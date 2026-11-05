@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionScopedOps;
 use worth_query_declaration::facade::{
     application_capability::{
@@ -69,7 +69,7 @@ pub trait ReplayOps<Schema: ApplicationSchema>:
     {
         let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
         self.replay_capability_delegation_after_fresh_denial_with_request(
             &execution,
@@ -148,12 +148,12 @@ pub(in crate::domain_computation) trait ReplayScopedOps<Schema: ApplicationSchem
         }) {
             Some(Ok(resolved)) => resolved,
             Some(Err(denial)) => match denial.kind() {
-                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
+                crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
                 return Err(
                     WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial),
                 )
                 }
-                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Ok(None),
+                crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Ok(None),
             },
             None => return Ok(None),
         };
@@ -177,12 +177,12 @@ pub(in crate::domain_computation) trait ReplayScopedOps<Schema: ApplicationSchem
         ) {
             Ok(admission) => admission,
             Err(denial) => match denial.kind() {
-                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
+                crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
                 return Err(
                     WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial),
                 )
                 }
-                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Ok(None),
+                crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Ok(None),
             },
         };
         let Ok(admission) = prepared.finish(admission) else {

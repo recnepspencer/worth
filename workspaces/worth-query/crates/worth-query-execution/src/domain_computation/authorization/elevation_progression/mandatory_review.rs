@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, TypedMutationPreconditions,
@@ -13,16 +13,11 @@ use super::super::capability_registry::WorthQueryElevationLifecycleOperationRole
 use super::super::operation_progression::{
     progress_capability_operation, WorthQueryCapabilityOperationProgression,
 };
-use super::super::{
-    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {super::super::WorthQueryAdmittedApplicationCapabilityAccess, super::super::WorthQueryAdmittedApplicationOperation, super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 use super::context_identity::{selected_elevation_entity, selected_review_entity};
 use super::operation_role::installed_lifecycle_owner;
 use super::transition_contract::{review_decision_reads, review_program_targets};
-use crate::domain_computation::primary_graph::{
-    WorthQueryElevationClosureKind, WorthQueryMandatoryReview,
-};
+use {crate::domain_computation::vocabulary::primary_graph::elevation_close_outcome::WorthQueryElevationClosureKind, crate::domain_computation::primary_graph::WorthQueryMandatoryReview};
 
 mod binding;
 pub(in crate::domain_computation) use binding::WorthQueryMandatoryReviewBinding;
@@ -97,7 +92,7 @@ where
     {
         let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
-            Err(_) => return Err(review_denial(mandatory, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
+            Err(_) => return Err(review_denial(mandatory, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
         self.authorize_mandatory_review_with_request(
             &execution,

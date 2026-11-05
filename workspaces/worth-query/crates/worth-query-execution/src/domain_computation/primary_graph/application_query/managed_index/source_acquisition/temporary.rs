@@ -1,10 +1,5 @@
 //! Temporary backing newly copied by the managed Source scope resolver.
-use crate::domain_computation::primary_graph::{
-    application_query::{
-        one_shot::outcome::material::MaterialCompletion, WorthQueryObservedScopeSelector,
-    },
-    source_facts::SourceFactsAllocation,
-};
+use {crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion, crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation};
 use std::sync::Arc;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 

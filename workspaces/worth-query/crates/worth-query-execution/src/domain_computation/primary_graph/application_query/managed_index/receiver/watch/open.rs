@@ -160,7 +160,7 @@ impl<
 {
 }
 pub(super) fn work_denial(
-    cause: super::super::super::super::WorthQueryManagedIndexWorkDenial,
+    cause: crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial,
 ) -> ReceiverCause {
     ReceiverCause::Provider(ProviderExecutionDenial::Work(cause))
 }

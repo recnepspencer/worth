@@ -3,10 +3,7 @@
 //! spends it; closing writes none.
 
 use super::history::HistoryBasis;
-use super::{
-    ObservedWorkflowInstance, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind,
-};
+use {super::ObservedWorkflowInstance, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 /// What a request observes a live instance for. Advancing writes a new
 /// transition and needs a free slot of the retained capacity; closing writes

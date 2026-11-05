@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use super::canonical_identity::WorthQueryTemporalBindingIdentity;
-use super::installation::ConditionalClockLease;
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::ConditionalClockLease;
 
 /// Immutable installed application meaning shared by operation instances.
 /// Runtime lowerings, managed clocks, cursors, and retained work belong to each

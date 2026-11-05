@@ -5,11 +5,7 @@ use worth_query_installation::facade::{ApplicationRelationRef, ApplicationSchema
 use worth_relational::facade::runtime::{ProjectionAspectScope, VisibilityProjectionView};
 use worth_relational::facade::storage::RecordLifecycleState;
 
-use super::{
-    WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
-    WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,
-    WorthQueryInvariantRelation,
-};
+use {super::WorthQueryApplicationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::WorthQueryInvariantProjectionTraversalDenial, super::WorthQueryInvariantProjectionTraversalDenialKind, super::WorthQueryInvariantRelation};
 
 impl<Schema> WorthQueryApplicationInvariantProjectionReader<'_, Schema>
 where

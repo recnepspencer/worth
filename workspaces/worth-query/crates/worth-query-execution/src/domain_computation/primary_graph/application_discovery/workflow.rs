@@ -34,10 +34,7 @@ use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionContentIdentity;
 use worth_relational::facade::identity::EntityId;
 
-use super::super::application_attempt::{
-    observe_adjacency, observe_field_value, PublishedWorkflowDefinitionRef,
-    WorthQueryApplicationAdjacencyDirection,
-};
+use {super::super::application_attempt::observe_adjacency, super::super::application_attempt::observe_field_value, crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection};
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 
 /// A lineage is unique per definition identity, so a second candidate is

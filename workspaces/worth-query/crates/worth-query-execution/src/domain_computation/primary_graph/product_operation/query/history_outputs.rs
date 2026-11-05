@@ -15,6 +15,7 @@ use {
     crate::domain_computation::primary_graph::WorthQueryHistoryOutputAuthority,
     crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
 
 type Rows<S, B> =
     <<B as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
@@ -27,8 +28,8 @@ pub enum WorthQueryHistoryOutputReadDenial {
     Read(crate::domain_computation::primary_graph::WorthQueryManagedIndexDenial),
     Control(WorthQueryHistoryOutputControlDenial),
     Demand(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial),
-    Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
-    Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
+    Principal(crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial),
+    Scope(crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial),
     Resource(worth_relational::facade::mvcc::CompanionPreflightStop),
     Preparation(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Dependencies(

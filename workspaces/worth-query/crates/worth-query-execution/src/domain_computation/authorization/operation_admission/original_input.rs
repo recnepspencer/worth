@@ -1,8 +1,6 @@
 //! Original handler input retained independently of authorization mode.
 use super::WorthQueryAdmittedOperation;
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 pub(in crate::domain_computation::authorization) fn retain_original_scope<Schema, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -13,7 +11,7 @@ pub(in crate::domain_computation::authorization) fn retain_original_scope<Schema
     contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
 ) -> Result<
     Option<
-        std::sync::Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>,
+        std::sync::Arc<crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector>,
     >,
     WorthQueryOperationAuthorizationDenial,
 > {
@@ -47,7 +45,7 @@ pub(super) struct ErasedOriginalInput {
     pub(super) binding_type: std::any::TypeId,
     pub(super) correction: Option<
         std::sync::Arc<
-            crate::domain_computation::application_aftermath::OriginalCorrectionDisclosure,
+            crate::domain_computation::vocabulary::application_aftermath::original::OriginalCorrectionDisclosure,
         >,
     >,
 }
@@ -56,7 +54,7 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn original_scope(
         &self,
     ) -> Option<
-        &std::sync::Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>,
+        &std::sync::Arc<crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector>,
     > {
         self.original_scope.as_ref()
     }
@@ -75,14 +73,14 @@ impl WorthQueryAdmittedOperation {
 
     pub(in crate::domain_computation) fn retain_original_inspection_disclosure(
         &mut self,
-        disclosure: Option<std::sync::Arc<crate::domain_computation::primary_graph::source_disclosure::OriginalSourceInspectionDisclosure>>,
+        disclosure: Option<std::sync::Arc<crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure>>,
     ) {
         self.original_inspection_disclosure = disclosure;
     }
 
     pub(in crate::domain_computation) fn original_inspection_disclosure(
         &self,
-    ) -> Option<&std::sync::Arc<crate::domain_computation::primary_graph::source_disclosure::OriginalSourceInspectionDisclosure>>{
+    ) -> Option<&std::sync::Arc<crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure>>{
         self.original_inspection_disclosure.as_ref()
     }
 
@@ -113,7 +111,7 @@ impl WorthQueryAdmittedOperation {
         &self,
     ) -> Option<
         &std::sync::Arc<
-            crate::domain_computation::application_aftermath::OriginalCorrectionDisclosure,
+            crate::domain_computation::vocabulary::application_aftermath::original::OriginalCorrectionDisclosure,
         >,
     > {
         self.original_input.as_ref()?.correction.as_ref()

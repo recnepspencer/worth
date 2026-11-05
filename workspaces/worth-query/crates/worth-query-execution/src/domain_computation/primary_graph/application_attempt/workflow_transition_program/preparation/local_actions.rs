@@ -4,10 +4,8 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationAdmissionBinding, ApplicationMutationIdentities,
 };
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
 
 impl WorthQueryWorkflowAdvanceAdapter {
     #[allow(clippy::too_many_arguments)]

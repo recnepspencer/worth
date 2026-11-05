@@ -1,21 +1,10 @@
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::EntityId;
 
-use super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationStaleAttempt,
-    WorthQueryApprovedElevation,
-};
+use {super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitOutcome, super::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt, super::WorthQueryApprovedElevation};
 use crate::domain_computation::authorization::WorthQueryElevationCloseBinding;
+use crate::domain_computation::vocabulary::primary_graph::elevation_close_outcome::WorthQueryElevationClosureKind;
 
-/// Why an approved elevation was closed.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryElevationClosureKind {
-    /// The elevation was revoked before it expired.
-    Revoked,
-    /// The elevation reached its expiry.
-    Expired,
-}
 
 /// Move-only obligation produced only after the approved elevation is closed.
 ///
@@ -119,7 +108,7 @@ impl WorthQueryMandatoryReview {
 
     pub(in crate::domain_computation) fn belongs_to_lifecycle(
         &self,
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         branch: &worth_relational::facade::history::BranchId,
         capability_identity: [u8; 32],
         capability_authority_identity: &str,

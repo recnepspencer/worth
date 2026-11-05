@@ -25,6 +25,8 @@ use materialization::materialize_decision;
 pub(super) use operation_inputs::observe_operation_approval_inputs;
 pub(super) use validation::validate_requirement_definition as actor_approval_node;
 use validation::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -49,9 +51,9 @@ where
             Schema,
             Spec,
         >,
-        instance: super::super::PublishedWorkflowInstanceRef,
+        instance: crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
-        proposal: &super::super::PublishedWorkflowProposalRef,
+        proposal: &crate::domain_computation::primary_graph::vocabulary::application_attempt::reference::PublishedWorkflowProposalRef,
         decision: WorkflowApprovalDecision,
         clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     ) -> Result<
@@ -66,7 +68,7 @@ where
             &self, installed, &instance, required, proposal,
         )?;
         let layout = self.lease.layout.workflow().clone();
-        let published = super::super::PublishedWorkflowDefinitionRef::retained(
+        let published = crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef::retained(
             instance.branch(),
             instance.definition_entity_id(),
             instance.definition_content_identity().clone(),

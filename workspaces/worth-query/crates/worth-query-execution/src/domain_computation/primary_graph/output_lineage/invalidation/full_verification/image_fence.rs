@@ -1,6 +1,7 @@
 //! Same-Native-position actor edits may change equality meaning during a probe.
 
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 impl FullVerificationImage<'_> {
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn fence_semantic_image(

@@ -1,7 +1,7 @@
 //! A genuine native lineage read refuses an absent retained-fact coordinate.
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::producer_observation::*;
 use worth_query_execution::facade::application_inspection::IndexedSelectionReobserveDenial as Indexed;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason as Requirement;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason as Requirement;
 use worth_query_execution::facade::application_inspection::RebaseVerificationReason as Reason;
 
 #[test]

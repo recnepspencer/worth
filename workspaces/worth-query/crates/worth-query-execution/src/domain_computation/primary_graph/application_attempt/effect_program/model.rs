@@ -14,27 +14,7 @@ pub(in crate::domain_computation::primary_graph) use emission::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
 };
 
-/// An entity handle usable only inside the effect program that produced it: an
-/// existing entity from the read set, or one the program creates.
-///
-/// Get one from the builder's `existing_entity`, `projected_entity`, or
-/// `create_entity`, then write fields or link relations through it. A handle
-/// from another effect program is refused.
-pub struct WorthQueryApplicationEffectEntity<Schema, Entity> {
-    pub(super) reference: EntityReference,
-    pub(super) entity: String,
-    pub(super) created_effect: Option<usize>,
-    pub(super) program: Arc<()>,
-    pub(super) _marker: PhantomData<fn() -> (Schema, Entity)>,
-}
 
-/// Only the creating effect program can initialize this new relation's payload.
-pub struct WorthQueryApplicationCreatedRelation<Schema, Relation, From, To> {
-    pub(super) relation:
-        worth_query_installation::facade::ApplicationRelationRef<Schema, Relation, From, To>,
-    pub(super) created_effect: usize,
-    pub(super) program: Arc<()>,
-}
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOptionalFieldWrite {
     pub(in crate::domain_computation::primary_graph::application_attempt) contract:
@@ -103,13 +83,13 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
     pub(in crate::domain_computation::primary_graph::application_attempt) conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
     pub(in crate::domain_computation::primary_graph::application_attempt) effect_posture:
-        crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
+        crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture,
     pub(in crate::domain_computation::primary_graph::application_attempt) output_correspondence:
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     pub(in crate::domain_computation::primary_graph::application_attempt) retain_output_demand_observation: bool,
     pub(in crate::domain_computation::primary_graph::application_attempt) retain_client_observation: bool,
     pub(in crate::domain_computation::primary_graph::application_attempt) producer_required_invariants:
-        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+        &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement],
     pub(in crate::domain_computation::primary_graph::application_attempt) output_currentness_facts:
         Option<super::super::OutputCurrentnessFacts>,
     pub(in crate::domain_computation::primary_graph::application_attempt) content_attachments:
@@ -164,7 +144,7 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     pub(super) creation_partition: Option<WorthQueryApplicationCreationPartition>,
     pub(super) content_attachments: worth_relational::facade::content::RelationalContentAttachments,
-    pub(super) content_denial: Option<crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial>,
+    pub(super) content_denial: Option<crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial>,
     // Last to drop: physical backing releases before its retained grant.
 
 }
@@ -192,7 +172,7 @@ impl<Schema, Operation, Input, Scope>
 {
     pub(in crate::domain_computation::primary_graph) fn belongs_to_application(
         &self,
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     ) -> bool {
         self.read_set
@@ -216,7 +196,7 @@ impl<Schema, Operation, Input, Scope>
 
     pub(in crate::domain_computation::primary_graph) fn with_producer_required_invariants(
         mut self,
-        requirements: &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+        requirements: &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement],
     ) -> Self {
         self.producer_required_invariants = requirements;
         self

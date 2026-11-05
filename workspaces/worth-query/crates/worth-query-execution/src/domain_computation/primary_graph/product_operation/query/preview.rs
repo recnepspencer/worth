@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::application_query::AdmissionScoped
 use crate::domain_computation::primary_graph::application_query::WorthQueryHistoryPreviewReadAdmission;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryModelIdentity;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
 
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     pub fn admit_document_preview_application_query<Q, P, R, A, I, E>(
@@ -24,7 +25,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let runtime = self.application();
         let execution = phase.execution_request_for(runtime.product_runtime())
             .map_err(|_| WorthQueryApplicationQueryAdmissionDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
+                crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
                 query.name()))?;
         let controls =
             self.document_preview_controls(&execution, phase, preview, query, access, controls)?;
@@ -52,7 +53,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let runtime = self.application();
         let execution = phase.execution_request_for(runtime.product_runtime())
             .map_err(|_| WorthQueryApplicationQueryAdmissionDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
+                crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
                 query.name()))?;
         let controls =
             self.document_preview_controls(&execution, phase, preview, query, access, controls)?;

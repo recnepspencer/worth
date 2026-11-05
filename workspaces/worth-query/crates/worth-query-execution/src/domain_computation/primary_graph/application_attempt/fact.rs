@@ -13,14 +13,12 @@ pub(crate) mod movement;
 mod retirement_equality;
 pub(crate) mod source_currentness;
 mod source_read_authorization;
-pub(in crate::domain_computation::primary_graph) use source_read_authorization::{
-    SourceReadAuthorization, SourceReadAuthorizationKey,
-};
+pub(in crate::domain_computation::primary_graph) use source_read_authorization::SourceReadAuthorization;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_read_authorization::SourceReadAuthorizationKey;
 mod source_merge;
 mod source_publication_read;
-pub(in crate::domain_computation::primary_graph) use managed_source_read::{
-    ManagedSourceRead, ManagedSourceReadKey,
-};
+pub(in crate::domain_computation::primary_graph) use managed_source_read::ManagedSourceRead;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::managed_source_read::ManagedSourceReadKey;
 pub(in crate::domain_computation::primary_graph) use source_publication_read::SourcePublicationRead;
 mod workflow_definition_predecessor;
 pub(crate) mod workflow_history_basis;
@@ -33,20 +31,14 @@ pub(in crate::domain_computation::primary_graph) use adjacency::{
     observe_adjacency_checked, AdjacencyObservationDenial,
 };
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::reobserve as reobserve_indexed_entity_selection;
-pub use indexed_entity_selection::IndexedSelectionReobserveDenial;
+
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::{
     observe_indexed_candidates, observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal,
 };
-pub(in crate::domain_computation::primary_graph) use movement::{
-    FactMovement, Movement, ObservedRetained,
-};
-pub(in crate::domain_computation::primary_graph) use source_currentness::WorthQuerySourceCurrentnessFailure;
+pub(in crate::domain_computation::primary_graph) use {movement::FactMovement, movement::ObservedRetained};
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum WorthQueryApplicationAdjacencyDirection {
-    Outgoing,
-    Incoming,
-}
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
+
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryApplicationObservedRelation {

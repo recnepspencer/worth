@@ -13,8 +13,8 @@ pub struct CompletedOriginalRead {
     projection: Arc<CompletedFactProjection>,
     lease: WorthQueryApplicationSnapshotLease,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
-    admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
-    graph_work: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+    admission: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
+    graph_work: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
 }
 impl CompletedOriginalRead {
     pub(super) fn from_native_completion(
@@ -55,13 +55,13 @@ impl CompletedOriginalRead {
     }
     pub(in crate::domain_computation::primary_graph) fn belongs_to_admission(
         &self,
-        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        admission: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
     ) -> bool {
         self.admission == admission
     }
     pub(in crate::domain_computation::primary_graph) fn belongs_to_graph_work(
         &self,
-        graph_work: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        graph_work: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     ) -> bool {
         self.graph_work == graph_work
     }

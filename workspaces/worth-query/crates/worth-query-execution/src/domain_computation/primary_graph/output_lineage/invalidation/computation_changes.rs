@@ -1,5 +1,5 @@
 //! Retained computation changes use the same source-aligned native mark image.
-use super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::super::RetainedSourceFacts;
 use super::source_alignment::SnapshotAlignedMarkState;
 use super::SourceInvalidationOwner;

@@ -5,8 +5,8 @@ use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::indexes::DerivedIndexId;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-use super::super::WorthQueryApplicationQueryAdmissionDenial;
-use super::super::WorthQueryApplicationQueryAdmissionDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
 use crate::domain_computation::primary_graph::index_currency::ensure_selected_field_indexes_admitted;
 use crate::domain_computation::primary_graph::index_currency::SelectedFieldIndexAdmissionStop;
 

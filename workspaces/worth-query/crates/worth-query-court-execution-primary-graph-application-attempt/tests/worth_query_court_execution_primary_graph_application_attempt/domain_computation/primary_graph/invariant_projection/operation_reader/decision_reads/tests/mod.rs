@@ -4,8 +4,8 @@ use worth_relational::facade::identity::PartitionId;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::DecisionReadOutcome;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::DecisionReads;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::FailedDecisionRead;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey;
 
 pub fn adjacency(slot: u64) -> WorthQueryApplicationFactKey {

@@ -40,10 +40,10 @@ pub enum WorthQueryTemporalReentryOutcome {
     Obsolete,
     RetryableFailure(super::WorthQueryConditionalReentryFailure),
     RetryableCommitFailure(
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
     ),
     RetryableExecutionControlStopped(
-        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     ),
     SnapshotCapacityBackpressured {
         maximum_active_snapshots: usize,
@@ -68,13 +68,13 @@ pub(super) enum WorthQueryTemporalControlStop {
 pub enum WorthQueryTemporalTerminalFailure {
     CustomInvariant(crate::domain_computation::WorthQueryCustomInvariantDenial),
     ApplicationCommit(
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
     ),
     ApplicationExecution {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
         cause: Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     },
     Admission(WorthQueryTemporalAdmissionTerminalFailure),
@@ -82,8 +82,8 @@ pub enum WorthQueryTemporalTerminalFailure {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum WorthQueryTemporalAdmissionTerminalFailure {
-    Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind),
-    Entity(crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind),
+    Principal(crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind),
+    Entity(crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind),
     Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial),
     Projection(crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenialKind),
     Invariant(crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenialKind),

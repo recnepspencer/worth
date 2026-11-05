@@ -1,12 +1,7 @@
 //! Non-driving observation of an installed required output, in this reader.
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::SourceQualificationScopedOps;
-use crate::domain_computation::primary_graph::{
-    application_attempt::{SourcePublicationRead, WorthQueryApplicationFactKey},
-    application_contribution::{WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily},
-    application_query::{ApplicationQueryNativeAccess, SourceQueryObservationStop},
-    invariant_projection::{ObservedOutputCandidate, ObservedOutputPosture},
-};
+use {crate::domain_computation::primary_graph::application_attempt::SourcePublicationRead, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFactKey, crate::domain_computation::primary_graph::application_contribution::WorthQueryApplicationOutputDemand, crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerOutputFamily, crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess, crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop, crate::domain_computation::primary_graph::invariant_projection::ObservedOutputCandidate, crate::domain_computation::primary_graph::vocabulary::invariant_projection::output_availability_candidate::ObservedOutputPosture};
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeBinding,
@@ -19,6 +14,7 @@ use worth_query_installation::facade::{
 };
 mod denial;
 pub use denial::WorthQueryOutputAvailabilityDenial;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 /// Result of a non-driving observation through the original checked reader.
 /// Its source and completion dependencies remain in that reader; this value
@@ -220,7 +216,7 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                     .map_err(Cause::Registration)?;
                 let observation = std::sync::Arc::new(observed);
                 self.decision_facts.record_source_publication(SourcePublicationRead::new(admission_identity,observation.clone()), observation)
-                    .map_err(|stop|Cause::Registration(crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop::Admission(stop)))?;
+                    .map_err(|stop|Cause::Registration(crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop::Admission(stop)))?;
                 Ok((posture, entity))
             })();
             let (posture, entity) = observed.map_err(WorthQueryOutputAvailabilityDenial::from)?;

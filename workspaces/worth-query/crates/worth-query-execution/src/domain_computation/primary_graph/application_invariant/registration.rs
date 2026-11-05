@@ -34,7 +34,7 @@ where
         binding_identity: ApplicationSchemaBindingIdentity,
         program_selection: Option<WorthQueryProgramRuleSelection>,
     ) -> Result<CustomInvariantRegistration, String> {
-        super::refusal::maximum::<Rule::RefusalBinding>()?;
+        crate::domain_computation::primary_graph::vocabulary::application_invariant::refusal::maximum::<Rule::RefusalBinding>()?;
         CustomInvariantRegistration::new(InstalledApplicationInvariantRule {
             rule: *self,
             descriptor,

@@ -1,5 +1,5 @@
 //! Descriptive node coordinates are never reused across isolated sibling edits.
-use super::{Stop, WorthQueryManagedIndexControl};
+use {crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl};
 use std::{
     alloc::Layout,
     sync::{

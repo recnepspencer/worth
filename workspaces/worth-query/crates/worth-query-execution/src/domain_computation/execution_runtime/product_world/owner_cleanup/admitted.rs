@@ -34,7 +34,7 @@ impl WorthQueryProductBranchOwnerCleanup {
         let execution = phase.checked_execution_request_for(&self.runtime)?;
         execution
             .check_live()
-            .map_err(execution_denial::advancement_checkpoint_stop)?;
+            .map_err(crate::domain_computation::request_execution::execution_stop::advancement_checkpoint_stop)?;
         Ok(execution)
     }
 
@@ -60,7 +60,7 @@ impl WorthQueryProductBranchOwnerCleanup {
                         |units| {
                             context.checkpoint(units).map_err(|stop| {
                                 WorthQueryProductBranchOwnerCleanupDenial::Execution(
-                                    execution_denial::advancement_checkpoint_stop(stop),
+                                    crate::domain_computation::request_execution::execution_stop::advancement_checkpoint_stop(stop),
                                 )
                             })
                         },
@@ -89,7 +89,7 @@ impl WorthQueryProductBranchOwnerCleanup {
                 .map_err(|denial| self.failure(denial)),
             Ok(Err(denial)) | Err(denial) => Err(self.failure(
                 WorthQueryProductBranchOwnerCleanupDenial::Execution(
-                    execution_denial::advancement_scope_stop(denial),
+                    crate::domain_computation::request_execution::execution_stop::advancement_scope_stop(denial),
                 ),
             )),
         }

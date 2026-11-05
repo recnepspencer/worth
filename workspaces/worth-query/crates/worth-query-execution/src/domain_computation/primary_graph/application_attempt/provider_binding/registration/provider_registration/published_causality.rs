@@ -1,7 +1,7 @@
 //! What an application attempt's World publication made live.
 
 use super::WorthQueryPrimaryGraphApplicationAttempt;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPublishedApplicationCausality {

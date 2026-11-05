@@ -1,9 +1,6 @@
 use super::{ErasedAuthorizationBasis, WorthQueryAdmittedOperation};
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use crate::domain_computation::authorization::{
-    WorthQueryCapabilityRevocationBinding, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialKind,
-};
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use {crate::domain_computation::authorization::WorthQueryCapabilityRevocationBinding, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 impl WorthQueryAdmittedOperation {
     pub(super) fn bind_capability_revocation(

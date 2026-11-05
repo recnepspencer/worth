@@ -1,8 +1,8 @@
 //! A certified successor shares output custody, without retaining obsolete inputs.
-use super::super::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::super::mark_state::MarkState;
-use super::super::SettlementRegistrationStop;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use std::sync::Arc;
 
 pub(super) fn carry(

@@ -10,6 +10,8 @@ use crate::domain_computation::primary_graph::application_attempt::{
     retained_decision_facts::{StorageControl, StoreDenial},
 };
 use worth_execution::ExecutionAllocationPolicy;
+use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 impl MutationReadAttemptCore<'_, '_, '_> {
     pub(super) fn complete_native(

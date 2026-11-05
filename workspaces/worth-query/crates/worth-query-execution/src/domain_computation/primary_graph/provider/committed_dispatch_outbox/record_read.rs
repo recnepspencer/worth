@@ -1,10 +1,11 @@
 //! Resolve and verify one authoritative committed outbox record.
 use super::*;
+use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout;
 
 pub(super) struct CommittedOutboxRead<'a> {
     pub(super) runtime: &'a mut worth_relational::facade::runtime::RelationalRuntime,
     pub(super) layout: &'a WorthQueryDispatchOutboxLayout,
-    pub(super) binding: &'a super::super::WorthQueryCommittedDispatchOutboxBinding,
+    pub(super) binding: &'a crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding,
     pub(super) expected_commit: &'a worth_relational::facade::history::RelationalCommitReceipt,
     pub(super) expected_runtime: u64,
     pub(super) retained_basis: &'a super::super::WorthQueryRetainedApplicationCommitBasis,

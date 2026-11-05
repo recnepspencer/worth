@@ -191,7 +191,7 @@ fn schedule_selected_output_producer_with_truth<Query>(
             u64,
             u64,
         ) -> Result<
-            crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision,
+            crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision,
             BridgeConditionalDenial,
         >,
     ) -> Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial> {
@@ -249,7 +249,7 @@ fn schedule_selected_output_producer_with_truth<Query>(
                 return scheduling_refusal(&selected.identity, error);
             }
         };
-        use crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision as Decision;
+        use crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision as Decision;
         match decision {
             Decision::Eligible => Ok(WorthQueryOutputSchedulingResult::Scheduled),
             Decision::Deferred => Ok(WorthQueryOutputSchedulingResult::Deferred),

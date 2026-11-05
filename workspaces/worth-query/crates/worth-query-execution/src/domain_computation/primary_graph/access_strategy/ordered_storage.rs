@@ -1,7 +1,5 @@
 //! Every copied ordered cell retains its original SDK grant, never a payer chain.
-use crate::domain_computation::primary_graph::application_query::managed_index::{
-    WorthQueryManagedIndexControl as Control, WorthQueryManagedIndexStop as Stop,
-};
+use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
 use worth_execution::{ExecutionOrderedMap as Map, ExecutionRequest};
 
 pub(in crate::domain_computation::primary_graph) fn lookup(

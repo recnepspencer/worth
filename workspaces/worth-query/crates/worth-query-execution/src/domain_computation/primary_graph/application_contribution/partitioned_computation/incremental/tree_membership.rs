@@ -38,7 +38,7 @@ impl TreeTarget {
             retained.tree.checked_full_build_cost().map(|cost| cost.0)
         } else {
             let bytes = results.len().checked_mul(size_of::<PartitionIdentity>())
-                .and_then(|n|u64::try_from(n).ok()).ok_or(D::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
+                .and_then(|n|u64::try_from(n).ok()).ok_or(D::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
             let _memory = execution.reserve(bytes).map_err(D::Resource)?;
             let inserted = CanonicalUniqueVec::try_from_sorted_unique(
                 results

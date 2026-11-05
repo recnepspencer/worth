@@ -1,0 +1,75 @@
+//! Moved whole from `domain_computation::primary_graph::application_contribution::computation::prepared_request`: the items below and every impl they own.
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::member_execution::WorthQueryMemberExecution;
+use std::any::Any;
+
+pub struct PreparedCompute {
+    run: Box<dyn for<'a> FnOnce(WorthQueryMemberExecution<'a>) -> ComputedSlot + Send>,
+}
+
+impl PreparedCompute {
+    pub(in crate::domain_computation::primary_graph) fn new<T: Any + Send>(
+        run: impl for<'a> FnOnce(WorthQueryMemberExecution<'a>) -> T + Send + 'static,
+    ) -> Self {
+        let callback = move |member: WorthQueryMemberExecution<'_>| {
+            let value = run(member);
+            ComputedSlot {
+                value: Box::new(value),
+            }
+        };
+        Self {
+            run: Box::new(callback),
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn observe(
+        self,
+        before: impl Fn() + Send + Sync + 'static,
+        after: impl Fn() + Send + Sync + 'static,
+    ) -> Self {
+        let callback = move |member: WorthQueryMemberExecution<'_>| {
+            let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
+            before();
+            let result = self.run(member);
+            after();
+            result
+        };
+        Self {
+            run: Box::new(callback),
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn run(
+        self,
+        member: WorthQueryMemberExecution<'_>,
+    ) -> ComputedSlot {
+        let _custody = crate::domain_computation::request_execution::advancement::worker_custody::MemberComputeCustody::enter();
+        (self.run)(member)
+    }
+}
+
+pub struct ComputedSlot {
+    value: Box<dyn Any + Send>,
+}
+
+impl ComputedSlot {
+    pub(in crate::domain_computation::primary_graph) fn into_value<T: Any + Send>(self) -> T {
+        *self
+            .value
+            .downcast::<T>()
+            .unwrap_or_else(|_| unreachable!("the sealed request fixes its result type"))
+    }
+}
+
+impl PreparedCompute {
+    #[doc(hidden)]
+    pub fn declared_test_request_for_test(rank: usize, fails: bool) -> Self {
+        Self::declared_test_request(rank, fails)
+    }
+}
+
+impl ComputedSlot {
+    #[doc(hidden)]
+    pub fn into_value_for_test<T: Any + Send>(self) -> T {
+        Self::into_value::<T>(self)
+    }
+}

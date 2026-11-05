@@ -1,6 +1,6 @@
 //! Exact request anchors and trusted-time predicates for installed policy paths.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::{
     RelationalAuthorizationEntityAnchor, RelationalAuthorizationExactAdjacencyConstraint,
     RelationalAuthorizationTraversal, RelationalAuthorizationTraversalDirection,
@@ -12,10 +12,7 @@ use super::super::capability_registry::{
 };
 use super::super::operation_progression::WorthQueryCapabilityContextKey;
 use super::super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use super::super::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryRuntimeTimeSample,
-};
+use {super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::super::WorthQueryRuntimeTimeSample};
 
 pub(super) fn prepare_exact_policy_paths(
     installed: &WorthQueryInstalledCapabilityPlan,

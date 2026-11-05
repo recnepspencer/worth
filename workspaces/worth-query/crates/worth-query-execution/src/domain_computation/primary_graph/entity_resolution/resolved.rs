@@ -6,9 +6,9 @@ use worth_relational::facade::identity::{EntityId, KindId};
 use worth_relational::facade::indexes::{DerivedIndexGenerationId, DerivedIndexId};
 use worth_relational::facade::transactions::RecordRef;
 
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
-use super::super::WorthQueryPrincipalResolutionMode;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 
 pub(super) struct WorthQueryEntityResolutionSubject<'subject> {
     entity: &'subject str,

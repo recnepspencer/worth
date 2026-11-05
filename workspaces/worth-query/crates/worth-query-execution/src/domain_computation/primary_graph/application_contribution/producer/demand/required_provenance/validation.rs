@@ -1,6 +1,7 @@
 //! Compare an actual required successor's issued mode with its effect call.
 
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
 const MODE_SUBJECT: &str = "required successor commit mode differs from its issued mode";
 const EDITION_SUBJECT: &str = "required successor installed producer edition moved";

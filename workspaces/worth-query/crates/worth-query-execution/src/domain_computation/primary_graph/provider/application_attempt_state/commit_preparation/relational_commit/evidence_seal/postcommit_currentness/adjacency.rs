@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection as DecisionDirection;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as DecisionDirection;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial;
 use worth_relational::facade::runtime::RelationalAdjacencyDirection as NativeDirection;

@@ -1,5 +1,5 @@
 use super::WorthQueryOwnedAsyncRuntimeCause as Cause;
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 use worth_runtime_bridge::facade::{
     BridgeOwnedAsyncEffectsIndeterminateIssuer, BridgeOwnedAsyncManagedDenial,
     BridgeOwnedAsyncManagedRequestAdmission, BridgeOwnedAsyncRequestAdmission,

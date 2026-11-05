@@ -23,6 +23,8 @@ pub mod provider_session;
 pub mod request_execution;
 #[path = "runtime_time/mod.rs"]
 pub mod runtime_time;
+#[path = "vocabulary/mod.rs"]
+pub mod vocabulary;
 pub use crate::domain_computation::WorthQueryConverged;
 pub use crate::domain_computation::WorthQueryIndeterminate;
 pub use crate::domain_computation::WorthQueryOscillating;

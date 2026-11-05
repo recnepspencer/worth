@@ -6,19 +6,7 @@ use super::{
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::RelationId;
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::admit_workflow_transition,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
-    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
-    crate::domain_computation::primary_graph::application_attempt::PublishedWorkflowInstanceRef,
-    crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact,
-    crate::domain_computation::primary_graph::WorthQueryCompleteApplicationReadSet,
-    crate::domain_computation::primary_graph::WorthQueryProjectedApplicationMutation,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::admit_workflow_transition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation, crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::WorthQueryCompleteApplicationReadSet, crate::domain_computation::primary_graph::WorthQueryProjectedApplicationMutation};
 
 /// A native verified original receipt may settle only its own pending custody.
 /// It grants no executable operation authority and has no public constructor.
@@ -99,7 +87,7 @@ where
         )?;
         if completion.is_some_and(|original| selected.identity() != original.transition) {
             return Err(super::denial(
-                super::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
                 "local completion's original authored route or frontier changed",
             ));
         }
@@ -133,7 +121,7 @@ where
     ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
         if self.admission.operation() != requested.operation {
             return Err(super::denial(
-                super::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAuthorityMismatch,
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAuthorityMismatch,
                 "admitted operation differs from the local workflow action body",
             ));
         }
@@ -155,7 +143,7 @@ where
                     execution, runtime, self.lease.snapshot(), layout, instance.entity_id(),
                 )?;
                 if custody.as_deref() != Some(completion.transition.as_str()) {
-                    return Err(super::denial(super::WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
+                    return Err(super::denial(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
                         "local completion does not own the exact pending occurrence"));
                 }
                 Ok(fact)

@@ -8,7 +8,7 @@ impl WorthQueryApplicationOutputLineage {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         family: &str,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,

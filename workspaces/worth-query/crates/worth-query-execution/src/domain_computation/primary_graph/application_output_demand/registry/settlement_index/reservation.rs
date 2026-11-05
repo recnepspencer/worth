@@ -1,6 +1,7 @@
 //! Reserve the exact invisible settlement address before owner effects.
 use super::*;
 use std::collections::btree_map::Entry;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 pub(super) fn reserve(
     state: &mut DemandRegistryState,
     identity: &Arc<RecordedSettlementIdentity>,

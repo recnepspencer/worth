@@ -5,9 +5,7 @@ use super::super::historical_authority::{
     WorthQueryApplicationHistoricalReadSource, WorthQueryApplicationHistoricalRetention,
 };
 use super::validation::{denial, validate_truth_view_request};
-use crate::domain_computation::primary_graph::application_query::{
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 

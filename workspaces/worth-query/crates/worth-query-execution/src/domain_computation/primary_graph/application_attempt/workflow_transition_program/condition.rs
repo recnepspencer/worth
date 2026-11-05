@@ -2,17 +2,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowCon
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{PreparedWorkflowAdvance, PreparedWorkflowCondition};
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_workflow_transition_facts,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState,
-    crate::domain_computation::primary_graph::expression::evaluate_condition,
-    crate::domain_computation::primary_graph::expression::supplies,
-    crate::domain_computation::primary_graph::expression::supporting_identity,
-    crate::domain_computation::primary_graph::expression::WorthQueryWorkflowConditionSources,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
-    crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_workflow_transition_facts, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState, crate::domain_computation::primary_graph::expression::evaluate_condition, crate::domain_computation::primary_graph::expression::supplies, crate::domain_computation::primary_graph::expression::supporting_identity, crate::domain_computation::primary_graph::expression::WorthQueryWorkflowConditionSources, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram};
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowCondition<Schema, Operation, Input, Scope>
 where
@@ -135,7 +125,7 @@ where
             read_set,
             effects,
             conditional_definition: None,
-            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
+            effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::Platform,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

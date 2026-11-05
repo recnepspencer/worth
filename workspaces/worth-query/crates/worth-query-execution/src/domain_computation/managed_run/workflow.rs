@@ -3,12 +3,7 @@ use std::sync::Arc;
 use super::WorthQueryManagedRelationalObservation;
 use worth_runtime_bridge::facade::BridgeBoundExecutionBasis;
 
-use super::{
-    WorthQueryManagedGraphCallRequest, WorthQueryManagedRunCounters, WorthQueryManagedRunDenial,
-    WorthQueryManagedRunDenialKind, WorthQueryManagedRunTerminalKind,
-    WorthQueryManagedSafePointFailure, WorthQueryManagedSafePointObservation,
-    WorthQueryManagedWorkflowArtifactAuthority,
-};
+use {super::WorthQueryManagedGraphCallRequest, crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters, super::WorthQueryManagedRunDenial, super::WorthQueryManagedRunDenialKind, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind, super::WorthQueryManagedSafePointFailure, crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation, super::WorthQueryManagedWorkflowArtifactAuthority};
 use crate::domain_computation::artifact_owner::{
     WorthQueryArtifactOccurrenceLedger, WorthQueryWorkflowArtifactAuthority,
     WorthQueryWorkflowArtifactRegistryEvidence,
@@ -27,8 +22,8 @@ mod terminal;
 #[path = "workflow_yield_freeze.rs"]
 pub(in crate::domain_computation::managed_run) mod yield_freeze;
 
-pub(in crate::domain_computation) use provider_plan_admission::WorthQueryWorkflowProviderPlanPermit;
-pub(in crate::domain_computation) use run_affinity::WorthQueryWorkflowRunTransitionPermit;
+
+use crate::domain_computation::vocabulary::managed_run::run_affinity::WorthQueryWorkflowRunTransitionPermit;
 pub(super) use run_affinity::{
     WorthQueryWorkflowAffinityCleanupReceipt, WorthQueryWorkflowRunAffinity,
     WorthQueryWorkflowRunProviderRestoreOutcome, WorthQueryWorkflowRunReadmissionPending,

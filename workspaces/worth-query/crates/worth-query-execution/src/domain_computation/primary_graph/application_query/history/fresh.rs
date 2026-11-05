@@ -14,11 +14,7 @@ use super::super::{
     admission::FreshQueryPermissionStop,
     disclosure::WorthQueryPendingApplicationQueryGovernance as Pending,
 };
-use super::{
-    HistoryMetadataAdmission, SubjectAccess, SubjectPlan,
-    WorthQueryApplicationHistoryDenial as Denial,
-    WorthQueryCapturedApplicationHistorySubjects as Subjects,
-};
+use {super::HistoryMetadataAdmission, super::SubjectAccess, super::SubjectPlan, crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial, super::WorthQueryCapturedApplicationHistorySubjects as Subjects};
 use crate::domain_computation::primary_graph::{
     WorthQueryProductQueryControls, WorthQuerySelectedProductOperation,
 };
@@ -117,8 +113,8 @@ fn request_for<'scope, Schema: ApplicationSchema>(
 ) -> Result<worth_execution::ExecutionRequest<'scope, 'scope>, Denial> {
     phase.execution_request_for(application.product_runtime()).map_err(|_| {
         Denial::Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
-            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(
-                crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::ForeignPhase,
+            crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(
+                crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind::ForeignPhase,
             ), "history-phase",
         ))
     })

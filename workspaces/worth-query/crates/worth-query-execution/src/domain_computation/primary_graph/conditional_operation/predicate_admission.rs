@@ -23,13 +23,13 @@ use super::installation::{
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind,
 };
-use super::predicate_observation::QueryTemporalPredicateProvider;
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::predicate_observation::QueryTemporalPredicateProvider;
 
 mod output_readiness_installation;
 mod providers;
 mod readiness_provider;
 pub(in crate::domain_computation::primary_graph) use output_readiness_installation::prepare_dependency_conditional_installation;
-pub(in crate::domain_computation::primary_graph) use providers::QueryConditionalComputeContext;
+
 use providers::{
     QueryConditionalComputeProvider, QueryConditionalComputeSemanticContract,
     QueryHostOutputComparator,

@@ -1,6 +1,7 @@
 //! Retained lineage source evidence may outlive a failed index registration.
 
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 impl FullVerificationImage<'_> {
     pub(super) fn root_source_is_current(

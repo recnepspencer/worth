@@ -1,4 +1,4 @@
-use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
+use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 pub(super) fn canonical_key(
     value: String,

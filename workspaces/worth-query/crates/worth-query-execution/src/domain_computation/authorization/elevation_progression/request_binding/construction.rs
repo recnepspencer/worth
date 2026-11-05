@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_capability::{
@@ -8,10 +8,7 @@ use worth_query_declaration::facade::application_capability::{
 use worth_query_installation::facade::{ApplicationOperationProgramTarget, ApplicationSchema};
 
 use super::super::super::capability_registry::WorthQueryInstalledCapabilityPlan;
-use super::super::super::{
-    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialKind,
-};
+use {super::super::super::WorthQueryAdmittedApplicationCapabilityAccess, super::super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 use super::super::request::{denial, projection_denial};
 use super::WorthQueryElevationRequestBinding;
 

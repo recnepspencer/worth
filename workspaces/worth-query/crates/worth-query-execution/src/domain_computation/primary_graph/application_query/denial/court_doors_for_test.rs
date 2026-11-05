@@ -1,12 +1,5 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
 
-impl WorthQueryApplicationQueryAdmissionDenial {
-    #[doc(hidden)]
-    pub fn new_for_test(
-        kind: WorthQueryApplicationQueryAdmissionDenialKind,
-        subject: impl Into<String>,
-    ) -> Self {
-        Self::new(kind, subject)
-    }
-}

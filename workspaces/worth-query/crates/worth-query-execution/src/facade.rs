@@ -23,45 +23,7 @@ pub mod causal_inspection {
 
 /// Fresh application inspection; only its supported result and request vocabulary.
 pub mod application_inspection {
-    pub use crate::domain_computation::primary_graph::causal_inspection::{
-        CausalInspectionReason, CausalObservationMissingReferencePosture,
-        DiagnosticComparisonDenial, FactlessCurrentness, IndexedSelectionReobserveDenial,
-        OutputFieldCaptureFailure, OwnEffectOnReads, RebaseVerificationReason, StoreDenial,
-        WorthQueryApplicationDisclosureContractDenial, WorthQueryApplicationEvidenceFamily,
-        WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,
-        WorthQueryApplicationInspectionOwnerRefusal, WorthQueryApplicationInspectionRequest,
-        WorthQueryApplicationInspectionResourceRefusal, WorthQueryApplicationInspectionStage,
-        WorthQueryApplicationInspectionStopKind, WorthQueryApplicationMaterializationPolicy,
-        WorthQueryApplicationMaterializationRequest, WorthQueryApplicationProducerConnection,
-        WorthQueryApplicationProducerEvaluation, WorthQueryApplicationQueryGovernanceDenialKind,
-        WorthQueryApplicationQueryInstallationDenial,
-        WorthQueryApplicationQueryInstallationDenialKind, WorthQueryApplicationQueryObservation,
-        WorthQueryApplicationRichMaterialization, WorthQueryChangedInspectionRequest,
-        WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryComparedApplicationInspection,
-        WorthQueryConditionalHistoryAvailability, WorthQueryConditionalHistoryDecisionClass,
-        WorthQueryConditionalHistoryOutcome, WorthQueryConnectedApplicationInspection,
-        WorthQueryConnectedInspectionRequest, WorthQueryConnectedReferenceOnlyInspectionRequest,
-        WorthQueryEvaluatedApplicationInspection, WorthQueryEvaluatedInspectionRequest,
-        WorthQueryEvaluatedReferenceOnlyInspectionRequest,
-        WorthQueryInspectionEvidenceAvailability, WorthQueryInspectionReadTerminalDenial,
-        WorthQueryInspectionRetainedEvidence, WorthQueryInspectionSupplierEvidence,
-        WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
-        WorthQueryMaterializedApplicationInspection, WorthQueryMaterializedConditionalHistory,
-        WorthQueryMaterializedConnectedInspectionRequest, WorthQueryMaterializedEvidenceReference,
-        WorthQueryMaterializedFamilyOutcome, WorthQueryMaterializedFieldValue,
-        WorthQueryMaterializedInspectionRequest, WorthQueryMaterializedPerformedSourceInspection,
-        WorthQueryMaterializedQueryField, WorthQueryMaterializedQueryProjection,
-        WorthQueryMaterializedQueryRelation, WorthQueryMaterializedQueryRow,
-        WorthQueryMaterializedSourceEffects, WorthQueryMaterializedSourceField,
-        WorthQueryMaterializedSourceFieldEffect, WorthQueryMaterializedSourceInspectionRequest,
-        WorthQueryObservedApplicationInspection, WorthQueryObservedInspectionRequest,
-        WorthQueryPerformedSourceInspection, WorthQueryPerformedSourceInspectionRequest,
-        WorthQueryProducerConnectionDenial, WorthQueryProducerEvaluationDecision,
-        WorthQueryProducerEvaluationDenial, WorthQueryProducerEvaluationIneligibility,
-        WorthQueryProducerOutputConnectionDenial, WorthQueryProjectionMaterializationRefusal,
-        WorthQueryReferenceOnlyInspectionRequest, WorthQuerySourceInspectionRequest,
-        WorthQuerySourceReferenceOnlyInspectionRequest,
-    };
+    pub use {crate::domain_computation::primary_graph::causal_inspection::CausalInspectionReason, crate::domain_computation::primary_graph::causal_inspection::CausalObservationMissingReferencePosture, crate::domain_computation::primary_graph::causal_inspection::DiagnosticComparisonDenial, crate::domain_computation::primary_graph::causal_inspection::FactlessCurrentness, crate::domain_computation::primary_graph::vocabulary::application_attempt::indexed_entity_selection::IndexedSelectionReobserveDenial, crate::domain_computation::primary_graph::causal_inspection::OutputFieldCaptureFailure, crate::domain_computation::primary_graph::causal_inspection::OwnEffectOnReads, crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason, crate::domain_computation::primary_graph::causal_inspection::StoreDenial, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationDisclosureContractDenial, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationEvidenceFamily, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionCanonicalRefusal, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionDenial, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionOwnerRefusal, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionResourceRefusal, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionStage, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionStopKind, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationMaterializationPolicy, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationMaterializationRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationProducerConnection, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationProducerEvaluation, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationQueryGovernanceDenialKind, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationQueryInstallationDenial, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationQueryInstallationDenialKind, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationQueryObservation, crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationRichMaterialization, crate::domain_computation::primary_graph::causal_inspection::WorthQueryChangedInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQueryChangedReferenceOnlyInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQueryComparedApplicationInspection, crate::domain_computation::primary_graph::causal_inspection::WorthQueryConditionalHistoryAvailability, crate::domain_computation::primary_graph::causal_inspection::WorthQueryConditionalHistoryDecisionClass, crate::domain_computation::primary_graph::causal_inspection::WorthQueryConditionalHistoryOutcome, crate::domain_computation::primary_graph::causal_inspection::WorthQueryConnectedApplicationInspection, crate::domain_computation::primary_graph::causal_inspection::WorthQueryConnectedInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQueryConnectedReferenceOnlyInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQueryEvaluatedApplicationInspection, crate::domain_computation::primary_graph::causal_inspection::WorthQueryEvaluatedInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQueryEvaluatedReferenceOnlyInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQueryInspectionEvidenceAvailability, crate::domain_computation::primary_graph::causal_inspection::WorthQueryInspectionReadTerminalDenial, crate::domain_computation::primary_graph::causal_inspection::WorthQueryInspectionRetainedEvidence, crate::domain_computation::primary_graph::causal_inspection::WorthQueryInspectionSupplierEvidence, crate::domain_computation::primary_graph::causal_inspection::WorthQueryManagedGraphReadDenial, crate::domain_computation::primary_graph::causal_inspection::WorthQueryManagedGraphWorkSessionStartDenial, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedApplicationInspection, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedConditionalHistory, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedConnectedInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedEvidenceReference, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedFamilyOutcome, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedFieldValue, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedPerformedSourceInspection, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedQueryField, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedQueryProjection, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedQueryRelation, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedQueryRow, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedSourceEffects, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedSourceField, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedSourceFieldEffect, crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedSourceInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQueryObservedApplicationInspection, crate::domain_computation::primary_graph::causal_inspection::WorthQueryObservedInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQueryPerformedSourceInspection, crate::domain_computation::primary_graph::causal_inspection::WorthQueryPerformedSourceInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQueryProducerConnectionDenial, crate::domain_computation::primary_graph::causal_inspection::WorthQueryProducerEvaluationDecision, crate::domain_computation::primary_graph::causal_inspection::WorthQueryProducerEvaluationDenial, crate::domain_computation::primary_graph::causal_inspection::WorthQueryProducerEvaluationIneligibility, crate::domain_computation::primary_graph::causal_inspection::WorthQueryProducerOutputConnectionDenial, crate::domain_computation::primary_graph::causal_inspection::WorthQueryProjectionMaterializationRefusal, crate::domain_computation::primary_graph::causal_inspection::WorthQueryReferenceOnlyInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQuerySourceInspectionRequest, crate::domain_computation::primary_graph::causal_inspection::WorthQuerySourceReferenceOnlyInspectionRequest};
 }
 
 /// Directional integration for retained legacy request occurrences.
@@ -102,18 +64,7 @@ pub mod runtime {
         WorthQueryProductWorldResources,
     };
     pub use crate::domain_computation::execution_runtime::*;
-    pub use crate::domain_computation::{
-        WorthQueryAdmittedDirectRun, WorthQueryAdmittedWorkflowRun,
-        WorthQueryDirectGraphStepOutcome, WorthQueryDirectRunCleanupFailure,
-        WorthQueryDirectRunCleanupReceipt, WorthQueryDirectRunTerminal,
-        WorthQueryExecutionBoundOperationAuthority, WorthQueryExecutionOperationBindingDenial,
-        WorthQueryInstalledDomainExecutionAuthority, WorthQueryManagedDirectRunAdmissionFailure,
-        WorthQueryManagedGraphCallRequest, WorthQueryManagedRunAdmission,
-        WorthQueryManagedTruthReadRequest, WorthQueryManagedWorkflowRunAdmissionFailure,
-        WorthQueryRunningDirectRun, WorthQueryRunningWorkflowRun,
-        WorthQueryWorkflowGraphStepOutcome, WorthQueryWorkflowRunCleanupOutcome,
-        WorthQueryWorkflowRunCleanupReceipt, WorthQueryWorkflowRunTerminal,
-    };
+    pub use {crate::domain_computation::WorthQueryAdmittedDirectRun, crate::domain_computation::WorthQueryAdmittedWorkflowRun, crate::domain_computation::WorthQueryDirectGraphStepOutcome, crate::domain_computation::WorthQueryDirectRunCleanupFailure, crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt, crate::domain_computation::WorthQueryDirectRunTerminal, crate::domain_computation::WorthQueryExecutionBoundOperationAuthority, crate::domain_computation::WorthQueryExecutionOperationBindingDenial, crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority, crate::domain_computation::WorthQueryManagedDirectRunAdmissionFailure, crate::domain_computation::WorthQueryManagedGraphCallRequest, crate::domain_computation::WorthQueryManagedRunAdmission, crate::domain_computation::WorthQueryManagedTruthReadRequest, crate::domain_computation::WorthQueryManagedWorkflowRunAdmissionFailure, crate::domain_computation::WorthQueryRunningDirectRun, crate::domain_computation::WorthQueryRunningWorkflowRun, crate::domain_computation::WorthQueryWorkflowGraphStepOutcome, crate::domain_computation::WorthQueryWorkflowRunCleanupOutcome, crate::domain_computation::WorthQueryWorkflowRunCleanupReceipt, crate::domain_computation::WorthQueryWorkflowRunTerminal};
     pub use worth_execution::{
         build_ordered_tree, build_sorted_ordered_tree, insert_ordered_tree, remove_ordered_tree,
         CancellationSource, CancellationToken, ConstructionDenial, ExecutionAllocationDenial,
@@ -143,11 +94,7 @@ pub mod runtime {
 
 /// Read-only owner observations for cert-band consumers.
 pub mod certification {
-    pub use crate::domain_computation::primary_graph::{
-        WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
-        WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,
-        WorthQueryCertificationWorldHistory, WorthQueryCertificationWorldRetention,
-    };
+    pub use {crate::domain_computation::primary_graph::vocabulary::application_runtime::certification_cost::WorthQueryCertificationApplicationWork, crate::domain_computation::primary_graph::vocabulary::application_runtime::certification_cost::WorthQueryCertificationCostObservation, crate::domain_computation::primary_graph::WorthQueryCertificationCostRuntimeExt, crate::domain_computation::primary_graph::vocabulary::application_runtime::certification_cost::WorthQueryCertificationCostScope, crate::domain_computation::primary_graph::vocabulary::application_runtime::certification_cost::WorthQueryCertificationWorldHistory, crate::domain_computation::primary_graph::vocabulary::application_runtime::certification_cost::WorthQueryCertificationWorldRetention};
 }
 
 pub mod application_contribution;
@@ -204,10 +151,7 @@ pub mod integration {
     use crate::domain_computation::execution_runtime::{
         WorthQueryExecutionInstallationAuthority, WorthQueryExecutionRuntime,
     };
-    use crate::domain_computation::primary_graph::{
-        WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
-        WorthQueryPrimaryGraphPublication,
-    };
+    use {crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication};
 
     pub use crate::domain_computation::artifact_owner::{
         WorthQueryArtifactAccessAuthority, WorthQueryArtifactProductionAuthority,
@@ -359,7 +303,7 @@ pub mod integration {
     #[doc(hidden)]
     pub fn classify_conditional_signal_for_certification(
         evidence: &worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
-    ) -> crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision {
+    ) -> crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision {
         crate::domain_computation::primary_graph::classify_bridge_signal(evidence)
     }
 }

@@ -6,7 +6,7 @@ use crate::domain_computation::execution_runtime::product_world::WorthQueryRelat
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 use std::sync::Arc;
 
-use super::WorthQueryGraphWorkSessionIdentity;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 
 /// The only application-query path to the primary graph's Relational runtime.
 pub(in crate::domain_computation) struct WorthQueryGraphReadOwnerPort {
@@ -114,14 +114,14 @@ pub(super) enum WorthQueryGraphReadOwnerPortDenial {
 pub(in crate::domain_computation) struct WorthQuerySessionGraphReadProof {
     pub(super) session: WorthQueryGraphWorkSessionIdentity,
     pub(super) plan: WorthQueryGraphWorkPlanIdentity,
-    pub(super) basis: crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
+    pub(super) basis: crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
 }
 
 impl WorthQuerySessionGraphReadProof {
     pub(super) fn new(
         session: WorthQueryGraphWorkSessionIdentity,
         plan: WorthQueryGraphWorkPlanIdentity,
-        basis: crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
+        basis: crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
     ) -> Self {
         Self {
             session,

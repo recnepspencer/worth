@@ -19,14 +19,7 @@ pub(crate) mod rich;
 pub(crate) mod terminal;
 use super::target::InspectionTargetDenial;
 use super::WorthQueryApplicationInspectionTarget;
-use crate::domain_computation::{
-    authorization::{
-        application_disclosure::WorthQueryApplicationQueryGovernance,
-        WorthQueryRetainedAuthorizationDecisionFacts,
-    },
-    primary_graph::{WorthQueryApplicationBasisIdentity, WorthQueryApplicationEntityIdentity},
-    provider_session::{WorthQueryManagedGraphWorkSession, WorthQuerySessionInspectionReadProof},
-};
+use {crate::domain_computation::authorization::application_disclosure::WorthQueryApplicationQueryGovernance, crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts, crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession, crate::domain_computation::provider_session::WorthQuerySessionInspectionReadProof};
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -37,29 +30,29 @@ pub enum InspectionAdmissionDenial {
     ForeignIssuedAccess,
     MissingGraph,
     MissingInspection,
-    Authorization(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial),
-    CurrentAuthorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind),
+    Authorization(crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial),
+    CurrentAuthorization(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind),
     Capability(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial),
-    Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
+    Scope(crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial),
     Security(crate::basis::WorthQueryProductBranchAdmissionDenial),
     Governance(crate::domain_computation::authorization::application_disclosure::WorthQueryApplicationQueryGovernanceDenialKind),
     FacetDenied,
-    DiagnosticAdmission(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonDenial>),
-    ComparisonParameters(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<()>),
-    Connection(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<super::connection::ConnectionRefusal>),
+    DiagnosticAdmission(crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonDenial>),
+    ComparisonParameters(crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop<()>),
+    Connection(crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop<super::connection::ConnectionRefusal>),
     MissingOriginalProjection,
-    RichSource(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<super::rich::source::SourceMaterializationDenial>),
-    Rich(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::primary_graph::application_query::WorthQueryProjectionMaterializationRefusal>),
-    Comparison(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::primary_graph::application_query::ProjectionComparisonDenial>),
-    DiagnosticContract(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial>),
-    DiagnosticPreparation(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticPreparationDenial>),
+    RichSource(crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop<super::rich::source::SourceMaterializationDenial>),
+    Rich(crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::primary_graph::application_query::WorthQueryProjectionMaterializationRefusal>),
+    Comparison(crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::primary_graph::application_query::ProjectionComparisonDenial>),
+    DiagnosticContract(crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial>),
+    DiagnosticPreparation(crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticPreparationDenial>),
     Target(InspectionTargetDenial),
-    Storage(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::primary_graph::admitted_capture::RetainedStorageDenial>),
-    Plan(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<plan::InspectionPlanDenial>),
+    Storage(crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial>),
+    Plan(crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop<plan::InspectionPlanDenial>),
     Session(crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSessionStartDenial),
     Read(crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial),
     Terminal(crate::domain_computation::provider_session::WorthQueryInspectionReadTerminalDenial),
-    Report(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<super::report::InspectionReportDenial>),
+    Report(crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop<super::report::InspectionReportDenial>),
 }
 
 pub struct InspectionRead<'a, 'storage, Schema, Scope> {

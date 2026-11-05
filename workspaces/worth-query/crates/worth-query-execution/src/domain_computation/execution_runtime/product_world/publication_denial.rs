@@ -18,7 +18,7 @@ pub enum WorthQueryProductPublicationOutcome<
 }
 impl WorthQueryProductPublicationDenial<NoEffectCompositePublication> {
     pub(super) fn publication(no_effect: NoEffectCompositePublication) -> Self {
-        match crate::domain_computation::primary_graph::publication_request_denial::publication(
+        match crate::domain_computation::vocabulary::primary_graph::publication_request_denial::publication(
             no_effect.cause(),
         ) {
             Err(stop) => Self::Stopped(stop),
@@ -30,7 +30,7 @@ impl WorthQueryProductPublicationDenial<RuntimeWorldSettledRelationalAdoptionDen
     pub(super) fn adoption(denial: RuntimeWorldSettledRelationalAdoptionDenial) -> Self {
         match &denial {
             RuntimeWorldSettledRelationalAdoptionDenial::Publication(no_effect) => {
-                match crate::domain_computation::primary_graph::publication_request_denial::publication(no_effect.cause()) {
+                match crate::domain_computation::vocabulary::primary_graph::publication_request_denial::publication(no_effect.cause()) {
                     Err(stop) => Self::Stopped(stop),
                     Ok(_) => Self::Refused(denial),
                 }

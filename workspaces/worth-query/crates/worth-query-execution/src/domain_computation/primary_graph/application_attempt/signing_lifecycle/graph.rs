@@ -26,7 +26,7 @@ fn add_subject(
         && subjects.len() >= maximum
     {
         return Err(super::refused(
-            super::Kind::SigningLifecycleSubjectCapacity {
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind::SigningLifecycleSubjectCapacity {
                 maximum_subjects: maximum,
             },
         ));

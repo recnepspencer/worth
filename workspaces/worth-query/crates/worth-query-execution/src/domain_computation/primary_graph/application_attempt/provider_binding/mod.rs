@@ -1,6 +1,6 @@
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 pub(crate) mod effect_accumulator;
-pub(in crate::domain_computation::primary_graph) use effect_accumulator::WorthQueryExpectedEffectStepPreparationWork;
+
 mod effect_lowering;
 mod registration;
 
@@ -18,16 +18,13 @@ use worth_query_installation::facade::{
 use self::effect_accumulator::WorthQueryProviderEffectAccumulator;
 use super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::fact::WorthQueryApplicationObservedFact;
-use super::{
-    WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEmission,
-};
+use {super::WorthQueryAdmittedApplicationEmissionBatch, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationEmission};
 
 pub struct WorthQueryPreparedApplicationProviderAttempt {
     workflow_origin: Option<crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin>,
     local_action_settlement: Option<super::workflow_transition_program::LocalActionSettlementProof>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
-    installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+    installed_read_scopes: crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
     facts: FactPayload,
     application_projection: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection>>,
     original_read: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>,
@@ -39,7 +36,7 @@ pub struct WorthQueryPreparedApplicationProviderAttempt {
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
-        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+        &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement],
     output_currentness_facts: Option<super::OutputCurrentnessFacts>,
 }
 
@@ -133,7 +130,7 @@ pub fn prepare_provider_attempt<'layout>(
     contracts: &'layout effect_lowering::AspectContracts<'layout>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     application_effect_count: usize,
-    installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+    installed_read_scopes: crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
     completed_facts: super::CompletedFactRoutes,
     application_projection: Option<
         std::sync::Arc<
@@ -157,7 +154,7 @@ pub fn prepare_provider_attempt<'layout>(
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
-        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+        &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement],
     output_currentness_facts: Option<super::OutputCurrentnessFacts>,
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
     let (facts, effect_routes) = completed_facts.into_parts();

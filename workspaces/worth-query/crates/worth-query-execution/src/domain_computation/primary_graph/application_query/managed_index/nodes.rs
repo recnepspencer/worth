@@ -1,6 +1,6 @@
 //! Finite build scratch and isolated edits of immutable retained node pages.
-use super::{WorthQueryManagedIndexControl, WorthQueryManagedIndexStop as Stop};
-use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
+use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 use std::{cell::Cell, sync::Arc};
 use worth_execution::{
     ExecutionArray, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,
@@ -133,7 +133,7 @@ impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
     /// Cold and opaque writers have no predecessor Source correspondence.
     pub fn before_source_node(
         &self,
-        slot: super::WorthQueryManagedIndexSourceSlot,
+        slot: crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot,
     ) -> Result<WorthQueryManagedIndexNodeId, Stop> {
         let tree = self
             .before_sources

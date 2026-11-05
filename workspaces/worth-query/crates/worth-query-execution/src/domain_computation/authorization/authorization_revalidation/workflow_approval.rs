@@ -1,7 +1,7 @@
 //! Commit-snapshot readmission of an approval from its durable, descriptive basis.
 
 use crate::domain_computation::authorization::InstalledBasisScopedOps;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -56,7 +56,7 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQueryWorkflowApprovalAuthorityBasis,
         product: &crate::basis::WorthQueryProductBranchLease,
-        session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         if authority.principal().principal() != authority.request().principal() {
             return Err(stale_principal());
@@ -75,7 +75,7 @@ where
         }
         if *now > authority.expiry() {
             return Err(WorthQueryOperationAuthorizationDenial::new(
-                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityExpired),
+                crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityExpired),
                 "workflow approval",
             ));
         }
@@ -132,7 +132,7 @@ where
                 }
                 if *support_now > support.expiry() {
                     return Err(WorthQueryOperationAuthorizationDenial::new(
-                        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityExpired),
+                        crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityExpired),
                         "workflow approval support",
                     ));
                 }

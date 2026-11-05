@@ -3,11 +3,7 @@ use std::sync::Arc;
 use super::inspection::WorthQueryCompletedWorkflowRunCleanup;
 use super::{WorthQueryWorkflowRunCleanupReceipt, WorthQueryWorkflowRunTerminal};
 use crate::domain_computation::managed_run::bridge_terminal_disposition;
-use crate::domain_computation::{
-    WorthQueryManagedProviderWorkEvidence, WorthQueryManagedRunCleanupDisposition,
-    WorthQueryManagedRunCleanupFailureKind, WorthQueryManagedRunTerminalKind,
-    WorthQueryWorkflowArtifactRegistryEvidence,
-};
+use {crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupDisposition, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupFailureKind, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind, crate::domain_computation::WorthQueryWorkflowArtifactRegistryEvidence};
 
 #[must_use = "workflow cleanup must resolve Complete, Pending, or RecoveryRequired"]
 pub enum WorthQueryWorkflowRunCleanupOutcome {

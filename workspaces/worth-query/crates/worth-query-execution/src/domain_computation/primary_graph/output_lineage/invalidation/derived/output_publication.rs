@@ -1,5 +1,6 @@
 //! Performed source completion installed with the original native settlement.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 
 impl SourceInvalidationOwner {
     /// Actual producer publication carries its native source partition beside

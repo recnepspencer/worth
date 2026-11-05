@@ -18,7 +18,7 @@ pub(crate) mod partitioned_computation;
 pub(crate) mod producer;
 pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
 pub(in crate::domain_computation::primary_graph) use producer::PendingProducerPublication;
-pub(in crate::domain_computation::primary_graph) use producer::{CurrentBasis, CurrentProof};
+pub(in crate::domain_computation::primary_graph) use producer::CurrentProof;
 
 mod setup;
 
@@ -64,51 +64,20 @@ pub use partitioned_computation::{
     WorthQueryPartitionedComputationOwner, WorthQueryPreparedPartitionedComputation,
     WorthQueryReductionInputDenial,
 };
-pub(in crate::domain_computation::primary_graph) use producer::{
-    install_output_readiness_routes, InstalledProducerEdition, MatchedRequiredPredecessors,
-    OutputSourceAddress, PendingOutputReadiness, QualifiedOutputSource,
-    TypedPendingOutputReadiness, WorthQueryInstalledOutputProducerRoutes,
-    WorthQueryInstalledOutputReadinessRoutes, WorthQueryProducerCommitAuthority,
-};
-pub use {
-    computation::WorthQueryCompletedManagedComputation,
-    computation::WorthQueryInstalledManagedComputation,
-    computation::WorthQueryManagedComputationCheckpoint,
-    computation::WorthQueryManagedComputationDenial,
-    computation::WorthQueryManagedComputationExecution,
-    computation::WorthQueryManagedComputationOwner, computation::WorthQueryMemberExecution,
-    computation::WorthQueryPreparedManagedComputation,
-};
+pub(in crate::domain_computation::primary_graph) use {producer::install_output_readiness_routes, producer::InstalledProducerEdition, producer::MatchedRequiredPredecessors, producer::PendingOutputReadiness, producer::QualifiedOutputSource, producer::TypedPendingOutputReadiness, producer::WorthQueryInstalledOutputProducerRoutes, producer::WorthQueryInstalledOutputReadinessRoutes};
+pub use {computation::WorthQueryCompletedManagedComputation, computation::WorthQueryInstalledManagedComputation, computation::WorthQueryManagedComputationDenial, computation::WorthQueryManagedComputationOwner, computation::WorthQueryPreparedManagedComputation};
 
 pub use setup::{
     WorthQueryApplicationContributionSetup, WorthQueryManagedIndexProviderRegistration,
 };
-pub use {
-    producer::WorthQueryAdmittedOutputDemand, producer::WorthQueryApplicationOutputDemand,
-    producer::WorthQueryApplicationProducerBinding,
-    producer::WorthQueryApplicationProducerProvider,
-    producer::WorthQueryDecisionContextDependencies,
-    producer::WorthQueryInstalledApplicationProducerRegistry,
-    producer::WorthQueryOutputDemandAdvance, producer::WorthQueryProducerApplicability,
-    producer::WorthQueryProducerDenialDeclaration, producer::WorthQueryProducerDenialDecodeDenial,
-    producer::WorthQueryProducerDenialEncodingRefusal,
-    producer::WorthQueryProducerDenialProjection, producer::WorthQueryProducerDenialValue,
-    producer::WorthQueryProducerEvaluationIneligibility,
-    producer::WorthQueryProducerInputReuseContract,
-    producer::WorthQueryProducerInvariantRequirement, producer::WorthQueryProducerLifecyclePosture,
-    producer::WorthQueryProducerOutputEquivalence, producer::WorthQueryProducerOutputFamily,
-    producer::WorthQueryProjectedProducerDenial, producer::WorthQuerySelectedApplicationProducer,
-    producer::WorthQueryUndeclaredProducerDenial,
-    producer::WorthQueryWorkflowAssessmentOutputFamily,
-    producer::WorthQueryWorkflowAssessmentPosture,
-};
+pub use {producer::WorthQueryAdmittedOutputDemand, producer::WorthQueryApplicationOutputDemand, producer::WorthQueryApplicationProducerBinding, producer::WorthQueryApplicationProducerProvider, producer::WorthQueryInstalledApplicationProducerRegistry, producer::WorthQueryOutputDemandAdvance, producer::WorthQueryProducerDenialDeclaration, producer::WorthQueryProducerDenialProjection, producer::WorthQueryProducerEvaluationIneligibility, producer::WorthQueryProducerOutputEquivalence, producer::WorthQueryProducerOutputFamily, producer::WorthQueryProjectedProducerDenial, producer::WorthQuerySelectedApplicationProducer, producer::WorthQueryUndeclaredProducerDenial, producer::WorthQueryWorkflowAssessmentOutputFamily};
 
 pub(in crate::domain_computation) use partitioned_computation::observe_discarded;
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::observe_published;
 
 pub use producer::demand::progression::caller_pass_observation::caller_pass_reports_on_this_thread_for_test;
 
-pub(in crate::domain_computation::primary_graph) use execution_denial::publication_execution_kind;
+
 
 pub use producer::AdmissionOps;
 pub(in crate::domain_computation) use producer::AdmissionScopedOps;

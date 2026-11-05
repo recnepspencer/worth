@@ -172,7 +172,7 @@ impl PreparedRead<'_> {
             result.map_err(|cause| {
                 stop.set(Some(cause));
                 super::read_execution_denial(
-                    super::WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
+                    crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
                     subject,
                 )
             })
@@ -202,8 +202,8 @@ impl PreparedRead<'_> {
         if let Some(stop) = stop.get() {
             return Err(MapKernelFailure::Stop(stop));
         }
-        use super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial as ReadDenial;
-        use super::super::one_shot::map_authorized_read_denial;
+        use crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial as ReadDenial;
+        use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial;
         match read {
             Ok((Ok(raw), proof)) => Ok(ReadOutput {
                 raw,

@@ -6,6 +6,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::OutputRowStage;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
 /// Whether the disclosed source is still the one the demand names.
 pub(super) enum SourceGuard {

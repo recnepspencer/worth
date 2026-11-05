@@ -11,7 +11,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         prepared: super::super::PreparedWorkflowAssessment<Schema, Operation, Input, Scope>,
         settlement: &crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement,
         source: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
-        posture: crate::domain_computation::primary_graph::WorthQueryWorkflowAssessmentPosture,
+        posture: crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryWorkflowAssessmentPosture,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<
         WorkflowProgressOutcome,
@@ -211,7 +211,7 @@ fn owner_custody_denial(
     required: &RequiredWorkflowOperation,
 ) -> crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial {
     crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
         required.node_path(),
     )
 }

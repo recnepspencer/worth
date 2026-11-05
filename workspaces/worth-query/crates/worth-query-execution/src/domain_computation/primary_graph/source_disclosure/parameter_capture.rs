@@ -1,5 +1,5 @@
 //! Source-owned association around the sole funded query-parameter capture.
-use super::OriginalSourceDisclosure;
+use crate::domain_computation::vocabulary::primary_graph::original::OriginalSourceDisclosure;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };

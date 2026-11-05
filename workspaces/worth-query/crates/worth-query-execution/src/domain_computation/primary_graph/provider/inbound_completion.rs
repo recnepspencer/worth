@@ -25,11 +25,11 @@ pub(in crate::domain_computation::primary_graph) use read::{
 pub enum WorthQueryInboundCompletionPreparationDenial {
     ExecutionDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        kind: crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
     },
     ExecutionControlStopped {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        kind: crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     },
     OriginalOutboxNotAnEntity,
     ForeignOrStaleBasis,
@@ -197,7 +197,7 @@ impl WorthQueryPrimaryGraphProvider {
                     .map_err(|error| preparation_denial::preparation_denial(&error))?;
                 crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(execution,
                     runtime, &mut candidate, &self.graph.primary_index_ids, &before,
-                    crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
+                    crate::domain_computation::vocabulary::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
                 ).map_err(|_| Denial::IndexPreparationUnavailable)?;
                 Ok(candidate)
             })();

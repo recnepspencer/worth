@@ -5,7 +5,7 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         requested_key: WorthQueryOutputDemandKey,
         source_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
-        source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        source_scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<WorthQueryOutputDemandInterest, WorthQueryOutputDemandDenial> {
         let mut state = self

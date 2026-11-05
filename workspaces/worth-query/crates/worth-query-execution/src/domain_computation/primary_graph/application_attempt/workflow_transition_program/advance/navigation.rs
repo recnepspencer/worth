@@ -24,7 +24,7 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         layout: &WorthQueryWorkflowLayout,
         compiled: CompiledWorkflowDefinition,
-        instance: super::super::super::PublishedWorkflowInstanceRef,
+        instance: crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         observed: &mut super::super::super::workflow_instance_observation::ObservedWorkflowInstance,
         live_membership: worth_relational::facade::identity::RelationId,
         mut facts: Vec<WorthQueryApplicationObservedFact>,

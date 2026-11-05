@@ -13,10 +13,10 @@ impl<Schema: ApplicationSchema> ApplicationResourceHost<Schema>
     fn installed_resources(&self) -> &crate::domain_computation::primary_graph::application_resource::installation::InstalledResourceRegistry<Schema>{
         &self.installed_resources
     }
-    fn refuse_completed_external_effect(&self, record: &crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord) -> Result<(), crate::domain_computation::application_aftermath::external_effect::WorthQueryTerminalEffectRefusal>{
+    fn refuse_completed_external_effect(&self, record: &crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord) -> Result<(), crate::domain_computation::application_aftermath::external_effect::WorthQueryTerminalEffectRefusal>{
         Self::refuse_completed_external_effect(self, record)
     }
-    fn committed_dispatch_outbox_for_binding(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, binding: &crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleBinding) -> Result<crate::domain_computation::primary_graph::provider::WorthQueryCommittedDispatchOutboxObservation, crate::domain_computation::primary_graph::provider::WorthQueryCommittedDispatchOutboxReadDenial>{
+    fn committed_dispatch_outbox_for_binding(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, binding: &crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleBinding) -> Result<crate::domain_computation::primary_graph::provider::WorthQueryCommittedDispatchOutboxObservation, crate::domain_computation::vocabulary::primary_graph::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial>{
         self.runtime
             .primary_provider
             .committed_dispatch_outbox_for_binding(execution, binding)

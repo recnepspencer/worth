@@ -5,7 +5,7 @@ use worth_runtime_world::facade::{
 };
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
-use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundTerminalIndexDenial as Denial;
 
 pub(in crate::domain_computation) trait ReconstructScopedOps<Schema>:

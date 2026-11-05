@@ -1,5 +1,8 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole;
 
 impl WorthQueryApplicationOutputCorrespondence {
     #[doc(hidden)]
@@ -50,12 +53,6 @@ impl WorthQueryApplicationOutputCorrespondence {
     }
 }
 
-impl WorthQueryCheckpointOutputRole {
-    #[doc(hidden)]
-    pub fn entity_mut_for_test(&mut self) -> &mut EntityId {
-        &mut self.entity
-    }
-}
 
 impl WorthQueryCheckpointOutputRole {
     #[doc(hidden)]

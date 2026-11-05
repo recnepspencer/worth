@@ -1,5 +1,5 @@
 use super::managed_graph_execution::WorthQueryManagedGraphExecution;
-use crate::domain_computation::WorthQueryProviderExecutionReleaseEvidence;
+use crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence;
 
 pub(super) struct WorthQueryManagedProviderExecutionRelease {
     evidence: WorthQueryProviderExecutionReleaseEvidence,

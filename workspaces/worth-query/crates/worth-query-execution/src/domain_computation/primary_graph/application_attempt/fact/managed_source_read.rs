@@ -12,22 +12,9 @@ use worth_relational::facade::{
     runtime::{ManagedIndexSourceObservation, RelationalRuntime},
     snapshots::SnapshotHandle,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::managed_source_read::ManagedInfluenceOrigin;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::managed_source_read::ManagedSourceReadKey;
 
-/// Descriptive locator within the already checked schema/runtime/branch affinity.
-/// The retained Native observation, not this key, supplies Source currentness.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct ManagedSourceReadKey {
-    pub obligation: [u8; 32],
-    pub authorization: [u8; 32],
-    pub scope: EntityId,
-    pub influence: Option<ManagedInfluenceOrigin>,
-}
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct ManagedInfluenceOrigin {
-    pub parameters: [u8; 32],
-    pub audience: [u8; 32],
-    pub content: worth_foundational::facade::ProjectedCandidateContentV1,
-}
 
 #[derive(Clone)]
 pub struct ManagedSourceRead {
@@ -142,7 +129,7 @@ impl ManagedSourceRead {
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
         reserve: &mut impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>,
-        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault) -> E,
+        fault: &mut impl FnMut(crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault) -> E,
         frames: &mut dyn FnMut(
             &worth_relational::facade::content::RelationalContentFrame,
             &worth_relational::facade::content::RelationalContentFrame,
@@ -190,7 +177,7 @@ impl ManagedSourceRead {
         runtime: &RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
-    ) -> Result<bool, super::WorthQuerySourceCurrentnessFailure> {
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure> {
         self.checked_at(runtime, execution, snapshot)
             .map(|checked| checked.is_some())
     }
@@ -199,10 +186,10 @@ impl ManagedSourceRead {
         runtime: &RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
-    ) -> Result<Option<CheckedManagedSource>, super::WorthQuerySourceCurrentnessFailure> {
+    ) -> Result<Option<CheckedManagedSource>, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure> {
         self.authorization
             .validate_current(runtime, execution, snapshot)
-            .map_err(super::WorthQuerySourceCurrentnessFailure::OutputObservation)?;
+            .map_err(crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure::OutputObservation)?;
         if self.whole_source_is_current(runtime, execution, snapshot)? {
             return Ok(Some(CheckedManagedSource(CheckedSource::Whole(
                 Arc::clone(&self.native),
@@ -222,8 +209,8 @@ impl ManagedSourceRead {
         runtime: &RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
-    ) -> Result<bool, super::WorthQuerySourceCurrentnessFailure> {
-        use super::WorthQuerySourceCurrentnessFailure as Stop;
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure> {
+        use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Stop;
         runtime
             .read_truth()
             .managed_index_source_is_current(execution, snapshot, &self.native)

@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind;
 
 impl WorthQueryRunningDirectRun {
     #[doc(hidden)]

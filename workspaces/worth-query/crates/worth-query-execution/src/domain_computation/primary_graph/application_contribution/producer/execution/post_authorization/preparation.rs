@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::application_attempt::OutputSourceO
 use crate::domain_computation::primary_graph::application_entry::PreparationScopedOps;
 use crate::domain_computation::primary_graph::application_query::PreparedExpectationScopedOps;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::execution) fn prepare_authorized<
     'owner,
@@ -93,19 +94,19 @@ where
         let declared = contract.context();
 
         let key = declared
-            .contains(super::super::super::WorthQueryDecisionContextDependencies::KEY)
+            .contains(crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryDecisionContextDependencies::KEY)
             .then(|| *identities.key_identity());
         let principal_witness = declared
-            .contains(super::super::super::WorthQueryDecisionContextDependencies::PRINCIPAL)
+            .contains(crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryDecisionContextDependencies::PRINCIPAL)
             .then(|| principal.freshness().reuse_witness());
         let scope_witness = declared
-            .contains(super::super::super::WorthQueryDecisionContextDependencies::SCOPE)
+            .contains(crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryDecisionContextDependencies::SCOPE)
             .then(|| {
                 admission
                     .operation_scope_binding()
                     .decision_reuse_witness(*admission.operation_authority_identity_bytes())
             });
-        crate::domain_computation::primary_graph::output_lineage::PreparedDecisionReuseContext::new(
+        crate::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext::new(
             contract,
             key,
             principal_witness,

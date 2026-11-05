@@ -1,5 +1,7 @@
 //! The same actual current READ/security checks before callbacks and payload reads.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 
 pub(super) fn validate_current_read_at_basis<S: ApplicationSchema, Q, P, R, A, I, C>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -58,7 +60,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn validate_
     let security = admit_read_security(execution, application, &plan.security_product, &plan.basis, &plan.index_posture)
         .map_err(|cause| WorthQueryAuthorizedApplicationReadDenial::Authorization(
             crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::from(cause), plan.query.name(),
+                crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::from(cause), plan.query.name(),
             )
         ))?;
     let graph = application

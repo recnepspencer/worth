@@ -1,5 +1,6 @@
 //! Ownership and realized scope of a completed operation projection.
 use super::*;
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
 
 impl<Schema, Operation> WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>
 where
@@ -11,7 +12,7 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn belongs_to(
         &self,
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
         admission_identity: WorthQueryOperationAdmissionIdentity,
     ) -> bool {

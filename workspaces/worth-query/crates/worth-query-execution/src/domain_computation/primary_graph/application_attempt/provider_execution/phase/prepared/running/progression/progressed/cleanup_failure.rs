@@ -3,13 +3,8 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
     outcome::WorthQueryProviderProgressionOutcome as Progression,
     recovery_evidence::unknown_commit_recovery_evidence,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitDenialKind as Kind, WorthQueryApplicationUncommitted as Outcome,
-};
-use crate::domain_computation::{
-    WorthQueryProviderSessionDenialKind as Session, WorthQueryProviderSessionFailure,
-    WorthQueryProviderSessionProtocolStage,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind, crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted as Outcome};
+use {crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Session, crate::domain_computation::WorthQueryProviderSessionFailure, crate::domain_computation::WorthQueryProviderSessionProtocolStage};
 
 pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
     match outcome {
@@ -101,10 +96,10 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             Outcome::Indeterminate(evidence.with_cleanup_failure())
         }
         Progression::Cancelled => cleanup_execution_indeterminate(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
         )),
         Progression::TimedOut => cleanup_execution_indeterminate(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
         )),
         Progression::Committed(_)
         | Progression::AlreadyCommitted(_)
@@ -117,7 +112,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
 // The existing unresolved evidence already holds a provider-session kind.
 // A cleanup failure still requires recovery; its cause cannot make it retryable.
 fn cleanup_execution_indeterminate(
-    kind: Result<Session, crate::domain_computation::WorthQueryProviderSessionControlStopKind>,
+    kind: Result<Session, crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind>,
 ) -> Outcome {
     use crate::domain_computation::primary_graph::{
         WorthQueryApplicationCommitRecoveryKind as Recovery,

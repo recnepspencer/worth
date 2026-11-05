@@ -88,7 +88,7 @@ fn checkpoint_output_slots_ignore_superseded_source_generations() {
         WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint(
                 [0x11; 16], [0x22; 32],
             )
-            .unwrap(), ("producer".to_owned()).into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed, source, scope, [7; 32], None, source, (Vec::new()).into(), None, 0, None)
+            .unwrap(), ("producer".to_owned()).into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed, source, scope, [7; 32], None, source, (Vec::new()).into(), None, 0, None)
     };
 
     assert!(checkpoint([1; 32]).same_output_slot(&checkpoint([2; 32])));

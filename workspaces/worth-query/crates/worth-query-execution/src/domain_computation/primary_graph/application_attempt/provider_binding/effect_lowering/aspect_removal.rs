@@ -27,7 +27,7 @@ pub(super) fn lower(
     }
     let mut steps = Vec::new();
     steps.try_reserve_exact(fields.len()).map_err(|_| WorthQueryApplicationAttemptDenial::new(
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::AllocationDenied,
+        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::AllocationDenied,
         "whole-aspect effect steps"))?;
     let mut absent = None;
     for (field, locator) in shape.fields().iter().zip(&fields) {

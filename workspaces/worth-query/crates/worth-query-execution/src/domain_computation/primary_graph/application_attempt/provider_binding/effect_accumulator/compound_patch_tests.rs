@@ -146,7 +146,7 @@ fn corrupted_composed_evidence_is_still_checked_by_the_step_owner() {
             .expect("conflicting evidence refuses");
     assert_eq!(
         denial.kind(),
-        super::super::super::WorthQueryApplicationAttemptDenialKind::ConflictingEffectStep
+        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ConflictingEffectStep
     );
     assert_eq!(denial.subject(), "same");
 }

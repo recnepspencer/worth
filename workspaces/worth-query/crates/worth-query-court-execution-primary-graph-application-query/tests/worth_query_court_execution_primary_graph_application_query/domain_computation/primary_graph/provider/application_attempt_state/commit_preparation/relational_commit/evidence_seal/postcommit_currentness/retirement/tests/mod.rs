@@ -6,7 +6,7 @@ pub use crate::domain_computation::primary_graph::provider::application_attempt_
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationSourceAdjacencyEndpoints as AdmittedAdjacencyEndpoints;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::sequence::FactSequence;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_dependencies;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::OutputDependencySelection;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;

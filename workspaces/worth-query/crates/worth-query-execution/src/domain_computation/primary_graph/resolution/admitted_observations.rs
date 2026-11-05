@@ -1,6 +1,6 @@
 //! Fresh principal observations at one issued native root and one request meter.
 
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use worth_foundational::facade::AspectFieldLocator;
 use worth_foundational::facade::AspectValue;
 use worth_foundational::facade::AuthoritativeRecordAspectState;
@@ -20,8 +20,8 @@ use worth_relational::facade::storage::RecordLifecycleState;
 use super::super::observations::WorthQueryPrincipalMappingObservation;
 use super::super::observations::WorthQueryPrincipalTargetObservation;
 
-use super::super::schema_layout::WorthQueryPrimaryPrincipalBindingLayout;
-use super::super::WorthQueryPrincipalResolutionDenialKind;
+use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
 use super::admitted_lookup::CheckedMappingCandidate;
 
 #[derive(Debug)]

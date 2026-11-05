@@ -1,9 +1,4 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::managed_bridge::WorthQueryInstalledApplicationBridge;
 
-impl WorthQueryInstalledApplicationBridge {
-    #[doc(hidden)]
-    pub fn ordinary_for_test(&self) -> &RuntimeBridge {
-        Self::ordinary(self)
-    }
-}

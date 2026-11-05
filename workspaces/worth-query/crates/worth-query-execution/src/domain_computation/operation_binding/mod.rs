@@ -10,5 +10,5 @@ pub(crate) use authority::{
 };
 pub use commit_posture::WorthQueryExecutionCommitPosture;
 pub use denial::WorthQueryExecutionOperationBindingDenial;
-pub use installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority;
+
 pub use installed_support::WorthQueryInstalledOperationExecutionSupport;

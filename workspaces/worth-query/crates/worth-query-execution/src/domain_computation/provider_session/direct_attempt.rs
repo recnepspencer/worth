@@ -13,6 +13,7 @@ mod readmission;
 pub(in crate::domain_computation) use readmission::{
     WorthQueryDirectProviderWorkRebinding, WorthQueryDirectResourceReadmissionPending,
 };
+use crate::domain_computation::vocabulary::provider_session::direct_attempt::WorthQueryDirectExecutionAttemptReleaseReceipt;
 pub struct WorthQueryDirectExecutionResourceAttempt {
     reserved: WorthQueryCapacityReservedExecutionResourcePlan,
     attempt_identity: WorthQueryExecutionAttemptIdentity,
@@ -84,20 +85,6 @@ impl WorthQueryDirectExecutionResourceAttempt {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryDirectExecutionAttemptReleaseReceipt {
-    provider_session_identity: String,
-    capacity: WorthQueryExecutionCapacityReleaseReceipt,
-}
 
-impl WorthQueryDirectExecutionAttemptReleaseReceipt {
-    pub fn provider_session_identity(&self) -> &str {
-        &self.provider_session_identity
-    }
-
-    pub fn capacity(&self) -> &WorthQueryExecutionCapacityReleaseReceipt {
-        &self.capacity
-    }
-}
 
 mod court_doors_for_test;

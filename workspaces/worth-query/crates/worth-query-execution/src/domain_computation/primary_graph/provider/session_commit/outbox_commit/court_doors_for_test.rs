@@ -1,16 +1,10 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
+use crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
+use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord;
+use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryPendingDispatchOutbox;
 
-impl WorthQueryCommittedDispatchOutboxBinding {
-    #[doc(hidden)]
-    pub fn fixture_from_commit_for_test(
-        layout: &crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxLayout,
-        record: Option<&WorthQueryDispatchOutboxRecord>,
-        committed: &CommitResult,
-    ) -> Result<Option<Self>, WorthQueryCommittedDispatchOutboxBindingDenial> {
-        Self::fixture_from_commit(layout, record, committed)
-    }
-}
 
 impl WorthQueryCommittedDispatchOutboxResolution {
     #[doc(hidden)]

@@ -5,10 +5,7 @@ use worth_query_declaration::facade::application_operation::{
     WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
 };
 
-use super::{
-    OutputRoleUse, WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
-    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputProjectionDenial,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse, super::WorthQueryApplicationOutputCorrespondence, super::WorthQueryApplicationOutputEntity, super::WorthQueryApplicationOutputFamilyEntry, crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial};
 
 /// One commit's output correspondence, read as the output contract
 /// `Contract`.

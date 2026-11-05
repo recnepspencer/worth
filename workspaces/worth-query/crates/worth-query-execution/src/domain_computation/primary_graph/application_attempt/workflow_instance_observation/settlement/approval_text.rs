@@ -39,7 +39,7 @@ pub(super) fn decode<Output>(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
     decode: impl FnOnce(&str) -> Result<Output, Denial>,
 ) -> Result<Output, Denial> {
-    super::super::super::observation::observe_field_value_borrowed(
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed(
         runtime,
         execution,
         read.snapshot(),

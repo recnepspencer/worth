@@ -1,12 +1,6 @@
 //! A declared index is borrowed through EACH actual Native observation.
 use super::{WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantScopePlanner};
-use crate::domain_computation::primary_graph::application_query::{
-    managed_index::{
-        invariant_read::{self, ManagedSourceValue},
-        WorthQueryManagedIndexInvariantDenial, WorthQueryManagedIndexProbeValue,
-    },
-    WorthQueryApplicationProjection,
-};
+use {crate::domain_computation::primary_graph::application_query::managed_index::invariant_read, crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ManagedSourceValue, crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::WorthQueryManagedIndexInvariantDenial, crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection};
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture as MatchPosture;
 use worth_query_declaration::facade::{
@@ -68,7 +62,7 @@ pub struct WorthQueryInvariantManagedIndexPair<'loan, 'runtime, S, I> {
 }
 pub struct WorthQueryInvariantManagedIndexRead<'loan, 'runtime, S, I> {
     pair: WorthQueryInvariantManagedIndexPair<'loan, 'runtime, S, I>,
-    posture: invariant_read::ReadPosture,
+    posture: crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ReadPosture,
 }
 impl<'borrow, 'runtime, S: ApplicationSchema>
     WorthQueryApplicationInvariantContext<'borrow, 'runtime, S>
@@ -112,7 +106,7 @@ impl<'loan, 'runtime, S, I> WorthQueryInvariantManagedIndexPair<'loan, 'runtime,
                 prepared: self.prepared,
                 match_posture: self.match_posture,
             },
-            posture: invariant_read::ReadPosture::Committed,
+            posture: crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ReadPosture::Committed,
         }
     }
     pub fn proposed(&self) -> WorthQueryInvariantManagedIndexRead<'loan, 'runtime, S, I> {
@@ -122,7 +116,7 @@ impl<'loan, 'runtime, S, I> WorthQueryInvariantManagedIndexPair<'loan, 'runtime,
                 prepared: self.prepared,
                 match_posture: self.match_posture,
             },
-            posture: invariant_read::ReadPosture::Proposed,
+            posture: crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ReadPosture::Proposed,
         }
     }
 }

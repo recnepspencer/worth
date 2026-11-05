@@ -6,10 +6,7 @@ use super::super::{
     stop::WorthQueryResourceStartStop,
 };
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_query::{capture_parameters, ApplicationQueryNativeAccess},
-    WorthQueryPrincipalResolutionMode,
-};
+use {crate::domain_computation::primary_graph::application_query::capture_parameters, crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 use worth_query_declaration::facade::{
     application_query::ApplicationQueryScopeResolution,
     application_resource::ApplicationResourceInput,

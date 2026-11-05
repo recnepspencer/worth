@@ -67,7 +67,7 @@ impl<S: ApplicationSchema, Q, R: WorthQueryApplicationProjection<S, Q>>
             return Err(Denial::ForeignQuery);
         }
         if plan.basis.identity().descriptor() != self.product.relational_basis().descriptor()
-            || plan.basis.identity().selection() != &super::super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity::Product(
+            || plan.basis.identity().selection() != &crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity::Product(
                 crate::basis::WorthQueryProductBranchReadIdentity::from_observation(self.product.observation()))
             || self.request_scope.as_ref().is_some_and(|scope| !scope.same_request(plan.controls.request_scope()))
         {

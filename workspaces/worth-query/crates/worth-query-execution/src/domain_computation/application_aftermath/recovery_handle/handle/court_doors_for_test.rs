@@ -53,7 +53,7 @@ impl WorthQueryRecoveryHandle {
     #[doc(hidden)]
     pub fn runtime_authority_for_test(
         &self,
-    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
         Self::runtime_authority(self)
     }
 }

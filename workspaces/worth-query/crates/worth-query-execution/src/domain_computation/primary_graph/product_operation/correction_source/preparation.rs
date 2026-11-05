@@ -5,7 +5,7 @@ use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::application_aftermath::{
     WorthQueryAftermathCausalRole, WorthQueryCorrectionLineageBinding,
 };
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::application_attempt::workflow::correction::PreparedWorkflowCorrection;
 pub(super) use workflow::prepare_workflow;
 use worth_query_declaration::facade::application_operation::{
@@ -79,11 +79,11 @@ impl WorthQueryPreparedCorrectionSource {
             .installed_mutation_binding::<Binding>()
             .map_err(|_| Denial::UnsupportedTargetProgram)?;
         let actor = target.resolve_authenticated_principal(phase, binding.principal_binding(), principal, request,
-            crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary)
+            crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode::Ordinary)
             .map_err(Denial::Principal)?;
         let (field, value) = scope.into_field_parts(actor.principal_identity());
         let scope = target.resolve_entity(phase, field, value, request,
-            crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary)
+            crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode::Ordinary)
             .map_err(Denial::Scope)?;
         let basis = target.product().relational_basis();
         let target_parent = basis
@@ -239,9 +239,9 @@ impl WorthQueryPreparedCorrectionSource {
     ) -> bool {
         self.runtime == admission.runtime_authority()
             && admission.operation_scope_binding().principal()
-                == crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.actor)
+                == crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(self.actor)
             && admission.operation_scope_binding().scope()
-                == crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.scope)
+                == crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(self.scope)
             && admission.graph_work().mutation_product().is_some_and(|product|
                 WorthQueryProductBranchReadIdentity::from_observation(product.observation())
                     == WorthQueryProductBranchReadIdentity::from_observation(self.ancestry.target()))

@@ -292,7 +292,7 @@ where
             drop(lease);
             match outcome {
                 Err(PublicationDenial::ClockMismatch) => {
-                    Err(Denial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
+                    Err(Denial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
                 },
 Err(PublicationDenial::Stopped(stop)) => {
                     Err(Denial::ExecutionDenied(advancement_denial(stop)))

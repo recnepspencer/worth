@@ -48,9 +48,9 @@ pub struct WorthQueryPreparedApplicationCommit<Schema, Operation, Input, Scope> 
     >,
     lease: WorthQueryApplicationSnapshotLease,
     provider_attempt: WorthQueryPreparedApplicationProviderAttempt,
-    outcome_identity: super::super::super::WorthQueryApplicationCommitOutcomeIdentity,
+    outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
     workflow_settlement_publication: Option<LocalWorkflowSettlementPublication>,
-    effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
+    effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture,
     native_reference_invariants:
         worth_query_installation::facade::WorthQueryInvariantExecutionContract,
     authorization: WorthQueryProviderCommitAuthorization,
@@ -134,7 +134,7 @@ struct WorthQueryProviderAttemptPreparation {
     local_action_settlement: Option<super::super::super::workflow_transition_program::LocalActionSettlementProof>,
     body_external_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
-    installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+    installed_read_scopes: crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
     effect_routes: super::super::super::CompletedFactRoutes,
     application_projection: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection>>,
     original_read: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>,
@@ -145,12 +145,12 @@ struct WorthQueryProviderAttemptPreparation {
     preimage_demand: Option<worth_query_installation::facade::InstalledPreImageDemand>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
+    effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture,
     output_correspondence: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
-        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+        &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement],
     output_currentness_facts: Option<super::super::super::OutputCurrentnessFacts>,
     workflow_settlement: Option<
         crate::domain_computation::primary_graph::application_attempt::read_set::WorkflowOperationBindingProof,
@@ -185,7 +185,7 @@ where
         workflow_approval_authority,
     } = current;
     let Some(outcome_identity) =
-        super::super::super::WorthQueryApplicationCommitOutcomeIdentity::mint()
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity::mint()
     else {
         return terminal(denied(DenialStage::ProposalBinding));
     };

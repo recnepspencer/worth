@@ -2,6 +2,7 @@ mod admission;
 mod navigation;
 mod proposal;
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -21,7 +22,7 @@ where
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
-        instance: super::super::PublishedWorkflowInstanceRef,
+        instance: crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         request_kind: WorkflowTransitionRequestKind,
         clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     ) -> Result<
@@ -42,7 +43,7 @@ where
             WorkflowTransitionRequestKind::LocalAction { .. }
         );
         let layout = self.lease.layout.workflow().clone();
-        let published = super::super::PublishedWorkflowDefinitionRef::retained(
+        let published = crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef::retained(
             instance.branch(),
             instance.definition_entity_id(),
             instance.definition_content_identity().clone(),

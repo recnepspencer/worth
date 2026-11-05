@@ -1,34 +1,27 @@
 //! One provider contract for spatial and nonspatial pure mechanisms.
-use super::{
-    WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexControl,
-    WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeRegion,
-    WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
-    WorthQueryManagedIndexProviderStop, WorthQueryManagedIndexSourceRow,
-    WorthQueryManagedIndexSourceRows, WorthQueryManagedIndexSummarySources,
-};
+use {super::WorthQueryManagedIndexCandidateWriter, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl, super::WorthQueryManagedIndexNodeId, super::WorthQueryManagedIndexNodeRegion, super::WorthQueryManagedIndexNodeWriter, super::WorthQueryManagedIndexNodes, super::WorthQueryManagedIndexProviderStop, super::WorthQueryManagedIndexSourceRow, super::WorthQueryManagedIndexSourceRows, super::WorthQueryManagedIndexSummarySources};
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding,
     application_schema::{ApplicationScalarValueBinding, ApplicationSchema},
 };
+use crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue;
 
 /// A Native-issued occurrence delta. Coordinates describe material and carry no
 /// Source loan, public admission or mutation authority.
 #[derive(Clone, Copy, Debug)]
 pub struct WorthQueryManagedIndexSourceChange {
-    pub(super) before: Option<super::WorthQueryManagedIndexSourceSlot>,
-    pub(super) after: Option<super::WorthQueryManagedIndexSourceSlot>,
+    pub(super) before: Option<crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot>,
+    pub(super) after: Option<crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot>,
 }
 impl WorthQueryManagedIndexSourceChange {
-    pub const fn before(&self) -> Option<super::WorthQueryManagedIndexSourceSlot> {
+    pub const fn before(&self) -> Option<crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot> {
         self.before
     }
-    pub const fn after(&self) -> Option<super::WorthQueryManagedIndexSourceSlot> {
+    pub const fn after(&self) -> Option<crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot> {
         self.after
     }
 }
 
-/// The actual declared probe codec's domain value.
-pub type WorthQueryManagedIndexProbeValue<S, I> = <<I as ApplicationManagedIndexBinding<S>>::ProbeBinding as ApplicationScalarValueBinding>::Value;
 /// Pure controlled mechanics over finite framework storage and genuine source slots.
 /// No callback returns a root object, entity handle, permission or completeness proof.
 pub trait WorthQueryManagedIndexProvider<S, I>: Send + Sync + 'static
@@ -44,12 +37,12 @@ where
 
     fn source_summary(
         &self,
-        _slot: super::WorthQueryManagedIndexSourceSlot,
+        _slot: crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot,
         _row: WorthQueryManagedIndexSourceRow<'_, S, I>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
         Err(control
-            .refuse(super::WorthQueryManagedIndexStop::SummaryUnavailable)
+            .refuse(crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop::SummaryUnavailable)
             .into())
     }
     fn merge_summaries(
@@ -59,7 +52,7 @@ where
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
         Err(control
-            .refuse(super::WorthQueryManagedIndexStop::SummaryUnavailable)
+            .refuse(crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop::SummaryUnavailable)
             .into())
     }
     fn node_summary(
@@ -68,7 +61,7 @@ where
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
         Err(control
-            .refuse(super::WorthQueryManagedIndexStop::SummaryUnavailable)
+            .refuse(crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop::SummaryUnavailable)
             .into())
     }
     fn summary_may_match(
@@ -79,7 +72,7 @@ where
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, WorthQueryManagedIndexProviderStop<Self::Denial>> {
         Err(control
-            .refuse(super::WorthQueryManagedIndexStop::SummaryUnavailable)
+            .refuse(crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop::SummaryUnavailable)
             .into())
     }
 
@@ -107,7 +100,7 @@ where
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<(), WorthQueryManagedIndexProviderStop<Self::Denial>> {
         Err(control
-            .refuse(super::WorthQueryManagedIndexStop::MembershipUnavailable)
+            .refuse(crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop::MembershipUnavailable)
             .into())
     }
 
@@ -129,7 +122,7 @@ where
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, WorthQueryManagedIndexProviderStop<Self::Denial>> {
         Err(control
-            .refuse(super::WorthQueryManagedIndexStop::MembershipUnavailable)
+            .refuse(crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop::MembershipUnavailable)
             .into())
     }
 
@@ -143,7 +136,7 @@ where
     ) -> Result<WorthQueryManagedIndexNodeRegion, WorthQueryManagedIndexProviderStop<Self::Denial>>
     {
         Err(control
-            .refuse(super::WorthQueryManagedIndexStop::SourceStructureUnavailable)
+            .refuse(crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop::SourceStructureUnavailable)
             .into())
     }
 
@@ -163,7 +156,7 @@ where
         WorthQueryManagedIndexProviderStop<Self::Denial>,
     > {
         Err(control
-            .refuse(super::WorthQueryManagedIndexStop::IncrementalUnavailable)
+            .refuse(crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop::IncrementalUnavailable)
             .into())
     }
 }

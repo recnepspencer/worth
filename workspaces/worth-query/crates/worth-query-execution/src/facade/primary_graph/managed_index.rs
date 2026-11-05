@@ -1,18 +1,2 @@
 //! Managed index contracts exposed through the primary-graph audience.
-pub use crate::domain_computation::primary_graph::{
-    WorthQueryManagedIndex, WorthQueryManagedIndexCandidateWriter,
-    WorthQueryManagedIndexContentReadDenial, WorthQueryManagedIndexControl,
-    WorthQueryManagedIndexDenial, WorthQueryManagedIndexDenialCause,
-    WorthQueryManagedIndexInvariantDenial, WorthQueryManagedIndexLifecycle,
-    WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeRegion,
-    WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
-    WorthQueryManagedIndexPredicateProvider, WorthQueryManagedIndexPredicateSummary,
-    WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexProvider,
-    WorthQueryManagedIndexProviderFailure, WorthQueryManagedIndexProviderStop,
-    WorthQueryManagedIndexRefinementProvider, WorthQueryManagedIndexRefusal,
-    WorthQueryManagedIndexSourceChange, WorthQueryManagedIndexSourceRow,
-    WorthQueryManagedIndexSourceRows, WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop,
-    WorthQueryManagedIndexSummarySources, WorthQueryManagedIndexTextReadDenial,
-    WorthQueryManagedIndexWatch, WorthQueryManagedIndexWatchOutcome,
-    WorthQueryManagedIndexWatchUpdate, WorthQueryManagedIndexWorkDenial,
-};
+pub use {crate::domain_computation::primary_graph::WorthQueryManagedIndex, crate::domain_computation::primary_graph::WorthQueryManagedIndexCandidateWriter, crate::domain_computation::primary_graph::WorthQueryManagedIndexContentReadDenial, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl, crate::domain_computation::primary_graph::WorthQueryManagedIndexDenial, crate::domain_computation::primary_graph::WorthQueryManagedIndexDenialCause, crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::WorthQueryManagedIndexInvariantDenial, crate::domain_computation::primary_graph::WorthQueryManagedIndexLifecycle, crate::domain_computation::primary_graph::WorthQueryManagedIndexNodeId, crate::domain_computation::primary_graph::WorthQueryManagedIndexNodeRegion, crate::domain_computation::primary_graph::WorthQueryManagedIndexNodeWriter, crate::domain_computation::primary_graph::WorthQueryManagedIndexNodes, crate::domain_computation::primary_graph::WorthQueryManagedIndexPredicateProvider, crate::domain_computation::primary_graph::WorthQueryManagedIndexPredicateSummary, crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue, crate::domain_computation::primary_graph::WorthQueryManagedIndexProvider, crate::domain_computation::vocabulary::primary_graph::provider_failure::WorthQueryManagedIndexProviderFailure, crate::domain_computation::primary_graph::WorthQueryManagedIndexProviderStop, crate::domain_computation::primary_graph::WorthQueryManagedIndexRefinementProvider, crate::domain_computation::primary_graph::WorthQueryManagedIndexRefusal, crate::domain_computation::primary_graph::WorthQueryManagedIndexSourceChange, crate::domain_computation::primary_graph::WorthQueryManagedIndexSourceRow, crate::domain_computation::primary_graph::WorthQueryManagedIndexSourceRows, crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop, crate::domain_computation::primary_graph::WorthQueryManagedIndexSummarySources, crate::domain_computation::primary_graph::WorthQueryManagedIndexTextReadDenial, crate::domain_computation::primary_graph::WorthQueryManagedIndexWatch, crate::domain_computation::primary_graph::WorthQueryManagedIndexWatchOutcome, crate::domain_computation::primary_graph::WorthQueryManagedIndexWatchUpdate, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial};

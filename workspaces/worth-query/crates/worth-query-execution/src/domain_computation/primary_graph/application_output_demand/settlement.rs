@@ -22,7 +22,7 @@ use crate::domain_computation::primary_graph::application_output_demand::denial:
 use crate::domain_computation::primary_graph::output_lineage::BoundCurrentAcceptedOutput;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
-use crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 use crate::domain_computation::primary_graph::WorthQueryApplicationTypedOutputCorrespondence;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;

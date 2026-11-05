@@ -7,7 +7,7 @@ pub trait CleanupDoorsOps<Schema: worth_query_installation::facade::ApplicationS
     #[doc(hidden)]
     fn retained_accepted_for_cleanup_test_for_test(
         &self,
-        correlation: &crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
+        correlation: &crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity,
     ) -> Option<
         std::sync::Arc<
             crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence,

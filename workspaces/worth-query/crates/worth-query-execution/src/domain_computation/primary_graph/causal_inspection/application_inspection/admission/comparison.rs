@@ -1,10 +1,6 @@
 //! The fresh diagnostic loan precedes every comparison of original payload facts.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    admitted_capture::{checkpoint, run_retained_stage},
-    application_query::compare_original_projections,
-    causal_inspection::CausalInspectionReason,
-};
+use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::primary_graph::application_query::compare_original_projections, crate::domain_computation::primary_graph::causal_inspection::CausalInspectionReason};
 use worth_execution::MapKernelFailure;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
 

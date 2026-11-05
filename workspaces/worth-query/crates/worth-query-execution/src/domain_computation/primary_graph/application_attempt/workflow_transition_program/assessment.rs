@@ -7,12 +7,7 @@ use super::{
     publication::PreparedWorkflowAssessmentProjection, PreparedWorkflowAdvance,
     PreparedWorkflowAssessment,
 };
-use crate::domain_computation::primary_graph::{
-    RequiredWorkflowAssessment, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEffectProgram,
-    WorthQueryObservedSource, WorthQueryOutputDemandSettlement,
-    WorthQueryWorkflowAssessmentPosture,
-};
+use {crate::domain_computation::primary_graph::RequiredWorkflowAssessment, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram, crate::domain_computation::primary_graph::WorthQueryObservedSource, crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement, crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryWorkflowAssessmentPosture};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::visit_workflow_assessment_facts,
     crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowAssessmentEvidenceMeaning,
@@ -119,7 +114,7 @@ where
             read_set,
             effects,
             conditional_definition: None,
-            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
+            effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::Platform,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

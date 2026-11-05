@@ -1,5 +1,5 @@
 //! Original decode control and optional explicitly accounted memory custody.
-use super::{session::ValueDecodeSession, WorthQueryValueDecodeDenial as Stop};
+use {super::session::ValueDecodeSession, crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial as Stop};
 use std::cell::{Cell, RefCell};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, ExecutionWorkCeiling};
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog;

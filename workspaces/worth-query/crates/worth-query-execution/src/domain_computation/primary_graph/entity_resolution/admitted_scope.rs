@@ -1,6 +1,6 @@
 //! Selected retained-scope resolution through the admitted Native lookup.
 
-use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
@@ -9,10 +9,10 @@ use worth_relational::facade::indexes::DerivedIndexId;
 
 use super::entity_denial;
 use super::WorthQueryApplicationEntityIdentity;
-use super::WorthQueryEntityResolutionDenial;
-use super::WorthQueryEntityResolutionDenialKind as Kind;
+use crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind as Kind;
 use super::WorthQueryEntityResolutionSubject;
-use super::WorthQueryPrincipalResolutionMode;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 use super::WorthQueryResolvedEntity;
 use crate::domain_computation::primary_graph::index_currency::selected_index_is_current;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;

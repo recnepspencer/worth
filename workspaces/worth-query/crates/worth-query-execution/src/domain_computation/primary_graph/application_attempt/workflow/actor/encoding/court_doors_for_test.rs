@@ -1,9 +1,4 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText;
 
-impl FundedActorText {
-    #[doc(hidden)]
-    pub fn as_str_for_test(&self) -> &str {
-        Self::as_str(self)
-    }
-}

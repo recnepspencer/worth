@@ -169,7 +169,7 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
             &second_lease,
             KindId::new(1),
             EntityId::new(PartitionId::main(), 0, 1),
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Outgoing,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Outgoing,
             0,
         ),
         Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::AdjacencyObservationDenial::SnapshotUnavailable)

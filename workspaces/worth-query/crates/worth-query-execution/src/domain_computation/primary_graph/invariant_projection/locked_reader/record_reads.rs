@@ -1,7 +1,11 @@
 //! Entity/field reads of the selected native snapshot.
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
+use crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 
 impl<Schema> WorthQueryApplicationInvariantProjectionReader<'_, Schema>
 where
@@ -156,7 +160,7 @@ where
             .clone();
         let reads = &mut self.work;
         let decoder = self.value_decode;
-        let observed = crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed_admitted(
+        let observed = crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed_admitted(
             self.runtime,
             execution,
             self.snapshot,

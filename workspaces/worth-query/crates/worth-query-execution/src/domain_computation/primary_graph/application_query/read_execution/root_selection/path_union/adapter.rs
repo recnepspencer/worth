@@ -10,6 +10,8 @@ use worth_query_installation::facade::WorthQueryInstalledRootPathGuard;
 use worth_relational::facade::runtime::{
     BoundedFrontierFieldEqualityTruthRead, PinnedStructuralWalkDenialKind,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind;
 type Error = WorthQueryApplicationReadExecutionDenial;
 pub(super) fn read_guard(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use worth_query_installation::facade::InstalledInboundOccurrenceContract;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
-use super::super::ExternalEffectCorrelationIdentity;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 use super::WorthQueryInboundOccurrenceClaims;
 use super::WorthQueryInboundTerminalOwnerResult;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;

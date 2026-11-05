@@ -2,7 +2,7 @@ pub use std::collections::BTreeMap;
 pub use std::num::NonZeroUsize;
 pub use std::time::Duration;
 
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 pub use worth_foundational::facade::AspectFieldLocator;
 pub use worth_foundational::facade::CanonicalFieldPath;
 pub use worth_foundational::facade::LocatorAuthority;

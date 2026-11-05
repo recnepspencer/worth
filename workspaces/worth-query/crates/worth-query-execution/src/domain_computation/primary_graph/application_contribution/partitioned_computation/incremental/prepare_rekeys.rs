@@ -16,6 +16,7 @@ use {
     crate::domain_computation::primary_graph::invariant_projection::CallVisit,
     crate::domain_computation::request_execution::QueryRequestExecution,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
     IncrementalRun<K, I, R>
 {
@@ -68,7 +69,7 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
                 .and_then(|count| count.checked_add(1))
                 .and_then(|count| count.checked_mul(64 * size_of::<usize>()))
                 .and_then(|bytes| u64::try_from(bytes).ok())
-                .ok_or(D::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
+                .ok_or(D::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
             Some(execution.reserve(bytes).map_err(D::Resource)?)
         } else {
             None

@@ -1,6 +1,6 @@
 //! A native add/remove restores the same observed relation set. Clearing its
 //! dirty mark requires native verification and a still-current companion image.
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
 
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::verification::DirtyReverification;

@@ -18,23 +18,25 @@ mod equality_recovery;
 mod marked_walk;
 mod restored_root;
 mod work_budget;
-use crate::domain_computation::primary_graph::application_attempt::Movement;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
-use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::ConsumedOutputCurrentness;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::DirtyReverification;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementVerificationStop;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
-pub use capacity_stop::VerificationCapacityStop;
+use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
 
 use work_budget::fact_is_current;
-pub(in crate::domain_computation::primary_graph) use work_budget::map_admission_stop;
+
 pub(in crate::domain_computation::primary_graph) use work_budget::map_verification_stop;
-pub(in crate::domain_computation::primary_graph) use work_budget::reserve_pending;
+
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 
 #[derive(Clone, Copy)]
 pub struct EvidenceView<'a> {
@@ -89,44 +91,7 @@ impl<'a> From<&'a ConsumedOutputEvidence> for EvidenceView<'a> {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ConsumedOutputVerification {
-    Current,
-    ChangedDirectFact(usize),
-    ChangedUpstream,
-    /// Native pending state, prior to ordinary driving-policy translation.
-    PendingUpstream,
-    /// A recorded output witness moved, not merely its input source facts.
-    ChangedOutput,
-    /// Evidence is from a different or later native source position.
-    Unaligned,
-}
-impl ConsumedOutputVerification {
-    fn driving(self) -> Result<Self, ConsumedOutputVerificationStop> {
-        match self {
-            Self::PendingUpstream => Err(ConsumedOutputVerificationStop::PendingUpstream),
-            Self::ChangedOutput | Self::Unaligned => Ok(Self::ChangedUpstream),
-            other => Ok(other),
-        }
-    }
-}
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ConsumedOutputVerificationStop {
-    ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
-    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
-    SourceQueryAuthorization(
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
-    ),
-    Unavailable,
-    CapacityExhausted(VerificationCapacityStop),
-    PendingUpstream,
-    RetryCurrentness(CompanionCellEditStop),
-    WorkExhausted,
-    /// The request was cancelled or ran out of time while verifying. The
-    /// evidence was neither found current nor found missing.
-    Interrupted(RelationalInterruptionEvent),
-}
 
 impl ConsumedOutputEvidence {
     pub(in crate::domain_computation::primary_graph) fn verify_many_with_admission(
@@ -269,11 +234,5 @@ impl ConsumedOutputEvidence {
     }
 }
 
-impl std::fmt::Display for ConsumedOutputVerificationStop {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "native output verification: {self:?}")
-    }
-}
-impl std::error::Error for ConsumedOutputVerificationStop {}
 
 mod court_doors_for_test;

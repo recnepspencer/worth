@@ -220,7 +220,7 @@ fn validate_input(
         .into_result()
         .map(|_| ())
         .map_err(|cause| WorthQueryApplicationAttemptDenial::new(
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
+            crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
             format!("{entity} {id:?}.{}: {cause:?}", contract.key().as_str()),
         ))
 }

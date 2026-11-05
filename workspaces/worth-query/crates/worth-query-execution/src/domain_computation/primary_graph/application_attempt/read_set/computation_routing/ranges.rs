@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::NativeComputationReads;
 use std::{ops::Range, sync::Arc};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 
 pub(super) struct CallRangeProgress {
     binding: CheckedCallShape,

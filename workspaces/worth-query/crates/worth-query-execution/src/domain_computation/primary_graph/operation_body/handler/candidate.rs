@@ -1,6 +1,7 @@
 //! Native candidate assembly consumes one sealed body decision; no graph rereads.
 use super::super::{path_value, retirement, reuse};
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial;
 impl<Schema, Binding> OperationBodyHandler<Schema, Binding>
 where
     Schema: ApplicationSchema,
@@ -136,7 +137,7 @@ where
             if root_index == 0
                 && matches!(
                     decision.creation_disposition,
-                    reuse::CreationDisposition::Reuse
+                    crate::domain_computation::primary_graph::vocabulary::operation_body::reuse::CreationDisposition::Reuse
                 )
             {
                 for _ in creation

@@ -2,14 +2,7 @@ use std::sync::Arc;
 
 use worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority;
 
-use super::{
-    WorthQueryProviderExecutionPlanContract, WorthQueryProviderExecutionPlanView,
-    WorthQueryProviderPlanReadmission, WorthQueryProviderProductAffinity,
-    WorthQueryProviderSessionAffinity, WorthQueryProviderSessionDenialKind,
-    WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolCounters,
-    WorthQueryProviderSessionProtocolStage, WorthQueryProviderSessionRecoveryPosture,
-    WorthQueryProviderSessionTokenAdmission,
-};
+use {super::WorthQueryProviderExecutionPlanContract, super::WorthQueryProviderExecutionPlanView, super::WorthQueryProviderPlanReadmission, super::WorthQueryProviderProductAffinity, super::WorthQueryProviderSessionAffinity, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind, super::WorthQueryProviderSessionFailure, super::WorthQueryProviderSessionProtocolCounters, super::WorthQueryProviderSessionProtocolStage, super::WorthQueryProviderSessionRecoveryPosture, super::WorthQueryProviderSessionTokenAdmission};
 
 pub(super) struct WorthQueryProviderPlanReadmissionSeal(());
 
@@ -181,7 +174,7 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
         run: &'run mut WorthQueryRunningWorkflowRun,
         stage_identity: &str,
         graph: &WorthQueryInstalledGraphParticipationAuthority,
-        owner: &crate::domain_computation::managed_run::WorthQueryWorkflowProviderPlanPermit,
+        owner: &crate::domain_computation::vocabulary::managed_run::provider_plan_admission::WorthQueryWorkflowProviderPlanPermit,
     ) -> Result<Self, WorthQueryProviderSessionFailure> {
         let mut counters = WorthQueryProviderSessionProtocolCounters::default();
         let (resources, evidence) = run

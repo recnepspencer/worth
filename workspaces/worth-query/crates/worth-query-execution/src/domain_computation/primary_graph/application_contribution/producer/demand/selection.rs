@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::output_reuse::compare_retained_out
 use crate::domain_computation::primary_graph::output_reuse::require_installed_output_dependencies;
 use crate::domain_computation::primary_graph::output_reuse::retained_output_settlement_is_verified;
 use crate::domain_computation::primary_graph::output_reuse::OutputDependencySelection;
-use crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity;
+use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
 use {
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,

@@ -1,9 +1,5 @@
 //! Current history metadata is disclosed by its own decision on the real READ session.
-use super::super::{
-    admission::prepare_governed_access, history::admit_metadata,
-    WorthQueryApplicationHistoryDenial as MetadataDenial, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-};
+use {super::super::admission::prepare_governed_access, super::super::history::admit_metadata, crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as MetadataDenial, super::super::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
 use super::*;
 use crate::domain_computation::authorization::application_disclosure::contract::compile_document_history_disclosure_contract;
 use crate::domain_computation::primary_graph::WorthQueryHistoryStep;
@@ -18,7 +14,7 @@ pub(in crate::domain_computation::primary_graph) struct CompletedMetadataRead<'p
     source: pending::PendingDocumentRead,
     phase: &'phase WorthQueryAdvancementPhase<'scope>,
     history: std::any::TypeId,
-    principal: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    principal: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
 }
 impl CompletedMetadataRead<'_, '_> {
     pub(in crate::domain_computation::primary_graph) fn current_product(
@@ -33,7 +29,7 @@ impl CompletedMetadataRead<'_, '_> {
     }
     pub(in crate::domain_computation::primary_graph) fn principal(
         &self,
-    ) -> crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding {
+    ) -> crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding {
         self.principal
     }
     pub(super) fn source(&self) -> &pending::PendingDocumentRead {
@@ -200,7 +196,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         // The original binding owns projection, body/filter denials, completion
         // and cleanup. Its common current-security validation consumes this
         // carried decision before the original query body may read.
-        let principal = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.plan.principal.principal_entity_id());
+        let principal = crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(self.plan.principal.principal_entity_id());
         let (source, _read) = self.execute(runtime, phase)?;
         if source.model() != document.model {
             return Err(Denial::ForeignModel);

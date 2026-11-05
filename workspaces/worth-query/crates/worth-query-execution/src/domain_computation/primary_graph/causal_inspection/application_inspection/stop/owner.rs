@@ -5,16 +5,8 @@ pub use crate::domain_computation::authorization::application_disclosure::contra
 pub use crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonDenial;
 use crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial;
 pub use crate::domain_computation::authorization::application_disclosure::WorthQueryApplicationQueryGovernanceDenialKind;
-use crate::domain_computation::authorization::{
-    application_disclosure::DiagnosticPreparationDenial, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialKind,
-};
-pub use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        IndexedSelectionReobserveDenial, OutputFieldCaptureFailure, StoreDenial,
-    },
-    provider::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason},
-};
+use {crate::domain_computation::authorization::application_disclosure::DiagnosticPreparationDenial, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+pub use {crate::domain_computation::primary_graph::vocabulary::application_attempt::indexed_entity_selection::IndexedSelectionReobserveDenial, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure, crate::domain_computation::primary_graph::application_attempt::StoreDenial, crate::domain_computation::primary_graph::provider::FactlessCurrentness, crate::domain_computation::primary_graph::provider::OwnEffectOnReads, crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason};
 pub use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSessionStartDenial;
 pub use crate::domain_computation::provider_session::{
     WorthQueryInspectionReadTerminalDenial, WorthQueryManagedGraphReadDenial,
@@ -96,6 +88,9 @@ pub enum WorthQueryApplicationInspectionStage {
     ReportBridge,
 }
 use WorthQueryApplicationInspectionStage as Stage;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
 
 type Refusal<'a> = WorthQueryApplicationInspectionOwnerRefusal<'a>;
 

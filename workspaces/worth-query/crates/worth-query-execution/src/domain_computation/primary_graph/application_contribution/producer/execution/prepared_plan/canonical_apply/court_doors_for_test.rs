@@ -6,7 +6,7 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
     pub fn slots_for_test(&self) -> &Vec<(
         OwnerPlan<'owner, Value, Stop>,
         Result<
-            crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::ComputedMember,
+            crate::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::ComputedMember,
             crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
         >,
     )>{

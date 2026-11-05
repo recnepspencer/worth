@@ -1,11 +1,11 @@
 use sha2::{Digest, Sha256};
 
-use super::{WorthQueryObservedSourceCoordinate, WorthQueryObservedSourceOccurrence};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceCoordinate, crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceOccurrence};
 
 /// Stable within one runtime and branch occurrence for equivalent native meaning.
 /// The meaning object's issuance identity remains separate for epoch custody.
 pub(super) fn stable_runtime_identity(
-    runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+    runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     coordinate: &WorthQueryObservedSourceCoordinate,
     checkpoint_identity: &[u8; 32],
 ) -> [u8; 32] {

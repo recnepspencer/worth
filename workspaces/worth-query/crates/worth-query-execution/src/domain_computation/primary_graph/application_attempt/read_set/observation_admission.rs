@@ -5,10 +5,7 @@ use worth_query_installation::facade::{
 
 use super::super::fact::WorthQueryApplicationFactKey;
 use super::WorthQueryApplicationReadAttempt;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationEntityIdentity,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity};
 
 impl<Schema, Operation, Input, Scope, Phase>
     WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>
@@ -16,13 +13,13 @@ impl<Schema, Operation, Input, Scope, Phase>
     pub(super) fn admit_target(
         &self,
         target: &ApplicationOperationDecisionReadTarget,
-    ) -> Result<super::InstalledScopePosition, WorthQueryApplicationAttemptDenial> {
+    ) -> Result<crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition, WorthQueryApplicationAttemptDenial> {
         crate::domain_computation::application_contract_admission::installed_read_scope_for_target(
             self.admission.allowed_graph_contract().graph_reads(),
             target,
         )
         .and_then(|scope| {
-            super::InstalledScopePosition::from_installed(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition::from_installed(
                 self.admission.allowed_graph_contract(),
                 scope,
             )
@@ -71,14 +68,14 @@ impl<Schema, Operation, Input, Scope, Phase>
                     .at_snapshot(
                         runtime,
                         self.lease.snapshot(),
-                        super::super::super::WorthQueryPrincipalResolutionMode::Ordinary,
+                        crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode::Ordinary,
                     )
                     .and_then(|truth| truth.validate_entity_freshness(execution, identity))
             })
             .map_err(|refusal| {
                 match refusal.kind() {
-                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Stopped(cause) => WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, entity),
-                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(_) => denial(WorthQueryApplicationAttemptDenialKind::StaleEntityIdentity, entity),
+                    crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Stopped(cause) => WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, entity),
+                    crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Refused(_) => denial(WorthQueryApplicationAttemptDenialKind::StaleEntityIdentity, entity),
                 }
                 })
     }

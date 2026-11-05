@@ -26,7 +26,7 @@ pub struct WorthQueryPrimaryGraph {
     pub(super) application_publication:
         Option<Arc<application_publication::ApplicationPublication>>,
     runtime_authority:
-        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     relational_runtime_instance_id: u64,
     binding_identity: ApplicationSchemaBindingIdentity,
     pub(super) layout: Arc<WorthQueryPrimaryGraphLayout>,
@@ -43,7 +43,7 @@ pub struct WorthQueryPrimaryGraph {
 
 impl WorthQueryPrimaryGraph {
     pub(super) fn new(
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: ApplicationSchemaBindingIdentity,
         layout: WorthQueryPrimaryGraphLayout,
         runtime: RelationalRuntime,
@@ -63,7 +63,7 @@ impl WorthQueryPrimaryGraph {
     }
 
     pub(super) fn from_recovered_runtime(
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: ApplicationSchemaBindingIdentity,
         layout: WorthQueryPrimaryGraphLayout,
         runtime: RelationalRuntime,
@@ -82,7 +82,7 @@ impl WorthQueryPrimaryGraph {
     }
 
     fn install(
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: ApplicationSchemaBindingIdentity,
         mut layout: WorthQueryPrimaryGraphLayout,
         runtime: RelationalRuntime,
@@ -148,7 +148,7 @@ impl WorthQueryPrimaryGraph {
 
     pub(super) const fn runtime_authority(
         &self,
-    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
         self.runtime_authority
     }
 
@@ -239,7 +239,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]
     pub fn workflow_compilation_reuse_counters(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorthQueryWorkflowCompilationReuseCounters{
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::counters::WorthQueryWorkflowCompilationReuseCounters{
         let reuse = self
             .workflow_compilation_reuse
             .lock()
@@ -261,8 +261,8 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]
     pub fn workflow_instance_progress_counters(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters{
-        let mut counters = crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters::default();
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::retention_counters::WorthQueryWorkflowInstanceProgressCounters{
+        let mut counters = crate::domain_computation::primary_graph::vocabulary::application_attempt::retention_counters::WorthQueryWorkflowInstanceProgressCounters::default();
         for shard in self.workflow_instance_progress_retention.iter() {
             let shard = shard
                 .lock()
@@ -274,7 +274,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
 
     pub(in crate::domain_computation::primary_graph) fn with_workflow_instance_progress_mut<T>(
         &self,
-        key: crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgressKey,
+        key: crate::domain_computation::primary_graph::vocabulary::application_attempt::retention::WorkflowInstanceProgressKey,
         mutate: impl FnOnce(&mut crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgressRetention) -> T,
     ) -> T {
         let shard = &self.workflow_instance_progress_retention[key.shard_index()];

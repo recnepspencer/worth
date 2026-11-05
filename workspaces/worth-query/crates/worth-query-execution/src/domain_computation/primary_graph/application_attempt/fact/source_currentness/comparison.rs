@@ -1,6 +1,6 @@
 use worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial;
 
-use super::{WorthQueryApplicationObservedFact, WorthQuerySourceCurrentnessFailure};
+use {super::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure};
 
 impl WorthQueryApplicationObservedFact {
     pub(in crate::domain_computation::primary_graph) fn comparison(
@@ -71,7 +71,7 @@ impl WorthQueryApplicationObservedFact {
                 kind,
                 aspect,
                 present,
-            } => Ok(super::super::super::observation::observe_aspect_presence(
+            } => Ok(crate::domain_computation::primary_graph::vocabulary::application_attempt::aspect_presence::observe_aspect_presence(
                 runtime, execution, snapshot, *entity_id, *kind, aspect,
             )
             .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
@@ -204,7 +204,7 @@ impl WorthQueryApplicationObservedFact {
                     snapshot,
                     *relation_kind,
                     *lineage,
-                    super::super::WorthQueryApplicationAdjacencyDirection::Outgoing,
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Outgoing,
                     Some(*maximum_work_units),
                 )
                 .map_err(map_adjacency_denial)?;
@@ -228,7 +228,7 @@ impl WorthQueryApplicationObservedFact {
                     snapshot,
                     *relation_kind,
                     *lineage,
-                    super::super::WorthQueryApplicationAdjacencyDirection::Outgoing,
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Outgoing,
                     Some(*maximum_work_units),
                 )
                 .map_err(map_adjacency_denial)?;
@@ -250,7 +250,7 @@ impl WorthQueryApplicationObservedFact {
                     snapshot,
                     *relation_kind,
                     *lineage,
-                    super::super::WorthQueryApplicationAdjacencyDirection::Incoming,
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Incoming,
                     Some(bound),
                 )
                 .map_err(map_adjacency_denial)?;

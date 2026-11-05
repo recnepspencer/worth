@@ -8,7 +8,7 @@ use worth_relational::facade::{
     storage::RecordLifecycleState,
 };
 
-use super::{projection_denial, ResultTreeWork, WorthQueryApplicationReadExecutionDenial};
+use {super::projection_denial, super::ResultTreeWork, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial};
 use crate::domain_computation::primary_graph::{
     application_query::disclosure::WorthQueryApplicationQueryGovernance,
     WorthQueryPrimaryGraphLayout,

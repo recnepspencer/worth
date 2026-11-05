@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use super::super::retained_graph_execution::WorthQueryRetainedManagedGraphExecution;
-use crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryProviderExecutionReleaseEvidence;
+use crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence;
 use crate::domain_computation::{
     WorthQueryProviderCheckpointEvidence, WorthQueryProviderCheckpointReleaseEvidence,
 };

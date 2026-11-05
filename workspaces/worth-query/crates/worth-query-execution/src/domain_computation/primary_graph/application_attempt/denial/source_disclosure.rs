@@ -1,11 +1,6 @@
 //! Original source parameter and execution refusals retain their native categories.
-use super::{
-    AttemptDenialCause, WorthQueryApplicationAttemptDenial as Denial,
-    WorthQueryApplicationAttemptDenialKind as Kind,
-};
-use crate::domain_computation::{
-    WorthQueryProviderSessionControlStopKind as Control, WorthQueryProviderSessionDenialKind,
-};
+use {super::AttemptDenialCause, super::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
+use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind};
 use worth_query_admission::facade::application_query::WorthQueryApplicationQueryParameterDenial;
 
 impl Denial {

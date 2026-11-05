@@ -1,5 +1,7 @@
 //! One current-security and exact-truth owner for ordinary and history reads.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
 
 pub(in crate::domain_computation::primary_graph::application_query) fn execute_authorized_read<
     Schema,
@@ -118,7 +120,7 @@ where
         |denial| {
             Stop::from(WorthQueryAuthorizedApplicationReadDenial::Authorization(
                 crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::from(denial),
+                    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::from(denial),
                     plan.query.name(),
                 ),
             ))

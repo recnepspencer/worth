@@ -8,12 +8,7 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
 };
 
-use super::{
-    observe_adjacency, PublishedWorkflowDefinitionRef, WorthQueryApplicationAdjacencyDirection,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationObservedFact,
-    WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
-};
+use {super::observe_adjacency, crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationEffectProgram, super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation};
 use crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_instance_start_facts;
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 
@@ -52,10 +47,7 @@ pub use preparation::{
     WorkflowInstanceBindingDenial, WorkflowInstancePreparationDenial,
     WorthQueryWorkflowInstanceAdapter,
 };
-pub use publication::{
-    PerformedWorkflowInstanceStart, PreparedWorkflowInstanceStart, PublishedWorkflowInstanceRef,
-    WorkflowInstanceStartOutcome,
-};
+pub use {publication::PerformedWorkflowInstanceStart, publication::PreparedWorkflowInstanceStart, publication::WorkflowInstanceStartOutcome};
 pub use supersession::{RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart};
 
 impl<Schema, Operation, Input, Scope>
@@ -135,7 +127,7 @@ where
             read_set: self,
             effects,
             conditional_definition: None,
-            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
+            effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::Platform,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

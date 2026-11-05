@@ -2,16 +2,8 @@
 use super::failure::{source_preparation_denial, source_storage};
 mod correspondence;
 mod factory;
-use super::super::{
-    adapter::{InstalledIndexProvider, TypedIndexProvider},
-    source::occurrences::PersistentSourceRows,
-    WorthQueryManagedIndexProvider, WorthQueryManagedIndexSourceChange as Change,
-    WorthQueryManagedIndexSourceSlot as Slot,
-};
-use crate::domain_computation::{
-    primary_graph::source_facts::SourceFactsAllocation,
-    provider_session::WorthQueryGraphWorkSessionIdentity,
-};
+use {super::super::adapter::InstalledIndexProvider, super::super::adapter::TypedIndexProvider, super::super::source::occurrences::PersistentSourceRows, super::super::WorthQueryManagedIndexProvider, super::super::WorthQueryManagedIndexSourceChange as Change, crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot as Slot};
+use {crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity};
 use std::{any::Any, sync::Arc};
 use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::{

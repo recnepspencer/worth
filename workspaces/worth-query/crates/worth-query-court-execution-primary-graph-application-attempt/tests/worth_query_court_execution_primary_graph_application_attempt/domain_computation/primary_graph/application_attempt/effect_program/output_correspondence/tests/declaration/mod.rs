@@ -25,7 +25,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaDeclaration;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial;
 
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
 
 pub struct Schema;
 

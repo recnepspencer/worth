@@ -1,5 +1,5 @@
 //! Per-call liveness is distinct from persistent installed producer provenance.
-use super::WorthQueryProducerCommitAuthority;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use worth_query_installation::facade::ApplicationSchema;
 use {

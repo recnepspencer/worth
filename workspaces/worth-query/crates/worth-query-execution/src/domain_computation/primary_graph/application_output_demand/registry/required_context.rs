@@ -4,7 +4,7 @@ use super::ready_backing::PreparedReadyBacking;
 use super::WorthQueryOutputDemandInterest;
 use super::WorthQueryOutputDemandKey;
 use super::WorthQueryOutputDemandRegistry;
-use crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary;
+use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
@@ -22,12 +22,12 @@ pub struct RequiredOutputDemandContext {
 
     ready_backing: Option<PreparedReadyBacking>,
     completed_handler_facts: Option<CompletedHandlerFactBoundary>,
-    decision_context_use: Option<crate::domain_computation::primary_graph::DecisionContextUse>,
+    decision_context_use: Option<crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse>,
     prepared_decision_reuse: Option<
-        crate::domain_computation::primary_graph::output_lineage::PreparedDecisionReuseContext,
+        crate::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext,
     >,
     completed_decision_reuse: Option<
-        crate::domain_computation::primary_graph::output_lineage::CompletedDecisionReuseProof,
+        crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof,
     >,
     prepared_input_reuse_key:
         Option<crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey>,
@@ -103,7 +103,7 @@ impl RequiredOutputDemandContext {
     }
     pub(in crate::domain_computation::primary_graph) fn prepare_execution(
         mut self,
-        mode: crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
+        mode: crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority,
     ) -> RequiredOutputExecution {
         RequiredOutputExecution {
             ready_backing: self
@@ -117,21 +117,21 @@ impl RequiredOutputDemandContext {
 
     pub(in crate::domain_computation::primary_graph) fn retain_prepared_decision_reuse(
         &mut self,
-        context: crate::domain_computation::primary_graph::output_lineage::PreparedDecisionReuseContext,
+        context: crate::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext,
     ) {
         assert!(self.prepared_decision_reuse.replace(context).is_none());
     }
 
     pub(in crate::domain_computation::primary_graph) fn take_completed_decision_reuse(
         &mut self,
-    ) -> Option<crate::domain_computation::primary_graph::output_lineage::CompletedDecisionReuseProof>
+    ) -> Option<crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof>
     {
         self.completed_decision_reuse.take()
     }
 
     pub(in crate::domain_computation) fn record_decision_context_use(
         &mut self,
-        use_mask: crate::domain_computation::primary_graph::DecisionContextUse,
+        use_mask: crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse,
     ) {
         assert!(self.decision_context_use.replace(use_mask).is_none());
     }

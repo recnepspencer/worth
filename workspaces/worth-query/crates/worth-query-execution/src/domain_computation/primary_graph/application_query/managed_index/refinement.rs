@@ -1,9 +1,5 @@
 //! Optional domain exactness over one genuine candidate row and the same probe.
-use super::{
-    WorthQueryManagedIndexControl as Control, WorthQueryManagedIndexProbeValue as Probe,
-    WorthQueryManagedIndexProvider as Provider, WorthQueryManagedIndexProviderStop as Stop,
-    WorthQueryManagedIndexSourceRow as Row,
-};
+use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue as Probe, super::WorthQueryManagedIndexProvider as Provider, super::WorthQueryManagedIndexProviderStop as Stop, super::WorthQueryManagedIndexSourceRow as Row};
 use worth_query_declaration::facade::{
     application_query::{ApplicationManagedIndexBinding, ApplicationManagedIndexRefinement},
     application_schema::ApplicationSchema,

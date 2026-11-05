@@ -3,6 +3,8 @@ use super::super::read_execution::project_non_live_kernel_roots;
 use super::*;
 use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use worth_relational::facade::identity::EntityId;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial;
 
 pub(in crate::domain_computation::primary_graph) trait OneShotCorrectionDisclosureScopedOps<
     Schema: ApplicationSchema,

@@ -11,7 +11,7 @@ pub(in crate::domain_computation) struct WorthQueryPendingApplicationCommitRecei
     precondition_comparison: WorthQueryMutationPreconditionComparisonEvidence,
     canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkPhases,
     committed_dispatch_outbox:
-        Option<super::super::super::super::provider::WorthQueryCommittedDispatchOutboxBinding>,
+        Option<crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding>,
     authority_binding: super::WorthQueryApplicationCommitAuthorityBinding,
     retained_preimage: Option<WorthQueryRetainedPreImage>,
     aftermath_causality: Option<WorthQueryCommittedAftermathCausality>,

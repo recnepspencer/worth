@@ -42,7 +42,7 @@ where
     let storage = MaterialCompletion::new(execution, allocation);
     let association = admit_parent::<S, B>(execution, access, &plan, native, allocation)?;
     let selector = retain_scope(execution, plan.scope, plan.query.name()).map_err(|cause| {
-        SourceQueryObservationStop::Read(super::super::WorthQueryAdmittedOneShotStop::Execution(
+        SourceQueryObservationStop::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop::Execution(
             cause,
         ))
     })?;
@@ -150,7 +150,7 @@ where
         native,
     )
     .map_err(|cause| {
-        SourceQueryObservationStop::Read(super::super::WorthQueryAdmittedOneShotStop::Execution(
+        SourceQueryObservationStop::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop::Execution(
             cause,
         ))
     })?;
@@ -174,7 +174,7 @@ pub(in crate::domain_computation::primary_graph) fn read_decision<S, B>(
     access: &SourceQueryReaderAccess<'_, S>,
     intent: B::Input,
     context: &std::cell::Cell<
-        crate::domain_computation::primary_graph::handler::DecisionContextUse,
+        crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse,
     >,
     operation_scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
     native: &mut ApplicationQueryNativeAccess<'_>,
@@ -203,8 +203,8 @@ where
     })?;
     let result =
         access.with_plan::<B, _, Denial>(execution, intent, context, native, |plan, native| {
-            if crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(plan.scope.entity_id()) != operation_scope.scope()
-                || crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(plan.graph_work.principal()) != operation_scope.principal() {
+            if crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(plan.scope.entity_id()) != operation_scope.scope()
+                || crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(plan.graph_work.principal()) != operation_scope.principal() {
                 return Err(Denial::ForeignAssociation);
             }
             let completed = read::<S, B>(execution, access, plan, native, &allocation)?;
@@ -238,7 +238,7 @@ where
     use super::denial::{ReceiverCause, WorthQueryManagedIndexDenial};
     let storage_stop =
         |cause: worth_relational::facade::transactions::RelationalExecutionDenialCause| {
-            SourceQueryObservationStop::Read(crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Admission(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause)))
+            SourceQueryObservationStop::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop::Admission(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause)))
         };
     let allocation = SourceFactsAllocation::open(execution).map_err(storage_stop)?;
     read::<S, B>(execution, access, plan, native, &allocation).map_err(|cause| {

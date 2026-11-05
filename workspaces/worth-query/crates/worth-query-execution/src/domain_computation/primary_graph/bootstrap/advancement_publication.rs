@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
     /// The phase witnesses the caller's scope around inline Relational publication.

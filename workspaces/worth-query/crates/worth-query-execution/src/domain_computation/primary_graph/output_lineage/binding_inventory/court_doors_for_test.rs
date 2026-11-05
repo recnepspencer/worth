@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 
 impl WorthQueryApplicationOutputLineage {
     #[doc(hidden)]

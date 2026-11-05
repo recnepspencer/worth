@@ -7,10 +7,7 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{denial, WorthQueryApplicationOutputCorrespondenceCandidate};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationOutputPosture,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct ExpectedOutputBinding {

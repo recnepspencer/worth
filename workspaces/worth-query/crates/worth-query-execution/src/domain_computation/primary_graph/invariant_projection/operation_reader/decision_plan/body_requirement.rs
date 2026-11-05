@@ -8,16 +8,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyRequirementDirection as Direction,
     ApplicationOperationBodyRequirementSource as Source,
 };
-use {
-    crate::domain_computation::primary_graph::operation_body::field_value,
-    crate::domain_computation::primary_graph::operation_body::PreparedRequirementOperand,
-    crate::domain_computation::primary_graph::HandlerExecutionDenial,
-    crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity,
-    crate::domain_computation::request_execution::advancement_denial,
-    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-    crate::domain_computation::request_execution::QueryRequestExecution,
-    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-};
+use {crate::domain_computation::primary_graph::operation_body::field_value, crate::domain_computation::primary_graph::vocabulary::operation_body::value::PreparedRequirementOperand, crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, crate::domain_computation::request_execution::advancement_denial, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::QueryRequestExecution, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
 mod collection_values;
 
 impl<Schema: ApplicationSchema, Operation>
@@ -30,7 +21,7 @@ impl<Schema: ApplicationSchema, Operation>
         crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext,
         HandlerExecutionDenial,
     > {
-        self.query_context.filter(|context| context.query_identifier() == query).cloned().ok_or_else(|| HandlerExecutionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, query)))
+        self.query_context.filter(|context| context.query_identifier() == query).cloned().ok_or_else(|| HandlerExecutionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, query)))
     }
     pub(in crate::domain_computation::primary_graph) fn body_requirement_operand<Entity>(
         &mut self,
@@ -41,7 +32,7 @@ impl<Schema: ApplicationSchema, Operation>
     ) -> Result<PreparedRequirementOperand, HandlerExecutionDenial> {
         match source {
             Source::QueryContext { query, .. } => {
-                let context = self.query_context.filter(|context| context.query_identifier() == query.name()).ok_or_else(|| HandlerExecutionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, query.name())))?;
+                let context = self.query_context.filter(|context| context.query_identifier() == query.name()).ok_or_else(|| HandlerExecutionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, query.name())))?;
                 // Values are already retained by the admission; this is an Arc
                 // clone, not another query, decode or allocation of the tree.
                 Ok(PreparedRequirementOperand {
@@ -116,7 +107,7 @@ impl<Schema: ApplicationSchema, Operation>
             from: from.clone(),
             to: to.clone(),
         };
-        use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection as Adjacency;
+        use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Adjacency;
         let adjacency = match direction {
             Direction::Outgoing => Adjacency::Outgoing,
             Direction::Incoming => Adjacency::Incoming,

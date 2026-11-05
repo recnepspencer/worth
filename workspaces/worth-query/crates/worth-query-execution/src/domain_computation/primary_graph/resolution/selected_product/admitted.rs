@@ -3,7 +3,7 @@
 pub(crate) mod issued_principal;
 #[path = "admitted/native.rs"]
 mod native;
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 pub(in crate::domain_computation) use issued_principal::WorthQueryIssuedSelectedPrincipal;
 #[path = "admitted/principal_admission_denial.rs"]
 mod principal_admission_denial;
@@ -13,6 +13,8 @@ use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
 use super::super::*;
 use crate::domain_computation::primary_graph::index_currency::ensure_selected_field_indexes_admitted;
 use crate::domain_computation::primary_graph::index_currency::SelectedFieldIndexAdmissionStop;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 
 impl<'runtime, Schema> super::super::super::WorthQuerySelectedProductOperation<'runtime, Schema>
 where

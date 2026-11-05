@@ -55,7 +55,7 @@ pub(super) struct WorthQueryAuthorizedProviderCommit<
         Scope,
     >,
     dispatch_outbox:
-        Option<crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord>,
+        Option<crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord>,
 }
 
 fn authorize_provider_commit<'run, 'a, 'provider, Schema, Operation, Input, Scope>(
@@ -69,7 +69,7 @@ fn authorize_provider_commit<'run, 'a, 'provider, Schema, Operation, Input, Scop
         Scope,
     >,
     dispatch_outbox: Option<
-        crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+        crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
     >,
 ) -> WorthQueryAuthorizedProviderCommit<'run, 'a, 'provider, Schema, Operation, Input, Scope> {
     WorthQueryAuthorizedProviderCommit {
@@ -134,7 +134,7 @@ pub(super) fn authorize_and_resolve_provider_commit<Schema, Operation, Input, Sc
         Scope,
     >,
     dispatch_outbox: Option<
-        crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+        crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
     >,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProviderProgressionOutcome
@@ -161,7 +161,7 @@ fn resolve_idempotency_under_authority<Schema, Operation, Input, Scope>(
         Scope,
     >,
     dispatch_outbox: Option<
-        crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+        crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
     >,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProviderProgressionOutcome

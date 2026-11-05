@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use super::WorthQueryObservedSource;
-use crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector;
+use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
 
 impl<Query> WorthQueryObservedSource<Query> {
     /// Original descriptive projection custody. Fresh inspection admission

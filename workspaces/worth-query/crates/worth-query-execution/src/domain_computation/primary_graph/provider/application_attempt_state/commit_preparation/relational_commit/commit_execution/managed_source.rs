@@ -40,9 +40,9 @@ pub(super) fn bind(
 }
 
 fn comparison_stop(
-    cause: crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure,
+    cause: crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
-    use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Stop;
+    use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Stop;
     match cause {
         Stop::ManagedIndex(cause) => crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
             provider_failure(WorthQueryProviderSessionProtocolStage::Commit, "managed Source consistency refused")
@@ -50,7 +50,7 @@ fn comparison_stop(
         Stop::Execution(cause) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
         Stop::OutputObservation(cause) => super::consumed_output::verification_stop(cause),
         Stop::WorkBudgetExceeded => super::consumed_output::verification_stop(
-            crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::WorkExhausted),
+            crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop::WorkExhausted),
         Stop::Unavailable => native_output_witness_stop(worth_relational::facade::mvcc::CompanionPreflightStop::ManagedSourceNotPrepared),
     }
 }

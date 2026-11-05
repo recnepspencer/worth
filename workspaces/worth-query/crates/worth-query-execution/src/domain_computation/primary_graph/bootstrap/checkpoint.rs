@@ -14,7 +14,7 @@ use super::super::{
     WorthQueryPrimaryGraph, WorthQueryPrimaryGraphBootstrap,
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
-use super::WorthQueryPrimaryGraphPublication;
+use crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication;
 
 impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema> {
     pub(in crate::domain_computation::primary_graph) fn has_pending_codec_transition(
@@ -27,7 +27,7 @@ impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema> {
 }
 
 pub(super) fn primary_graph_for_installation(
-    runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+    runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: ApplicationSchemaBindingIdentity,
     layout: super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     relational_runtime: RelationalRuntime,

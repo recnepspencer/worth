@@ -1,7 +1,7 @@
 //! Settlement discovery after publication cannot refuse its occurrence walk.
 use super::super::refreshed_rejoin::occurrence_rows;
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 type Identity = Arc<RecordedSettlementIdentity>;
 
 use std::sync::Arc;

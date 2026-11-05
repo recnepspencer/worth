@@ -8,11 +8,9 @@ pub(in crate::domain_computation::primary_graph) use aftermath_causality::{
 pub(crate) mod application_attempt_state;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::ManagedUnpublishedAttempt;
-pub(in crate::domain_computation::primary_graph) use application_attempt_state::RebaseVerificationFailure;
+
 pub(in crate::domain_computation) use application_attempt_state::RegisteredPrimaryRead;
-pub use application_attempt_state::{
-    FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
-};
+pub use {application_attempt_state::FactlessCurrentness, application_attempt_state::OwnEffectOnReads};
 pub(crate) mod application_attempt_work;
 pub(crate) mod application_decision_fact;
 pub(crate) mod application_touch_admission;
@@ -79,13 +77,13 @@ pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::Wo
 pub(super) use super::application_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 use super::WorthQueryPrimaryGraphIntegrationHandle;
 pub(super) use application_attempt_state::WorthQueryPrimaryGraphCommittedApplication;
-pub(crate) use application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot;
+use crate::domain_computation::primary_graph::vocabulary::provider::application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot;
 pub(in crate::domain_computation) use application_decision_fact::ApplicationFactTable;
 pub(in crate::domain_computation) use application_decision_fact::CompletedApplicationFacts;
 pub(in crate::domain_computation) use application_decision_fact::WorthQueryPrimaryGraphApplicationDecisionFact;
 
 pub use committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxObservation;
-pub use committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial;
+
 pub use committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadWork;
 pub(super) use idempotency::WorthQueryProductIdempotencyAffinity;
 pub(in crate::domain_computation::primary_graph) use idempotency::WorthQueryProviderGuardedWorkflowOperationCustody;
@@ -93,11 +91,11 @@ pub(super) use idempotency::WorthQueryProviderIdempotencyResolution;
 pub(super) use idempotency::WorthQueryProviderIdempotencyResolutionDenial;
 pub use mutation_work::WorthQueryPrimaryMutationWorkEvidence;
 pub use mutation_work::WorthQueryTouchedRecordIdentity;
-pub(in crate::domain_computation) use session_commit::WorthQueryCommittedDispatchOutboxBinding;
-pub(super) use session_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
+
+
 pub(super) use session_commit::WorthQueryCommittedDispatchOutboxReceiptSeal;
 pub(super) use session_commit::WorthQueryRetainedApplicationCommitBasis;
-pub(crate) use session_commit::WorthQueryRetainedPreImageSeal;
+
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -135,7 +133,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn reserve_outstanding_dispatch(
         &self,
         record: Option<
-            &crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+            &crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
         >,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> Result<Option<OutstandingDispatchReservation>, &'static str> {
@@ -177,7 +175,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         batch: worth_relational::facade::transactions::WorkerIntentBatch,
         idempotency: super::application_attempt::WorthQueryApplicationIdempotencyBinding,
-        outcome_identity: super::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+        outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
         emitted_effect_count: u64,
         mutation_partition: worth_relational::facade::identity::PartitionId,
     ) -> worth_relational::facade::transactions::WorkerIntentBatch {
@@ -194,7 +192,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         batch: worth_relational::facade::transactions::WorkerIntentBatch,
         causality: &crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
-        outcome_identity: super::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+        outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
         mutation_partition: worth_relational::facade::identity::PartitionId,
     ) -> worth_relational::facade::transactions::WorkerIntentBatch {
         batch.push(aftermath_causality::aftermath_causality_create_intent(
@@ -214,7 +212,7 @@ impl WorthQueryPrimaryGraphProvider {
         (
             worth_relational::facade::transactions::WorkerIntentBatch,
             Option<
-                crate::domain_computation::application_aftermath::WorthQueryPendingDispatchOutbox,
+                crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryPendingDispatchOutbox,
             >,
         ),
         &'static str,
@@ -222,7 +220,7 @@ impl WorthQueryPrimaryGraphProvider {
         let record = dispatch_outbox::derive_dispatch_outbox_record(basis)
             .map_err(|_| "external-effect correlation derivation failed")?;
         let pending =
-            crate::domain_computation::application_aftermath::bind_dispatch_outbox_create_intent(
+            crate::domain_computation::vocabulary::application_aftermath::outbox::bind_dispatch_outbox_create_intent(
                 Some(self.graph.layout.provider_dispatch_outbox()),
                 record.as_ref(),
                 mutation_partition,

@@ -1,4 +1,4 @@
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::identity::{EntityId, KindId};
@@ -28,7 +28,7 @@ impl HistoryModelIdentity {
             && self.runtime.as_u64() == source.runtime_authority
             && self.binding == source.schema_binding
             && matches!(&source.selection,
-                crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(product)
+                crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity::Product(product)
                     if product.matches_observation(observation.product_observation()))
     }
     pub(in crate::domain_computation::primary_graph) fn record(
@@ -40,7 +40,7 @@ impl HistoryModelIdentity {
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> bool {
-        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
+        crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(
             self.entity,
         ) == receipt.principal_scope().scope()
             && self.runtime == receipt.authority_binding().runtime_authority()

@@ -46,7 +46,7 @@ pub(crate) mod settlement_identity;
 
 pub(in crate::domain_computation) use invalidation::SourceInvalidationOwner;
 
-use super::output_family_identity::OutputFamilyIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_family_identity::OutputFamilyIdentity;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
@@ -55,11 +55,11 @@ use std::sync::OnceLock;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-pub(in crate::domain_computation::primary_graph) use super::application_attempt::CompletedDecisionReuseProof;
-pub(in crate::domain_computation::primary_graph) use super::application_attempt::PreparedDecisionReuseContext;
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof;
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext;
 pub use denial::WorthQueryPriorOutputDenial;
 pub use denial::WorthQueryPriorOutputDenialKind;
-pub(in crate::domain_computation::primary_graph) use input_cutoff::cutoff_declines;
+
 pub(in crate::domain_computation::primary_graph) use input_cutoff::prepare_stable_address;
 pub(in crate::domain_computation::primary_graph) use input_cutoff::InputCutoffVerificationStop;
 pub(in crate::domain_computation::primary_graph) use input_cutoff::OwnedInputCutoffDecision;
@@ -77,14 +77,15 @@ pub(in crate::domain_computation::primary_graph) use recorded_output::RecordedOu
 use recorded_output::RecordedOutputMutable;
 pub(in crate::domain_computation::primary_graph) use recorded_source_identity::RecordedSourceIdentity;
 use resolution::latest_output_matching;
-pub(in crate::domain_computation::primary_graph) use settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 use super::provider::WorthQueryPrimaryGraphCommittedApplication;
 use super::WorthQueryApplicationOutputCorrespondence;
 
 mod binding_inventory;
 pub(crate) mod semantic_source;
-pub(in crate::domain_computation::primary_graph) use semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 
 #[derive(Default)]
 pub struct WorthQueryApplicationOutputLineage {
@@ -117,7 +118,7 @@ pub struct WorthQueryExactRecordedOutput {
     pub(super) idempotency_key_identity: [u8; 32],
     pub(super) runtime_authority: u64,
     pub(super) schema: ApplicationSchemaBindingIdentity,
-    pub scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    pub scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     pub(super) observed_source_facts: RetainedSourceFacts,
 }
 
@@ -134,11 +135,6 @@ pub(super) struct WorthQueryProducerLineageHead {
     pub(super) may_replay_idempotency: bool,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ProductCoordinate {
-    occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    generation: u64,
-}
 
 pub struct WorthQueryPriorOutputBindingResolution {
     pub(super) correspondence: Option<Arc<WorthQueryApplicationOutputCorrespondence>>,
@@ -146,7 +142,7 @@ pub struct WorthQueryPriorOutputBindingResolution {
 
 pub struct WorthQueryCurrentOutputCandidate {
     pub(super) consumed_outputs: Arc<[super::invariant_projection::ConsumedOutputEvidence]>,
-    pub(super) verification_requirement: Option<invalidation::FullVerificationReason>,
+    pub(super) verification_requirement: Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason>,
     pub(super) settlement_identity: Arc<RecordedSettlementIdentity>,
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     /// The role the producer of this correspondence outputs to its family.
@@ -177,7 +173,7 @@ impl WorthQueryApplicationOutputLineage {
         application: &WorthQueryPrimaryGraphCommittedApplication,
         consumed_outputs: Arc<[super::invariant_projection::ConsumedOutputEvidence]>,
         prepared: Option<&PreparedOutputLineageSlot>,
-        completed_handler_facts: Option<super::application_attempt::CompletedHandlerFactBoundary>,
+        completed_handler_facts: Option<crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary>,
         completed_decision_reuse: Option<CompletedDecisionReuseProof>,
         prepared_input_reuse_key: Option<PreparedInputReuseKey>,
         native_prior_checkpoint: Option<native_prior_checkpoint::NativePriorCheckpointLocator>,
@@ -302,7 +298,7 @@ impl WorthQueryApplicationOutputLineage {
             correspondence: evidence.retain_output_correspondence(),
             source_identity: evidence.idempotency().source_identity().map(|identity| {
                 RecordedSourceIdentity::Runtime(
-                    super::application_query::WorthQueryRuntimeSourceIdentity::new(identity),
+                    crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity::new(identity),
                 )
             }),
             source_partition_identity: evidence.idempotency().source_partition_identity(),

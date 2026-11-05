@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use crate::domain_computation::primary_graph::fact_verification_observation;
 
 mod diagnostic;
-pub use diagnostic::RebaseVerificationReason;
+
 pub(crate) mod adjacency;
 mod resolution;
 pub(crate) mod retirement;
@@ -89,7 +89,7 @@ pub struct FailedRebase {
 }
 
 pub(crate) mod failure;
-pub(in crate::domain_computation::primary_graph) use failure::RebaseVerificationFailure;
+use crate::domain_computation::primary_graph::vocabulary::provider::failure::RebaseVerificationFailure;
 
 mod full_preparation;
 use full_preparation::FullSourceFactRebase;

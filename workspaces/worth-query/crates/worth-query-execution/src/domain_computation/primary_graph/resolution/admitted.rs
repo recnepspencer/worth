@@ -1,6 +1,6 @@
 //! Fresh installed principal decode from one bounded selected native image.
 
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use worth_query_installation::facade::ApplicationIdentityScalarValueBinding;
 use worth_query_installation::facade::WorthQueryInstalledPrincipalBinding;
 use worth_relational::facade::runtime::RelationalRuntime;
@@ -9,7 +9,7 @@ use worth_relational::facade::runtime::VisibilityProjectionView;
 use super::super::authenticated_principal::WorthQueryResolvedPrincipalEvidence;
 use super::super::freshness::WorthQueryPrincipalFreshnessEvidence;
 
-use super::super::WorthQueryPrincipalResolutionDenialKind;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
 use super::admitted_lookup::AdmittedPrincipalLookupStop;
 use super::admitted_observations::AdmittedPrincipalObservationStop;
 use super::WorthQueryPrincipalSnapshotResolution;

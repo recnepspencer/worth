@@ -7,11 +7,11 @@ impl WorthQueryApplicationOutputLineage {
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,
-        runtime_identity: crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
-        checkpoint_identity: crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
+        runtime_identity: crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity,
+        checkpoint_identity: crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity,
     ) -> Option<WorthQueryExactRecordedOutput> {
         Self::qualified_output::<Binding>(
             self,

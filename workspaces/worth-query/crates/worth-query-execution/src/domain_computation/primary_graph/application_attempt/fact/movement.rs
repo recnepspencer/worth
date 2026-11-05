@@ -7,16 +7,12 @@
 
 use super::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::application_contribution::Comparator;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 
 /// Whether a fact moved. No value of it is built outside the fact module.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct FactMovement(Movement);
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Movement {
-    Unmoved,
-    Moved,
-}
 
 /// The fact the comparator observed for a retained key. It has no equality
 /// of its own: only [`FactMovement::between`] compares it.

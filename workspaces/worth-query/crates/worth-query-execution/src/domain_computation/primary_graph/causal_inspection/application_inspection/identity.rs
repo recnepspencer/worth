@@ -2,10 +2,7 @@
 mod evaluation;
 pub(super) mod history;
 use super::WorthQueryApplicationInspectionTarget;
-use crate::domain_computation::{
-    primary_graph::WorthQueryApplicationBasisSelectionIdentity,
-    provider_session::WorthQueryManagedGraphWorkSession,
-};
+use {crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity, crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession};
 pub(super) use evaluation::producer_explanation_identity;
 use std::{
     alloc::Layout,

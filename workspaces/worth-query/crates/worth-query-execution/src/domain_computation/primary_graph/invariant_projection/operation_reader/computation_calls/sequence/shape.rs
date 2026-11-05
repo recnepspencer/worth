@@ -1,6 +1,7 @@
 //! Persistent canonical order; ranks are views, never stored suffix positions.
 use super::*;
 use worth_execution::ExecutionOrderedMap;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 pub struct CallShape {
     pub(super) order: ExecutionOrderedMap<ComputationRead, ()>,
     pub(super) prefix: usize,

@@ -5,7 +5,7 @@ use worth_relational::facade::{
     storage::AuthoritativeFieldComparisonKey,
 };
 
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 
 /// Exact reverse-posting selectors. These are derived addresses, not facts or
 /// revision evidence; a match identifies the retained fact to verify.
@@ -13,7 +13,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 pub enum FactPostingKey {
     SourcePublication(
         std::sync::Arc<
-            crate::domain_computation::primary_graph::application_contribution::OutputSourceAddress,
+            crate::domain_computation::primary_graph::vocabulary::application_contribution::source_qualification::OutputSourceAddress,
         >,
     ),
     EntityLifecycle(EntityId),

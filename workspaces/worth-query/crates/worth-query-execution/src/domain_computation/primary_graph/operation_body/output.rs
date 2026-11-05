@@ -1,5 +1,5 @@
 //! Install fixed authored roles, then use the existing candidate correspondence owner.
-use super::super::application_attempt::OutputRoleUse;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
 use super::super::{
     WorthQueryPrimaryGraphInstallationDenial as Denial,
     WorthQueryPrimaryGraphInstallationDenialKind as Kind,
@@ -96,14 +96,14 @@ pub(super) fn install_outputs<
 
 pub(super) fn require_related_outputs<Schema>(
     outputs: &[InstalledBodyOutput],
-    selections: &super::PreparedBodySelections<Schema>,
+    selections: &crate::domain_computation::primary_graph::vocabulary::operation_body::selection::PreparedBodySelections<Schema>,
 ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial> {
     for output in outputs {
         if let ApplicationOperationBodyOutputTarget::Related { relation, from, to } = &output.target
             && selections.selected(relation, from, to).is_none()
         {
             return Err(super::super::WorthQueryApplicationAttemptDenial::new(
-                super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
                 relation,
             ));
         }

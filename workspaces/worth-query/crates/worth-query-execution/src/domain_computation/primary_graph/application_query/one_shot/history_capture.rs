@@ -3,26 +3,8 @@ use worth_query_declaration::facade::{
     application_query::ApplicationHistoryQueryBinding, application_schema::ApplicationSchema,
 };
 
-use super::{
-    admit_request, denial, map_authorized_read_denial, refresh_governed_authorization,
-    validate_one_shot_plan, WorthQueryApplicationOneShotDenialKind,
-    WorthQueryApplicationOneShotResult,
-};
-use {
-    crate::domain_computation::primary_graph::application_query::authorized_read::execute_authorized_read_with_access,
-    crate::domain_computation::primary_graph::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial,
-    crate::domain_computation::primary_graph::application_query::history::prepare_capture,
-    crate::domain_computation::primary_graph::application_query::history::SubjectQuery,
-    crate::domain_computation::primary_graph::application_query::history::SubjectResult,
-    crate::domain_computation::primary_graph::application_query::history::WorthQueryAdmittedApplicationHistoryCapture,
-    crate::domain_computation::primary_graph::application_query::history::WorthQueryApplicationHistoryDenial as Denial,
-    crate::domain_computation::primary_graph::application_query::history::WorthQueryCapturedApplicationHistorySubjects,
-    crate::domain_computation::primary_graph::application_query::read_execution::project_non_live_kernel_with_decode,
-    crate::domain_computation::primary_graph::application_query::read_execution::read_bounded_root_rows,
-    crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection,
-    crate::domain_computation::primary_graph::value_decode::ValueDecodeState,
-    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
-};
+use {super::admit_request, super::denial, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial, super::refresh_governed_authorization, super::validate_one_shot_plan, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind, super::WorthQueryApplicationOneShotResult};
+use {crate::domain_computation::primary_graph::application_query::authorized_read::execute_authorized_read_with_access, crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial, crate::domain_computation::primary_graph::application_query::history::prepare_capture, crate::domain_computation::primary_graph::application_query::history::SubjectQuery, crate::domain_computation::primary_graph::application_query::history::SubjectResult, crate::domain_computation::primary_graph::application_query::history::WorthQueryAdmittedApplicationHistoryCapture, crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial, crate::domain_computation::primary_graph::application_query::history::WorthQueryCapturedApplicationHistorySubjects, crate::domain_computation::primary_graph::application_query::read_execution::project_non_live_kernel_with_decode, crate::domain_computation::primary_graph::application_query::read_execution::read_bounded_root_rows, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection, crate::domain_computation::primary_graph::value_decode::ValueDecodeState, crate::domain_computation::request_execution::WorthQueryAdvancementPhase};
 
 /// The ordinary disclosed result and the exact generations captured from that result.
 pub struct WorthQueryApplicationHistoryCaptureResult<
@@ -66,10 +48,10 @@ pub trait HistoryCaptureOps<Schema: ApplicationSchema>:
             WorthQueryApplicationProjection<Schema, SubjectQuery<Schema, History>>,
     {
         let request = phase.execution_request_for(self.product_runtime()).map_err(|_| {
-            Denial::Read(super::authorization_denial(
+            Denial::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::authorization_denial(
                 crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(
-                        crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::ForeignPhase,
+                    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(
+                        crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind::ForeignPhase,
                     ),
                     "phase-custody",
                 ),

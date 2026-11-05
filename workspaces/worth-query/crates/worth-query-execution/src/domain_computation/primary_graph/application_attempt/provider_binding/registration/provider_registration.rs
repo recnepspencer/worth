@@ -1,9 +1,9 @@
 //! Atomic registration of Query-owned application-attempt records.
 
 use super::WorthQueryApplicationAttemptRegistration;
-use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord;
+use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptAffinity;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
 
 use crate::domain_computation::primary_graph::provider::dispatch_outbox::WorthQueryDispatchOutboxBasis;
@@ -33,7 +33,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
     dispatch_outbox:
-        Option<crate::domain_computation::application_aftermath::WorthQueryPendingDispatchOutbox>,
+        Option<crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryPendingDispatchOutbox>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
     live_delivery_reservation: Option<
@@ -48,7 +48,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
-        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+        &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement],
     source_fact_rebase: Option<crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase>,
     consumed_outputs: std::sync::Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
 }
@@ -119,7 +119,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
     pub(in crate::domain_computation::primary_graph) const fn expected_step_preparation_work(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryExpectedEffectStepPreparationWork{
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::expected_steps::WorthQueryExpectedEffectStepPreparationWork{
         self.effects.expected_step_preparation_work()
     }
 
@@ -166,7 +166,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
     pub(in crate::domain_computation::primary_graph) const fn producer_required_invariants(
         &self,
-    ) -> &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement]
+    ) -> &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement]
     {
         self.producer_required_invariants
     }
@@ -179,7 +179,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
     pub(in crate::domain_computation::primary_graph) const fn dispatch_outbox(
         &self,
-    ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryPendingDispatchOutbox>
+    ) -> Option<&crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryPendingDispatchOutbox>
     {
         self.dispatch_outbox.as_ref()
     }

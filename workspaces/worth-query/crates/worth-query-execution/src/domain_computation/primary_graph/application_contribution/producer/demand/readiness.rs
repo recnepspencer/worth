@@ -195,7 +195,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             crate::domain_computation::primary_graph::conditional_operation::classify_bridge_signal(
                 &execution,
             );
-        if decision != crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision::Eligible {
+        if decision != crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision::Eligible {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::SchedulingRejected,
                 if admitted.is_some() {

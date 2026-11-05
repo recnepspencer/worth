@@ -10,7 +10,7 @@ use std::sync::Arc;
 use worth_relational::facade::mvcc::CompanionBranchCell;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-use super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 use super::derived::PreparedSettlementRegistration;
 
@@ -18,7 +18,7 @@ use super::mark_state::EqualOutputLink;
 use super::mark_state::MarkState;
 use super::settlement;
 use super::source_alignment::BranchMarkRoot;
-use super::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use super::SourceInvalidationOwner;
 
 type Identity = Arc<RecordedSettlementIdentity>;

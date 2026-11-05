@@ -11,6 +11,7 @@ use super::{
     contract_space_exhausted, planned_field_locator, required_kind,
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphLayout,
 };
+use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 
 impl WorthQueryPrimaryGraphLayout {
     pub(in crate::domain_computation) fn principal_binding(
@@ -37,22 +38,7 @@ impl WorthQueryPrimaryGraphLayout {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct WorthQueryPrimaryPrincipalBindingLayout {
-    pub(in crate::domain_computation::primary_graph) mapping_kind: KindId,
-    pub(in crate::domain_computation::primary_graph) identity_locator: AspectFieldLocator,
-    pub(in crate::domain_computation::primary_graph) status_locator: AspectFieldLocator,
-    pub(in crate::domain_computation::primary_graph) relation_kind: KindId,
-    pub(in crate::domain_computation::primary_graph) principal_kind: KindId,
-    pub(in crate::domain_computation::primary_graph) principal_identity_locator: AspectFieldLocator,
-    pub(in crate::domain_computation::primary_graph) index_id: DerivedIndexId,
-}
 
-impl WorthQueryPrimaryPrincipalBindingLayout {
-    pub(in crate::domain_computation) const fn selector_index(&self) -> DerivedIndexId {
-        self.index_id
-    }
-}
 
 pub(super) fn lower_principal_bindings(
     schema: &ErasedApplicationSchemaDeclaration,

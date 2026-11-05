@@ -1,8 +1,5 @@
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum WorthQueryAcceptedOutputCheckpointPosture {
-    Performed,
-    StableReused,
-}
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::CheckpointOutputSlot;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
 
 #[derive(Clone, Debug)]
 pub struct WorthQueryAcceptedOutputCheckpointIdentity {
@@ -12,12 +9,12 @@ pub struct WorthQueryAcceptedOutputCheckpointIdentity {
         WorthQueryAcceptedOutputCheckpointPosture,
     pub(in crate::domain_computation::primary_graph) source: [u8; 32],
     pub(in crate::domain_computation::primary_graph) scope:
-        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     pub(in crate::domain_computation::primary_graph) source_partition: [u8; 32],
     pub(in crate::domain_computation::primary_graph) producer_dependency: Option<[u8; 32]>,
     pub(in crate::domain_computation::primary_graph) idempotency_key: [u8; 32],
     pub(in crate::domain_computation::primary_graph) roles:
-        std::sync::Arc<Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>>,
+        std::sync::Arc<Vec<crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole>>,
     /// Authenticated encoding of the complete rebased producer fact set.
     /// Its source wire version travels with recovered bytes across later captures.
     pub(in crate::domain_computation::primary_graph) producer_facts: Option<std::sync::Arc<Vec<u8>>>,
@@ -55,27 +52,7 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
     }
 }
 
-/// Borrowed checkpoint slot identity; it carries no publication authority.
-#[derive(Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct CheckpointOutputSlot<'a> {
-    producer: &'a str,
-    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    partition: [u8; 32],
-}
 
-impl<'a> CheckpointOutputSlot<'a> {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        producer: &'a str,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        partition: [u8; 32],
-    ) -> Self {
-        Self {
-            producer,
-            scope,
-            partition,
-        }
-    }
-}
 
 // Resource custody is not semantic checkpoint identity.
 impl PartialEq for WorthQueryAcceptedOutputCheckpointIdentity {

@@ -30,7 +30,7 @@ pub(super) use recovered_outputs::WorthQueryRecoveredOutputs;
 pub(super) use registry::AcceptedCheckpointFactSource;
 pub(super) use registry::BoundOutputSource;
 pub(super) use registry::CheckpointFinishStop;
-pub(super) use registry::CheckpointOutputSlot;
+
 pub(super) use registry::DemandAdmissionKind;
 pub(in crate::domain_computation::primary_graph) use registry::HeldRequiredSuccessor;
 pub(super) use registry::OutputRefreshPredecessor;
@@ -41,7 +41,7 @@ pub(in crate::domain_computation::primary_graph) use registry::PreparedPrerequis
 pub(super) use registry::PreparedReadyBacking;
 pub(super) use registry::PreparedSelectedCheckpointFinish;
 pub(super) use registry::ReadyCompletion;
-pub(in crate::domain_computation::primary_graph) use registry::ReplacedRequiredWorkHint;
+
 pub(in crate::domain_computation::primary_graph) use registry::RequestedOutputReadClaims;
 pub(in crate::domain_computation) use registry::RequiredOutputDemandContext;
 pub(in crate::domain_computation) use registry::RequiredOutputExecution;
@@ -56,7 +56,7 @@ pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredW
 pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredWorkKind;
 pub(super) use registry::WorthQueryAcceptedOutputAuthority;
 pub(super) use registry::WorthQueryAcceptedOutputCheckpointIdentity;
-pub(super) use registry::WorthQueryAcceptedOutputCheckpointPosture;
+
 pub(super) use registry::WorthQueryCompletedOutputDemand;
 pub(super) use registry::WorthQueryOutputCheckpoint;
 pub(super) use registry::WorthQueryOutputClaimIdentity;

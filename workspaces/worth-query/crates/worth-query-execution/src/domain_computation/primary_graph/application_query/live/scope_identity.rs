@@ -3,13 +3,7 @@ use worth_query_declaration::facade::application_query::ApplicationQueryObservab
 use worth_relational::facade::runtime::ProjectionAspectScope;
 use worth_relational::facade::storage::RecordLifecycleState;
 
-use super::super::{
-    read_execution::{
-        read_execution_denial, WorthQueryApplicationReadExecutionDenial,
-        WorthQueryApplicationReadExecutionDenialKind,
-    },
-    WorthQueryAdmittedApplicationQueryPlan,
-};
+use {super::super::read_execution::read_execution_denial, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind, super::super::WorthQueryAdmittedApplicationQueryPlan};
 
 pub(super) fn read_scope_identity<
     Schema,

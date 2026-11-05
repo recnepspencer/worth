@@ -1,10 +1,7 @@
 //! Execution-only native body write into the existing candidate owner.
 mod reference_input;
-use super::OutputRoleUse;
-use super::{
-    ApplicationMutationBinding, ApplicationSchema, CandidateWriter,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationEffectEntity,
-};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
+use {super::ApplicationMutationBinding, super::ApplicationSchema, super::CandidateWriter, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity};
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 
@@ -19,8 +16,8 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     }
     pub(in crate::domain_computation::primary_graph) fn body_retire_owned_selection(
         &mut self,
-        owner: &super::WorthQueryInvariantMutationTarget<Schema, ()>,
-        selected: &super::WorthQueryInvariantMutationTarget<Schema, ()>,
+        owner: &crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget<Schema, ()>,
+        selected: &crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget<Schema, ()>,
         rule:&worth_query_declaration::facade::application_schema::ApplicationOperationBodyOwnedSelectionRetirement,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         let owner = self.projected_entity(owner)?;

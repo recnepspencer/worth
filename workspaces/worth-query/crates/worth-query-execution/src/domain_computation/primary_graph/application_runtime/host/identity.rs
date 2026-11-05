@@ -2,9 +2,7 @@
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
 use super::super::WorthQueryPrimaryGraphApplicationRuntime;
-use crate::domain_computation::execution_runtime::{
-    WorthQueryApplicationIdentityHost, WorthQueryRuntimeAuthorityIdentity,
-};
+use {crate::domain_computation::execution_runtime::WorthQueryApplicationIdentityHost, crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity};
 use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 
@@ -49,7 +47,7 @@ impl<Schema: ApplicationSchema> WorthQueryRuntimeIdentityHost<Schema>
     fn application_runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self
     }
-    fn bridge(&self) -> &crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge{
+    fn bridge(&self) -> &crate::domain_computation::primary_graph::vocabulary::managed_bridge::WorthQueryInstalledApplicationBridge{
         &self.runtime.bridge
     }
     fn granular_invalidation_installation(

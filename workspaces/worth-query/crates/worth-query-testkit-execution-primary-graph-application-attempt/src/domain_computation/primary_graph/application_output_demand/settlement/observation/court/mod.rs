@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::compare_and_c
 use std::sync::Arc;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerObservation;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerSource;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_disclosure::inspection::OriginalSourceInspectionDisclosure;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::receipt_custody::SettlementReceiptCustody;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;

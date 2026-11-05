@@ -85,7 +85,7 @@ impl SelectedRequiredRefreshClaim {
 
     pub(in crate::domain_computation::primary_graph) fn commit_authority(
         &self,
-    ) -> &crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority{
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority{
         self.selected
             .completion
             .producer_mode()

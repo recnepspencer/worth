@@ -22,7 +22,7 @@ impl<Query> WorthQueryObservedSource<Query> {
                 })
         {
             return Err(super::WorthQuerySourceExpectationDenial::new(
-                super::WorthQuerySourceExpectationDenialKind::IncompleteFootprint,
+                crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind::IncompleteFootprint,
                 self.query_identifier.as_str(),
             ));
         }
@@ -46,7 +46,7 @@ impl<Query> WorthQueryObservedSource<Query> {
             != self.invocation_managed_source.is_some()
         {
             return Err(super::WorthQuerySourceExpectationDenial::new(
-                super::WorthQuerySourceExpectationDenialKind::IncompleteFootprint,
+                crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind::IncompleteFootprint,
                 self.query_identifier.as_str(),
             ));
         }

@@ -37,6 +37,6 @@ fn cold_reconstruction_exhaustion_remains_a_typed_index_budget_denial() {
     };
     assert_eq!(
             denial.kind(),
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded,
         );
 }

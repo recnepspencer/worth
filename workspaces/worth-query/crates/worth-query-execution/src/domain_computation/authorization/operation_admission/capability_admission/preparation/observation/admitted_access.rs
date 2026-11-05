@@ -157,7 +157,7 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     runtime_authority:
-        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: ApplicationSchemaBindingIdentity,
     capability: Arc<str>,
     capability_type: Arc<str>,
@@ -178,7 +178,7 @@ where
     request_scope: WorthQueryRequestScope,
     canonical_work: WorthQueryCanonicalWorkEvidence,
     authorization: WorthQueryRetainedCapabilityAuthorization,
-    operation_admission_identity: super::super::super::super::WorthQueryOperationAdmissionIdentity,
+    operation_admission_identity: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
     graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     _marker: PhantomData<fn() -> (Capability, Operation)>,
 }

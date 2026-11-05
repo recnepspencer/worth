@@ -15,7 +15,7 @@ pub(in crate::domain_computation::primary_graph::invariant_projection) struct Co
         WorthQueryRealizedProjectionScope,
     pub(in crate::domain_computation::primary_graph::invariant_projection) consumed_outputs:
         BTreeMap<
-            Arc<super::super::super::output_lineage::RecordedSettlementIdentity>,
+            Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
             super::super::ConsumedOutputEvidence,
         >,
     pub(in crate::domain_computation::primary_graph::invariant_projection) dependent_source_facts:

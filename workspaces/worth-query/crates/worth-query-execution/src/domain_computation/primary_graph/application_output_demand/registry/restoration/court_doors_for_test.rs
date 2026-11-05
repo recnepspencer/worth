@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 impl WorthQueryRestoredAcceptedOutput {
     #[doc(hidden)]
@@ -12,7 +13,7 @@ impl WorthQueryRestoredAcceptedOutput {
     #[doc(hidden)]
     pub fn source_scope_for_test(
         &self,
-    ) -> &crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding {
+    ) -> &crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding {
         &self.source_scope
     }
 }
@@ -22,7 +23,7 @@ impl WorthQueryOutputDemandRegistry {
     pub fn admit_restored_for_test(
         &self,
         requested_key: WorthQueryOutputDemandKey,
-        source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        source_scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         admission_kind: super::super::DemandAdmissionKind,
         restored: super::super::WorthQueryRestoredAcceptedOutput,
@@ -59,8 +60,8 @@ impl WorthQueryRestoredAcceptedOutput {
             crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
         >,
         observation: worth_runtime_world::facade::ProductBranchObservation,
-        source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        source_identity: crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
+        source_scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
+        source_identity: crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity,
         observed_source_facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         native_output_witness: Option<
         std::sync::Arc<std::sync::OnceLock<crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness>>,

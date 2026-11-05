@@ -22,7 +22,7 @@ impl ChargedBytes for AttemptDenialCause {
             >() as u64,
             AttemptDenialCause::OutputObservation(cause) => (std::mem::size_of_val(cause.as_ref()) as u64).saturating_add(
                 match cause.as_ref() {
-                    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::ManagedIndex(cause) => cause.additional_charged_bytes(),
+                    crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop::ManagedIndex(cause) => cause.additional_charged_bytes(),
                     _ => 0,
                 }),
             AttemptDenialCause::None => 0,

@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::marker::PhantomData;
 
 use worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane;
@@ -15,19 +15,7 @@ pub use denial::{
     WorthQueryApplicationContinuationDenial, WorthQueryApplicationContinuationDenialKind,
 };
 
-use super::{
-    authorized_read::{
-        execute_authorized_read, refresh_governed_authorization,
-        WorthQueryAuthorizedApplicationReadDenial,
-    },
-    execution_validation::{
-        validate_execution_lifetimes, validate_execution_plan, validate_live_basis,
-        WorthQueryApplicationQueryExecutionValidationDenial,
-    },
-    read_execution::{read_continuation_page, WorthQueryApplicationReadExecutionDenialKind},
-    WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationProjection,
-    WorthQueryApplicationQueryAccessReceipt,
-};
+use {super::authorized_read::execute_authorized_read, super::authorized_read::refresh_governed_authorization, crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial, super::execution_validation::validate_execution_lifetimes, super::execution_validation::validate_execution_plan, super::execution_validation::validate_live_basis, super::execution_validation::WorthQueryApplicationQueryExecutionValidationDenial, super::read_execution::read_continuation_page, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind, super::WorthQueryAdmittedApplicationQueryPlan, super::WorthQueryApplicationProjection, super::WorthQueryApplicationQueryAccessReceipt};
 use outcome::finalize_continuation_page;
 
 /// One page of a paged query read: the rows, the continuation for the next
@@ -84,7 +72,7 @@ where
     {
         let request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(WorthQueryApplicationContinuationDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
+            Err(_) => return Err(WorthQueryApplicationContinuationDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
         let execution = &request;
 

@@ -8,6 +8,8 @@ use crate::domain_computation::primary_graph::{
     invariant_projection::{ExpectedFactKeys, ObservedComputationInputs},
     value_decode::ValueDecodeState,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 type ComputationReads = (ObservedComputationInputs, CompletedComputationRetention);
 
@@ -58,7 +60,7 @@ pub(super) fn check_completion_live(
     execution.consult().map_err(|cause| {
         denial(
             WorthQueryApplicationAttemptDenialKind::ValueDecode(
-                super::super::super::value_decode::WorthQueryValueDecodeDenial::Scope(cause),
+                crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial::Scope(cause),
             ),
             admission.operation(),
         )

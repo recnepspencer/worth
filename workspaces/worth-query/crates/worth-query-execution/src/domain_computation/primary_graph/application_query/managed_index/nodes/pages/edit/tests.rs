@@ -1,8 +1,6 @@
 //! Physical edit custody only; no Source or audience authority is constructed.
 use super::*;
-use crate::domain_computation::primary_graph::application_query::managed_index::{
-    invocation::controlled, WorthQueryManagedIndexWorkDenial as Denial,
-};
+use {crate::domain_computation::primary_graph::application_query::managed_index::invocation::controlled, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial};
 use worth_execution::{
     CancellationSource, ExecutionWorkCeiling, SerialMemoryBudget, SerialRequest,
 };

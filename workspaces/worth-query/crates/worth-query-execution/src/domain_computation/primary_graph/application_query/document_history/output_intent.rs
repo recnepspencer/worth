@@ -1,14 +1,7 @@
 //! Complete source intent captured from a real plan, without its grant or session.
 use super::output_read::{control_denial, HistoryOutputControlPlan};
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_query::execution_validation::{
-        validate_execution_lifetimes, validate_execution_plan,
-    },
-    product_operation::document_history::HistoryModelIdentity,
-    WorthQueryHistoryNavigationDenial, WorthQueryHistoryOutputReadDenial,
-    WorthQueryObservedScopeSelector,
-};
+use {crate::domain_computation::primary_graph::application_query::execution_validation::validate_execution_lifetimes, crate::domain_computation::primary_graph::application_query::execution_validation::validate_execution_plan, crate::domain_computation::primary_graph::product_operation::document_history::HistoryModelIdentity, crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial, crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial, crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector};
 use std::sync::Arc;
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
@@ -228,11 +221,8 @@ pub trait OutputIntentOps<S: ApplicationSchema>:
             .scope
             .retain_scope_selector_funded(&execution)
             .map_err(|cause| {
-                use crate::domain_computation::primary_graph::{
-                    WorthQueryApplicationQueryAdmissionDenial as Denial,
-                    WorthQueryApplicationQueryAdmissionDenialKind as Kind,
-                };
-                use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Stop;
+                use {crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind as Kind};
+                use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Stop;
                 ReadDenial::Admission(Denial::new(
                     match cause {
                         Ok(cause) => Kind::ExecutionRequest(cause),

@@ -16,7 +16,7 @@ use worth_foundational::{ExecutionReport, ExecutionRequestPolicy};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
-use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
+use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 use {
     crate::domain_computation::request_execution::execution_stop::interruption_stop,
     crate::domain_computation::request_execution::execution_stop::lease_denial,

@@ -7,11 +7,8 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::transactions::EntityReference;
 
-use super::{denial, WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationEntityIdentity, WorthQueryInvariantMutationTarget,
-};
+use {super::denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity, super::WorthQueryApplicationEffectProgramBuilder};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>

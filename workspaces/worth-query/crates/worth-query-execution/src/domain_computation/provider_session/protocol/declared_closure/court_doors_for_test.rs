@@ -1,16 +1,8 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations;
+use crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclaredClosure;
 
-impl WorthQueryProviderPlanDeclarations {
-    #[doc(hidden)]
-    pub fn test_direct_for_test(
-        graph_role: &str,
-        read_access: Option<WorthQueryOperationGraphAccess>,
-        touched: bool,
-    ) -> Self {
-        Self::test_direct(graph_role, read_access, touched)
-    }
-}
 
 impl WorthQueryProviderPlanDeclarations {
     #[doc(hidden)]
@@ -70,12 +62,6 @@ impl WorthQueryProviderPlanDeclarations {
     }
 }
 
-impl WorthQueryProviderPlanDeclaredClosure {
-    #[doc(hidden)]
-    pub fn effect_for_test(&self) -> &Vec<String> {
-        &self.effect
-    }
-}
 
 impl WorthQueryProviderPlanDeclaredClosure {
     #[doc(hidden)]

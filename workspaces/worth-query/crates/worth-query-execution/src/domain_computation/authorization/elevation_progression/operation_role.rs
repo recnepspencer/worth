@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationOperation,
@@ -7,9 +7,7 @@ use worth_query_installation::facade::{
 use super::super::capability_registry::{
     WorthQueryElevationLifecycleOperationRole, WorthQueryInstalledCapabilityPlan,
 };
-use super::super::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 pub(super) fn installed_lifecycle_owner<'runtime, Schema, Operation, Input>(
     runtime: &'runtime dyn crate::domain_computation::authorization::host::AuthorizationHost<

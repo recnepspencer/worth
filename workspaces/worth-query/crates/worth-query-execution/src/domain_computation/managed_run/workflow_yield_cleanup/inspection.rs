@@ -1,16 +1,12 @@
 use std::sync::Arc;
 
-use super::super::WorthQueryManagedRelationalObservationReleaseReceipt;
+use crate::domain_computation::vocabulary::managed_run::relational_observation::WorthQueryManagedRelationalObservationReleaseReceipt;
 use worth_query_admission::facade::resource_admission::WorthQueryExecutionCapacityReservationScope;
 use worth_runtime_bridge::facade::{
     BridgeExecutionBasisFinalizationReceipt, BridgeExecutionBasisSignalTerminal,
 };
 
-use super::super::{
-    workflow::WorthQueryWorkflowAffinityCleanupReceipt, WorthQueryManagedProviderWorkEvidence,
-    WorthQueryManagedRunCleanupDisposition, WorthQueryManagedRunCounters,
-    WorthQueryYieldCleanupCheckpointInspection, WorthQueryYieldTransitionCounters,
-};
+use {super::super::workflow::WorthQueryWorkflowAffinityCleanupReceipt, crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupDisposition, crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters, super::super::WorthQueryYieldCleanupCheckpointInspection, super::super::WorthQueryYieldTransitionCounters};
 use crate::domain_computation::{
     artifact_owner::WorthQueryWorkflowArtifactRegistryEvidence,
     WorthQueryProviderCheckpointReleaseEvidence,

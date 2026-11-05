@@ -1,11 +1,5 @@
 //! Capture declared disclosure parameters inside the original admitted handler boundary.
-use crate::domain_computation::{
-    application_aftermath::OriginalCorrectionDisclosure,
-    primary_graph::{
-        WorthQueryApplicationAttemptDenial as Denial,
-        WorthQueryApplicationAttemptDenialKind as Kind,
-    },
-};
+use {crate::domain_computation::vocabulary::application_aftermath::original::OriginalCorrectionDisclosure, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
 use std::{
     any::{Any, TypeId},
     sync::Arc,

@@ -1,13 +1,12 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
 };
 
 use super::*;
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
 
 impl WorthQueryWorkflowAdvanceAdapter {
     /// An actor permission denial can identify the blocked posture, but never
@@ -69,10 +68,10 @@ mod tests {
         }
         for kind in [
             Kind::Stopped(Err(
-                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+                crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
             )),
             Kind::Stopped(Err(
-                crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+                crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
             )),
             Kind::Refused(AuthorizationRefusal::ExpiredAuthentication),
             Kind::Refused(AuthorizationRefusal::CapabilityExpired),

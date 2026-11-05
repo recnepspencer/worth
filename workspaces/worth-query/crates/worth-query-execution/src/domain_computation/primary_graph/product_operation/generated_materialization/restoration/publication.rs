@@ -51,7 +51,7 @@ where
                         completion,
                     ),
                     WorthQueryGeneratedOutputRestorationFailureCause::advancement(
-                        crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                        crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
                     ),
                 ))
             },
@@ -119,7 +119,7 @@ Err(PublicationDenial::Stopped(stop)) => {
                     producer,
                     completion,
                 ),
-                WorthQueryGeneratedOutputRestorationFailureCause::advancement(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                WorthQueryGeneratedOutputRestorationFailureCause::advancement(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
             )),
 Err(PublicationDenial::Stopped(stop)) => Err(restoration_failure(
                 suspended_from_completion(

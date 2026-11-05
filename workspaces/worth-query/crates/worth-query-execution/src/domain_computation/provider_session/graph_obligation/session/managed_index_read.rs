@@ -17,6 +17,8 @@ use worth_query_admission::facade::{
 };
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 
 #[derive(Debug)]
 pub(in crate::domain_computation) enum WorthQueryManagedIndexSessionDenial {
@@ -151,7 +153,7 @@ impl<'a, 'request, 'authority> WorthQueryManagedIndexReadSession<'a, 'request, '
             return Err(Denial::Interrupted(stop));
         }
         let read = self.parent.query_read_basis().map_err(Denial::Parent)?;
-        let crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(selected) = read.identity.selection() else {
+        let crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity::Product(selected) = read.identity.selection() else {
             return Err(Denial::AuthorityMismatch);
         };
         self.product

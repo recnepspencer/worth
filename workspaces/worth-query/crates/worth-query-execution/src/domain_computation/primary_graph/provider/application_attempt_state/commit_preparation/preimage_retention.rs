@@ -2,11 +2,9 @@
 
 pub(crate) mod selection;
 
-pub(crate) use selection::WorthQueryRetainedPreImageSeal;
 
-use crate::domain_computation::application_aftermath::{
-    WorthQueryPreImageRetentionDenial, WorthQueryRetainedPreImage,
-};
+
+use {crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial, crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage};
 use crate::domain_computation::{
     WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
 };

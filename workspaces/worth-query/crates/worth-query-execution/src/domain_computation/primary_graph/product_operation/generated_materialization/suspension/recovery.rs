@@ -225,7 +225,7 @@ trait SuspensionRecoveryOwnOps<Schema: ApplicationSchema>:
             Err(PublicationDenial::ClockMismatch) => {
                 return Err(failure(
                     WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
-                        crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                        crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
                     ),
                     RecoveryState::World { recovery, retry },
                 ))
@@ -270,7 +270,7 @@ Err(PublicationDenial::Stopped(stop)) => {
             }
             Err(PublicationDenial::ClockMismatch) => Err(failure(
                 WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
-                    crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                    crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
                 ),
                 RecoveryState::World { recovery, retry },
             )),

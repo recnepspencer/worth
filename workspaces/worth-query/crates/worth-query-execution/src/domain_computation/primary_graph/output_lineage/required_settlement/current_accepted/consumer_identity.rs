@@ -1,6 +1,6 @@
 //! The exact accepted consumer whose registry custody a refresh retains.
 use super::AcceptedCurrentCandidate;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 impl AcceptedCurrentCandidate {
     pub(in crate::domain_computation::primary_graph) fn consumes_outputs(&self) -> bool {

@@ -1,8 +1,5 @@
 use super::PreparedPrerequisiteClaims;
-use crate::domain_computation::primary_graph::{
-    application_attempt::CompletedHandlerFactBoundary,
-    output_lineage::{CompletedDecisionReuseProof, PreparedInputReuseKey},
-};
+use {crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary, crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof, crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey};
 
 impl PreparedPrerequisiteClaims {
     pub(in crate::domain_computation::primary_graph) fn native_publication_family(

@@ -4,10 +4,7 @@ use super::super::super::{
     target::InspectionTargetDenial as Target,
 };
 use super::*;
-use crate::domain_computation::primary_graph::{
-    admitted_capture::RetainedStorageDenial as Storage,
-    application_query::ProjectionComparisonDenial as Comparison,
-};
+use {crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial as Storage, crate::domain_computation::primary_graph::application_query::ProjectionComparisonDenial as Comparison};
 use worth_runtime_bridge::facade::BridgeQueryObservationReportingStop as Bridge;
 use InspectionAdmissionDenial as A;
 fn captured<E>(cause: E) -> CaptureStop<E> {

@@ -8,6 +8,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyCreatedField as Created, ApplicationOperationBodyProgram,
     ApplicationOperationBodyScopeField as Scope,
 };
+use crate::domain_computation::primary_graph::vocabulary::operation_body::operation_body_value::InstalledBodyValue;
 pub(in crate::domain_computation::primary_graph::operation_body) fn install<
     S: worth_query_installation::facade::ApplicationSchema,
 >(

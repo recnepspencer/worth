@@ -7,8 +7,8 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use super::InputCutoffVerificationStop;
 use super::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::ConsumedOutputCurrentness;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 /// Scheduling proof only: the cutoff must still verify handler facts and
 /// native consumed evidence before it may certify input reuse.

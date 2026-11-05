@@ -7,18 +7,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
 };
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::definition::reconstruct_compiled_definition,
-    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
-    crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationPosture,
-    crate::domain_computation::primary_graph::application_attempt::PublishedWorkflowDefinitionRef,
-    crate::domain_computation::primary_graph::application_attempt::PublishedWorkflowInstanceRef,
-    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact,
-    crate::domain_computation::primary_graph::application_attempt::WorthQueryCompleteApplicationReadSet,
-    crate::domain_computation::primary_graph::application_attempt::WorthQueryProjectedApplicationMutation,
-    crate::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::reconstruct_compiled_definition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationPosture, crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::application_attempt::WorthQueryCompleteApplicationReadSet, crate::domain_computation::primary_graph::application_attempt::WorthQueryProjectedApplicationMutation, crate::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport};
 mod original;
 
 pub(in crate::domain_computation::primary_graph::application_attempt::workflow_instance_program::succession)
@@ -77,7 +66,7 @@ impl<
             WorkflowSuccessionTarget::Original(original) => {
                 if original.subject_entity_id() != self.admission.scope_entity_id() {
                     return Err(WorthQueryApplicationAttemptDenial::new(
-                        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+                        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
                         "original workflow intent belongs to another admitted subject",
                     ));
                 }

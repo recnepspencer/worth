@@ -38,9 +38,9 @@ impl<
 {
 }
 fn map_registration_denial(
-    denial: crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistrationDenial,
+    denial: crate::domain_computation::primary_graph::vocabulary::application_query::basis_registry::WorthQueryApplicationBasisRegistrationDenial,
 ) -> WorthQueryProductBranchAdmissionDenial {
-    use crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistrationDenial as Registration;
+    use crate::domain_computation::primary_graph::vocabulary::application_query::basis_registry::WorthQueryApplicationBasisRegistrationDenial as Registration;
     use worth_relational::facade::branch::RelationalBranchBasisDenial as Basis;
     use worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial as Snapshot;
     match denial {

@@ -6,10 +6,7 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationHistoryQuery;
 
-use super::{
-    HistoryMetadataAdmission, SubjectPlan, SubjectScope, WorthQueryApplicationHistoryCaptureLimits,
-    WorthQueryApplicationHistoryDenial as Denial,
-};
+use {super::HistoryMetadataAdmission, super::SubjectPlan, super::SubjectScope, super::WorthQueryApplicationHistoryCaptureLimits, crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial};
 use crate::domain_computation::{
     authorization::WorthQueryAdmittedApplicationCapabilityAccess,
     primary_graph::application_query::{

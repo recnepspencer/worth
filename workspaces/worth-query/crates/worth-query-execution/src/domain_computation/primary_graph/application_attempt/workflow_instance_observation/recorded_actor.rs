@@ -1,6 +1,8 @@
 //! Original immutable occurrence membership, independent of command eligibility.
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn original_parent(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

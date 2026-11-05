@@ -2,10 +2,7 @@
 use super::validation::denial;
 use super::*;
 use crate::domain_computation::authorization::admission::requirement_observation::RequirementObservationParentOps;
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryOperationAuthorizationRefusalKind,
-};
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind};
 use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext;
 use worth_query_declaration::facade::{
     application_query::{
@@ -23,7 +20,7 @@ pub(in crate::domain_computation) trait ResourceObservationScopedOps<Schema: App
     fn observe_resource_authorization<Binding>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session_identity: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         relational: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: worth_relational::facade::snapshots::SnapshotHandle,
         resource: &WorthQueryInstalledApplicationResource<Schema, Binding>,

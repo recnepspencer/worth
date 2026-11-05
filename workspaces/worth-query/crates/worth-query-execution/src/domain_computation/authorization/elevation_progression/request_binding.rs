@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
@@ -11,7 +11,7 @@ use crate::domain_computation::authorization::WorthQueryRetainedCapabilitySuppor
 #[derive(Debug)]
 pub(in crate::domain_computation) struct WorthQueryElevationRequestBinding {
     runtime_authority:
-        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     branch: worth_relational::facade::history::BranchId,
     capability_identity: [u8; 32],
     capability_authority_identity: Arc<str>,
@@ -111,7 +111,7 @@ fn inconsistent_support(
     subject: &str,
 ) -> crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial {
     crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::InconsistentDecision),
+        crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::InconsistentDecision),
         subject,
     )
 }
@@ -137,7 +137,7 @@ impl WorthQueryObservedElevationSupport {
 impl WorthQueryElevationRequestBinding {
     pub(in crate::domain_computation) const fn runtime_authority(
         &self,
-    ) -> &crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+    ) -> &crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
         &self.runtime_authority
     }
     pub(in crate::domain_computation) const fn branch(

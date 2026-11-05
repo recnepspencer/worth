@@ -1,17 +1,7 @@
 //! One existing Native Source service owns point-routed World/scope roots.
 mod registration;
 use super::PredicateWorld;
-use crate::domain_computation::primary_graph::{
-    application_query::{
-        managed_index::{
-            predicate::{PredicateFactory, PredicateRoot, RetainedPredicateProbe, WatchSlot},
-            SourceImageView, WorthQueryManagedIndexSourceChange,
-            WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial as Denial,
-        },
-        one_shot::outcome::material::MaterialCompletion,
-    },
-    source_facts::SourceFactsAllocation,
-};
+use {crate::domain_computation::primary_graph::application_query::managed_index::predicate::PredicateFactory, crate::domain_computation::primary_graph::application_query::managed_index::predicate::PredicateRoot, crate::domain_computation::primary_graph::application_query::managed_index::predicate::RetainedPredicateProbe, crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot, crate::domain_computation::primary_graph::application_query::managed_index::SourceImageView, crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexSourceChange, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial, crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation};
 pub(in crate::domain_computation::primary_graph::application_query) use registration::{
     PredicateRegistration, PredicateRootReservation,
 };
@@ -194,7 +184,7 @@ impl SourcePredicateAxis {
         before: SourceImageView<'_>,
         after: SourceImageView<'_>,
         changes: &[WorthQueryManagedIndexSourceChange],
-        receive: &mut dyn FnMut(WatchSlot, &crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexControl<'_>) -> Result<(), Denial>,
+        receive: &mut dyn FnMut(WatchSlot, &crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl<'_>) -> Result<(), Denial>,
     ) -> Result<(), Denial> {
         if let Some(root) = self.find_root(execution, world, scope)? {
             root.route(execution, before, after, changes, receive)?;
@@ -224,7 +214,7 @@ impl SourcePredicateAxis {
         world: &PredicateWorld,
         scope: EntityId,
         budget: &worth_relational::facade::runtime::CustomInvariantReadBudget<'_>,
-        receive: &mut dyn FnMut(WatchSlot, &crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexControl<'_>) -> Result<(), Denial>,
+        receive: &mut dyn FnMut(WatchSlot, &crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl<'_>) -> Result<(), Denial>,
     ) -> Result<(), Denial> {
         if let Some(root) = self.find_root(execution, world, scope)? {
             root.invalidate_scope(execution, budget, receive)?;

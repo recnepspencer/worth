@@ -2,9 +2,7 @@
 use super::{
     ApplicationMutationBinding, ApplicationSchema, DecisionReader, HandlerExecutionDenial,
 };
-use crate::domain_computation::primary_graph::operation_body::{
-    CreationDisposition, PreparedBodyInputs, PreparedBodySelections,
-};
+use {crate::domain_computation::primary_graph::vocabulary::operation_body::reuse::CreationDisposition, crate::domain_computation::primary_graph::vocabulary::operation_body::input::PreparedBodyInputs, crate::domain_computation::primary_graph::vocabulary::operation_body::selection::PreparedBodySelections};
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyCreatedField as Field, ApplicationOperationBodyProgram,
 };

@@ -8,8 +8,8 @@ use std::sync::Mutex;
 use std::sync::OnceLock;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::computation::PreparedComputationCustody;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::PreparedOutputLineageSlot;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::sealed_run_for_lineage_test;
 

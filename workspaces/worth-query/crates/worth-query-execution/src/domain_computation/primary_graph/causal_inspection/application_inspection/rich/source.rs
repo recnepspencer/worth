@@ -1,14 +1,7 @@
 //! Selected canonical source effects retain their actual original envelope owners.
 use super::super::{admission::InspectionAdmissionDenial, source_original::SourceOriginal};
 use super::*;
-use crate::domain_computation::{
-    authorization::application_disclosure::DiagnosticComparisonAdmission,
-    primary_graph::{
-        admitted_capture::{checkpoint, run_retained_stage, CaptureStop},
-        application_attempt::MaterializedCommittedField,
-        WorthQueryPrimaryGraphLayout,
-    },
-};
+use {crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonAdmission, crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::primary_graph::application_attempt::MaterializedCommittedField, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout};
 use std::sync::Arc;
 use worth_execution::{
     ExecutionArray, ExecutionMemoryReservation, ExecutionRequest, ExecutionRequestArrayBuilder,

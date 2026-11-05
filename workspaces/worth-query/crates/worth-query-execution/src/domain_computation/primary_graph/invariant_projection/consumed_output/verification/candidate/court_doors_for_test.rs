@@ -1,5 +1,9 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 impl ConsumedOutputEvidence {
     #[doc(hidden)]

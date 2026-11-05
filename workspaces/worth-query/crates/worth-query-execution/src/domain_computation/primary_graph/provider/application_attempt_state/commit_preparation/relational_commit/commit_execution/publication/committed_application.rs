@@ -5,7 +5,7 @@ use worth_relational::facade::history::{BranchId, RelationalCommitReceipt};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPrimaryGraphCommittedApplication {
     application_outcome_identity: Option<
-        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
     >,
     runtime_instance_id: u64,
     changed_record_count: usize,
@@ -13,7 +13,7 @@ pub struct WorthQueryPrimaryGraphCommittedApplication {
     basis_descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
     commit_evidence: super::super::super::WorthQueryPrimaryGraphCommitEvidence,
     committed_product_publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
-    exact_output_settlement: Option<std::sync::Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>>,
+    exact_output_settlement: Option<std::sync::Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>>,
     /// The co-committed aftermath relation, sealed at publication so replay
     /// answers it after the commit's history retires.
     aftermath_causality: Option<crate::domain_computation::application_aftermath::WorthQueryCommittedAftermathCausality>,
@@ -91,7 +91,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
     pub(in crate::domain_computation::primary_graph) fn retain_exact_output_settlement(
         &mut self,
         identity: std::sync::Arc<
-            crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+            crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity,
         >,
     ) {
         assert!(self.exact_output_settlement.replace(identity).is_none());
@@ -101,7 +101,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
         &self,
     ) -> Option<
         &std::sync::Arc<
-            crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+            crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity,
         >,
     > {
         self.exact_output_settlement.as_ref()
@@ -127,7 +127,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
     pub(in crate::domain_computation::primary_graph) const fn application_outcome_identity(
         &self,
     ) -> Option<
-        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
     >{
         self.application_outcome_identity
     }

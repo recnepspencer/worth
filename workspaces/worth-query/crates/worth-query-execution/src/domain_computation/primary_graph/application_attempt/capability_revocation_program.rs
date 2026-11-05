@@ -7,11 +7,7 @@ use worth_query_installation::facade::{
 };
 
 use super::effect_program::WorthQueryApplicationRealizedEffect;
-use super::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationObservedFact,
-    WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
-};
+use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationEffectProgram, super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation};
 use crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity;
 
 /// Exact `Active -> Revoked` effect minted only from Query-owned transition authority.
@@ -54,7 +50,7 @@ impl<Schema, Operation, Input, Scope>
                 read_set: self,
                 effects: vec![effect],
                 conditional_definition: None,
-            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
+            effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::Application,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

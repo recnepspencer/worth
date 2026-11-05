@@ -1,13 +1,10 @@
 use super::WorthQueryAdmittedOperation;
-use crate::domain_computation::primary_graph::{
-    application_attempt::CompletedHandlerFactBoundary, ComputationPrior,
-    RequiredOutputDemandContext, SealedComputationRetention,
-};
+use {crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary, crate::domain_computation::primary_graph::ComputationPrior, crate::domain_computation::primary_graph::RequiredOutputDemandContext, crate::domain_computation::primary_graph::SealedComputationRetention};
 
 impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn record_decision_context_use(
         &mut self,
-        use_mask: crate::domain_computation::primary_graph::DecisionContextUse,
+        use_mask: crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse,
     ) {
         if let Some(context) = &mut self.required_output_demand {
             context.record_decision_context_use(use_mask);

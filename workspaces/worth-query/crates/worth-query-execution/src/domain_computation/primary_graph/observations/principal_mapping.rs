@@ -1,5 +1,7 @@
 //! Request-aware exact-root observation of the principal mapping.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
 
 pub(in crate::domain_computation::primary_graph) fn observe_mapping(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

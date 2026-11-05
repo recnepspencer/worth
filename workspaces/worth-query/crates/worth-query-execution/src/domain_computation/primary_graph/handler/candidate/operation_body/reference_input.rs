@@ -1,7 +1,8 @@
 //! Existing reference replacement emits only the admitted changed endpoints.
 use super::*;
-use crate::domain_computation::primary_graph::operation_body::reference_input::PreparedBodyReferences;
+use crate::domain_computation::primary_graph::vocabulary::operation_body::reference_input::PreparedBodyReferences;
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> CandidateWriter<'_, S, B> {
     pub(in crate::domain_computation::primary_graph) fn body_references<Entity>(
         &mut self,

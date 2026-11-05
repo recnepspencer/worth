@@ -9,7 +9,7 @@ use super::causal_event::{
     ExternalEffectPosture,
 };
 use super::classification::{ExternalEffectClassification, ExternalRailTransportFault};
-use super::correlation::ExternalEffectCorrelationIdentity;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 use super::identity_derivation::provider_commit_identity;
 use super::observation::classify_dispatch_observation;
 use super::transport::{WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport};
@@ -139,7 +139,7 @@ impl WorthQueryExternalEffectDispatch {
     /// different outbox or product publication.
     pub(in crate::domain_computation) fn matches_committed_owner(
         &self,
-        runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         committed: &crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
     ) -> bool {
         let ladder = &self.causal_ladder;

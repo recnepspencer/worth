@@ -1,10 +1,6 @@
 use super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::effect_validation::denial;
-use super::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationEffectProgram, WorthQueryCompleteApplicationReadSet,
-    WorthQueryProjectedApplicationMutation,
-};
+use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationEffectProgram, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation};
 use crate::domain_computation::authorization::{
     WorthQueryDelegationActivationBinding, WorthQueryDelegationActivationEffect,
 };
@@ -51,7 +47,7 @@ impl<Schema, Operation, Input, Scope>
             read_set: self,
             effects,
             conditional_definition: None,
-            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
+            effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::Application,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

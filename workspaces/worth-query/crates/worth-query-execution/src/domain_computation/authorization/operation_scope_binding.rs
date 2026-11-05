@@ -3,37 +3,10 @@
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryDecisionScopeWitness;
+use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
 
-/// Exact identity of one entity (partition, slot, and generation) that an
-/// admitted operation was bound to as its principal or scope.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryOperationScopeEntityBinding {
-    partition_id: u32,
-    local_slot: u64,
-    generation: u32,
-}
 
-impl WorthQueryOperationScopeEntityBinding {
-    pub(crate) fn from_entity(entity: worth_relational::facade::identity::EntityId) -> Self {
-        Self {
-            partition_id: entity.partition_value(),
-            local_slot: entity.local_slot_value(),
-            generation: entity.generation_value(),
-        }
-    }
-
-    pub const fn partition_id(self) -> u32 {
-        self.partition_id
-    }
-
-    pub const fn local_slot(self) -> u64 {
-        self.local_slot
-    }
-
-    pub const fn generation(self) -> u32 {
-        self.generation
-    }
-}
 
 /// The runtime, installed schema binding, operation, principal, and scope that
 /// one operation admission was bound to.
@@ -50,16 +23,6 @@ pub struct WorthQueryOperationScopeBinding {
     scope: WorthQueryOperationScopeEntityBinding,
 }
 
-/// Fixed descriptive affinity used only to compare completed producer
-/// decisions. The admitted operation remains the authority to execute.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryDecisionScopeWitness {
-    runtime_authority: u64,
-    binding_identity: ApplicationSchemaBindingIdentity,
-    operation_authority_identity: [u8; 32],
-    principal: WorthQueryOperationScopeEntityBinding,
-    scope: WorthQueryOperationScopeEntityBinding,
-}
 
 impl WorthQueryOperationScopeBinding {
     pub(in crate::domain_computation) fn decision_reuse_witness(
@@ -76,7 +39,7 @@ impl WorthQueryOperationScopeBinding {
     }
 
     pub(super) fn mint(
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
         operation_authority_identity: &str,
         principal: worth_relational::facade::identity::EntityId,

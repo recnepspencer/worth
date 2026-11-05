@@ -9,13 +9,13 @@ use worth_query_installation::facade::{
 use worth_relational::facade::authorization::RelationalAuthorizationObservationCounters;
 
 use super::access::WorthQueryWorkflowApprovalAuthority;
-use super::{WorthQueryAdmittedApplicationOperation, WorthQueryOperationAdmissionIdentity};
+use {super::WorthQueryAdmittedApplicationOperation, crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity};
 use crate::domain_computation::authorization::{
     WorkflowApprovalRequestEncodingDenial, WorthQueryAdmissionLapse,
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationScopeBinding,
     WorthQueryRetainedAuthorizationDecisionFacts,
 };
-use crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText;
+use crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText;
 use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditions;
 
 impl<Schema, Operation, Input, Scope>
@@ -29,7 +29,7 @@ impl<Schema, Operation, Input, Scope>
     #[inline]
     pub(in crate::domain_computation) const fn runtime_authority(
         &self,
-    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
         self.core.runtime_authority()
     }
 
@@ -247,7 +247,7 @@ impl<Schema, Operation, Input, Scope>
     #[inline]
     pub(in crate::domain_computation) fn bind_source_expectation_kind(
         &mut self,
-        kind: crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind,
+        kind: crate::domain_computation::vocabulary::primary_graph::observed_source::WorthQuerySourceExpectationKind,
     ) {
         self.core.bind_source_expectation_kind(kind)
     }
@@ -255,7 +255,7 @@ impl<Schema, Operation, Input, Scope>
     #[inline]
     pub(in crate::domain_computation) const fn source_expectation_kind(
         &self,
-    ) -> Option<crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind> {
+    ) -> Option<crate::domain_computation::vocabulary::primary_graph::observed_source::WorthQuerySourceExpectationKind> {
         self.core.source_expectation_kind()
     }
 

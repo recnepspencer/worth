@@ -1,6 +1,6 @@
 //! Runtime Bridge observations derived from neutral Relational evidence.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence;
 use worth_runtime_bridge::facade::{
     BridgeAuthorizationClauseObservation, BridgeAuthorizationDependencyCardinality,
@@ -9,7 +9,7 @@ use worth_runtime_bridge::facade::{
 };
 
 use super::installed_policy::WorthQueryInstalledAuthorizationPolicy;
-use super::{WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind};
+use {super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 pub(super) fn lower_bridge_observation(
     installed: &WorthQueryInstalledAuthorizationPolicy,

@@ -1,5 +1,5 @@
 //! One concrete field-bound Native staging handoff for all application formats.
-use super::super::WorthQueryValueDecodeDenial as Stop;
+use crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial as Stop;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{CanonicalDigestId, ContentRefId};
 use worth_query_declaration::facade::application_schema::ApplicationContentBindingRecipe;

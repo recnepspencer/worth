@@ -20,9 +20,7 @@ mod workflow_attempt;
 
 pub use attempt_evidence::WorthQueryExecutionResourceAttemptEvidence;
 pub use decision_read_set::*;
-pub use direct_attempt::{
-    WorthQueryDirectExecutionAttemptReleaseReceipt, WorthQueryDirectExecutionResourceAttempt,
-};
+pub use direct_attempt::WorthQueryDirectExecutionResourceAttempt;
 pub(in crate::domain_computation) use direct_attempt::{
     WorthQueryDirectProviderWorkRebinding, WorthQueryDirectResourceReadmissionPending,
 };
@@ -35,12 +33,7 @@ pub(in crate::domain_computation) use graph_obligation::{
     WorthQueryPreparedProductReadSessionIdentity, WorthQueryProviderSessionBoundMutationRun,
     WorthQueryQuerySourceContext, WorthQuerySessionGraphReadProof,
 };
-pub use graph_obligation::{
-    WorthQueryGraphReadCompletion, WorthQueryGraphReadDependencyEvidence,
-    WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
-    WorthQueryMutationCleanupFailure, WorthQueryMutationCleanupFailureKind,
-    WorthQueryMutationGraphWorkCompletion,
-};
+pub use {graph_obligation::WorthQueryGraphReadCompletion, graph_obligation::WorthQueryGraphReadDependencyEvidence, graph_obligation::WorthQueryMutationCleanupFailure, graph_obligation::WorthQueryMutationCleanupFailureKind, graph_obligation::WorthQueryMutationGraphWorkCompletion};
 pub use graph_provider::*;
 pub use protocol::*;
 pub use provisional_attempt::*;

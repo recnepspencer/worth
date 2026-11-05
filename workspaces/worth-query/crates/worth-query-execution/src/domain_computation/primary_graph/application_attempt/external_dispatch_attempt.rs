@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
 use crate::domain_computation::application_aftermath::external_effect::WorthQueryTerminalEffectRefusal;
-use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord;
+use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord;
 use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 
@@ -33,22 +33,7 @@ impl From<WorthQueryTerminalEffectRefusal> for WorthQueryExternalDispatchAdmissi
     }
 }
 
-/// Opaque, move-only ordinal minted only while the runtime admits an attempt.
-pub(in crate::domain_computation) struct WorthQueryExternalDispatchAttemptOrdinal(u64);
 
-impl WorthQueryExternalDispatchAttemptOrdinal {
-    fn mint(value: u64) -> Self {
-        Self(value)
-    }
-
-    pub(in crate::domain_computation) fn into_value(self) -> u64 {
-        self.0
-    }
-
-    pub(in crate::domain_computation) const fn value_for_test(&self) -> u64 {
-        self.0
-    }
-}
 
 pub(in crate::domain_computation::primary_graph) trait ExternalDispatchAttemptScopedOps<
     Schema: worth_query_installation::facade::ApplicationSchema,
@@ -158,3 +143,4 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: c
 
 pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::ExternalDispatchAttemptDoorsOps;
+use crate::domain_computation::vocabulary::primary_graph::external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;

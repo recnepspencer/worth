@@ -19,7 +19,7 @@ mod workflow_transition;
 
 pub use capability_workflow::WorthQueryCapabilityWorkflowIdempotency;
 use encoding::{append_identity_slot, encode_identity};
-pub(in crate::domain_computation::primary_graph) use recorded_intent::WorthQueryRecordedIntentMatch;
+
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct WorthQueryIdempotencyEntityIdentity {

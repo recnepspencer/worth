@@ -79,7 +79,7 @@ impl<Schema, Operation, Input, Scope>
         Operation,
         Input,
         Scope,
-    >, WorthQueryApplicationSnapshotLease, WorthQueryPreparedApplicationProviderAttempt, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity, Option<LocalWorkflowSettlementPublication>, crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization, WorthQueryApplicationIdempotencyBinding, crate::domain_computation::WorthQueryRunningDirectRun, crate::domain_computation::provider_session::WorthQueryMutationRunBinding, WorthQueryApplicationAttemptBasis, Option<
+    >, WorthQueryApplicationSnapshotLease, WorthQueryPreparedApplicationProviderAttempt, crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity, Option<LocalWorkflowSettlementPublication>, crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization, WorthQueryApplicationIdempotencyBinding, crate::domain_computation::WorthQueryRunningDirectRun, crate::domain_computation::provider_session::WorthQueryMutationRunBinding, WorthQueryApplicationAttemptBasis, Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,){
         (

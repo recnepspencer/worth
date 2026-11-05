@@ -48,8 +48,8 @@ impl<'borrow, 'scope, 'authority> Projector<'borrow, 'scope, 'authority> {
         }
         let occurrences = self.rows.projection_occurrences(&read)?;
         validate_relation_cardinality(relation, occurrences.len()).map_err(|cause| {
-            let cause = crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjectionDenial::new(
-                crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjectionDenialKind::RelationCardinalityMismatch,
+            let cause = crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenial::new(
+                crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind::RelationCardinalityMismatch,
                 cause.into_subject(),
             );
             MaterialDenial::Native(super::super::failure::retain_failure(self.execution, cause))

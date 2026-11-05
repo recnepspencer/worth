@@ -1,9 +1,5 @@
 //! Native bounded inverse traversal retains the exact preimage used to route a source edit.
-use crate::domain_computation::primary_graph::application_attempt::{
-    fact::WorthQueryApplicationObservedRelation as Edge,
-    fact::{observe_adjacency_with_work, AdjacencyObservationDenial},
-    WorthQueryApplicationAdjacencyDirection as Direction,
-};
+use {crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation as Edge, crate::domain_computation::primary_graph::application_attempt::fact::observe_adjacency_with_work, crate::domain_computation::primary_graph::application_attempt::fact::AdjacencyObservationDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction};
 use {
     super::attempt, super::capacity, super::stopped, super::unavailable, super::Batch,
     super::EntityId, super::Fact, super::KindId, super::Lease, super::Outcome,
@@ -51,8 +47,8 @@ pub(super) fn edges(
         AdjacencyObservationDenial::WorkBudgetExceeded => capacity(),
         AdjacencyObservationDenial::Interrupted(event) => attempt(super::super::super::super::WorthQueryApplicationAttemptDenial::new(
             match event.interruption() {
-                worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => super::super::super::super::WorthQueryApplicationAttemptDenialKind::Cancelled,
-                worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => super::super::super::super::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
+                worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::Cancelled,
+                worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
             }, "signing subject path",
         )),
     })?;

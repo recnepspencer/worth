@@ -4,10 +4,7 @@
 //! that depends on any of those, or on a shared resource that frees again,
 //! stays with the caller.
 
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOneShotDenialKind, WorthQueryApplicationProjectionDenialKind,
-    WorthQueryApplicationQueryAdmissionDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind, crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
 
 pub(super) fn admission_is_row(kind: WorthQueryApplicationQueryAdmissionDenialKind) -> bool {
     use WorthQueryApplicationQueryAdmissionDenialKind as Kind;
@@ -112,7 +109,7 @@ fn projection_is_row(kind: WorthQueryApplicationProjectionDenialKind) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial as Decode;
+    use crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial as Decode;
 
     #[test]
     fn decode_request_exhaustion_does_not_poison_the_shared_source_row() {

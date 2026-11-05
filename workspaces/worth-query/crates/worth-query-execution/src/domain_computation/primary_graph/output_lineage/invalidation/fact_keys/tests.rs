@@ -13,7 +13,7 @@ use worth_relational::facade::{
     transactions::RecordRef,
 };
 
-use super::{visit, Fact, FactKeyProjectionStop, FullVerificationReason, Key};
+use {super::visit, super::Fact, super::FactKeyProjectionStop, crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason, super::Key};
 
 fn locator() -> AspectFieldLocator {
     AspectFieldLocator::new(
@@ -175,7 +175,7 @@ fn entity_local_field_and_anchor_postings_do_not_collide_across_unrelated_entiti
         let adjacency = Fact::Adjacency {
             relation_kind: KindId(5),
             anchor: entity,
-            direction: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection::Outgoing,
+            direction: crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Outgoing,
             maximum_work_units: 8,
             relations: Vec::new(),
         };

@@ -10,7 +10,7 @@ impl WorthQueryPrincipalCurrentnessDependency {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<
         bool,
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+        crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
     > {
         Self::remains_current_in(self, execution, runtime, snapshot)
     }

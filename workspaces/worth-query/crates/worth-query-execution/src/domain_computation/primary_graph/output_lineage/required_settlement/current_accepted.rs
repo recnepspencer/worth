@@ -7,8 +7,8 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
-use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
-use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::invariant_projection::SelectedPendingConsumedOutput;
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 
@@ -18,8 +18,8 @@ mod decision_input;
 
 mod recovery;
 
-use super::super::invalidation::FullVerificationReason;
-use super::super::invalidation::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use super::super::invalidation::VerifiedCurrentCleanup;
 use super::AcceptedCurrentCandidate;
 

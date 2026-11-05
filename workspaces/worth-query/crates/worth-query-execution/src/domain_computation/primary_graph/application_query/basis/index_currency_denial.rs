@@ -1,9 +1,7 @@
 use super::admission_denial::admission_denial;
-use crate::domain_computation::primary_graph::application_query::{
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-};
-use crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial;
-use crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial;
+use {crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
+use crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial;
+use crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial;
 
 pub(in crate::domain_computation::primary_graph::application_query) fn map_index_currency_denial(
     denial: WorthQueryPrimaryIndexCurrencyDenial,
@@ -14,10 +12,10 @@ pub(in crate::domain_computation::primary_graph::application_query) fn map_index
             let kind = match stop {
                 Ok(kind) => WorthQueryApplicationQueryAdmissionDenialKind::ExecutionRequest(kind),
                 Err(
-                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+                    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
                 ) => WorthQueryApplicationQueryAdmissionDenialKind::Cancelled,
                 Err(
-                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+                    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
                 ) => WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded,
             };
             admission_denial(kind, "index currency execution stopped")

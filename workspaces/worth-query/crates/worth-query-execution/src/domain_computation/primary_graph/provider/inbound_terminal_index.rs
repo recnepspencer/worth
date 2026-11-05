@@ -21,10 +21,7 @@ use worth_runtime_world::facade::{
 
 use super::inbound_completion::WorthQueryCanonicalCompletionRow;
 use super::inbound_completion::WorthQueryCompletionProvenance;
-use crate::domain_computation::application_aftermath::{
-    ExternalEffectCorrelationIdentity, WorthQueryInboundOccurrenceClaims,
-    WorthQueryInboundTerminalOwnerResult,
-};
+use {crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity, crate::domain_computation::application_aftermath::WorthQueryInboundOccurrenceClaims, crate::domain_computation::application_aftermath::WorthQueryInboundTerminalOwnerResult};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryCanonicalInboundCompletion {
@@ -55,7 +52,7 @@ impl WorthQueryCanonicalInboundCompletion {
     /// use after both the dispatch and completion have been World-performed.
     pub(in crate::domain_computation::primary_graph) fn matches_original_dispatch(
         &self,
-        record: &crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+        record: &crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
         original_relational_commit: &RelationalCommitReceipt,
         original_world_commit: &CompositeCommitIdentity,
         original_incarnation: ProductBranchIncarnation,

@@ -284,10 +284,10 @@ mod tests {
 }
 
 fn comparison_fault(
-    cause: crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault,
+    cause: crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault,
 ) -> super::super::retained_decision_facts::StoreDenial {
     use super::super::retained_decision_facts::StoreDenial;
-    use crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault as Fault;
+    use crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault as Fault;
     match cause {
         Fault::ContentInconsistency => StoreDenial::ContentInconsistency,
         Fault::CapacityOverflow => StoreDenial::Representability,

@@ -1,5 +1,6 @@
 //! Fixed-width routing data; the typed receiver still checks actual owner affinity.
 use super::*;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ManagedIndexRegistrationKey {

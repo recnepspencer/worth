@@ -1,5 +1,6 @@
 //! Exact-slot removal requires no comparisons, Probe loans or new allocations.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot;
 impl<P, R, S: Summary> PredicateTree<P, R, S> {
     pub(in crate::domain_computation::primary_graph::application_query::managed_index::predicate) fn remove(
         &mut self,

@@ -1,0 +1,25 @@
+//! Doors under `domain_computation::primary_graph::vocabulary`.
+#[path = "application_attempt/mod.rs"]
+pub mod application_attempt;
+#[path = "application_contribution/mod.rs"]
+pub mod application_contribution;
+#[path = "application_output_demand/mod.rs"]
+pub mod application_output_demand;
+#[path = "application_query/mod.rs"]
+pub mod application_query;
+#[path = "conditional_operation/mod.rs"]
+pub mod conditional_operation;
+#[path = "index_currency/mod.rs"]
+pub mod index_currency;
+#[path = "invariant_projection/mod.rs"]
+pub mod invariant_projection;
+#[path = "output_binding_identity/mod.rs"]
+pub mod output_binding_identity;
+#[path = "output_family_identity/mod.rs"]
+pub mod output_family_identity;
+#[path = "output_lineage/mod.rs"]
+pub mod output_lineage;
+#[path = "product_operation/mod.rs"]
+pub mod product_operation;
+#[path = "provider/mod.rs"]
+pub mod provider;

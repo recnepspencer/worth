@@ -1,5 +1,5 @@
 use super::*;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 impl WorthQueryWorkflowAdvanceAdapter {
     pub fn requested_instance<Schema, Operation, Input, Scope>(
@@ -19,7 +19,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         required: &super::super::RequiredWorkflowAssessment,
         settlement: &crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement,
         source: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
-        posture: crate::domain_computation::primary_graph::WorthQueryWorkflowAssessmentPosture,
+        posture: crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryWorkflowAssessmentPosture,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<
         Option<WorkflowProgressOutcome>,
@@ -32,7 +32,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     {
         let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "workflow-phase"))),
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "workflow-phase"))),
         };
         let execution = &phase_request;
 
@@ -59,7 +59,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        required: &super::super::RequiredWorkflowCondition,
+        required: &crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_transition_program_publication::RequiredWorkflowCondition,
         sources: &crate::domain_computation::primary_graph::WorthQueryWorkflowConditionSources<
             Schema,
         >,
@@ -75,7 +75,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     {
         let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "workflow-phase"))),
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "workflow-phase"))),
         };
         let execution = &phase_request;
 
@@ -106,7 +106,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     {
         let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "workflow-phase"))),
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "workflow-phase"))),
         };
         let execution = &phase_request;
 

@@ -1,10 +1,6 @@
 use worth_relational::facade::identity::EntityId;
 
-use super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationStaleAttempt,
-    WorthQueryRequestedElevation,
-};
+use {super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitOutcome, super::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt, super::WorthQueryRequestedElevation};
 use crate::domain_computation::authorization::{
     WorthQueryAuthorizationDecisionFact, WorthQueryElevationApprovalBinding,
     WorthQueryElevationRequestBinding, WorthQueryRetainedCapabilityRequest,
@@ -147,7 +143,7 @@ impl WorthQueryApprovedElevation {
 
     pub(in crate::domain_computation) fn belongs_to_lifecycle(
         &self,
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         branch: &worth_relational::facade::history::BranchId,
         capability_identity: [u8; 32],
         capability_authority_identity: &str,
@@ -192,7 +188,7 @@ impl WorthQueryApprovedElevation {
     #[allow(clippy::too_many_arguments)]
     pub(in crate::domain_computation) fn admits_active_use(
         &self,
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         branch: &worth_relational::facade::history::BranchId,
         capability_identity: [u8; 32],
         capability_authority_identity: &str,

@@ -1,6 +1,7 @@
 //! Consuming projected completion accepts only this reader's issued Source values.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::ManagedSourceReadKey;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::managed_source_read::ManagedSourceReadKey;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationReadAttempt<
         '_,
@@ -18,7 +19,7 @@ impl<Schema, Operation, Input, Scope>
         read: &crate::domain_computation::primary_graph::application_attempt::SourcePublicationRead,
     ) -> Result<
         (
-            super::super::InstalledScopePosition,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition,
             WorthQueryApplicationObservedFact,
         ),
         WorthQueryApplicationAttemptDenial,
@@ -43,7 +44,7 @@ impl<Schema, Operation, Input, Scope>
                     )
                 })?;
             Ok((
-                super::super::InstalledScopePosition::SourceQuery,
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition::SourceQuery,
                 WorthQueryApplicationObservedFact::SourcePublication {
                     observation: std::sync::Arc::clone(observation),
                 },
@@ -52,10 +53,10 @@ impl<Schema, Operation, Input, Scope>
     }
     pub(super) fn observe_source_authorization(
         &self,
-        key: &crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorizationKey,
+        key: &crate::domain_computation::primary_graph::vocabulary::application_attempt::source_read_authorization::SourceReadAuthorizationKey,
     ) -> Result<
         (
-            super::super::InstalledScopePosition,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition,
             WorthQueryApplicationObservedFact,
         ),
         WorthQueryApplicationAttemptDenial,
@@ -78,7 +79,7 @@ impl<Schema, Operation, Input, Scope>
                 )
             })?;
         Ok((
-            super::super::InstalledScopePosition::SourceQuery,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition::SourceQuery,
             WorthQueryApplicationObservedFact::SourceReadAuthorization {
                 observation: std::sync::Arc::clone(observation),
             },
@@ -89,7 +90,7 @@ impl<Schema, Operation, Input, Scope>
         key: &ManagedSourceReadKey,
     ) -> Result<
         (
-            super::super::InstalledScopePosition,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition,
             WorthQueryApplicationObservedFact,
         ),
         WorthQueryApplicationAttemptDenial,
@@ -112,7 +113,7 @@ impl<Schema, Operation, Input, Scope>
                 )
             })?;
         Ok((
-            super::super::InstalledScopePosition::SourceQuery,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition::SourceQuery,
             WorthQueryApplicationObservedFact::ManagedIndexSource {
                 observation: std::sync::Arc::clone(observation),
             },

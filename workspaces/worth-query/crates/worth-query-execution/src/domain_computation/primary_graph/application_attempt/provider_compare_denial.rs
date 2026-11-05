@@ -43,7 +43,7 @@ pub fn provider_compare_denied(denial: Compare) -> Progression {
 pub fn provider_session_denied(
     failure: crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> Denial {
-    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
+    use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind;
     if let Some(stop) = failure.checked_read_stop() {
         return Denial::provider_execution_denied(Stage::ProviderCommit, stop, failure.detail())
             .with_provider_session_failure(failure);
@@ -156,8 +156,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn read_se
 
 pub fn provider_session_execution_denied(
     stop: Result<
-        crate::domain_computation::WorthQueryProviderSessionDenialKind,
-        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     >,
     stage: Stage,
     detail: impl Into<std::sync::Arc<str>>,
@@ -180,10 +180,10 @@ pub fn control_stopped_outcome(
         ));
     }
     match stopped.kind() {
-        crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled => {
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled => {
             Progression::Cancelled
         }
-        crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut => {
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut => {
             Progression::TimedOut
         }
     }

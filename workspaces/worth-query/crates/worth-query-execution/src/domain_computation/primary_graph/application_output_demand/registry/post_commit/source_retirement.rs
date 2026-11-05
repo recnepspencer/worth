@@ -9,7 +9,7 @@ use std::cmp::Ordering;
 pub fn retire_stale_records(
     state: &mut DemandRegistryState,
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     successor: &WorthQueryObservedSourceEpoch,
 ) {
     // Custody retirement is source-wide: a changed query source invalidates

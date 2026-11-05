@@ -5,7 +5,7 @@ pub trait CertificationWorthQueryApplicationCommitReceiptForTest: Sized {
     fn without_settlement_description(self) -> Self;
     fn with_corrupted_original_disclosure(
         self,
-        disclosure: std::sync::Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_disclosure::inspection::OriginalSourceInspectionDisclosure>,
+        disclosure: std::sync::Arc<worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure>,
     ) -> Self;
     #[cfg(all())]
     fn with_provider_runtime_instance_id_for_test(self, runtime: u64) -> Self;
@@ -24,7 +24,7 @@ impl CertificationWorthQueryApplicationCommitReceiptForTest for WorthQueryApplic
 
     fn with_corrupted_original_disclosure(
         mut self,
-        disclosure: std::sync::Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_disclosure::inspection::OriginalSourceInspectionDisclosure>,
+        disclosure: std::sync::Arc<worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure>,
     ) -> Self {
         (*self.authority_binding_mut_for_test()).corrupt_original_disclosure_for_test(disclosure);
         self

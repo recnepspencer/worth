@@ -1,4 +1,4 @@
-use crate::domain_computation::managed_run::WorthQueryManagedRelationalObservationReleaseReceipt;
+use crate::domain_computation::vocabulary::managed_run::relational_observation::WorthQueryManagedRelationalObservationReleaseReceipt;
 use worth_runtime_bridge::facade::{
     BridgeExecutionBasisFinalizationReceipt, BridgeExecutionBasisReadmissionCleanupOutcome,
     BridgeExecutionBasisReadmissionRecoveryRequired,
@@ -15,11 +15,8 @@ use crate::domain_computation::artifact_owner::{
 use crate::domain_computation::managed_run::provider_restore::WorthQueryManagedGraphRestoreCleanupRequired;
 use crate::domain_computation::managed_run::readmission::evidence::WorthQueryReadmissionProgress;
 use crate::domain_computation::managed_run::readmission::workflow_recovery::WorthQueryWorkflowReadmissionRecoveryPermit;
-use crate::domain_computation::managed_run::{
-    WorthQueryManagedRunCleanupDisposition, WorthQueryManagedRunCounters,
-    WorthQueryYieldTransitionCounters,
-};
-use crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryProviderExecutionReleaseEvidence;
+use {crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupDisposition, crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters, crate::domain_computation::managed_run::WorthQueryYieldTransitionCounters};
+use crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence;
 use crate::domain_computation::WorthQueryProviderCheckpointReleaseEvidence;
 
 #[path = "workflow_cleanup/inspection.rs"]

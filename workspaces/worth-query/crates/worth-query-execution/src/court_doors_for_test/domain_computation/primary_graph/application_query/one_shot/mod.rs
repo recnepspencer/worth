@@ -5,4 +5,3 @@ pub mod correction_disclosure;
 pub mod court_doors_for_test;
 #[path = "denial/mod.rs"]
 pub mod denial;
-pub use crate::domain_computation::primary_graph::application_query::one_shot::map_authorized_read_denial;

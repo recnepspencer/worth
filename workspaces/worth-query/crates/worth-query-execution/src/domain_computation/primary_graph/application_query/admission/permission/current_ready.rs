@@ -1,5 +1,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::MatchingHeadScopedOps;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
 
 /// The exact prepared Query permission after its issued World head was
 /// checked. Actor currentness still runs outside the World guard.
@@ -176,7 +178,7 @@ where
         &self,
         history: crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'_>,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
-        let principal = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
+        let principal = crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(
             self.access.principal().principal_entity_id(),
         );
         if !history.admits_principal(&principal) {

@@ -1,11 +1,5 @@
-use super::{read_execution_denial, RootSelectionWork, WorthQueryApplicationReadExecutionDenial};
-use crate::domain_computation::primary_graph::application_query::{
-    observed_source::{
-        DeclaredManagedIndexSelection, DeclaredOrbitSelection, WorthQueryObservedFieldRevision,
-        WorthQueryObservedRootSelection,
-    },
-    read_execution::{relational_read_denial, WorthQueryApplicationReadExecutionDenialKind},
-};
+use {super::read_execution_denial, super::RootSelectionWork, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial};
+use {crate::domain_computation::primary_graph::application_query::observed_source::DeclaredManagedIndexSelection, crate::domain_computation::primary_graph::application_query::observed_source::DeclaredOrbitSelection, crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedFieldRevision, crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection, crate::domain_computation::primary_graph::application_query::read_execution::relational_read_denial, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind};
 use crate::domain_computation::primary_graph::{
     source_facts::{SourceFactReadDenial, SourceFactsBuilder},
     structural_walk::StructuralWalkDependencies,

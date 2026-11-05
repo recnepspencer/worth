@@ -1,6 +1,7 @@
 //! Prepared claims transfer into the exact published downstream row.
 
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 impl PreparedPrerequisiteClaims {
     /// The lineage owner has already reserved and minted this exact address.

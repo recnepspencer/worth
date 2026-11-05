@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::application_query::LiveReadmissionScopedOps;
 use crate::domain_computation::primary_graph::product_operation::ApplicationBasisScopedOps;
 use worth_query_declaration::facade::{
@@ -7,17 +7,7 @@ use worth_query_declaration::facade::{
 use worth_runtime_bridge::facade::BridgeExecutionBasisTerminalDisposition;
 
 use super::WorthQueryApplicationLiveLease;
-use crate::domain_computation::primary_graph::{
-    application_query::{
-        authorized_read::{execute_authorized_read, refresh_governed_authorization},
-        live::scope_identity::read_scope_identity,
-        WorthQueryApplicationProjection, WorthQueryApplicationQueryAccessContext,
-        WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-        WorthQueryApplicationQueryControls,
-    },
-    WorthQueryAuthenticatedPrincipal, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialKind,
-};
+use {crate::domain_computation::primary_graph::application_query::authorized_read::execute_authorized_read, crate::domain_computation::primary_graph::application_query::authorized_read::refresh_governed_authorization, crate::domain_computation::primary_graph::application_query::live::scope_identity::read_scope_identity, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryControls, crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal, crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 impl<
         Schema,
@@ -62,10 +52,10 @@ where
                     self.execution_denied_outcome(kind)
                 }
                 crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(Err(
-                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+                    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
                 )) => self.cancelled_outcome(),
                 crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(Err(
-                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+                    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
                 )) => self.deadline_exceeded_outcome(),
                 crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
                     super::super::outcome::WorthQueryApplicationLiveOutcome::Unavailable
@@ -205,10 +195,10 @@ where
 
     fn delivery_read_denial(
         &mut self,
-        denial: crate::domain_computation::primary_graph::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial,
+        denial: crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial,
     ) -> super::super::outcome::WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         use super::super::outcome::WorthQueryApplicationLiveOutcome as Outcome;
-        use crate::domain_computation::primary_graph::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial as Denial;
+        use crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial as Denial;
 
         match denial {
             Denial::StalePrincipal => self.terminate_delivery_outcome(Outcome::StalePrincipal),
@@ -219,7 +209,7 @@ where
                 self.delivery_authorization_denial(authorization)
             }
             Denial::Read(read) => {
-                use crate::domain_computation::primary_graph::application_query::read_execution::WorthQueryApplicationReadExecutionDenialKind as Read;
+                use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind as Read;
                 let outcome = match read.kind() {
                     Read::Content(cause) => Outcome::CauseDenied(
                         super::super::outcome::WorthQueryApplicationLiveCauseDenialKind::Content(
@@ -260,10 +250,10 @@ where
                 Outcome::ExecutionRequest(kind)
             }
             WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
-                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+                crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
             )) => Outcome::Cancelled,
             WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
-                crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+                crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
             )) => Outcome::DeadlineExceeded,
             WorthQueryOperationAuthorizationDenialKind::Refused(_) => {
                 Outcome::AuthorizationDenied(Box::new(denial))

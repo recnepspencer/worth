@@ -16,12 +16,7 @@ use worth_query_declaration::facade::{
     },
     application_schema::{ApplicationScalarValueBinding, ApplicationSchema},
 };
-use {
-    crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext,
-    crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls,
-    crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode,
-    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode, crate::domain_computation::request_execution::WorthQueryAdvancementPhase};
 
 #[derive(Debug)]
 /// A source-disclosure, semantic-comparison or inverse-derivation refusal.
@@ -62,7 +57,7 @@ pub enum WorthQueryCorrectionDerivationDenial {
     RequiredOutputReconciliation,
     Workflow(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
     TargetProgram(
-        crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial,
+        crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial,
     ),
     Basis(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
     DependencyComparison(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial),
@@ -72,10 +67,10 @@ pub enum WorthQueryCorrectionDerivationDenial {
         >,
     ),
     Product(crate::basis::WorthQueryProductBranchAdmissionDenial),
-    Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
-    Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
-    Admission(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial),
-    Read(crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenial),
+    Principal(crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial),
+    Scope(crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial),
+    Admission(crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial),
+    Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial),
     Domain(ApplicationCorrectionDerivationDenial),
 }
 

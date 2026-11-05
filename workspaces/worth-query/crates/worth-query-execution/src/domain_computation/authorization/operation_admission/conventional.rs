@@ -1,7 +1,7 @@
 //! Conventional-operation admission phases.
 
 use crate::domain_computation::authorization::OperationObservationScopedOps;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
@@ -10,14 +10,8 @@ use worth_query_installation::facade::{
 };
 
 use super::brand_tag::BrandTag;
-use super::{
-    ErasedAuthorizationBasis, WorthQueryAdmittedApplicationOperation, WorthQueryAdmittedOperation,
-    WorthQueryOperationAdmissionIdentity,
-};
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryRetainedAuthorizationDecisionFacts,
-};
+use {super::ErasedAuthorizationBasis, super::WorthQueryAdmittedApplicationOperation, super::WorthQueryAdmittedOperation, crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity};
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
     WorthQueryBoundMutationPreconditions,

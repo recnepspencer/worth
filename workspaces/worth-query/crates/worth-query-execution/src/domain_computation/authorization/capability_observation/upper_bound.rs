@@ -1,10 +1,11 @@
 use super::*;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 
 pub(in crate::domain_computation::authorization) fn observe_upper_bound_policy(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     _permit: super::super::delegation_admission::WorthQueryCapabilityObservationPermit,
-    session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+    session_identity: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     bridge: &BridgeAuthorizationRuntime,

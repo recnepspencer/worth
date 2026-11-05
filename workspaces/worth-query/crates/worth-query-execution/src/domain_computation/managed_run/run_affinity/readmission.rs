@@ -3,7 +3,7 @@ use super::*;
 impl WorthQueryDirectRunReadmissionPending {
     pub(in crate::domain_computation::managed_run) fn bridge_readmission_intent(
         &self,
-        owner: &crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit,
+        owner: &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit,
     ) -> worth_runtime_bridge::facade::BridgeManagedExecutionIntent {
         worth_runtime_bridge::facade::BridgeManagedExecutionIntent::new(
             self.attempt
@@ -16,7 +16,7 @@ impl WorthQueryDirectRunReadmissionPending {
 
     pub(in crate::domain_computation::managed_run) fn commit(
         self,
-        owner: crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit,
+        owner: crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit,
     ) -> WorthQueryDirectRunAffinity {
         let binding = self.attempt.provider_work_rebinding(&owner);
         let attempt = self.attempt.commit(owner);
@@ -35,7 +35,7 @@ impl WorthQueryDirectRunReadmissionPending {
 
     pub(in crate::domain_computation::managed_run) fn abort(
         self,
-        owner: crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit,
+        owner: crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit,
     ) -> WorthQueryDirectRunAffinity {
         WorthQueryDirectRunAffinity {
             logical: self.logical,
@@ -50,7 +50,7 @@ impl WorthQueryDirectRunReadmissionPending {
 
         execution: crate::domain_computation::managed_run::retained_graph_execution::WorthQueryRetainedManagedGraphExecution,
         contract: crate::domain_computation::managed_run::step_contract_admission::WorthQueryAdmittedManagedStepContract,
-        _owner: &crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit,
+        _owner: &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit,
     ) -> WorthQueryDirectRunProviderRestoreOutcome {
         let fresh_call = self
             .fresh_call

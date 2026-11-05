@@ -1,7 +1,4 @@
-use super::super::resource_lifecycle::{
-    WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisLease,
-    WorthQueryApplicationBasisReleaseReceipt,
-};
+use {crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity, super::super::resource_lifecycle::WorthQueryApplicationBasisLease, crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt};
 use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
 
 /// The basis admitted by the query pipeline owns the exact selected World
@@ -15,7 +12,7 @@ impl WorthQueryApplicationQueryBasisCustody {
     pub(in crate::domain_computation::primary_graph) fn from_selected<Schema: worth_query_installation::facade::ApplicationSchema>(
         runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
         shared: &crate::domain_computation::primary_graph::SharedSelectedProductOperation<'_, Schema>,
-    ) -> Result<Self, crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop>{
+    ) -> Result<Self, crate::domain_computation::primary_graph::vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop>{
         let (product, application_basis) = runtime.retain_selected_query_basis_admitted(shared)?;
         Ok(Self::new(product, application_basis))
     }
@@ -33,7 +30,7 @@ impl WorthQueryApplicationQueryBasisCustody {
     pub(in crate::domain_computation::primary_graph::application_query) fn from_issued_selected<Schema: worth_query_installation::facade::ApplicationSchema>(
         runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
         selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<'_, Schema>,
-    ) -> Result<Self, crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop>{
+    ) -> Result<Self, crate::domain_computation::primary_graph::vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop>{
         let (product, basis) = runtime.retain_issued_query_basis_admitted(selected)?;
         Ok(Self::new(product, basis))
     }

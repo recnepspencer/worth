@@ -7,11 +7,11 @@ use worth_relational::facade::query::{
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
 use worth_relational::facade::storage::RecordLifecycleState;
 
-use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
+use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 pub(crate) mod aspect_presence;
 pub(crate) mod predecode_admission;
-pub(in crate::domain_computation::primary_graph) use aspect_presence::observe_aspect_presence;
+
 pub(crate) mod read_rendezvous;
 std::thread_local! {
     static NATIVE_FIELD_CONTACTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
@@ -19,44 +19,10 @@ std::thread_local! {
 pub fn take_native_field_contacts() -> usize {
     NATIVE_FIELD_CONTACTS.with(|count| count.replace(0))
 }
-pub(in crate::domain_computation::primary_graph) use predecode_admission::{
-    observe_aspect_absence, observe_field_observation_borrowed_admitted,
-    observe_field_value_borrowed, observe_field_value_borrowed_admitted,
-};
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationFieldObservation {
-    Present(worth_foundational::facade::AspectValue),
-    Absent,
-    AspectAbsent,
-    UnsupportedAspectShape,
-}
-impl WorthQueryApplicationFieldObservation {
-    pub(in crate::domain_computation::primary_graph) fn into_value(
-        self,
-    ) -> Option<worth_foundational::facade::AspectValue> {
-        match self {
-            Self::Present(value) => Some(value),
-            Self::Absent | Self::AspectAbsent | Self::UnsupportedAspectShape => None,
-        }
-    }
-}
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation;
 
-impl From<worth_relational::facade::runtime::RelationalProjectedFieldObservation<'_>>
-    for WorthQueryApplicationFieldObservation
-{
-    fn from(
-        value: worth_relational::facade::runtime::RelationalProjectedFieldObservation<'_>,
-    ) -> Self {
-        use worth_relational::facade::runtime::RelationalProjectedFieldObservation as Raw;
-        match value {
-            Raw::Present(value) => Self::Present(value.clone()),
-            Raw::AspectAbsent => Self::AspectAbsent,
-            Raw::FieldAbsent => Self::Absent,
-            Raw::UnsupportedAspectShape => Self::UnsupportedAspectShape,
-        }
-    }
-}
+
 
 pub fn observe_field(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,

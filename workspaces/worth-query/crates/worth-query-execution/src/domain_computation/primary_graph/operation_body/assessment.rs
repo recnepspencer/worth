@@ -1,5 +1,5 @@
 //! Read-only assessment borrows resources from the exact native runtime phase.
-use super::WorthQueryOperationBodyRequirementFinding;
+use crate::domain_computation::primary_graph::vocabulary::operation_body::requirement::WorthQueryOperationBodyRequirementFinding;
 use crate::domain_computation::primary_graph::application_attempt::SourceFactsScopedOps;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
@@ -15,34 +15,9 @@ use {
     crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
     crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase,
 };
+use crate::domain_computation::primary_graph::vocabulary::operation_body::assessment::WorthQueryCurrentBodyRequirementAssessment;
 
-/// Descriptive findings retain their native memory claim for their whole lifetime.
-/// This result carries no projection snapshot or mutation authority.
-pub struct WorthQueryCurrentBodyRequirementAssessment {
-    findings: Vec<WorthQueryOperationBodyRequirementFinding>,
-    _memory: Option<crate::domain_computation::request_execution::QueryMemoryReservation>,
-}
 
-impl WorthQueryCurrentBodyRequirementAssessment {
-    pub fn findings(&self) -> &[WorthQueryOperationBodyRequirementFinding] {
-        &self.findings
-    }
-    pub(in crate::domain_computation::primary_graph::operation_body) fn new(
-        findings: Vec<WorthQueryOperationBodyRequirementFinding>,
-        memory: crate::domain_computation::request_execution::QueryMemoryReservation,
-    ) -> Self {
-        Self {
-            findings,
-            _memory: Some(memory),
-        }
-    }
-    pub(in crate::domain_computation::primary_graph::operation_body) fn empty() -> Self {
-        Self {
-            findings: Vec::new(),
-            _memory: None,
-        }
-    }
-}
 
 /// A native body assessment preserves phase, projection and observation refusal.
 #[derive(Debug)]

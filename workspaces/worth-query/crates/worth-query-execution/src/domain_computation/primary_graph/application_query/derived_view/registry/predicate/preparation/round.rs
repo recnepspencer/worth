@@ -1,11 +1,11 @@
 //! One interpretation collects only its own output-sized, originally funded notices.
 use super::*;
-use crate::domain_computation::primary_graph::application_query::managed_index::{
-    WorthQueryManagedIndexControl as Control, WorthQueryManagedIndexStop as Stop,
-    WorthQueryManagedIndexWorkDenial as WorkDenial,
-};
+use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as WorkDenial};
 use std::collections::BTreeMap;
 use worth_execution::{ExecutionArray, ExecutionRequestArrayBuilder};
+use crate::domain_computation::primary_graph::vocabulary::application_query::round::PredicateNoticeDisposition;
+use crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot;
+use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial;
 
 struct Collected {
     slots: BTreeMap<WatchSlot, PredicateNoticeDisposition>,
@@ -19,11 +19,6 @@ pub(super) struct Round {
 pub(in crate::domain_computation::primary_graph) struct PreparedPredicateNotices {
     slots: ExecutionArray<(WatchSlot, PredicateNoticeDisposition)>,
     _allocation: Arc<SourceFactsAllocation>,
-}
-#[derive(Clone, Copy, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum PredicateNoticeDisposition {
-    Refresh,
-    Unavailable,
 }
 impl PreparedPredicateNotices {
     pub(in crate::domain_computation::primary_graph) fn disposition(

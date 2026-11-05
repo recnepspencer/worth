@@ -65,7 +65,7 @@ impl WorthQueryWorkflowExecutionResourceAttempt {
 
     pub(in crate::domain_computation) fn provider_session_for_managed_run(
         &self,
-        _owner: &crate::domain_computation::managed_run::WorthQueryWorkflowRunTransitionPermit,
+        _owner: &crate::domain_computation::vocabulary::managed_run::run_affinity::WorthQueryWorkflowRunTransitionPermit,
     ) -> &WorthQueryExecutionProviderSession {
         &self.provider_session
     }
@@ -94,7 +94,7 @@ impl WorthQueryWorkflowExecutionResourceAttempt {
 
     pub(in crate::domain_computation) fn bind_workflow_artifacts_for_managed_run(
         &self,
-        _owner: &crate::domain_computation::managed_run::WorthQueryWorkflowRunTransitionPermit,
+        _owner: &crate::domain_computation::vocabulary::managed_run::run_affinity::WorthQueryWorkflowRunTransitionPermit,
     ) -> Result<
         crate::domain_computation::artifact_owner::WorthQueryWorkflowArtifactAuthority,
         crate::domain_computation::artifact_owner::WorthQueryArtifactDenial,
@@ -147,7 +147,7 @@ impl WorthQueryWorkflowExecutionResourceAttempt {
     pub(in crate::domain_computation) fn stage_resources_and_evidence_for_managed_run(
         &self,
         stage_identity: &str,
-        _owner: &crate::domain_computation::managed_run::WorthQueryWorkflowRunTransitionPermit,
+        _owner: &crate::domain_computation::vocabulary::managed_run::run_affinity::WorthQueryWorkflowRunTransitionPermit,
     ) -> Option<(
         Arc<WorthQueryAdmittedExecutionResourcePlan>,
         WorthQueryExecutionResourceAttemptEvidence,

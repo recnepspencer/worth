@@ -1,6 +1,6 @@
 //! Retained managed consistency refusals preserve their original typed cause.
 use super::*;
-use crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial as Cause;
+use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Cause;
 impl WorthQueryOutputDemandDenial {
     pub(in crate::domain_computation::primary_graph) fn managed_index(
         cause: Cause,

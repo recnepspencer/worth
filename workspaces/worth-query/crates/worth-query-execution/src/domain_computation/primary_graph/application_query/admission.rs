@@ -5,10 +5,7 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
-use super::{
-    WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryControls,
-};
+use {super::WorthQueryAdmittedApplicationQueryPlan, super::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, super::WorthQueryApplicationQueryControls};
 
 mod access_observation;
 mod authorization;
@@ -17,7 +14,7 @@ mod denial;
 mod finish;
 mod funded_parameters;
 pub(in crate::domain_computation::primary_graph) use funded_parameters::capture_parameters;
-pub(in crate::domain_computation) use funded_parameters::CapturedApplicationQueryParameters;
+
 mod governed_access;
 mod live_readmission;
 pub(crate) mod permission;

@@ -1,16 +1,6 @@
 //! The completed Source's ordered row and empty-result dependency owners.
-use super::{source_completion::SourceDenial, WorthQueryManagedIndexStop as Stop};
-use crate::domain_computation::primary_graph::{
-    application_query::{
-        observed_source::{
-            ManagedSourceDependencies, WorthQueryObservedResultSet, WorthQueryObservedSource,
-            WorthQuerySourceExpectationDenial as Denial,
-            WorthQuerySourceExpectationDenialKind as Kind,
-        },
-        one_shot::outcome::material::MaterialCompletion,
-    },
-    source_facts::SourceFactsAllocation,
-};
+use {super::source_completion::SourceDenial, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
+use {crate::domain_computation::primary_graph::application_query::observed_source::ManagedSourceDependencies, crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedResultSet, crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSource, crate::domain_computation::primary_graph::application_query::observed_source::WorthQuerySourceExpectationDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind as Kind, crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 

@@ -1,11 +1,7 @@
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::EntityId;
 
-use super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationStaleAttempt,
-    WorthQueryElevationClosureKind, WorthQueryMandatoryReview,
-};
+use {super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitOutcome, super::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt, crate::domain_computation::vocabulary::primary_graph::elevation_close_outcome::WorthQueryElevationClosureKind, super::WorthQueryMandatoryReview};
 use crate::domain_computation::authorization::WorthQueryMandatoryReviewBinding;
 
 /// Terminal move-only lifecycle receipt produced by exact mandatory review.

@@ -4,7 +4,7 @@ use super::*;
 use crate::domain_computation::primary_graph::access_strategy::coverage::{
     CandidateSelection, CoverageFrame, CoverageVerifier, RecordedFrontier,
 };
-use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity as Session;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity as Session;
 use std::{any::Any, sync::Arc};
 use worth_execution::ExecutionRequest;
 use worth_proof::ManagedCoverageDisposition as Disposition;
@@ -16,6 +16,8 @@ use worth_query_installation::facade::WorthQueryInstalledManagedIndex;
 mod execution;
 mod history;
 pub(super) use execution::ErasedIndexExecutor;
+use crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop;
+use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial;
 
 pub(super) trait InstalledIndexProvider<S, I>: Send + Sync
 where

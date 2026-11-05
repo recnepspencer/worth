@@ -38,10 +38,10 @@ fn commit_denial(error: &Error, stage: Stage, ordinary: Denial) -> Denial {
             stage,
             kind: match interruption.interruption() {
                 worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
-                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
+                    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled
                 }
                 worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => {
-                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut
+                    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut
                 }
             },
         },

@@ -1,5 +1,6 @@
 //! A performed input joins its canonical source without any output-query projection.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
 impl ObservationConnection<'_, '_> {
     /// Diagnostic O(inputs squared times (installed fields + disclosed fields + source patches)).
     pub(in super::super) fn require_independent_input(

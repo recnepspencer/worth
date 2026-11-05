@@ -1,7 +1,7 @@
 //! Read-only native receipt restricted to the armed owning validation control.
 use super::*;
-use crate::domain_computation::primary_graph::application_runtime::WorthQuerySourcePublicationHeadForTest as Head;
-use crate::domain_computation::primary_graph::application_runtime::WorthQuerySourcePublicationImageForTest as View;
+use crate::domain_computation::primary_graph::vocabulary::application_runtime::receipt::WorthQuerySourcePublicationHeadForTest as Head;
+use crate::domain_computation::primary_graph::vocabulary::application_runtime::receipt::WorthQuerySourcePublicationImageForTest as View;
 impl SourceInvalidationOwner {
     pub(in crate::domain_computation::primary_graph) fn source_publication_validation_image_for_test(
         &self,

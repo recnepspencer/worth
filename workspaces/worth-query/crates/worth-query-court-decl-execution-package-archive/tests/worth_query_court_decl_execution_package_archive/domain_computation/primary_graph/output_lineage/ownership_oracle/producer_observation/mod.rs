@@ -79,7 +79,7 @@ fn real_settlement_seed_preserves_producer_a_and_later_query_basis_b_without_rea
 pub fn observe(
     runtime: &Application,
     read: &Arc<WorthQueryApplicationReadObservation>,
-    expected: &Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity>,
+    expected: &Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
     native: &worth_runtime_bridge::facade::BridgeConditionalCausalObservation,
     batched: bool,
 ) -> worth_query_execution::facade::application_inspection::WorthQueryApplicationQueryObservation {
@@ -210,7 +210,7 @@ pub fn observe(
             );
             assert!(conditional.as_ref().unwrap().same_observation(native));
             assert!(seed.correspondence().native_witness_roles_for_test().len() > 0);
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::admitted_capture::retained_stage::run_retained_stage(
+            worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage(
                 &execution,
                 &mut None,
                 |context, _| {
@@ -219,10 +219,10 @@ pub fn observe(
                 },
             )
             .unwrap_or_else(|cause| match cause {
-                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::admitted_capture::CaptureStop::Request(cause) => {
+                worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop::Request(cause) => {
                     panic!("genuine field inspection request stopped: {cause:?}")
                 }
-                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::admitted_capture::CaptureStop::Kernel(cause) => {
+                worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop::Kernel(cause) => {
                     panic!("genuine field inspection kernel stopped: {cause:?}")
                 }
             });

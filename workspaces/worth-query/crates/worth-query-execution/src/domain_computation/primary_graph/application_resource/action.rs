@@ -3,10 +3,7 @@ use super::{
     admission, installation::InstalledResourceBinding,
     selector::WorthQueryApplicationResourceReceipt, stop::ResourceCause, storage::ResourceRowLease,
 };
-use crate::domain_computation::{
-    authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
-    primary_graph::WorthQueryPrincipalResolutionMode,
-};
+use {crate::domain_computation::authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_query_admission::facade::authenticated_principal::{

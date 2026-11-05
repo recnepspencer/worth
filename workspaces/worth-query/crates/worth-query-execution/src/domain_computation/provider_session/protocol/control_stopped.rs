@@ -1,11 +1,6 @@
 use super::{WorthQueryProviderSessionProtocolCounters, WorthQueryProviderSessionProtocolStage};
+use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind;
 
-/// The request control condition that stopped provider execution before publication.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryProviderSessionControlStopKind {
-    Cancelled,
-    TimedOut,
-}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderSessionCommitControlStopped {

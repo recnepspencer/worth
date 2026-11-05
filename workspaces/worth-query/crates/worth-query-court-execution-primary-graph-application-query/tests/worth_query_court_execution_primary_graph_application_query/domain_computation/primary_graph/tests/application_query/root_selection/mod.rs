@@ -1,7 +1,7 @@
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::context::court_doors_for_test::ContextDoorsOps;
 pub use std::time::Duration;
 
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 
 pub use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 pub use worth_relational::facade::identity::PartitionId;

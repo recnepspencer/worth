@@ -6,7 +6,7 @@ use worth_relational::facade::transactions::{
 };
 
 use super::WorthQueryPrimaryGraphProvider;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
@@ -54,8 +54,8 @@ pub enum WorthQueryProviderIdempotencyResolutionDenial {
     RecordedIntentUnverifiable,
     ExecutionDenied(
         Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     ),
     Unavailable,
@@ -248,7 +248,7 @@ impl WorthQueryPrimaryGraphProvider {
 fn pending_publication_denial(
     failure: crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> WorthQueryProviderIdempotencyResolutionDenial {
-    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
+    use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind;
     match super::relational_execution_denial::native_preparation_kind(&failure) {
         Ok(Some(kind)) => {
             return WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(Ok(kind))
@@ -308,40 +308,40 @@ fn pending_publication_denial(
 }
 
 fn idempotency_index_currency_denial(
-    denial: crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial,
+    denial: crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial,
 ) -> WorthQueryProviderIdempotencyResolutionDenial {
     match denial {
-        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(crate::facade::primary_graph::relational_execution_kind(stop, None)),
+        crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(crate::facade::primary_graph::relational_execution_kind(stop, None)),
 
-        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
-            crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted,
+        crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
+            crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted,
         ) => WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted,
-        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
-            crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted,
+        crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
+            crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted,
         ) => WorthQueryProviderIdempotencyResolutionDenial::RetentionIdentityExhausted,
-        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
-            crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted,
+        crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
+            crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted,
         ) => WorthQueryProviderIdempotencyResolutionDenial::SnapshotIdentityExhausted,
         _ => WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
     }
 }
 
 fn idempotency_snapshot_denial(
-    denial: crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial,
+    denial: crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial,
 ) -> WorthQueryProviderIdempotencyResolutionDenial {
     match denial {
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted {
+        crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         } => WorthQueryProviderIdempotencyResolutionDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         },
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
+        crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
             WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted
         }
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted => {
+        crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted => {
             WorthQueryProviderIdempotencyResolutionDenial::RetentionIdentityExhausted
         }
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted => {
+        crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted => {
             WorthQueryProviderIdempotencyResolutionDenial::SnapshotIdentityExhausted
         }
         _ => WorthQueryProviderIdempotencyResolutionDenial::Unavailable,

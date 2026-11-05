@@ -12,7 +12,7 @@ pub struct WorthQueryOutputReadinessDeliveryEvidence {
     truth_targets_admitted: usize,
     signal_seeds_emitted: usize,
     slots_touched: usize,
-    signal_decision: crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision,
+    signal_decision: crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision,
     semantic_observation_reads: usize,
     // The native owner issued this handle during the actual readiness evaluation.
     // Counters and test fixtures cannot construct it or grant inspection access.
@@ -46,7 +46,7 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
             truth_targets_admitted: 0,
             signal_seeds_emitted: 0,
             slots_touched: 0,
-            signal_decision: crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision::DependencyUnchanged,
+            signal_decision: crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision::DependencyUnchanged,
             semantic_observation_reads: 0,
             causal_observation: None,
             output_evaluation: None,
@@ -61,7 +61,7 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
             truth_targets_admitted: 0,
             signal_seeds_emitted: 0,
             slots_touched: 0,
-            signal_decision: crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision::DependencyUnchanged,
+            signal_decision: crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision::DependencyUnchanged,
             semantic_observation_reads: 1,
             causal_observation: None,
             output_evaluation: None,
@@ -112,7 +112,7 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
 
     pub const fn signal_decision(
         &self,
-    ) -> crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision {
+    ) -> crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision {
         self.signal_decision
     }
 

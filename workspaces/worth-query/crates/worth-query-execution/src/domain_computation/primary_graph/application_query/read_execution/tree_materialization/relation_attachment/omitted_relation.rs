@@ -4,10 +4,7 @@ use worth_relational::facade::indexes::{
 };
 
 use super::{ordered::ordered_lookup_denial, traversal_denial};
-use crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization::{
-    ActiveResultTreeCollectionSelection, OrderedCollectionProgress, ResultTreeWork,
-    WorthQueryApplicationProjectionNode, WorthQueryApplicationReadExecutionDenial,
-};
+use {crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization::ActiveResultTreeCollectionSelection, crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization::OrderedCollectionProgress, crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization::ResultTreeWork, crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization::WorthQueryApplicationProjectionNode, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial};
 
 pub(in crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization) fn advance_omitted_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

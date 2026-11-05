@@ -1,8 +1,6 @@
 //! Concrete content checks retain the exact original first refusal.
-use super::{WorthQueryManagedIndexControl as Control, WorthQueryManagedIndexStop as Stop};
-use crate::domain_computation::primary_graph::application_query::projection::{
-    WorthQueryApplicationProjectedField, WorthQueryApplicationProjectionDenial,
-};
+use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
+use {crate::domain_computation::primary_graph::application_query::projection::WorthQueryApplicationProjectedField, crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenial};
 use worth_relational::facade::content::{
     RelationalContentDenial as Native, RelationalContentFrame,
 };
@@ -74,7 +72,7 @@ pub(super) fn admit_field(control: &Control<'_>, parts: &[&str]) -> Result<(), S
     let work = parts
         .iter()
         .try_fold(
-            (size_of::<usize>() + size_of::<super::WorthQueryManagedIndexSourceSlot>()) as u64,
+            (size_of::<usize>() + size_of::<crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot>()) as u64,
             |sum, part| sum.checked_add(part.len() as u64),
         )
         .and_then(|work| work.checked_mul(2))

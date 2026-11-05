@@ -2,16 +2,7 @@ use super::{denial::graph_work_denial, governed_access::governance_denial};
 use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
 use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
 use crate::domain_computation::primary_graph::application_query::AccessObservationScopedOps;
-use crate::domain_computation::primary_graph::application_query::{
-    disclosure::{
-        admit_application_query_governance, WorthQueryAdmittedApplicationDisclosureContract,
-        WorthQueryApplicationGovernanceBinding, WorthQueryApplicationQueryGovernance,
-        WorthQueryPendingApplicationQueryGovernance,
-    },
-    graph_read_plan_binding::WorthQueryQueryIndexPosture,
-    WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAdmissionDenial,
-};
+use {crate::domain_computation::primary_graph::application_query::disclosure::admit_application_query_governance, crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryAdmittedApplicationDisclosureContract, crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationGovernanceBinding, crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance, crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryPendingApplicationQueryGovernance, crate::domain_computation::primary_graph::application_query::graph_read_plan_binding::WorthQueryQueryIndexPosture, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationAuthorizationWorkEvidence, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial};
 use crate::domain_computation::primary_graph::product_operation::ProductOperationSecurityBasisScopedOps;
 use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession;
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
@@ -83,7 +74,7 @@ pub(super) trait AuthorizationParentOps<Schema: ApplicationSchema>:
         }
             .map_err(|denial| WorthQueryApplicationQueryAdmissionDenial::from_authorization(
                 crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::from(denial), query.name(),
+                    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::from(denial), query.name(),
                 ),
             ))?;
         let (authorization, authorization_work) =

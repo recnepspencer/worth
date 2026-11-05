@@ -82,9 +82,7 @@ pub(in crate::domain_computation) use retained::{
 };
 
 use self::retained::{RetainedBasis, TypedPrior};
-use crate::domain_computation::primary_graph::application_attempt::{
-    ComputationRead, FactMovement, Movement, WorthQueryApplicationFactKey,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead, crate::domain_computation::primary_graph::application_attempt::FactMovement, crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFactKey};
 use crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader;
 
 type Reader<'reader, 'runtime, Schema, Operation> =
@@ -256,9 +254,9 @@ where
                 Movement::Moved => KeyMovement::Changed,
             },
             Err(denial) if matches!(denial.kind(),
-                crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(_)
-                | crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::Cancelled
-                | crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(_)
+                | crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::Cancelled
+                | crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
             ) => return Err(denial),
             Err(_) => KeyMovement::NotObservable,
         };

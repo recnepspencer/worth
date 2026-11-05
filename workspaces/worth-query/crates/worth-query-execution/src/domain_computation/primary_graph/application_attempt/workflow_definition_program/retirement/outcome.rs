@@ -9,7 +9,7 @@ use super::super::super::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
     WorthQueryApplicationUncommitted,
 };
-use super::PublishedWorkflowDefinitionRef;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef;
 
 /// Opaque, live retirement program for one exact published definition.
 ///

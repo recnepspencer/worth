@@ -19,12 +19,12 @@ impl<'a> ApplicationQueryNativeAccess<'a> {
     pub(in crate::domain_computation::primary_graph) fn borrowed(
         graph: &WorthQueryPrimaryGraph,
         runtime: &'a mut RelationalRuntime,
-    ) -> Result<Self, super::WorthQueryApplicationQueryAdmissionDenial> {
+    ) -> Result<Self, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial> {
         if graph.relational_runtime_instance_id()
             != runtime.main_branch_identity().runtime_instance_id()
         {
-            return Err(super::WorthQueryApplicationQueryAdmissionDenial::new(
-                super::WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
+            return Err(crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial::new(
+                crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
                 "original native source read",
             ));
         }
@@ -54,7 +54,7 @@ impl<'a> ApplicationQueryNativeAccess<'a> {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
-        basis: &crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
+        basis: &crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
         read: impl FnOnce(
             &mut RelationalRuntime,
             &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,

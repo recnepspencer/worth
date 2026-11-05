@@ -1,9 +1,7 @@
 //! Computation failures enter the handler topology without rendering their source.
 
 use super::*;
-use crate::domain_computation::primary_graph::application_entry::mutation::{
-    HandlerExecutionDenial, HandlerFailure, HandlerInterruption,
-};
+use {crate::domain_computation::primary_graph::application_entry::mutation::HandlerExecutionDenial, crate::domain_computation::primary_graph::application_entry::mutation::HandlerFailure, crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption};
 
 impl<Domain> From<WorthQueryManagedComputationInterruption> for HandlerFailure<Domain> {
     fn from(cause: WorthQueryManagedComputationInterruption) -> Self {

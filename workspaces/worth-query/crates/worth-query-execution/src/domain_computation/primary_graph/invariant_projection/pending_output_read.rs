@@ -1,5 +1,5 @@
 //! An actual projected read names one exact native output needing managed progress.
-use super::super::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use std::sync::Arc;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 

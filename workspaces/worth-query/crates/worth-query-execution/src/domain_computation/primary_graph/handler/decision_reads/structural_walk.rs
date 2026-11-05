@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryInvariantProjectionWalk;
 use worth_query_declaration::facade::application_schema::RelationDirection;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     DecisionReader<'_, '_, '_, Schema, Binding>
 {

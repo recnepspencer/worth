@@ -1,6 +1,7 @@
 //! Descriptive original-principal comparison, never cached authorization.
 use super::*;
 use crate::publication_boundary::WorthQueryProgramPublicationAccess;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 /// Opaque full native principal association retained by Publication commands.
 pub struct WorthQueryCommandPrincipalPin {

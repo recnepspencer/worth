@@ -1,7 +1,5 @@
 //! Actual admitted Parent parameters retain their original funded raw probe.
-use super::super::{
-    WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial as Denial,
-};
+use {crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial};
 use crate::domain_computation::primary_graph::{
     application_query::one_shot::outcome::material::MaterialCompletion,
     source_facts::SourceFactsAllocation,

@@ -3,18 +3,7 @@ use super::{
     ApplicationMutationBinding, ApplicationSchema, DecisionReader, HandlerExecutionDenial,
 };
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
-use {
-    crate::domain_computation::primary_graph::operation_body::BodyFieldExpectation,
-    crate::domain_computation::primary_graph::operation_body::PreparedBodyInputs,
-    crate::domain_computation::primary_graph::operation_body::PreparedBodyRetirements,
-    crate::domain_computation::primary_graph::operation_body::PreparedRetirementBatch,
-    crate::domain_computation::primary_graph::HandlerResult,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
-    crate::domain_computation::primary_graph::WorthQueryOperationBodyDenial,
-    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-};
+use {crate::domain_computation::primary_graph::vocabulary::operation_body::field_expectation::BodyFieldExpectation, crate::domain_computation::primary_graph::vocabulary::operation_body::input::PreparedBodyInputs, crate::domain_computation::primary_graph::vocabulary::operation_body::retirement::PreparedBodyRetirements, crate::domain_computation::primary_graph::vocabulary::operation_body::retirement::PreparedRetirementBatch, crate::domain_computation::primary_graph::HandlerResult, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
     pub(in crate::domain_computation::primary_graph) fn body_retirements(
         &mut self,

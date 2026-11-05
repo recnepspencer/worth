@@ -15,7 +15,7 @@ impl ChargedBytes for WorthQueryOperationAuthorizationDenial {
         (std::mem::size_of_val(kind.as_ref()) as u64)
             .saturating_add(
                 (causes.capacity() as u64).saturating_mul(std::mem::size_of::<
-                    super::WorthQueryOperationAuthorizationDenialKind,
+                    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
                 >() as u64),
             )
             .saturating_add(subject.capacity() as u64)

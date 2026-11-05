@@ -9,21 +9,7 @@ use super::{
     PreparedWorkflowAdvance, PreparedWorkflowOperation, RequiredWorkflowOperation,
     WorkflowOperationAuthority,
 };
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
-    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,
-    crate::domain_computation::primary_graph::application_attempt::workflow::proposal::observe_workflow_operation_input,
-    crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::instance_binding,
-    crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::observe_retained_transition,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
-    crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-    crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram,
-    crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact,
-    crate::domain_computation::primary_graph::WorthQueryCompleteApplicationReadSet,
-    crate::domain_computation::primary_graph::WorthQueryProjectedApplicationMutation,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress, crate::domain_computation::primary_graph::application_attempt::workflow::proposal::observe_workflow_operation_input, crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::instance_binding, crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::observe_retained_transition, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::WorthQueryCompleteApplicationReadSet, crate::domain_computation::primary_graph::WorthQueryProjectedApplicationMutation};
 
 mod authority_binding;
 mod evidence;
@@ -55,7 +41,7 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
         compiled: &CompiledWorkflowDefinition,
-        instance: super::super::PublishedWorkflowInstanceRef,
+        instance: crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
         live_membership: worth_relational::facade::identity::RelationId,
         retire_live_membership: bool,

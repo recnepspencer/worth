@@ -2,7 +2,7 @@ use worth_runtime_bridge::facade::{
     BridgeExecutionQueuePressureState, BridgeExecutionSafePointSignalState,
 };
 
-use super::{WorthQueryManagedRunTerminalKind, WorthQueryManagedSafePointObservation};
+use {crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind, crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation};
 
 pub(super) fn producer_terminal_kind(
     observation: &WorthQueryManagedSafePointObservation,

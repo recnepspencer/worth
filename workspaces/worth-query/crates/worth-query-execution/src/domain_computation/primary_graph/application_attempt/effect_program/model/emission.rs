@@ -20,7 +20,7 @@ pub struct WorthQueryApplicationEmission {
         crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext,
     >,
     _native_values_backing:
-        Option<crate::domain_computation::primary_graph::operation_body::value::PreparedBodyValues>,
+        Option<crate::domain_computation::primary_graph::vocabulary::operation_body::operation_body_value::PreparedBodyValues>,
 }
 
 #[derive(Clone)]
@@ -97,7 +97,7 @@ impl WorthQueryApplicationEmission {
         projection: worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection,
         backing: Option<crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>,
         values: Option<
-            crate::domain_computation::primary_graph::operation_body::value::PreparedBodyValues,
+            crate::domain_computation::primary_graph::vocabulary::operation_body::operation_body_value::PreparedBodyValues,
         >,
     ) -> Self {
         Self {

@@ -7,11 +7,9 @@ use worth_relational::facade::runtime::{
 
 pub(in crate::domain_computation::primary_graph::application_query) fn source_preparation_denial(
     execution: &ExecutionRequest<'_, '_>,
-    cause: super::super::WorthQueryManagedIndexWorkDenial,
+    cause: crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial,
 ) -> Denial {
-    use super::super::{
-        WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial as Work,
-    };
+    use {crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Work};
     match cause {
         Work::Controlled(Stop::Content(cause)) => Denial::Content(cause),
         Work::Controlled(Stop::MaterialStorage(cause)) => source_storage(cause),

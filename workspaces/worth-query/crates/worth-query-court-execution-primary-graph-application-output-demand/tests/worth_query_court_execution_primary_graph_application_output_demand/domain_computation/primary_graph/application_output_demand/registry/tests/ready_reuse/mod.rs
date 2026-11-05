@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence;
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
@@ -38,7 +38,7 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
     let checkpoint = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint(
                 [0x11; 16], [0x22; 32],
             )
-            .unwrap(), ("producer".to_owned()).into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed, [1; 32], scope, [2; 32], None, [3; 32], (Vec::new()).into(), None, 0, None);
+            .unwrap(), ("producer".to_owned()).into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed, [1; 32], scope, [2; 32], None, [3; 32], (Vec::new()).into(), None, 0, None);
     let completion = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand::new_for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Restored(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::restoration::WorthQueryRestoredAcceptedOutput::new_for_test(checkpoint, Arc::new(correspondence), observation, scope, WorthQueryCheckpointSourceIdentity::new_for_test([1; 32]), Arc::<[_]>::from([]).into(), None),
         ), WorthQueryOutputReadinessDeliveryEvidence::without_execution_for_test());

@@ -8,11 +8,8 @@ use worth_relational::facade::{history::BranchId, identity::EntityId};
 
 use super::contract::{AdmittedDisclosureRule, WorthQueryAdmittedApplicationDisclosureContract};
 use super::influence_validation::GovernedInternalFieldRules;
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
-use crate::domain_computation::provider_session::{
-    WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
-    WorthQueryManagedGraphWorkSession,
-};
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
+use {crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity, crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession};
 
 use super::super::WorthQueryRetainedCapabilityAuthorization;
 

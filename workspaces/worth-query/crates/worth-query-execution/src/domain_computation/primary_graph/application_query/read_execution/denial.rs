@@ -1,30 +1,6 @@
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationReadExecutionDenialKind {
-    Content(worth_relational::facade::content::RelationalContentDenial),
-    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
-    PredicateIndexUnavailable,
-    TargetIdentityIndexUnavailable,
-    TargetIdentityLookupOverflow,
-    TargetIdentityNotFound,
-    ResultLimitExceeded,
-    CardinalityMismatch,
-    TraversalUnavailable,
-    ContinuationIndexUnavailable,
-    ContinuationBoundaryRejected,
-    ContinuationGenerationChanged,
-    ContinuationPageWidthInvalid,
-    ProjectionUnavailable,
-    ResultBufferLimitExceeded,
-    WorkLimitExceeded,
-    Cancelled,
-    DeadlineExceeded,
-}
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationReadExecutionDenial {
-    kind: WorthQueryApplicationReadExecutionDenialKind,
-    subject: String,
-}
 
 pub(in crate::domain_computation::primary_graph::application_query) fn read_execution_denial(
     kind: WorthQueryApplicationReadExecutionDenialKind,
@@ -36,21 +12,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_exec
     }
 }
 
-impl WorthQueryApplicationReadExecutionDenial {
-    pub const fn kind(&self) -> WorthQueryApplicationReadExecutionDenialKind {
-        self.kind
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_query) fn subject(&self) -> &str {
-        &self.subject
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_query) fn into_subject(
-        self,
-    ) -> String {
-        self.subject
-    }
-}
 
 pub(super) fn relational_lookup_denial(
     denial: worth_relational::facade::indexes::BoundedEntityFieldLookupDenial,
@@ -75,7 +36,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn relationa
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
     subject: impl Into<String>,
 ) -> WorthQueryApplicationReadExecutionDenial {
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
     let kind = match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
         Ok(kind) => WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(kind),
         Err(Control::Cancelled) => WorthQueryApplicationReadExecutionDenialKind::Cancelled,
@@ -90,10 +51,10 @@ pub(in crate::domain_computation::primary_graph::application_query) fn managed_r
     cause: crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial,
     plan: &super::read_plan::ReadPlan<'_>,
 ) -> Result<
-    super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial,
     worth_execution::MapKernelStop,
 > {
-    use super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial as Denial;
+    use crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial as Denial;
     use crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial as Cause;
     match cause {
         Cause::SnapshotUnavailable => Ok(Denial::Read(plan.snapshot_unavailable_denial())),

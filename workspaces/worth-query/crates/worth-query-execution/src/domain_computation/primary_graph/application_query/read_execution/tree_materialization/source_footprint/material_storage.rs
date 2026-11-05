@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocatio
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
 
 pub struct MaterialFootprintStorage<'a, 'request, 'authority> {
     execution: &'a ExecutionRequest<'request, 'authority>,

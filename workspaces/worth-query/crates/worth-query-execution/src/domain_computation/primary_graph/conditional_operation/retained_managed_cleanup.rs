@@ -8,7 +8,7 @@ use {
 pub(super) struct RetainedManagedCleanup {
     outcome: WorthQueryApplicationUncommitted,
     pending: Option<WorthQueryApplicationManagedCleanup>,
-    receipt: Option<crate::domain_computation::WorthQueryDirectRunCleanupReceipt>,
+    receipt: Option<crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt>,
     kind: crate::domain_computation::WorthQueryMutationCleanupFailureKind,
 }
 impl RetainedManagedCleanup {

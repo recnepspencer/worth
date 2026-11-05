@@ -1,9 +1,6 @@
 //! Preserve the actual missing-field cause at the effect-lowering boundary.
-use super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitDenialStage,
-};
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationUnobservedWrite;
+use {super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind, super::WorthQueryApplicationCommitDenialStage};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::unobserved_write::WorthQueryApplicationUnobservedWrite;
 
 impl WorthQueryApplicationCommitDenial {
     pub(super) fn unobserved_write_denied(cause: WorthQueryApplicationUnobservedWrite) -> Self {

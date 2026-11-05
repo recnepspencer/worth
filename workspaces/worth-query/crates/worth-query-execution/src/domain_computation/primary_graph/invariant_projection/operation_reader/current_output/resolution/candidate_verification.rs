@@ -6,9 +6,11 @@ use std::sync::OnceLock;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
 use crate::domain_computation::primary_graph::output_lineage::WorthQueryCurrentOutputCandidate;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 
 pub(super) enum VerifiedCandidate {
     Current {

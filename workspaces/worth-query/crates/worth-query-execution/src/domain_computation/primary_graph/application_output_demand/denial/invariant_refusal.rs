@@ -1,5 +1,5 @@
 use super::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryGeneratedOutputInvariantAdmissionDenial;
+use crate::domain_computation::vocabulary::primary_graph::invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial;
 use crate::domain_computation::WorthQueryCustomInvariantDenial;
 
 impl WorthQueryOutputDemandDenial {

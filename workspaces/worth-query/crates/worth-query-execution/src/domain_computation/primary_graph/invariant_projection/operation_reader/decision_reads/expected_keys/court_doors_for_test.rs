@@ -6,7 +6,7 @@ impl ExpectedFactKeys {
     pub fn aggregate_for_test(
         &self,
         key: &crate::domain_computation::primary_graph::aggregate_observation::AggregateKey,
-        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        admission: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         >,
@@ -30,7 +30,7 @@ impl ExpectedFactKeys {
     pub fn structural_walk_for_test(
         &self,
         key: &crate::domain_computation::primary_graph::structural_walk::StructuralWalkKey,
-        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        admission: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         >,

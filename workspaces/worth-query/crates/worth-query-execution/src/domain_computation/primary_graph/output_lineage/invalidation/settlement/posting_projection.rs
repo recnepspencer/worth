@@ -1,6 +1,6 @@
 //! Immutable physical addresses. A handle proves storage identity, never currentness.
 use super::super::fact_key::FactPostingKey;
-use super::super::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 
 use im::OrdMap;
 use im::OrdSet;

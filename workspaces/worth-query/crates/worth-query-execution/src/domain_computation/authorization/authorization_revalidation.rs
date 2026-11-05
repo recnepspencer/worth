@@ -13,11 +13,7 @@ use super::{
     decision_facts::WorthQueryObservedCommitBasis,
     delegation_admission::WorthQueryCapabilityObservationSource,
 };
-use super::{
-    WorthQueryApplicationCommitAuthorization, WorthQueryCapabilityCommitBasis,
-    WorthQueryCommitAuthorizationBasis, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialKind, WorthQueryRetainedAuthorizationDecisionFacts,
-};
+use {super::WorthQueryApplicationCommitAuthorization, super::WorthQueryCapabilityCommitBasis, super::WorthQueryCommitAuthorizationBasis, super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::WorthQueryRetainedAuthorizationDecisionFacts};
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationBranchCommitCoordination,
 };
@@ -25,7 +21,7 @@ use currentness::*;
 pub(in crate::domain_computation::authorization) use observation::WorthQueryAuthorizationRevalidationObservation;
 
 struct RevalidationObservationAxes<'observation> {
-    session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+    session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     relational: &'observation worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &'observation worth_relational::facade::snapshots::SnapshotHandle,
     bridge: &'observation worth_runtime_bridge::facade::BridgeAuthorizationRuntime,

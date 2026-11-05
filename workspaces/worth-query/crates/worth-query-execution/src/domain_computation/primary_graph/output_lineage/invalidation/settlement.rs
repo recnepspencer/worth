@@ -7,13 +7,13 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
 
-use super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 use super::delivery;
 use super::fact_key::FactPostingKey;
 
 use super::logical_marking::WorthQueryNativeMarkingWork;
-use super::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::mark_state::MarkState;
 use super::mark_state::OutputFactCoverage;
 use super::mark_state::SettlementMarks;

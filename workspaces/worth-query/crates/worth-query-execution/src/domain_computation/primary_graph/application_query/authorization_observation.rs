@@ -24,7 +24,7 @@ pub(in crate::domain_computation::primary_graph::application_query) trait Author
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session_identity: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: worth_relational::facade::snapshots::SnapshotHandle,
         query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,

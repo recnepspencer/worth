@@ -1,8 +1,8 @@
 //! The original advancement observer preserves refusal, panic and owner-only custody.
 use crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::tests::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::dispatch;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::PreparedMember;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::PreparedMember;
 
 pub const PREPARE: u64 = 2;
 

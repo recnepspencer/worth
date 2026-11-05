@@ -1,7 +1,5 @@
 //! Persisted output-context shape, not occurrence or performed-receipt authority.
-use super::super::schema::version::{
-    WORKFLOW_FACT_PROTOCOL_VERSION, WORKFLOW_OPERATION_OUTPUT_PROTOCOL_VERSION,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION, super::super::schema::version::WORKFLOW_OPERATION_OUTPUT_PROTOCOL_VERSION};
 use worth_foundational::facade::{AspectValue, InternedString};
 
 pub(in crate::domain_computation::primary_graph) fn decode_transition_output_context(

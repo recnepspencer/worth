@@ -7,11 +7,7 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
 };
 
-use super::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationObservedFact,
-    WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
-};
+use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationEffectProgram, super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::reconstruct_compiled_definition,
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationPosture,
@@ -33,10 +29,7 @@ pub use preparation::{
     WorkflowProposalBindingDenial, WorkflowProposalPreparationDenial,
     WorthQueryWorkflowProposalAdapter,
 };
-pub use publication::{
-    PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowProposalRef,
-    WorkflowProposalOutcome,
-};
+pub use {publication::PerformedWorkflowProposal, publication::PreparedWorkflowProposal, publication::WorkflowProposalOutcome};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -54,7 +47,7 @@ where
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
-        instance: super::PublishedWorkflowInstanceRef,
+        instance: crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         input_identity: [u8; 32],
         source_identity: Option<[u8; 32]>,
         mut captured: crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputs,
@@ -77,7 +70,7 @@ where
         }
         let input_type = <Operation::InputBinding as ApplicationStructuredValueBinding>::IDENTITY;
         let layout = self.lease.layout.workflow().clone();
-        let published = super::PublishedWorkflowDefinitionRef::retained(
+        let published = crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef::retained(
             instance.branch(),
             instance.definition_entity_id(),
             instance.definition_content_identity().clone(),
@@ -241,7 +234,7 @@ where
                 read_set: admitted.into_read_set(),
                 effects,
                 conditional_definition: None,
-            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
+            effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::Platform,
                 output_correspondence: Default::default(),
                 retain_output_demand_observation: false,
                 retain_client_observation: false,

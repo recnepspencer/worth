@@ -2,10 +2,11 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::super::WorthQueryApplicationAttemptDenial;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 use crate::domain_computation::{
     WorthQueryProvisionalEffectAction, WorthQueryProvisionalEffectStep,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::expected_steps::WorthQueryExpectedEffectStepPreparationWork;
 
 /// One ordered, exact summary owned by effect lowering and shared through commit.
 #[derive(Clone)]
@@ -14,25 +15,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryExpectedEffect
     preparation_work: WorthQueryExpectedEffectStepPreparationWork,
 }
 
-/// Preparation cardinality: one map lookup per lowered step and one exact
-/// equality check per repeated identity. These are not map-comparison counts
-/// or, by themselves, proof of the lookup algorithm's complexity.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryExpectedEffectStepPreparationWork
-{
-    key_lookups: usize,
-    duplicate_equalities: usize,
-}
 
-impl WorthQueryExpectedEffectStepPreparationWork {
-    pub(in crate::domain_computation::primary_graph) const fn key_lookups(self) -> usize {
-        self.key_lookups
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn duplicate_equalities(self) -> usize {
-        self.duplicate_equalities
-    }
-}
 
 impl WorthQueryExpectedEffectSteps {
     pub(super) fn from_step_groups(

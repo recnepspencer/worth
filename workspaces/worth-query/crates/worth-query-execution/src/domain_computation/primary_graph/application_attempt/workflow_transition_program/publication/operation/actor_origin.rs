@@ -1,8 +1,6 @@
 //! Original native occurrence locators, never current authorization.
 use super::{ApplicationProgramRevision, RequiredWorkflowOperation};
-use crate::domain_computation::primary_graph::application_attempt::{
-    workflow_transition_program::actor_context::OriginalActorSources, PublishedWorkflowInstanceRef,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::actor_context::OriginalActorSources, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef};
 impl RequiredWorkflowOperation {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn original_sources(
         &self,

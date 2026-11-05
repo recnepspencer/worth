@@ -1,8 +1,5 @@
 //! Present normalized assignments only; optional clears consume no unique value.
-use super::{
-    denial, WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationRealizedEffect as Effect,
-};
+use {super::denial, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationRealizedEffect as Effect};
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::KindId;
 type Write<'a> = (KindId, &'a AspectFieldLocator, &'a AspectValue);

@@ -1,5 +1,5 @@
 //! Original managed-source custody before framework tree and attachment growth.
-use super::WorthQueryApplicationReadExecutionDenial as Denial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial as Denial;
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;

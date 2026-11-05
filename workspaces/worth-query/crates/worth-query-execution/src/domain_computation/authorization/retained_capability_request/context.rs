@@ -11,7 +11,7 @@ pub enum RetainedContext {
 impl RetainedContext {
     pub(super) fn retained_storage_bytes(&self) -> Option<u64> {
         match self {
-            Self::Native(entries) => crate::domain_computation::primary_graph::admitted_capture::storage::tree_clone_bytes::<Entry>(entries.len()),
+            Self::Native(entries) => crate::domain_computation::vocabulary::primary_graph::storage::tree_clone_bytes::<Entry>(entries.len()),
             Self::Decoded(entries) => u64::try_from(entries.capacity().checked_mul(size_of::<Entry>())?).ok(),
         }
     }

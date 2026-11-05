@@ -1,10 +1,9 @@
 //! Exact-commit evidence minted only from the committed session stage.
 
 pub(crate) mod postcommit_currentness;
-pub use postcommit_currentness::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
-pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
-    FailedRebase, RebaseVerificationFailure,
-};
+pub use {postcommit_currentness::FactlessCurrentness, postcommit_currentness::OwnEffectOnReads};
+use crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason;
+pub(in crate::domain_computation::primary_graph) use postcommit_currentness::FailedRebase;
 
 use super::commit_execution::WorthQueryCommittedApplicationSession;
 use crate::domain_computation::primary_graph::provider::{

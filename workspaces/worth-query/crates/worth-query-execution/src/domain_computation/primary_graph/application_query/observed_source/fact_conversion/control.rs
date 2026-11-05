@@ -7,6 +7,7 @@ use {
     crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
     crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind;
 
 #[derive(Clone, Copy)]
 pub struct SourceFactExpansionControl<'request, 'authority> {

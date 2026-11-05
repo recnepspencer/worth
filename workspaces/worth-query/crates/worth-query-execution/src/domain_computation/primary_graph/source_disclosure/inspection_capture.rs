@@ -1,9 +1,6 @@
 //! The actual source binding dispatches its original input once, before acceptance.
-use super::{capture_parameters, OriginalSourceInspectionDisclosure};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
-    WorthQueryObservedScopeSelector, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {super::capture_parameters, crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind, crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 use std::{any::TypeId, sync::Arc};
 use worth_query_declaration::facade::{
     application_operation::{

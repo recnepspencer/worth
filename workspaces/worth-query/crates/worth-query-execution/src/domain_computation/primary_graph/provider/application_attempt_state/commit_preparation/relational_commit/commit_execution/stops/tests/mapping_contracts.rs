@@ -2,10 +2,7 @@
 //! Child policy admission precedes a valid request; accounting,
 //! and malformed builder extrema are guarded at Relational's owning boundary.
 use super::super::*;
-use crate::domain_computation::primary_graph::application_attempt::{
-    provider_compare_denial::provider_compare_denied,
-    WorthQueryApplicationCommitDenialKind as Kind, WorthQueryProviderProgressionOutcome as Outcome,
-};
+use {crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_compare_denied, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind, crate::domain_computation::primary_graph::application_attempt::WorthQueryProviderProgressionOutcome as Outcome};
 use crate::domain_computation::{
     WorthQueryProviderCompareAndCommitDenial as Compare,
     WorthQueryProviderSessionCommitStop as Stop,
@@ -17,10 +14,7 @@ use worth_relational::facade::{
         RelationalExecutionDenialCause as Cause, TransactionCommitError,
     },
 };
-use {
-    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
-    crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level,
-};
+use {crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
 
 fn assert_kind(cause: Cause, expected: Kind) {
     let stop = transaction_commit_stop(TransactionCommitError::Execution {

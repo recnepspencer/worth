@@ -4,11 +4,11 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 use super::denial;
 use crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency;
-use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAdmissionDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
 use crate::domain_computation::primary_graph::capture_principal_currentness_admitted;
 use crate::domain_computation::primary_graph::PrincipalCurrentnessCaptureStop;
 use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
-use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 
 pub(super) fn capture<Schema, Principal, PrincipalIdentity>(
     runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
@@ -16,7 +16,7 @@ pub(super) fn capture<Schema, Principal, PrincipalIdentity>(
     session: WorthQueryGraphWorkSessionIdentity,
 ) -> Result<
     WorthQueryPrincipalCurrentnessDependency,
-    super::WorthQueryApplicationQueryAdmissionDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial,
 >
 where
     Schema: ApplicationSchema,

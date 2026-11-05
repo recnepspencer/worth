@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::product_operation::ContextScopedOps;
-use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use std::collections::BTreeMap;
 
 use worth_query_installation::facade::{
@@ -12,7 +12,7 @@ use super::{
     reconstruction_denial, WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) struct WorthQueryReconstructedTemporalIntent<
     Clock,
@@ -98,22 +98,22 @@ where
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .map_err(|denial| match denial.kind() {
-                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::ActiveSnapshotCapacityExhausted {
+                    crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::ActiveSnapshotCapacityExhausted {
                         maximum_active_snapshots,
                     }) => super::snapshot_capacity_reconstruction_denial(
                         maximum_active_snapshots,
                     ),
-                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::RetentionCapacityExhausted) => {
+                    crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::RetentionCapacityExhausted) => {
                         super::retention_capacity_reconstruction_denial()
                     }
-                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::RetentionIdentityExhausted) => {
+                    crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::RetentionIdentityExhausted) => {
                         super::retention_identity_reconstruction_denial()
                     }
-                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::SnapshotIdentityExhausted) => {
+                    crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::SnapshotIdentityExhausted) => {
                         super::snapshot_identity_reconstruction_denial()
                     }
-                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Stopped(cause) => super::denial::read_stopped(crate::facade::primary_graph::relational_execution_kind(cause, None)),
-        crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(_) => reconstruction_denial(
+                    crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Stopped(cause) => super::denial::read_stopped(crate::facade::primary_graph::relational_execution_kind(cause, None)),
+        crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Refused(_) => reconstruction_denial(
                         WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionIntent,
                         format!("{:?}: {}", denial.kind(), denial.subject()),
                     ),

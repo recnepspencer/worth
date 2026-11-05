@@ -4,6 +4,9 @@ use std::sync::Arc;
 use worth_query_installation::facade::{
     WorthQueryInstalledResourceAccessContract, WorthQueryResourceAccessPurpose,
 };
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 enum DisclosureSubject {
     Query(WorthQueryInstalledApplicationQueryIdentity),
@@ -20,7 +23,7 @@ pub struct WorthQueryApplicationGovernanceBinding {
     session: WorthQueryGraphWorkSessionIdentity,
     managed_run: WorthQueryGraphWorkManagedRunIdentity,
     branch: BranchId,
-    basis: crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
+    basis: crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
     provider: String,
 }
 
@@ -139,7 +142,7 @@ impl WorthQueryApplicationGovernanceBinding {
         parameters: CanonicalDigestId,
         principal: EntityId,
         scope: EntityId,
-        basis: crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
+        basis: crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
     ) -> Self {
         Self {
             runtime: graph_work.runtime_authority(),

@@ -1,9 +1,5 @@
 //! Linear repair custody for an unpublished, performed installation.
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCheckpoint, WorthQueryCheckpointCaptureDenial,
-    WorthQueryCheckpointCapturePolicy, WorthQueryPrimaryGraphIntegrationHandle,
-    WorthQueryPrimaryGraphPublication,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint, crate::domain_computation::primary_graph::WorthQueryCheckpointCaptureDenial, crate::domain_computation::primary_graph::WorthQueryCheckpointCapturePolicy, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle, crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication};
 use worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority;
 
 /// An acknowledged transition awaiting checkpoint capture. This capsule never

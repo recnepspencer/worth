@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod admission;
 pub(in crate::domain_computation) mod admitted_request;
 pub(crate) mod application_commit_authorization;
@@ -30,7 +30,7 @@ pub(crate) mod installed_policy;
 mod lowering;
 pub(crate) mod operation_progression;
 pub(crate) mod operation_scope_binding;
-pub(in crate::domain_computation) use operation_scope_binding::WorthQueryDecisionScopeWitness;
+
 pub(crate) mod retained_capability_request;
 pub(in crate::domain_computation) use retained_capability_request::WorkflowApprovalRequestDecodingDenial;
 pub(in crate::domain_computation) use retained_capability_request::WorkflowApprovalRequestEncodingDenial;
@@ -74,8 +74,8 @@ pub(in crate::domain_computation) use denial::WorthQueryAdmissionLapse;
 pub use denial::WorthQueryApplicationAuthorizationExplanationCause;
 pub use denial::WorthQueryOperationAuthorizationDenial;
 pub use denial::WorthQueryOperationAuthorizationDenialIdentity;
-pub use denial::WorthQueryOperationAuthorizationDenialKind;
-pub use denial::WorthQueryOperationAuthorizationRefusalKind;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind;
 pub(in crate::domain_computation) use elevation_progression::WorthQueryCurrentElevationSupport;
 pub use elevation_progression::WorthQueryElevationApprovalAuthorizationDenial;
 pub(in crate::domain_computation) use elevation_progression::WorthQueryElevationApprovalBinding;
@@ -94,9 +94,9 @@ pub(in crate::domain_computation) use operation_progression::progress_convention
 pub(in crate::domain_computation) use operation_progression::SelectedConventionalAdmissionStop;
 pub use operation_progression::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use operation_progression::WorthQueryAdmittedApplicationOperation;
-pub(in crate::domain_computation) use operation_progression::WorthQueryOperationAdmissionIdentity;
+
 pub use operation_scope_binding::WorthQueryOperationScopeBinding;
-pub use operation_scope_binding::WorthQueryOperationScopeEntityBinding;
+
 pub(in crate::domain_computation) use retained_capability_support::WorthQueryCapabilitySupportCommitBasis;
 pub(in crate::domain_computation) use retained_capability_support::WorthQueryCapabilitySupportRole;
 pub(in crate::domain_computation) use retained_capability_support::WorthQueryRetainedCapabilitySupport;

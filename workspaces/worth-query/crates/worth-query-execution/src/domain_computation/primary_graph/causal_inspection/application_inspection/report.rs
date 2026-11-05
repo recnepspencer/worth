@@ -6,15 +6,7 @@ use super::{
     },
     WorthQueryApplicationInspectionTarget,
 };
-use crate::domain_computation::{
-    primary_graph::admitted_capture::{
-        checkpoint, run_retained_stage, CaptureStop, RetainedStorageDenial,
-    },
-    provider_session::{
-        WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
-        WorthQueryManagedGraphWorkSession,
-    },
-};
+use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity, crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession};
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
@@ -53,7 +45,7 @@ pub struct FundedInspectionReport {
     session: WorthQueryGraphWorkSessionIdentity,
     managed_run: WorthQueryGraphWorkManagedRunIdentity,
     plan: WorthQueryGraphWorkPlanIdentity,
-    basis: crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
+    basis: crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
     capacity_identity:
         worth_query_admission::integration::WorthQueryGraphCapacityReservationIdentity,
     target: Arc<WorthQueryApplicationInspectionTarget>,
@@ -142,8 +134,8 @@ pub fn materialize(
                 RetainedStorageDenial::Overflow,
             )))?;
         let selection_bytes = match basis.selection() {
-            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Relational => 0,
-            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(product) => product.branch_identity().name().as_str().len(),
+            crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity::Relational => 0,
+            crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity::Product(product) => product.branch_identity().name().as_str().len(),
         };
         // Fund the clone and both completion comparisons before retaining this basis.
         // Product selection custody is shared, but its name still has comparison cost.
@@ -191,7 +183,7 @@ impl FundedInspectionReport {
     }
     pub(super) fn basis(
         &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity {
+    ) -> &crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity {
         &self.basis
     }
     pub(super) fn capacity_identity(

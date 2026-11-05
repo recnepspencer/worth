@@ -1,11 +1,7 @@
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::{ManagedDerivedViewState, WorthQueryManagedDerivedValue};
-use crate::domain_computation::primary_graph::application_query::derived_view::{
-    publication::{PreparedViewTransition, ViewChange},
-    registry::RegisteredDerivedView,
-    ViewPublicationBasis,
-};
+use {crate::domain_computation::primary_graph::application_query::derived_view::publication::PreparedViewTransition, crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewChange, crate::domain_computation::primary_graph::application_query::derived_view::registry::RegisteredDerivedView, crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewPublicationBasis};
 
 impl<Key, Value> ManagedDerivedViewState<Key, Value>
 where

@@ -5,7 +5,7 @@ use std::ops::Bound::{Excluded, Unbounded};
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::InstalledTransportCompletionCustody;
-use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 impl InstalledTransportCompletionCustody {

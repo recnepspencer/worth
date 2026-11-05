@@ -2,6 +2,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication;
 use std::sync::Arc;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
 pub(super) fn validate(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
@@ -9,7 +11,7 @@ pub(super) fn validate(
     observations: &[Arc<ObservedSourcePublication>],
 ) -> Result<(), crate::domain_computation::WorthQueryProviderSessionCommitStop> {
     let stop = consumed_output::verification_stop;
-    let map_admission=crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop;
+    let map_admission=crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop;
     provider.graph.with_runtime(execution, |runtime| {
         for observed in observations {
             let fact = Fact::SourcePublication {
@@ -57,11 +59,11 @@ pub(super) fn validate(
 }
 fn image(execution:&worth_execution::ExecutionRequest<'_, '_>,provider:&WorthQueryPrimaryGraphProvider,
  before:&worth_relational::facade::snapshots::SnapshotHandle,observations:&[Arc<ObservedSourcePublication>],
-)->Result<crate::domain_computation::primary_graph::application_runtime::WorthQuerySourcePublicationImageForTest,crate::domain_computation::WorthQueryProviderSessionCommitStop>{
+)->Result<crate::domain_computation::primary_graph::vocabulary::application_runtime::receipt::WorthQuerySourcePublicationImageForTest,crate::domain_computation::WorthQueryProviderSessionCommitStop>{
     let stop = consumed_output::verification_stop;
     provider.graph.with_runtime(execution,|runtime|{
  let selected=runtime.read_truth().positioned_snapshot(before).map_err(|_|stop(VerificationStop::Unavailable))?;
  provider.graph.source_owner.invalidation_owner.source_publication_validation_image_for_test(observations, &selected)
- .map_err(|cause|stop(crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(cause)))
+ .map_err(|cause|stop(crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop(cause)))
  })
 }

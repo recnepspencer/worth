@@ -5,9 +5,7 @@ use super::super::{
 };
 use super::decision_reads::DecisionReadOutcome;
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAdjacencyDirection as Direction, WorthQueryApplicationFactKey as Fact,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFactKey as Fact};
 use worth_query_declaration::facade::application_schema::{
     ApplicationDerivedRelationRef, ApplicationOperationMarkerIdentity,
 };
@@ -25,6 +23,7 @@ pub use member::{
     WorthQueryInvariantDerivedWalkStep, WorthQueryInvariantGraphComponent,
     WorthQueryInvariantGraphMember,
 };
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 /// One canonical derived endpoint pair. It has no stored relation identity.
 pub struct WorthQueryInvariantDerivedRelation<Schema, Relation, From, To> {

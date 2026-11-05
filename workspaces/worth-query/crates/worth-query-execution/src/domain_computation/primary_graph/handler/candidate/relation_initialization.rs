@@ -1,11 +1,12 @@
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryApplicationCreatedRelation;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationCreatedRelation;
 use worth_query_declaration::facade::application_schema::{
     ApplicationAspectMarkerIdentity, ApplicationEncodedScalarValue, ApplicationFieldMarkerIdentity,
 };
 use worth_query_installation::facade::{
     ApplicationRelationFieldRef, OperationLinks, OperationWrites,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
 
 impl<Schema, Binding> CandidateWriter<'_, Schema, Binding>
 where

@@ -1,9 +1,5 @@
 //! Convert only native observations at their original immutable basis.
-use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationAdjacencyDirection as Direction,
-    WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
-    WorthQueryApplicationObservedFact as Fact, WorthQueryApplicationSourceAdjacencyEndpoints,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact, crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     identity::{EntityId, KindId},

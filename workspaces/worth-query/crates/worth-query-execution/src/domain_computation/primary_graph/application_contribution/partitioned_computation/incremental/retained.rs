@@ -16,9 +16,7 @@ use worth_execution::{NativeReductionTree, PartitionItemId};
 use super::super::items::{ItemDigests, Items};
 use super::super::routing::ComputationPartitionRouting;
 pub(in crate::domain_computation) use super::carriage::ComputationPrior;
-use crate::domain_computation::primary_graph::application_attempt::{
-    ComputationRead, SealedComputationFacts,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead, crate::domain_computation::primary_graph::application_attempt::SealedComputationFacts};
 use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
 use crate::domain_computation::request_execution::QueryMemoryReservation;

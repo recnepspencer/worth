@@ -2,6 +2,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::component_selection::storage;
 use acquisition::AcquiredComponents;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind;
 pub(super) fn complete(
     mut selected: AcquiredComponents,
     meaning: &ApplicationQueryComponentMeaning,

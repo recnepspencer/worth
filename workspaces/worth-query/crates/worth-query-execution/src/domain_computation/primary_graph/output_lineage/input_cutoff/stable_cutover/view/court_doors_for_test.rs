@@ -5,7 +5,7 @@ impl PublishedStableLineage {
     #[doc(hidden)]
     pub fn exact_settlement_for_test(
         &self,
-    ) -> &Arc<super::super::super::super::RecordedSettlementIdentity> {
+    ) -> &Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity> {
         Self::exact_settlement(self)
     }
 }

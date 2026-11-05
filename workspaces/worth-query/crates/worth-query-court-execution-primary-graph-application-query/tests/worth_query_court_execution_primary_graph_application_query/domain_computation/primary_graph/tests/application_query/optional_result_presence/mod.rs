@@ -3,7 +3,7 @@ use std::num::NonZeroUsize;
 use std::time::Duration;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock;
 
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 
 use worth_foundational::facade::AspectFieldLocator;
 use worth_foundational::facade::CanonicalFieldPath;

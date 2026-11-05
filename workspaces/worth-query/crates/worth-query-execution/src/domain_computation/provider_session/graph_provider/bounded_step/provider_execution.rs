@@ -2,7 +2,7 @@ use super::{
     WorthQueryGraphProviderCheckpoint, WorthQueryGraphProviderStep,
     WorthQueryGraphProviderStepDisposition,
 };
-use crate::domain_computation::WorthQueryGraphProviderFailure;
+use crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure;
 
 pub trait WorthQueryGraphProviderExecution: Send + 'static {
     fn advance(

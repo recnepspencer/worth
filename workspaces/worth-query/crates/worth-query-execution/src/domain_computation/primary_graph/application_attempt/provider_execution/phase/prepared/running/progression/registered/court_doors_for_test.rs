@@ -8,7 +8,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
     ) -> (
         crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
         std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
-        Option<crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord>,
+        Option<crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord>,
     ) {
         (self.staged, self.steps, self.dispatch_outbox)
     }
@@ -45,7 +45,7 @@ impl<'a, Schema, Operation, Input, Scope>
             Scope,
         >,
         idempotency: WorthQueryApplicationIdempotencyBinding,
-        outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+        outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
         aftermath_causality: Option<
             &'a crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
         >,

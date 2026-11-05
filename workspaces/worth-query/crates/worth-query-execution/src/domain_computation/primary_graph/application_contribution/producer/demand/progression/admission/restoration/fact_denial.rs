@@ -16,7 +16,7 @@ pub(super) fn decode_denial(error: FactDecodeDenial) -> WorthQueryOutputDemandDe
         }
         FactDecodeDenial::Format(message) => denial(Kind::IncompleteDependencyCoverage, message),
         FactDecodeDenial::Retention(StoreDenial::ExecutionRequest(cause)) => denial(
-            Kind::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_scope_stop(cause)),
+            Kind::ExecutionRequest(crate::domain_computation::request_execution::execution_stop::advancement_scope_stop(cause)),
             "checkpoint producer facts",
         ),
         FactDecodeDenial::Retention(StoreDenial::Allocation(allocation)) => {

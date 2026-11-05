@@ -1,12 +1,7 @@
 use std::marker::PhantomData;
 
-use super::super::{
-    WorthQueryApplicationProjectionDenialKind, WorthQueryApplicationQueryAccessReceipt,
-    WorthQueryApplicationQueryAdmissionDenialKind,
-};
-use crate::domain_computation::primary_graph::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind, super::super::WorthQueryApplicationQueryAccessReceipt, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
+use {crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 /// The specific reason a live read could not be opened.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -207,7 +202,7 @@ pub enum WorthQueryApplicationLiveOutcome<Query, QueryResult> {
     /// The buffered cause could not be turned into a delivery.
     CauseDenied(WorthQueryApplicationLiveCauseDenialKind),
     /// The caller's resource or execution request stopped the read.
-    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    ExecutionRequest(crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind),
     /// The request was cancelled.
     Cancelled,
     /// The request reached its deadline.

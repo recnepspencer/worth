@@ -1,5 +1,5 @@
 pub(crate) mod field_text;
-use super::actor::encoding::FundedActorText;
+use crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText;
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial;
 pub(in crate::domain_computation::primary_graph) use field_text::WorkflowApprovalFieldText;
 use std::collections::BTreeMap;
@@ -47,7 +47,7 @@ pub struct WorkflowApprovalMeaning {
     pub expiry: worth_foundational::facade::AspectValue,
     pub scope: EntityId,
     pub decision:
-        crate::domain_computation::primary_graph::application_attempt::WorkflowApprovalDecision,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision,
 }
 
 pub fn workflow_approval_fields(
@@ -66,7 +66,7 @@ pub fn workflow_approval_fields(
         ),
         (
             layout.approval.protocol_version.clone(),
-            AspectValue::UInt64(super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION),
+            AspectValue::UInt64(crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION),
         ),
         (
             layout.approval.instance_identity.clone(),
@@ -83,8 +83,8 @@ pub fn workflow_approval_fields(
         (
             layout.approval.decision.clone(),
             text(match meaning.decision {
-                crate::domain_computation::primary_graph::application_attempt::WorkflowApprovalDecision::Approve => "approve",
-                crate::domain_computation::primary_graph::application_attempt::WorkflowApprovalDecision::Reject => "reject",
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision::Approve => "approve",
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision::Reject => "reject",
             }),
         ),
         (

@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use worth_foundational::facade::AspectValue;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
@@ -16,7 +16,7 @@ use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime;
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 use super::authenticated_principal::WorthQueryResolvedPrincipalEvidence;
 use super::freshness::validate_freshness_at_snapshot;
@@ -28,20 +28,11 @@ use super::resolution_denial::entity_lookup_resolution_denial;
 use super::resolution_denial::principal_binding_resolution_denial;
 use super::resolution_denial::resolution_denial;
 use super::root::WorthQueryPrimaryGraph;
-use super::schema_layout::WorthQueryPrimaryPrincipalBindingLayout;
+use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 use super::WorthQueryAuthenticatedPrincipal;
-use super::WorthQueryPrincipalResolutionDenial;
-use super::WorthQueryPrincipalResolutionDenialKind;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
 
-/// How strictly identity lookups are verified while resolving a principal or
-/// entity.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryPrincipalResolutionMode {
-    /// Trust the identity index.
-    Ordinary,
-    /// Also verify each index lookup against stored records.
-    Certification,
-}
 
 struct WorthQueryPrincipalSnapshotResolution<'a> {
     binding: &'a str,
@@ -61,6 +52,7 @@ mod admitted_observations;
 #[path = "resolution/selected_product.rs"]
 pub(crate) mod selected_product;
 pub(in crate::domain_computation) use selected_product::WorthQueryIssuedSelectedPrincipal;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 
 fn principal_graph_binding<'a>(
     runtime: &'a WorthQueryExecutionRuntime,
@@ -127,7 +119,7 @@ fn principal_admission_denial(
     stop: worth_relational::facade::mvcc::CompanionPreflightStop,
     binding: &str,
 ) -> WorthQueryPrincipalResolutionDenial {
-    let kind = match super::provider::relational_execution_denial::preflight_execution_cause(stop) {
+    let kind = match crate::domain_computation::primary_graph::vocabulary::provider::preflight::preflight_execution_cause(stop) {
         Ok(cause) => WorthQueryPrincipalResolutionDenialKind::Stopped(
             super::provider::relational_execution_denial::relational_execution_kind(cause, None),
         ),
@@ -320,7 +312,7 @@ fn admit_resolution_request(
         Some(WorthQueryRequestInterruption::Cancelled) => {
             return Err(resolution_denial(
                 WorthQueryPrincipalResolutionDenialKind::Stopped(Err(
-                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+                    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
                 )),
                 binding,
             ));
@@ -328,7 +320,7 @@ fn admit_resolution_request(
         Some(WorthQueryRequestInterruption::DeadlineExceeded) => {
             return Err(resolution_denial(
                 WorthQueryPrincipalResolutionDenialKind::Stopped(Err(
-                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+                    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
                 )),
                 binding,
             ));
@@ -358,7 +350,7 @@ fn validate_principal_clock(
     } else {
         Err(resolution_denial(
             WorthQueryPrincipalResolutionDenialKind::Refused(
-                super::WorthQueryPrincipalResolutionRefusalKind::ForeignRuntime,
+                crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind::ForeignRuntime,
             ),
             binding,
         ))

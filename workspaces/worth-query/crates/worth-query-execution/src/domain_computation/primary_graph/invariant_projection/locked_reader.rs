@@ -11,16 +11,8 @@ use worth_query_installation::facade::{
 };
 
 use super::work::WorthQueryInvariantProjectionWorkBudget;
-use super::{
-    WorthQueryApplicationInvariantProjectionAuthority,
-    WorthQueryApplicationInvariantProjectionSnapshot, WorthQueryInvariantEntityIdentity,
-    WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionWork,
-    WorthQueryRealizedProjectionScope,
-};
-use crate::domain_computation::primary_graph::{
-    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
-    WorthQueryPrincipalResolutionMode,
-};
+use {super::WorthQueryApplicationInvariantProjectionAuthority, super::WorthQueryApplicationInvariantProjectionSnapshot, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::WorthQueryInvariantProjectionDenial, super::WorthQueryInvariantProjectionWork, super::WorthQueryRealizedProjectionScope};
+use {crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial, crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 
 mod borrowed_snapshot;
 #[path = "locked_reader/content.rs"]
@@ -90,7 +82,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
             'runtime,
         >,
     pub(super) consumed_outputs: BTreeMap<
-        Arc<super::super::output_lineage::RecordedSettlementIdentity>,
+        Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
         super::ConsumedOutputEvidence,
     >,
     _schema: PhantomData<fn() -> Schema>,

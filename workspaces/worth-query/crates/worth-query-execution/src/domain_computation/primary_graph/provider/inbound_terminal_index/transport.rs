@@ -6,11 +6,7 @@ use super::{
     WorthQueryCanonicalInboundCompletion, WorthQueryCompletionProvenance,
     WorthQueryInboundTerminalIndex, WorthQueryInboundTerminalIndexDenial,
 };
-use {
-    crate::domain_computation::primary_graph::application_inbound::inbound_occurrence::WorthQueryInstalledTransportCompletionBinding,
-    crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportCompletion,
-    crate::domain_computation::primary_graph::application_inbound::inbound_publication::PerformedInstalledTransportCompletion,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_inbound::transport_binding::WorthQueryInstalledTransportCompletionBinding, crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportCompletion, crate::domain_computation::primary_graph::application_inbound::inbound_publication::PerformedInstalledTransportCompletion};
 
 impl WorthQueryCanonicalInboundCompletion {
     /// Match a completed transport report against the already World-performed

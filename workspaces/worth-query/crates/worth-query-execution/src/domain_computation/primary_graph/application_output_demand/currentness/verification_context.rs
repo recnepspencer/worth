@@ -1,9 +1,9 @@
 //! Resolve retained fact coordinates before any successful native mark can answer.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial as Indexed;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::indexed_entity_selection::IndexedSelectionReobserveDenial as Indexed;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason as Requirement;
-use crate::domain_computation::primary_graph::provider::RebaseVerificationReason as Reason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason as Requirement;
+use crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason as Reason;
 
 pub(super) enum VerificationContext<'a> {
     Native(&'a Fact),

@@ -1,6 +1,6 @@
 mod application_basis;
 pub(crate) mod shared_query_basis;
-pub(in crate::domain_computation::primary_graph) use shared_query_basis::SelectedQueryBasisRetentionStop;
+
 pub(in crate::domain_computation) use shared_query_basis::SharedSelectedProductOperation;
 mod branches;
 mod candidate_selectors;
@@ -22,7 +22,7 @@ pub use correction_source::{
     WorthQuerySelectedCorrectionSource,
 };
 pub(crate) mod generated_materialization;
-pub(in crate::domain_computation::primary_graph) use generated_materialization::admit_required_invariants;
+
 mod history;
 mod observation_room;
 mod operation;
@@ -53,13 +53,7 @@ pub use cleanup::{
 };
 pub use close::WorthQueryApplicationProductBranchCloseDenial;
 pub(in crate::domain_computation::primary_graph) use conditional_definition::AdmissionScopedOps;
-pub use conditional_definition::{
-    WorthQueryAdmittedApplicationConditionalDefinition,
-    WorthQueryApplicationConditionalDefinitionAdmissionDenial,
-    WorthQueryConditionalDefinitionPublicationDenial,
-    WorthQueryConditionalDefinitionPublicationOutcome,
-    WorthQueryPerformedConditionalDefinitionPublication,
-};
+pub use {conditional_definition::WorthQueryAdmittedApplicationConditionalDefinition, conditional_definition::WorthQueryConditionalDefinitionPublicationDenial, conditional_definition::WorthQueryConditionalDefinitionPublicationOutcome, conditional_definition::WorthQueryPerformedConditionalDefinitionPublication};
 pub use context::ContextOps;
 pub(crate) use context::ContextScopedOps;
 pub(in crate::domain_computation::primary_graph) use context::ProductOperationContextScopedOps;
@@ -69,22 +63,7 @@ pub use generated_materialization::AdvancementOps;
 pub use generated_materialization::ReconstructionOps;
 pub use generated_materialization::RecoveryAdvancementOps;
 pub use generated_materialization::RestorationOps;
-pub use generated_materialization::{
-    WorthQueryCompletedGeneratedOutputReconstruction, WorthQueryGeneratedEntity,
-    WorthQueryGeneratedOutputInvariantAdmissionDenial,
-    WorthQueryGeneratedOutputPublicationNoEffect,
-    WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputReconstruction,
-    WorthQueryGeneratedOutputReconstructionDenial, WorthQueryGeneratedOutputReconstructionFailure,
-    WorthQueryGeneratedOutputRestorationFailure, WorthQueryGeneratedOutputRestorationFailureCause,
-    WorthQueryGeneratedOutputRestorationReceipt, WorthQueryGeneratedOutputRestorationRecovery,
-    WorthQueryGeneratedOutputRestorationRecoveryFailure,
-    WorthQueryGeneratedOutputRestorationRecoveryStage, WorthQueryGeneratedOutputSuspensionDenial,
-    WorthQueryGeneratedOutputSuspensionFailure, WorthQueryGeneratedOutputSuspensionRecovery,
-    WorthQueryGeneratedOutputSuspensionRecoveryFailure,
-    WorthQueryGeneratedOutputSuspensionRecoveryStage, WorthQueryReconstructedOutputEntity,
-    WorthQueryRestoredGeneratedOutput, WorthQueryRetainedGeneratedOutputEntity,
-    WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedGeneratedOutputRestoration,
-};
+pub use {generated_materialization::WorthQueryCompletedGeneratedOutputReconstruction, generated_materialization::WorthQueryGeneratedEntity, generated_materialization::WorthQueryGeneratedOutputPublicationNoEffect, generated_materialization::WorthQueryGeneratedOutputPublicationNoEffectCause, generated_materialization::WorthQueryGeneratedOutputReconstruction, generated_materialization::WorthQueryGeneratedOutputReconstructionDenial, generated_materialization::WorthQueryGeneratedOutputReconstructionFailure, generated_materialization::WorthQueryGeneratedOutputRestorationFailure, generated_materialization::WorthQueryGeneratedOutputRestorationFailureCause, generated_materialization::WorthQueryGeneratedOutputRestorationReceipt, generated_materialization::WorthQueryGeneratedOutputRestorationRecovery, generated_materialization::WorthQueryGeneratedOutputRestorationRecoveryFailure, generated_materialization::WorthQueryGeneratedOutputRestorationRecoveryStage, generated_materialization::WorthQueryGeneratedOutputSuspensionDenial, generated_materialization::WorthQueryGeneratedOutputSuspensionFailure, generated_materialization::WorthQueryGeneratedOutputSuspensionRecovery, generated_materialization::WorthQueryGeneratedOutputSuspensionRecoveryFailure, generated_materialization::WorthQueryGeneratedOutputSuspensionRecoveryStage, generated_materialization::WorthQueryReconstructedOutputEntity, generated_materialization::WorthQueryRestoredGeneratedOutput, generated_materialization::WorthQueryRetainedGeneratedOutputEntity, generated_materialization::WorthQuerySuspendedGeneratedOutput, generated_materialization::WorthQueryUnpublishedGeneratedOutputRestoration};
 pub use history::{WorthQueryProductHistory, WorthQueryProductHistoryEntry};
 pub(in crate::domain_computation::primary_graph) use observation_room::ObservationRoomScopedOps;
 pub use program_adoption::AdmissionOps;

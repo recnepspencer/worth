@@ -186,7 +186,7 @@ fn validate_effects(
                     return Err(Denial::signed_entity_immutable());
                 }
                 if layout.signing_lifecycle.is_record(kind) {
-                    return Err(Denial::signing_lifecycle(super::super::WorthQueryApplicationCommitDenialKind::SigningLifecycleForgery));
+                    return Err(Denial::signing_lifecycle(crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind::SigningLifecycleForgery));
                 }
             }
             _ => {}

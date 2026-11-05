@@ -26,6 +26,8 @@ use worth_query_declaration::facade::application_query::{
 use worth_relational::facade::{
     runtime::RelationalPinnedRead, transactions::RelationalExecutionDenialCause as Cause,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind;
 mod sources;
 pub(super) fn select(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

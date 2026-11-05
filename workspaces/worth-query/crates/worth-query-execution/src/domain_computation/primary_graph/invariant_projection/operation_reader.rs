@@ -56,19 +56,9 @@ pub use prior_output::WorthQueryPriorOutputFamilyMember;
 pub(in crate::domain_computation::primary_graph) use prior_output::WorthQueryPriorOutputRead;
 
 use super::super::request_local::{assert_request_local, RequestLocal};
-use super::{
-    WorthQueryApplicationInvariantProjectionAuthority,
-    WorthQueryApplicationInvariantProjectionReader,
-    WorthQueryApplicationInvariantProjectionSnapshot, WorthQueryCompletedInvariantProjection,
-    WorthQueryInvariantAggregateDenial, WorthQueryInvariantEntityIdentity,
-    WorthQueryInvariantMutationTarget, WorthQueryInvariantProjectionDenial,
-    WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionWork,
-    WorthQueryInvariantRelation, WorthQueryOperationProjectionDenial,
-};
-use crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryEntityResolutionDenial,
-};
+use {super::WorthQueryApplicationInvariantProjectionAuthority, super::WorthQueryApplicationInvariantProjectionReader, super::WorthQueryApplicationInvariantProjectionSnapshot, super::WorthQueryCompletedInvariantProjection, super::WorthQueryInvariantAggregateDenial, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget, super::WorthQueryInvariantProjectionDenial, super::WorthQueryInvariantProjectionTraversalDenial, super::WorthQueryInvariantProjectionWork, super::WorthQueryInvariantRelation, super::WorthQueryOperationProjectionDenial};
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
+use {crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial};
 
 /// An invariant projection reader restricted to one operation's declared reads.
 ///
@@ -82,10 +72,10 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
 > {
     reader: &'reader mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
     source_query: Option<&'reader crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<'reader, Schema>>,
-    source_context_use: Option<&'reader std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>>,
+    source_context_use: Option<&'reader std::cell::Cell<crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse>>,
     admitted_contracts: Option<Arc<WorthQueryCompiledApplicationOperationContracts>>,
     runtime_authority:
-        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: &'reader worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
     selected_product: Option<&'reader crate::basis::WorthQueryProductBranchLease>,

@@ -4,7 +4,7 @@ use worth_query_admission::integration::prepare_application_operation_graph_work
 
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::TouchAccountOperation;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::resource_request::application_resource_request;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::resource_request::application_resource_request;
 
 #[test]
 fn installed_operation_template_keeps_exact_operation_and_support_authority() {

@@ -48,7 +48,7 @@ struct WorthQueryContinuationFinalization {
     receipt_basis: WorthQueryApplicationQueryReceiptBasis,
     graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkPhases,
-    basis_release: super::super::WorthQueryApplicationBasisReleaseReceipt,
+    basis_release: crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt,
 }
 
 pub(super) fn finalize_continuation_page<
@@ -98,7 +98,7 @@ where
                 denial(map_validation_denial(validation), &finalization.subject)
             })
         },
-        |projection: crate::domain_computation::primary_graph::WorthQueryApplicationProjectionDenial| {
+        |projection: crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenial| {
             denial(
                 WorthQueryApplicationContinuationDenialKind::Projection(projection.kind()),
                 projection.subject(),
@@ -108,7 +108,7 @@ where
     finalization.decode.check(execution).map_err(|cause| {
         denial(
             WorthQueryApplicationContinuationDenialKind::Projection(
-                super::super::WorthQueryApplicationProjectionDenialKind::ValueDecode(cause),
+                crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind::ValueDecode(cause),
             ),
             "value-decode",
         )

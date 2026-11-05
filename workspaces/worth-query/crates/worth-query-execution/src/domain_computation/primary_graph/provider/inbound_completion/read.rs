@@ -9,7 +9,7 @@ use worth_relational::facade::{
     runtime::RelationalRuntime,
 };
 
-use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryInboundCompletionReadDenial {

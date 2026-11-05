@@ -1,5 +1,9 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_family_identity::OutputFamilyIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 
 impl WorthQueryApplicationOutputLineage {
     #[doc(hidden)]
@@ -31,18 +35,6 @@ impl WorthQueryApplicationOutputLineage {
     }
 }
 
-impl ProductCoordinate {
-    #[doc(hidden)]
-    pub fn new_for_test(
-        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        generation: u64,
-    ) -> Self {
-        Self {
-            occurrence,
-            generation,
-        }
-    }
-}
 
 impl WorthQueryCurrentOutputFamilyResolution {
     #[doc(hidden)]
@@ -206,7 +198,7 @@ impl WorthQueryCurrentOutputCandidate {
     #[doc(hidden)]
     pub fn verification_requirement_for_test(
         &self,
-    ) -> &Option<invalidation::FullVerificationReason> {
+    ) -> &Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason> {
         &self.verification_requirement
     }
 }
@@ -328,7 +320,7 @@ impl WorthQueryExactRecordedOutput {
         [u8; 32],
         u64,
         ApplicationSchemaBindingIdentity,
-        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         RetainedSourceFacts,
     ) {
         (

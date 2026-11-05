@@ -1,9 +1,7 @@
 //! Literal closed control handles, each armed on its original runtime receiver.
 use super::*;
 mod receipt;
-pub use receipt::{
-    WorthQuerySourcePublicationHeadForTest, WorthQuerySourcePublicationImageForTest,
-};
+use crate::domain_computation::primary_graph::vocabulary::application_runtime::receipt::WorthQuerySourcePublicationImageForTest;
 pub struct WorthQuerySourcePublicationValidationPauseForTest {
     slot: Arc<PendingAttemptPause>,
     latch: Arc<ExactAttemptPause>,

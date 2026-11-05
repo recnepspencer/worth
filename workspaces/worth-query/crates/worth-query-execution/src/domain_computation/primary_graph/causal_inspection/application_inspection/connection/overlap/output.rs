@@ -4,6 +4,7 @@ use worth_relational::facade::{
     publication::PublishedAuthoritativeFieldEffect as FieldEffect, runtime::RelationalFieldPresence,
 };
 use WorthQueryProducerOutputConnectionDenial as Refusal;
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
 
 impl ObservationConnection<'_, '_> {
     /// Diagnostic O(roles × observed fields × (installed fields + producer patches)).

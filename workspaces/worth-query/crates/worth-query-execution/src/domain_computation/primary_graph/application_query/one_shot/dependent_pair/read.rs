@@ -3,10 +3,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_query::derived_view::reconstruction_denial as denial;
 use crate::domain_computation::primary_graph::application_query::OneShotBatchScopedOps;
-use crate::domain_computation::primary_graph::application_query::{
-    read_execution::{read_execution_denial, WorthQueryApplicationReadExecutionDenialKind},
-    WorthQueryApplicationBatchReadDenial, WorthQueryApplicationBatchResult,
-};
+use {crate::domain_computation::primary_graph::application_query::read_execution::read_execution_denial, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBatchReadDenial, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBatchResult};
 use std::cell::{Cell, RefCell};
 use worth_execution::ExecutionMemoryReservation;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};

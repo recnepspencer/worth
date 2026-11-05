@@ -1,9 +1,7 @@
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::EntityId;
 
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode,
@@ -36,6 +34,7 @@ pub(in crate::domain_computation::primary_graph) use collection::select_assessme
 use identity::transition_identity;
 use inbound::select_inbound;
 pub(in crate::domain_computation::primary_graph) use replay::select_settled_replay_transition;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::selection::SelectedWorkflowCondition;
 pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowTransition {
     pub(super) node: EntityId,
     pub(super) node_path: String,
@@ -83,11 +82,6 @@ pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowAssessme
         worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
 }
 
-#[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowCondition {
-    pub(in crate::domain_computation::primary_graph) condition:
-        crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowCondition,
-}
 
 impl SelectedWorkflowTransition {
     pub(in crate::domain_computation::primary_graph) const fn node(&self) -> EntityId {

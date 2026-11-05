@@ -1,7 +1,4 @@
-use super::{
-    PreparedWorkflowAdvance, RequiredWorkflowCondition, RequiredWorkflowOperation,
-    WorkflowProgressOutcome,
-};
+use {super::PreparedWorkflowAdvance, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_transition_program_publication::RequiredWorkflowCondition, super::RequiredWorkflowOperation, super::WorkflowProgressOutcome};
 use crate::domain_computation::primary_graph::application_attempt::ApplicationAttemptIdempotencyResolutionScopedOps;
 use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionScopedOps;
 use crate::domain_computation::primary_graph::{

@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::application_output_demand::denial:
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
-use crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity;
+use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 

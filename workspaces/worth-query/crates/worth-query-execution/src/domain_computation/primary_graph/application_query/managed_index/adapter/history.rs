@@ -5,6 +5,9 @@ use worth_foundational::facade::AspectValue;
 use worth_relational::facade::{
     history::RelationalAuthoredManagedSourceMaterial, identity::EntityId,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot;
+use crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop;
+use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial;
 
 pub(super) fn relevant<S, I, P>(
     installed: &TypedIndexProvider<S, I, P>,

@@ -1,7 +1,7 @@
 //! Explicit bounded reclamation after terminal owner handoff and signed expiry.
 
 use super::WorthQueryInboundCustody;
-use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 /// Exact accepted-custody count and bytes released by one bounded cleanup.

@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::ReadSetScoped
 use crate::domain_computation::primary_graph::{
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
 
 impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     pub(super) fn prepare_transition_observation<O, I, Scope, Spec>(

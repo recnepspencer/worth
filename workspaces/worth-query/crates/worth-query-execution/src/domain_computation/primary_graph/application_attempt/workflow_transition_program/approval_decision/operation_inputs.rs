@@ -9,7 +9,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
     layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
     graph_layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
     resource: worth_relational::facade::identity::EntityId,
-    instance: &super::super::super::PublishedWorkflowInstanceRef,
+    instance: &crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
     progress: &crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,
     approval: worth_relational::facade::identity::EntityId,
     target_operation: &str,

@@ -304,6 +304,4 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) use attempt_registration::{
-    WorthQuerySourcePublicationHeadForTest, WorthQuerySourcePublicationImageForTest,
-};
+

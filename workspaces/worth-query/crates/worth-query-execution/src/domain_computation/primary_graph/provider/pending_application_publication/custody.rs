@@ -12,7 +12,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplica
     pub(super) committed: Arc<worth_relational::facade::transactions::CommitResult>,
     pub(super) application: Option<WorthQueryPrimaryGraphCommittedApplication>,
     pub(super) emitted_effect_count: usize,
-    pub(super) outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+    pub(super) outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
     pub(super) aggregate_published: bool,
     pub(super) source_read_stop: Option<worth_relational::facade::transactions::RelationalExecutionDenialCause>,
     pub(super) receipt_basis_lease:

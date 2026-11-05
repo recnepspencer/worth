@@ -29,13 +29,8 @@ pub mod required_settlement;
 pub mod resolution;
 #[path = "retained_computation/mod.rs"]
 pub mod retained_computation;
-#[path = "semantic_source/mod.rs"]
-pub mod semantic_source;
-#[path = "settlement_identity/mod.rs"]
-pub mod settlement_identity;
 #[path = "source_facts/mod.rs"]
 pub mod source_facts;
-pub use crate::domain_computation::primary_graph::output_lineage::ProductCoordinate;
 pub use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 pub use crate::domain_computation::primary_graph::output_lineage::WorthQueryCurrentOutputFamilyResolution;
 pub use crate::domain_computation::primary_graph::output_lineage::WorthQueryPriorOutputBindingResolution;

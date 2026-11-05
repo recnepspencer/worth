@@ -160,8 +160,8 @@ where
         let mut families: BTreeMap<
             (&str, &str),
             (
-                &[super::WorthQueryProducerApplicability],
-                BTreeSet<super::WorthQueryProducerApplicability>,
+                &[crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerApplicability],
+                BTreeSet<crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerApplicability>,
             ),
         > = BTreeMap::new();
         for binding in self.producers.values() {

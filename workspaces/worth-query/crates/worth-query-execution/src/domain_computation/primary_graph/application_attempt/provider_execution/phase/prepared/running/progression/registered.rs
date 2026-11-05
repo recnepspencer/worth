@@ -9,7 +9,7 @@ pub struct WorthQueryRegisteredProviderAttempt<'run> {
 
     steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
     dispatch_outbox:
-        Option<crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord>,
+        Option<crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord>,
 }
 
 pub struct WorthQueryProviderAttemptRegistrationContext<
@@ -30,7 +30,7 @@ pub struct WorthQueryProviderAttemptRegistrationContext<
     original_authority: std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
     >,
-    outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+    outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
     aftermath_causality: Option<
         &'a crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
@@ -48,7 +48,7 @@ impl<'a, Schema, Operation, Input, Scope>
             Scope,
         >,
         idempotency: WorthQueryApplicationIdempotencyBinding,
-        outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+        outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
         aftermath_causality: Option<
             &'a crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
         >,
@@ -99,7 +99,7 @@ impl<'a, Schema, Operation, Input, Scope>
     pub(in crate::domain_computation::primary_graph::application_attempt) const fn outcome_identity(
         &self,
         _permit: &WorthQueryProviderRegistrationInspectionPermit,
-    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity{
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity{
         self.outcome_identity
     }
 
@@ -129,7 +129,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
 
         steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
         dispatch_outbox: Option<
-            crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+            crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
         >,
     ) -> Self {
         Self {

@@ -37,7 +37,7 @@ fn absent_admitted_demand_refuses_with_required_successor_state_unavailable() {
                     &scope,
                     runtime.current_world(),
                     &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::invocation::ProducerInvocationAuthority::from(
-                        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority::Ordinary,
+                        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority::Ordinary,
                     ),
                     &RefCell::new(PerformedMembers::start()),
                 )

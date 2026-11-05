@@ -1,5 +1,8 @@
 //! Native collection membership and scalar observations share one retained decision.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::operation_body::value::PreparedRequirementOperand;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
+use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
@@ -31,7 +34,7 @@ impl<Schema: ApplicationSchema, Operation>
             self.observed_requirement_collection(root, &selection, execution, context)?;
         let kind = self.reader.layout.entity_kind(to).ok_or_else(|| HandlerExecutionDenial::new(
             crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, to,
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, to,
             )))?;
         let list_bytes = observed
             .ids

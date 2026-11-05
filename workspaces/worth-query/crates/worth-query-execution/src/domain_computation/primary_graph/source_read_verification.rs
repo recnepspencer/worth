@@ -3,7 +3,7 @@ use super::{
     aggregate_observation::AggregateObservation,
     structural_walk::{memory, StructuralWalkObservation},
 };
-use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Failure;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Failure;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use worth_execution::ExecutionMemoryReservation;

@@ -13,7 +13,7 @@ pub enum WorthQueryConditionalReentryFailure {
     Invocation(super::operation_invocation::WorthQueryTemporalInvocationFailure),
     Principal(super::reconstruction_authority::WorthQueryTemporalPrincipalFailure),
     ApplicationAttempt(
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
+        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
     ),
     Idempotency(worth_foundational::facade::CanonicalDigestDerivationDenial),
     ProductSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),

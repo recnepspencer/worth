@@ -2,17 +2,9 @@
 mod retirement;
 mod round;
 use super::{PredicateWorld, SourcePredicateAxis};
-use crate::domain_computation::primary_graph::{
-    application_query::managed_index::{
-        predicate::WatchSlot, SourceImageView, WorthQueryManagedIndexSourceChange,
-        WorthQueryManagedIndexWorkDenial,
-    },
-    live_delivery::WorthQueryLivePredicatePreparation,
-    source_facts::SourceFactsAllocation,
-};
-pub(in crate::domain_computation::primary_graph) use round::{
-    PredicateNoticeDisposition, PreparedPredicateNotices,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot, crate::domain_computation::primary_graph::application_query::managed_index::SourceImageView, crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexSourceChange, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial, crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePredicatePreparation, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation};
+pub(in crate::domain_computation::primary_graph) use round::PreparedPredicateNotices;
+use crate::domain_computation::primary_graph::vocabulary::application_query::round::PredicateNoticeDisposition;
 use std::sync::{Arc, Mutex};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{

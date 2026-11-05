@@ -89,7 +89,7 @@ impl<'a, 'request, 'authority> MaterialCompletion<'a, 'request, 'authority> {
     }
     pub(super) fn basis(
         &self,
-        basis: &super::super::super::WorthQueryApplicationBasisIdentity,
+        basis: &crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
     ) -> Result<(), Cause> {
         let bytes = basis
             .retained_clone_heap_bytes()
@@ -103,9 +103,9 @@ pub(in crate::domain_computation::primary_graph::application_query) fn retain_sc
     execution: &ExecutionRequest<'_, '_>,
     scope: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<S, E>,
     query: &str,
-) -> Result<Arc<crate::domain_computation::primary_graph::entity_resolution::WorthQueryObservedScopeSelector>, super::WorthQueryApplicationOneShotDenial>{
-    use super::WorthQueryApplicationOneShotDenialKind as Kind;
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+) -> Result<Arc<crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector>, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial>{
+    use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as Kind;
+    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
     scope
         .retain_scope_selector_funded(execution)
         .map_err(|cause| {

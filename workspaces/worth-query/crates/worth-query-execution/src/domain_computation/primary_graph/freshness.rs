@@ -4,13 +4,14 @@ use super::observations::{
     observe_exact_principal_target, observe_mapping, WorthQueryPrincipalMappingObservation,
     WorthQueryPrincipalTargetObservation,
 };
-use super::resolution_denial::{resolution_denial, WorthQueryPrincipalResolutionDenialKind};
-use super::schema_layout::WorthQueryPrimaryPrincipalBindingLayout;
-use super::WorthQueryPrincipalResolutionDenial;
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use {super::resolution_denial::resolution_denial, crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind};
+use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use serde::{Deserialize, Serialize};
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
+use crate::domain_computation::vocabulary::primary_graph::freshness::WorthQueryPrincipalReuseWitness;
 
 /// Descriptive evidence retained by a workflow approval, never a live principal permit.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -142,22 +143,6 @@ pub(in crate::domain_computation) struct WorthQueryPrincipalFreshnessEvidence {
     target: WorthQueryPrincipalTargetObservation,
 }
 
-/// Fixed native revision evidence for a producer decision that used its
-/// authenticated principal. A value rewrite changes its field revision and
-/// therefore refuses reuse even when the new value compares equal.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryPrincipalReuseWitness {
-    mapping: EntityId,
-    mapping_kind: KindId,
-    mapping_identity_revision: worth_relational::facade::runtime::RelationalFieldRevision,
-    mapping_status_revision: worth_relational::facade::runtime::RelationalFieldRevision,
-    relation: RelationId,
-    relation_kind: KindId,
-    principal: EntityId,
-    principal_kind: KindId,
-    principal_identity_revision: worth_relational::facade::runtime::RelationalFieldRevision,
-    adjacency_revision: Option<worth_relational::facade::identity::VersionId>,
-}
 
 impl WorthQueryPrincipalFreshnessEvidence {
     /// Compare the actual Native scalar decoded by the admitted principal
@@ -276,8 +261,8 @@ fn comparison_observation<T>(
             if matches!(
                 denial.kind(),
                 WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(_))
-                    | WorthQueryPrincipalResolutionDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled))
-                    | WorthQueryPrincipalResolutionDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut))
+                    | WorthQueryPrincipalResolutionDenialKind::Stopped(Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled))
+                    | WorthQueryPrincipalResolutionDenialKind::Stopped(Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut))
             ) =>
         {
             Err(denial)

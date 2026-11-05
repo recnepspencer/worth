@@ -2,6 +2,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_query::execution_shape::PreparedOneShotShape;
 use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryControls;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
 pub(super) trait AdmittedGraphParentOps<Schema: ApplicationSchema>:
     crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 {

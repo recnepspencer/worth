@@ -6,13 +6,7 @@ use crate::domain_computation::provider_session::graph_provider::bounded_step::{
     WorthQueryGraphProviderStepArtifactContext, WorthQueryGraphProviderStepCompletion,
     WorthQueryOwnedGraphProviderExecution, WorthQueryProviderExecutionInvocation,
 };
-use crate::domain_computation::{
-    WorthQueryBoundGraphExecutionReceipt, WorthQueryGraphProviderCall,
-    WorthQueryGraphProviderCallKind, WorthQueryGraphProviderExecution, WorthQueryGraphProviderStep,
-    WorthQueryGraphProviderStepReport, WorthQueryGraphProviderStepRetainedEvidence,
-    WorthQueryGraphReadMaterial, WorthQueryGraphReadStreamAccumulator,
-    WorthQueryProviderWorkReport,
-};
+use {crate::domain_computation::WorthQueryBoundGraphExecutionReceipt, crate::domain_computation::WorthQueryGraphProviderCall, crate::domain_computation::vocabulary::provider_session::call_kind::WorthQueryGraphProviderCallKind, crate::domain_computation::WorthQueryGraphProviderExecution, crate::domain_computation::WorthQueryGraphProviderStep, crate::domain_computation::WorthQueryGraphProviderStepReport, crate::domain_computation::WorthQueryGraphProviderStepRetainedEvidence, crate::domain_computation::WorthQueryGraphReadMaterial, crate::domain_computation::WorthQueryGraphReadStreamAccumulator, crate::domain_computation::WorthQueryProviderWorkReport};
 
 pub(super) struct WorthQueryManagedGraphExecution {
     pub(super) call: WorthQueryGraphProviderCall,
@@ -139,7 +133,7 @@ impl WorthQueryManagedGraphExecution {
 
     pub(super) fn admit_provider_step(
         &self,
-        observation: super::WorthQueryManagedSafePointObservation,
+        observation: crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation,
     ) -> super::provider_step_admission::WorthQueryProviderStepAdmissionOutcome {
         super::provider_step_admission::admit_provider_step(
             self.call.kind(),
@@ -244,7 +238,7 @@ impl WorthQueryManagedGraphExecution {
 
     pub(super) fn yield_safe_point(
         &self,
-        observation: super::WorthQueryManagedSafePointObservation,
+        observation: crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation,
     ) -> super::yield_eligibility::WorthQueryManagedYieldSafePoint {
         assert_eq!(
             observation.signal_state(),

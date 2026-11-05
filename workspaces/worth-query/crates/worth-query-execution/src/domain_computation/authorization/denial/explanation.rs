@@ -1,5 +1,6 @@
 //! Product-facing explanations derived from native denial kinds.
 use super::*;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 
 /// Coarse, explainable cause of an authorization denial, fit to show a user.
 ///

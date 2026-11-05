@@ -1,19 +1,9 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity;
+use crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity;
 
-impl WorthQueryCheckpointSourceIdentity {
-    #[doc(hidden)]
-    pub fn new_for_test(identity: [u8; 32]) -> Self {
-        Self::new(identity)
-    }
-}
 
-impl WorthQueryRuntimeSourceIdentity {
-    #[doc(hidden)]
-    pub fn new_for_test(identity: [u8; 32]) -> Self {
-        Self::new(identity)
-    }
-}
 
 impl WorthQueryCheckpointSourceIdentity {
     #[doc(hidden)]

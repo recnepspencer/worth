@@ -1,13 +1,10 @@
 //! Workflow approval readmission keeps request stops distinct from authority refusal.
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryOperationAuthorizationDenial,
-};
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial};
 pub(super) fn denial(
     denial: WorthQueryOperationAuthorizationDenial,
 ) -> WorthQueryApplicationAttemptDenial {
-    use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind;
+    use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
     let kind = match denial.kind() {
         WorthQueryOperationAuthorizationDenialKind::Refused(
             AuthorizationRefusal::StalePrincipal,
@@ -31,10 +28,10 @@ pub(super) fn denial(
             WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind)
         }
         WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
         )) => WorthQueryApplicationAttemptDenialKind::Cancelled,
         WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
         )) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
         WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)
         | WorthQueryOperationAuthorizationDenialKind::Refused(

@@ -1,6 +1,6 @@
 //! Borrowed view of the original admitted request; JSON bytes own their payer.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText;
+use crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText;
 
 #[derive(Serialize)]
 struct Request<'a> {

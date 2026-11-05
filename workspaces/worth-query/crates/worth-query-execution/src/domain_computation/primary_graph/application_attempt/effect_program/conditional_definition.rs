@@ -1,4 +1,4 @@
-use super::super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
+use {super::super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 use super::WorthQueryApplicationEffectProgramBuilder;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition;
 

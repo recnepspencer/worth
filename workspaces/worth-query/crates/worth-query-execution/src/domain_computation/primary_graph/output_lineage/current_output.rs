@@ -10,17 +10,17 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-use super::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use super::RecordedOutput;
 use super::RecordedSourceIdentity;
-use super::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
 use super::WorthQueryProducerLineageHead;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
 pub struct RetainedOutputCurrentnessRead {
     pub(in crate::domain_computation::primary_graph) identity:
-        Arc<super::RecordedSettlementIdentity>,
+        Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
     pub(in crate::domain_computation::primary_graph) facts: Option<super::ComparableSourceFacts>,
     pub(in crate::domain_computation::primary_graph) consumed_outputs:
         Arc<[ConsumedOutputEvidence]>,
@@ -29,7 +29,7 @@ pub struct RetainedOutputCurrentnessRead {
     /// The facts and the witness are everything this output depends on.
     pub(in crate::domain_computation::primary_graph) consumed_nothing: bool,
     pub(in crate::domain_computation::primary_graph) verification_requirement:
-        Option<super::invalidation::FullVerificationReason>,
+        Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason>,
 }
 
 impl WorthQueryApplicationOutputLineage {
@@ -132,7 +132,7 @@ impl WorthQueryApplicationOutputLineage {
             let matches = |recorded: &super::RecordedOutput| {
                 recorded.source_identity
                         == Some(RecordedSourceIdentity::Runtime(
-                            crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity::new(source_identity),
+                            crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity::new(source_identity),
                         ))
                         && std::ptr::eq(
                             recorded.correspondence.as_ref(),

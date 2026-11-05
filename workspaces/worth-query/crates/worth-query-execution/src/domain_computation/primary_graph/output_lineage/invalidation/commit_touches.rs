@@ -14,39 +14,10 @@ use worth_relational::facade::publication::PatchStreamPosition;
 
 use super::fact_key::FactPostingKey;
 use super::owner::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::commit_touches::CommitTouchEntities;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::commit_touches::CommitTouchInterest;
 
-/// The records a reader watches. Conditional source records are entities;
-/// `every_commit` covers whole-graph dependencies and bootstrap catch-up.
-#[derive(Clone, Copy)]
-pub struct CommitTouchInterest<'a> {
-    pub(in crate::domain_computation::primary_graph) entities: CommitTouchEntities<'a>,
-    pub(in crate::domain_computation::primary_graph) every_commit: bool,
-}
 
-/// Borrowed interest uses the same canonical touch stream for sets and bounded read dependencies.
-#[derive(Clone, Copy)]
-pub enum CommitTouchEntities<'a> {
-    Set(&'a BTreeSet<EntityId>),
-    Slice(&'a [EntityId]),
-}
-impl<'a> From<&'a BTreeSet<EntityId>> for CommitTouchEntities<'a> {
-    fn from(value: &'a BTreeSet<EntityId>) -> Self {
-        Self::Set(value)
-    }
-}
-impl<'a> From<&'a [EntityId]> for CommitTouchEntities<'a> {
-    fn from(value: &'a [EntityId]) -> Self {
-        Self::Slice(value)
-    }
-}
-impl CommitTouchEntities<'_> {
-    fn contains(&self, id: &EntityId) -> bool {
-        match self {
-            Self::Set(v) => v.contains(id),
-            Self::Slice(v) => v.contains(id),
-        }
-    }
-}
 /// One relevant commit on the branch and the watched entities it touched.
 pub struct TouchedCommit {
     pub(in crate::domain_computation::primary_graph) position: PatchStreamPosition,
@@ -219,7 +190,7 @@ mod relation_interest_tests {
     use worth_relational::facade::identity::PartitionId;
     #[test]
     fn relation_only_interest_matches_full_native_anchors_and_endpoints() {
-        use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection;
+        use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
         let anchor = EntityId::new(PartitionId::new(7), 11, 2);
         let target = EntityId::new(PartitionId::new(9), 13, 4);
         let recycled_anchor = EntityId::new(PartitionId::new(7), 11, 3);

@@ -1,14 +1,7 @@
 use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::product_operation::ProductOperationSecurityBasisScopedOps;
-use crate::domain_computation::primary_graph::{
-    application_query::{
-        graph_read_plan_binding::WorthQueryQueryIndexPosture,
-        read_execution::WorthQueryApplicationReadExecutionDenial,
-        WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationAuthorizationWorkEvidence,
-    },
-    WorthQueryInstalledEntityResolutionContext, WorthQueryPrincipalResolutionMode,
-};
+use {crate::domain_computation::primary_graph::application_query::graph_read_plan_binding::WorthQueryQueryIndexPosture, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial, crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationAuthorizationWorkEvidence, crate::domain_computation::primary_graph::WorthQueryInstalledEntityResolutionContext, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 mod freshness_denial;
@@ -23,19 +16,12 @@ pub(in crate::domain_computation::primary_graph::application_query) use selected
     execute_selected_authorized_read_with_native_access, SelectedAuthorizedReadStop,
 };
 
-pub enum WorthQueryAuthorizedApplicationReadDenial {
-    StalePrincipal,
-    StaleScope,
-    StaleBasisScope,
-    Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial),
-    Read(WorthQueryApplicationReadExecutionDenial),
-    Session,
-}
 
 mod validation;
 pub(in crate::domain_computation::primary_graph::application_query) use validation::validate_before_callback;
 mod ordinary;
 pub(super) use ordinary::{execute_authorized_read, execute_authorized_read_with_access};
+use crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
 
 /// Keep the exact Product security and graph-session acceptance common to
 /// ordinary and selected reads. Each caller supplies only its currentness
@@ -202,7 +188,7 @@ where
     plan.authorization
         .validate_currentness_in(execution, runtime, current, application.authorization().bridge())
         .map_err(|kind| match kind {
-            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StalePrincipal) => {
+            crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StalePrincipal) => {
                 WorthQueryAuthorizedApplicationReadDenial::StalePrincipal
             }
             kind => WorthQueryAuthorizedApplicationReadDenial::Authorization(

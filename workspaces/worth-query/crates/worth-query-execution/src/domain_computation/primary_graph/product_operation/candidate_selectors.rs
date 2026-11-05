@@ -56,7 +56,7 @@ fn seed<S: ApplicationSchema>(
                 request,
                 basis,
                 None,
-                super::super::index_maintenance_budget::ordinary_index_maintenance_budget(),
+                crate::domain_computation::vocabulary::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
                 execution,
             )
             .map(|_| ())
@@ -84,7 +84,7 @@ pub(super) fn prepare<S: ApplicationSchema>(
                 candidate,
                 &indexes,
                 &before,
-                super::super::index_maintenance_budget::ordinary_index_maintenance_budget(),
+                crate::domain_computation::vocabulary::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
                 execution,
             )
             .map(|_| ())

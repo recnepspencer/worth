@@ -2,6 +2,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::read_set::{
     MutationHandlerBindingProof, WorkflowOperationBindingProof,
 };
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
@@ -30,7 +31,7 @@ impl<Schema, Operation, Input, Scope>
     ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
         let phase_request = match phase.request_for_source(self.read_set.lease.handle().relational_runtime_instance_id()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
         };
         let execution = &phase_request;
 

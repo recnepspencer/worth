@@ -6,12 +6,7 @@ use worth_runtime_bridge::facade::BridgeYieldedExecutionBasis;
 pub use inspection::{WorthQueryDirectYieldCleanupInspection, WorthQueryDirectYieldCleanupReceipt};
 
 use self::inspection::WorthQueryCompletedDirectYieldCleanup;
-use super::{
-    run_affinity::WorthQueryDirectRunTerminalAffinity, WorthQueryDirectYieldRecoveryRequired,
-    WorthQueryManagedProviderWorkEvidence, WorthQueryManagedRunCleanupDisposition,
-    WorthQueryManagedRunCounters, WorthQueryYieldRecoveryResourceEvidence,
-    WorthQueryYieldTransitionCounters, WorthQueryYieldedDirectRun,
-};
+use {super::run_affinity::WorthQueryDirectRunTerminalAffinity, super::WorthQueryDirectYieldRecoveryRequired, crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupDisposition, crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters, super::WorthQueryYieldRecoveryResourceEvidence, super::WorthQueryYieldTransitionCounters, super::WorthQueryYieldedDirectRun};
 
 pub(super) struct WorthQueryDirectYieldCleanupPermit {
     _owner: (),

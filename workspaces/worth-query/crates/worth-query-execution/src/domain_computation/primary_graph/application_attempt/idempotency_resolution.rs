@@ -1,5 +1,5 @@
 use crate::domain_computation::authorization::AuthorizationRevalidationScopedOps;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_installation::facade::ApplicationSchema;
 
 #[path = "idempotency_resolution/denial.rs"]
@@ -11,10 +11,7 @@ mod historical_commit;
 
 pub use historical_commit::WorthQueryHistoricalApplicationCommit;
 
-pub use denial::{
-    WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryApplicationIdempotencyResolutionDenialKind,
-};
+pub use denial::WorthQueryApplicationIdempotencyResolutionDenial;
 
 use super::{
     provider_recomparison::recover_equivalent_commit_evidence,
@@ -237,7 +234,7 @@ where
         let execution = phase.execution_request_for(self.product_runtime()).map_err(|_| {
             WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
-                    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase),
+                    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase),
                     "idempotency-resolution",
                 ),
             )

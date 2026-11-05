@@ -1,12 +1,13 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::snapshot_lease::WorthQueryApplicationSnapshotRelease;
 
 impl WorthQueryMutationRunBinding {
     #[doc(hidden)]
     pub fn finish_for_test(
         self,
         running: crate::domain_computation::WorthQueryRunningDirectRun,
-        terminal: crate::domain_computation::WorthQueryManagedRunTerminalKind,
+        terminal: crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind,
         snapshot_release: WorthQueryApplicationSnapshotRelease,
         on_worker: bool,
     ) -> Result<WorthQueryMutationGraphWorkCompletion, WorthQueryMutationCleanupFailure> {
@@ -19,7 +20,7 @@ impl WorthQueryProviderSessionBoundMutationRun {
     pub fn finish_for_test(
         self,
         running: crate::domain_computation::WorthQueryRunningDirectRun,
-        terminal: crate::domain_computation::WorthQueryManagedRunTerminalKind,
+        terminal: crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind,
         snapshot_release: WorthQueryApplicationSnapshotRelease,
         on_worker: bool,
     ) -> Result<WorthQueryMutationGraphWorkCompletion, WorthQueryMutationCleanupFailure> {

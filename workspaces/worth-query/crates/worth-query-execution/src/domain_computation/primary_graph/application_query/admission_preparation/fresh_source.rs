@@ -1,6 +1,8 @@
 //! Fresh source parameters on the original invalidation admission.
 use super::*;
 use worth_query_admission::facade::application_query::admit_application_query_parameters;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
 
 pub(in crate::domain_computation::primary_graph::application_query) trait FreshSourceScopedOps<
     Schema: ApplicationSchema,

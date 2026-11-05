@@ -7,6 +7,7 @@ use worth_relational::facade::{
     runtime::{RelationalPinnedRead, RelationalRuntime},
     snapshots::SnapshotHandle,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 pub(in crate::domain_computation::primary_graph) struct ReadFields<'a, 'e, 'r> {
     pub(in crate::domain_computation::primary_graph) runtime: &'a RelationalRuntime,
     pub(in crate::domain_computation::primary_graph) execution:
@@ -37,7 +38,7 @@ impl<'a, 'e, 'r> ReadFields<'a, 'e, 'r> {
         kind: KindId,
         field: &AspectFieldLocator,
     ) -> Result<u64, Denial> {
-        super::super::observe_field_value_borrowed(
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed(
             self.runtime,
             self.execution,
             self.snapshot(),
@@ -59,7 +60,7 @@ impl<'a, 'e, 'r> ReadFields<'a, 'e, 'r> {
         kind: KindId,
         field: &AspectFieldLocator,
     ) -> Result<Option<worth_execution::ExecutionImmutableBytes>, Denial> {
-        super::super::observe_field_value_borrowed(
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed(
             self.runtime,
             self.execution,
             self.snapshot(),
@@ -150,7 +151,7 @@ impl<'a, 'e, 'r> ReadFields<'a, 'e, 'r> {
         kind: KindId,
         field: &AspectFieldLocator,
     ) -> Result<(), Denial> {
-        if self.u64(entity,kind,field)?!=crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION {return Err(Denial::Corrupt);}
+        if self.u64(entity,kind,field)?!=crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION {return Err(Denial::Corrupt);}
         Ok(())
     }
 }

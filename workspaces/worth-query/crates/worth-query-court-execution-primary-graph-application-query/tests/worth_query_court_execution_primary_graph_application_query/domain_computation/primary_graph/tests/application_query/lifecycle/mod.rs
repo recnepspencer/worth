@@ -311,7 +311,7 @@ fn cancellation_after_admission_releases_basis_before_projection() {
 
 pub fn basis_is_live(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
-    _basis: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::resource_lifecycle::basis_registry::WorthQueryApplicationBasisIdentity,
+    _basis: &worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
 ) -> bool {
     world
         .application

@@ -11,10 +11,10 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use super::super::input_cutoff::StableEqualityConsequence;
-use super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 use super::equality;
-use super::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::mark_state::SettlementCurrentness;
 use super::owner::SourceInvalidationOwner;
 use super::settlement;
@@ -31,39 +31,11 @@ pub(in crate::domain_computation::primary_graph) use current_registration::Prepa
 pub(in crate::domain_computation::primary_graph) use prepared::PreparedSettlementRegistration;
 pub(in crate::domain_computation::primary_graph) use prepared::SettlementRegistrationCleanup;
 pub(in crate::domain_computation::primary_graph) use prepared::StoppedSettlementRegistration;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum SettlementRegistrationStop {
-    Alignment(FullVerificationReason),
-    /// The registration's basis or equality belongs to another source.
-    Foreign,
-    /// The selected source snapshot cannot be positioned.
-    SourceUnavailable,
-    Admission(CompanionPreflightStop),
-    Edit(CompanionCellEditStop),
-}
 
-pub enum SourceSettlementCurrentness {
-    Clean,
-    Dirty(OrdSet<usize>),
-    PendingUpstream(OrdSet<Arc<RecordedSettlementIdentity>>),
-    FullVerificationRequired(FullVerificationReason),
-    /// The selected source belongs to another runtime. Marks here say nothing
-    /// about it, and no reader takes it as a reason to verify.
-    Foreign,
-}
 
-impl SourceSettlementCurrentness {
-    /// No mark row answers for the settlement here: the source is foreign, or
-    /// its reason is one of [`FullVerificationReason::no_row_answers`].
-    pub(in crate::domain_computation::primary_graph) const fn no_row_answers(&self) -> bool {
-        match self {
-            Self::Foreign => true,
-            Self::FullVerificationRequired(reason) => reason.no_row_answers(),
-            Self::Clean | Self::Dirty(_) | Self::PendingUpstream(_) => false,
-        }
-    }
-}
 
 /// Only consumed-output evidence may interpret the actor's certified equality
 /// consequence. Direct callers still observe the old settlement's own marks.
@@ -79,11 +51,6 @@ enum RegistrationReadBasis {
     RetainedReadAllowed,
 }
 
-impl From<CompanionPreflightStop> for SettlementRegistrationStop {
-    fn from(value: CompanionPreflightStop) -> Self {
-        Self::Admission(value)
-    }
-}
 
 impl SourceInvalidationOwner {
     pub(super) fn cell_for_read(

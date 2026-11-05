@@ -3,9 +3,7 @@ use super::{
     occurrence::RetainedResourceValue,
     provider::{WorthQueryResourceVerificationFailure, WorthQueryResourceVerifiedFrame},
 };
-use crate::domain_computation::primary_graph::admitted_capture::{
-    checkpoint, run_stage, CaptureStop,
-};
+use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::primary_graph::admitted_capture::run_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop};
 use worth_execution::{
     ChargedBytes, ExecutionRequest, LeaseDenial, MapKernelFailure, WorkCeilingDenial,
 };

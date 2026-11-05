@@ -1,7 +1,5 @@
 use super::*;
-use crate::domain_computation::{
-    WorthQueryProviderSessionCommitStop as Stop, WorthQueryProviderSessionDenialKind as Kind,
-};
+use {crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind};
 mod mapping_contracts;
 
 #[test]

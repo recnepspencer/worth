@@ -1,12 +1,8 @@
-pub(in crate::domain_computation::primary_graph) use fact::{
-    SourceReadAuthorization, SourceReadAuthorizationKey,
-};
+pub(in crate::domain_computation::primary_graph) use fact::SourceReadAuthorization;
 mod output_field_capture;
-pub use fact::IndexedSelectionReobserveDenial;
+
 pub(in crate::domain_computation::primary_graph) use fact::SourcePublicationRead;
-pub(in crate::domain_computation::primary_graph) use fact::{
-    ManagedSourceRead, ManagedSourceReadKey,
-};
+pub(in crate::domain_computation::primary_graph) use fact::ManagedSourceRead;
 pub use output_field_capture::{OutputFieldCaptureFailure, StoreDenial};
 mod capability_revocation_program;
 pub(crate) mod commit_authority_binding;
@@ -40,15 +36,11 @@ mod mandatory_review_program;
 mod mandatory_review_replay;
 pub(crate) mod migration;
 pub(crate) mod observation;
-pub(in crate::domain_computation::primary_graph) use observation::observe_aspect_presence;
-pub(in crate::domain_computation::primary_graph) use observation::{
-    observe_aspect_absence, observe_field, observe_field_observation_borrowed_admitted,
-    observe_field_value_borrowed, observe_field_value_borrowed_admitted,
-    WorthQueryApplicationFieldObservation,
-};
+
+pub(in crate::domain_computation::primary_graph) use observation::observe_field;
 pub(crate) mod precondition_binding;
 pub(crate) mod provider_binding;
-pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryExpectedEffectStepPreparationWork;
+
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryPrimaryGraphApplicationAttempt;
 pub(crate) mod provider_compare_denial;
 pub(crate) mod provider_execution;
@@ -61,13 +53,9 @@ pub(in crate::domain_computation::primary_graph) mod signed_creation;
 mod signed_selection;
 mod signing_lifecycle;
 pub(in crate::domain_computation::primary_graph) use read_set::request_liveness::check_request_live;
-pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
+
 pub(in crate::domain_computation::primary_graph) use read_set::FactRoutes;
-pub(in crate::domain_computation::primary_graph) use read_set::{
-    observe_admitted_fact, CheckedCallShape, CompletedDecisionReuseProof,
-    ComputationFactAttribution, ComputationFactIndex, ComputationRead, NativeCallCarriage,
-    PreparedDecisionReuseContext, SealedComputationFacts,
-};
+pub(in crate::domain_computation::primary_graph) use {read_set::observe_admitted_fact, read_set::CheckedCallShape, read_set::ComputationFactAttribution, read_set::ComputationFactIndex, read_set::NativeCallCarriage, read_set::SealedComputationFacts};
 pub(in crate::domain_computation) use read_set::{CompletedFactProjection, CompletedOriginalRead};
 pub use signed_creation::{
     WorthQuerySignedCreationAdapter, WorthQuerySignedCreationPreparationDenial,
@@ -83,52 +71,24 @@ pub(crate) mod workflow;
 pub(crate) mod workflow_instance_program;
 mod workflow_proposal_program;
 pub(crate) mod workflow_transition_program;
-pub(in crate::domain_computation) use snapshot_lease::{
-    WorthQueryApplicationSnapshotLease, WorthQueryApplicationSnapshotLeaseDenial,
-    WorthQueryApplicationSnapshotRelease,
-};
+pub(in crate::domain_computation) use snapshot_lease::WorthQueryApplicationSnapshotLease;
 
 pub use capability_revocation_program::WorthQueryCapabilityRevocationProgram;
 pub use commit_authority_binding::WorthQueryApplicationCommitAuthorityBinding;
-pub(crate) use commit_authority_binding::WorthQueryRetainedGovernedInput;
-pub use commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity;
+
+
 pub use commit_terminal::{
     WorthQueryApplicationCommitTerminalEvidence, WorthQueryApplicationCommitTerminalKind,
 };
-pub use compare_and_commit::{
-    WorthQueryApplicationCleanupRequired, WorthQueryApplicationCommitDeferred,
-    WorthQueryApplicationCommitDeferredKind, WorthQueryApplicationCommitDenial,
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitPublicationSource,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationCommitRecoveryKind,
-    WorthQueryApplicationCommittedChanges, WorthQueryApplicationManagedCleanup,
-    WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
-    WorthQueryApplicationNoEffectCause, WorthQueryApplicationStaleAttempt,
-    WorthQueryApplicationUncommitted, WorthQueryApplicationUnresolvedCommitEvidence,
-    WorthQueryCommittedProductPublication,
-};
+pub use {compare_and_commit::WorthQueryApplicationCleanupRequired, compare_and_commit::WorthQueryApplicationCommitDeferred, compare_and_commit::WorthQueryApplicationCommitDeferredKind, compare_and_commit::WorthQueryApplicationCommitDenial, compare_and_commit::WorthQueryApplicationCommitDenialStage, compare_and_commit::WorthQueryApplicationCommitOutcome, compare_and_commit::WorthQueryApplicationCommitPublicationSource, compare_and_commit::WorthQueryApplicationCommitReceipt, compare_and_commit::WorthQueryApplicationCommitRecoveryKind, compare_and_commit::WorthQueryApplicationCommittedChanges, compare_and_commit::WorthQueryApplicationManagedCleanup, compare_and_commit::WorthQueryApplicationManagedCleanupFailure, compare_and_commit::WorthQueryApplicationNoEffect, compare_and_commit::WorthQueryApplicationNoEffectCause, compare_and_commit::WorthQueryApplicationUncommitted, compare_and_commit::WorthQueryApplicationUnresolvedCommitEvidence, compare_and_commit::WorthQueryCommittedProductPublication};
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
     WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
     WorthQueryProgramActivationUnresolved,
 };
 pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
-pub use denial::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationUnobservedWrite,
-};
-pub(in crate::domain_computation::primary_graph) use effect_program::{
-    OutputRoleUse, WorthQueryAdmittedApplicationEmissionBatch,
-    WorthQueryApplicationCreationPartition, WorthQueryApplicationEmission,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationRealizedEffect,
-    WorthQueryCheckpointOutputRole,
-};
-pub use effect_program::{
-    WorthQueryApplicationCreatedRelation, WorthQueryApplicationEffectEntity,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationEffectProgramBuilder,
-    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputFamilyEntry,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
-    WorthQueryApplicationTypedOutputCorrespondence,
-};
+pub use denial::WorthQueryApplicationAttemptDenial;
+pub(in crate::domain_computation::primary_graph) use {effect_program::WorthQueryAdmittedApplicationEmissionBatch, effect_program::WorthQueryApplicationCreationPartition, effect_program::WorthQueryApplicationEmission, effect_program::WorthQueryApplicationOutputCorrespondence, effect_program::WorthQueryApplicationRealizedEffect};
+pub use {effect_program::WorthQueryApplicationEffectProgram, effect_program::WorthQueryApplicationEffectProgramBuilder, effect_program::WorthQueryApplicationOutputEntity, effect_program::WorthQueryApplicationOutputFamilyEntry, effect_program::WorthQueryApplicationOutputPosture, effect_program::WorthQueryApplicationTypedOutputCorrespondence};
 pub(super) use elevation_approval_outcome::approved_outcome;
 pub use elevation_approval_outcome::{
     WorthQueryApprovedElevation, WorthQueryElevationApprovalOutcome,
@@ -136,9 +96,7 @@ pub use elevation_approval_outcome::{
 pub(super) use elevation_approval_program::validate_elevation_approval_program;
 pub use elevation_approval_program::WorthQueryElevationApprovalProgram;
 pub(super) use elevation_close_outcome::closed_outcome;
-pub use elevation_close_outcome::{
-    WorthQueryElevationCloseOutcome, WorthQueryElevationClosureKind, WorthQueryMandatoryReview,
-};
+pub use {elevation_close_outcome::WorthQueryElevationCloseOutcome, elevation_close_outcome::WorthQueryMandatoryReview};
 pub(super) use elevation_close_program::validate_elevation_close_program;
 pub use elevation_close_program::WorthQueryElevationCloseProgram;
 pub(super) use elevation_request_outcome::requested_outcome;
@@ -148,22 +106,14 @@ pub use elevation_request_outcome::{
 pub(super) use elevation_request_program::validate_elevation_request_program;
 pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
-pub(in crate::domain_computation::primary_graph) use fact::{
-    observe_adjacency, observe_indexed_candidates, reobserve_indexed_entity_selection,
-    FactMovement, Movement, ObservedRetained, WorthQueryApplicationAdjacencyDirection,
-    WorthQueryApplicationFactKey, WorthQueryApplicationObservedRelation,
-    WorthQueryIndexedSelectionRefusal, WorthQuerySourceCurrentnessFailure,
-};
-pub(in crate::domain_computation::primary_graph) use idempotency::WorthQueryRecordedIntentMatch;
+pub(in crate::domain_computation::primary_graph) use {fact::observe_adjacency, fact::observe_indexed_candidates, fact::reobserve_indexed_entity_selection, fact::FactMovement, fact::ObservedRetained, fact::WorthQueryApplicationFactKey, fact::WorthQueryApplicationObservedRelation, fact::WorthQueryIndexedSelectionRefusal};
+
 pub use idempotency::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryCapabilityWorkflowIdempotency,
 };
 
 pub use idempotency_resolution::WorthQueryGuardedWorkflowOperationCustody;
-pub use idempotency_resolution::{
-    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryHistoricalApplicationCommit,
-};
+pub use {idempotency_resolution::WorthQueryApplicationIdempotencyResolution, idempotency_resolution::WorthQueryApplicationIdempotencyResolutionDenial, idempotency_resolution::WorthQueryHistoricalApplicationCommit};
 pub(super) use mandatory_review_outcome::reviewed_outcome;
 pub use mandatory_review_outcome::{WorthQueryMandatoryReviewOutcome, WorthQueryReviewedElevation};
 pub(super) use mandatory_review_program::validate_mandatory_review_program;
@@ -171,7 +121,7 @@ pub use mandatory_review_program::WorthQueryMandatoryReviewProgram;
 pub(in crate::domain_computation::primary_graph) use migration::prepare_program_migration_effects;
 pub(in crate::domain_computation::primary_graph) use observation::observe_field_value;
 pub(in crate::domain_computation) use provider_binding::WorthQueryPreparedApplicationProviderAttempt;
-pub(in crate::domain_computation) use provider_execution::application_resource_request;
+
 pub(in crate::domain_computation) use provider_execution::WorthQueryApplicationAttemptAffinity;
 pub(crate) use provider_execution::WorthQueryPerformedExternalRedispatchSeal;
 pub(in crate::domain_computation) use provider_execution::{
@@ -179,10 +129,7 @@ pub(in crate::domain_computation) use provider_execution::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryProviderProgressionOutcome,
     WorthQueryRegisteredProviderAttempt,
 };
-pub use provider_execution::{
-    WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
-    WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
-};
+pub use {provider_execution::WorthQueryExternalDispatchPreparationDenial, provider_execution::WorthQueryExternalRedispatchDenial, provider_execution::WorthQueryExternalTransportInstallationDenial};
 pub use provider_recomparison::WorthQueryMutationPreconditionComparisonEvidence;
 pub use read_phase::{WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation};
 pub use read_set::{
@@ -190,39 +137,10 @@ pub use read_set::{
     WorthQueryObservedApplicationRelation,
 };
 pub use retained_commit::WorthQueryApplicationRetainedCommitOutcome;
-pub use workflow_definition_program::{
-    PerformedWorkflowDefinitionPublication, PerformedWorkflowDefinitionRetirement,
-    PreparedWorkflowDefinitionPublication, PreparedWorkflowDefinitionRetirement,
-    PublishedWorkflowDefinitionRef, WorkflowDefinitionExpectedPredecessor,
-    WorkflowDefinitionPublicationOutcome, WorkflowDefinitionRetirementOutcome,
-};
-pub use workflow_instance_program::{
-    PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
-    PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
-    PublishedWorkflowInstanceRef, RequiredWorkflowBirth, RequiredWorkflowSuccession,
-    RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart, WorkflowBirthAuthority,
-    WorkflowBirthAuthoritySlot, WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
-    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowSuccessionAuthority,
-    WorkflowSuccessionAuthoritySlot, WorkflowSuccessionTarget, WorthQueryWorkflowBirthAdapter,
-    WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowInstanceDiscoveryIntent,
-    WorthQueryWorkflowSuccessionAdapter,
-};
-pub use workflow_proposal_program::{
-    PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowProposalRef,
-    WorkflowProposalBindingDenial, WorkflowProposalOutcome, WorkflowProposalPreparationDenial,
-    WorthQueryWorkflowProposalAdapter,
-};
-pub use workflow_transition_program::{
-    PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
-    PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowOperation,
-    RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
-    RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-    RequiredWorkflowProposal, WorkflowApprovalBodyDenial, WorkflowApprovalBodyPreparation,
-    WorkflowApprovalDecision, WorkflowLocalActionKind, WorkflowOperationAuthority,
-    WorkflowOperationAuthoritySlot, WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
-    WorkflowTransitionPreparationDenial, WorthQueryWorkflowActorContext,
-    WorthQueryWorkflowAdvanceAdapter,
-};
+pub use {workflow_definition_program::PerformedWorkflowDefinitionPublication, workflow_definition_program::PerformedWorkflowDefinitionRetirement, workflow_definition_program::PreparedWorkflowDefinitionPublication, workflow_definition_program::PreparedWorkflowDefinitionRetirement, workflow_definition_program::WorkflowDefinitionExpectedPredecessor, workflow_definition_program::WorkflowDefinitionPublicationOutcome, workflow_definition_program::WorkflowDefinitionRetirementOutcome};
+pub use {workflow_instance_program::PerformedWorkflowInstanceCancellation, workflow_instance_program::PerformedWorkflowInstanceStart, workflow_instance_program::PreparedWorkflowInstanceCancellation, workflow_instance_program::PreparedWorkflowInstanceStart, workflow_instance_program::RequiredWorkflowBirth, workflow_instance_program::RequiredWorkflowSuccession, workflow_instance_program::RetiredWorkflowDefinitionStart, workflow_instance_program::SupersededWorkflowDefinitionStart, workflow_instance_program::WorkflowBirthAuthority, workflow_instance_program::WorkflowBirthAuthoritySlot, workflow_instance_program::WorkflowInstanceBindingDenial, workflow_instance_program::WorkflowInstanceCancellationOutcome, workflow_instance_program::WorkflowInstancePreparationDenial, workflow_instance_program::WorkflowInstanceStartOutcome, workflow_instance_program::WorkflowSuccessionAuthority, workflow_instance_program::WorkflowSuccessionAuthoritySlot, workflow_instance_program::WorkflowSuccessionTarget, workflow_instance_program::WorthQueryWorkflowBirthAdapter, workflow_instance_program::WorthQueryWorkflowInstanceAdapter, workflow_instance_program::WorthQueryWorkflowInstanceDiscoveryIntent, workflow_instance_program::WorthQueryWorkflowSuccessionAdapter};
+pub use {workflow_proposal_program::PerformedWorkflowProposal, workflow_proposal_program::PreparedWorkflowProposal, workflow_proposal_program::WorkflowProposalBindingDenial, workflow_proposal_program::WorkflowProposalOutcome, workflow_proposal_program::WorkflowProposalPreparationDenial, workflow_proposal_program::WorthQueryWorkflowProposalAdapter};
+pub use {workflow_transition_program::PerformedWorkflowApproval, workflow_transition_program::PerformedWorkflowAssessmentEvidence, workflow_transition_program::PerformedWorkflowTransition, workflow_transition_program::PreparedWorkflowAdvance, workflow_transition_program::PreparedWorkflowAssessment, workflow_transition_program::PreparedWorkflowOperation, workflow_transition_program::RequiredWorkflowActor, workflow_transition_program::RequiredWorkflowApproval, workflow_transition_program::RequiredWorkflowAssessment, workflow_transition_program::RequiredWorkflowEvidence, workflow_transition_program::RequiredWorkflowOperation, workflow_transition_program::RequiredWorkflowProposal, workflow_transition_program::WorkflowApprovalBodyDenial, workflow_transition_program::WorkflowApprovalBodyPreparation, workflow_transition_program::WorkflowLocalActionKind, workflow_transition_program::WorkflowOperationAuthority, workflow_transition_program::WorkflowOperationAuthoritySlot, workflow_transition_program::WorkflowProgressOutcome, workflow_transition_program::WorkflowTransitionBindingDenial, workflow_transition_program::WorkflowTransitionPreparationDenial, workflow_transition_program::WorthQueryWorkflowActorContext, workflow_transition_program::WorthQueryWorkflowAdvanceAdapter};
 
 pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;
 
@@ -230,7 +148,7 @@ pub(in crate::domain_computation) use fact::consult_observation;
 
 pub(in crate::domain_computation::primary_graph) use fact::observe_indexed_entity_selection;
 
-pub(in crate::domain_computation::primary_graph) use read_set::CompletedReadScopes;
+
 
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::MaterializedCommittedField;
 

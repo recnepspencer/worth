@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation;
 use std::sync::Arc;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 
 pub(super) fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

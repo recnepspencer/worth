@@ -10,7 +10,7 @@ use super::WorthQueryOutputDemandRegistry;
 
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 #[derive(Clone)]
 pub struct WorthQueryRestoredAcceptedOutput {
@@ -22,9 +22,9 @@ pub struct WorthQueryRestoredAcceptedOutput {
     pub(in crate::domain_computation::primary_graph) observation:
         worth_runtime_world::facade::ProductBranchObservation,
     pub(in crate::domain_computation::primary_graph) source_scope:
-        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     pub(in crate::domain_computation::primary_graph) source_identity:
-        crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
+        crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity,
     pub(in crate::domain_computation::primary_graph) observed_source_facts:
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     /// Only a reconstruction verified against the authentic recovered Native
@@ -53,10 +53,10 @@ impl WorthQueryRestoredAcceptedOutput {
     ) -> crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture {
         use crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture as Posture;
         match self.checkpoint.posture {
-            super::WorthQueryAcceptedOutputCheckpointPosture::Performed => {
+            crate::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed => {
                 Posture::RecoveredPerformed
             }
-            super::WorthQueryAcceptedOutputCheckpointPosture::StableReused => {
+            crate::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::StableReused => {
                 Posture::RecoveredStableReused
             }
         }
@@ -67,7 +67,7 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn admit_restored(
         &self,
         requested_key: WorthQueryOutputDemandKey,
-        source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        source_scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         admission_kind: super::DemandAdmissionKind,
         restored: super::WorthQueryRestoredAcceptedOutput,

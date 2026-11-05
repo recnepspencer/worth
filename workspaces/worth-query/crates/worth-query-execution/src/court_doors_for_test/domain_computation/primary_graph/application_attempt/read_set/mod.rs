@@ -5,14 +5,8 @@ pub mod admitted_arrays;
 pub mod aggregate;
 #[path = "computation_routing/mod.rs"]
 pub mod computation_routing;
-#[path = "decision_reuse/mod.rs"]
-pub mod decision_reuse;
 #[path = "fact_observation/mod.rs"]
 pub mod fact_observation;
-#[path = "handler_fact_boundary/mod.rs"]
-pub mod handler_fact_boundary;
-#[path = "scope_bindings/mod.rs"]
-pub mod scope_bindings;
 #[path = "source_facts/mod.rs"]
 pub mod source_facts;
 #[path = "structural_walk/mod.rs"]

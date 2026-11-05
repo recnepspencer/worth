@@ -11,14 +11,14 @@ pub use causes::{WorthQueryManagedIndexDenialCause, WorthQueryManagedIndexRefusa
 pub(super) enum ReceiverCause {
     Provider(ProviderExecutionDenial),
     Execution(ExecutionCause),
-    Read(super::super::WorthQueryApplicationOneShotDenial),
+    Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial),
     LiveAdmission(super::super::WorthQueryApplicationLiveOpenDenial),
     Installation(WorthQueryInstalledQueryBindingAdmissionStop<ExecutionCause>),
     Product(crate::basis::WorthQueryProductBranchAdmissionDenial),
     Refused(WorthQueryManagedIndexRefusal),
 }
-impl From<super::super::WorthQueryApplicationOneShotDenial> for ReceiverCause {
-    fn from(cause: super::super::WorthQueryApplicationOneShotDenial) -> Self {
+impl From<crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial> for ReceiverCause {
+    fn from(cause: crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial) -> Self {
         Self::Read(cause)
     }
 }
@@ -121,16 +121,7 @@ mod tests {
 
     #[test]
     fn source_verification_preserves_request_causes_and_intrinsic_mismatch() {
-        use crate::domain_computation::{
-            authorization::{
-                WorthQueryOperationAuthorizationDenialKind as Authorization,
-                WorthQueryOperationAuthorizationRefusalKind as Refusal,
-            },
-            primary_graph::{
-                invariant_projection::ConsumedOutputVerificationStop as Stop,
-                WorthQueryApplicationAttemptDenial as Attempt,
-            },
-        };
+        use {crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Authorization, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as Refusal, crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop as Stop, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Attempt};
         let authorization = Authorization::Refused(Refusal::CapabilityGrantMissing);
         for (stop, kind, posture) in [
             (

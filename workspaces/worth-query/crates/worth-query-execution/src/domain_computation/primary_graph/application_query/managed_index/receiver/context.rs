@@ -1,17 +1,7 @@
 //! Full Parent admission precedes any Source, provider, or retained-root lookup.
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::ObservationRoomScopedOps;
-use crate::domain_computation::primary_graph::{
-    application_query::{
-        authorized_read::{refresh_governed_authorization, validate_before_callback},
-        one_shot::{
-            outcome::material::{retain_scope, MaterialCompletion},
-            plan_admission::validate_one_shot_plan,
-        },
-        WorthQueryApplicationBasisSelectionIdentity, WorthQueryObservedScopeSelector,
-    },
-    WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::primary_graph::application_query::authorized_read::refresh_governed_authorization, crate::domain_computation::primary_graph::application_query::authorized_read::validate_before_callback, crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::retain_scope, crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion, crate::domain_computation::primary_graph::application_query::one_shot::plan_admission::validate_one_shot_plan, crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity, crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 
 pub(super) struct ParentContext<'a, S> {
@@ -59,13 +49,13 @@ pub(super) fn prepare<'a, S: ApplicationSchema, B: ApplicationQueryBinding<S>>(
     }
     validate_one_shot_plan(execution, application, plan).map_err(ReceiverCause::Read)?;
     refresh_governed_authorization(execution, application, plan).map_err(|cause| {
-        ReceiverCause::Read(one_shot::map_authorized_read_denial(
+        ReceiverCause::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial(
             cause,
             plan.query.name(),
         ))
     })?;
     validate_before_callback(execution, application, plan).map_err(|cause| {
-        ReceiverCause::Read(one_shot::map_authorized_read_denial(
+        ReceiverCause::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial(
             cause,
             plan.query.name(),
         ))
@@ -90,7 +80,7 @@ pub(super) fn prepare<'a, S: ApplicationSchema, B: ApplicationQueryBinding<S>>(
     // admitted at their actual selected-observation owner before allocation.
     let selected = application.on_branch(product.product_branch())
         .select_for_managed_index(execution, |observed| {
-            let bytes = super::super::super::WorthQueryApplicationBasisIdentity::retained_basis_clone_heap_bytes(
+            let bytes = crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity::retained_basis_clone_heap_bytes(
                 observed.basis().relational_basis(),
             ).ok_or(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow)?;
             storage.work(bytes)?;

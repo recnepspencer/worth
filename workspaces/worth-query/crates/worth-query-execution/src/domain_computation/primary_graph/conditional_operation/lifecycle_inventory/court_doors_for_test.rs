@@ -5,7 +5,7 @@ impl WorthQueryConditionalOperationLiveness {
     #[doc(hidden)]
     pub fn new_for_test(
         binding: Weak<()>,
-        lease: Weak<super::super::installation::ConditionalClockLease>,
+        lease: Weak<crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::ConditionalClockLease>,
         wakes: Vec<Weak<()>>,
         intents: Vec<Weak<()>>,
         attempts: Vec<Weak<()>>,

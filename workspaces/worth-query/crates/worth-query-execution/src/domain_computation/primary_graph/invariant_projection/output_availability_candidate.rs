@@ -1,7 +1,7 @@
 //! Native non-driving assessment of one actual selected publication.
 use super::consumed_output::ConsumedOutputEvidence;
-use super::consumed_output::ConsumedOutputVerification as ResultMeaning;
-use super::consumed_output::ConsumedOutputVerificationStop as Stop;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification as ResultMeaning;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop as Stop;
 use crate::domain_computation::primary_graph::output_lineage::WorthQueryCurrentOutputCandidate;
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 use std::sync::Arc;
@@ -9,12 +9,8 @@ mod dependencies;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::output_availability_candidate::ObservedOutputPosture;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum ObservedOutputPosture {
-    Current,
-    Pending,
-}
 
 pub(in crate::domain_computation::primary_graph) struct ObservedOutputCandidate {
     candidate: CandidateEvidence,
@@ -23,9 +19,9 @@ pub(in crate::domain_computation::primary_graph) struct ObservedOutputCandidate 
 }
 struct CandidateEvidence {
     observed_source_facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts,
-    settlement_identity: Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+    settlement_identity: Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
     consumed_outputs: Arc<[ConsumedOutputEvidence]>,
-    verification_requirement: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason>,
+    verification_requirement: Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason>,
     native_output_witness: Option<Arc<std::sync::OnceLock<crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness>>>,
 }
 impl ObservedOutputCandidate {
@@ -102,7 +98,7 @@ impl ObservedOutputCandidate {
             .get()
             .expect("checked sealed witness")
             .roles_remain_present_in(runtime, snapshot, execution)
-            .map_err(super::consumed_output::map_admission_stop)?
+            .map_err(crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop)?
         {
             return Err(Stop::Unavailable);
         }

@@ -8,7 +8,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowNod
 use worth_relational::facade::transactions::CreatedEntityRef;
 
 use super::super::codec::WorkflowNodeTag;
-use super::super::{encode_draft, encode_operands};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::condition::encode_draft, super::super::encode_operands};
 use super::encoding::{hex, raw_key, text};
 use super::{
     WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,

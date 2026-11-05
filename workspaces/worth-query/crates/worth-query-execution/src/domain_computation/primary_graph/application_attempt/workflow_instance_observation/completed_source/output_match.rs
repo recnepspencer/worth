@@ -6,6 +6,7 @@ use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
 };
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 #[cfg(test)]
 mod tests;
 

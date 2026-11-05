@@ -31,10 +31,8 @@ pub(crate) mod relational_observation;
 mod retained_graph_execution;
 mod run_affinity;
 pub(in crate::domain_computation) use direct_graph_execution::WorthQueryCompletedDirectEvidenceOwner;
-pub(in crate::domain_computation) use readmission::WorthQueryDirectReadmissionTransitionPermit;
-pub(in crate::domain_computation) use relational_observation::{
-    WorthQueryManagedRelationalObservation, WorthQueryManagedRelationalObservationReleaseReceipt,
-};
+
+pub(in crate::domain_computation) use relational_observation::WorthQueryManagedRelationalObservation;
 
 mod safe_point_observation;
 mod semantic_basis;
@@ -43,7 +41,7 @@ mod terminal;
 mod truth_read_request;
 mod workflow;
 pub(in crate::domain_computation::managed_run) use workflow::WorthQueryWorkflowRunAffinity;
-pub(in crate::domain_computation) use workflow::WorthQueryWorkflowRunTransitionPermit;
+
 pub(in crate::domain_computation) use workflow_graph_execution::WorthQueryCompletedWorkflowEvidenceOwner;
 mod workflow_admission;
 mod workflow_admission_failure;
@@ -64,7 +62,7 @@ mod yield_recovery_evidence;
 mod yield_transition_counters;
 mod yielded_observation;
 
-pub use counters::WorthQueryManagedRunCounters;
+
 pub use denial::{WorthQueryManagedRunDenial, WorthQueryManagedRunDenialKind};
 pub use direct::{
     WorthQueryAdmittedDirectRun, WorthQueryDirectRunCompletionRejection, WorthQueryRunningDirectRun,
@@ -81,10 +79,7 @@ pub use direct_graph_execution::{
 pub use direct_graph_execution_start::{
     WorthQueryDirectGraphExecutionStartFailure, WorthQueryDirectGraphExecutionStartFailureKind,
 };
-pub use direct_terminal::{
-    WorthQueryDirectRunCleanupFailure, WorthQueryDirectRunCleanupInspection,
-    WorthQueryDirectRunCleanupReceipt, WorthQueryDirectRunTerminal,
-};
+pub use {direct_terminal::WorthQueryDirectRunCleanupFailure, direct_terminal::WorthQueryDirectRunTerminal};
 pub use direct_yield::{
     WorthQueryDirectYieldDenialKind, WorthQueryDirectYieldDenied, WorthQueryDirectYieldOutcome,
     WorthQueryYieldedDirectRun,
@@ -101,10 +96,7 @@ pub use managed_graph_suspension::{
     WorthQueryProviderCheckpointSuspensionFailureEvidence,
     WorthQueryProviderCheckpointSuspensionFailureKind,
 };
-pub use provider_work::{
-    WorthQueryManagedGraphCallRequest, WorthQueryManagedProviderSessionDisposition,
-    WorthQueryManagedProviderWorkEvidence,
-};
+pub use provider_work::WorthQueryManagedGraphCallRequest;
 pub use readmission::{
     WorthQueryArtifactGenerationRollbackEvidence, WorthQueryDirectReadmissionCleanupInspection,
     WorthQueryDirectReadmissionCleanupOutcome, WorthQueryDirectReadmissionCleanupPending,
@@ -138,18 +130,12 @@ pub use yielded_observation::{
     WorthQueryYieldedWorkflowRunInspection,
 };
 
-pub use safe_point_observation::{
-    WorthQueryManagedSafePointFailure, WorthQueryManagedSafePointFailureKind,
-    WorthQueryManagedSafePointObservation,
-};
+pub use {safe_point_observation::WorthQueryManagedSafePointFailure, safe_point_observation::WorthQueryManagedSafePointFailureKind};
 pub use step_contract_admission::WorthQueryManagedStepContractDenialKind;
 pub(in crate::domain_computation::managed_run) use terminal::bridge_terminal_disposition;
-pub use terminal::{
-    WorthQueryManagedRunCleanupDisposition, WorthQueryManagedRunCleanupFailureKind,
-    WorthQueryManagedRunTerminalKind,
-};
+
 pub use truth_read_request::WorthQueryManagedTruthReadRequest;
-pub(in crate::domain_computation) use workflow::WorthQueryWorkflowProviderPlanPermit;
+
 pub use workflow::{
     WorthQueryAdmittedWorkflowRun, WorthQueryRunningWorkflowRun,
     WorthQueryWorkflowRunCleanupFailure, WorthQueryWorkflowRunCleanupInspection,

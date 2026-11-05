@@ -1,8 +1,6 @@
 //! Diagnostic use compiles the real field contract under its original payer.
 use super::*;
-use crate::domain_computation::primary_graph::admitted_capture::{
-    checkpoint, run_retained_stage, CaptureStop, RetainedStorageDenial,
-};
+use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
 
 mod allocation;

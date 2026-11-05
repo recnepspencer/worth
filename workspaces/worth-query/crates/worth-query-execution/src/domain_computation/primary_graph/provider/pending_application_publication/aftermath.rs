@@ -73,12 +73,8 @@ mod tests {
     use super::*;
     #[test]
     fn checked_aftermath_stop_keeps_recovery_custody_by_value() {
-        use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
-        use crate::domain_computation::{
-            WorthQueryProviderSessionControlStopKind as Control,
-            WorthQueryProviderSessionDenialKind as Kind,
-            WorthQueryProviderSessionRecoveryPosture as Posture,
-        };
+        use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
+        use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind, crate::domain_computation::WorthQueryProviderSessionRecoveryPosture as Posture};
         for stop in [
             Err(Control::Cancelled),
             Ok(Kind::ExecutionResource {

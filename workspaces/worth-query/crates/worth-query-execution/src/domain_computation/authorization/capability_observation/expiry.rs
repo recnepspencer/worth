@@ -1,7 +1,8 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
 
 use super::*;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 
 pub(super) fn observe_grant_expiry(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

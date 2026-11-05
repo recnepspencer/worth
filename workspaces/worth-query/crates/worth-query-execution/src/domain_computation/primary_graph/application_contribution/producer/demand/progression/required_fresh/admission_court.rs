@@ -85,7 +85,7 @@ where
             )
             .unwrap();
         assert_eq!(successor.selected.applicability.lifecycle(),
-            crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture::Preserve);
+            crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture::Preserve);
         assert_ne!(original.edition, successor.installed_entry.edition);
         let fresh = validate_required_successor(fresh, slot.claim(), original, &successor).unwrap();
         successor

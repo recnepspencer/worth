@@ -2,23 +2,17 @@ use super::application_operation_reentry as reentry;
 use super::signal_decision_reentry::{
     WorthQueryRetainedConditionalDecision, WorthQueryRetainedConditionalWake,
 };
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph as graph;
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use classification::WorthQueryConditionalExecutionCause as Cause;
-use graph::{
-    WorthQueryInvariantProjectionDenialKind as InvariantKind,
-    WorthQueryOperationAuthorizationDenialKind as AuthorizationKind,
-    WorthQueryPrincipalResolutionDenialKind as PrincipalKind,
-};
+use {graph::WorthQueryInvariantProjectionDenialKind as InvariantKind, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as AuthorizationKind, crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind as PrincipalKind};
 
 mod classification;
 mod commit_cause;
 pub(in crate::domain_computation::primary_graph::conditional_operation) use classification::signal_decision;
-pub use classification::{
-    WorthQueryConditionalExecutionCause, WorthQueryConditionalExecutionTerminal,
-    WorthQueryConditionalSignalDecision,
-};
+pub use {classification::WorthQueryConditionalExecutionCause, classification::WorthQueryConditionalExecutionTerminal};
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision;
 use commit_cause::application_commit_cause;
 
 /// Descriptive, non-authorizing lineage for one temporal wake processed by an
@@ -121,10 +115,7 @@ fn cause(
     };
     use super::signal_decision_reentry::WorthQueryOperationBackpressureCause as Backpressure;
     use super::signal_decision_reentry::WorthQueryRetainedConditionalDecision as Decision;
-    use graph::{
-        WorthQueryApplicationCommitDenialKind as CommitKind,
-        WorthQueryApplicationCommitDenialStage as Stage,
-    };
+    use {crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as CommitKind, graph::WorthQueryApplicationCommitDenialStage as Stage};
     match decision {
         Decision::OperationExecutionControlRetryable(_, kind) => {
             Some(Cause::ApplicationExecutionDenied {
@@ -241,7 +232,7 @@ fn admission_retention_identity_exhausted(
         ),
         Admission::Entity(kind) => matches!(
             kind,
-            graph::WorthQueryEntityResolutionRefusalKind::RetentionIdentityExhausted
+            crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind::RetentionIdentityExhausted
         ),
         Admission::Authorization(denial) => {
             matches!(
@@ -272,7 +263,7 @@ fn admission_snapshot_identity_exhausted(
         ),
         Admission::Entity(kind) => matches!(
             kind,
-            graph::WorthQueryEntityResolutionRefusalKind::SnapshotIdentityExhausted
+            crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind::SnapshotIdentityExhausted
         ),
         Admission::Authorization(denial) => {
             matches!(
@@ -346,7 +337,7 @@ fn terminal(
 }
 
 fn authorization_cause(denial: &graph::WorthQueryOperationAuthorizationDenial) -> Cause {
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
     match denial.kind() {
         AuthorizationKind::Stopped(Err(Control::Cancelled)) => Cause::Cancelled,
         AuthorizationKind::Stopped(Err(Control::TimedOut)) => Cause::TimedOut,

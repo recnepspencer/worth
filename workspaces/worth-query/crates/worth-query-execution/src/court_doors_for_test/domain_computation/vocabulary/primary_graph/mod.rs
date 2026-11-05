@@ -1,0 +1,23 @@
+//! Doors under `domain_computation::vocabulary::primary_graph`.
+#[path = "admitted_capture/mod.rs"]
+pub mod admitted_capture;
+#[path = "basis_registry/mod.rs"]
+pub mod basis_registry;
+#[path = "commit_authority_binding/mod.rs"]
+pub mod commit_authority_binding;
+#[path = "decision_context_use/mod.rs"]
+pub mod decision_context_use;
+#[path = "decision_reuse/mod.rs"]
+pub mod decision_reuse;
+#[path = "handler_fact_boundary/mod.rs"]
+pub mod handler_fact_boundary;
+#[path = "inspection/mod.rs"]
+pub mod inspection;
+#[path = "outbox_commit/mod.rs"]
+pub mod outbox_commit;
+#[path = "publication_request_denial/mod.rs"]
+pub mod publication_request_denial;
+#[path = "resource_request/mod.rs"]
+pub mod resource_request;
+#[path = "retained_stage/mod.rs"]
+pub mod retained_stage;

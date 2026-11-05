@@ -12,6 +12,7 @@ use worth_foundational::facade::{
 use worth_query_installation::facade::WorthQueryExternalEffectCorrelationFamily;
 
 use super::super::WorthQueryAftermathDerivationFailure;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.external-effect-correlation");
@@ -21,25 +22,7 @@ const BUDGET: CanonicalDigestWorkBudget = match CanonicalDigestWorkBudget::new(2
     None => panic!("fixed external-effect correlation budget is valid"),
 };
 
-/// Query-owned correlation identity. Equality is digest equality only.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct ExternalEffectCorrelationIdentity {
-    digest: CanonicalDigestId,
-}
 
-impl ExternalEffectCorrelationIdentity {
-    pub(crate) const fn from_digest(digest: CanonicalDigestId) -> Self {
-        Self { digest }
-    }
-
-    pub const fn digest(&self) -> &CanonicalDigestId {
-        &self.digest
-    }
-
-    pub fn bytes(&self) -> &[u8; 32] {
-        self.digest.bytes()
-    }
-}
 
 /// Inputs that may bind correlation. Provider strings are excluded by type.
 pub struct ExternalEffectCorrelationBasis<'a> {

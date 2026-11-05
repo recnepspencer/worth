@@ -3,6 +3,10 @@ use super::*;
 use crate::domain_computation::primary_graph::SourceFactsAllocation;
 use std::sync::Arc;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 
 pub(in crate::domain_computation) struct WorthQueryCompletedSourceRead {
     context: super::super::session::WorthQueryQuerySourceContext,
@@ -75,7 +79,7 @@ impl WorthQueryCompletedSourceRead {
     }
     pub(in crate::domain_computation) fn runtime(
         &self,
-    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
         self.context.runtime()
     }
     pub(in crate::domain_computation) fn obligation(

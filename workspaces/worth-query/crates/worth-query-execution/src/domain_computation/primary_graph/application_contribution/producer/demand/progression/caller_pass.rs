@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 use super::*;
 mod own_publication;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
 /// What one pass of a caller over its own row answered.
 pub(super) enum CallerPass<Query, Value> {

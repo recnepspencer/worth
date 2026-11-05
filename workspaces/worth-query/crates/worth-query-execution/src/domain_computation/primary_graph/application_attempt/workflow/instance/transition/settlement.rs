@@ -151,7 +151,7 @@ fn visit_transition_facts_from_basis<Error>(
             AspectValue::UInt64(if operation_receipt_identity.is_some() {
                 super::super::super::schema::version::WORKFLOW_OPERATION_OUTPUT_PROTOCOL_VERSION
             } else {
-                super::super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION
             }),
         ),
         (

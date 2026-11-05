@@ -1,5 +1,7 @@
 //! An ordinary one-shot read owns its decode custody until finalization returns.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind;
 
 pub(in crate::domain_computation::primary_graph::application_query) fn complete_one_shot_with_decode<
     Schema,

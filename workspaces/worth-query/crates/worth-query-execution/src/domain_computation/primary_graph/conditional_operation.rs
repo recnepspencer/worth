@@ -21,9 +21,7 @@ pub(crate) mod lifecycle_inventory;
 mod operation_invocation;
 mod pending_binding;
 mod predicate_admission;
-pub(in crate::domain_computation::primary_graph) use predicate_admission::{
-    prepare_dependency_conditional_installation, QueryConditionalComputeContext,
-};
+pub(in crate::domain_computation::primary_graph) use predicate_admission::prepare_dependency_conditional_installation;
 mod predicate_observation;
 mod publication;
 mod reconstruction_authority;
@@ -49,25 +47,18 @@ pub use clock_observation::{
     WorthQueryConditionalClockObservationOutcome, WorthQueryConditionalClockObservationPort,
     WorthQueryConditionalClockObservationReceipt,
 };
-pub use execution_provenance::{
-    WorthQueryConditionalExecutionCause, WorthQueryConditionalExecutionProvenance,
-    WorthQueryConditionalExecutionTerminal, WorthQueryConditionalSignalDecision,
-};
+pub use {execution_provenance::WorthQueryConditionalExecutionCause, execution_provenance::WorthQueryConditionalExecutionProvenance, execution_provenance::WorthQueryConditionalExecutionTerminal};
 pub use inspection::InspectionOps;
 pub use inspection::WorthQueryConditionalRuntimeInspection;
 pub(in crate::domain_computation::primary_graph) use installation::WorthQueryPendingConditionalOperation;
-pub use installation::{
-    WorthQueryConditionalApplicationRuntimeInstallation, WorthQueryConditionalClockHandle,
-    WorthQueryConditionalRuntimeInstallationDenial,
-    WorthQueryConditionalRuntimeInstallationDenialKind,
-};
+pub use {installation::WorthQueryConditionalApplicationRuntimeInstallation, installation::WorthQueryConditionalRuntimeInstallationDenial, installation::WorthQueryConditionalRuntimeInstallationDenialKind};
 pub(in crate::domain_computation::primary_graph) use lifecycle::WorthQueryConditionalOperationRegistry;
 pub use lifecycle_inventory::WorthQueryConditionalRuntimeLifecycleProbe;
 pub use operation_invocation::{
     WorthQueryTemporalInvocationFailure, WorthQueryTemporalInvocationFailureKind,
     WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
 };
-pub(in crate::domain_computation::primary_graph) use predicate_observation::QueryTemporalPredicateProvider;
+
 pub(in crate::domain_computation::primary_graph) use publication::{
     install_pending_bindings, publication_denial, require_complete_binding_inventory,
 };

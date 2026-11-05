@@ -1,8 +1,6 @@
 //! Governed source read inside the original producer reader and native borrow.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    SharedSelectedProductOperation, WorthQueryPrincipalResolutionMode,
-};
+use {crate::domain_computation::primary_graph::SharedSelectedProductOperation, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::{
@@ -24,6 +22,8 @@ mod read_closure;
 mod same_scope;
 mod single;
 pub(in crate::domain_computation::primary_graph) use read_closure::SourceQueryReadClosure;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
 
 type SourceValue<S, B> =
     <<B as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
@@ -53,12 +53,12 @@ pub enum SourceQueryObservationStop {
     CurrentControl(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial),
     ManagedIndex(Arc<super::managed_index::WorthQueryManagedIndexDenial>),
     Installation(worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial),
-    Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
-    Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
+    Principal(crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial),
+    Scope(crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial),
     Admission(WorthQueryApplicationQueryAdmissionDenial),
     Preparation { phase: SourceQueryPreparationPhase, cause: WorthQueryApplicationQueryAdmissionDenial },
     Read(WorthQueryAdmittedOneShotStop),
-    Basis(crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop),
+    Basis(crate::domain_computation::primary_graph::vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop),
     Missing,
     Ambiguous,
     ForeignClosure,
@@ -85,7 +85,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         intent: Binding::Input,
         context_use: &std::cell::Cell<
-            crate::domain_computation::primary_graph::handler::DecisionContextUse,
+            crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse,
         >,
         native: &mut ApplicationQueryNativeAccess<'_>,
         consume: impl for<'plan> FnOnce(
@@ -121,7 +121,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         intent: Binding::Input,
         context_use: &std::cell::Cell<
-            crate::domain_computation::primary_graph::handler::DecisionContextUse,
+            crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse,
         >,
         native: &mut ApplicationQueryNativeAccess<'_>,
         consume: impl for<'plan> FnOnce(

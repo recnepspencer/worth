@@ -1,5 +1,6 @@
 //! Apply the existing governed frontier predicates to actual provider candidates.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn filter(

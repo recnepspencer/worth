@@ -90,7 +90,7 @@ impl<Query, Value> FreshOutputDisclosure<Query, Value> {
     ) -> bool {
         self.0.affinity.admits(principal, request)
             && matches!(&self.0.source.selection,
-                crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(disclosed) if disclosed.matches_observation(selected))
+                crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity::Product(disclosed) if disclosed.matches_observation(selected))
     }
 }
 

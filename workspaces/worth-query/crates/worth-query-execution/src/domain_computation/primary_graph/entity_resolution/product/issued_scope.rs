@@ -1,4 +1,6 @@
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial;
+use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
 
 /// An installed scope resolved on the selected Product's exact native root.
 /// The selected operation is borrowed until the scoped Query read completes.

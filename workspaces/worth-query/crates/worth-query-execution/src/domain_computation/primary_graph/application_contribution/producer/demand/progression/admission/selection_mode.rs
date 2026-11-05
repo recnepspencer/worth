@@ -58,11 +58,11 @@ where
 
         let same_family = claim.selected().key().family_identity() == Family::IDENTITY;
         let preserve = selected.applicability.lifecycle()
-            == crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerLifecyclePosture::Preserve;
+            == crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture::Preserve;
         let same_profile = selected.applicability.profile_kind()
             == claim.selected().key().applicability().profile_kind();
         let initial_predecessor = claim.selected().key().applicability().lifecycle()
-            == crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerLifecyclePosture::Initial;
+            == crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture::Initial;
         if !same_family
             || (producer != expected && (!preserve || !same_profile || !initial_predecessor))
         {

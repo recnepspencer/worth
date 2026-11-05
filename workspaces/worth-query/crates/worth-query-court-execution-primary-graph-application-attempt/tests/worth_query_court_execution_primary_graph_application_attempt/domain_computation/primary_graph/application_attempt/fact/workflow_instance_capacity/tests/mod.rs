@@ -1,6 +1,6 @@
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::identity::KindId;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::workflow_instance_capacity::remains_equal;

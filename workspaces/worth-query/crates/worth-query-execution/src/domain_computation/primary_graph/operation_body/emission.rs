@@ -1,7 +1,7 @@
 //! Native earned selection and once-prepared payload of one installed external effect.
 mod installation;
 use crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext;
-use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as DenialKind;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as DenialKind;
 pub(super) use installation::install;
 use std::sync::Arc;
 use worth_query_declaration::facade::application_schema::{
@@ -16,7 +16,7 @@ pub(in crate::domain_computation::primary_graph) struct BodyExternalEffectSelect
     emit: bool,
     payload: Option<worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection>,
     backing: Option<ObservedQueryExpressionContext>,
-    values: Option<super::value::PreparedBodyValues>,
+    values: Option<crate::domain_computation::primary_graph::vocabulary::operation_body::operation_body_value::PreparedBodyValues>,
 }
 impl BodyExternalEffectSelection {
     /// A missing disposition preserves the ordinary mandatory external slot.
@@ -61,7 +61,7 @@ impl BodyExternalEffectSelection {
     }
     pub(in crate::domain_computation::primary_graph) fn values(
         &self,
-    ) -> Option<super::value::PreparedBodyValues> {
+    ) -> Option<crate::domain_computation::primary_graph::vocabulary::operation_body::operation_body_value::PreparedBodyValues> {
         self.values.clone()
     }
     pub(in crate::domain_computation::primary_graph) fn matches(&self, meaning: &Meaning) -> bool {
@@ -84,13 +84,13 @@ pub(in crate::domain_computation::primary_graph) fn prepare<
     Entity,
 >(
     reader: &mut crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
-    scope: &crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity<
+    scope: &crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity<
         Schema,
         Entity,
     >,
     recipe: Arc<Recipe>,
     input: &dyn std::any::Any,
-    values: Option<&super::value::PreparedBodyValues>,
+    values: Option<&crate::domain_computation::primary_graph::vocabulary::operation_body::operation_body_value::PreparedBodyValues>,
     execution: &crate::domain_computation::request_execution::QueryRequestExecution<'_>,
 ) -> Result<
     BodyExternalEffectSelection,
@@ -104,7 +104,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare<
             super::requirement::evaluate_requirement(reader, scope, condition, execution)
         })
         .transpose()?
-        .is_none_or(|status| status == super::WorthQueryOperationBodyRequirementStatus::Met);
+        .is_none_or(|status| status == crate::domain_computation::primary_graph::vocabulary::operation_body::requirement::WorthQueryOperationBodyRequirementStatus::Met);
     let backing = if emit {
         match &recipe.meaning().source {
             worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::OperationInput => None,

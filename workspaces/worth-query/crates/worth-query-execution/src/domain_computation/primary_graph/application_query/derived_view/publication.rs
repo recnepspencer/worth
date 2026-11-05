@@ -10,25 +10,9 @@ use worth_runtime_world::facade::{
 };
 
 use super::dependency::ViewDependency;
+use crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewChange;
 
-/// Canonical changes are translated to these dependency-level events before
-/// publication. A field event also changes aspect readers; a whole-aspect
-/// event changes every field reader of that aspect.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ViewChange {
-    /// Record lifecycle can change, so every dependency on the entity is affected.
-    Entity(EntityId),
-    Aspect(EntityId, AspectKey),
-    Field(EntityId, AspectKey, CanonicalFieldPath),
-    Adjacency(EntityId, KindId, u8),
-}
 
-pub struct ViewPublicationBasis<'a> {
-    pub before: &'a CompositeCommitIdentity,
-    pub relational_branch: &'a BranchId,
-    pub product_branch: &'a ProductBranchIdentity,
-    pub incarnation: ProductBranchIncarnation,
-}
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum Target<Key> {

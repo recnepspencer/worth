@@ -1,10 +1,6 @@
 //! Native source-edit consequence progression, sharing one publication with its cause.
 use super::snapshot_lease::WorthQueryApplicationSnapshotLease as Lease;
-use super::{
-    WorthQueryApplicationCommitDenial as Denial, WorthQueryApplicationCommitDenialKind as Kind,
-    WorthQueryApplicationCommitOutcome as Outcome, WorthQueryApplicationObservedFact as Fact,
-    WorthQueryApplicationRealizedEffect as Effect,
-};
+use {super::WorthQueryApplicationCommitDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind, super::WorthQueryApplicationCommitOutcome as Outcome, super::WorthQueryApplicationObservedFact as Fact, super::WorthQueryApplicationRealizedEffect as Effect};
 use crate::domain_computation::request_execution::QueryRequestExecution;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus as Locus;
 use worth_query_installation::facade::{
@@ -118,13 +114,13 @@ fn capacity() -> Outcome {
 }
 fn attempt(cause: super::WorthQueryApplicationAttemptDenial) -> Outcome {
     match cause.kind() {
-        super::WorthQueryApplicationAttemptDenialKind::Cancelled => Outcome::Cancelled,
-        super::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded => Outcome::TimedOut,
+        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::Cancelled => Outcome::Cancelled,
+        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded => Outcome::TimedOut,
         _ => Outcome::Denied(Denial::signing_lifecycle_attempt(cause)),
     }
 }
 fn resource(
-    cause: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+    cause: crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
 ) -> Outcome {
     crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(cause)
         .into_commit_outcome()

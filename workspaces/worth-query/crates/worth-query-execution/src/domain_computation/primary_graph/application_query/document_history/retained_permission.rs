@@ -3,13 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_query::FreshScopedOps;
 use crate::domain_computation::primary_graph::application_query::WorkLimitOps;
 use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
-use crate::domain_computation::primary_graph::{
-    application_query::{FreshQueryPermissionStop, WorthQueryApplicationQueryControls},
-    product_operation::{
-        document_history::HistoryProducerInvocation, SelectedQueryBasisRetentionStop,
-    },
-    WorthQueryHistoryNavigationDenial, WorthQueryObservedSource,
-};
+use {crate::domain_computation::primary_graph::application_query::FreshQueryPermissionStop, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryControls, crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation, crate::domain_computation::primary_graph::vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop, crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial, crate::domain_computation::primary_graph::WorthQueryObservedSource};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 pub(in crate::domain_computation::primary_graph) enum HistoryRetainedPermissionStop {

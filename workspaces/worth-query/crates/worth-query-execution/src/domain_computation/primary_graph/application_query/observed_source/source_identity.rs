@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
 
-use super::super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
+use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
 use super::WorthQueryObservedSourceFootprint;
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 mod checkpoint_commitment;
 #[path = "source_identity/tests/epoch_construction.rs"]
@@ -15,25 +15,13 @@ pub(in crate::domain_computation::primary_graph::application_query) use material
 pub(crate) mod membership;
 mod ordering;
 mod runtime_commitment;
-pub(in crate::domain_computation::primary_graph) use identity_kind::{
-    WorthQueryCheckpointSourceIdentity, WorthQueryRuntimeSourceIdentity,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity, crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity};
 pub(in crate::domain_computation::primary_graph) use membership::WorthQueryObservedSourceSelection;
 use runtime_commitment::stable_runtime_identity;
+use crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceOccurrence;
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-enum WorthQueryObservedSourceOccurrence {
-    Relational,
-    Product(worth_runtime_world::facade::ProductBranchIncarnation),
-}
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryObservedSourceCoordinate {
-    query: [u8; 32],
-    parameters: [u8; 32],
-    occurrence: WorthQueryObservedSourceOccurrence,
-    root: worth_relational::facade::identity::EntityId,
-}
 
 /// Runtime-owned exact meaning retained by observed sources and output epochs.
 pub struct WorthQueryObservedSourceMeaning {

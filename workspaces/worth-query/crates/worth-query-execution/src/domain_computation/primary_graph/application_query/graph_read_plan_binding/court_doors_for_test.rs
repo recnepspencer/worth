@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>
     WorthQueryAdmittedApplicationQueryPlan<

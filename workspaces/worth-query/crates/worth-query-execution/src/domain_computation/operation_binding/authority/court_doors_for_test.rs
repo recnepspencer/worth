@@ -1,5 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 impl WorthQueryWorkflowStageResourceAuthority {
     #[doc(hidden)]
@@ -26,7 +28,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
     #[doc(hidden)]
     pub fn provider_plan_declarations_for_test(
         &self,
-    ) -> &Arc<crate::domain_computation::provider_session::WorthQueryProviderPlanDeclarations> {
+    ) -> &Arc<crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations> {
         &self.provider_plan_declarations
     }
 }
@@ -67,7 +69,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
     #[doc(hidden)]
     pub fn provider_plan_declarations_mut_for_test(
         &mut self,
-    ) -> &mut Arc<crate::domain_computation::provider_session::WorthQueryProviderPlanDeclarations>
+    ) -> &mut Arc<crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations>
     {
         &mut self.provider_plan_declarations
     }
@@ -92,7 +94,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
         canonical_query_digest: Arc<str>,
         operation_resource_contract_identity: Arc<str>,
         provider_plan_declarations: Arc<
-            crate::domain_computation::provider_session::WorthQueryProviderPlanDeclarations,
+            crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations,
         >,
         commit_posture: WorthQueryExecutionCommitPosture,
         direct_resource_topology: WorthQueryExecutionResourceTopology,
@@ -106,7 +108,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
         installed_domain: Arc<WorthQueryInstalledDomainExecutionAuthority>,
         graph_work_affinity: Option<WorthQueryApplicationGraphWorkAffinity>,
         application_operation_attempt: Option<
-            crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+            crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
         >,
         application_operation_slot: Option<Arc<str>>,
         application_schema_binding: Option<

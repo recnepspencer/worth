@@ -1,19 +1,10 @@
 //! The bounded adjacency observer seals optional predecessor selection and liveness.
-use super::{
-    ApplicationSchema, WorthQueryApplicationOperationInvariantProjectionReader,
-    WorthQueryInvariantEntityIdentity,
-};
+use {super::ApplicationSchema, super::WorthQueryApplicationOperationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyRequirementDirection as Direction,
     ApplicationOperationBodyRequirementSource as Source, ApplicationOperationDecisionReadTarget,
 };
-use {
-    crate::domain_computation::primary_graph::operation_body::PreparedBodySelection,
-    crate::domain_computation::primary_graph::HandlerExecutionDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as Kind,
-    crate::domain_computation::request_execution::QueryRequestExecution,
-};
+use {crate::domain_computation::primary_graph::vocabulary::operation_body::selection::PreparedBodySelection, crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind, crate::domain_computation::request_execution::QueryRequestExecution};
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {

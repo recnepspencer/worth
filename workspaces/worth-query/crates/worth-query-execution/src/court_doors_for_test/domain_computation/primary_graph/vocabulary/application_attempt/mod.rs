@@ -1,0 +1,21 @@
+//! Doors under `domain_computation::primary_graph::vocabulary::application_attempt`.
+#[path = "aspect_presence/mod.rs"]
+pub mod aspect_presence;
+#[path = "computation_routing/mod.rs"]
+pub mod computation_routing;
+#[path = "fact/mod.rs"]
+pub mod fact;
+#[path = "movement/mod.rs"]
+pub mod movement;
+#[path = "observation/mod.rs"]
+pub mod observation;
+#[path = "output_correspondence/mod.rs"]
+pub mod output_correspondence;
+#[path = "predecode_admission/mod.rs"]
+pub mod predecode_admission;
+#[path = "role_use/mod.rs"]
+pub mod role_use;
+#[path = "scope_bindings/mod.rs"]
+pub mod scope_bindings;
+#[path = "source_currentness/mod.rs"]
+pub mod source_currentness;

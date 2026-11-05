@@ -1,5 +1,9 @@
 //! Ordinary currentness and native observational candidate entry points.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 impl ConsumedOutputEvidence {
     /// The source owner decides whether this settlement is clean, which exact
     /// fact ordinals are dirty, or whether retained evidence must be verified.

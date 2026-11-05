@@ -1,7 +1,7 @@
 //! Validate source custody against the actual admitted required successor.
 use super::super::super::registry::InstalledProducerProvider;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture;
 use crate::domain_computation::primary_graph::application_output_demand::SelectedRequiredRefreshClaim;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 

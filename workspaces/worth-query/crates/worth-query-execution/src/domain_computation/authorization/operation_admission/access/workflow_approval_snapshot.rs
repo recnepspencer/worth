@@ -4,7 +4,7 @@ use super::*;
 use crate::domain_computation::authorization::{
     WorkflowApprovalRequestEncodingDenial, MAXIMUM_PORTABLE_BYTES,
 };
-use crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText;
+use crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText;
 
 impl WorthQueryAdmittedOperation {
     /// Original live native admission identity, across ordinary and capability lanes.

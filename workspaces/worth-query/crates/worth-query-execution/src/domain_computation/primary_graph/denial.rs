@@ -94,7 +94,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     IndexBuildRejected,
     /// The execution owner refused commit or index preparation; the cause and partition stay typed.
     ExecutionDenied {
-        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        kind: crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
     },
     /// Native checkpoint recovery's allocation owner refused the backing.
     /// The checked quote is absent when layout could not be represented.
@@ -104,7 +104,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     },
     /// Commit or index preparation was canceled or exceeded its deadline before publication.
     ExecutionControlStopped {
-        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        kind: crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     },
     /// Relational rejected the schema.
     RelationalSchemaRejected,

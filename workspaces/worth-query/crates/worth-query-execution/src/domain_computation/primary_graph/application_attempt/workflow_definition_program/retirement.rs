@@ -15,15 +15,9 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::{EntityId, RelationId};
 
-use super::super::{
-    observe_adjacency, observe_field_value, WorthQueryApplicationAdjacencyDirection,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationObservedFact,
-    WorthQueryApplicationRealizedEffect, WorthQueryCompleteApplicationReadSet,
-    WorthQueryProjectedApplicationMutation,
-};
+use {super::super::observe_adjacency, super::super::observe_field_value, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, super::super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::super::WorthQueryApplicationEffectProgram, super::super::WorthQueryApplicationObservedFact, super::super::WorthQueryApplicationRealizedEffect, super::super::WorthQueryCompleteApplicationReadSet, super::super::WorthQueryProjectedApplicationMutation};
 use super::lineage::{lineage_denial, lineage_identity_facts, text, CURRENT_DEFINITION_WORK_LIMIT};
-use super::{denial, intent_identity, PublishedWorkflowDefinitionRef};
+use {super::denial, super::intent_identity, crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef};
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 
@@ -161,7 +155,7 @@ where
             read_set: self,
             effects,
             conditional_definition: None,
-            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
+            effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::Platform,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

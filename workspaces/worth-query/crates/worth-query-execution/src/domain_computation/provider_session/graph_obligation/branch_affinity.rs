@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
 use std::sync::Arc;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::snapshots::SnapshotHandle;

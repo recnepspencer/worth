@@ -1,4 +1,4 @@
-use super::WorthQueryApplicationBasisIdentity;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_query_installation::facade::{
@@ -8,7 +8,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::indexes::DerivedIndexId;
 use worth_relational::facade::indexes::{DerivedIndexGenerationId, RelatedEntityOrderingBoundary};
 
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 use super::super::{WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal};
 use super::{
@@ -140,13 +140,13 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
 
     pub fn graph_work_session_identity(
         &self,
-    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
         self.graph_work.identity()
     }
 
     pub fn graph_work_managed_run_identity(
         &self,
-    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity {
         self.graph_work.managed_run_identity()
     }
 

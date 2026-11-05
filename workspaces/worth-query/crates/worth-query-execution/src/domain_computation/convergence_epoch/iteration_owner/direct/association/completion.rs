@@ -11,10 +11,7 @@ use super::super::super::core::{
     admit_assessed_domain_report, WorthQueryConvergenceReportAdmissionFailure,
 };
 use super::DirectIterationAssociation;
-use crate::domain_computation::{
-    WorthQueryCompletedDirectGraphExecution, WorthQueryDirectRunTerminal,
-    WorthQueryManagedRunTerminalKind,
-};
+use {crate::domain_computation::WorthQueryCompletedDirectGraphExecution, crate::domain_computation::WorthQueryDirectRunTerminal, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind};
 
 impl DirectIterationAssociation<WorthQueryCompletedDirectGraphExecution> {
     pub(super) fn admit_completion(

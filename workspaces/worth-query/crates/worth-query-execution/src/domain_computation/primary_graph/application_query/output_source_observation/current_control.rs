@@ -8,6 +8,9 @@ use {
     crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitLane,
     crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
 
 pub(super) struct HistorySourceQueryControl<'a, S> {
     pub(super) current: &'a SharedSelectedProductOperation<'a, S>,
@@ -18,8 +21,8 @@ pub(super) struct HistorySourceQueryControl<'a, S> {
 impl SourceQueryObservationStop {
     /// Authorized model-result outcomes retain the handler's existing semantics.
     pub(super) fn is_control_refusal(&self) -> bool {
-        use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Read;
-        use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
+        use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as Read;
+        use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
         use SourceQueryObservationStop as Stop;
         match self {
             Stop::CurrentControl(_)

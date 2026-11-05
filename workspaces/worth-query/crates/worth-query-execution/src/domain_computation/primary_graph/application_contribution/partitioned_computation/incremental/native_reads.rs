@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::SealedComputationFacts;
 use crate::domain_computation::primary_graph::application_contribution::RetainedComputation;
 use worth_relational::facade::snapshots::SnapshotHandle;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 
 #[derive(Clone)]
 pub struct NativeComputationReads {

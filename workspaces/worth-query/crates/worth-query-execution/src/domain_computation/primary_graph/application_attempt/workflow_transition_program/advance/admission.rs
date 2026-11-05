@@ -1,10 +1,5 @@
 //! Ordinary progression requires the installed advance capability, not a business-action admission.
-use super::{
-    denial, ApplicationCapabilityMarkerIdentity, ApplicationOperationMarkerIdentity,
-    ApplicationSchema, ApplicationWorkflowSpec, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryCompleteApplicationReadSet,
-    WorthQueryInstalledApplicationWorkflowSpec, WorthQueryProjectedApplicationMutation,
-};
+use {super::denial, super::ApplicationCapabilityMarkerIdentity, super::ApplicationOperationMarkerIdentity, super::ApplicationSchema, super::ApplicationWorkflowSpec, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryInstalledApplicationWorkflowSpec, super::WorthQueryProjectedApplicationMutation};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<

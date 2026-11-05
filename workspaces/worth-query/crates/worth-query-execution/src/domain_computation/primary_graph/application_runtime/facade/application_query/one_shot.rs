@@ -3,7 +3,7 @@ use crate::domain_computation::primary_graph::application_query::one_shot::*;
 use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationHistoryCapture;
 use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBatchResult;
-use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationHistoryDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotResult;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryBatchAdmission;
@@ -12,6 +12,7 @@ use worth_query_declaration::facade::application_query::ApplicationHistoryQueryB
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::ApplicationSchema;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial;
 
 impl<Schema: ApplicationSchema>
     super::super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>

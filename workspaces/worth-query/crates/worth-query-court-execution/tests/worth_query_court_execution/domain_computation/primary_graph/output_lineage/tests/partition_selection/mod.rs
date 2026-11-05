@@ -1,5 +1,5 @@
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 use std::sync::OnceLock;
@@ -7,9 +7,9 @@ use std::sync::OnceLock;
 use crate::domain_computation::primary_graph::output_lineage::tests::checkpoint_identity;
 use crate::domain_computation::primary_graph::output_lineage::tests::source_facts;
 use crate::domain_computation::primary_graph::output_lineage::tests::RestoredOutputBinding;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 
@@ -130,7 +130,7 @@ pub fn unrelated_partition_selection(population: u64) {
     let slot = records.len();
     let recorded = {
         // Bound in the original literal order, passed in the door's.
-        let (producing_implementation, required_publication, native_prior_checkpoint, computation_source, performed_origin, consumed_outputs, completed_handler_facts, completed_decision_reuse, prepared_input_reuse_key, native_output_witness, mutable, settlement_identity, correspondence, source_identity, source_partition_identity, producer_dependency_identity, idempotency_key_identity) = (None, None, None, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false), None, Arc::from([]), None, None, None, OnceLock::new(), std::sync::Mutex::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutputMutable::new_for_test(None, None, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity::retain_for_test(
+        let (producing_implementation, required_publication, native_prior_checkpoint, computation_source, performed_origin, consumed_outputs, completed_handler_facts, completed_decision_reuse, prepared_input_reuse_key, native_output_witness, mutable, settlement_identity, correspondence, source_identity, source_partition_identity, producer_dependency_identity, idempotency_key_identity) = (None, None, None, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false), None, Arc::from([]), None, None, None, OnceLock::new(), std::sync::Mutex::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutputMutable::new_for_test(None, None, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity::retain_for_test(
             &source,
             ProductCoordinate::new_for_test(occurrence, revised_generation),
             slot,

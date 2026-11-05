@@ -2,8 +2,8 @@
 use super::provider::{SealedIngressFrame, WorthQueryResourceProviderAttempt};
 use crate::basis::WorthQueryProductBranchLease;
 use crate::domain_computation::application_aftermath::WorthQueryRecoveryHandle;
-use crate::domain_computation::primary_graph::application_query::CapturedApplicationQueryParameters;
-use crate::domain_computation::primary_graph::entity_resolution::WorthQueryObservedScopeSelector;
+use crate::domain_computation::vocabulary::primary_graph::funded_parameters::CapturedApplicationQueryParameters;
+use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
 use std::sync::Arc;
 use worth_execution::ExecutionMemoryReservation;
 use worth_foundational::facade::AspectValue;

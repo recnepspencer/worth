@@ -1,12 +1,6 @@
 //! Original managed Source read refusal stays owned through producer/output handoff.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_query::managed_index::{
-        WorthQueryManagedIndexDenial as Cause, WorthQueryManagedIndexDenialCause as Detail,
-        WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial as Work,
-    },
-    output_reuse, WorthQueryOutputDemandRecoveryPosture,
-};
+use {crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenial as Cause, crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenialCause as Detail, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Work, crate::domain_computation::primary_graph::output_reuse, crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture};
 use std::sync::Arc;
 impl WorthQueryOutputDemandDenial {
     pub(in crate::domain_computation::primary_graph) fn managed_source_query(
@@ -21,13 +15,13 @@ impl WorthQueryOutputDemandDenial {
                 Self::new(WorthQueryOutputDemandDenialKind::of_request_authorization(kind), subject)
                     .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable),
             Detail::SourceVerification { kind, .. } => {
-                use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as Attempt;
+                use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Attempt;
                 let kind = match kind {
                     Attempt::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
                     Attempt::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
                     Attempt::DecisionFactBudgetExceeded => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
                     Attempt::ExecutionRequest(stop) => WorthQueryOutputDemandDenialKind::SourceQueryExecution(
-                        crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(stop)),
+                        crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(stop)),
                     _ => return Self::new(WorthQueryOutputDemandDenialKind::ManagedIndexSourceDenied, subject)
                         .with_managed_source_query(cause),
                 };
@@ -62,16 +56,16 @@ impl WorthQueryOutputDemandDenial {
             ),
             Detail::QueryAdmission(stop) => Self::new(
                 match stop.kind() {
-                    crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
-                    crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
+                    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
+                    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
                     kind => WorthQueryOutputDemandDenialKind::SourceQueryAdmission(kind),
                 },
                 subject,
             ),
             Detail::QueryRead(stop) => Self::new(
                 match stop.kind() {
-                    crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
-                    crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
+                    crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
+                    crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
                     kind => WorthQueryOutputDemandDenialKind::SourceQueryExecution(kind),
                 },
                 subject,

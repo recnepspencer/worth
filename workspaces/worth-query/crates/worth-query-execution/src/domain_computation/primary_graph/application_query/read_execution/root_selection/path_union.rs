@@ -1,19 +1,6 @@
 //! Query admission, controls and receipt materialization around the sole path engine.
 use super::{BoundedRootSelection, RootSelectionWork};
-use crate::domain_computation::primary_graph::{
-    application_query::{
-        observed_source::WorthQueryObservedRootSelection,
-        read_execution::{
-            read_execution_denial, read_plan::ReadPlan, OneShotReadWorkObservation,
-            WorthQueryApplicationReadExecutionDenial, WorthQueryApplicationReadExecutionDenialKind,
-        },
-    },
-    root_path_selection::{
-        self, RootPathOrientation, RootPathReadBasis, RootPathReadPorts, RootPathSelection,
-        RootPathSelectionRequest,
-    },
-    source_facts::{SourceFacts, SourceFactsAllocation},
-};
+use {crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection, crate::domain_computation::primary_graph::application_query::read_execution::read_execution_denial, crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan, crate::domain_computation::primary_graph::application_query::read_execution::OneShotReadWorkObservation, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind, crate::domain_computation::primary_graph::root_path_selection, crate::domain_computation::primary_graph::root_path_selection::RootPathOrientation, crate::domain_computation::primary_graph::root_path_selection::RootPathReadBasis, crate::domain_computation::primary_graph::root_path_selection::RootPathReadPorts, crate::domain_computation::primary_graph::root_path_selection::RootPathSelection, crate::domain_computation::primary_graph::root_path_selection::RootPathSelectionRequest, crate::domain_computation::primary_graph::source_facts::SourceFacts, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation};
 use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,

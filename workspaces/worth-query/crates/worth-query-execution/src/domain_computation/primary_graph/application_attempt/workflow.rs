@@ -34,4 +34,4 @@ pub use definition::{
     WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial,
     WorthQueryWorkflowDefinitionPublicationAdapter, WorthQueryWorkflowDefinitionRetirementAdapter,
 };
-pub use instance::WorthQueryWorkflowInstanceProgressCounters;
+

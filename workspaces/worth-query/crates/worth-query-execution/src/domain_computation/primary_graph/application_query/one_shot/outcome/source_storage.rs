@@ -1,5 +1,5 @@
 //! Preserve the original row-roster request or physical allocation refusal.
-use super::{denial, WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind};
+use {super::denial, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind};
 use worth_execution::{ExecutionAllocationDenialClass, ExecutionRequestArrayDenial};
 
 pub(in crate::domain_computation::primary_graph::application_query) fn denied(
@@ -22,8 +22,8 @@ pub(in crate::domain_computation::primary_graph::application_query) fn denied(
             }
         },
     };
-    super::super::map_authorized_read_denial(
-        super::super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
+    crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial(
+        crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
             super::super::super::read_execution::relational_read_denial(request.into(), query),
         ),
         query,

@@ -14,11 +14,7 @@ use worth_query_installation::facade::{
 
 use super::{WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial};
 use crate::basis::WorthQueryProductBranchReadIdentity;
-use crate::domain_computation::primary_graph::{
-    PreparedWorkflowDefinitionRetirement, PublishedWorkflowDefinitionRef,
-    WorkflowDefinitionRetirementOutcome, WorthQueryAdmittedApplicationOperation,
-    WorthQueryApplicationIdempotencyBinding, WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::primary_graph::PreparedWorkflowDefinitionRetirement, crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::WorkflowDefinitionRetirementOutcome, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 
 impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
 where
@@ -127,7 +123,7 @@ impl WorthQueryWorkflowDefinitionRetirementAdapter {
     {
         let phase_request = match phase.execution_request_for(selected.application().product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(WorkflowDefinitionPreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
+            Err(_) => return Err(WorkflowDefinitionPreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
         };
         let execution = &phase_request;
 

@@ -1,9 +1,6 @@
 //! Typed execution refusals before application publication.
-use super::{
-    WorthQueryApplicationCommitDenial as Denial, WorthQueryApplicationCommitDenialKind as Kind,
-    WorthQueryApplicationCommitDenialStage as Stage,
-};
-use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
+use {super::WorthQueryApplicationCommitDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind, super::WorthQueryApplicationCommitDenialStage as Stage};
+use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
 
 impl Denial {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn execution_resource(
@@ -15,7 +12,7 @@ impl Denial {
         Self::provider_execution_denied(
             Stage::ProviderCommit,
             Ok(
-                crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ExecutionResource {
                     denial,
                     partition_identity,
                     policy_ancestor,
@@ -30,7 +27,7 @@ impl Denial {
     ) -> Self {
         Self::provider_execution_denied(
             Stage::ProviderCommit,
-            Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionNestedPatternStopped {
+            Ok(crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ExecutionNestedPatternStopped {
                 partition_identity,
             }),
             detail,
@@ -44,8 +41,8 @@ impl Denial {
         &self,
     ) -> Option<
         Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     > {
         use super::denial_cause::DenialCause as Cause;
@@ -88,7 +85,7 @@ impl Denial {
                 }
             },
             Some(Cause::ProviderSession(failure)) => {
-                use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
+                use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Session;
                 let kind = match crate::domain_computation::primary_graph::provider::relational_execution_denial::native_preparation_kind(failure) {
                     Ok(kind) => kind.unwrap_or(failure.kind()),
                     Err(stop) => return Some(Err(stop)),
@@ -130,7 +127,7 @@ impl Denial {
             }
             Some(Cause::DecisionReadSet(failure)) => {
                 use crate::domain_computation::WorthQueryDecisionReadSetDenialKind as ReadSet;
-                use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+                use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
                 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interruption;
                 match failure.kind() {
                     ReadSet::ExecutionRequest(kind) => Some(Ok(kind)),
@@ -161,7 +158,7 @@ impl Denial {
             }
             Some(Cause::RequestAuthority(kind)) => authority_execution(*kind),
             Some(Cause::SigningLifecycleAttempt(failure)) => {
-                if let crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind) = failure.kind() {
+                if let crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind) = failure.kind() {
                     Some(Ok(kind))
                 } else { allocation_control(failure.allocation_denial()) }
             }
@@ -172,8 +169,8 @@ impl Denial {
     pub(in crate::domain_computation::primary_graph) fn provider_execution_denied(
         stage: Stage,
         cause: Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
         detail: impl Into<std::sync::Arc<str>>,
     ) -> Self {
@@ -189,11 +186,11 @@ impl Denial {
 /// Both projections of a preparation refusal carry the same execution category.
 pub(super) fn execution_kind(
     cause: Result<
-        crate::domain_computation::WorthQueryProviderSessionDenialKind,
-        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     >,
 ) -> Kind {
-    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
+    use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Session;
     match cause {
         Ok(Session::StorageUnavailable(failure)) => Kind::StorageUnavailable(failure),
         Ok(Session::ContentInconsistency) => Kind::ContentInconsistency,
@@ -243,16 +240,16 @@ pub(super) fn execution_kind(
         | Ok(Session::EmptyPhysicalSessionIdentity)
         | Ok(Session::SessionIdentityExhausted)
         | Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
-            | crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled
+            | crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
         ) => Kind::ProviderRejected,
     }
 }
 
 fn control_kind(
     stop: worth_relational::facade::mvcc::RelationalOperationInterruption,
-) -> crate::domain_computation::WorthQueryProviderSessionControlStopKind {
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+) -> crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind {
+    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
     match stop {
         worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
             Control::Cancelled
@@ -266,11 +263,11 @@ fn allocation_control(
     denial: Option<&worth_execution::ExecutionAllocationDenial>,
 ) -> Option<
     Result<
-        crate::domain_computation::WorthQueryProviderSessionDenialKind,
-        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     >,
 > {
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
     use worth_execution::{
         ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,
         WorkCeilingDenial as Request,

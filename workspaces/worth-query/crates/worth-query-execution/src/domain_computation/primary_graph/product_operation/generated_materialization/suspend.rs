@@ -29,11 +29,11 @@ use crate::domain_computation::primary_graph::{
 pub(in crate::domain_computation::primary_graph::product_operation) struct ExpectedSourceQualification {
     runtime_authority: u64,
     schema: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
-    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     runtime_source_identity:
-        crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
+        crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity,
     checkpoint_source_identity:
-        crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
+        crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity,
     selection: crate::basis::WorthQueryProductBranchReadIdentity,
 }
 
@@ -82,7 +82,7 @@ where
         let source_identity = source.idempotency_identity();
         let checkpoint_source_identity = source.checkpoint_identity();
         let source_root = source.source_root();
-        let crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBasisSelectionIdentity::Product(selection) = source.selection.clone() else {
+        let crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity::Product(selection) = source.selection.clone() else {
             return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
                 WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
             ));
@@ -93,7 +93,7 @@ where
             ExpectedSourceQualification {
                 runtime_authority: source.runtime_authority,
                 schema: source.schema_binding,
-                scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source_root),
+                scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(source_root),
                 runtime_source_identity: source_identity,
                 checkpoint_source_identity,
                 selection,
@@ -227,7 +227,7 @@ where
             .prepare_relational_candidate(candidate, request, true)
             .map_err(|denial| match denial {
                 PublicationDenial::ClockMismatch => {
-                    WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
+                    WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
                 },
 PublicationDenial::Stopped(stop) => {
                     WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(advancement_denial(
@@ -286,7 +286,7 @@ PublicationDenial::Stopped(stop) => {
             }
             Err(PublicationDenial::ClockMismatch) => {
                 Err(WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(
-                    crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                    crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
                 ))
             },
 Err(PublicationDenial::Stopped(stop)) => {

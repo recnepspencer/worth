@@ -1,7 +1,7 @@
 //! Metered ordered native-cell equality excludes all row/dependency provenance.
 use super::super::retained_projection::ProjectionComparisonDenial as Denial;
 use super::*;
-use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
 use worth_execution::{MapKernelContext, MapKernelFailure, MapKernelStop};
 
 type Failure = MapKernelFailure<Denial>;

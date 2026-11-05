@@ -57,10 +57,7 @@ impl WorthQueryApplicationCommittedChanges {
         use crate::domain_computation::authorization::{
             WorkflowApprovalRequestDecodingDenial as Decode, WorthQueryRetainedCapabilityRequest,
         };
-        use crate::domain_computation::primary_graph::{
-            WorthQueryApplicationAttemptDenial as Denial,
-            WorthQueryApplicationAttemptDenialKind as Kind,
-        };
+        use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
         let invalid = |subject: &str| Denial::new(Kind::InvalidAuthoritativeValue, subject);
         let locator =
             crate::domain_computation::primary_graph::schema_layout::planned_field_locator(

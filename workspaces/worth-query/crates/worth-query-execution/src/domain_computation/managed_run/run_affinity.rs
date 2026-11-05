@@ -7,10 +7,7 @@ use crate::domain_computation::provider_session::graph_provider::{
 use crate::domain_computation::provider_session::WorthQueryDirectResourceReadmissionPending;
 use crate::domain_computation::WorthQueryDirectExecutionResourceAttempt;
 
-use super::provider_work::{
-    WorthQueryManagedProviderCleanupAuthority, WorthQueryManagedProviderWorkEvidence,
-    WorthQueryManagedProviderWorkLedger,
-};
+use {super::provider_work::WorthQueryManagedProviderCleanupAuthority, crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence, super::provider_work::WorthQueryManagedProviderWorkLedger};
 
 mod readmission;
 mod terminal;
@@ -103,7 +100,7 @@ impl WorthQueryDirectRunAffinity {
         &self,
         bridge: &worth_runtime_bridge::facade::BridgeBoundExecutionBasis,
     ) -> Result<
-        super::WorthQueryManagedSafePointObservation,
+        crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation,
         super::WorthQueryManagedSafePointFailure,
     > {
         super::safe_point_observation::observe_managed_run_safe_point(
@@ -254,7 +251,7 @@ impl WorthQueryDirectRunAffinity {
     pub(super) fn begin_readmission(
         self,
         call: WorthQueryGraphProviderCallReadmissionPlan,
-        owner: &super::WorthQueryDirectReadmissionTransitionPermit,
+        owner: &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit,
     ) -> WorthQueryDirectRunReadmissionPending {
         let (attempt, fresh_call) =
             WorthQueryDirectResourceReadmissionPending::begin(self.attempt, call, owner);

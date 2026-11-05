@@ -1,22 +1,16 @@
 mod preflight;
-pub(in crate::domain_computation::primary_graph) use preflight::preflight_execution_cause;
+
 /// The only conversion from Relational execution causes to Query denial kinds.
 pub fn relational_execution_kind(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
     partition_identity: Option<u64>,
 ) -> Result<
-    crate::domain_computation::WorthQueryProviderSessionDenialKind,
-    crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
 > {
-    use crate::domain_computation::{
-        WorthQueryProviderSessionControlStopKind as Control,
-        WorthQueryProviderSessionDenialKind as Kind,
-    };
+    use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind};
     use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
-    use {
-        crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
-        crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level,
-    };
+    use {crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
 
     let resource = |denial, policy_ancestor| Kind::ExecutionResource {
         denial,
@@ -124,8 +118,8 @@ pub fn relational_execution_stop(
 pub fn native_preparation_kind(
     failure: &crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> Result<
-    Option<crate::domain_computation::WorthQueryProviderSessionDenialKind>,
-    crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    Option<crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind>,
+    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
 > {
     if let Some(stop) = failure.checked_read_stop() {
         return stop.map(Some);
@@ -145,8 +139,8 @@ pub fn native_preparation_kind(
 pub(in crate::domain_computation::primary_graph) fn query_read_execution_kind(
     stop: &worth_relational::facade::runtime::QueryReadExecutionStop,
 ) -> Result<
-    Option<crate::domain_computation::WorthQueryProviderSessionDenialKind>,
-    crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    Option<crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind>,
+    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
 > {
     let Some(denial) = stop.execution_denial() else {
         return Ok(None);

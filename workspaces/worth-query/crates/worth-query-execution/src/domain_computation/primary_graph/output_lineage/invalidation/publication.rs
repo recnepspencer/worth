@@ -4,14 +4,14 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-use crate::domain_computation::primary_graph::provider::RebaseVerificationFailure;
+use crate::domain_computation::primary_graph::vocabulary::provider::failure::RebaseVerificationFailure;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
 
-use super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::super::WorthQueryApplicationOutputLineage;
-use super::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::SettlementRegistration;
-use super::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use super::SourceInvalidationOwner;
 
 /// Both performed and stable publications retain the same exact upstream
@@ -106,7 +106,7 @@ pub fn register_republished(
     output_witness: &super::super::SealedNativeOutputWitness,
     read_basis: worth_relational::facade::runtime::PositionedRelationalSnapshot,
 ) -> Result<(), FullVerificationReason> {
-    use super::SourceSettlementCurrentness as Currentness;
+    use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness as Currentness;
     use FullVerificationReason as Reason;
     let requirement = match owner
         .currentness(&read_basis, predecessor)
@@ -143,13 +143,6 @@ pub fn register_republished(
         .map_err(registration_reason)
 }
 
-/// Why the row of a commit that could not rebase its facts requires
-/// verification.
-impl From<RebaseVerificationFailure> for FullVerificationReason {
-    fn from(reason: RebaseVerificationFailure) -> Self {
-        reason.into_registration_requirement()
-    }
-}
 
 fn registration_reason(stop: SettlementRegistrationStop) -> FullVerificationReason {
     match stop {

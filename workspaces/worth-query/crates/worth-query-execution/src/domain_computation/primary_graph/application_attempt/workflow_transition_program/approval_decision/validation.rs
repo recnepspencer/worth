@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 pub(super) fn decode_transition_identity(identity: &str) -> Option<[u8; 32]> {
     if identity.len() != 64 {
@@ -21,9 +22,9 @@ pub(super) fn validate_request_binding<Schema, Capability, Operation, Input, Sco
         WorthQueryProjectedApplicationMutation,
     >,
     installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
-    instance: &super::super::super::PublishedWorkflowInstanceRef,
+    instance: &crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
     required: &RequiredWorkflowApproval,
-    proposal: &super::super::super::PublishedWorkflowProposalRef,
+    proposal: &crate::domain_computation::primary_graph::vocabulary::application_attempt::reference::PublishedWorkflowProposalRef,
 ) -> Result<(), WorthQueryApplicationAttemptDenial>
 where
     Schema: ApplicationSchema,

@@ -1,6 +1,6 @@
 //! Actual historical candidate matching; exact rejection never discards influence.
 use super::super::source::service::ManagedSourceRoot;
-use super::super::{WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial};
+use {crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial};
 use super::CapturedIndexInfluence;
 use crate::domain_computation::primary_graph::access_strategy::realized_footprint::ManagedHistoryRelevanceDenial as Denial;
 use std::sync::Arc;

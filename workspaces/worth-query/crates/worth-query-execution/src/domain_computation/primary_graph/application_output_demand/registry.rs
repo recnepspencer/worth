@@ -45,7 +45,7 @@ pub struct SourceCustody {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BoundOutputSource {
-    pub scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    pub scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     pub(in crate::domain_computation::primary_graph) identity: SourceEpoch,
 }
 
@@ -53,7 +53,7 @@ impl SourceCustody {
     fn available(
         &self,
         identity: &SourceEpoch,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     ) -> bool {
         self.retired.is_none()
             && self.source.is_some()
@@ -131,9 +131,9 @@ pub struct WorthQueryOutputDemandNotifications {
 pub(crate) mod accepted_checkpoint;
 pub(crate) mod accepted_checkpoint_identity;
 pub(in crate::domain_computation::primary_graph) use accepted_checkpoint::AcceptedCheckpointFactSource;
-pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::CheckpointOutputSlot;
+
 pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity;
-pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
+
 pub(crate) mod admission;
 pub(crate) mod checkpoint;
 pub(crate) mod cleanup;
@@ -175,7 +175,7 @@ pub(in crate::domain_computation::primary_graph) use held_successor::HeldRequire
 pub(in crate::domain_computation::primary_graph) use required_work::AdmittedRequiredWave;
 pub(in crate::domain_computation::primary_graph) use required_work::PendingUpstream;
 pub(in crate::domain_computation::primary_graph) use required_work::PreparedRequiredInputs;
-pub(in crate::domain_computation::primary_graph) use required_work::ReplacedRequiredWorkHint;
+
 pub(in crate::domain_computation::primary_graph) use required_work::RequestedOutputReadClaims;
 pub(in crate::domain_computation::primary_graph) use required_work::RequiredRefreshRejection;
 pub(in crate::domain_computation::primary_graph) use required_work::RequiredWorkClaim;
@@ -257,11 +257,11 @@ pub struct DemandRecord {
     pending_cleanup_queued: bool,
 
     settlements: Vec<
-        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+        Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
     >,
     product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     source_scope:
-        Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding>,
+        Option<crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding>,
     source_commits: Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
     state: DemandState,
     performed_source: Option<WorthQueryPerformedOutputDemandSource>,

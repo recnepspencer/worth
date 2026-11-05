@@ -1,8 +1,6 @@
 use super::*;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 use crate::domain_computation::primary_graph::application_attempt::ElevationApprovalReplayScopedOps;
 
 pub trait ApprovalReplayOps<Schema>:
@@ -102,7 +100,7 @@ where
         let draft = match bind_approval(execution, self.authorization_host(), &requested, &access, operation) {
             Ok(draft) => draft,
             Err(denial) => match denial.kind() {
-                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
+                crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
                 return Err((
                     Some(
                         WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
@@ -112,7 +110,7 @@ where
                     requested,
                 ))
                 }
-                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Err((None, requested)),
+                crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Err((None, requested)),
             },
         };
         let admission = match progress_capability_operation(
@@ -125,7 +123,7 @@ where
         ) {
             Ok(admission) => admission,
             Err(denial) => match denial.kind() {
-                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
+                crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
                 return Err((
                     Some(
                         WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
@@ -135,7 +133,7 @@ where
                     requested,
                 ))
                 }
-                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Err((None, requested)),
+                crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Err((None, requested)),
             },
         };
         let mut admission = admission

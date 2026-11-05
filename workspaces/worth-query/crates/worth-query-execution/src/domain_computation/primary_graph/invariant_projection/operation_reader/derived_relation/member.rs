@@ -8,6 +8,7 @@ use worth_relational::facade::{
 };
 
 pub use super::super::super::graph_member::WorthQueryInvariantGraphMember;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 /// Read-only endpoints of one observed derived-relation edge.
 pub struct WorthQueryInvariantDerivedMemberRelation<S, R, F, T> {
     from: WorthQueryInvariantGraphMember<S, F>,

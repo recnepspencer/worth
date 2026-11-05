@@ -22,7 +22,7 @@ use super::provider_inbound_completion::{
     lower_provider_inbound_completion, WorthQueryInboundCompletionLayout,
 };
 use super::{kind_space_exhausted, WorthQueryPrimaryGraphInstallationDenial};
-use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxLayout;
+use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout;
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::schema::lower_workflow,
     crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,

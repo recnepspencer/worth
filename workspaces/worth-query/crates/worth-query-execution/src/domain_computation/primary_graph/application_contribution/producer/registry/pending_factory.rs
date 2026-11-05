@@ -10,7 +10,7 @@ use worth_query_installation::facade::{
 };
 
 use super::{denial, DenialKind};
-use crate::domain_computation::primary_graph::application_attempt::application_resource_request;
+use crate::domain_computation::vocabulary::primary_graph::resource_request::application_resource_request;
 use crate::domain_computation::primary_graph::application_contribution::producer::{
     InstalledProducerExecutor, ProducerSourceBinding, ProducerSourceQuery, ProducerSourceValue,
     TypedInstalledProducer, WorthQueryApplicationProducerBinding,

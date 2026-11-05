@@ -10,17 +10,7 @@ use worth_relational::facade::{
 };
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
-use crate::domain_computation::{
-    execution_runtime::product_world::{
-        WorthQueryProductPublicationBinding, WorthQueryProductPublicationReceipt,
-    },
-    primary_graph::{
-        application_query::derived_view::{
-            changes_from_summary, PreparedManagedViewPublication, ViewPublicationBasis,
-        },
-        provider::WorthQueryPrimaryGraphProvider,
-    },
-};
+use {crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding, crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt, crate::domain_computation::primary_graph::vocabulary::application_query::change_summary::changes_from_summary, crate::domain_computation::primary_graph::application_query::derived_view::PreparedManagedViewPublication, crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewPublicationBasis, crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider};
 
 const MAXIMUM_CHANGED_RECORDS: usize = 100_000;
 const MAXIMUM_ASPECT_SCOPES: usize = 100_000;

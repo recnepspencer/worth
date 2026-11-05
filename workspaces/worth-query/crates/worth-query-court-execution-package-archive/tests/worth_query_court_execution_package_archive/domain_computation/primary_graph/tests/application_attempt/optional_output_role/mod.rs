@@ -11,7 +11,7 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 pub use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
 pub use worth_query_execution::facade::domain_computation::HandlerResult;
 pub use worth_query_execution::facade::domain_computation::WorthQueryCompletedMutationCandidate;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account;

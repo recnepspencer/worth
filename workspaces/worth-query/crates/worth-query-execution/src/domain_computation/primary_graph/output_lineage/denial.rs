@@ -1,4 +1,4 @@
-use super::super::WorthQueryApplicationOutputProjectionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial;
 
 /// Owning refusal reason for reading a prior binding's admitted output.
 /// Absence of the binding is distinct from a missing member in present output.

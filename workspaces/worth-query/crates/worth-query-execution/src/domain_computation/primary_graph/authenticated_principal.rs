@@ -11,7 +11,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::{EntityId, RelationId};
 
 use super::freshness::WorthQueryPrincipalFreshnessEvidence;
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 mod command_pin;
 pub use command_pin::WorthQueryCommandPrincipalPin;

@@ -1,26 +1,9 @@
 //! The local original-request proof lends only sealed immutable rows to Native.
-use super::{
-    invocation::controlled,
-    retention::{ManagedIndexState, ReadyIndex},
-    WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial as WorkDenial,
-};
+use {super::invocation::controlled, super::retention::ManagedIndexState, super::retention::ReadyIndex, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as WorkDenial};
 use crate::domain_computation::primary_graph::access_strategy::coverage::{
     ReceivedSelection, RetainedCoverage,
 };
-use crate::domain_computation::{
-    primary_graph::{
-        application_query::{
-            observed_source::ManagedSourceDependencies,
-            one_shot::outcome::material::MaterialCompletion,
-        },
-        source_facts::SourceFactsAllocation,
-    },
-    provider_session::{
-        WorthQueryCompletedSourceRead, WorthQueryGraphWorkSessionIdentity,
-        WorthQueryManagedGraphWorkSession, WorthQueryManagedIndexSelectionProof,
-        WorthQueryManagedIndexSessionDenial,
-    },
-};
+use {crate::domain_computation::primary_graph::application_query::observed_source::ManagedSourceDependencies, crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation, crate::domain_computation::provider_session::WorthQueryCompletedSourceRead, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity, crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession, crate::domain_computation::provider_session::WorthQueryManagedIndexSelectionProof, crate::domain_computation::provider_session::WorthQueryManagedIndexSessionDenial};
 use std::sync::Arc;
 use worth_execution::{ExecutionArray, ExecutionRequestArrayBuilder};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;

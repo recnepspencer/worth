@@ -1,16 +1,11 @@
 use crate::domain_computation::primary_graph::application_query::AuthorizationObservationScopedOps;
 mod freshness_denial;
-use super::super::{
-    WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-};
+use {super::super::WorthQueryApplicationAuthorizationWorkEvidence, super::super::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
 use super::denial::denial;
 use crate::domain_computation::authorization::{
     WorthQueryPrincipalCurrentnessDependency, WorthQueryRetainedAuthorizationDecisionFacts,
 };
-use crate::domain_computation::primary_graph::{
-    validate_freshness_at_snapshot, WorthQueryPrincipalResolutionMode,
-};
+use {crate::domain_computation::primary_graph::validate_freshness_at_snapshot, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
 use worth_query_installation::facade::{

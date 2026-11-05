@@ -4,6 +4,7 @@ use crate::domain_computation::{
     WorthQueryDecisionReadSetDenialKind as Kind, WorthQueryDecisionReadSetFailure,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interruption;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 impl WorthQueryApplicationAttemptDenial {
     pub(in crate::domain_computation::primary_graph) fn into_decision_read_set_failure(

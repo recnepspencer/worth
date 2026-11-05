@@ -5,6 +5,8 @@ use worth_query_declaration::facade::application_operation::{
     WorthQueryCreateOutput, WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
 };
 use worth_relational::facade::mvcc::CompanionPreflightStop;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 /// Local error context, not another publication or currentness authority.
 #[derive(Debug)]

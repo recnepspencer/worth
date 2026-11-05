@@ -1,5 +1,6 @@
 //! Refusal evidence for an active capability refresh.
 use super::*;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 pub(super) fn inconsistent_refresh(
     refresh: &WorthQueryCapabilityRefresh<'_>,
 ) -> WorthQueryOperationAuthorizationDenial {

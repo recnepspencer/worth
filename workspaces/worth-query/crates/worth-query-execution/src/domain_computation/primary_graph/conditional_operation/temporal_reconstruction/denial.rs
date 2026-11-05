@@ -2,8 +2,8 @@ use super::super::{
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind,
 };
-use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) fn bridge_reconstruction_denial(
     detail: impl Into<String>,
@@ -57,9 +57,9 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn recon
 }
 
 pub(super) fn principal(
-    denial: crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial,
+    denial: crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial,
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
-    use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind as Kind;
+    use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind as Kind;
     match denial.kind() {
         Kind::Stopped(stop) => read_stopped(stop),
 
@@ -98,9 +98,9 @@ pub(super) fn principal(
 }
 
 pub(super) fn entity(
-    denial: crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial,
+    denial: crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial,
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
-    use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind as Kind;
+    use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind as Kind;
     match denial.kind() {
         Kind::Refused(ResolutionRefusal::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
@@ -138,9 +138,9 @@ pub(super) fn query_authorization(
 mod query;
 
 pub(super) fn one_shot(
-    denial: crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenial,
+    denial: crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial,
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
-    use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Kind;
+    use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as Kind;
     match denial.kind() {
         Kind::Content(cause) => reconstruction_denial(
             WorthQueryConditionalRuntimeInstallationDenialKind::Content(cause),
@@ -148,10 +148,10 @@ pub(super) fn one_shot(
         ),
         Kind::ExecutionRequest(kind) => read_stopped(Ok(kind)),
         Kind::Cancelled => read_stopped(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
         )),
         Kind::DeadlineExceeded => read_stopped(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
         )),
 
         Kind::ActiveSnapshotCapacityExhausted {
@@ -190,8 +190,8 @@ pub(super) fn one_shot(
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) fn read_stopped(
     stop: Result<
-        crate::domain_computation::WorthQueryProviderSessionDenialKind,
-        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     >,
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
     reconstruction_denial(

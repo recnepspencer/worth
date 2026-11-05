@@ -3,10 +3,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
 
-use super::{
-    ConditionalClockLease, ErasedClockObservationOutcome, WorthQueryConditionalTruthBasis,
-    WorthQueryInstalledConditionalOperation,
-};
+use {crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::ConditionalClockLease, super::ErasedClockObservationOutcome, super::WorthQueryConditionalTruthBasis, super::WorthQueryInstalledConditionalOperation};
 
 /// Retained ownership of one installed operation. The lease is immutable and
 /// lookup never needs to acquire the operation's execution mutex.

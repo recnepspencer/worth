@@ -1,11 +1,7 @@
 //! Actual conventional Source decisions and their issuer-owned principal support.
 use super::WorthQueryRetainedAuthorizationDecisionFacts;
 mod meaning;
-use crate::domain_computation::{
-    authorization::WorthQueryInstalledAuthorizationRegistry,
-    primary_graph::{SourceFactsAllocation, WorthQueryApplicationObservedFact},
-    provider_session::WorthQueryGraphWorkSessionIdentity,
-};
+use {crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry, crate::domain_computation::primary_graph::SourceFactsAllocation, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity};
 pub(in crate::domain_computation) use meaning::SourceAuthorizationLocus;
 use std::sync::Arc;
 use worth_relational::facade::{

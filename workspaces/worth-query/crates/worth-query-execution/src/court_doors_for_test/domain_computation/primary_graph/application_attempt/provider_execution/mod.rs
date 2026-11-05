@@ -11,5 +11,3 @@ pub mod outcome;
 pub mod phase;
 #[path = "program_occurrence_gate/mod.rs"]
 pub mod program_occurrence_gate;
-#[path = "resource_request/mod.rs"]
-pub mod resource_request;

@@ -136,8 +136,8 @@ impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_
 pub enum WorthQueryInboundIndexRepairDenial {
     ExecutionDenied(
         Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     ),
     ForeignPhase,

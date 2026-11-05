@@ -95,7 +95,7 @@ impl WorthQueryDelegationDecisionFact {
 
     pub(super) fn belongs_to_session(
         &self,
-        session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     ) -> bool {
         match self {
             Self::Root { .. } => true,

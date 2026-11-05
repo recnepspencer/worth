@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use super::WorthQueryWorkflowRunAffinity;
-use crate::domain_computation::managed_run::provider_work::WorthQueryManagedProviderWorkEvidence;
+use crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence;
 use crate::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupPermit;
 use crate::domain_computation::{
     WorthQueryWorkflowExecutionAttemptReleaseReceipt, WorthQueryWorkflowExecutionResourceAttempt,

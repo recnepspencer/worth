@@ -1,15 +1,12 @@
 //! Capability observation across Relational and Runtime Bridge authority.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationPlan;
 use worth_runtime_bridge::facade::BridgeAuthorizationRuntime;
 
 use super::capability_registry::WorthQueryInstalledCapabilityPlan;
 use super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use super::{
-    WorthQueryAuthorizationDecisionFact, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialKind,
-};
+use {super::WorthQueryAuthorizationDecisionFact, super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 use crate::domain_computation::authorization::WorthQueryRuntimeTimeSample;
 
 mod bridge_observation;
@@ -156,7 +153,7 @@ impl WorthQueryObservedCapabilitySeed {
 pub(super) fn observe_capability_policy(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     _permit: super::delegation_admission::WorthQueryCapabilityObservationPermit,
-    session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+    session_identity: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     bridge: &BridgeAuthorizationRuntime,

@@ -2,11 +2,7 @@
 use super::{
     ApplicationMutationBinding, ApplicationSchema, DecisionReader, HandlerExecutionDenial,
 };
-use crate::domain_computation::primary_graph::{
-    operation_body::{PreparedBodySelections, PreparedBodySource},
-    HandlerResult, WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryOperationBodyDenial,
-};
+use {crate::domain_computation::primary_graph::vocabulary::operation_body::selection::PreparedBodySelections, crate::domain_computation::primary_graph::vocabulary::operation_body::source::PreparedBodySource, crate::domain_computation::primary_graph::HandlerResult, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial};
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldPresence, ApplicationOperationBodyCreatedField, ApplicationOperationBodyProgram,
 };

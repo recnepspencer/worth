@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::condition::CompiledWorkflowCondition;
 
 #[derive(Default)]
 pub(super) struct InboundFields {

@@ -37,16 +37,14 @@ where
 mod checkpoint;
 mod member_execution;
 pub(crate) mod nested_failure;
-pub use member_execution::WorthQueryMemberExecution;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::member_execution::WorthQueryMemberExecution;
 mod decision_plan;
 mod denial;
 mod preparation_loans;
 pub(crate) mod prepared_request;
 pub(crate) mod wave_dispatch;
 
-pub use checkpoint::{
-    WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationExecution,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_contribution::checkpoint::WorthQueryManagedComputationCheckpoint, crate::domain_computation::primary_graph::vocabulary::application_contribution::checkpoint::WorthQueryManagedComputationExecution};
 pub use denial::WorthQueryManagedComputationDenial;
 
 pub struct WorthQueryInstalledManagedComputation<Schema, Feature, Computation, Owner> {

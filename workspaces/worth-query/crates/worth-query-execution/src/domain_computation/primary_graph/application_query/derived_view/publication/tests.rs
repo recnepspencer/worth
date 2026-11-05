@@ -5,7 +5,7 @@ use worth_foundational::facade::{
 };
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
 
-use super::{DependencyIndex, ViewChange, ViewDependency};
+use {super::DependencyIndex, crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewChange, super::ViewDependency};
 
 fn entity(slot: u64) -> EntityId {
     EntityId::new(PartitionId::main(), slot, 1)

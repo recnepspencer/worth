@@ -10,6 +10,8 @@ use worth_execution::ExecutionArrayBuilder;
 use worth_execution::ExecutionMemoryReservation;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
+use crate::domain_computation::primary_graph::vocabulary::provider::failure::RebaseVerificationFailure;
+use crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason;
 
 type Endpoints =
     crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints;

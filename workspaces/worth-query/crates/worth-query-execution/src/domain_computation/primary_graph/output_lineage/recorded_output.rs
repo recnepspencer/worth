@@ -2,13 +2,8 @@
 
 use std::sync::{Arc, Mutex, OnceLock};
 
-use super::{
-    invalidation::FullVerificationReason, RecordedSettlementIdentity, RecordedSourceIdentity,
-    WorthQueryApplicationOutputCorrespondence,
-};
-use crate::domain_computation::primary_graph::{
-    application_attempt::CompletedHandlerFactBoundary, invariant_projection::ConsumedOutputEvidence,
-};
+use {crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason, crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity, super::RecordedSourceIdentity, super::WorthQueryApplicationOutputCorrespondence};
+use {crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary, crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence};
 
 pub struct RecordedOutput {
     pub(super) producing_implementation:
@@ -25,7 +20,7 @@ pub struct RecordedOutput {
     pub(super) performed_origin: Option<Arc<OnceLock<RecordedOutput>>>,
     pub(super) consumed_outputs: Arc<[ConsumedOutputEvidence]>,
     pub(super) completed_handler_facts: Option<CompletedHandlerFactBoundary>,
-    pub(super) completed_decision_reuse: Option<super::CompletedDecisionReuseProof>,
+    pub(super) completed_decision_reuse: Option<crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof>,
     pub(super) prepared_input_reuse_key: Option<super::PreparedInputReuseKey>,
     /// Performed output initializes this slot at publication. Recovery may fill
     /// the same empty slot only after verifying its original checkpoint witness.

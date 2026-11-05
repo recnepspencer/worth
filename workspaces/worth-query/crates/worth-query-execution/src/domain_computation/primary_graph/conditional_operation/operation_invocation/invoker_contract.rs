@@ -1,7 +1,4 @@
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationEffectProgramBuilder,
-    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgramBuilder, crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
 
 /// Which step of a temporal operation invoker failed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

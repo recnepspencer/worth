@@ -18,6 +18,7 @@ use worth_query_installation::facade::{
     WorthQueryOperationComponentReadScope, WorthQueryOperationGraphReadScope,
 };
 use worth_relational::facade::{identity::EntityId, runtime::RelationalPinnedRead};
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 mod paths;
 mod public_reads;
 mod selection;

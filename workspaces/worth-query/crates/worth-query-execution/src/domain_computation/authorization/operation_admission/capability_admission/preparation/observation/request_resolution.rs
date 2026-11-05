@@ -1,6 +1,6 @@
 //! Exact typed capability-request resolution owned by capability admission.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::collections::BTreeMap;
 
 use worth_query_declaration::facade::{
@@ -13,9 +13,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 use worth_relational::facade::identity::EntityId;
 
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryEntityResolutionTruth, WorthQueryResolvedEntity,
 };

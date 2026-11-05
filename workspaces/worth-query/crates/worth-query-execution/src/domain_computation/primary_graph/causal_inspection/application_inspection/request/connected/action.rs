@@ -3,9 +3,7 @@ pub(super) use super::super::super::admission::connected::PendingInspectionPolic
 use super::super::super::{admission, source_original::SourceOriginal};
 use super::*;
 use crate::domain_computation::primary_graph::application_query::AccessScopedOps;
-use crate::domain_computation::primary_graph::{
-    application_query::FreshQueryPermissionStop, WorthQueryApplicationBasisSelectionIdentity,
-};
+use {crate::domain_computation::primary_graph::application_query::FreshQueryPermissionStop, crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity};
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::identity::EntityId;
 enum PreparedConnectedOutcome<'o> {

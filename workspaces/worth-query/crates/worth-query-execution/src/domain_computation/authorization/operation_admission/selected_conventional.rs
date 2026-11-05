@@ -29,7 +29,7 @@ use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
 use crate::domain_computation::primary_graph::bind_empty_mutation_preconditions_admitted;
 use crate::domain_computation::primary_graph::capture_principal_currentness_admitted;
-use crate::domain_computation::primary_graph::EmptyMutationPreconditionAdmissionStop;
+use crate::domain_computation::vocabulary::primary_graph::precondition_binding::EmptyMutationPreconditionAdmissionStop;
 use crate::domain_computation::primary_graph::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedPrincipal;
 use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedScope;

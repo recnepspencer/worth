@@ -66,7 +66,7 @@ trait ExternalSettlementOwnOps<Schema: worth_query_installation::facade::Applica
 {
     fn resolve_original_dispatch_terminal(
         &self,
-        record: &crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+        record: &crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
         publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
     ) -> Result<bool, Denial> {
         match self

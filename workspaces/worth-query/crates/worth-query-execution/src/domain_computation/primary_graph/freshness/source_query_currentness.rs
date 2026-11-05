@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
+use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 
 impl WorthQueryPrincipalFreshnessEvidence {
     pub(in crate::domain_computation) fn source_query_facts(

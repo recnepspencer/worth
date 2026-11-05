@@ -3,7 +3,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 
 pub use worth_foundational::facade::AspectValue;
 pub use std::collections::BTreeMap;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction;
 pub use worth_relational::facade::identity::EntityId;
 pub use worth_foundational::facade::InternedString;
 pub use worth_relational::facade::identity::KindId;

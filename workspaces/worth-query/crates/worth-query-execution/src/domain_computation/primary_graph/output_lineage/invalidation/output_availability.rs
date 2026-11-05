@@ -12,14 +12,14 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use super::super::CoveredSourcePublication;
-use super::super::RecordedSettlementIdentity;
-use super::super::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::super::SourcePublication;
-use super::derived::SettlementRegistrationStop;
-use super::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::mark_state::MarkState;
 use super::SourceInvalidationOwner;
-use crate::domain_computation::primary_graph::application_contribution::OutputSourceAddress;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::source_qualification::OutputSourceAddress;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(super) struct PublicationSourceKey {
@@ -46,7 +46,7 @@ pub(in crate::domain_computation) struct ObservedSourcePublication {
     address: Arc<OutputSourceAddress>,
     state: Arc<SourcePublicationState>,
     candidate: Option<Arc<crate::domain_computation::primary_graph::invariant_projection::ObservedOutputCandidate>>,
-    source_epoch: crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
+    source_epoch: crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity,
     read_closure:
         Arc<crate::domain_computation::primary_graph::application_query::SourceQueryReadClosure>,
     selected: PositionedRelationalSnapshot,

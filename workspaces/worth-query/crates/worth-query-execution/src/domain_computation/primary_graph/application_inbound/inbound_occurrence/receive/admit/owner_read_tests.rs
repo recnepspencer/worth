@@ -1,9 +1,7 @@
 //! Each owner-read refusal of a callback asks for a retry only when one can succeed.
 
 use super::map_owner_read;
-use crate::domain_computation::primary_graph::{
-    WorthQueryCommittedDispatchOutboxReadDenial as Read, WorthQueryInboundAdmissionDenial as Denial,
-};
+use {crate::domain_computation::vocabulary::primary_graph::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial as Read, crate::domain_computation::primary_graph::WorthQueryInboundAdmissionDenial as Denial};
 
 #[test]
 fn only_a_read_that_can_later_succeed_asks_for_a_retry() {

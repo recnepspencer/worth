@@ -11,6 +11,7 @@ use worth_query_declaration::facade::{
     },
     application_schema::{ApplicationEntityMarkerIdentity, ApplicationStructuredValueBinding},
 };
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 impl<Schema, Operation> WorthQueryComputationReader<'_, '_, '_, Schema, Operation>
 where
     Schema: ApplicationSchema + 'static,

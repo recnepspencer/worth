@@ -3,25 +3,7 @@ use {
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
 };
 
-/// An approver's decision on a proposal. `Approve` and `Reject` record the approved and
-/// rejected control outcomes.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorkflowApprovalDecision {
-    Approve,
-    Reject,
-}
 
-impl WorkflowApprovalDecision {
-    pub(in crate::domain_computation::primary_graph) const fn outcome(
-        self,
-    ) -> worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome
-    {
-        match self {
-            Self::Approve => worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Approved,
-            Self::Reject => worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Rejected,
-        }
-    }
-}
 
 /// An approval the instance waits on: the capability and operation that must approve, and
 /// the operation the approval authorizes.

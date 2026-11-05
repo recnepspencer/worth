@@ -15,10 +15,7 @@ use super::super::{
 };
 use super::admission::{require_request, InspectionAdmissionDenial};
 use super::report::{FundedInspectionReport, InspectionReportPayload};
-use crate::domain_computation::{
-    primary_graph::admitted_capture::{CaptureStop, RetainedStorageDenial},
-    provider_session::WorthQueryInspectionReadCompletion,
-};
+use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial, crate::domain_computation::provider_session::WorthQueryInspectionReadCompletion};
 pub(super) use comparison::PreparedComparedInspection;
 pub use comparison::WorthQueryComparedApplicationInspection;
 pub(super) use source::{PreparedMaterializedSourceInspection, PreparedSourceInspection};

@@ -1,5 +1,6 @@
 //! Framework-only AVL links, ordered extrema and qualified summary repair.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot;
 impl<P, R, S: Summary> PredicateTree<P, R, S> {
     pub(super) fn repair(&mut self, id: WatchSlot) {
         let node = self.node(id);

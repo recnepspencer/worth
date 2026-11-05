@@ -15,22 +15,8 @@ use worth_runtime_world::facade::{
 };
 
 use super::WorthQuerySelectedProductOperation;
-use crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalClockHandle;
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::WorthQueryConditionalClockHandle;
 
-/// Why a conditional definition was not admitted for an application change.
-/// Admission is a check, so nothing was published.
-#[derive(Debug)]
-pub enum WorthQueryApplicationConditionalDefinitionAdmissionDenial {
-    /// The operation has no admitted mutation product to bind a successor to.
-    MissingProductObservation,
-    /// The installed registry has no matching typed conditional binding.
-    ConditionalBindingUnavailable { identity: &'static str },
-    /// The clock handle's conditional operation is not live in this
-    /// application.
-    ForeignConditionalOperation,
-    /// The bridge refused the conditional signal basis of the selected product.
-    BridgePreparation(worth_runtime_bridge::facade::BridgeConditionalDenial),
-}
 
 /// Why publishing a conditional definition was refused before publication.
 /// Nothing was published.
@@ -166,3 +152,4 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     }
 }
 pub(in crate::domain_computation::primary_graph) use admission::AdmissionScopedOps;
+use crate::domain_computation::primary_graph::vocabulary::product_operation::conditional_definition::WorthQueryApplicationConditionalDefinitionAdmissionDenial;

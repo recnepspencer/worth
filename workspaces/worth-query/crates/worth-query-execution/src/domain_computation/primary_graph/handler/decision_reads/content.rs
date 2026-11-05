@@ -1,8 +1,6 @@
 //! The ordinary typed decision door; content is field-bound, never a free lookup.
 use super::super::invariant::DecisionReader;
-use crate::domain_computation::primary_graph::{
-    AdmittedContent, ContentReadDenial, WorthQueryInvariantEntityIdentity,
-};
+use {crate::domain_computation::primary_graph::AdmittedContent, crate::domain_computation::primary_graph::ContentReadDenial, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
 use worth_foundational::facade::ContentRefId;
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,

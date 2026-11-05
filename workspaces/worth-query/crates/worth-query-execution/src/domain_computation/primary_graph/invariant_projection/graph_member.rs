@@ -1,10 +1,5 @@
 //! Read-only selectors share one exact projection snapshot and installed domain.
-use super::{
-    WorthQueryApplicationInvariantProjectionReader as Reader,
-    WorthQueryInvariantEntityIdentity as Entity,
-    WorthQueryInvariantProjectionTraversalDenial as Denial,
-    WorthQueryInvariantProjectionTraversalDenialKind as Kind,
-};
+use {super::WorthQueryApplicationInvariantProjectionReader as Reader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity as Entity, super::WorthQueryInvariantProjectionTraversalDenial as Denial, super::WorthQueryInvariantProjectionTraversalDenialKind as Kind};
 use crate::domain_computation::primary_graph::{
     schema_layout::MemberDomainBinding as Domain, source_facts::SourceFactsAllocation,
 };

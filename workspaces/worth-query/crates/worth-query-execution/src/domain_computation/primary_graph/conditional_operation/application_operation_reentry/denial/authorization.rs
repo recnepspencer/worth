@@ -1,7 +1,7 @@
 //! authorization refusal at conditional reentry.
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use super::WorthQueryTemporalReentryDenial;
-use crate::domain_computation::primary_graph::{WorthQueryOperationAuthorizationDenialKind as Kind, WorthQueryOperationAuthorizationDenial as Failure};
+use {crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Kind, crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial as Failure};
 use crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure as Terminal;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
 impl WorthQueryTemporalReentryDenial {
@@ -36,10 +36,10 @@ impl WorthQueryTemporalReentryDenial {
             }
             Kind::Stopped(Ok(cause)) => Self::from_read_stop(Ok(cause)),
             Kind::Stopped(Err(
-                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+                crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
             )) => Self::from_native_stop(Native::Cancelled),
             Kind::Stopped(Err(
-                crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+                crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
             )) => Self::from_native_stop(Native::DeadlineElapsed),
             kind @ Kind::Refused(AuthorizationRefusal::ProductSecurityBasis(_)) => {
                 Self::Terminal(refused(kind))

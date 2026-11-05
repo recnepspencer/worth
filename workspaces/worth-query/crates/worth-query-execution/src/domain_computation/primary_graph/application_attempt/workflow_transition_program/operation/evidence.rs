@@ -2,16 +2,7 @@
 //! approval authority. Common occurrence binding remains the operation owner's job.
 
 use crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis;
-use {
-    super::check_request_live, super::mismatch, super::observe_retained_transition,
-    super::ApplicationOperationMarkerIdentity, super::ApplicationSchema,
-    super::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationAttemptDenialKind,
-    super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet,
-    super::WorthQueryProjectedApplicationMutation,
-    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
-    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,
-};
+use {super::check_request_live, super::mismatch, super::observe_retained_transition, super::ApplicationOperationMarkerIdentity, super::ApplicationSchema, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation,
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
@@ -41,7 +32,7 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         compiled: &CompiledWorkflowDefinition,
         layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
-        instance: &super::super::super::PublishedWorkflowInstanceRef,
+        instance: &crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         selected: &SelectedWorkflowTransition,
         progress: &WorkflowInstanceProgress,
         operation: &SelectedWorkflowOperation,

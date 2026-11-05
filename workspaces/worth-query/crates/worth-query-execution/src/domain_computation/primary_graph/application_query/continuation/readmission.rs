@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::application_query::admission_preparation::AdmissionPreparationParentOps;
 use crate::domain_computation::primary_graph::application_query::OrdinaryScopedOps;
 use worth_query_declaration::facade::{
@@ -11,13 +11,7 @@ use super::{
     affinity::{validate_continuation_affinity, WorthQueryValidatedContinuationAffinity},
     authority::WorthQueryApplicationQueryContinuation,
 };
-use crate::domain_computation::primary_graph::application_query::{
-    admission::prepare_governed_access, disclosure::WorthQueryPendingApplicationQueryGovernance,
-    graph_read_plan_binding::WorthQueryAdmittedContinuationState,
-    WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-    WorthQueryApplicationQueryControls, WorthQueryApplicationQueryResumeControls,
-};
+use {crate::domain_computation::primary_graph::application_query::admission::prepare_governed_access, crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryPendingApplicationQueryGovernance, crate::domain_computation::primary_graph::application_query::graph_read_plan_binding::WorthQueryAdmittedContinuationState, crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryControls, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryResumeControls};
 
 pub trait ReadmissionOps<Schema>:
     crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
@@ -73,7 +67,7 @@ where
     > {
         let request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
+            Err(_) => return Err(crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };
         let execution = &request;
 
@@ -160,7 +154,7 @@ where
     {
         let request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
+            Err(_) => return Err(crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };
         let execution = &request;
 

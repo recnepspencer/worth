@@ -5,7 +5,7 @@ use std::sync::Arc;
 use im::OrdSet;
 use worth_relational::facade::history::CommitId;
 
-use super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 mod read_observation;
 

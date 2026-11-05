@@ -1,5 +1,8 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 impl RecordedOutput {
     #[doc(hidden)]
@@ -12,7 +15,7 @@ impl RecordedOutput {
     #[doc(hidden)]
     pub fn completed_decision_reuse_for_test(
         &self,
-    ) -> &Option<super::super::CompletedDecisionReuseProof> {
+    ) -> &Option<crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof> {
         &self.completed_decision_reuse
     }
 }
@@ -44,7 +47,7 @@ impl RecordedOutput {
     #[doc(hidden)]
     pub fn completed_decision_reuse_mut_for_test(
         &mut self,
-    ) -> &mut Option<super::super::CompletedDecisionReuseProof> {
+    ) -> &mut Option<crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof> {
         &mut self.completed_decision_reuse
     }
 }
@@ -345,7 +348,7 @@ impl RecordedOutput {
         performed_origin: Option<Arc<OnceLock<RecordedOutput>>>,
         consumed_outputs: Arc<[ConsumedOutputEvidence]>,
         completed_handler_facts: Option<CompletedHandlerFactBoundary>,
-        completed_decision_reuse: Option<super::super::CompletedDecisionReuseProof>,
+        completed_decision_reuse: Option<crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof>,
         prepared_input_reuse_key: Option<super::super::PreparedInputReuseKey>,
         native_output_witness: OnceLock<Arc<OnceLock<super::super::SealedNativeOutputWitness>>>,
         settlement_identity: Arc<RecordedSettlementIdentity>,

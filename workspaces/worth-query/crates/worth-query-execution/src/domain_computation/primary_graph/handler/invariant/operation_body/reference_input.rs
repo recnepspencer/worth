@@ -1,13 +1,10 @@
 //! The compiled reference uses the same native indexed selection and adjacency owners.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    operation_body::reference_input::{PreparedBodyReference, PreparedBodyReferences},
-    operation_body::{PreparedBodyInputs, PreparedBodySelection},
-    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind as ResolutionKind,
-    WorthQueryEntityResolutionRefusalKind as Refusal,
-};
+use {crate::domain_computation::primary_graph::vocabulary::operation_body::reference_input::PreparedBodyReference, crate::domain_computation::primary_graph::vocabulary::operation_body::reference_input::PreparedBodyReferences, crate::domain_computation::primary_graph::vocabulary::operation_body::input::PreparedBodyInputs, crate::domain_computation::primary_graph::vocabulary::operation_body::selection::PreparedBodySelection, crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial, crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind as ResolutionKind, crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as Refusal};
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
 use worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget as Read;
+use crate::domain_computation::primary_graph::vocabulary::operation_body::field_expectation::BodyFieldExpectation;
+use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
     pub(in crate::domain_computation::primary_graph) fn body_references(
         &mut self,

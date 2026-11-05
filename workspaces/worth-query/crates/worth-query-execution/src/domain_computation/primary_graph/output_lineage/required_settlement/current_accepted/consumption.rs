@@ -1,5 +1,6 @@
 //! A bound accepted row supplies the complete basis of retained consumption.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 
 impl BoundCurrentAcceptedOutput<'_> {
     pub(in crate::domain_computation::primary_graph) fn retain_consumed(
@@ -10,7 +11,7 @@ impl BoundCurrentAcceptedOutput<'_> {
 
     pub(in crate::domain_computation::primary_graph) fn consumed_identity(
         &self,
-    ) -> &std::sync::Arc<super::super::super::RecordedSettlementIdentity> {
+    ) -> &std::sync::Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity> {
         &self
             ._proof
             .candidate

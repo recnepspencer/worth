@@ -38,7 +38,7 @@ pub struct WorthQuerySelectedProductOperation<'runtime, Schema> {
         super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
     selected_program: Result<
         super::super::WorthQuerySelectedProgramInspection,
-        super::super::WorthQuerySelectedProgramInspectionDenial,
+        crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial,
     >,
     producer: Option<
         std::sync::Arc<super::super::application_output_demand::OriginalSettledProducerObservation>,
@@ -281,7 +281,7 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         &self,
     ) -> Result<
         super::super::WorthQuerySelectedProgramInspection,
-        super::super::WorthQuerySelectedProgramInspectionDenial,
+        crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial,
     >
     where
         Schema: ApplicationSchema,

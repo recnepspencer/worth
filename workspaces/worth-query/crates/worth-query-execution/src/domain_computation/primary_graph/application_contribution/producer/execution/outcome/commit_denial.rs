@@ -1,10 +1,7 @@
 //! A commit refusal retains its native cause and publication staleness.
 use super::*;
-use crate::domain_computation::{
-    WorthQueryProviderSessionControlStopKind as Control,
-    WorthQueryProviderSessionDenialKind as Native,
-};
-use graph::VerificationCapacityStop;
+use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Native};
+use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
 use graph::WorthQueryApplicationCommitDenialStage as Stage;
 
 pub(super) fn stopped(
@@ -14,7 +11,7 @@ pub(super) fn stopped(
     cause: Option<Result<Native, Control>>,
     capacity: Option<VerificationCapacityStop>,
     detail: &impl std::fmt::Debug,
-    unobserved_write: Option<&graph::WorthQueryApplicationUnobservedWrite>,
+    unobserved_write: Option<&crate::domain_computation::primary_graph::vocabulary::application_attempt::unobserved_write::WorthQueryApplicationUnobservedWrite>,
 ) -> WorthQueryOutputDemandDenial {
     use WorthQueryApplicationCommitDenialKind as Kind;
     let execution = cause.map(|cause| (stage, cause));

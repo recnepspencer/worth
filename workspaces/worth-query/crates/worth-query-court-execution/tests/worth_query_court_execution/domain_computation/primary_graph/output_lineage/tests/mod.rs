@@ -1,11 +1,11 @@
 use std::sync::Arc;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::resolution::latest_output_matching;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_source_identity::RecordedSourceIdentity;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 
@@ -164,9 +164,9 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     ));
 
     let current_checkpoint =
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([0x31; 32]);
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([0x31; 32]);
     let current_runtime =
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([0x99; 32]);
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([0x99; 32]);
     let candidates = lineage
         .retained_output_candidates_metered_for_test(
             runtime_authority,
@@ -205,7 +205,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
 
 pub fn checkpoint_identity(identity: [u8; 32]) -> RecordedSourceIdentity {
     RecordedSourceIdentity::Checkpoint(
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test(identity),
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test(identity),
     )
 }
 

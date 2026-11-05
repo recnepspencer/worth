@@ -2,7 +2,7 @@
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum OutputFieldCaptureFailure {
     Rebase {
-        reason: super::super::provider::RebaseVerificationReason,
+        reason: crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason,
         own_effect: super::super::provider::OwnEffectOnReads,
     },
     Retention(StoreDenial),

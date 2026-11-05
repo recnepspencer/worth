@@ -9,6 +9,8 @@ use worth_query_installation::facade::{
     ApplicationFieldUnit, ApplicationReadableScalarValueBinding, RequiredApplicationFieldValue,
     WritePosture,
 };
+use crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenial;
+use crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind;
 impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query> {
     pub fn disclosed_optional_aspect_field<
         Slot,

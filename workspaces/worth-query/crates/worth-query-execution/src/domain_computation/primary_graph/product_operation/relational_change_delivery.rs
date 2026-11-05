@@ -8,7 +8,7 @@ use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryPerformedRelationalProductChangeDeliveryDenialKind,
     WorthQueryPerformedRelationalProductChangeDeliveryOutcome,
 };
-use crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalClockHandle;
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::WorthQueryConditionalClockHandle;
 
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     /// Delivers the unique Relational patch retained by a fresh application

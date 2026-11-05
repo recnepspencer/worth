@@ -36,7 +36,7 @@ struct WorthQueryConventionalAuthorizationObservation<
     Scope,
 > {
     session_identity:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     relational: &'a worth_relational::facade::runtime::RelationalRuntime,
     snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
@@ -47,7 +47,7 @@ struct WorthQueryConventionalAuthorizationObservation<
 
 struct WorthQueryObservedConventionalOperation {
     session_identity:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     principal_currentness: WorthQueryPrincipalCurrentnessDependency,
     decision_facts: Vec<WorthQueryAuthorizationDecisionFact>,
 }

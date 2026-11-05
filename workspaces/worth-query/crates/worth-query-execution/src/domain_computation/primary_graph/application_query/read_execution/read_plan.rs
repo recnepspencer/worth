@@ -9,7 +9,7 @@ use worth_relational::facade::{identity::EntityId, snapshots::SnapshotHandle};
 
 pub struct ReadPlan<'a> {
     pub(in crate::domain_computation::primary_graph::application_query) parent_session:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     pub(in crate::domain_computation::primary_graph::application_query) managed_rows:
         Option<&'a super::super::managed_index::selection::SelectionRows>,
     pub(in crate::domain_computation::primary_graph::application_query) binding:
@@ -119,24 +119,24 @@ impl ReadPlan<'_> {
 impl ReadPlan<'_> {
     pub(in crate::domain_computation::primary_graph::application_query) fn snapshot_unavailable_denial(
         &self,
-    ) -> super::WorthQueryApplicationReadExecutionDenial {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial {
         if self.contract.orbit().is_some() || !self.contract.root_paths().is_empty() {
             super::read_execution_denial(
-                super::WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
+                crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
                 self.name,
             )
         } else {
             super::read_execution_denial(
-                super::WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+                crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
                 self.name,
             )
         }
     }
     pub(in crate::domain_computation::primary_graph::application_query) fn predicate_unavailable_denial(
         &self,
-    ) -> super::WorthQueryApplicationReadExecutionDenial {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial {
         super::read_execution_denial(
-            super::WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
+            crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
             match self.contract.predicates() {
                 [predicate] => predicate.field().2,
                 _ => self.name,

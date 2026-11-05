@@ -3,7 +3,7 @@ use super::*;
 pub(super) fn identities<Stop>(
     target: &Arc<WorthQueryApplicationInspectionTarget>,
     session: &WorthQueryManagedGraphWorkSession,
-    current: &crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
+    current: &crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
     admit: &mut impl FnMut(usize, usize) -> Result<(), Stop>,
 ) -> Result<InspectionReferenceIdentities, InspectionIdentityStop<Stop>> {
     let original = target

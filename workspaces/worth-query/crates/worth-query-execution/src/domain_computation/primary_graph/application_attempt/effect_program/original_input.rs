@@ -5,7 +5,7 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_installation::facade::{ApplicationSchema, InstalledCorrectionAuthority};
 
 use super::WorthQueryApplicationEffectProgram;
-use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
+use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 mod correction;
 mod program;
 

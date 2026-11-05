@@ -10,11 +10,7 @@ use worth_query_installation::facade::{
     WritePosture,
 };
 
-use super::{
-    projection_denial, relation_cardinality_denial, WorthQueryApplicationProjectedRelation,
-    WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionDenialKind,
-    WorthQueryApplicationProjectionRow, WorthQueryApplicationProjectionRows,
-};
+use {super::projection_denial, super::relation_cardinality_denial, super::WorthQueryApplicationProjectedRelation, crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenial, crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind, super::WorthQueryApplicationProjectionRow, super::WorthQueryApplicationProjectionRows};
 
 /// A value governed disclosure withheld: its classification and the disclosure
 /// it requires.

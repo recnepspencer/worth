@@ -3,6 +3,7 @@ use super::*;
 use std::sync::Arc;
 use worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts;
 use worth_relational::facade::identity::EntityId;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SealedReadLayout {
@@ -14,7 +15,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::read_set) 
 {
     pub(super) contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
     pub(super) scopes:
-        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
     pub(super) handlers: Arc<BTreeMap<WorthQueryApplicationFactKey, usize>>,
     pub(super) root: EntityId,
     pub(super) decision_count: usize,
@@ -27,7 +28,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::read_set) 
 impl CheckedReadLayout {
     pub(super) fn new(
         contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
-        scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+        scopes: crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
         handlers: BTreeMap<WorthQueryApplicationFactKey, usize>,
         root: EntityId,
         decision_count: usize,

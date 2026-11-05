@@ -39,7 +39,7 @@ pub struct PublicationReadiness {
 mod captured_input;
 pub(crate) mod certification;
 pub(super) use certification::certify_required_ready;
-pub(in crate::domain_computation::primary_graph) use certification::CurrentBasis;
+
 pub(in crate::domain_computation::primary_graph) use certification::CurrentProof;
 mod member_keys;
 use captured_input::CapturedDecisionInput;
@@ -65,7 +65,7 @@ impl PerformedMembers {
         key: &WorthQueryOutputDemandKey,
         candidate: &Result<
             Option<AcceptedCurrentCandidate>,
-            captured_input::FullVerificationReason,
+            crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason,
         >,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         for entry in &mut self.entries {

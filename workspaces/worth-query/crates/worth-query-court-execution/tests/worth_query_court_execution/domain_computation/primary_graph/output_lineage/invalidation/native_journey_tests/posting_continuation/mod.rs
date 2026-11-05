@@ -258,7 +258,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     assert!(matches!(
         currentness(owner, &after, &fourth),
         SourceSettlementCurrentness::FullVerificationRequired(
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::MissingSettlement
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason::MissingSettlement
         )
     ));
     drop(retired_image);

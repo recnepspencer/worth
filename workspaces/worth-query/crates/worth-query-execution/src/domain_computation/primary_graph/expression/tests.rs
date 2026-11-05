@@ -6,7 +6,7 @@ use worth_foundational::expression_api::{
 use worth_query_declaration::facade::application_program::ApplicationWorkflowCondition;
 
 use super::{evaluate_condition, supporting_identity};
-use crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowConditionExpression;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::condition::CompiledWorkflowConditionExpression;
 
 fn draft(source: &str) -> CompiledWorkflowConditionExpression {
     let draft = expressions()

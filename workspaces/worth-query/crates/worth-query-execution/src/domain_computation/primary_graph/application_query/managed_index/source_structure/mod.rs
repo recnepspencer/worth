@@ -14,12 +14,8 @@ mod summary_frontier;
 mod summary_sources;
 pub(super) use summary_context::SummaryContext;
 mod transition;
-use super::{
-    source_rows::{SourceImageView, WorthQueryManagedIndexSourceSlot as Slot},
-    WorthQueryManagedIndexControl as Control, WorthQueryManagedIndexSourceChange as Change,
-    WorthQueryManagedIndexStop as Stop,
-};
-use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
+use {super::source_rows::SourceImageView, crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot as Slot, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, super::WorthQueryManagedIndexSourceChange as Change, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 pub use region::WorthQueryManagedIndexNodeRegion;
 use region::{Edit, Region};
 pub use summary_sources::WorthQueryManagedIndexSummarySources;

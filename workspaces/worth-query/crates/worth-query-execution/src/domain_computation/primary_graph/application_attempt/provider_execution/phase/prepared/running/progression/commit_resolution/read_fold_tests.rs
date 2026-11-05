@@ -1,10 +1,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial as Denial;
-use crate::domain_computation::{
-    WorthQueryProviderSessionControlStopKind as Control,
-    WorthQueryProviderSessionDenialKind as Kind, WorthQueryProviderSessionFailure,
-    WorthQueryProviderSessionProtocolStage as Stage,
-};
+use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind, crate::domain_computation::WorthQueryProviderSessionFailure, crate::domain_computation::WorthQueryProviderSessionProtocolStage as Stage};
 #[test]
 fn read_fold_indeterminate_idempotency_stop_replaces_the_prior_failure() {
     let prior = WorthQueryProviderSessionFailure::new(
@@ -19,7 +15,7 @@ fn read_fold_indeterminate_idempotency_stop_replaces_the_prior_failure() {
             &prior,
         )
     };
-    for stop in [Err(Control::Cancelled), Err(Control::TimedOut), Ok(Kind::ExecutionResource { denial: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })] {
+    for stop in [Err(Control::Cancelled), Err(Control::TimedOut), Ok(Kind::ExecutionResource { denial: crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })] {
         let WorthQueryProviderProgressionOutcome::Indeterminate(actual) = indeterminate_read_denied(evidence(), Denial::ExecutionDenied(stop)) else { panic!("the original commit still needs recovery") };
         assert_eq!(actual.denial_kind(), stop);
         assert_eq!(actual.recovery(), WorthQueryApplicationCommitRecoveryKind::CommitRecoveryRequired);

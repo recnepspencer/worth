@@ -1,6 +1,6 @@
 //! Owned application-attempt refusals and their original causes.
 mod kind;
-pub use kind::WorthQueryApplicationAttemptDenialKind;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 /// A typed refusal of an application attempt before commit, with the subject it
 /// names (usually the operation, entity, field, or relation involved).
@@ -29,11 +29,11 @@ enum AttemptDenialMeaning {
 /// Inspection preserves the original owner cause.
 #[derive(Debug)]
 enum AttemptDenialCause {
-    ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
+    ManagedIndex(crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial),
     UnobservedWrite(Box<WorthQueryApplicationUnobservedWrite>),
     SourceDisclosureParameters(Box<worth_query_admission::facade::application_query::WorthQueryApplicationQueryParameterDenial>),
     IndexedLookup(Box<worth_relational::facade::indexes::BoundedEntityFieldLookupDenial>),
-    OutputObservation(Box<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>),
+    OutputObservation(Box<crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop>),
     None,
     NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
     RetainedSource(Box<super::retained_decision_facts::StoreDenial>),
@@ -209,7 +209,7 @@ impl std::fmt::Display for WorthQueryApplicationAttemptDenial {
 }
 
 mod unobserved_write;
-pub use unobserved_write::WorthQueryApplicationUnobservedWrite;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::unobserved_write::WorthQueryApplicationUnobservedWrite;
 mod output_observation;
 mod source_disclosure;
 

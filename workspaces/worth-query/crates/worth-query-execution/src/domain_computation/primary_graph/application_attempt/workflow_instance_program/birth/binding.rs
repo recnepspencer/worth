@@ -113,12 +113,12 @@ impl<Schema, Operation, Input, Scope>
         )?;
         self.effects.try_reserve(effects.len()).map_err(|_| {
             WorthQueryApplicationAttemptDenial::new(
-                super::super::super::WorthQueryApplicationAttemptDenialKind::AllocationDenied,
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::AllocationDenied,
                 "workflow birth effect allocation failed",
             )
         })?;
         self.effects.extend(effects);
-        self.effect_posture = crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
+        self.effect_posture = crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
         self.read_set.workflow_deadline = authority.carry.deadline;
         self.read_set.new_commit_refusal = authority.refusal;
         self.read_set.workflow_birth_binding = Some(WorkflowBirthBindingProof {

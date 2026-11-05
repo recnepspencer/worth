@@ -1,29 +1,27 @@
 //! Request refusals at authorization's Relational read boundary.
-use super::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind as Kind,
-};
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use {super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Kind};
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 pub(in crate::domain_computation::authorization) fn denial(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
     subject: &str,
 ) -> WorthQueryOperationAuthorizationDenial {
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
     let kind = match crate::facade::primary_graph::relational_execution_kind(cause, None) {
         Ok(kind) => Kind::Stopped(Ok(kind)),
         Err(Control::Cancelled) => Kind::Stopped(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
         )),
         Err(Control::TimedOut) => Kind::Stopped(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
         )),
     };
     WorthQueryOperationAuthorizationDenial::new(kind, subject)
 }
 
 pub(in crate::domain_computation) fn principal_currentness(
-    denied: crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial,
+    denied: crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial,
 ) -> Kind {
-    use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind as Principal;
+    use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind as Principal;
     match denied.kind() {
         Principal::Stopped(stop) => Kind::Stopped(stop),
         Principal::Refused(_) => Kind::Refused(AuthorizationRefusal::StalePrincipal),

@@ -8,14 +8,8 @@ use worth_relational::facade::indexes::{
 };
 
 use super::super::relation_distribution::distribute_relation_rows;
-use super::super::{
-    project_nodes, ActiveOrderedCollectionWindow, ActiveResultTreeCollectionSelection,
-    OrderedCollectionProgress, ResultTreeWork, WorthQueryApplicationProjectionNode,
-    WorthQueryApplicationReadExecutionDenial,
-};
-use crate::domain_computation::primary_graph::application_query::read_execution::{
-    read_execution_denial, WorthQueryApplicationReadExecutionDenialKind,
-};
+use {super::super::project_nodes, super::super::ActiveOrderedCollectionWindow, super::super::ActiveResultTreeCollectionSelection, super::super::OrderedCollectionProgress, super::super::ResultTreeWork, super::super::WorthQueryApplicationProjectionNode, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial};
+use {crate::domain_computation::primary_graph::application_query::read_execution::read_execution_denial, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind};
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn attach_ordered_relation(

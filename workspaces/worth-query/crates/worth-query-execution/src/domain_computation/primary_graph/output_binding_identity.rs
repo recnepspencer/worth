@@ -1,18 +1,9 @@
 //! Declared binding names order lineage; Rust type identity only locates metadata.
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::{collections::HashMap, sync::Arc};
+use crate::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct OutputBindingIdentity(Arc<str>);
 
-impl OutputBindingIdentity {
-    pub(super) fn declared(name: &str) -> Self {
-        Self(Arc::from(name))
-    }
-    pub(super) fn as_str(&self) -> &str {
-        &self.0
-    }
-}
 
 #[derive(Default)]
 pub struct OutputBindingInventory {

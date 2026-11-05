@@ -10,7 +10,7 @@ where
     pub fn attempt_workflow_definition_membership_cycle_for_test(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
+        definition: &crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef,
     ) -> Result<
         Result<(), worth_relational::facade::transactions::TransactionCommitError>,
         crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase,

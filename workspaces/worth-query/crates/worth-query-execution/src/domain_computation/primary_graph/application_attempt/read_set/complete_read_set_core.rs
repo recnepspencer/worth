@@ -1,6 +1,7 @@
 //! Read facts sealed by completion, before the original brand moves on.
 use super::*;
 use crate::domain_computation::primary_graph::SealedComputationRetention;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes;
 
 // Only read completion constructs this data. The admission and phase brand
 // never leave the shell; this value cannot mint or rebrand their authority.

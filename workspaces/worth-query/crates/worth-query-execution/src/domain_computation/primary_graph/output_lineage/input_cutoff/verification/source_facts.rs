@@ -1,5 +1,8 @@
 //! Current source facts preserve the request stop through input cutoff.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
 
 pub fn marked_facts_permit_reuse<'fact>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -41,7 +44,7 @@ fn fact_is_current(
 ) -> Result<bool, InputCutoffVerificationStop> {
     match fact.source_currentness_in(runtime, execution, snapshot)? {
         Err(WorthQuerySourceCurrentnessFailure::ManagedIndex(cause)) => Err(InputCutoffVerificationStop::OutputObservation(
-            crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::ManagedIndex(cause))),
+            crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop::ManagedIndex(cause))),
         Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => {
             Err(InputCutoffVerificationStop::OutputObservation(stop))
         }

@@ -2,8 +2,8 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQueryInstalledApplicationProducerRegistry;
-use super::WorthQueryProducerApplicability;
-use super::WorthQueryProducerLifecyclePosture;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerApplicability;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture;
 use super::WorthQueryProducerOutputFamily;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 
@@ -13,7 +13,7 @@ type FamilySourceValue<Schema, Family> =
 type FamilySourceQuery<Schema, Family> =
     <FamilySource<Schema, Family> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query;
 
-pub(in crate::domain_computation::primary_graph) use progression::CurrentBasis;
+
 pub(in crate::domain_computation::primary_graph) use progression::CurrentProof;
 pub(crate) mod bridge_denial;
 pub(crate) mod checkpoint_delivery;

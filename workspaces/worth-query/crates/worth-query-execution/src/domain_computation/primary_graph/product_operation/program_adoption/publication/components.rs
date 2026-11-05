@@ -113,7 +113,7 @@ impl WorthQueryPreparedBranchAdoption {
                 )
             }
             Err(PublicationDenial::ClockMismatch) => {
-                WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
+                WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
             },
 Err(PublicationDenial::Stopped(stop)) => {
                 WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(advancement_denial(

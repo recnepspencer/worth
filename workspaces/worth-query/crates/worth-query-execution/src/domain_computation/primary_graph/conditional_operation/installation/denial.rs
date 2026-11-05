@@ -10,8 +10,8 @@ pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
     ),
     ReadExecution(
         Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     ),
     /// Bridge retained the native conditional or Signal refusal, boxed as in

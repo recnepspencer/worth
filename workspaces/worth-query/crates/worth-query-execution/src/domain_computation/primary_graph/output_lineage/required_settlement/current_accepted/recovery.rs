@@ -1,6 +1,10 @@
 //! A committed member recovers derived registration without another publication.
 
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 
 impl AcceptedCurrentCandidate {
     pub(super) fn recover_registration<'basis>(
@@ -61,7 +65,7 @@ impl AcceptedCurrentCandidate {
                 return Ok(CurrentAcceptedResult::NeedsDisclosure);
             }
         } else {
-            use crate::domain_computation::primary_graph::invariant_projection::PublicationRecoveryStop;
+            use crate::domain_computation::primary_graph::vocabulary::invariant_projection::publication_recovery::PublicationRecoveryStop;
             match ConsumedOutputEvidence::recover_missing(
                 execution,
                 owner,

@@ -2,6 +2,7 @@
 use super::*;
 use std::cell::RefCell;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
 pub(in crate::domain_computation::primary_graph::application_query::read_execution) struct NativeReadInterruption<
     'a,
     'subject,

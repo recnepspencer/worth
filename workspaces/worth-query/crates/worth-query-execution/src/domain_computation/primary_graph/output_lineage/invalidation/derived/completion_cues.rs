@@ -1,8 +1,8 @@
 //! Wake actual native consumers only after completion's image is installed.
 
 use super::super::mark_state::MarkState;
-use super::RecordedSettlementIdentity;
-use crate::domain_computation::primary_graph::application_output_demand::ReplacedRequiredWorkHint;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::required_work::ReplacedRequiredWorkHint;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
 use im::OrdSet;
 use std::sync::Arc;

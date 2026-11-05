@@ -1,5 +1,5 @@
 //! Descriptive predecessor forms; neither carries fresh succession permission.
-use super::super::{PublishedWorkflowInstanceRef, WorthQueryWorkflowInstanceDiscoveryIntent};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, super::super::WorthQueryWorkflowInstanceDiscoveryIntent};
 mod resolution;
 
 /// Select an exact predecessor through the ordinary fresh-admission funnel.

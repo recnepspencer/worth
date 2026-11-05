@@ -4,8 +4,8 @@ use std::sync::Arc;
 use std::sync::OnceLock;
 
 use crate::domain_computation::primary_graph::output_lineage::tests::republication::Witness;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition;
 use worth_query_execution::facade::application_contribution::WorthQueryDecisionContextDependencies;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract;
@@ -13,7 +13,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse;
 
 pub const INPUT: [u8; 32] = [0x61; 32];
 pub const DECISION_KEY: [u8; 32] = [0x71; 32];

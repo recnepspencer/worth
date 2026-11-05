@@ -3,10 +3,8 @@
 //! dropped as before.
 use std::cell::RefCell;
 use std::marker::PhantomData;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::seeded_dispatch_orders::ORDERS;
 
-thread_local! {
-    static ORDERS: RefCell<Option<Vec<Vec<usize>>>> = const { RefCell::new(None) };
-}
 
 /// Owned handle of an armed recorder; dropping it, unwinding included, disarms
 /// and discards what it recorded.
@@ -36,10 +34,3 @@ pub fn record_seeded_dispatch_for_test() -> SeededDispatchOrdersForTest {
     }
 }
 
-pub(super) fn record(order: Vec<usize>) {
-    ORDERS.with(|orders| {
-        if let Some(orders) = orders.borrow_mut().as_mut() {
-            orders.push(order);
-        }
-    });
-}

@@ -14,12 +14,8 @@ use super::read_phase::{
 };
 use super::read_scope::WorthQueryApplicationReadScope;
 use super::snapshot_lease::WorthQueryApplicationSnapshotLease;
-use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationEntityIdentity,
-    WorthQueryApplicationOperationInvariantProjectionSnapshot,
-    WorthQueryInstalledEntityResolutionContext, WorthQueryPrincipalResolutionMode,
-};
+use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionSnapshot, crate::domain_computation::primary_graph::WorthQueryInstalledEntityResolutionContext, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 mod fact_routes;
 pub(in crate::domain_computation::primary_graph) use fact_routes::FactRoutes;
 pub(crate) mod application_projection;
@@ -38,25 +34,18 @@ pub(crate) mod computation_routing;
 mod mutation_read_attempt_core;
 mod native_completion;
 mod value_decode;
-pub(in crate::domain_computation::primary_graph) use computation_routing::{
-    CheckedCallShape, ComputationFactAttribution, ComputationFactIndex, ComputationRead,
-    NativeCallCarriage, SealedComputationFacts,
-};
+pub(in crate::domain_computation::primary_graph) use {computation_routing::CheckedCallShape, computation_routing::ComputationFactAttribution, computation_routing::ComputationFactIndex, computation_routing::NativeCallCarriage, computation_routing::SealedComputationFacts};
 pub(in crate::domain_computation::primary_graph) mod request_liveness;
 mod retained_facts;
 pub(crate) mod scope_bindings;
 pub(in crate::domain_computation::primary_graph::application_attempt) use admitted_arrays::admit_array;
-pub(in crate::domain_computation::primary_graph) use scope_bindings::{
-    CompletedReadScopes, InstalledScopePosition,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes, crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition};
 pub(crate) mod decision_reuse;
 pub(crate) mod fact_observation;
-pub(in crate::domain_computation::primary_graph) use decision_reuse::{
-    CompletedDecisionReuseProof, PreparedDecisionReuseContext,
-};
+
 pub(in crate::domain_computation::primary_graph) use fact_observation::observe_admitted_fact;
 pub(crate) mod handler_fact_boundary;
-pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFactBoundary;
+
 pub(crate) mod aggregate;
 mod components;
 mod observation_admission;
@@ -250,7 +239,7 @@ where
     > {
         let phase_request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
         };
         let execution = &phase_request;
         self.begin_projected_application_read_attempt_with_request(

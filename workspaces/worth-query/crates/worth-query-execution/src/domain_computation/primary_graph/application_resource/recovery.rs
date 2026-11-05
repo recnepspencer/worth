@@ -3,10 +3,7 @@ use super::{
     occurrence::OriginalResourceAccess,
     stop::{ResourceCause, ResourceRecoveryAffinity as Affinity},
 };
-use crate::domain_computation::{
-    application_aftermath::{WorthQueryRecoveryHandle, WorthQueryRecoveryInspectAuthority},
-    authorization::WorthQueryOperationScopeEntityBinding,
-};
+use {crate::domain_computation::application_aftermath::WorthQueryRecoveryHandle, crate::domain_computation::application_aftermath::WorthQueryRecoveryInspectAuthority, crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding};
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) fn require_authority<Schema: ApplicationSchema>(

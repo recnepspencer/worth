@@ -10,7 +10,7 @@ use crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDe
 use crate::domain_computation::application_aftermath::WorthQueryRecoveryInspectAuthority;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::managed_run::WorthQueryRecoveryHandleRegistry;
 use crate::domain_computation::managed_run::WorthQueryRecoveryMintClaim;
 use crate::domain_computation::managed_run::WorthQueryRecoveryResourceTerminal;

@@ -7,9 +7,9 @@ use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::ObservedSourcePublication;
-use super::OutputSourceAddress;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::source_qualification::OutputSourceAddress;
 use super::SourceInvalidationOwner;
-use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Stop;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Stop;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 /// Sealed owner port prevents a retained fact from owning its native index
@@ -60,8 +60,8 @@ impl ObservedSourcePublication {
 
     pub(in crate::domain_computation::primary_graph) fn posture(
         &self,
-    ) -> crate::domain_computation::primary_graph::invariant_projection::ObservedOutputPosture {
-        self.candidate.as_ref().map_or(crate::domain_computation::primary_graph::invariant_projection::ObservedOutputPosture::Pending, |c| c.expected())
+    ) -> crate::domain_computation::primary_graph::vocabulary::invariant_projection::output_availability_candidate::ObservedOutputPosture {
+        self.candidate.as_ref().map_or(crate::domain_computation::primary_graph::vocabulary::invariant_projection::output_availability_candidate::ObservedOutputPosture::Pending, |c| c.expected())
     }
     pub(in crate::domain_computation::primary_graph) fn touches_entity(
         &self,
@@ -127,8 +127,8 @@ impl ObservedSourcePublication {
         runtime: &RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
-    ) -> Result<bool, crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure>{
-        use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Stop;
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure>{
+        use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Stop;
         let positioned = runtime
             .read_truth()
             .positioned_snapshot(snapshot)
@@ -158,7 +158,7 @@ impl SourcePublicationReader for SourceInvalidationOwner {
         positioned: &PositionedRelationalSnapshot,
     ) -> Result<bool, Stop> {
         let cell = self.cell_for_read(positioned)
-            .map_err(|stop| Stop::OutputObservation(crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(stop)))?
+            .map_err(|stop| Stop::OutputObservation(crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop(stop)))?
             .ok_or(Stop::Unavailable)?;
         let image = cell.read_image();
 

@@ -1,5 +1,5 @@
 //! Immutable node pages; isolated editors freeze each touched page once.
-use super::{Stop, WorthQueryManagedIndexControl};
+use {crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl};
 use std::{alloc::Layout, cell::Cell, sync::Arc};
 use worth_execution::{
     ExecutionArray, ExecutionMemoryReservation, ExecutionRequest, ExecutionRequestArrayBuilder,

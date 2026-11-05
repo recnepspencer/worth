@@ -1,10 +1,5 @@
 //! The receiver compares actual borrowed invocation objects, not reconstructed IDs.
-use crate::domain_computation::{
-    primary_graph::application_query::managed_index::{
-        invariant_read::ReadPosture, SourceImageView,
-    },
-    provider_session::WorthQueryManagedGraphWorkSession,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ReadPosture, crate::domain_computation::primary_graph::application_query::managed_index::SourceImageView, crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession};
 use std::{any::Any, sync::Arc};
 use worth_foundational::facade::AspectValue;
 use worth_proof::BorrowedManagedCoverageFrame as Borrowed;

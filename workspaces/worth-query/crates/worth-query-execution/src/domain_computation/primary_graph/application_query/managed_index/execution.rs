@@ -1,8 +1,5 @@
 //! Actual provider calls under the distinct purpose and original Parent request.
-use super::{
-    retention::WorthQueryManagedIndexLifecycleDenial, selection::SelectionDenial,
-    source_acquisition::AcquisitionDenial, WorthQueryManagedIndexWorkDenial,
-};
+use {super::retention::WorthQueryManagedIndexLifecycleDenial, super::selection::SelectionDenial, super::source_acquisition::AcquisitionDenial, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial};
 use crate::domain_computation::provider_session::{
     WorthQueryManagedGraphWorkSessionStartDenial, WorthQueryManagedIndexSessionDenial,
 };

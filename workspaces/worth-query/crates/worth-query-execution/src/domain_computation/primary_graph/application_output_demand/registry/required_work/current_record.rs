@@ -1,6 +1,6 @@
 //! Native inspection binds a Current certificate to the actual row it read.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::CurrentBasis;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::current_basis::CurrentBasis;
 impl RequiredWorkMembership {
     pub fn certify_current_basis(self: &Arc<Self>, basis: CurrentBasis) -> Arc<Self> {
         self.state

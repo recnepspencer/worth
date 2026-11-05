@@ -24,7 +24,7 @@ where
     pub fn attempt_workflow_approval_field_update_for_test(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        instance: &crate::domain_computation::primary_graph::PublishedWorkflowInstanceRef,
+        instance: &crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         approval: EntityId,
     ) -> Result<
         Result<(), TransactionCommitError>,
@@ -79,7 +79,7 @@ where
     pub fn attempt_workflow_approval_evidence_delete_for_test(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        instance: &crate::domain_computation::primary_graph::PublishedWorkflowInstanceRef,
+        instance: &crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         approval: EntityId,
     ) -> Result<
         Result<(), TransactionCommitError>,

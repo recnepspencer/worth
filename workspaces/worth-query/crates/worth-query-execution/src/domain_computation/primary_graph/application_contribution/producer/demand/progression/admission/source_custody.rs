@@ -156,7 +156,7 @@ fn bind_prepared_output_source<
         self.output_production().demands().bind_prepared_output_source(
             &prepared.source_commit,
             crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
-                scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
+                scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
                 identity: observed.output_source_epoch().ok_or_else(|| {
                     denial(
                         WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -197,7 +197,7 @@ fn bind_prepared_output_sources<
                     observed,
                 )?;
                 Ok(crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
-                    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
+                    scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
                     identity: observed.output_source_epoch().ok_or_else(|| {
                         denial(
                             WorthQueryOutputDemandDenialKind::ForeignSource,

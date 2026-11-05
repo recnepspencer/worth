@@ -10,13 +10,8 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::transactions::EntityReference;
 
-use super::{
-    WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder,
-    WorthQueryApplicationOptionalFieldWrite, WorthQueryApplicationRealizedEffect,
-};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity, super::WorthQueryApplicationEffectProgramBuilder, super::WorthQueryApplicationOptionalFieldWrite, super::WorthQueryApplicationRealizedEffect};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>

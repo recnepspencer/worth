@@ -2,7 +2,7 @@ use worth_relational::facade::history::RelationalDescriptiveTouch;
 use worth_relational::facade::history::RelationalTouchAdjacencyDirection;
 use worth_relational::facade::transactions::RecordRef;
 
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 
 use super::fact_key::FactPostingKey;
 

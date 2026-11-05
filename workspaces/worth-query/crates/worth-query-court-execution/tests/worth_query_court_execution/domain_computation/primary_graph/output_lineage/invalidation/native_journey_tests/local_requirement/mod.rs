@@ -1,10 +1,10 @@
 //! A post-effect lineage requirement cannot be hidden by an older Clean mark.
 
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_source_identity::RecordedSourceIdentity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;

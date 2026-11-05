@@ -52,7 +52,7 @@ pub(super) fn mechanism<'a, S: ApplicationSchema>(
                 Ok(true) => {},
                 Ok(false) => return Err(Denial::Workflow(
                     crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
-                        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
+                        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
                         "original external workflow operation has no authenticated completion",
                     ),
                 )),

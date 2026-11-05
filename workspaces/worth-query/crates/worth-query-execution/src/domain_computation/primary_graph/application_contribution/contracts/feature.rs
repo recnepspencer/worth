@@ -57,10 +57,10 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationContractCatalog<Schema> {
             .ok_or_else(|| denial(DenialKind::MissingConditionalBinding, role.readiness()))?;
         let lifecycle = match role.kind() {
             ApplicationRequiredFeatureRoleKind::Initial => {
-                super::super::WorthQueryProducerLifecyclePosture::Initial
+                crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture::Initial
             }
             ApplicationRequiredFeatureRoleKind::Preserve => {
-                super::super::WorthQueryProducerLifecyclePosture::Preserve
+                crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture::Preserve
             }
         };
         if producer.binding_type != TypeId::from(role.producer_type())

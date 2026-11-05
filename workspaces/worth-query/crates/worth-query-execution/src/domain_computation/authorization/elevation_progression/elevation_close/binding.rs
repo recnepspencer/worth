@@ -5,9 +5,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::EntityId;
 
 use super::WorthQueryElevationCloseDraft;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApprovedElevation, WorthQueryElevationClosureKind,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApprovedElevation, crate::domain_computation::vocabulary::primary_graph::elevation_close_outcome::WorthQueryElevationClosureKind};
 
 #[derive(Debug)]
 pub(in crate::domain_computation) struct WorthQueryElevationCloseBinding {

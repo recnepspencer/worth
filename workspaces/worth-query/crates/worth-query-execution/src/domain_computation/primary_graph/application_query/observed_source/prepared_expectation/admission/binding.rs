@@ -1,6 +1,7 @@
 //! Source binding consumes the validation owner's unique admission loan.
 use crate::domain_computation::primary_graph::application_query::observed_source::prepared_expectation::affinity::AffinityParentOps;
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::observed_source::WorthQuerySourceExpectationKind;
 impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Input, Scope>
     CheckedMutableSourceAdmission<'_, Schema, Operation, Input, Scope>
 {

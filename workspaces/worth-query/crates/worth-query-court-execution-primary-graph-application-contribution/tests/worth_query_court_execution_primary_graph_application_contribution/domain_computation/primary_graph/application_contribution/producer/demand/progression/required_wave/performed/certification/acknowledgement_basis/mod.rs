@@ -2,7 +2,7 @@
 
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::required_work::RequiredWorkWorthQueryOutputDemandRegistryForTest;
 
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::current_basis::CurrentBasis;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_contribution::current_basis::CurrentBasis;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::PerformedMembers;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::denial;

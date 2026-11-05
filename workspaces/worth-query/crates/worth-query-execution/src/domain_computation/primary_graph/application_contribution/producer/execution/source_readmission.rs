@@ -1,7 +1,7 @@
 use crate::domain_computation::primary_graph::application_query::OneShotScopedOps;
 use crate::domain_computation::primary_graph::application_query::SourceReadmissionScopedOps;
 use crate::domain_computation::primary_graph::application_query::WorkLimitOps;
-use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
+use crate::domain_computation::primary_graph::vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop;
 use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -24,7 +24,7 @@ use super::WorthQueryApplicationProducerBinding;
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use crate::domain_computation::primary_graph::output_lineage::AcceptedCurrentCandidate;
 use crate::domain_computation::primary_graph::output_lineage::CurrentAcceptedResult;
 use crate::domain_computation::primary_graph::output_lineage::CurrentAcceptedStop;
@@ -34,7 +34,7 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessCo
 use crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls;
 use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 
 mod current_product;

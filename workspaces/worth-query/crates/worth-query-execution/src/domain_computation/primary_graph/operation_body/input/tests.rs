@@ -1,4 +1,4 @@
-use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
+use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 use std::{cell::Cell, num::NonZeroUsize};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,

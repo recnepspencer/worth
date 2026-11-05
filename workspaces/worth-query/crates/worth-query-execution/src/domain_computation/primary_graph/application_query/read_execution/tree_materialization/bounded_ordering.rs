@@ -7,10 +7,7 @@ use worth_query_installation::facade::{
     WorthQueryInstalledGraphOrdering, WorthQueryInstalledGraphReadContract,
 };
 
-use super::{
-    projection_denial, ResultTreeWork, WorthQueryApplicationProjectionNode,
-    WorthQueryApplicationReadExecutionDenial,
-};
+use {super::projection_denial, super::ResultTreeWork, super::WorthQueryApplicationProjectionNode, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial};
 
 pub(super) fn order_collection(
     contract: &WorthQueryInstalledGraphReadContract,

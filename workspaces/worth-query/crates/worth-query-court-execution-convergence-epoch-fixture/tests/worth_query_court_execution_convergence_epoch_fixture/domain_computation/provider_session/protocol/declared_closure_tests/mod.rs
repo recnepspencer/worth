@@ -1,8 +1,8 @@
-use worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::application::bind_application_candidate_effect_closure;
-use worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::bind_direct_role_closure;
-use worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::aftermath_posture::reversal_posture;
-use worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::application::WorthQueryApplicationEffectPosture;
-use worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclaredClosure;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::provider_session::application::bind_application_candidate_effect_closure;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::provider_session::declared_closure::bind_direct_role_closure;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::provider_session::aftermath_posture::reversal_posture;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclaredClosure;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::application_aftermath::aftermath_schema_fixture as fixture;
 
 #[test]

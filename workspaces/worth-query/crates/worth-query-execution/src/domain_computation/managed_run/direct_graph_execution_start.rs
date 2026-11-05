@@ -43,7 +43,7 @@ pub struct WorthQueryDirectGraphExecutionStartFailure {
     provider_retained_bytes: u64,
     provider_retained_allocation_count: u64,
     provider_execution_release:
-        Option<crate::domain_computation::WorthQueryProviderExecutionReleaseEvidence>,
+        Option<crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence>,
 }
 
 impl WorthQueryDirectGraphExecutionStartFailure {
@@ -69,7 +69,7 @@ impl WorthQueryDirectGraphExecutionStartFailure {
 
     pub const fn provider_execution_release(
         &self,
-    ) -> Option<&crate::domain_computation::WorthQueryProviderExecutionReleaseEvidence> {
+    ) -> Option<&crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence> {
         self.provider_execution_release.as_ref()
     }
 }
@@ -257,7 +257,7 @@ fn provider_start_failure(
     detail: Arc<str>,
     memory: crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryGraphProviderMemorySnapshot,
     provider_execution_release: Option<
-        crate::domain_computation::WorthQueryProviderExecutionReleaseEvidence,
+        crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence,
     >,
     running: WorthQueryRunningDirectRun,
 ) -> WorthQueryDirectGraphExecutionStartFailure {

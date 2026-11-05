@@ -1,9 +1,6 @@
 use worth_relational::facade::identity::{EntityId, KindId};
 
-use super::{
-    observe_adjacency, WorthQueryApplicationAdjacencyDirection,
-    WorthQueryApplicationObservedRelation,
-};
+use {super::observe_adjacency, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, super::WorthQueryApplicationObservedRelation};
 
 pub fn remains_equal(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,

@@ -23,7 +23,7 @@ use super::{
 pub struct WorthQueryArtifactAccessAuthority {
     pub(super) contract: Arc<WorthQueryInstalledArtifactContractAuthority>,
     pub(super) domain_authority:
-        Arc<crate::domain_computation::WorthQueryInstalledDomainExecutionAuthority>,
+        Arc<crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority>,
     pub(super) operation_identity: String,
     pub(super) binding_identity: String,
     pub(super) run_identity: String,
@@ -35,7 +35,7 @@ impl WorthQueryArtifactAccessAuthority {
     pub(crate) fn mint(
         contract: Arc<WorthQueryInstalledArtifactContractAuthority>,
         domain_authority: Arc<
-            crate::domain_computation::WorthQueryInstalledDomainExecutionAuthority,
+            crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority,
         >,
         operation_identity: &str,
         binding_identity: &str,

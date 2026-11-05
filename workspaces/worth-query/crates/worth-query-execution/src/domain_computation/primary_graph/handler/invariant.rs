@@ -3,49 +3,17 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::{
-    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
-    WorthQueryOperationScopeBinding,
-};
-use super::DecisionContextUse;
+use {super::super::WorthQueryApplicationOperationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::super::WorthQueryOperationScopeBinding};
+use crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse;
 
 mod interruption;
 mod managed_index;
 mod operation_body;
 mod predecode_admission;
 
-/// Why a mutation handler stopped before finishing.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum HandlerInterruption {
-    /// The request was cancelled.
-    Cancelled,
-    /// The request reached its deadline.
-    DeadlineExceeded,
-}
 
-impl std::fmt::Display for HandlerInterruption {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str(match self {
-            Self::Cancelled => "the request was cancelled",
-            Self::DeadlineExceeded => "the request reached its deadline",
-        })
-    }
-}
 
-impl std::error::Error for HandlerInterruption {}
 
-impl From<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
-    for HandlerInterruption
-{
-    fn from(
-        interruption: worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption,
-    ) -> Self {
-        match interruption {
-            worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled => Self::Cancelled,
-            worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::DeadlineExceeded => Self::DeadlineExceeded,
-        }
-    }
-}
 
 /// Exact admitted decision projection and its already-resolved operation scope.
 pub struct DecisionReader<'borrow, 'reader, 'runtime, Schema, Binding>
@@ -198,5 +166,6 @@ where
 use std::cell::Cell;
 
 use crate::domain_computation::request_execution::QueryRequestExecution;
+use crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption;
 
 mod court_doors_for_test;

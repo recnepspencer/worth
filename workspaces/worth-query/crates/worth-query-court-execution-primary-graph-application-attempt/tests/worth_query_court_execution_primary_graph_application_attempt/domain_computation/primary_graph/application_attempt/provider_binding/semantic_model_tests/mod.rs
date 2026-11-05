@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_bind
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_binding::prepare_provider_attempt;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::identity::KindId;
@@ -22,7 +22,7 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
         &|_, _| None,
         PartitionId::main(),
         world.effects.len(),
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts_for_test(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts_for_test(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::native(admitted(world.facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
@@ -51,7 +51,7 @@ fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
         &|_, _| None,
         PartitionId::main(),
         world.alternate_effects.len(),
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts_for_test(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts_for_test(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::native(admitted(world.facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
@@ -79,7 +79,7 @@ fn created_records_and_symbolic_endpoints_use_the_issued_mutation_partition() {
         &|_, _| None,
         PartitionId(7),
         world.effects.len(),
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts_for_test(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts_for_test(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::native(admitted(world.facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
@@ -128,7 +128,7 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
         &|_, _| None,
         PartitionId::main(),
         effects.len(),
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts_for_test(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts_for_test(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::native(admitted(facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),

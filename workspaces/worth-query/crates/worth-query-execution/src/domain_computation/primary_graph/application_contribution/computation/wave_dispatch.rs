@@ -1,6 +1,6 @@
 //! One request settles the wave; member outcomes travel to owner completion.
-use super::prepared_request::{ComputedSlot, PreparedCompute};
-use super::WorthQueryMemberExecution;
+use {crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::ComputedSlot, crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute};
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::member_execution::WorthQueryMemberExecution;
 use worth_execution::{ExecutionMap, MapKernelFailure, MapOutcome, MapStop};
 use worth_foundational::PartitionIdentity;
 use {
@@ -11,15 +11,11 @@ use {
     crate::domain_computation::request_execution::QueryRequestExecution,
     crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::ComputedMember;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::NoMemberFailure;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::PreparedMember;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::settle_outcome;
 
-// A member outcome cannot stop the map; only its request can.
-enum NoMemberFailure {}
-pub struct PreparedMember {
-    pub requests: Vec<PreparedCompute>,
-}
-pub struct ComputedMember {
-    slots: Vec<ComputedSlot>,
-}
 
 /// Interruption already present at dispatch has width-independent settlement.
 /// An interruption arriving during compute can be seen by an earlier running
@@ -44,7 +40,7 @@ pub fn dispatch(
         Ok(map) => map,
         Err(kind) => {
             return vec![Err(WorthQueryAdvancementDenial::Resource(
-                crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::NativeAllocationRefused {
+                crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::NativeAllocationRefused {
                     kind,
                     requested_payload_bytes: None,
                 },
@@ -88,7 +84,7 @@ pub fn dispatch(
                 Some(seed) => {
                     let (outcome, order) =
                         map.run_owned_native_perturbed_for_test(lease, seed, kernel);
-                    seeded_dispatch_orders::record(order);
+                    crate::domain_computation::primary_graph::vocabulary::application_contribution::seeded_dispatch_orders::record(order);
                     outcome
                 }
                 None => map.run_owned_native(lease, kernel),
@@ -103,62 +99,7 @@ pub fn dispatch(
     }
 }
 
-fn settle_outcome(
-    outcome: MapOutcome<ComputedMember, NoMemberFailure>,
-) -> Vec<Result<ComputedMember, WorthQueryAdvancementDenial>> {
-    match outcome {
-        MapOutcome::Complete { values, report: _ } => values.into_iter().map(Ok).collect(),
-        MapOutcome::Stopped {
-            completed_prefix,
-            boundary: _,
-            reason,
-            report: _,
-        } => {
-            let mut settled: Vec<_> = completed_prefix.into_iter().map(Ok).collect();
-            let failed = match reason {
-                MapStop::Failure { identity: _, cause: MapKernelFailure::Domain(impossible) } => match impossible {},
-                MapStop::Failure { identity: _, cause: MapKernelFailure::Stop(stop) } => Err(from_checkpoint(stop)),
-                MapStop::Failure { identity: _, cause: MapKernelFailure::Panic } => Err(WorthQueryAdvancementDenial::Panicked),
-                MapStop::Failure { identity: _, cause: MapKernelFailure::ResultCapacityExceeded } => Err(
-                    WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ResultCapacityExceeded)),
-                MapStop::WorkExhausted { identity: _ } => Err(WorthQueryAdvancementDenial::Resource(
-                    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted)),
-                MapStop::Admission(denial) => Err(WorthQueryAdvancementDenial::Resource(lease_denial(denial))),
-                MapStop::Allocation(kind) => Err(WorthQueryAdvancementDenial::Resource(
-                    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::NativeAllocationRefused {
-                        kind, requested_payload_bytes: None,
-                    })),
-            };
-            settled.push(failed);
-            settled
-        }
-    }
-}
-impl ComputedMember {
-    pub(in crate::domain_computation::primary_graph) fn finish<T>(
-        self,
-        complete: impl FnOnce(Vec<ComputedSlot>) -> T,
-    ) -> T {
-        complete(self.slots)
-    }
-    pub(in crate::domain_computation::primary_graph) fn into_slots(self) -> Vec<ComputedSlot> {
-        self.finish(|slots| slots)
-    }
-}
 
-fn from_checkpoint(stop: worth_execution::MapKernelStop) -> WorthQueryAdvancementDenial {
-    match checkpoint_denial(stop) {
-        crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial::Resource(denial) => {
-            WorthQueryAdvancementDenial::Resource(denial)
-        }
-        crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial::Interrupted(denial) => {
-            WorthQueryAdvancementDenial::Interrupted(denial)
-        }
-        crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial::NestedPatternStopped => {
-            WorthQueryAdvancementDenial::NestedStopped
-        }
-    }
-}
 
 pub(crate) mod seeded_dispatch_orders;
 

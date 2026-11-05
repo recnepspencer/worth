@@ -3,6 +3,10 @@ use super::super::super::CausalInspectionReason;
 use super::super::identity::comparison_identity;
 use super::*;
 use worth_runtime_bridge::facade::BridgeIdentityEvidence;
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
+use crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial;
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
+use crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage;
 
 pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) struct ComparisonReportPayload
 {

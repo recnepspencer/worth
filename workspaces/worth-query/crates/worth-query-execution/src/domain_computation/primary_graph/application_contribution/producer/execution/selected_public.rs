@@ -12,9 +12,9 @@ use crate::domain_computation::authorization::authorize_current_control_mutation
 use crate::domain_computation::authorization::authorize_public_mutation_on_selected;
 use crate::domain_computation::authorization::SelectedConventionalAdmissionStop;
 use crate::domain_computation::primary_graph::SharedSelectedProductOperation;
-use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial;
+use crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial;
 use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedPrincipal;
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
 
 type Mutation<Schema, Binding> =
     <Binding as WorthQueryApplicationProducerBinding<Schema>>::Operation;
@@ -219,7 +219,7 @@ where
         let selector = scope.scope().retain_scope_selector_funded(execution).map_err(|cause| {
             Stop::CurrentOperation(SelectedConventionalAdmissionStop::Authorization(
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
-                    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(cause),
+                    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Stopped(cause),
                     Binding::IDENTITY,
                 ),
             ))
@@ -271,3 +271,4 @@ where
 
 mod denial;
 pub(super) use denial::preparation_stop;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;

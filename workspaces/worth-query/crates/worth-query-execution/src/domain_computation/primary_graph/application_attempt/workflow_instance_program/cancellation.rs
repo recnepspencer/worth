@@ -18,12 +18,8 @@ use worth_query_installation::facade::{
 };
 
 use super::super::workflow_instance_observation::instance_binding::deny_ended;
-use super::super::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationEffectProgram, WorthQueryCompleteApplicationReadSet,
-    WorthQueryProjectedApplicationMutation,
-};
-use super::{intent_identity, PublishedWorkflowInstanceRef};
+use {super::super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::super::WorthQueryApplicationEffectProgram, super::super::WorthQueryCompleteApplicationReadSet, super::super::WorthQueryProjectedApplicationMutation};
+use {super::intent_identity, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef};
 use close::ClosedWorkflowInstance;
 pub use publication::{
     PerformedWorkflowInstanceCancellation, PreparedWorkflowInstanceCancellation,
@@ -152,7 +148,7 @@ where
                 read_set: self,
                 effects,
                 conditional_definition: None,
-                effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
+                effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::Platform,
                 output_correspondence: Default::default(),
                 retain_output_demand_observation: false,
                 retain_client_observation: false,

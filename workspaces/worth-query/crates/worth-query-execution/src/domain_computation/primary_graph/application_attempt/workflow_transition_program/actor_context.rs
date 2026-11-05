@@ -6,6 +6,7 @@ use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,
     application_program::ApplicationProgramRevision,
 };
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 /// Opaque original typed command locators for native capability observation.
 /// Only the designated publication owner constructs this context. It carries
@@ -13,7 +14,7 @@ use worth_query_declaration::facade::{
 #[derive(Clone, Debug)]
 pub struct WorthQueryWorkflowActorContext {
     pub(super) runtime: u64,
-    pub(super) instance: super::super::PublishedWorkflowInstanceRef,
+    pub(super) instance: crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
     pub(super) command: Command,
     pub(super) revision: ApplicationProgramRevision,
     pub(super) spec: String,
@@ -58,7 +59,7 @@ pub(super) struct OperationActorCommand {
 pub(super) enum Command {
     Approval {
         required: RequiredWorkflowApproval,
-        proposal: super::super::PublishedWorkflowProposalRef,
+        proposal: crate::domain_computation::primary_graph::vocabulary::application_attempt::reference::PublishedWorkflowProposalRef,
     },
     Operation {
         required: OperationActorCommand,
@@ -97,9 +98,9 @@ impl WorthQueryWorkflowAdvanceAdapter {
             Schema,
         >,
         workflow: crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
-        instance: &super::super::PublishedWorkflowInstanceRef,
+        instance: &crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
-        proposal: &super::super::PublishedWorkflowProposalRef,
+        proposal: &crate::domain_computation::primary_graph::vocabulary::application_attempt::reference::PublishedWorkflowProposalRef,
     ) -> Result<Option<WorthQueryWorkflowActorContext>, WorthQueryApplicationAttemptDenial>
     where
         Schema: ApplicationSchema,
@@ -149,7 +150,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
 fn context<Schema, Spec, Binding>(
     runtime: u64,
     installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
-    instance: &super::super::PublishedWorkflowInstanceRef,
+    instance: &crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
     command: Command,
 ) -> Result<Option<WorthQueryWorkflowActorContext>, WorthQueryApplicationAttemptDenial>
 where

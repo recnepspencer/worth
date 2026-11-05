@@ -2,10 +2,7 @@
 use super::*;
 use crate::domain_computation::authorization::host::AuthorizationHost;
 use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
-use crate::domain_computation::primary_graph::{
-    admitted_capture::{checkpoint, run_retained_stage, RetainedStorageDenial},
-    WorthQueryPrincipalResolutionMode,
-};
+use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 use worth_execution::MapKernelFailure;
 use worth_query_installation::facade::ApplicationSchema;
 

@@ -9,7 +9,7 @@ mod preparation;
 mod publication;
 pub(in crate::domain_computation::primary_graph) mod retained_descriptor;
 mod retirement;
-pub use compilation::WorthQueryWorkflowCompilationReuseCounters;
+
 pub(in crate::domain_computation::primary_graph) use compilation::{
     compile_node, observe_connection, reconstruct_compiled_definition,
     CompiledWorkflowAssessmentApplicability, CompiledWorkflowConnection,
@@ -17,10 +17,8 @@ pub(in crate::domain_computation::primary_graph) use compilation::{
     CompiledWorkflowNodeKind, WorkflowDefinitionCompilationPosture,
     WorkflowDefinitionCompilationReuse,
 };
-pub use condition::WorkflowConditionOperand;
-pub(in crate::domain_computation::primary_graph) use condition::{
-    encode_draft, encode_operands, CompiledWorkflowCondition, CompiledWorkflowConditionExpression,
-};
+
+pub(in crate::domain_computation::primary_graph) use condition::encode_operands;
 pub(in crate::domain_computation::primary_graph) use dependencies::WorkflowRetainedNode;
 pub(in crate::domain_computation::primary_graph) use dependencies::{
     read_definition_dependencies, WorkflowDefinitionDependencies,

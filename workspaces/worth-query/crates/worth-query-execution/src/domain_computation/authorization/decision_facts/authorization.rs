@@ -22,7 +22,7 @@ pub(in crate::domain_computation::authorization) use delegation_activation::Wort
 #[derive(Clone)]
 pub(in crate::domain_computation) struct WorthQueryAuthorizationDecisionFact {
     session_identity:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     relational: Arc<RelationalAuthorizationObservationEvidence>,
     bridge: Arc<BridgeAuthorizationDecisionEvidence>,
     native_dependencies: Option<worth_relational::facade::authorization::RelationalAuthorizationDependencyWire>,
@@ -36,7 +36,7 @@ impl WorthQueryAuthorizationDecisionFact {
     pub(in crate::domain_computation::authorization) fn from_capability_observation(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         _permit: crate::domain_computation::authorization::capability_observation::WorthQueryAuthorizationDecisionPermit,
-        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session_identity: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         relational: RelationalAuthorizationObservationEvidence,
         bridge: BridgeAuthorizationDecisionEvidence,
@@ -54,7 +54,7 @@ impl WorthQueryAuthorizationDecisionFact {
 
     pub(in crate::domain_computation::authorization) fn from_conventional_observation(
         _permit: crate::domain_computation::authorization::admission::WorthQueryConventionalAuthorizationDecisionPermit,
-        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session_identity: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         relational: RelationalAuthorizationObservationEvidence,
         bridge: BridgeAuthorizationDecisionEvidence,
     ) -> Self {
@@ -62,7 +62,7 @@ impl WorthQueryAuthorizationDecisionFact {
     }
 
     fn mint(
-        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session_identity: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         relational: RelationalAuthorizationObservationEvidence,
         bridge: BridgeAuthorizationDecisionEvidence,
     ) -> Self {
@@ -125,7 +125,7 @@ impl WorthQueryAuthorizationDecisionFact {
 
     pub(in crate::domain_computation) const fn session_identity(
         &self,
-    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
         self.session_identity
     }
 

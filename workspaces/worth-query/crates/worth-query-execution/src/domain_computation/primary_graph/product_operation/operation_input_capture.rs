@@ -28,7 +28,7 @@ impl WorthQueryOperationInputCaptureDenial {
             Self::Execution(cause) => Some(*cause),
             Self::Allocation(cause) => match cause.classify() {
                 worth_execution::ExecutionAllocationDenialClass::Request(cause) => Some(
-                    crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_scope_stop(cause),
+                    crate::domain_computation::request_execution::execution_stop::advancement_scope_stop(cause),
                 ),
                 worth_execution::ExecutionAllocationDenialClass::Physical(_) => None,
             },

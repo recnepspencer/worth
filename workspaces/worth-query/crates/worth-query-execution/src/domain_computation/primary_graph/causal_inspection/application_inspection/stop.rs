@@ -1,13 +1,7 @@
 //! Original owner causes and their backing survive the complete fresh request.
 use super::{admission::InspectionAdmissionDenial, request::binding::InspectionBindingDenial};
 use worth_execution::{ExecutionMemoryReservation, WorkCeilingDenial};
-use {
-    crate::domain_computation::primary_graph::admitted_capture::CaptureStop,
-    crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial,
-    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial,
-    crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial,
-    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-};
+use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial, crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
 mod captured_domain;
 mod kind;
 mod resource;
@@ -15,15 +9,7 @@ pub use resource::WorthQueryApplicationInspectionResourceRefusal;
 mod canonical;
 pub use canonical::WorthQueryApplicationInspectionCanonicalRefusal;
 mod owner;
-pub use owner::{
-    DiagnosticComparisonDenial, FactlessCurrentness, IndexedSelectionReobserveDenial,
-    OutputFieldCaptureFailure, OwnEffectOnReads, RebaseVerificationReason, StoreDenial,
-    WorthQueryApplicationDisclosureContractDenial, WorthQueryApplicationInspectionOwnerRefusal,
-    WorthQueryApplicationInspectionStage, WorthQueryApplicationQueryGovernanceDenialKind,
-    WorthQueryApplicationQueryInstallationDenial, WorthQueryApplicationQueryInstallationDenialKind,
-    WorthQueryInspectionReadTerminalDenial, WorthQueryManagedGraphReadDenial,
-    WorthQueryManagedGraphWorkSessionStartDenial,
-};
+pub use {owner::DiagnosticComparisonDenial, owner::FactlessCurrentness, crate::domain_computation::primary_graph::vocabulary::application_attempt::indexed_entity_selection::IndexedSelectionReobserveDenial, owner::OutputFieldCaptureFailure, owner::OwnEffectOnReads, crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason, owner::StoreDenial, owner::WorthQueryApplicationDisclosureContractDenial, owner::WorthQueryApplicationInspectionOwnerRefusal, owner::WorthQueryApplicationInspectionStage, owner::WorthQueryApplicationQueryGovernanceDenialKind, owner::WorthQueryApplicationQueryInstallationDenial, owner::WorthQueryApplicationQueryInstallationDenialKind, owner::WorthQueryInspectionReadTerminalDenial, owner::WorthQueryManagedGraphReadDenial, owner::WorthQueryManagedGraphWorkSessionStartDenial};
 #[cfg(test)]
 mod output_tests;
 

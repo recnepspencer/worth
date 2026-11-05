@@ -1,6 +1,7 @@
 //! Original admitted projection, with an optional real source-query loan.
 use super::admitted::SourceAccess;
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
     pub(in crate::domain_computation::primary_graph) fn project_admitted_operation_with_source_access<
@@ -24,7 +25,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             >,
         >,
         source_context_use: Option<
-            &std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>,
+            &std::cell::Cell<crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse>,
         >,
     ) -> Result<
         WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Output>,

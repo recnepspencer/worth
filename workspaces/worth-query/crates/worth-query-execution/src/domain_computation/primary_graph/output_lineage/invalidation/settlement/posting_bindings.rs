@@ -1,6 +1,7 @@
 //! Versioned exact settlement membership in the one physical reverse index.
 
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 #[derive(Clone, Debug)]
 pub enum PostingBindings {

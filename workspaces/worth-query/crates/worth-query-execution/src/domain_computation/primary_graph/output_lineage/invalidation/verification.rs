@@ -11,10 +11,10 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-use crate::domain_computation::primary_graph::application_attempt::Movement;
-use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
 
-use super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::mark_state::SettlementCurrentness;
 use super::mark_state::SettlementMarks;
 use super::source_alignment::BranchMarkRoot;
@@ -36,14 +36,14 @@ impl From<CompanionPreflightStop> for SettlementVerificationStop {
     }
 }
 
-impl From<super::SettlementRegistrationStop> for SettlementVerificationStop {
-    fn from(stop: super::SettlementRegistrationStop) -> Self {
+impl From<crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop> for SettlementVerificationStop {
+    fn from(stop: crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop) -> Self {
         match stop {
-            super::SettlementRegistrationStop::Alignment(_)
-            | super::SettlementRegistrationStop::Foreign
-            | super::SettlementRegistrationStop::SourceUnavailable => Self::Alignment,
-            super::SettlementRegistrationStop::Admission(reason) => Self::Admission(reason),
-            super::SettlementRegistrationStop::Edit(reason) => Self::Edit(reason),
+            crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop::Alignment(_)
+            | crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop::Foreign
+            | crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop::SourceUnavailable => Self::Alignment,
+            crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop::Admission(reason) => Self::Admission(reason),
+            crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop::Edit(reason) => Self::Edit(reason),
         }
     }
 }

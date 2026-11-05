@@ -148,7 +148,7 @@ impl AggregateScanReader<'_, '_> {
         if value.is_some() {
             self.accounting.record_source_field();
         }
-        Ok(value.and_then(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFieldObservation::into_value))
+        Ok(value.and_then(crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation::into_value))
     }
 
     /// Reads the plan's snapshot on its own branch root, so a sibling branch's

@@ -1,10 +1,7 @@
 //! Receipt-backed origin of native settlement; it never claims to have executed a body again.
 use super::{RequiredWorkflowOperation, ValidatedWorkflowOperationReceipt};
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationIdempotencyBinding,
-};
-use crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture;
+use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding};
+use crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture;
 pub(in crate::domain_computation::primary_graph::application_attempt) struct LocalActionSettlementProof
 {
     binding: String,

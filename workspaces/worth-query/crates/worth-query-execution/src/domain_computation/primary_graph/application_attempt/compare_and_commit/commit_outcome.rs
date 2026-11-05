@@ -46,32 +46,12 @@ impl WorthQueryApplicationNoEffect {
     }
 }
 
-/// Evidence that sealed decision facts changed at the admitted commit basis.
-/// Nothing was committed.
-///
-/// Re-read from a fresh basis and retry with a fresh source. The runtime never
-/// reruns the handler for you.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationStaleAttempt {
-    stale_fact_count: usize,
-}
 
-impl WorthQueryApplicationStaleAttempt {
-    pub const fn stale_fact_count(self) -> usize {
-        self.stale_fact_count
-    }
-
-    pub(in super::super) const fn new(stale_fact_count: usize) -> Self {
-        Self { stale_fact_count }
-    }
-}
 
 pub(crate) mod denial;
 pub(in crate::domain_computation::primary_graph) use denial::WorthQueryProgramActivationUnresolved;
-pub use denial::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitDenialStage,
-};
+pub use {denial::WorthQueryApplicationCommitDenial, denial::WorthQueryApplicationCommitDenialStage};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt;
 
 /// Every way an application compare-and-commit can end.
 ///
@@ -205,8 +185,8 @@ impl From<WorthQueryApplicationUncommitted> for WorthQueryApplicationCommitOutco
 pub struct WorthQueryApplicationUnresolvedCommitEvidence {
     recovery: WorthQueryApplicationCommitRecoveryKind,
     denial_kind: Result<
-        crate::domain_computation::provider_session::WorthQueryProviderSessionDenialKind,
-        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     >,
     stage: crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolStage,
     detail: String,
@@ -243,8 +223,8 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
     pub(in crate::domain_computation::primary_graph) fn with_read_stop(
         mut self,
         cause: Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     ) -> Self {
         self.denial_kind = cause;
@@ -266,8 +246,8 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
     pub const fn denial_kind(
         &self,
     ) -> Result<
-        crate::domain_computation::provider_session::WorthQueryProviderSessionDenialKind,
-        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     > {
         self.denial_kind
     }

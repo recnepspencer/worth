@@ -2,6 +2,7 @@
 use super::*;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
 struct Frame<'a> {
     node: &'a WorthQueryApplicationProjectionNode,
     relation: usize,

@@ -3,6 +3,7 @@ use super::*;
 use worth_query_declaration::facade::application_operation::{
     ApplicationEncodedInput, ApplicationOwnedMutationIdentities,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::execution) fn prepare_input<
     S,

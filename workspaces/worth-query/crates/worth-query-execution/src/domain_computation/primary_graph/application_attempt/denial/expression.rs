@@ -1,7 +1,5 @@
 //! Expression-language refusals keep their original denial as the attempt cause.
-use super::{
-    AttemptDenialCause, WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-};
+use {super::AttemptDenialCause, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 impl WorthQueryApplicationAttemptDenial {
     pub(in crate::domain_computation::primary_graph) fn condition_expression(

@@ -27,7 +27,7 @@ use super::DemandRegistryState;
 use super::WorthQueryOutputDemandKey;
 use super::WorthQueryOutputDemandRegistry;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 type Identity = Arc<RecordedSettlementIdentity>;
 use super::post_commit::discovery;

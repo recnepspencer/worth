@@ -32,7 +32,7 @@ impl<S: ApplicationSchema, F: WorthQueryProducerOutputFamily<S>>
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<
-        Option<crate::domain_computation::WorthQueryDirectRunCleanupReceipt>,
+        Option<crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt>,
         WorthQueryOutputDemandDenial,
     > {
         match self.terminal_caller_denial.as_mut() {

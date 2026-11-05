@@ -1,8 +1,8 @@
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
-use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
-use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::provider::session_commit::provider_failure;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphApplicationAttempt;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
@@ -112,7 +112,7 @@ fn publication_stop(stop: PrecommitOutputStop) -> WorthQueryProviderSessionCommi
             ),
             PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(cause)) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
             PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::SourceQueryAuthorization(kind)) => {
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Authorization;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Authorization;
                 let detail = "source query authorization is no longer current";
                 match kind {
                     Authorization::Stopped(Err(control)) => WorthQueryProviderSessionCommitStop::ControlStopped(
@@ -167,7 +167,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDe
 }
 
 fn capacity_denied(
-    stop: crate::domain_computation::primary_graph::VerificationCapacityStop,
+    stop: crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop,
 ) -> WorthQueryProviderSessionCommitStop {
     WorthQueryProviderSessionCommitStop::PreEffectDenied(
         provider_failure(

@@ -6,7 +6,7 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::{history::BranchId, identity::EntityId};
 
-use super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
+use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
 
 pub(in crate::domain_computation::primary_graph::application_query) mod comparison;
 mod denial;
@@ -25,7 +25,8 @@ pub(crate) mod retained_parameters;
 pub(crate) mod root_selection;
 mod scope_selector;
 mod workflow_capture;
-pub use denial::{WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind};
+pub use denial::WorthQuerySourceExpectationDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind;
 pub(in crate::domain_computation::primary_graph::application_query) use expression_context::RetainedExpressionContext;
 pub use prepared_expectation::WorthQueryPendingSourceExpectation;
 pub(in crate::domain_computation::primary_graph) use prepared_expectation::{
@@ -43,19 +44,6 @@ pub struct WorthQueryBoundSourceExpectation {
     partition_identity: [u8; 32],
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQuerySourceExpectationKind {
-    Row,
-    ResultSet,
-}
-impl WorthQuerySourceExpectationKind {
-    pub(in crate::domain_computation) const fn code(self) -> u64 {
-        match self {
-            Self::Row => 1,
-            Self::ResultSet => 2,
-        }
-    }
-}
 
 impl WorthQueryBoundSourceExpectation {
     pub(in crate::domain_computation::primary_graph) const fn recorded_source_identity(
@@ -78,17 +66,15 @@ impl WorthQueryBoundSourceExpectation {
     }
 }
 pub(crate) mod source_identity;
-pub(in crate::domain_computation::primary_graph) use super::super::entity_resolution::WorthQueryObservedScopeSelector;
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
 pub(in crate::domain_computation::primary_graph::application_query) use retained_parameters::WorthQueryRetainedObservedParameters;
 pub(in crate::domain_computation::primary_graph) use root_selection::WorthQueryObservedRootSelection;
 pub(in crate::domain_computation::primary_graph::application_query) use root_selection::{
     DeclaredComponentSelection, DeclaredManagedIndexSelection, DeclaredOrbitSelection,
     ManagedSourceDependencies,
 };
-pub(in crate::domain_computation::primary_graph) use source_identity::{
-    WorthQueryCheckpointSourceIdentity, WorthQueryObservedSourceEpoch,
-    WorthQueryObservedSourceSelection, WorthQueryRuntimeSourceIdentity,
-};
+pub(in crate::domain_computation::primary_graph) use {source_identity::WorthQueryObservedSourceEpoch, source_identity::WorthQueryObservedSourceSelection};
+use crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity;
 
 pub(in crate::domain_computation) use super::super::source_facts::{
     WorthQueryObservedAdjacencyRevision, WorthQueryObservedFieldRevision,
@@ -249,3 +235,4 @@ impl<Query> WorthQueryObservedSource<Query> {
 mod court_doors_for_test;
 pub use prepared_expectation::PreparedExpectationOps;
 pub(in crate::domain_computation::primary_graph) use prepared_expectation::PreparedExpectationScopedOps;
+use crate::domain_computation::vocabulary::primary_graph::observed_source::WorthQuerySourceExpectationKind;

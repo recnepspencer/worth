@@ -1,5 +1,10 @@
 use super::*;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial;
 
 pub(in crate::domain_computation::primary_graph::application_query) trait AdmittedScopedOps<
     Schema: ApplicationSchema,
@@ -116,7 +121,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn map_selec
         SelectedAuthorizedReadStop::Currentness(SelectedAuthorizationCurrentnessStop::Admission(stop)) => return WorthQueryAdmittedOneShotStop::Admission(stop),
 
         SelectedAuthorizedReadStop::Currentness(SelectedAuthorizationCurrentnessStop::Execution(cause)) => {
-use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
             match crate::facade::primary_graph::relational_execution_kind(cause, None) {
                 Ok(kind) => WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind),
                 Err(Control::Cancelled) => WorthQueryApplicationOneShotDenialKind::Cancelled,
@@ -127,7 +132,7 @@ use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Contr
             crate::domain_computation::primary_graph::product_operation::SelectedPermissionSecurityStop,
         ) | SelectedAuthorizedReadStop::StaleSecurity => {
             WorthQueryApplicationOneShotDenialKind::Authorization(
-                crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StaleAuthorization),
+                crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StaleAuthorization),
             )
         }
         SelectedAuthorizedReadStop::Currentness(
@@ -135,7 +140,7 @@ use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Contr
             | SelectedAuthorizationCurrentnessStop::StaleDecision
             | SelectedAuthorizationCurrentnessStop::UnsupportedGovernance,
         ) => WorthQueryApplicationOneShotDenialKind::Authorization(
-            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StaleAuthorization),
+            crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StaleAuthorization),
         ),
         SelectedAuthorizedReadStop::Currentness(
             SelectedAuthorizationCurrentnessStop::Interrupted(

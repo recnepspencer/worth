@@ -10,7 +10,7 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::computation::nested_failure::{MemberComputeFailure, NestedFailureTransport};
+use {crate::domain_computation::primary_graph::vocabulary::application_contribution::nested_failure::MemberComputeFailure, crate::domain_computation::primary_graph::vocabulary::application_contribution::nested_failure::NestedFailureTransport};
 use super::super::execution_denial::kernel_failure;
 use super::incremental::{
     observe_unretained, CompletedComputationRetention, ComputationDeposit, ComputedIncremental,
@@ -22,11 +22,7 @@ use super::{
     WorthQueryComputationPartitionView, WorthQueryInstalledPartitionedComputation,
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
 };
-use {
-    super::super::WorthQueryManagedComputationCheckpoint,
-    super::super::WorthQueryManagedComputationExecution,
-    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_contribution::checkpoint::WorthQueryManagedComputationCheckpoint, crate::domain_computation::primary_graph::vocabulary::application_contribution::checkpoint::WorthQueryManagedComputationExecution, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 
 pub(super) type Denial<Schema, Feature, Computation, Owner> =
     WorthQueryPartitionedComputationDenial<

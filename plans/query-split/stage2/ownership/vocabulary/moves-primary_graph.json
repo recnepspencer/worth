@@ -1,0 +1,926 @@
+[
+{
+"item": "domain_computation::primary_graph::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome::WorthQueryApplicationStaleAttempt",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenialKind",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::denial::kind::WorthQueryApplicationAttemptDenialKind",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::denial::unobserved_write::WorthQueryApplicationUnobservedWrite",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreatedRelation",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationEffectEntity",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::projection::WorthQueryApplicationOutputProjectionDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::declared_member",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::IndexedSelectionReobserveDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::fact::managed_source_read::ManagedInfluenceOrigin",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::fact::managed_source_read::ManagedSourceReadKey",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::fact::movement::Movement",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::fact::source_currentness::WorthQuerySourceCurrentnessFailure",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::fact::source_read_authorization::SourceReadAuthorizationKey",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::WorthQueryRecordedIntentMatch",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::idempotency_resolution::denial::WorthQueryApplicationIdempotencyResolutionDenialKind",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::observation::WorthQueryApplicationFieldObservation",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::observation::aspect_presence::observe_aspect_presence",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::observation::predecode_admission::observe_aspect_absence",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::observation::predecode_admission::observe_field_observation_borrowed_admitted",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::observation::predecode_admission::observe_field_value_borrowed",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::observation::predecode_admission::observe_field_value_borrowed_admitted",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::provider_binding::effect_accumulator::expected_steps::WorthQueryExpectedEffectStepPreparationWork",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::read_set::decision_reuse::CompletedDecisionReuseProof",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::read_set::scope_bindings::CompletedReadScopes",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::read_set::scope_bindings::InstalledScopePosition",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::definition::compilation::reuse::counters::WorthQueryWorkflowCompilationReuseCounters",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::definition::condition::CompiledWorkflowCondition",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::definition::condition::CompiledWorkflowConditionExpression",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::definition::condition::OPERAND_FIELDS",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::definition::condition::WorkflowConditionOperand",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::definition::condition::decode_draft",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::definition::condition::decode_operands",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::definition::condition::encode_draft",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::instance::progression::retention::SHARD_COUNT",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::instance::progression::retention::WorkflowInstanceProgressKey",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::instance::progression::retention::counters::WorthQueryWorkflowInstanceProgressCounters",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::instance::transition::admission::selection::SelectedWorkflowCondition",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::schema::fact_custody::RULE_ID",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::schema::fact_custody::RULE_VERSION",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::schema::fact_custody::fact_custody_receipt_contract",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow_definition_program::publication::PublishedWorkflowDefinitionRef",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow_instance_program::publication::PublishedWorkflowInstanceRef",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow_proposal_program::publication::reference::ProposalText",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow_proposal_program::publication::reference::PublishedWorkflowProposalRef",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::RequiredWorkflowCondition",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::approval::WorkflowApprovalDecision",
+"to": "domain_computation::primary_graph::vocabulary::application_attempt"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::checkpoint::WorthQueryManagedComputationCheckpoint",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::checkpoint::WorthQueryManagedComputationExecution",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::member_execution::WorthQueryMemberExecution",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::nested_failure::MemberComputeFailure",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::nested_failure::NestedFailureTransport",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::nested_failure::TakenNestedFailure",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::wave_dispatch::ComputedMember",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::wave_dispatch::NoMemberFailure",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::wave_dispatch::PreparedMember",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::wave_dispatch::from_checkpoint",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::wave_dispatch::seeded_dispatch_orders::ORDERS",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::wave_dispatch::seeded_dispatch_orders::record",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::computation::wave_dispatch::settle_outcome",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::execution_denial::publication::publication_execution_kind",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::execution_denial::scope::scope_stop_kind",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerApplicability",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerInvariantRequirement",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerLifecyclePosture",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::producer::WorthQueryWorkflowAssessmentPosture",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::current_basis::CurrentBasis",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::producer::denial_value::WorthQueryProducerDenialDecodeDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::producer::denial_value::WorthQueryProducerDenialEncodingRefusal",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::producer::denial_value::WorthQueryProducerDenialValue",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::producer::denial_value::mismatch_or",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::producer::input_reuse_contract::WorthQueryDecisionContextDependencies",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::producer::input_reuse_contract::WorthQueryProducerInputReuseContract",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_contribution::producer::source_qualification::OutputSourceAddress",
+"to": "domain_computation::primary_graph::vocabulary::application_contribution"
+},
+{
+"item": "domain_computation::primary_graph::application_inbound::inbound_occurrence::transport_binding::WorthQueryInstalledTransportCompletionBinding",
+"to": "domain_computation::primary_graph::vocabulary::application_inbound"
+},
+{
+"item": "domain_computation::primary_graph::application_installation::program::program_owner::WorthQuerySelectedProgramOwnerDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_installation"
+},
+{
+"item": "domain_computation::primary_graph::application_installation::program_admission::WorthQueryAdmittedProgramSupport",
+"to": "domain_computation::primary_graph::vocabulary::application_installation"
+},
+{
+"item": "domain_computation::primary_graph::application_invariant::refusal::canonical_wire_maximum",
+"to": "domain_computation::primary_graph::vocabulary::application_invariant"
+},
+{
+"item": "domain_computation::primary_graph::application_invariant::refusal::maximum",
+"to": "domain_computation::primary_graph::vocabulary::application_invariant"
+},
+{
+"item": "domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::CheckpointOutputSlot",
+"to": "domain_computation::primary_graph::vocabulary::application_output_demand"
+},
+{
+"item": "domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture",
+"to": "domain_computation::primary_graph::vocabulary::application_output_demand"
+},
+{
+"item": "domain_computation::primary_graph::application_output_demand::registry::required_work::ReplacedRequiredWorkHint",
+"to": "domain_computation::primary_graph::vocabulary::application_output_demand"
+},
+{
+"item": "domain_computation::primary_graph::application_output_demand::registry::required_work::native_hints::NativeBranch",
+"to": "domain_computation::primary_graph::vocabulary::application_output_demand"
+},
+{
+"item": "domain_computation::primary_graph::application_output_demand::registry::required_work::native_hints::NativeHint",
+"to": "domain_computation::primary_graph::vocabulary::application_output_demand"
+},
+{
+"item": "domain_computation::primary_graph::application_query::admission::funded_parameters::CapturedApplicationQueryParameters",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::batch::WorthQueryApplicationQueryBatchResourceDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::denial::WorthQueryApplicationQueryAdmissionDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::derived_view::change_summary::changes_from_summary",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::derived_view::publication::ViewChange",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::derived_view::publication::ViewPublicationBasis",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::derived_view::registry::predicate::preparation::round::PredicateNoticeDisposition",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::history::admission::MetadataValidationDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::history::denial::WorthQueryApplicationHistoryDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::managed_index::control::WorthQueryManagedIndexControl",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::managed_index::invariant_read::ManagedSourceValue",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::managed_index::invariant_read::ReadPosture",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::managed_index::invariant_read::WorthQueryManagedIndexInvariantDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::managed_index::invocation::WorthQueryManagedIndexWorkDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::managed_index::predicate::tree::WatchSlot",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::managed_index::provider::WorthQueryManagedIndexProbeValue",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::managed_index::provider_failure::PaidProviderDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::managed_index::provider_failure::WorthQueryManagedIndexProviderFailure",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::managed_index::provider_failure::equal_cause",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::managed_index::source_rows::WorthQueryManagedIndexSourceSlot",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::managed_index::stop::WorthQueryManagedIndexStop",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::observed_source::denial::WorthQuerySourceExpectationDenialKind",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceCoordinate",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceOccurrence",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::one_shot::WorthQueryAdmittedOneShotStop",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::one_shot::denial::OneShotDenialPayload",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::one_shot::denial::WorthQueryApplicationOneShotDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::one_shot::denial::WorthQueryApplicationOneShotDenialKind",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::one_shot::denial::authorization_denial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::one_shot::denial::denial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::one_shot::map_authorized_read_denial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::projection::denial::WorthQueryApplicationProjectionDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::projection::denial::WorthQueryApplicationProjectionDenialKind",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::projection::projected_tree::content_comparison::ProjectionContentComparisonFault",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::projection::projected_tree::content_storage::ContentScratch",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::read_execution::denial::WorthQueryApplicationReadExecutionDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::read_execution::denial::WorthQueryApplicationReadExecutionDenialKind",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::resource_lifecycle::basis_registry::WorthQueryApplicationBasisRegistrationDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::resource_lifecycle::basis_registry::WorthQueryApplicationBasisReleaseOutcome",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_query::resource_lifecycle::basis_registry::WorthQueryApplicationBasisSelectionIdentity",
+"to": "domain_computation::primary_graph::vocabulary::application_query"
+},
+{
+"item": "domain_computation::primary_graph::application_runtime::WorthQueryApplicationLiveDeliveryCloseReceipt",
+"to": "domain_computation::primary_graph::vocabulary::application_runtime"
+},
+{
+"item": "domain_computation::primary_graph::application_runtime::certification_cost::WorthQueryCertificationApplicationWork",
+"to": "domain_computation::primary_graph::vocabulary::application_runtime"
+},
+{
+"item": "domain_computation::primary_graph::application_runtime::certification_cost::WorthQueryCertificationCostObservation",
+"to": "domain_computation::primary_graph::vocabulary::application_runtime"
+},
+{
+"item": "domain_computation::primary_graph::application_runtime::certification_cost::WorthQueryCertificationCostScope",
+"to": "domain_computation::primary_graph::vocabulary::application_runtime"
+},
+{
+"item": "domain_computation::primary_graph::application_runtime::certification_cost::WorthQueryCertificationWorldHistory",
+"to": "domain_computation::primary_graph::vocabulary::application_runtime"
+},
+{
+"item": "domain_computation::primary_graph::application_runtime::certification_cost::WorthQueryCertificationWorldRetention",
+"to": "domain_computation::primary_graph::vocabulary::application_runtime"
+},
+{
+"item": "domain_computation::primary_graph::application_runtime::execution_memory::WorthQueryExecutionLeaseDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_runtime"
+},
+{
+"item": "domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::source_publication::receipt::WorthQuerySourcePublicationHeadForTest",
+"to": "domain_computation::primary_graph::vocabulary::application_runtime"
+},
+{
+"item": "domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::source_publication::receipt::WorthQuerySourcePublicationImageForTest",
+"to": "domain_computation::primary_graph::vocabulary::application_runtime"
+},
+{
+"item": "domain_computation::primary_graph::application_runtime::storage_retention::WorthQueryStorageRetentionDenial",
+"to": "domain_computation::primary_graph::vocabulary::application_runtime"
+},
+{
+"item": "domain_computation::primary_graph::application_runtime::storage_retention::WorthQueryStorageRetentionProgress",
+"to": "domain_computation::primary_graph::vocabulary::application_runtime"
+},
+{
+"item": "domain_computation::primary_graph::application_runtime::storage_retention::WorthQueryStorageRetentionStop",
+"to": "domain_computation::primary_graph::vocabulary::application_runtime"
+},
+{
+"item": "domain_computation::primary_graph::bootstrap::WorthQueryPrincipalBootstrapRow",
+"to": "domain_computation::primary_graph::vocabulary::bootstrap"
+},
+{
+"item": "domain_computation::primary_graph::bootstrap::publication::WorthQueryPrimaryGraphPublication",
+"to": "domain_computation::primary_graph::vocabulary::bootstrap"
+},
+{
+"item": "domain_computation::primary_graph::conditional_operation::execution_provenance::classification::WorthQueryConditionalSignalDecision",
+"to": "domain_computation::primary_graph::vocabulary::conditional_operation"
+},
+{
+"item": "domain_computation::primary_graph::conditional_operation::installation::clock_handle::ConditionalClockLease",
+"to": "domain_computation::primary_graph::vocabulary::conditional_operation"
+},
+{
+"item": "domain_computation::primary_graph::conditional_operation::installation::clock_handle::WorthQueryConditionalClockHandle",
+"to": "domain_computation::primary_graph::vocabulary::conditional_operation"
+},
+{
+"item": "domain_computation::primary_graph::conditional_operation::predicate_admission::providers::QueryConditionalComputeContext",
+"to": "domain_computation::primary_graph::vocabulary::conditional_operation"
+},
+{
+"item": "domain_computation::primary_graph::conditional_operation::predicate_observation::QueryTemporalPredicateProvider",
+"to": "domain_computation::primary_graph::vocabulary::conditional_operation"
+},
+{
+"item": "domain_computation::primary_graph::conditional_operation::predicate_observation::QueryTemporalPredicateSemanticContract",
+"to": "domain_computation::primary_graph::vocabulary::conditional_operation"
+},
+{
+"item": "domain_computation::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenial",
+"to": "domain_computation::primary_graph::vocabulary::entity_resolution_denial"
+},
+{
+"item": "domain_computation::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind",
+"to": "domain_computation::primary_graph::vocabulary::entity_resolution_denial"
+},
+{
+"item": "domain_computation::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind",
+"to": "domain_computation::primary_graph::vocabulary::entity_resolution_denial"
+},
+{
+"item": "domain_computation::primary_graph::exact_basis_access::WorthQueryExactBasisSnapshotDenial",
+"to": "domain_computation::primary_graph::vocabulary::exact_basis_access"
+},
+{
+"item": "domain_computation::primary_graph::freshness::WorthQueryPrincipalReuseWitness",
+"to": "domain_computation::primary_graph::vocabulary::freshness"
+},
+{
+"item": "domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse",
+"to": "domain_computation::primary_graph::vocabulary::handler"
+},
+{
+"item": "domain_computation::primary_graph::handler::invariant::HandlerInterruption",
+"to": "domain_computation::primary_graph::vocabulary::handler"
+},
+{
+"item": "domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial",
+"to": "domain_computation::primary_graph::vocabulary::index_currency"
+},
+{
+"item": "domain_computation::primary_graph::invariant_projection::WorthQueryInvariantEntityIdentity",
+"to": "domain_computation::primary_graph::vocabulary::invariant_projection"
+},
+{
+"item": "domain_computation::primary_graph::invariant_projection::WorthQueryInvariantMutationTarget",
+"to": "domain_computation::primary_graph::vocabulary::invariant_projection"
+},
+{
+"item": "domain_computation::primary_graph::invariant_projection::consumed_output::publication_recovery::PublicationRecoveryStop",
+"to": "domain_computation::primary_graph::vocabulary::invariant_projection"
+},
+{
+"item": "domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification",
+"to": "domain_computation::primary_graph::vocabulary::invariant_projection"
+},
+{
+"item": "domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerificationStop",
+"to": "domain_computation::primary_graph::vocabulary::invariant_projection"
+},
+{
+"item": "domain_computation::primary_graph::invariant_projection::consumed_output::verification::capacity_stop::VerificationCapacityStop",
+"to": "domain_computation::primary_graph::vocabulary::invariant_projection"
+},
+{
+"item": "domain_computation::primary_graph::invariant_projection::consumed_output::verification::work_budget::map_admission_stop",
+"to": "domain_computation::primary_graph::vocabulary::invariant_projection"
+},
+{
+"item": "domain_computation::primary_graph::invariant_projection::consumed_output::verification::work_budget::reserve_pending",
+"to": "domain_computation::primary_graph::vocabulary::invariant_projection"
+},
+{
+"item": "domain_computation::primary_graph::invariant_projection::identity_encoding::ProjectionAuthorityEncoding",
+"to": "domain_computation::primary_graph::vocabulary::invariant_projection"
+},
+{
+"item": "domain_computation::primary_graph::invariant_projection::output_availability_candidate::ObservedOutputPosture",
+"to": "domain_computation::primary_graph::vocabulary::invariant_projection"
+},
+{
+"item": "domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge",
+"to": "domain_computation::primary_graph::vocabulary::managed_bridge"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::WorthQueryOperationBodyDenial",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::assessment::WorthQueryCurrentBodyRequirementAssessment",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::children::PreparedBodyChildren",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::field_expectation::BodyFieldExpectation",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::input::PreparedBodyInputs",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::path_links::PreparedBodyPathLinks",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::path_value::PreparedBodyPathWrites",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::reference_input::PreparedBodyReference",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::reference_input::PreparedBodyReferences",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::requirement::WorthQueryOperationBodyRequirementFinding",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::requirement::WorthQueryOperationBodyRequirementStatus",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::requirement::WorthQueryOperationBodyRequirementTarget",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::requirement::value::PreparedRequirementOperand",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::retirement::PreparedBodyRetirements",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::retirement::PreparedRetirementBatch",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::reuse::CreationDisposition",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::selection::PreparedBodySelection",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::selection::PreparedBodySelections",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::source::PreparedBodySource",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::value::InstalledBodyValue",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::value::PreparedBodyValues",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::operation_body::value::RetainedValues",
+"to": "domain_computation::primary_graph::vocabulary::operation_body"
+},
+{
+"item": "domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity",
+"to": "domain_computation::primary_graph::vocabulary::output_binding_identity"
+},
+{
+"item": "domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity",
+"to": "domain_computation::primary_graph::vocabulary::output_family_identity"
+},
+{
+"item": "domain_computation::primary_graph::output_lineage::ProductCoordinate",
+"to": "domain_computation::primary_graph::vocabulary::output_lineage"
+},
+{
+"item": "domain_computation::primary_graph::output_lineage::input_cutoff::verification::cutoff_declines",
+"to": "domain_computation::primary_graph::vocabulary::output_lineage"
+},
+{
+"item": "domain_computation::primary_graph::output_lineage::invalidation::commit_touches::CommitTouchEntities",
+"to": "domain_computation::primary_graph::vocabulary::output_lineage"
+},
+{
+"item": "domain_computation::primary_graph::output_lineage::invalidation::commit_touches::CommitTouchInterest",
+"to": "domain_computation::primary_graph::vocabulary::output_lineage"
+},
+{
+"item": "domain_computation::primary_graph::output_lineage::invalidation::derived::SettlementRegistrationStop",
+"to": "domain_computation::primary_graph::vocabulary::output_lineage"
+},
+{
+"item": "domain_computation::primary_graph::output_lineage::invalidation::derived::SourceSettlementCurrentness",
+"to": "domain_computation::primary_graph::vocabulary::output_lineage"
+},
+{
+"item": "domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason",
+"to": "domain_computation::primary_graph::vocabulary::output_lineage"
+},
+{
+"item": "domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource",
+"to": "domain_computation::primary_graph::vocabulary::output_lineage"
+},
+{
+"item": "domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity",
+"to": "domain_computation::primary_graph::vocabulary::output_lineage"
+},
+{
+"item": "domain_computation::primary_graph::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial",
+"to": "domain_computation::primary_graph::vocabulary::product_activation"
+},
+{
+"item": "domain_computation::primary_graph::product_operation::conditional_definition::WorthQueryApplicationConditionalDefinitionAdmissionDenial",
+"to": "domain_computation::primary_graph::vocabulary::product_operation"
+},
+{
+"item": "domain_computation::primary_graph::product_operation::generated_materialization::restoration::invariant_admission::ReceiptFact",
+"to": "domain_computation::primary_graph::vocabulary::product_operation"
+},
+{
+"item": "domain_computation::primary_graph::product_operation::generated_materialization::restoration::invariant_admission::RequirementSatisfaction",
+"to": "domain_computation::primary_graph::vocabulary::product_operation"
+},
+{
+"item": "domain_computation::primary_graph::product_operation::generated_materialization::restoration::invariant_admission::admit_required_invariants",
+"to": "domain_computation::primary_graph::vocabulary::product_operation"
+},
+{
+"item": "domain_computation::primary_graph::product_operation::generated_materialization::restoration::invariant_admission::admit_requirement",
+"to": "domain_computation::primary_graph::vocabulary::product_operation"
+},
+{
+"item": "domain_computation::primary_graph::product_operation::generated_materialization::restoration::invariant_admission::admit_requirement_facts",
+"to": "domain_computation::primary_graph::vocabulary::product_operation"
+},
+{
+"item": "domain_computation::primary_graph::product_operation::generated_materialization::restoration::invariant_admission::lower_execution_point",
+"to": "domain_computation::primary_graph::vocabulary::product_operation"
+},
+{
+"item": "domain_computation::primary_graph::product_operation::generated_materialization::restoration::invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial",
+"to": "domain_computation::primary_graph::vocabulary::product_operation"
+},
+{
+"item": "domain_computation::primary_graph::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop",
+"to": "domain_computation::primary_graph::vocabulary::product_operation"
+},
+{
+"item": "domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::diagnostic::RebaseVerificationReason",
+"to": "domain_computation::primary_graph::vocabulary::provider"
+},
+{
+"item": "domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::failure::RebaseVerificationFailure",
+"to": "domain_computation::primary_graph::vocabulary::provider"
+},
+{
+"item": "domain_computation::primary_graph::provider::application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot",
+"to": "domain_computation::primary_graph::vocabulary::provider"
+},
+{
+"item": "domain_computation::primary_graph::provider::relational_execution_denial::preflight::PreflightReadRefusal",
+"to": "domain_computation::primary_graph::vocabulary::provider"
+},
+{
+"item": "domain_computation::primary_graph::provider::relational_execution_denial::preflight::preflight_execution_cause",
+"to": "domain_computation::primary_graph::vocabulary::provider"
+},
+{
+"item": "domain_computation::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial",
+"to": "domain_computation::primary_graph::vocabulary::resolution_denial"
+},
+{
+"item": "domain_computation::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind",
+"to": "domain_computation::primary_graph::vocabulary::resolution_denial"
+},
+{
+"item": "domain_computation::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind",
+"to": "domain_computation::primary_graph::vocabulary::resolution_denial"
+},
+{
+"item": "domain_computation::primary_graph::schema_layout::principal_binding::WorthQueryPrimaryPrincipalBindingLayout",
+"to": "domain_computation::primary_graph::vocabulary::schema_layout"
+},
+{
+"item": "domain_computation::primary_graph::value_decode::WorthQueryValueDecodeDenial",
+"to": "domain_computation::primary_graph::vocabulary::value_decode"
+}
+]

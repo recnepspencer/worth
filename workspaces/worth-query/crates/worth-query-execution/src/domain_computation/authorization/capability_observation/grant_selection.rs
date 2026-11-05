@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::{
     RelationalAuthorizationEntityAnchor, RelationalAuthorizationFieldComparison,
     RelationalAuthorizationObservationCounters, RelationalAuthorizationObservationPlan,
@@ -27,10 +27,7 @@ impl SelectedCapabilityGrant {
 
 use super::super::capability_registry::WorthQueryInstalledCapabilityPlan;
 use super::super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use super::super::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryRuntimeTimeSample,
-};
+use {super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::super::WorthQueryRuntimeTimeSample};
 
 pub(super) fn select_exact_grant(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

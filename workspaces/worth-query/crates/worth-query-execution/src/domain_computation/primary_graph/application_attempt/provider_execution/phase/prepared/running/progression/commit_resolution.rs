@@ -2,18 +2,12 @@
 
 mod world_no_effect;
 
-use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord;
+use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord;
 use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution;
 use crate::domain_computation::WorthQueryProviderCompareAndCommitOutcome;
 
 use crate::domain_computation::primary_graph::application_attempt::provider_recomparison::certify_provider_recomparison;
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationCommitDeferred, WorthQueryApplicationStaleAttempt,
-    WorthQueryCommittedReceiptProjection,
-    WorthQueryPendingApplicationCommitReceipt, WorthQueryApplicationCommitRecoveryKind,
-    WorthQueryApplicationUnresolvedCommitEvidence,
-};
+use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDeferred, crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt, crate::domain_computation::primary_graph::application_attempt::WorthQueryCommittedReceiptProjection, crate::domain_computation::primary_graph::application_attempt::WorthQueryPendingApplicationCommitReceipt, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitRecoveryKind, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationUnresolvedCommitEvidence};
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::aftermath_resolution::resolve_exact_committed_aftermath;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::recovery_evidence;
@@ -231,7 +225,7 @@ mod index_preparation_tests {
     #[test]
     fn pre_effect_index_exhaustion_remains_typed_at_application_boundary() {
         let failure = crate::domain_computation::WorthQueryProviderSessionFailure::new(
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded,
             crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
             "candidate index work exceeded its finite budget",
             crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
@@ -246,7 +240,7 @@ mod index_preparation_tests {
         };
         assert_eq!(
             denial.kind(),
-            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialKind::IndexMaintenanceBudgetExceeded,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind::IndexMaintenanceBudgetExceeded,
         );
         assert_eq!(denial.stage(), crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialStage::ProviderCommit);
         assert_eq!(

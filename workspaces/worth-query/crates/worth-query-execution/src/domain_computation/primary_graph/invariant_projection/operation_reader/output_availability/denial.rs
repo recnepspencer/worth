@@ -1,12 +1,5 @@
 //! Original native owner stops from a non-driving output observation.
-use {
-    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
-    crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop,
-    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop,
-    crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop,
-    crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenial,
-    crate::domain_computation::primary_graph::WorthQueryInvariantDecisionPlanDenial,
-};
+use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop, crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop, crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop, crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenial, crate::domain_computation::primary_graph::WorthQueryInvariantDecisionPlanDenial};
 /// Original admission, source-read or output-verification refusal.
 /// The causal accessors retain native failure meaning; a refusal grants no
 /// pending state or independent source/currentness authority.
@@ -48,7 +41,7 @@ impl WorthQueryOutputAvailabilityDenial {
     /// The original source Query admission refusal, if that phase stopped.
     pub fn query_admission_denial(
         &self,
-    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial>
+    ) -> Option<&crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial>
     {
         match self.cause.as_ref() {
             Cause::SourceQuery(SourceQueryObservationStop::Admission(stop))
@@ -61,8 +54,8 @@ impl WorthQueryOutputAvailabilityDenial {
     /// The original admitted Query read refusal, if that phase stopped.
     pub fn query_execution_denial(
         &self,
-    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenial> {
-        match self.cause.as_ref() { Cause::SourceQuery(SourceQueryObservationStop::Read(crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Execution(stop))) => Some(stop), _ => None }
+    ) -> Option<&crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial> {
+        match self.cause.as_ref() { Cause::SourceQuery(SourceQueryObservationStop::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop::Execution(stop))) => Some(stop), _ => None }
     }
     /// Exact owned managed Source read failure, including domain/request causes.
     pub fn managed_source_query_denial(&self) -> Option<&crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenial>{
@@ -95,7 +88,7 @@ impl worth_execution::ChargedBytes for WorthQueryOutputAvailabilityDenial {
  Cause::SourceQuery(Query::Admission(stop)) | Cause::SourceQuery(Query::Preparation { cause: stop, .. })=>stop.additional_charged_bytes(),
  Cause::SourceQuery(Query::SourceFacts(stop))=>stop.additional_charged_bytes(),
  Cause::SourceQuery(Query::CurrentControl(stop))=>stop.additional_charged_bytes(),
- Cause::SourceQuery(Query::Read(crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Execution(stop)))=>stop.additional_charged_bytes(),
+ Cause::SourceQuery(Query::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop::Execution(stop)))=>stop.additional_charged_bytes(),
  // Installation diagnostics remain owned by Installation, which does not yet
  // expose a resident-error quote. They refuse retained error storage.
  Cause::SourceQuery(Query::Installation(_))=>u64::MAX,

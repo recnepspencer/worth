@@ -15,11 +15,7 @@ use worth_query_declaration::facade::authentication::{
 use worth_query_installation::facade::{ApplicationScalarValueBinding, ApplicationSchema};
 use worth_relational::facade::identity::KindId;
 
-use super::{
-    primary_graph_denial, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-    WorthQueryPrincipalBootstrapRow,
-};
+use {super::primary_graph_denial, super::WorthQueryPrimaryGraphBootstrap, super::WorthQueryPrimaryGraphInstallationDenial, super::WorthQueryPrimaryGraphInstallationDenialKind, crate::domain_computation::primary_graph::vocabulary::bootstrap::WorthQueryPrincipalBootstrapRow};
 
 /// One admitted value of one unique field.
 pub(in crate::domain_computation::primary_graph) type WorthQueryUniqueSeedValue = (

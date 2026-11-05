@@ -10,11 +10,7 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
 };
 
-use super::{
-    PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
-    PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
-    WorkflowInstanceCancellationOutcome, WorkflowInstanceStartOutcome,
-};
+use {super::PreparedWorkflowInstanceCancellation, super::PreparedWorkflowInstanceStart, crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, super::WorkflowInstanceCancellationOutcome, super::WorkflowInstanceStartOutcome};
 use crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowSuccession;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,

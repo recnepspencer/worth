@@ -1,14 +1,11 @@
 //! Exact managed cleanup custody, distinct from inconsistent completion evidence.
 use super::WorthQueryMutationRunBinding;
-use crate::domain_computation::{
-    WorthQueryDirectRunCleanupFailure, WorthQueryDirectRunCleanupReceipt,
-    WorthQueryRunningDirectRun,
-};
+use {crate::domain_computation::WorthQueryDirectRunCleanupFailure, crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt, crate::domain_computation::WorthQueryRunningDirectRun};
 
 /// Native cleanup refusal is distinct from an inconsistent binding or completion witness.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryMutationCleanupFailureKind {
-    Native(crate::domain_computation::WorthQueryManagedRunCleanupFailureKind),
+    Native(crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupFailureKind),
     AffinityInconsistent,
     CompletionInconsistent,
 }
@@ -135,11 +132,11 @@ impl WorthQueryMutationCleanupFailure {
         }
     }
     /// Original admitted graph-work session identity; no fresh session is inferred.
-    pub fn session_identity(&self) -> super::WorthQueryGraphWorkSessionIdentity {
+    pub fn session_identity(&self) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
         self.binding.session
     }
     /// Original admitted managed-run identity retained with cleanup custody.
-    pub fn managed_run_identity(&self) -> super::WorthQueryGraphWorkManagedRunIdentity {
+    pub fn managed_run_identity(&self) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity {
         self.binding.managed_run
     }
 }

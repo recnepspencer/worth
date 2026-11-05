@@ -1,6 +1,9 @@
 //! Move the verified native basis with a suspended owner publication.
 use super::*;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
+use crate::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext;
 
 pub(in crate::domain_computation::primary_graph) enum OwnedInputCutoffDecision {
     Fresh {

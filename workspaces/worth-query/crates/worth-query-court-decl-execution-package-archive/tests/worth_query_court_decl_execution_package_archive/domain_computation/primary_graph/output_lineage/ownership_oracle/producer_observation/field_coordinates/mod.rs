@@ -1,6 +1,6 @@
 //! Genuine performed inputs and query revisions meet only through installed fields.
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::producer_observation::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::admitted_capture::checkpoint;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::field_coordinate::InstalledFieldCoordinate;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;

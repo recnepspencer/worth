@@ -206,7 +206,7 @@ where
     pub fn attempt_workflow_node_field_update_for_test(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
+        definition: &crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef,
     ) -> Result<
         Result<(), worth_relational::facade::transactions::TransactionCommitError>,
         crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase,
@@ -267,7 +267,7 @@ where
     pub fn attempt_workflow_existing_node_attachment_for_test(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
+        definition: &crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef,
     ) -> Result<
         Result<(), worth_relational::facade::transactions::TransactionCommitError>,
         crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase,
@@ -382,7 +382,7 @@ where
 
     pub fn application_attempt_work_for_test(
         &self,
-    ) -> crate::domain_computation::primary_graph::provider::WorthQueryApplicationAttemptWorkSnapshot
+    ) -> crate::domain_computation::primary_graph::vocabulary::provider::application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot
     {
         self.runtime
             .primary_provider

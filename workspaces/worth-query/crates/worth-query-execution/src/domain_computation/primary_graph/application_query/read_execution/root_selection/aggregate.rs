@@ -6,6 +6,8 @@ use crate::domain_computation::primary_graph::aggregate_observation::{
 };
 use std::sync::Arc;
 use worth_relational::facade::runtime::PinnedAggregateReadDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind;
 pub(super) fn read(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalPinnedRead,

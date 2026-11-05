@@ -6,7 +6,7 @@ use super::{WorthQueryAuthorizationDecisionFact, WorthQueryPrincipalCurrentnessD
 use crate::domain_computation::primary_graph::{
     ApplicationFactTable, CompletedApplicationFacts, WorthQueryPrimaryGraphApplicationDecisionFact,
 };
-use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 
 pub(in crate::domain_computation) struct WorthQueryProviderAuthorizationDecisionFacts {
     principal: WorthQueryPrincipalCurrentnessDependency,

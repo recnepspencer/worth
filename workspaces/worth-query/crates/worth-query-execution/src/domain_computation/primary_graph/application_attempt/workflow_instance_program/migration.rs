@@ -25,15 +25,8 @@ use super::super::workflow_deadline::{
     definition_deadline, ensure_before, instance_deadline, start_deadline,
 };
 use super::super::workflow_instance_observation::instance_binding::fence_owner_custody;
-use super::super::{
-    PublishedWorkflowDefinitionRef, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationObservedFact, WorthQueryApplicationRealizedEffect,
-    WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
-};
-use super::{
-    intent_identity, performed, PreparedWorkflowInstanceStart, PublishedWorkflowInstanceRef,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, super::super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::super::WorthQueryApplicationEffectProgram, super::super::WorthQueryApplicationObservedFact, super::super::WorthQueryApplicationRealizedEffect, super::super::WorthQueryCompleteApplicationReadSet, super::super::WorthQueryProjectedApplicationMutation};
+use {super::intent_identity, super::performed, super::PreparedWorkflowInstanceStart, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef};
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 use lineage::successor_identity;
 use {
@@ -312,7 +305,7 @@ where
                 read_set: self,
                 effects,
                 conditional_definition: None,
-                effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
+                effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::Platform,
                 output_correspondence: Default::default(),
                 retain_output_demand_observation: false,
                 retain_client_observation: false,

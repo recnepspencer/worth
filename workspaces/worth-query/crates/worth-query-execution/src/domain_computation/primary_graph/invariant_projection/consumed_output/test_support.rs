@@ -3,8 +3,8 @@ use std::sync::Arc;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use super::ConsumedOutputEvidence;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 impl ConsumedOutputEvidence {
     /// Test journeys retain the original identity, facts and selected native root.

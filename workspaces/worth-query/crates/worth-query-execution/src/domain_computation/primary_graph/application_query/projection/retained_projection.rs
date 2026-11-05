@@ -4,14 +4,7 @@ use std::sync::Arc;
 use worth_execution::{ChargedBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
 use worth_query_installation::facade::WorthQueryInstalledGraphReadContract;
 
-use super::super::{
-    disclosure::WorthQueryApplicationQueryGovernance,
-    one_shot::{
-        denial, outcome::source_storage, WorthQueryApplicationOneShotDenial,
-        WorthQueryApplicationOneShotDenialKind,
-    },
-    read_execution::RawOneShotRows,
-};
+use {super::super::disclosure::WorthQueryApplicationQueryGovernance, super::super::one_shot::denial, super::super::one_shot::outcome::source_storage, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind, super::super::read_execution::RawOneShotRows};
 pub(crate) mod body;
 mod comparison;
 pub(in crate::domain_computation::primary_graph) use body::OriginalProjection;

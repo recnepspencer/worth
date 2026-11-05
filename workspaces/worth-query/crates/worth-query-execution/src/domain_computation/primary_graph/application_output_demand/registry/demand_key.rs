@@ -2,8 +2,8 @@
 
 use super::SourceEpoch;
 
-use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerApplicability;
-use crate::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerApplicability;
+use crate::domain_computation::primary_graph::vocabulary::output_family_identity::OutputFamilyIdentity;
 use std::cmp::Ordering;
 
 // Family and source precede the binding: one output occurrence remains a

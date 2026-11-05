@@ -6,9 +6,7 @@ use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionA
 use worth_relational::facade::transactions::RecordRef;
 
 use super::WorthQueryPrimaryGraphProvider;
-use crate::domain_computation::application_aftermath::{
-    WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord,
-};
+use {crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout, crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryCommittedProductPublication,
 };
@@ -42,32 +40,6 @@ pub struct WorthQueryCommittedDispatchOutboxOwnerObservation {
     work: WorthQueryCommittedDispatchOutboxReadWork,
 }
 
-/// Why Query could not establish an authoritative committed outbox row.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryCommittedDispatchOutboxReadDenial {
-    ReadExecution(
-        Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
-        >,
-    ),
-    ForeignPhase,
-    ForeignRuntime,
-    Missing,
-    AmbiguousCorrelation,
-    PendingPublication,
-    CommittedIndexUnavailable,
-    WrongRecordKind,
-    NotAuthoritative,
-    ExactCommitUnavailable,
-    ActiveSnapshotCapacityExhausted {
-        maximum_active_snapshots: usize,
-    },
-    SnapshotIdentityExhausted,
-    Malformed,
-    CommitMismatch,
-    RecordMismatch,
-}
 
 use WorthQueryCommittedDispatchOutboxReadDenial as Denial;
 
@@ -209,7 +181,7 @@ impl WorthQueryPrimaryGraphProvider {
     fn observe_expected(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        binding: &super::WorthQueryCommittedDispatchOutboxBinding,
+        binding: &crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding,
         expected_commit: &worth_relational::facade::history::RelationalCommitReceipt,
         expected_runtime: u64,
     ) -> Result<WorthQueryCommittedDispatchOutboxOwnerObservation, Denial> {
@@ -267,7 +239,7 @@ where
     fn observe_committed_dispatch_outbox_for_correlation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        correlation: &crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
+        correlation: &crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity,
     ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
         self.primary_provider()
             .committed_dispatch_outbox_for_correlation(execution, correlation)
@@ -336,6 +308,7 @@ where
 
 mod record_read;
 use record_read::CommittedOutboxRead;
+use crate::domain_computation::vocabulary::primary_graph::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial;
 
 #[cfg(test)]
 #[path = "committed_dispatch_outbox/restoration_tests.rs"]

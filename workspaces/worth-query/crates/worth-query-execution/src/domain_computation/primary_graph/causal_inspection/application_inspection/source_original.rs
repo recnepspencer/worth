@@ -1,9 +1,6 @@
 //! A performed source shares only immutable canonical/disclosure custody.
 use super::admission::InspectionAdmissionDenial as Denial;
-use crate::domain_computation::primary_graph::{
-    source_disclosure::OriginalSourceInspectionDisclosure, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationCommittedChanges,
-};
+use {crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure, crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges};
 use std::sync::Arc;
 use worth_query_declaration::facade::application_operation::{
     ApplicationSourceDisclosureBinding, DeclaredApplicationSourceDisclosure,

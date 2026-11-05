@@ -136,8 +136,8 @@ fn claim_for(receipt: &WorthQueryApplicationCommitReceipt) -> WorthQueryRecovery
 
 /// The minting runtime must be the one that admitted the commit.
 pub(crate) fn ensure_receipt_belongs_to_runtime(
-    minting: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
-    committed_by: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+    minting: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
+    committed_by: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
 ) -> Result<(), WorthQueryRecoveryHandleDenial> {
     if committed_by != minting {
         return Err(WorthQueryRecoveryHandleDenial::new(

@@ -4,7 +4,7 @@ use super::*;
 fn retention_identity_exhaustion_survives_idempotency_snapshot_mapping() {
     assert_eq!(
             idempotency_snapshot_denial(
-                crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted,
+                crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted,
             ),
             WorthQueryProviderIdempotencyResolutionDenial::RetentionIdentityExhausted,
         );
@@ -12,10 +12,8 @@ fn retention_identity_exhaustion_survives_idempotency_snapshot_mapping() {
 
 #[test]
 fn mapping_contract_pending_execution_retains_kind_and_ancestry() {
-    use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
-    use crate::domain_computation::{
-        WorthQueryProviderSessionDenialKind as Kind, WorthQueryProviderSessionFailure,
-    };
+    use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
+    use {crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind, crate::domain_computation::WorthQueryProviderSessionFailure};
     let kind = Kind::ExecutionResource {
         denial: Resource::ScratchCapacityExceeded,
         partition_identity: Some(3),
@@ -32,5 +30,5 @@ fn mapping_contract_pending_execution_retains_kind_and_ancestry() {
         WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(Ok(kind))
     );
     let application = crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_provider(provider);
-    assert_eq!(application.kind(), crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind::ExecutionDenied(Ok(kind)));
+    assert_eq!(application.kind(), crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency_resolution_denial::WorthQueryApplicationIdempotencyResolutionDenialKind::ExecutionDenied(Ok(kind)));
 }

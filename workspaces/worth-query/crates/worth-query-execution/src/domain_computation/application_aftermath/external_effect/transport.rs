@@ -4,7 +4,7 @@
 //! of things a caller can observe from one attempt, and every one of those
 //! observations except `Completed` leaves the external effect unresolved.
 
-use super::outbox::WorthQueryDispatchOutboxRecord;
+use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_installation::facade::WorthQueryExternalEffectCorrelationFamily;
 
@@ -124,10 +124,7 @@ mod tests {
         InstalledExternalEffectContract, WorthQueryExternalEffectCorrelationFamily,
     };
 
-    use super::super::{
-        derive_external_effect_correlation_identity, ExternalEffectCorrelationBasis,
-        WorthQueryDispatchOutboxRecord,
-    };
+    use {super::super::derive_external_effect_correlation_identity, super::super::ExternalEffectCorrelationBasis, crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord};
     use super::WorthQueryExternalDispatchRequest;
 
     #[test]

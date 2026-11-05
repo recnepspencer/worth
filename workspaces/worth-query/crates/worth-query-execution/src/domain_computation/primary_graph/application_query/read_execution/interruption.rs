@@ -2,10 +2,7 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
 
-use super::{
-    read_execution_denial, WorthQueryApplicationReadExecutionDenial,
-    WorthQueryApplicationReadExecutionDenialKind,
-};
+use {super::read_execution_denial, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind};
 
 mod native;
 pub(super) use native::NativeReadInterruption;

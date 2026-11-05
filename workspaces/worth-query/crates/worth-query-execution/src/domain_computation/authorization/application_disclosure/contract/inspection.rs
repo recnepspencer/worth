@@ -4,9 +4,7 @@ use worth_query_declaration::facade::application_query::ApplicationQueryInspecti
 use worth_query_installation::facade::WorthQueryInstalledApplicationInspectionContract;
 
 mod allocation;
-use crate::domain_computation::primary_graph::admitted_capture::{
-    checkpoint, run_retained_stage, CaptureStop, RetainedStorageDenial,
-};
+use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial};
 use allocation::inspection_disclosure_backing_bytes;
 use worth_execution::{
     ExecutionMemoryReservation, ExecutionRequest, MapKernelContext, MapKernelFailure,

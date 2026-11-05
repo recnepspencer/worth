@@ -1,8 +1,10 @@
 //! Exact prior-family-member reads through the admitted correspondence index.
 
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial;
 use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputAction;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 impl<'reader, 'runtime, Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>

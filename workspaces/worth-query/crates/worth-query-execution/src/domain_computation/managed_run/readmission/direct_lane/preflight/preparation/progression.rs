@@ -137,7 +137,7 @@ pub fn restore_direct(
         active_request,
         execution,
         contract,
-        &crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit::mint(
+        &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit::mint(
         ),
     ) {
         WorthQueryDirectRunProviderRestoreOutcome::Pending { resource, provider } => {
@@ -244,7 +244,7 @@ fn commit_direct(
         .into_parts();
     progress.observe_bridge(bridge_counters);
     let affinity = resource.commit(
-        crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit::mint(),
+        crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit::mint(),
     );
     progress.committed_attempt();
     let active = WorthQueryActiveDirectGraphExecution::new(
@@ -292,7 +292,7 @@ fn abort_to_denial(
                 WorthQueryDirectYieldedParts {
                     state: WorthQueryDirectYieldedState {
                         affinity: rollback.resource.abort(
-                            crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit::mint(),
+                            crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit::mint(),
                         ),
                         retained: rollback.state,
                     },

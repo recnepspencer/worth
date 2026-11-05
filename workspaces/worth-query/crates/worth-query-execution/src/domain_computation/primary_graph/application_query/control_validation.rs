@@ -1,10 +1,7 @@
 use worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
-use super::{
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-    WorthQueryApplicationQueryControls,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind, super::WorthQueryApplicationQueryControls};
 
 pub(super) fn validate_controls<Schema, Query, Parameters, QueryResult, Scope>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,

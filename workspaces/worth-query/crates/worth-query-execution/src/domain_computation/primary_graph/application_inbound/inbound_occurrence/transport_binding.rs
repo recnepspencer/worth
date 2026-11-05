@@ -2,36 +2,11 @@
 
 use worth_query_installation::facade::{ApplicationSchema, InstalledInboundOccurrenceContract};
 
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 
-/// Runtime-sealed operation and verifier audience for one installed outbox.
-/// An external dispatch result cannot supply either field.
-pub struct WorthQueryInstalledTransportCompletionBinding {
-    operation: String,
-    audience: String,
-    contract: InstalledInboundOccurrenceContract,
-    runtime: WorthQueryRuntimeAuthorityIdentity,
-}
 
-impl WorthQueryInstalledTransportCompletionBinding {
-    pub(in crate::domain_computation) fn operation(&self) -> &str {
-        &self.operation
-    }
-
-    pub(in crate::domain_computation) fn audience(&self) -> &str {
-        &self.audience
-    }
-
-    pub(in crate::domain_computation) fn contract(&self) -> &InstalledInboundOccurrenceContract {
-        &self.contract
-    }
-
-    pub(in crate::domain_computation) fn runtime(&self) -> WorthQueryRuntimeAuthorityIdentity {
-        self.runtime
-    }
-}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryTransportCompletionBindingDenial {
@@ -90,3 +65,4 @@ impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_
 
 pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::TransportBindingDoorsOps;
+use crate::domain_computation::primary_graph::vocabulary::application_inbound::transport_binding::WorthQueryInstalledTransportCompletionBinding;

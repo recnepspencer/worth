@@ -1,11 +1,11 @@
-use super::super::{
-    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchResourceDenial,
-};
+use {super::super::WorthQueryApplicationQueryBatchAdmission, crate::domain_computation::primary_graph::vocabulary::application_query::batch::WorthQueryApplicationQueryBatchResourceDenial};
 use super::*;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 mod result;
 pub use result::WorthQueryApplicationBatchResult;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::authorization_denial;
 
 /// A batch read preserves the ordinary execution cause and distinguishes an
 /// aggregate admission refusal. It carries no partially completed result.
@@ -48,7 +48,7 @@ pub trait BatchOps<Schema: ApplicationSchema>:
     {
         let request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(WorthQueryApplicationBatchReadDenial::Execution(authorization_denial(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"), plan.query.name()))),
+            Err(_) => return Err(WorthQueryApplicationBatchReadDenial::Execution(authorization_denial(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"), plan.query.name()))),
         };
         let execution = &request;
         self.execute_application_query_one_shot_in_batch_with_request(execution, plan, batch)
@@ -140,7 +140,7 @@ pub(in crate::domain_computation::primary_graph::application_query) trait OneSho
                 &str,
             ) -> Result<
                 (),
-                super::super::read_execution::WorthQueryApplicationReadExecutionDenial,
+                crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial,
             >,
         >,
     ) -> Result<

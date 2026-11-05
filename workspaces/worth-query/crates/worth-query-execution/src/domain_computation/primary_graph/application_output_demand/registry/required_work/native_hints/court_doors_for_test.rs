@@ -1,12 +1,8 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::native_hints::NativeBranch;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::native_hints::NativeHint;
 
-impl NativeBranch {
-    #[doc(hidden)]
-    pub fn branch_id_for_test(&self) -> &BranchId {
-        Self::branch_id(self)
-    }
-}
 
 impl RequiredWorkMembership {
     #[doc(hidden)]

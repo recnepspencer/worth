@@ -27,31 +27,3 @@ impl<Entity, Action> WorthQueryApplicationOutputEntity<Entity, Action> {
     }
 }
 
-/// Why an output role could not be projected from a committed output
-/// correspondence. Nothing is changed by the refusal.
-///
-/// A role marker its contract does not declare exactly as used never reaches
-/// here: the use fails to compile. These refusals cover what the type system
-/// cannot see, such as a correspondence committed under another contract or
-/// readmitted from a checkpoint.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationOutputProjectionDenial {
-    /// The commit bound no entity to the requested exactly-one role.
-    MissingRole,
-    /// The role's cardinality differs from the one the committing binding
-    /// declared.
-    CardinalityMismatch,
-    /// The correspondence was committed by a different mutation binding than
-    /// the one requested.
-    ForeignBinding,
-    /// The correspondence was committed under a different output contract than
-    /// the role marker's.
-    ForeignContract,
-    /// The family member suffix does not form a valid role name.
-    InvalidMemberSuffix(WorthQueryApplicationOutputRoleNameDenial),
-    /// The role was committed with a different posture (preserve, create, or
-    /// retire) than the one requested.
-    ActionMismatch,
-    /// The role was committed for a different entity type than the one requested.
-    EntityMismatch,
-}

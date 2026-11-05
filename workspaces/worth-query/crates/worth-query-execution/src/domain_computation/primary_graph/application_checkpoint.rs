@@ -173,11 +173,11 @@ impl<'a> CheckpointCursor<'a> {
     fn next_scope(
         &mut self,
     ) -> Result<
-        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         String,
     > {
         Ok(
-            crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
+            crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(
                 self.next_entity()?,
             ),
         )

@@ -7,10 +7,7 @@ use worth_query_installation::facade::{ApplicationRelationRef, OperationReads};
 use super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
 use super::super::read_phase::WorthQueryProjectedApplicationMutation;
 use super::{denial, WorthQueryApplicationReadAttempt, WorthQueryCompleteApplicationReadSet};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationEntityIdentity,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationReadAttempt<
@@ -43,7 +40,7 @@ impl<Schema, Operation, Input, Scope>
     > {
         let phase_request = match phase.request_for_source(self.lease.handle().relational_runtime_instance_id()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
         };
         let execution = &phase_request;
         self.complete_projected_dependencies_with_request(execution, allocation_policy)
@@ -133,7 +130,7 @@ impl<Schema, Operation, Input, Scope>
         key: &WorthQueryApplicationFactKey,
     ) -> Result<
         (
-            super::InstalledScopePosition,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition,
             WorthQueryApplicationObservedFact,
         ),
         WorthQueryApplicationAttemptDenial,
@@ -199,7 +196,7 @@ impl<Schema, Operation, Input, Scope>
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         key: &WorthQueryApplicationFactKey,
-        scope: super::InstalledScopePosition,
+        scope: crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition,
     ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
         if let WorthQueryApplicationFactKey::ComponentSelection(key) = key {
             return super::components::observe(
@@ -269,7 +266,7 @@ pub(super) fn observe_projection_dependency<Schema, Operation, Input, Scope>(
     key: &WorthQueryApplicationFactKey,
 ) -> Result<
     (
-        super::InstalledScopePosition,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition,
         WorthQueryApplicationObservedFact,
     ),
     WorthQueryApplicationAttemptDenial,
@@ -288,7 +285,7 @@ pub(super) fn observe_projection_dependency<Schema, Operation, Input, Scope>(
         .flat_map(|role| role.read_scopes())
         .find(|scope| super::observation_admission::graph_read_scope_matches_key(scope, key))
         .and_then(|scope| {
-            super::InstalledScopePosition::from_installed(admission.allowed_graph_contract(), scope)
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition::from_installed(admission.allowed_graph_contract(), scope)
         })
         .ok_or_else(|| {
             denial(
@@ -311,7 +308,7 @@ fn observe_scoped_dependency<Schema, Operation, Input, Scope>(
     lease: &super::super::snapshot_lease::WorthQueryApplicationSnapshotLease,
     read_scope: &super::super::read_scope::WorthQueryApplicationReadScope,
     key: &WorthQueryApplicationFactKey,
-    scope: super::InstalledScopePosition,
+    scope: crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition,
 ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
     if !key_entities_are_in_scope(key, read_scope) {
         return Err(denial(

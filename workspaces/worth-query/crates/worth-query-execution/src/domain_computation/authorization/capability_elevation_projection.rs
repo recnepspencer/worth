@@ -1,13 +1,13 @@
 //! Exact request-shape validation for installed elevation meaning.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityElevationRule, ApplicationCapabilityFieldBinding,
     ApplicationCapabilityRequestProjection, ErasedApplicationCapabilityContract,
     ErasedApplicationCapabilityEntitySelector,
 };
 
-use super::{WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind};
+use {super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 pub fn validate_elevation_projection<Schema, Scope, Context>(
     contract: &ErasedApplicationCapabilityContract,

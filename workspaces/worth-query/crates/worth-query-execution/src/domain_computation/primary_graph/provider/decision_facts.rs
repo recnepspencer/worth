@@ -59,21 +59,21 @@ impl WorthQueryDecisionFactProvider for Arc<WorthQueryPrimaryGraphProvider> {
 }
 
 pub(super) fn snapshot_read_set_failure(
-    denial: crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial,
+    denial: crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial,
 ) -> WorthQueryDecisionReadSetFailure {
     let kind = match denial {
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted {
+        crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         } => crate::domain_computation::WorthQueryDecisionReadSetDenialKind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         },
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
+        crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
             crate::domain_computation::WorthQueryDecisionReadSetDenialKind::RetentionCapacityExhausted
         }
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted => {
+        crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted => {
             crate::domain_computation::WorthQueryDecisionReadSetDenialKind::RetentionIdentityExhausted
         }
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted => {
+        crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted => {
             crate::domain_computation::WorthQueryDecisionReadSetDenialKind::SnapshotIdentityExhausted
         }
         _ => crate::domain_computation::WorthQueryDecisionReadSetDenialKind::ProviderRejected,
@@ -91,7 +91,7 @@ pub(in crate::domain_computation::primary_graph) fn storage_read_set_failure(
     use crate::domain_computation::WorthQueryDecisionReadSetDenialKind as Kind;
     match failure {
         Store::ExecutionRequest(stop) => {
-            use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+            use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
             use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interruption;
             let cause = stop.into();
             let kind =

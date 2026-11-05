@@ -1,5 +1,5 @@
 //! Borrowed rows and slots from one genuine completed-source session.
-use super::{WorthQueryManagedIndexControl, WorthQueryManagedIndexStop as Stop};
+use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
 use crate::domain_computation::primary_graph::{
     application_query::{
         disclosure::WorthQueryApplicationQueryGovernance,
@@ -9,19 +9,13 @@ use crate::domain_computation::primary_graph::{
     },
     value_decode::ValueDecodeSession,
 };
-use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog;
+use crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot;
 
-/// A descriptive source slot issued by the selected source owner. It is not an entity handle.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryManagedIndexSourceSlot {
-    pub(super) owner: WorthQueryGraphWorkSessionIdentity,
-    pub(super) ordinal: usize,
-    pub(super) entity: Option<worth_relational::facade::identity::EntityId>,
-}
 
 #[derive(Clone, Copy)]
 pub(super) enum SourceImageRows<'a> {

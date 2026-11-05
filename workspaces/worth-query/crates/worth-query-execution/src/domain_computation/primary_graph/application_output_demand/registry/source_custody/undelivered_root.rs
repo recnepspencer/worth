@@ -8,7 +8,7 @@ impl SourceCustody {
     pub(in super::super) fn return_undelivered_root(
         &mut self,
         identity: &SourceEpoch,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     ) {
         if self.retired.is_some() || self.completed || self.source.is_none() {
             return;

@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 impl<Schema> WorthQueryApplicationInvariantProjectionSnapshot<Schema>
 where
@@ -19,12 +20,6 @@ where
     }
 }
 
-impl<Schema, Entity> WorthQueryInvariantEntityIdentity<Schema, Entity> {
-    #[doc(hidden)]
-    pub fn authority_identity_for_test(&self) -> &u64 {
-        &self.authority_identity
-    }
-}
 
 impl<Schema, Entity> WorthQueryInvariantEntityIdentity<Schema, Entity> {
     #[doc(hidden)]

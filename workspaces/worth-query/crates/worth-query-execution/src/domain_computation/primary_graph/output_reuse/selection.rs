@@ -2,14 +2,14 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::Fac
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
-use crate::domain_computation::primary_graph::application_attempt::Movement;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
-use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
-use crate::domain_computation::primary_graph::output_lineage::cutoff_declines;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::verification::cutoff_declines;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 
@@ -68,10 +68,10 @@ pub(in crate::domain_computation::primary_graph) fn retained_fact_denial(
 
 /// Why a retained output's facts could not be compared.
 pub(in crate::domain_computation::primary_graph) enum RetainedFactStop<'fact> {
-    ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
+    ManagedIndex(crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial),
     /// The request's meter, or the fact's own recorded bound, stopped it.
     Work,
-    OutputObservation(crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop),
+    OutputObservation(crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop),
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Interrupted(worth_relational::facade::mvcc::RelationalInterruptionEvent),
     Refused(CompanionPreflightStop),
@@ -238,8 +238,8 @@ fn reusable_facts<F: FactSequence + ?Sized>(
 pub(in crate::domain_computation::primary_graph) fn read_denial(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
 ) -> WorthQueryOutputDemandDenial {
-    use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Execution;
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as Execution;
+    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
     let kind = match crate::facade::primary_graph::relational_execution_kind(cause, None) {
         Ok(kind) => WorthQueryOutputDemandDenialKind::SourceQueryExecution(
             Execution::ExecutionRequest(kind),

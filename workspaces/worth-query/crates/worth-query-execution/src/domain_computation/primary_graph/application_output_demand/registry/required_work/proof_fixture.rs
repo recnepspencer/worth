@@ -1,5 +1,6 @@
 //! Real membership observation for the acknowledgement writer's basis witness.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::required_work::ReplacedRequiredWorkHint;
 impl SelectedRequiredWork {
     /// Queue-state fixture only: this does not prove a graph row Current.
     pub fn acknowledge_fixture(self) -> Option<ReplacedRequiredWorkHint> {

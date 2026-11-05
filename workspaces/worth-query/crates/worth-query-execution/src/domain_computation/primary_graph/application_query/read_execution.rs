@@ -28,9 +28,7 @@ use super::{
     WorthQueryAdmittedApplicationQueryPlan,
 };
 pub(super) use denial::{managed_read_denial, read_execution_denial, relational_read_denial};
-pub(super) use denial::{
-    WorthQueryApplicationReadExecutionDenial, WorthQueryApplicationReadExecutionDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind};
 pub(super) use kernel_outcome::{
     project_non_live_kernel_roots, project_non_live_kernel_source,
     project_non_live_kernel_with_decode, NonLiveKernelReceiptEvidence,

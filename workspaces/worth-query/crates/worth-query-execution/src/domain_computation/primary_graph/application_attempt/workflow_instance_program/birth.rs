@@ -1,8 +1,5 @@
 //! Sealed authority for creating a subject and enrolling it in one publication.
-use super::super::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationObservedFact,
-};
+use {super::super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::super::WorthQueryApplicationObservedFact};
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::{Arc, Mutex};

@@ -42,10 +42,10 @@ pub(super) fn index_preparation_stop(
     let kind = match denial.kind {
         Kind::Execution(cause) => return relational_execution_stop(cause, None),
         Kind::WorkBudgetExceeded | Kind::ColdReconstructionRequired => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded
         }
         Kind::GenerationIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexGenerationIdentityExhausted
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::IndexGenerationIdentityExhausted
         }
         Kind::Basis(_)
         | Kind::SnapshotUnavailable
@@ -58,7 +58,7 @@ pub(super) fn index_preparation_stop(
         | Kind::CandidateLifetimeExpired { .. }
         | Kind::CandidateUnavailable
         | Kind::CandidateIndexesAlreadyPrepared => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ProviderRejected
         }
     };
     crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
@@ -83,7 +83,7 @@ pub fn transaction_commit_stop(
                 match relational_execution_stop(cause, denial.partition_identity) {
                     Stop::PreEffectDenied(failure) => Stop::PreEffectDenied(
                         WorthQueryProviderSessionFailure::new(
-                            crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+                            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ProviderRejected,
                             WorthQueryProviderSessionProtocolStage::Commit,
                             failure.detail(),
                             Default::default(),
@@ -103,7 +103,7 @@ pub fn transaction_commit_stop(
         // denial: the session requires commit recovery.
         error @ Error::DurabilityUnresolved { .. } => Stop::Denied(
             WorthQueryProviderSessionFailure::new(
-                crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+                crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ProviderRejected,
                 WorthQueryProviderSessionProtocolStage::Commit,
                 error.detail(),
                 crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
@@ -118,7 +118,7 @@ pub fn transaction_commit_stop(
             let failure = match &error {
                 Error::PublicationFailed { failure, .. } => publication_failure(failure),
                 _ => WorthQueryProviderSessionFailure::new(
-                    crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+                    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ProviderRejected,
                     WorthQueryProviderSessionProtocolStage::Commit,
                     error.detail(),
                     crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
@@ -132,7 +132,7 @@ pub fn transaction_commit_stop(
 pub(super) fn interruption_control_stopped(
     event: worth_relational::facade::mvcc::RelationalInterruptionEvent,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitControlStopped {
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Kind;
+    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Kind;
     let kind = match event.interruption() {
         worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
             Kind::Cancelled
@@ -180,13 +180,13 @@ fn publication_failure(
     use worth_relational::facade::mvcc::RelationalPublicationFailureKind as Failure;
     let kind = match failure.kind() {
         Failure::SnapshotIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted
         }
         Failure::CandidateIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::CandidateIdentityExhausted
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::CandidateIdentityExhausted
         }
         Failure::RetentionIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
         }
         Failure::SnapshotCountOverflow
         | Failure::PreparedRootMismatch
@@ -197,7 +197,7 @@ fn publication_failure(
         | Failure::PatchPositionCapacityExhausted
         | Failure::RetentionOwner
         | Failure::PendingSettlementIdentityConflict => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ProviderRejected
         }
     };
     WorthQueryProviderSessionFailure::new(
@@ -216,11 +216,7 @@ pub(super) fn source_rebase_preparation_stop(
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     use super::super::PreparedRebaseDenial as Denial;
     use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
-    use crate::domain_computation::{
-        WorthQueryProviderSessionCommitControlStopped as Control,
-        WorthQueryProviderSessionCommitStop as Stop,
-        WorthQueryProviderSessionControlStopKind as Kind,
-    };
+    use {crate::domain_computation::WorthQueryProviderSessionCommitControlStopped as Control, crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop, crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Kind};
     use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interrupted;
     if let Denial::Admission(stop) = &cause {
         if let worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause) = stop {
@@ -268,7 +264,7 @@ pub(super) fn source_rebase_preparation_stop(
         ));
     }
     Stop::PreEffectDenied(WorthQueryProviderSessionFailure::new(
-        crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ProviderRejected,
         WorthQueryProviderSessionProtocolStage::Commit,
         format!("source rebase preparation refused before publication: {cause:?}"),
         crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),

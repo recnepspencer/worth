@@ -22,8 +22,8 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::application_queries::markers::AccountSummaryQuery;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::application_queries::markers::OrderedAccountSummaryQuery;
 pub use worth_query_execution::facade::domain_computation::WorthQueryProductBranchLease;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::derived_view::publication::ViewChange;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::derived_view::publication::ViewPublicationBasis;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::publication::ViewChange;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::publication::ViewPublicationBasis;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountLabel;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
 pub use worth_query_execution::facade::domain_computation::WorthQueryManagedDerivedValue;

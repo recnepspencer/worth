@@ -14,7 +14,7 @@ pub(in crate::domain_computation::primary_graph) enum HistoryBorrowedReadStop {
 pub struct HistoryProducerInvocation<'invocation> {
     current: &'invocation WorthQueryProductObservationLease,
     request: &'invocation AdmittedRequestCurrentness,
-    principal: &'invocation crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    principal: &'invocation crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     selection: &'invocation HistoryAuthorityLifetime,
     callback: &'invocation HistoryAuthorityLifetime,
 }
@@ -60,7 +60,7 @@ impl<'invocation> HistoryProducerInvocation<'invocation> {
     pub(super) fn new(
         current: &'invocation WorthQueryProductObservationLease,
         request: &'invocation AdmittedRequestCurrentness,
-        principal: &'invocation crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        principal: &'invocation crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         selection: &'invocation HistoryAuthorityLifetime,
         callback: &'invocation HistoryAuthorityLifetime,
     ) -> Self {
@@ -87,7 +87,7 @@ impl<'invocation> HistoryProducerInvocation<'invocation> {
 
     pub(in crate::domain_computation::primary_graph) fn admits_principal(
         &self,
-        principal: &crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        principal: &crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     ) -> bool {
         self.principal == principal
     }

@@ -4,7 +4,7 @@ use super::super::DemandState;
 use super::super::WorthQueryOutputAdvancement;
 use super::super::WorthQueryOutputCheckpoint;
 use super::super::WorthQueryOutputDemandKey;
-use crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding;
+use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 impl super::super::WorthQueryOutputDemandRegistry {
@@ -58,7 +58,7 @@ impl super::super::WorthQueryOutputDemandRegistry {
         )?;
         // Ready owns its original execution mode even after completed source
         // custody releases its mutable links to this row.
-        use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority;
+        use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
         match completion.producer_mode() {
             Some(WorthQueryProducerCommitAuthority::ProgramOutput) => Some(completion.clone()),
             Some(

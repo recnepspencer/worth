@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::vocabulary::managed_run::run_affinity::WorthQueryWorkflowRunTransitionPermit;
 
 impl WorthQueryWorkflowRunReadmissionPending {
     pub(in crate::domain_computation::managed_run) fn bridge_readmission_intent(

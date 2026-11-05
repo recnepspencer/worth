@@ -1,8 +1,8 @@
 use super::WorthQueryConditionalExecutionCause;
 pub(super) fn application_commit_cause(
-    kind: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
+    kind: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
 ) -> WorthQueryConditionalExecutionCause {
-    use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind as Kind;
+    use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind;
     match kind {
         Kind::ContentInconsistency
         | Kind::Content(_)

@@ -3,6 +3,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::output_facts::RegisteredOutputFacts;
 use std::sync::Arc;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 pub(super) fn terminal<'state>(
     state: &'state MarkState,

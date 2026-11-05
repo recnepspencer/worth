@@ -27,12 +27,12 @@ pub enum WorthQueryInboundPendingReason {
     /// Accepted custody remains pending; the execution owner refused preparation.
     ExecutionDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        kind: crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
     },
     /// Accepted custody remains pending after a preparation control stop.
     ExecutionControlStopped {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        kind: crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     },
     AllocationDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,

@@ -19,7 +19,7 @@ pub(super) fn acknowledge_caller_claim(
     proof: performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>,
 
 ) -> Result<
-    Option<crate::domain_computation::primary_graph::application_output_demand::ReplacedRequiredWorkHint>,
+    Option<crate::domain_computation::primary_graph::vocabulary::application_output_demand::required_work::ReplacedRequiredWorkHint>,
     WorthQueryOutputDemandDenial,
 >{
     work.acknowledge_current_admitted(proof)

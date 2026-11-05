@@ -13,7 +13,7 @@ use crate::domain_computation::managed_run::readmission::evidence::{
     WorthQueryReadmissionEvidence, WorthQueryReadmissionProgress,
 };
 use crate::domain_computation::managed_run::WorthQueryYieldedWorkflowRun;
-use crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryProviderExecutionReleaseEvidence;
+use crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence;
 use crate::domain_computation::{
     WorthQueryProviderCheckpointEvidence, WorthQueryProviderCheckpointReleaseEvidence,
 };

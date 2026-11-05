@@ -1,6 +1,8 @@
 //! Cardinality admission for both typed and prepared reads.
 
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind;
 
 pub(super) fn validate_cardinality_and_limit<
     Schema,

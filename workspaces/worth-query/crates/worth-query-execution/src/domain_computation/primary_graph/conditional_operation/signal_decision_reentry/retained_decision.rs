@@ -23,11 +23,11 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) enum Wor
     ),
     OperationCommitRetryable(
         BridgeConditionalDecisionEvidence,
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
     ),
     OperationExecutionControlRetryable(
         BridgeConditionalDecisionEvidence,
-        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     ),
     OperationBackpressured(
         BridgeConditionalDecisionEvidence,

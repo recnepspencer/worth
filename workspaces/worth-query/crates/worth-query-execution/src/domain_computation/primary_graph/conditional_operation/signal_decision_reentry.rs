@@ -3,7 +3,7 @@ use worth_runtime_bridge::facade::{
     BridgeManagedDueWake, BridgeSealedRuntimeAssembly, TruthBranchIdentity, TruthSnapshotIdentity,
 };
 
-use super::predicate_admission::QueryConditionalComputeContext;
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::providers::QueryConditionalComputeContext;
 use crate::domain_computation::primary_graph::primary_truth_branch_identity;
 
 mod admitted;
@@ -117,7 +117,7 @@ pub(super) struct WorthQueryRetainedConditionalWake {
     pub(super) due: BridgeManagedDueWake,
     pub(super) decision: WorthQueryRetainedConditionalDecision,
     pub(super) attempt: u64,
-    pub(super) last_signal_decision: Option<super::WorthQueryConditionalSignalDecision>,
+    pub(super) last_signal_decision: Option<crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision>,
     pub(super) application_attempted: bool,
     pub(super) application_admission_canonical_work:
         worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
@@ -328,15 +328,15 @@ pub(super) fn reconsider_retained_wake(
 
 fn classify(evidence: BridgeConditionalDecisionEvidence) -> WorthQueryRetainedConditionalDecision {
     match classify_bridge_signal(&evidence) {
-        super::WorthQueryConditionalSignalDecision::Eligible => {
+        crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision::Eligible => {
             WorthQueryRetainedConditionalDecision::Eligible(evidence)
         }
-        super::WorthQueryConditionalSignalDecision::DependencyUnchanged
-        | super::WorthQueryConditionalSignalDecision::RevertedClean
-        | super::WorthQueryConditionalSignalDecision::Suppressed => {
+        crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision::DependencyUnchanged
+        | crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision::RevertedClean
+        | crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision::Suppressed => {
             WorthQueryRetainedConditionalDecision::Suppressed(evidence)
         }
-        super::WorthQueryConditionalSignalDecision::Deferred => {
+        crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision::Deferred => {
             WorthQueryRetainedConditionalDecision::Deferred(evidence)
         }
     }
@@ -344,12 +344,12 @@ fn classify(evidence: BridgeConditionalDecisionEvidence) -> WorthQueryRetainedCo
 
 pub(crate) fn classify_bridge_signal(
     evidence: &BridgeConditionalDecisionEvidence,
-) -> super::WorthQueryConditionalSignalDecision {
+) -> crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision {
     super::execution_provenance::signal_decision(evidence.signal().class())
 }
 
 pub(crate) fn classify_bridge_signal_observation(
     evidence: &worth_runtime_bridge::facade::BridgeConditionalCausalObservation,
-) -> super::WorthQueryConditionalSignalDecision {
+) -> crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision {
     super::execution_provenance::signal_decision(evidence.signal_class())
 }

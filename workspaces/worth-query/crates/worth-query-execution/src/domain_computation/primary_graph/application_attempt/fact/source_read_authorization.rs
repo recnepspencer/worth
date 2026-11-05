@@ -1,14 +1,5 @@
 //! Original completed Source READ support, independent of structural Source data.
-use crate::domain_computation::{
-    authorization::{
-        SourceReadSupport, WorthQueryInstalledAuthorizationRegistry,
-        WorthQueryRetainedAuthorizationDecisionFacts,
-    },
-    primary_graph::{
-        invariant_projection::ConsumedOutputVerificationStop, source_facts::SourceFactsAllocation,
-    },
-    provider_session::{WorthQueryCompletedSourceRead, WorthQueryGraphWorkSessionIdentity},
-};
+use {crate::domain_computation::authorization::SourceReadSupport, crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry, crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts, crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation, crate::domain_computation::provider_session::WorthQueryCompletedSourceRead, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBindingObservation;
@@ -16,14 +7,8 @@ use worth_relational::facade::{
     identity::EntityId, mvcc::CompanionPreflightStop, runtime::RelationalRuntime,
     snapshots::SnapshotHandle,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_read_authorization::SourceReadAuthorizationKey;
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct SourceReadAuthorizationKey {
-    pub source: [u8; 32],
-    pub support: [u8; 32],
-    pub principal: EntityId,
-    pub scope: EntityId,
-}
 
 pub(in crate::domain_computation) struct SourceReadAuthorization {
     key: SourceReadAuthorizationKey,

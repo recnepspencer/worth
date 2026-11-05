@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::fact_verification_observation::inp
 use crate::domain_computation::primary_graph::output_lineage::prepare_stable_address;
 use crate::domain_computation::primary_graph::output_lineage::InputCutoffVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::OwnedInputCutoffDecision;
-use crate::domain_computation::primary_graph::output_lineage::PreparedDecisionReuseContext;
+use crate::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext;
 use crate::domain_computation::primary_graph::output_lineage::PreparedInputCutoffBasis;
 use crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey;
 use crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage;
@@ -317,9 +317,9 @@ pub(super) fn source_preparation_denial(
     identity: &str,
     stop: crate::domain_computation::primary_graph::WorthQuerySourceExpectationDenial,
 ) -> WorthQueryOutputDemandDenial {
-    use crate::domain_computation::primary_graph::WorthQuerySourceExpectationDenialKind as Kind;
+    use crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind as Kind;
     if let Some(cause) = stop.execution_denial() {
-        return denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_scope_stop(*cause)), identity.to_owned());
+        return denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::request_execution::execution_stop::advancement_scope_stop(*cause)), identity.to_owned());
     }
     if let Some(cause) = stop.retention_interruption() {
         use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;

@@ -20,7 +20,7 @@ pub(super) struct WorthQueryCommittedApplicationPublicationSeal {
     changed_record_count: usize,
     emitted_effect_count: usize,
     outcome_identity:
-        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
     basis_descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
     product_publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,

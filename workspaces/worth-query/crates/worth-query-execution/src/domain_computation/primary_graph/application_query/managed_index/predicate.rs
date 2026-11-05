@@ -2,18 +2,14 @@
 mod probe;
 mod root;
 mod tree;
-use super::{
-    WorthQueryManagedIndexControl as Control, WorthQueryManagedIndexProbeValue as Probe,
-    WorthQueryManagedIndexProvider, WorthQueryManagedIndexProviderStop as Stop,
-    WorthQueryManagedIndexSourceRow as Row,
-};
+use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue as Probe, super::WorthQueryManagedIndexProvider, super::WorthQueryManagedIndexProviderStop as Stop, super::WorthQueryManagedIndexSourceRow as Row};
 pub(in crate::domain_computation::primary_graph::application_query) use probe::RetainedPredicateProbe;
 pub(super) use root::TypedPredicateFactory;
 pub(in crate::domain_computation::primary_graph::application_query) use root::{
     PredicateFactory, PredicateRoot,
 };
 use std::cmp::Ordering;
-pub(in crate::domain_computation::primary_graph) use tree::WatchSlot;
+
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
 };

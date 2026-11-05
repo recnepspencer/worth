@@ -45,29 +45,18 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use model:
 pub(in crate::domain_computation::primary_graph) use model::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
 };
-pub use model::{
-    WorthQueryApplicationCreatedRelation, WorthQueryApplicationEffectEntity,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationEffectProgramBuilder,
-};
+pub use {model::WorthQueryApplicationEffectProgram, model::WorthQueryApplicationEffectProgramBuilder};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
 pub(in crate::domain_computation::primary_graph) use model::{
     WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,
 };
 
 use super::effect_validation::{canonical_key, denial};
 use super::read_set::WorthQueryCompleteApplicationReadSet;
-use super::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryProjectedApplicationMutation,
-};
+use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryProjectedApplicationMutation};
 use crate::domain_computation::primary_graph::WorthQueryApplicationEntityKey;
-pub(in crate::domain_computation::primary_graph) use output_correspondence::{
-    OutputRoleUse, WorthQueryApplicationOutputCorrespondence, WorthQueryCheckpointOutputRole,
-};
-pub use output_correspondence::{
-    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputFamilyEntry,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
-    WorthQueryApplicationTypedOutputCorrespondence,
-};
+pub(in crate::domain_computation::primary_graph) use output_correspondence::WorthQueryApplicationOutputCorrespondence;
+pub use {output_correspondence::WorthQueryApplicationOutputEntity, output_correspondence::WorthQueryApplicationOutputFamilyEntry, output_correspondence::WorthQueryApplicationOutputPosture, output_correspondence::WorthQueryApplicationTypedOutputCorrespondence};
 use target_admission::installed_contract_admits_program_target;
 
 impl<Schema, Operation, Input, Scope>
@@ -243,7 +232,7 @@ impl<Schema, Operation, Input, Scope>
             effects: self.effects,
             content_attachments: self.content_attachments,
             conditional_definition: self.conditional_definition,
-            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
+            effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::Application,
             output_correspondence: self.output_correspondence,
             retain_output_demand_observation: false,
             retain_client_observation: false,

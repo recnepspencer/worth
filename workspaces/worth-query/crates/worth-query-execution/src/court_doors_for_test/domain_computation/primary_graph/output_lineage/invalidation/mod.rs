@@ -1,6 +1,4 @@
 //! Doors under `domain_computation::primary_graph::output_lineage::invalidation`.
-#[path = "commit_touches/mod.rs"]
-pub mod commit_touches;
 #[path = "computation_changes/mod.rs"]
 pub mod computation_changes;
 #[path = "delivery/mod.rs"]

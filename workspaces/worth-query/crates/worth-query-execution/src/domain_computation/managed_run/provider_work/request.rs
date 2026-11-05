@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::domain_computation::WorthQueryGraphProviderCallKind;
+use crate::domain_computation::vocabulary::provider_session::call_kind::WorthQueryGraphProviderCallKind;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryManagedGraphCallRequest {

@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProjectionAuthority;
-use crate::domain_computation::primary_graph::WorthQueryCurrentBodyRequirementAssessment;
+use crate::domain_computation::primary_graph::vocabulary::operation_body::assessment::WorthQueryCurrentBodyRequirementAssessment;
 use crate::domain_computation::primary_graph::WorthQueryOperationBodyAssessmentDenial;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding;

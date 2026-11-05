@@ -1,6 +1,8 @@
 //! One permission owner for fresh source intent and retained-source readmission.
 use crate::domain_computation::primary_graph::application_query::admission::permission::read_authorization::ReadAuthorizationParentOps;
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
 
 pub(in crate::domain_computation::primary_graph::application_query) trait SourceParametersScopedOps<
     Schema: ApplicationSchema,
@@ -101,7 +103,7 @@ pub(in crate::domain_computation::primary_graph::application_query) trait Source
         // retaining C here creates no new Native snapshot or authorization.
         let security_basis = truth.map(|_| WorthQueryApplicationQueryBasisCustody::from_issued_selected(self.application_query_host(), selected))
             .transpose().map_err(|cause| {
-                use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop as Stop;
+                use crate::domain_computation::primary_graph::vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop as Stop;
                 match cause {
                     Stop::Basis => denial(WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis, query.name()),
                     Stop::Admission(stop) => denial(match stop {

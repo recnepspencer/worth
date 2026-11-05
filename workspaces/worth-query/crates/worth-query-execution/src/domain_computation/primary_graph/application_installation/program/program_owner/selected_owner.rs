@@ -1,6 +1,7 @@
 //! Resolve one occurrence-bound program owner.
 use super::*;
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use crate::domain_computation::primary_graph::vocabulary::application_installation::program_owner::WorthQuerySelectedProgramOwnerDenial;
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
 where

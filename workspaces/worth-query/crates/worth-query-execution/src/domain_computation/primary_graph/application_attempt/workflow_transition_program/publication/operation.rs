@@ -53,7 +53,7 @@ pub struct RequiredWorkflowOperation {
         Option<crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputContract>,
     pub(super) branch: crate::basis::WorthQueryProductBranch,
     pub(super) instance: worth_relational::facade::identity::EntityId,
-    original_instance: super::super::super::PublishedWorkflowInstanceRef,
+    original_instance: crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
     original_runtime: u64,
     original_program_revision: ApplicationProgramRevision,
     original_sources: Option<super::super::actor_context::OriginalActorSources>,
@@ -89,7 +89,7 @@ pub struct WorkflowOperationAuthority {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) runtime_authority:
         u64,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) session_identity:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) observation:
         WorthQueryProductBranchReadIdentity,
     pub(super) facts: Arc<[WorthQueryApplicationObservedFact]>,
@@ -148,7 +148,7 @@ impl RequiredWorkflowOperation {
         branch: crate::basis::WorthQueryProductBranch,
         original_runtime: u64,
         original_program_revision: ApplicationProgramRevision,
-        original_instance: super::super::super::PublishedWorkflowInstanceRef,
+        original_instance: crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         original_sources: Option<super::super::actor_context::OriginalActorSources>,
         node_path: String,
         transition_identity: String,
@@ -247,7 +247,7 @@ impl WorkflowOperationAuthority {
         input_identity: [u8; 32],
         runtime_authority: u64,
         session_identity:
-            crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+            crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         observation: WorthQueryProductBranchReadIdentity,
         facts: Vec<WorthQueryApplicationObservedFact>,
         settlement_basis:
@@ -304,13 +304,11 @@ impl WorkflowOperationAuthority {
     {
         let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
         };
         let execution = &phase_request;
 
-        use crate::domain_computation::primary_graph::{
-            WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-        };
+        use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
         let mismatch = || {
             WorthQueryApplicationAttemptDenial::new(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
@@ -327,8 +325,8 @@ impl WorkflowOperationAuthority {
                 crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(cause) => WorthQueryApplicationAttemptDenial::new(
                     match cause {
                         Ok(kind) => WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind),
-                        Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => WorthQueryApplicationAttemptDenialKind::Cancelled,
-                        Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
+                        Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled) => WorthQueryApplicationAttemptDenialKind::Cancelled,
+                        Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
                     },
                     "workflow operation authority",
                 ),

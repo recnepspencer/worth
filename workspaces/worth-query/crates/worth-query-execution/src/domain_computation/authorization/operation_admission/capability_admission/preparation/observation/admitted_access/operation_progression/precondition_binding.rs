@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_schema::TypedMutationPreconditions,
@@ -8,9 +8,7 @@ use worth_query_installation::facade::{
 };
 
 use super::super::WorthQueryAdmittedApplicationCapabilityAccess;
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 use crate::domain_computation::primary_graph::{
     bind_mutation_preconditions, WorthQueryBoundMutationPreconditions,
 };

@@ -17,6 +17,7 @@ use super::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
 
 use canonical_identity::prepare_precondition_identity;
+use crate::domain_computation::vocabulary::primary_graph::precondition_binding::EmptyMutationPreconditionAdmissionStop;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryBoundMutationPrecondition {
@@ -120,10 +121,6 @@ pub(in crate::domain_computation) fn bind_empty_mutation_preconditions_admitted<
     Ok(empty_bound_preconditions())
 }
 
-#[derive(Debug)]
-pub(in crate::domain_computation) enum EmptyMutationPreconditionAdmissionStop {
-    Nonempty,
-}
 
 fn empty_bound_preconditions() -> WorthQueryBoundMutationPreconditions {
     WorthQueryBoundMutationPreconditions {

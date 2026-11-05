@@ -8,7 +8,7 @@ pub(in crate::domain_computation) use authority_validation::{
 
 pub use authority_validation::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use authority_validation::WorthQueryAdmittedApplicationOperation;
-pub(in crate::domain_computation) use authority_validation::WorthQueryOperationAdmissionIdentity;
+
 pub(in crate::domain_computation) use authority_validation::{
     admit_capability_access, admit_encoded_capability_access,
 };

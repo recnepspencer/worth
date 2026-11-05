@@ -6,7 +6,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub fn observe_expected_for_test(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        binding: &super::super::WorthQueryCommittedDispatchOutboxBinding,
+        binding: &crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding,
         expected_commit: &worth_relational::facade::history::RelationalCommitReceipt,
         expected_runtime: u64,
     ) -> Result<WorthQueryCommittedDispatchOutboxOwnerObservation, Denial> {

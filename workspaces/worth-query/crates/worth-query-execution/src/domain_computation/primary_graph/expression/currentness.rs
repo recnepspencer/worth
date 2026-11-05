@@ -1,6 +1,6 @@
 use sha2::{Digest, Sha256};
 
-use crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowConditionExpression;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::condition::CompiledWorkflowConditionExpression;
 
 const DOMAIN: &[u8] = b"worth-query/workflow-condition-sources/v1";
 

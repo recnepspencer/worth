@@ -9,14 +9,14 @@ pub use worth_relational::facade::symbols::ClientKey;
 pub use worth_relational::facade::transactions::CreatedEntityRef;
 pub use worth_relational::facade::transactions::EntityReference;
 
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
 pub use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::candidate::WorthQueryApplicationOutputCorrespondenceCandidate;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationOutputProjectionDenial;
 pub use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputRoleNameDenial;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationEffectEntity;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;

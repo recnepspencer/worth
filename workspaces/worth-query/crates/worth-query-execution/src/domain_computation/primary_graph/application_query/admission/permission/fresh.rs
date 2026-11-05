@@ -10,10 +10,10 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding
 use super::PreparedApplicationQueryPermission;
 use super::*;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryControls;
-use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial;
+use crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial;
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 
 pub(crate) mod access;
 
@@ -106,3 +106,4 @@ impl<
 }
 pub use access::AccessDoorsOps;
 pub(in crate::domain_computation::primary_graph) use access::AccessScopedOps;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;

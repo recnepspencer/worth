@@ -1,5 +1,8 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse;
+use crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 impl<'borrow, 'reader, 'runtime, Schema, Binding>
     DecisionReader<'borrow, 'reader, 'runtime, Schema, Binding>

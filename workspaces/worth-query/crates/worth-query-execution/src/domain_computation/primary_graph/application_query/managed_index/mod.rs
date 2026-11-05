@@ -15,11 +15,11 @@ pub(crate) mod invocation;
 
 mod maintained_read;
 pub(in crate::domain_computation::primary_graph) mod realized_footprint;
-pub use invariant_read::WorthQueryManagedIndexInvariantDenial;
+
 mod node_backing;
 mod nodes;
 pub(in crate::domain_computation::primary_graph::application_query) mod predicate;
-pub(in crate::domain_computation::primary_graph) use predicate::WatchSlot;
+
 mod provider;
 pub(crate) mod refinement;
 pub use predicate::{
@@ -60,20 +60,17 @@ mod stop;
 
 pub use candidates::WorthQueryManagedIndexCandidateWriter;
 pub(in crate::domain_computation::primary_graph) use configuration::ManagedIndexProviderCatalog;
-pub use control::WorthQueryManagedIndexControl;
+
 pub use denial::{
     WorthQueryManagedIndexDenial, WorthQueryManagedIndexDenialCause, WorthQueryManagedIndexRefusal,
 };
 pub use handle::WorthQueryManagedIndex;
-pub use invocation::WorthQueryManagedIndexWorkDenial;
+
 pub use nodes::{
     WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
 };
-pub use provider::{
-    WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexProvider,
-    WorthQueryManagedIndexSourceChange,
-};
-pub use provider_failure::WorthQueryManagedIndexProviderFailure;
+pub use {provider::WorthQueryManagedIndexProvider, provider::WorthQueryManagedIndexSourceChange};
+
 pub use receiver::EvictionOps;
 pub use receiver::LifecycleOps;
 pub use receiver::NextOps;
@@ -84,5 +81,5 @@ pub use receiver::{
     WorthQueryManagedIndexWatchUpdate,
 };
 pub use retention::WorthQueryManagedIndexLifecycle;
-pub use source_rows::{WorthQueryManagedIndexSourceRows, WorthQueryManagedIndexSourceSlot};
-pub use stop::{WorthQueryManagedIndexProviderStop, WorthQueryManagedIndexStop};
+pub use source_rows::WorthQueryManagedIndexSourceRows;
+pub use stop::WorthQueryManagedIndexProviderStop;

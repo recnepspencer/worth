@@ -134,7 +134,7 @@ pub(super) trait RecoveryParentOps<Schema: ApplicationSchema>:
                 return RecoveryProgress::Pending(
                     prior,
                     None,
-                    Pending::ExecutionRequest(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                    Pending::ExecutionRequest(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
                 )
             },
 Err(PublicationDenial::Stopped(stop)) => {
@@ -180,7 +180,7 @@ Err(PublicationDenial::Stopped(stop)) => {
             Err(PublicationDenial::ClockMismatch) => RecoveryProgress::Pending(
                 prior,
                 None,
-                Pending::ExecutionRequest(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                Pending::ExecutionRequest(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
             ),
 Err(PublicationDenial::Stopped(stop)) => RecoveryProgress::Pending(
                 prior,

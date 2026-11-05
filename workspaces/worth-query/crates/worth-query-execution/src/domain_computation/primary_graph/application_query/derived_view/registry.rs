@@ -8,7 +8,7 @@ mod managed_index;
 mod managed_source;
 mod native_count;
 mod predicate;
-pub(in crate::domain_computation::primary_graph) use predicate::PredicateNoticeDisposition;
+
 pub(in crate::domain_computation::primary_graph::application_query) use predicate::PredicateRegistration;
 pub(in crate::domain_computation::primary_graph::application_query) use predicate::{
     mark_prepared_predicates_unavailable, route_prepared_predicates,
@@ -26,12 +26,12 @@ pub(in crate::domain_computation::primary_graph::application_query) trait Regist
     Send + Sync
 {
     fn dispose(&self);
-    fn belongs_to(&self, basis: &super::publication::ViewPublicationBasis<'_>) -> bool;
+    fn belongs_to(&self, basis: &crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewPublicationBasis<'_>) -> bool;
     fn warm_at(&self, before: &worth_runtime_world::facade::CompositeCommitIdentity) -> bool;
     fn prepare_transition(
         &self,
         before: &worth_runtime_world::facade::CompositeCommitIdentity,
-        changes: &[super::publication::ViewChange],
+        changes: &[crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewChange],
         maximum_work_units: usize,
     ) -> Option<(Box<dyn Any + Send>, usize)>;
     fn apply_transition(
@@ -116,8 +116,8 @@ impl ManagedDerivedViewRegistry {
 
     pub(in crate::domain_computation::primary_graph) fn prepare_publication(
         &self,
-        basis: super::publication::ViewPublicationBasis<'_>,
-        changes: &[super::publication::ViewChange],
+        basis: crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewPublicationBasis<'_>,
+        changes: &[crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewChange],
         maximum_work_units: usize,
     ) -> PreparedManagedViewPublication {
         let views = self

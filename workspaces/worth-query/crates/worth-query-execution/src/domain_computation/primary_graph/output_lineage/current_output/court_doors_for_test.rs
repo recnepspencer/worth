@@ -33,7 +33,7 @@ impl RetainedOutputCurrentnessRead {
     #[doc(hidden)]
     pub fn verification_requirement_for_test(
         &self,
-    ) -> &Option<super::super::invalidation::FullVerificationReason> {
+    ) -> &Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason> {
         &self.verification_requirement
     }
 }
@@ -42,7 +42,7 @@ impl RetainedOutputCurrentnessRead {
     #[doc(hidden)]
     pub fn verification_requirement_mut_for_test(
         &mut self,
-    ) -> &mut Option<super::super::invalidation::FullVerificationReason> {
+    ) -> &mut Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason> {
         &mut self.verification_requirement
     }
 }
@@ -78,12 +78,12 @@ impl WorthQueryApplicationOutputLineage {
 impl RetainedOutputCurrentnessRead {
     #[doc(hidden)]
     pub fn new_for_test(
-        identity: Arc<super::super::RecordedSettlementIdentity>,
+        identity: Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
         facts: Option<super::super::ComparableSourceFacts>,
         consumed_outputs: Arc<[ConsumedOutputEvidence]>,
         native_output_witness: Option<Arc<OnceLock<super::super::SealedNativeOutputWitness>>>,
         consumed_nothing: bool,
-        verification_requirement: Option<super::super::invalidation::FullVerificationReason>,
+        verification_requirement: Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason>,
     ) -> Self {
         Self {
             identity,

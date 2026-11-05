@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryClockCoordinate};
 
-use super::installation::WorthQueryConditionalClockHandle;
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::WorthQueryConditionalClockHandle;
 use super::lifecycle::WorthQueryConditionalOperationCell;
 
 pub(crate) mod erased;

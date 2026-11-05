@@ -1,12 +1,5 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::operation_body::assessment::WorthQueryCurrentBodyRequirementAssessment;
+use crate::domain_computation::primary_graph::vocabulary::operation_body::requirement::WorthQueryOperationBodyRequirementFinding;
 
-impl WorthQueryCurrentBodyRequirementAssessment {
-    #[doc(hidden)]
-    pub fn new_for_test(
-        findings: Vec<WorthQueryOperationBodyRequirementFinding>,
-        memory: crate::domain_computation::request_execution::QueryMemoryReservation,
-    ) -> Self {
-        Self::new(findings, memory)
-    }
-}

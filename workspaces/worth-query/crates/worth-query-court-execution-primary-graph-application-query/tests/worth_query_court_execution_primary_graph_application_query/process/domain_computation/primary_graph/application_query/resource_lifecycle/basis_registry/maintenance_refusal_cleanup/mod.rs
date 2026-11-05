@@ -1,7 +1,7 @@
 //! Exact snapshot custody still settles after the caller unwinds on a refusal.
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::resource_lifecycle::basis_registry::WorthQueryApplicationBasisRegistry;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Currency;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Currency;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
 use worth_execution::ExecutionRequest;

@@ -8,8 +8,8 @@ use crate::domain_computation::authorization::bridge_observation::lower_bridge_o
 use crate::domain_computation::authorization::installed_policy::WorthQueryInstalledAuthorizationPolicy;
 use crate::domain_computation::authorization::WorthQueryAuthorizationDecisionFact;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationPlan;
@@ -29,7 +29,7 @@ where
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session_identity: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         relational: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: worth_relational::facade::snapshots::SnapshotHandle,
         query: &worth_query_installation::facade::WorthQueryInstalledApplicationQuery<

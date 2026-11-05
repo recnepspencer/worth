@@ -162,7 +162,7 @@ where
 fn program_request_stop(
     stop: worth_execution::WorkCeilingDenial,
 ) -> WorthQueryApplicationCommitOutcome {
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
     let cause = crate::facade::primary_graph::relational_execution_kind(stop.into(), None);
     match cause {
         Err(Control::Cancelled) => WorthQueryApplicationCommitOutcome::Cancelled,

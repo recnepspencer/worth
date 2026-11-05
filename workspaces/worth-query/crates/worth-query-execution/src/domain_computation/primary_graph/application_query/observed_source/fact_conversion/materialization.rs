@@ -1,5 +1,6 @@
 //! Convert one validated complete source under its borrowed request controls.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind;
 
 impl<Query> PreparedSourceFactMaterialization<'_, '_, '_, Query> {
     pub(in crate::domain_computation::primary_graph::application_query) fn into_facts(

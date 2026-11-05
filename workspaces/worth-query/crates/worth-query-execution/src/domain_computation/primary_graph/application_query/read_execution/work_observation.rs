@@ -5,7 +5,7 @@ use std::cell::Cell;
 /// Root and tree observations include a refused read's completed prefix.
 pub struct OneShotReadWorkObservation<'charge> {
     charge: Option<
-        &'charge dyn Fn(usize, &str) -> Result<(), super::WorthQueryApplicationReadExecutionDenial>,
+        &'charge dyn Fn(usize, &str) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial>,
     >,
     root: Cell<usize>,
     tree: Cell<usize>,
@@ -25,7 +25,7 @@ impl<'charge> OneShotReadWorkObservation<'charge> {
             usize,
             &str,
         )
-            -> Result<(), super::WorthQueryApplicationReadExecutionDenial>,
+            -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial>,
     ) -> Self {
         Self {
             charge: Some(charge),
@@ -37,7 +37,7 @@ impl<'charge> OneShotReadWorkObservation<'charge> {
         &self,
         units: usize,
         subject: &str,
-    ) -> Result<(), super::WorthQueryApplicationReadExecutionDenial> {
+    ) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial> {
         match self.charge {
             Some(charge) => charge(units, subject),
             None => Ok(()),

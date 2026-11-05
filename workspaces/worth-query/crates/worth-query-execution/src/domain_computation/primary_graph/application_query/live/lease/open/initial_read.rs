@@ -13,7 +13,7 @@ pub(super) struct WorthQueryApplicationLiveInitialRead {
     pub(super) graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     pub(super) read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
     pub(super) initial_read_work: crate::domain_computation::provider_session::WorthQueryObservedGraphReadWork,
-    pub(super) basis_release: super::super::super::super::WorthQueryApplicationBasisReleaseReceipt,
+    pub(super) basis_release: crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt,
 }
 
 pub(super) fn execute_live_initial_read<

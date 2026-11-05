@@ -11,8 +11,8 @@ use super::super::disclosure::compile_disclosure_contract;
 use super::super::disclosure::WorthQueryAdmittedApplicationDisclosureContract;
 use super::super::WorthQueryApplicationAuthorizationWorkEvidence;
 use super::super::WorthQueryApplicationQueryAccessContext;
-use super::super::WorthQueryApplicationQueryAdmissionDenial;
-use super::super::WorthQueryApplicationQueryAdmissionDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
 use super::source_readmission::PreparedApplicationQuerySourceReadmission;
 use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
 

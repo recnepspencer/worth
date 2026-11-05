@@ -28,7 +28,7 @@ use crate::domain_computation::managed_run::run_affinity::{
     WorthQueryDirectRunAffinity, WorthQueryDirectRunReadmissionPending,
 };
 use crate::domain_computation::managed_run::WorthQueryYieldedDirectRun;
-use crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryProviderExecutionReleaseEvidence;
+use crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence;
 use crate::domain_computation::{
     WorthQueryProviderCheckpointEvidence, WorthQueryProviderCheckpointReleaseEvidence,
 };
@@ -61,7 +61,7 @@ impl WorthQueryDirectBridgeCleanupRecoveryState {
         Self {
             state: attempt.state,
             affinity: attempt.resource.abort(
-                crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit::mint(),
+                crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit::mint(),
             ),
             execution: attempt.execution,
             bridge,
@@ -75,7 +75,7 @@ impl WorthQueryDirectBridgeCleanupRecoveryState {
         Self {
             state: rollback.state,
             affinity: rollback.resource.abort(
-                crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit::mint(),
+                crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit::mint(),
             ),
             execution: rollback.execution,
             bridge,
@@ -299,7 +299,7 @@ impl WorthQueryDirectReadmissionTerminalRecovery {
         WorthQueryDirectReadmissionCleanupRequired::provider(
             self.recovery.state,
             self.recovery.resource.abort(
-                crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit::mint(),
+                crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit::mint(),
             ),
             self.recovery.bridge,
             self.recovery.provider.into_cleanup(),

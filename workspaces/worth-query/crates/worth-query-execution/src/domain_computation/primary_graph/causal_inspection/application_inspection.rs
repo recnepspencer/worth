@@ -49,17 +49,7 @@ pub use result::{
     WorthQueryMaterializedPerformedSourceInspection, WorthQueryObservedApplicationInspection,
     WorthQueryPerformedSourceInspection,
 };
-pub use stop::{
-    DiagnosticComparisonDenial, FactlessCurrentness, IndexedSelectionReobserveDenial,
-    OutputFieldCaptureFailure, OwnEffectOnReads, RebaseVerificationReason, StoreDenial,
-    WorthQueryApplicationDisclosureContractDenial, WorthQueryApplicationInspectionCanonicalRefusal,
-    WorthQueryApplicationInspectionDenial, WorthQueryApplicationInspectionOwnerRefusal,
-    WorthQueryApplicationInspectionResourceRefusal, WorthQueryApplicationInspectionStage,
-    WorthQueryApplicationInspectionStopKind, WorthQueryApplicationQueryGovernanceDenialKind,
-    WorthQueryApplicationQueryInstallationDenial, WorthQueryApplicationQueryInstallationDenialKind,
-    WorthQueryInspectionReadTerminalDenial, WorthQueryManagedGraphReadDenial,
-    WorthQueryManagedGraphWorkSessionStartDenial,
-};
+pub use {stop::DiagnosticComparisonDenial, stop::FactlessCurrentness, crate::domain_computation::primary_graph::vocabulary::application_attempt::indexed_entity_selection::IndexedSelectionReobserveDenial, stop::OutputFieldCaptureFailure, stop::OwnEffectOnReads, crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason, stop::StoreDenial, stop::WorthQueryApplicationDisclosureContractDenial, stop::WorthQueryApplicationInspectionCanonicalRefusal, stop::WorthQueryApplicationInspectionDenial, stop::WorthQueryApplicationInspectionOwnerRefusal, stop::WorthQueryApplicationInspectionResourceRefusal, stop::WorthQueryApplicationInspectionStage, stop::WorthQueryApplicationInspectionStopKind, stop::WorthQueryApplicationQueryGovernanceDenialKind, stop::WorthQueryApplicationQueryInstallationDenial, stop::WorthQueryApplicationQueryInstallationDenialKind, stop::WorthQueryInspectionReadTerminalDenial, stop::WorthQueryManagedGraphReadDenial, stop::WorthQueryManagedGraphWorkSessionStartDenial};
 
 pub(crate) mod target;
 

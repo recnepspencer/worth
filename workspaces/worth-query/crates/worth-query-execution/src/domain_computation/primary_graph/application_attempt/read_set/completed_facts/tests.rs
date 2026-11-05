@@ -1,8 +1,6 @@
 //! Descriptive builder ordering, not installed Query admission or graph authority.
 use super::{admit_completed_facts, WorthQueryApplicationObservedFact as Fact};
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind as Kind,
-};
+use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
 use std::{cell::RefCell, rc::Rc};
 use worth_execution::ExecutionAllocationPolicy;
 use worth_query_admission::facade::authenticated_principal::{

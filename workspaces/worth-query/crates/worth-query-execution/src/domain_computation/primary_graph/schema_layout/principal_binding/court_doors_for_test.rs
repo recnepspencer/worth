@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 
 impl WorthQueryPrimaryGraphLayout {
     #[doc(hidden)]
@@ -10,19 +11,7 @@ impl WorthQueryPrimaryGraphLayout {
     }
 }
 
-impl WorthQueryPrimaryPrincipalBindingLayout {
-    #[doc(hidden)]
-    pub fn identity_locator_for_test(&self) -> &AspectFieldLocator {
-        &self.identity_locator
-    }
-}
 
-impl WorthQueryPrimaryPrincipalBindingLayout {
-    #[doc(hidden)]
-    pub fn index_id_for_test(&self) -> &DerivedIndexId {
-        &self.index_id
-    }
-}
 
 impl WorthQueryPrimaryGraphLayout {
     #[doc(hidden)]

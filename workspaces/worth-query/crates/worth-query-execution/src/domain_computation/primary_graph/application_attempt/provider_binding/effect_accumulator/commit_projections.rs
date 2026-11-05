@@ -61,7 +61,7 @@ pub(super) fn materialize_commit_projections(
         AuthoredIntent::AspectPatch(entity_id) => {
             let operations = patches.remove(&entity_id).ok_or_else(|| {
                 WorthQueryApplicationAttemptDenial::new(
-                    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind::IncompleteEffectBasis,
+                    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::IncompleteEffectBasis,
                     "authored aspect patch lost its composed material",
                 )
             })?;

@@ -7,7 +7,7 @@ use worth_query_installation::facade::{
 };
 
 use super::product_world::WorthQueryProductRuntime;
-use super::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 /// Hosts are shared across the threads a context crosses, as the runtime itself is.
 /// The installed schema and operations, the runtime authority, the product runtime and the

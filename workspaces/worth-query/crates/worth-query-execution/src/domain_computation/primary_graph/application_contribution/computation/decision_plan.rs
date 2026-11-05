@@ -1,5 +1,5 @@
 //! Installed preparation, request-owned compute and validated owner completion.
-use super::prepared_request::PreparedCompute;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute;
 use super::*;
 use crate::domain_computation::primary_graph::application_entry::mutation::{
     HandlerFailure, HandlerResult, WorthQueryDecisionPlan,

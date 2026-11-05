@@ -2,7 +2,7 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantProjectionDenialKind {
     /// An admitted field decode refused; no callback output is accepted.
-    ValueDecode(super::WorthQueryValueDecodeDenial),
+    ValueDecode(crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial),
     /// A required native read stopped; its exact request cause is retained.
     ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// The main branch basis could not be observed.
@@ -46,7 +46,7 @@ const _: () = assert!(
 
 impl WorthQueryInvariantProjectionDenial {
     pub(super) fn value_decode_stopped(
-        cause: super::WorthQueryValueDecodeDenial,
+        cause: crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial,
         work: Option<super::WorthQueryInvariantProjectionWork>,
     ) -> Self {
         if let Some(worth_execution::WorkCeilingDenial::Stopped(stop)) = cause.request_cause() {
@@ -62,10 +62,10 @@ impl WorthQueryInvariantProjectionDenial {
     /// request's own stop, reported as `ExecutionRequest` like every native
     /// read stop before it; only a retained decode failure stays `ValueDecode`.
     pub(super) fn value_decode_handoff_stopped(
-        cause: super::WorthQueryValueDecodeDenial,
+        cause: crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial,
         work: Option<super::WorthQueryInvariantProjectionWork>,
     ) -> Self {
-        use super::WorthQueryValueDecodeDenial as Decode;
+        use crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial as Decode;
         match cause {
             Decode::Scope(request) => Self::execution_request_stopped(request.into(), work),
             Decode::Checkpoint(_)

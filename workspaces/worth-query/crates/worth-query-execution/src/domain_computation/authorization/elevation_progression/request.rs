@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::collections::BTreeSet;
 
 use worth_query_declaration::facade::application_capability::{
@@ -18,10 +18,7 @@ use super::super::capability_registry::{
 use super::super::operation_progression::{
     progress_capability_operation, WorthQueryCapabilityOperationProgression,
 };
-use super::super::{
-    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {super::super::WorthQueryAdmittedApplicationCapabilityAccess, super::super::WorthQueryAdmittedApplicationOperation, super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 use super::request_binding::bind_request;
 
@@ -57,7 +54,7 @@ where
     {
         let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
-            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
+            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
         self.authorize_elevation_request_with_request(&execution, access, operation, preconditions)
     }

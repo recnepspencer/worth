@@ -1,12 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 
-impl OutputBindingIdentity {
-    #[doc(hidden)]
-    pub fn declared_for_test(name: &str) -> Self {
-        Self::declared(name)
-    }
-}
 
 impl OutputBindingInventory {
     #[doc(hidden)]

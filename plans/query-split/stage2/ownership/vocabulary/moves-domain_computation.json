@@ -1,0 +1,494 @@
+[
+{
+"item": "domain_computation::application_aftermath::correction::selection::original::OriginalCorrectionDisclosure",
+"to": "domain_computation::vocabulary::application_aftermath"
+},
+{
+"item": "domain_computation::application_aftermath::external_effect::correlation::ExternalEffectCorrelationIdentity",
+"to": "domain_computation::vocabulary::application_aftermath"
+},
+{
+"item": "domain_computation::application_aftermath::external_effect::outbox::WorthQueryDispatchOutboxLayout",
+"to": "domain_computation::vocabulary::application_aftermath"
+},
+{
+"item": "domain_computation::application_aftermath::external_effect::outbox::WorthQueryDispatchOutboxRecord",
+"to": "domain_computation::vocabulary::application_aftermath"
+},
+{
+"item": "domain_computation::application_aftermath::external_effect::outbox::WorthQueryDispatchOutboxRestoredFields",
+"to": "domain_computation::vocabulary::application_aftermath"
+},
+{
+"item": "domain_computation::application_aftermath::external_effect::outbox::WorthQueryPendingDispatchOutbox",
+"to": "domain_computation::vocabulary::application_aftermath"
+},
+{
+"item": "domain_computation::application_aftermath::external_effect::outbox::bind_dispatch_outbox_create_intent",
+"to": "domain_computation::vocabulary::application_aftermath"
+},
+{
+"item": "domain_computation::application_aftermath::external_effect::outbox::hex_bytes",
+"to": "domain_computation::vocabulary::application_aftermath"
+},
+{
+"item": "domain_computation::application_aftermath::external_effect::outbox::hex_digest",
+"to": "domain_computation::vocabulary::application_aftermath"
+},
+{
+"item": "domain_computation::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial",
+"to": "domain_computation::vocabulary::application_aftermath"
+},
+{
+"item": "domain_computation::authorization::denial::WorthQueryOperationAuthorizationDenialKind",
+"to": "domain_computation::vocabulary::authorization"
+},
+{
+"item": "domain_computation::authorization::denial::WorthQueryOperationAuthorizationRefusalKind",
+"to": "domain_computation::vocabulary::authorization"
+},
+{
+"item": "domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::NEXT_OPERATION_ADMISSION_IDENTITY",
+"to": "domain_computation::vocabulary::authorization"
+},
+{
+"item": "domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryOperationAdmissionIdentity",
+"to": "domain_computation::vocabulary::authorization"
+},
+{
+"item": "domain_computation::authorization::operation_scope_binding::WorthQueryDecisionScopeWitness",
+"to": "domain_computation::vocabulary::authorization"
+},
+{
+"item": "domain_computation::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding",
+"to": "domain_computation::vocabulary::authorization"
+},
+{
+"item": "domain_computation::execution_runtime::runtime_identity::NEXT_RUNTIME_AUTHORITY_IDENTITY",
+"to": "domain_computation::vocabulary::execution_runtime"
+},
+{
+"item": "domain_computation::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity",
+"to": "domain_computation::vocabulary::execution_runtime"
+},
+{
+"item": "domain_computation::execution_runtime::runtime_identity::next_runtime_authority_ordinal",
+"to": "domain_computation::vocabulary::execution_runtime"
+},
+{
+"item": "domain_computation::managed_run::counters::WorthQueryManagedRunCounters",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::direct_terminal::inspection::WorthQueryCompletedDirectRunCleanup",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::direct_terminal::inspection::WorthQueryDirectRunCleanupInspection",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::direct_terminal::inspection::WorthQueryDirectRunCleanupReceipt",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::provider_work::evidence::WorthQueryManagedProviderSessionDisposition",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::provider_work::evidence::WorthQueryManagedProviderWorkEvidence",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::provider_work::evidence::WorthQueryManagedProviderWorkEvidenceParts",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::provider_work::release_summary::WorthQueryManagedProviderExecutionReleaseSummary",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::readmission::direct_lane::WorthQueryDirectReadmissionTransitionPermit",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::relational_observation::WorthQueryManagedRelationalObservationReleaseReceipt",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::terminal::WorthQueryManagedRunCleanupDisposition",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::terminal::WorthQueryManagedRunCleanupFailureKind",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::terminal::WorthQueryManagedRunTerminalKind",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::workflow::provider_plan_admission::WorthQueryWorkflowProviderPlanPermit",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::managed_run::workflow::run_affinity::WorthQueryWorkflowRunTransitionPermit",
+"to": "domain_computation::vocabulary::managed_run"
+},
+{
+"item": "domain_computation::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority",
+"to": "domain_computation::vocabulary::operation_binding"
+},
+{
+"item": "domain_computation::primary_graph::admitted_capture::CaptureStop",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::admitted_capture::checkpoint",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::admitted_capture::retained_stage::RetainedCaptureMemory",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::admitted_capture::retained_stage::RetainedStorageDenial",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::admitted_capture::retained_stage::run_retained_stage",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::admitted_capture::storage::tree_clone_bytes",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::commit_authority_binding::WorthQueryRetainedGovernedInput",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::elevation_close_outcome::WorthQueryElevationClosureKind",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::precondition_binding::EmptyMutationPreconditionAdmissionStop",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::provider_execution::external_dispatch::denial::WorthQueryExternalDispatchAttemptDenial",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::provider_execution::resource_request::application_resource_request",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLeaseDenial",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotRelease",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::application_query::observed_source::WorthQuerySourceExpectationKind",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::application_query::resource_lifecycle::basis_registry::WorthQueryApplicationBasisIdentity",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::application_query::resource_lifecycle::basis_registry::WorthQueryApplicationBasisReleaseReceipt",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::content::retention_work::checkpoint",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::entity_resolution::retained_selector::WorthQueryObservedScopeSelector",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::preimage_retention::selection::WorthQueryRetainedPreImageFieldSeal",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::preimage_retention::selection::WorthQueryRetainedPreImageSeal",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::provider::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBinding",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBindingDenial",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::publication_request_denial::publication",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::resolution::WorthQueryPrincipalResolutionMode",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::source_disclosure::inspection::OriginalSourceInspectionDisclosure",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::source_disclosure::original::OriginalSourceDisclosure",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_attempt::decision_reuse::CompletedDecisionReuseProof",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_attempt::decision_reuse::PreparedDecisionReuseContext",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_attempt::handler_fact_boundary::CompletedHandlerFactBoundary",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_attempt::kind::WorthQueryApplicationAttemptDenialKind",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_contribution::input_reuse_contract::WorthQueryDecisionContextDependencies",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_contribution::input_reuse_contract::WorthQueryProducerInputReuseContract",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_query::basis_registry::WorthQueryApplicationBasisReleaseOutcome",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_query::basis_registry::WorthQueryApplicationBasisSelectionIdentity",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_query::control::WorthQueryManagedIndexControl",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_query::funded_parameters::CapturedApplicationQueryParameters",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_query::invocation::WorthQueryManagedIndexWorkDenial",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_query::projection_denial::WorthQueryApplicationProjectionDenial",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_query::projection_denial::WorthQueryApplicationProjectionDenialKind",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_query::provider_failure::PaidProviderDenial",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_query::provider_failure::WorthQueryManagedIndexProviderFailure",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_query::provider_failure::equal_cause",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::application_query::stop::WorthQueryManagedIndexStop",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenialKind",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::freshness::WorthQueryPrincipalReuseWitness",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::handler::decision_context_use::DecisionContextUse",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::invariant_projection::capacity_stop::VerificationCapacityStop",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::product_operation::invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::resolution_denial::WorthQueryPrincipalResolutionDenial",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::resolution_denial::WorthQueryPrincipalResolutionDenialKind",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::resolution_denial::WorthQueryPrincipalResolutionRefusalKind",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::schema_layout::principal_binding::WorthQueryPrimaryPrincipalBindingLayout",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::primary_graph::vocabulary::value_decode::WorthQueryValueDecodeDenial",
+"to": "domain_computation::vocabulary::primary_graph"
+},
+{
+"item": "domain_computation::provider_session::direct_attempt::WorthQueryDirectExecutionAttemptReleaseReceipt",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::graph_obligation::session_identity::NEXT_GRAPH_WORK_MANAGED_RUN_IDENTITY",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::graph_obligation::session_identity::NEXT_GRAPH_WORK_SESSION_IDENTITY",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::graph_obligation::session_identity::WorthQueryGraphWorkManagedRunIdentity",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::graph_obligation::session_identity::WorthQueryGraphWorkSessionIdentity",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::graph_provider::bounded_step::denial::WorthQueryGraphProviderStepDenial",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::graph_provider::bounded_step::denial::WorthQueryGraphProviderStepDenialKind",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::graph_provider::bounded_step::provider_execution_release::WorthQueryProviderExecutionDestructorDisposition",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::graph_provider::bounded_step::provider_execution_release::WorthQueryProviderExecutionDisposalDisposition",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::graph_provider::bounded_step::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::graph_provider::bounded_step::step_failure::WorthQueryGraphProviderStepFailureEvidence",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::graph_provider::bounded_step::step_failure::WorthQueryGraphProviderStepInvocationDisposition",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::graph_provider::call_kind::WorthQueryGraphProviderCallKind",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::graph_provider::failure::WorthQueryGraphProviderFailure",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::protocol::control_stopped::WorthQueryProviderSessionControlStopKind",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclaredClosure",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::protocol::declared_closure::aftermath_posture::aftermath_postcondition",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::protocol::declared_closure::aftermath_posture::reversal_posture",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::protocol::declared_closure::application::WorthQueryApplicationEffectPosture",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::protocol::declared_closure::application::bind_application_candidate_effect_closure",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::protocol::declared_closure::application::bind_native_reference_invariants",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::protocol::declared_closure::bind_direct_role_closure",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::protocol::declared_closure::effect_families",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::protocol::declared_closure::invariant_slots",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::protocol::declared_closure::read_binding",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::provider_session::protocol::denial::WorthQueryProviderSessionDenialKind",
+"to": "domain_computation::vocabulary::provider_session"
+},
+{
+"item": "domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial",
+"to": "domain_computation::vocabulary::request_execution"
+},
+{
+"item": "domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel",
+"to": "domain_computation::vocabulary::request_execution"
+}
+]

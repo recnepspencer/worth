@@ -28,7 +28,7 @@ pub use crate::domain_computation::primary_graph::provider::application_attempt_
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::preimage_retention::selection::retain_from_attempt;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::preimage_retention::selection::retain_matching;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::preimage_retention::selection::WorthQueryObservedPreImageCandidate;
-pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial;
+pub use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_decision_fact::WorthQueryPrimaryGraphApplicationDecisionFact;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;

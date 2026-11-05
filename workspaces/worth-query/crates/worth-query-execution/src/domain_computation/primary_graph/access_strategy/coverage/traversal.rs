@@ -1,8 +1,5 @@
 //! Query discharges the actual checked root through visits or qualified subtree summaries.
-use crate::domain_computation::primary_graph::application_query::managed_index::{
-    SourceTree, WorthQueryManagedIndexControl as Control, WorthQueryManagedIndexSourceSlot as Slot,
-    WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial as Denial,
-};
+use {crate::domain_computation::primary_graph::application_query::managed_index::SourceTree, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot as Slot, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial};
 
 pub(in crate::domain_computation::primary_graph) fn visit(
     tree: &SourceTree,

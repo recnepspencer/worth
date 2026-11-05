@@ -15,6 +15,8 @@ use worth_relational::facade::runtime::{
 use worth_relational::facade::transactions::EntityReference;
 
 use super::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact_custody::RULE_ID;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact_custody::RULE_VERSION;
 
 #[derive(Clone)]
 struct WorkflowFactCustody {
@@ -27,15 +29,7 @@ struct WorkflowFactCustody {
     existing_target_links: [(KindId, KindId); 7],
 }
 
-// The installed identity predates approval custody; retain its name across
-// semantic versions so diagnostics preserve the same rule lineage.
-const RULE_ID: &str = "worth-query.workflow.publication-immutability";
-const RULE_VERSION: CustomInvariantSemanticVersion = CustomInvariantSemanticVersion::new(1, 6);
 
-pub(in crate::domain_computation::primary_graph) const fn fact_custody_receipt_contract(
-) -> (&'static str, u16, u16, Option<u64>) {
-    (RULE_ID, RULE_VERSION.major, RULE_VERSION.minor, None)
-}
 
 pub(in crate::domain_computation::primary_graph) fn fact_custody_registration(
     layout: &WorthQueryWorkflowLayout,

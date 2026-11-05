@@ -26,7 +26,7 @@ pub(super) use capture::prepare_capture;
 pub use capture::WorthQueryCapturedApplicationHistorySubjects;
 pub use capture_plan::WorthQueryAdmittedApplicationHistoryCapture;
 pub use cursor::WorthQueryApplicationHistoryCursor;
-pub use denial::WorthQueryApplicationHistoryDenial;
+
 pub use page::{
     WorthQueryApplicationHistoryEntry, WorthQueryApplicationHistoryPage,
     WorthQueryApplicationHistoryPageLimits,

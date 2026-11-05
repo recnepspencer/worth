@@ -9,8 +9,8 @@ use super::identity::{ExternalEffectCausalLink, ExternalEffectPostureIdentity};
 use super::identity_derivation::{
     attempt_identity, emission_identity, observation_identity, provider_commit_identity,
 };
-use super::{ExternalEffectPostureKind, WorthQueryDispatchOutboxRecord};
-use crate::domain_computation::primary_graph::application_attempt::external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
+use {super::ExternalEffectPostureKind, crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord};
+use crate::domain_computation::vocabulary::primary_graph::external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 
@@ -93,7 +93,7 @@ pub(super) struct ExternalAcknowledgementEvent {
 /// this causal owner can decompose the completed admission.
 pub struct WorthQueryAdmittedExternalDispatchAttempt {
     committed: WorthQueryCommittedDispatchOutboxObservation,
-    query_runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+    query_runtime: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     ordinal: WorthQueryExternalDispatchAttemptOrdinal,
     clock: Arc<WorthQueryRuntimeClock>,
 }
@@ -101,7 +101,7 @@ pub struct WorthQueryAdmittedExternalDispatchAttempt {
 impl WorthQueryAdmittedExternalDispatchAttempt {
     pub(in crate::domain_computation) fn seal(
         committed: WorthQueryCommittedDispatchOutboxObservation,
-        query_runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        query_runtime: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         ordinal: WorthQueryExternalDispatchAttemptOrdinal,
         clock: Arc<WorthQueryRuntimeClock>,
     ) -> Self {
@@ -138,7 +138,7 @@ pub(super) fn with_admitted_dispatch<Output>(
 }
 
 fn admit_co_committed_emission(
-    runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+    runtime: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     committed: WorthQueryCommittedDispatchOutboxObservation,
 ) -> Result<
     (
@@ -308,7 +308,7 @@ mod tests {
 
     #[test]
     fn owner_observation_identity_binds_its_exact_attempt_predecessor() {
-        let correlation = super::super::ExternalEffectCorrelationIdentity::from_digest(
+        let correlation = crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity::from_digest(
             CanonicalDigestId::new([9; 32]),
         );
         let first = ExternalEffectPostureIdentity::from_digest(

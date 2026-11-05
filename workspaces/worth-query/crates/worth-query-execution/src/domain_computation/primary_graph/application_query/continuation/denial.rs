@@ -1,6 +1,4 @@
-use crate::domain_computation::primary_graph::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 /// The specific reason reading the next page of a continuation was refused.
 ///
@@ -10,7 +8,7 @@ use crate::domain_computation::primary_graph::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationContinuationDenialKind {
     Content(worth_relational::facade::content::RelationalContentDenial),
-    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    ExecutionRequest(crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind),
     /// The continuation belongs to a different plan or runtime.
     ForeignPlan,
     /// The installed query changed since the continuation was issued.
@@ -56,7 +54,7 @@ pub enum WorthQueryApplicationContinuationDenialKind {
     /// The result projection is unavailable.
     ProjectionUnavailable,
     /// Projecting a result row failed.
-    Projection(super::super::WorthQueryApplicationProjectionDenialKind),
+    Projection(crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind),
     /// The page would exceed the result buffer limit.
     ResultBufferLimitExceeded,
     /// The page would exceed the work limit.

@@ -1,10 +1,6 @@
 //! Complete provider read-set owner evidence at the application commit boundary.
 
-use super::{
-    denial_cause::DenialCause, WorthQueryApplicationCommitDenial,
-    WorthQueryApplicationCommitDenialKind as CommitKind,
-    WorthQueryApplicationCommitDenialStage as Stage,
-};
+use {super::denial_cause::DenialCause, super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as CommitKind, super::WorthQueryApplicationCommitDenialStage as Stage};
 use crate::domain_computation::{
     WorthQueryDecisionReadSetDenialKind as Kind, WorthQueryDecisionReadSetFailure,
 };

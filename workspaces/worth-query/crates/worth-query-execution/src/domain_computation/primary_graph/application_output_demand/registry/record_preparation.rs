@@ -15,7 +15,7 @@ impl DemandRegistryState {
         key: &WorthQueryOutputDemandKey,
         source_commit: Option<&Commit>,
         product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        source_scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         successor_of: Option<[u8; 32]>,
     ) -> Result<PreparedRecord, WorthQueryOutputDemandDenial> {
         let prepared_queue = self

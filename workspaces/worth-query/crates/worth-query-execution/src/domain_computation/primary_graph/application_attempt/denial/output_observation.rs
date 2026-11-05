@@ -1,6 +1,7 @@
 //! Lossless native source-output stop in a decision dependency comparison.
 use super::*;
-use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop as Stop;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop as Stop;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 impl WorthQueryApplicationAttemptDenial {
     pub(in crate::domain_computation::primary_graph) fn output_observation(stop: Stop) -> Self {
         let kind = match stop {

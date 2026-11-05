@@ -83,7 +83,7 @@ where
     let mut leaves = Vec::new();
     if leaves.try_reserve_exact(plan.identities().len()).is_err() {
         return TreeAttempt::unstarted(TreeBeginning(execution.has_accounting()),Err(Denial::Resource(
-            crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::NativeAllocationRefused {
+            crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::NativeAllocationRefused {
                 kind:worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator,
                 requested_payload_bytes:None,
             })));

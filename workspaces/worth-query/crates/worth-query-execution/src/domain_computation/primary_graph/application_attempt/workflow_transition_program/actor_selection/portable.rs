@@ -2,6 +2,7 @@
 use super::*;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -49,7 +50,7 @@ impl WorkflowRecordedActorObservation {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         maximum: usize,
     ) -> Result<
-        crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText,
+        crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText,
         crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDenial,
     >{
         #[derive(Serialize)]

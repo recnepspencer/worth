@@ -71,7 +71,7 @@ fn acquire_current_lease(
     retained: &WorthQueryApplicationSnapshotLease,
     product: crate::basis::WorthQueryProductBranchLease,
 ) -> Result<WorthQueryApplicationSnapshotLease, WorthQueryApplicationCommitOutcome> {
-    use crate::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLeaseDenial as Denial;
+    use crate::domain_computation::vocabulary::primary_graph::snapshot_lease::WorthQueryApplicationSnapshotLeaseDenial as Denial;
     WorthQueryApplicationSnapshotLease::acquire(
         execution,
         retained.handle().clone(),

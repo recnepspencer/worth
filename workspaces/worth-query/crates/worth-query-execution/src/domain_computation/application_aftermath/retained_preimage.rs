@@ -11,6 +11,7 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::transactions::RecordRef;
+use crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial;
 
 /// One retained field pre-image bound into the strengthened commit receipt.
 #[derive(Clone, Eq, PartialEq)]
@@ -87,7 +88,7 @@ impl WorthQueryRetainedPreImage {
             worth_relational::facade::content::RelationalContentAttachments::default();
         let mut total = self.total_encoded_bytes;
         for field in &mut self.fields {
-            crate::domain_computation::primary_graph::retention_checkpoint(execution)
+            crate::domain_computation::vocabulary::primary_graph::retention_work::checkpoint(execution)
                 .map_err(Denial::Content)?;
             let AspectValue::ContentRef(identity) = field.value() else {
                 continue;
@@ -166,7 +167,7 @@ impl WorthQueryRetainedPreImage {
     }
 
     pub(crate) fn from_retention_seal(
-        seal: crate::domain_computation::primary_graph::WorthQueryRetainedPreImageSeal,
+        seal: crate::domain_computation::vocabulary::primary_graph::selection::WorthQueryRetainedPreImageSeal,
     ) -> Self {
         let (fields, total_encoded_bytes) = seal.into_parts();
         let fields = fields
@@ -193,18 +194,6 @@ impl WorthQueryRetainedPreImage {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryPreImageRetentionDenial {
-    Content(worth_relational::facade::content::RelationalContentDenial),
-    MissingDemandedField,
-    ExceedsByteBound,
-    EmptyDemand,
-    /// Demanded loci have no unique common mutated record, or a demanded locus
-    /// has several admitted observations on that selected record (Q8.26-C7).
-    AmbiguousDemandedField,
-    /// The operation mutates nothing, so there is no prior truth to invert.
-    NoMutatedRecord,
-}
 
 /// The demanded field slot an observed path names, if any (Q8.26-C3).
 ///

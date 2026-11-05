@@ -1,5 +1,5 @@
 //! Only actual changed support and its complete final ancestor closure is requalified.
-use super::super::WorthQueryManagedIndexWorkDenial as Denial;
+use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial;
 use super::*;
 
 impl SourceTree {

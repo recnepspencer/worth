@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
@@ -27,20 +27,20 @@ pub(crate) mod pair_plans;
 mod result;
 pub use pair_plans::WorthQueryDerivedPairReadPlans;
 
-use denial::authorization_denial;
-pub(in crate::domain_computation::primary_graph::application_query) use denial::denial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::authorization_denial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::denial;
 pub(in crate::domain_computation::primary_graph) use denial::retain_reconstruction_result;
-pub use denial::WorthQueryApplicationOneShotDenial;
-pub use denial::WorthQueryApplicationOneShotDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind;
 
 use super::authorized_read::execute_authorized_read;
 use super::authorized_read::refresh_governed_authorization;
 use super::authorized_read::SelectedAuthorizationCurrentnessStop;
 use super::authorized_read::SelectedAuthorizedReadStop;
-use super::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
 use super::read_execution::read_bounded_root_rows;
 use super::read_execution::OneShotReadWorkObservation;
-use super::read_execution::WorthQueryApplicationReadExecutionDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind;
 use super::WorthQueryAdmittedApplicationQueryControls;
 use super::WorthQueryAdmittedApplicationQueryPlan;
 use super::WorthQueryApplicationProjection;
@@ -60,16 +60,6 @@ pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
     receipt: WorthQueryApplicationQueryAccessReceipt,
 }
 
-/// The admitted read keeps its original semantic denial and accounts for
-/// newly performed Query execution work on either outcome.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryAdmittedOneShotStop {
-    Admission(CompanionPreflightStop),
-
-    WorkCounterOverflow,
-    WorkAccountingMismatch,
-    Execution(WorthQueryApplicationOneShotDenial),
-}
 
 pub trait OneShotOps<Schema>:
     crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
@@ -105,7 +95,7 @@ where
     {
         let request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(authorization_denial(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"), plan.query.name())),
+            Err(_) => return Err(authorization_denial(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"), plan.query.name())),
         };
         let execution = &request;
         self.execute_application_query_one_shot_with_request(execution, plan)
@@ -236,77 +226,6 @@ where
 {
 }
 
-pub fn map_authorized_read_denial(
-    denial_value: WorthQueryAuthorizedApplicationReadDenial,
-    query: &str,
-) -> WorthQueryApplicationOneShotDenial {
-    let (kind, subject) = match denial_value {
-        WorthQueryAuthorizedApplicationReadDenial::StalePrincipal => (
-            WorthQueryApplicationOneShotDenialKind::StalePrincipal,
-            query.to_string(),
-        ),
-        WorthQueryAuthorizedApplicationReadDenial::StaleScope
-        | WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope => (
-            WorthQueryApplicationOneShotDenialKind::StaleScope,
-            query.to_string(),
-        ),
-        WorthQueryAuthorizedApplicationReadDenial::Authorization(denial) => {
-            return authorization_denial(denial, query);
-        }
-        WorthQueryAuthorizedApplicationReadDenial::Read(read) => {
-            let kind = match read.kind() {
-                WorthQueryApplicationReadExecutionDenialKind::Content(cause) => {
-                    WorthQueryApplicationOneShotDenialKind::Content(cause)
-                }
-                WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(kind) => {
-                    WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind)
-                }
-                WorthQueryApplicationReadExecutionDenialKind::Cancelled => {
-                    WorthQueryApplicationOneShotDenialKind::Cancelled
-                }
-                WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded => {
-                    WorthQueryApplicationOneShotDenialKind::DeadlineExceeded
-                }
-                WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable => {
-                    WorthQueryApplicationOneShotDenialKind::PredicateIndexUnavailable
-                }
-                WorthQueryApplicationReadExecutionDenialKind::ResultLimitExceeded => {
-                    WorthQueryApplicationOneShotDenialKind::ResultLimitExceeded
-                }
-                WorthQueryApplicationReadExecutionDenialKind::CardinalityMismatch => {
-                    WorthQueryApplicationOneShotDenialKind::CardinalityMismatch
-                }
-                WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable => {
-                    WorthQueryApplicationOneShotDenialKind::ProjectionUnavailable
-                }
-                WorthQueryApplicationReadExecutionDenialKind::ResultBufferLimitExceeded => {
-                    WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded
-                }
-                WorthQueryApplicationReadExecutionDenialKind::TargetIdentityIndexUnavailable
-                | WorthQueryApplicationReadExecutionDenialKind::TargetIdentityLookupOverflow
-                | WorthQueryApplicationReadExecutionDenialKind::TargetIdentityNotFound => {
-                    WorthQueryApplicationOneShotDenialKind::ProjectionUnavailable
-                }
-                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded => {
-                    WorthQueryApplicationOneShotDenialKind::WorkLimitExceeded
-                }
-                WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable
-                | WorthQueryApplicationReadExecutionDenialKind::ContinuationIndexUnavailable
-                | WorthQueryApplicationReadExecutionDenialKind::ContinuationBoundaryRejected
-                | WorthQueryApplicationReadExecutionDenialKind::ContinuationGenerationChanged
-                | WorthQueryApplicationReadExecutionDenialKind::ContinuationPageWidthInvalid => {
-                    WorthQueryApplicationOneShotDenialKind::TraversalUnavailable
-                }
-            };
-            return denial(kind, query, read.into_subject());
-        }
-        WorthQueryAuthorizedApplicationReadDenial::Session => (
-            WorthQueryApplicationOneShotDenialKind::ForeignPlan,
-            query.to_string(),
-        ),
-    };
-    denial(kind, query, subject)
-}
 
 pub(crate) mod court_doors_for_test;
 pub(in crate::domain_computation::primary_graph::application_query) use admitted::AdmittedScopedOps;
@@ -315,3 +234,4 @@ pub(in crate::domain_computation) use batch::BatchScopedOps;
 pub(in crate::domain_computation::primary_graph::application_query) use batch::OneShotBatchScopedOps;
 pub(in crate::domain_computation::primary_graph) use correction_disclosure::OneShotCorrectionDisclosureScopedOps;
 pub use history_capture::HistoryCaptureOps;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial;

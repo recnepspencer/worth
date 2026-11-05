@@ -19,7 +19,7 @@ pub(super) struct WorthQueryDirectYieldMintedOwner {
     pub(super) relational_basis: super::WorthQueryManagedRelationalObservation,
     pub(super) bridge: worth_runtime_bridge::facade::BridgeYieldedExecutionBasis,
     pub(super) execution: super::retained_graph_execution::WorthQueryRetainedManagedGraphExecution,
-    pub(super) run_counters: super::WorthQueryManagedRunCounters,
+    pub(super) run_counters: crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters,
     pub(super) yield_counters: super::WorthQueryYieldTransitionCounters,
 }
 
@@ -31,12 +31,7 @@ use super::managed_graph_execution::WorthQueryManagedGraphExecution;
 use super::retained_graph_execution::WorthQueryRetainedManagedGraphExecution;
 use super::run_affinity::WorthQueryDirectRunAffinity;
 use super::yield_eligibility::WorthQueryManagedYieldSafePoint;
-use super::{
-    WorthQueryDirectYieldDenied, WorthQueryDirectYieldOutcome, WorthQueryManagedRunCounters,
-    WorthQueryPausedDirectGraphExecution, WorthQueryRunningDirectRun, WorthQueryYieldRecoveryKind,
-    WorthQueryYieldRecoveryResourceEvidence, WorthQueryYieldTransitionCounters,
-    WorthQueryYieldedDirectRun,
-};
+use {super::WorthQueryDirectYieldDenied, super::WorthQueryDirectYieldOutcome, crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters, super::WorthQueryPausedDirectGraphExecution, super::WorthQueryRunningDirectRun, super::WorthQueryYieldRecoveryKind, super::WorthQueryYieldRecoveryResourceEvidence, super::WorthQueryYieldTransitionCounters, super::WorthQueryYieldedDirectRun};
 
 pub(super) fn yield_direct_run(
     paused: WorthQueryPausedDirectGraphExecution,

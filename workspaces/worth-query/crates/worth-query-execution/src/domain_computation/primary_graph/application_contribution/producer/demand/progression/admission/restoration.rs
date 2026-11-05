@@ -20,7 +20,7 @@ fn readmit_checkpoint_output<Query>(
         expected_idempotency_key: [u8; 32],
         observed_source: &WorthQueryObservedSource<Query>,
         source_epoch: crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch,
-        source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        source_scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         owner_retained_program_basis: bool,
     ) -> Result<Option<ReadmittedOutput>, WorthQueryOutputDemandDenial> {
         let checkpoint_source = source_epoch.checkpoint_identity();
@@ -90,8 +90,8 @@ fn readmit_checkpoint_output<Query>(
         // decoded producer observations before admitting a restored row.
 
         let source_read = match &observed_source.selection {
-            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(source_read) => source_read,
-            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Relational => return Ok(None),
+            crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity::Product(source_read) => source_read,
+            crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity::Relational => return Ok(None),
         };
         let selected = self
             .on_branch(source_read.product_branch())
@@ -182,7 +182,7 @@ fn readmit_checkpoint_output<Query>(
 fn record_restored_output(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        source_scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         readmitted: &ReadmittedOutput,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let restored = &readmitted.restored;
@@ -256,7 +256,7 @@ pub(super) struct ReadmittedOutput {
     computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence,
     pub(super) restored: crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput,
     pub(super) settlement: std::sync::Arc<
-        crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+        crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity,
     >,
     verified_at: Option<worth_relational::facade::runtime::PositionedRelationalSnapshot>,
 }

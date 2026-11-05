@@ -4,11 +4,13 @@ use worth_query_admission::facade::authentication_event::WorthQueryAuthenticatio
 
 use super::inputs::ObservedApprovalEvidence;
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 pub(super) fn authentication_intent(
-    instance: &super::super::super::PublishedWorkflowInstanceRef,
+    instance: &crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
     required: &RequiredWorkflowApproval,
-    proposal: &super::super::super::PublishedWorkflowProposalRef,
+    proposal: &crate::domain_computation::primary_graph::vocabulary::application_attempt::reference::PublishedWorkflowProposalRef,
     decision: WorkflowApprovalDecision,
     evidence: &[ObservedApprovalEvidence],
     currentness: &[super::super::super::WorthQueryApplicationObservedFact],
@@ -64,7 +66,7 @@ pub(super) fn derive<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     compiled: &crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
     required: &RequiredWorkflowApproval,
-    proposal: &super::super::super::PublishedWorkflowProposalRef,
+    proposal: &crate::domain_computation::primary_graph::vocabulary::application_attempt::reference::PublishedWorkflowProposalRef,
     decision: WorkflowApprovalDecision,
     admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,

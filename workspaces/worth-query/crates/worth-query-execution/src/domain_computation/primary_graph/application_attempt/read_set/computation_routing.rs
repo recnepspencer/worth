@@ -17,17 +17,6 @@ use worth_proof::CanonicalUniqueVec;
 
 use super::super::fact::WorthQueryApplicationFactKey;
 
-/// One owner call of a partitioned computation that reads through the lent
-/// reader.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum ComputationRead {
-    /// `partitions`: which items the input holds.
-    Membership,
-    /// `partition_key` for one item.
-    ItemKey(PartitionItemId),
-    /// `gather` for one partition.
-    Partition(PartitionIdentity),
-}
 
 /// Every owner call that read one decision fact while the attempt runs. A
 /// call that reads the fact again is still one call.
@@ -339,11 +328,7 @@ pub(crate) mod sealed;
 mod test_mutation;
 
 pub(in crate::domain_computation::primary_graph) use index::ComputationFactIndex;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 
-impl worth_execution::ChargedBytes for ComputationRead {
-    fn additional_charged_bytes(&self) -> u64 {
-        0
-    }
-}
 
 mod court_doors_for_test;

@@ -1,5 +1,5 @@
 //! Domain stops survive only an exact generic nested-stop handoff; direct controls win.
-use super::denial::WorthQueryApplicationHistoryDenial as Denial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial;
 
 pub(super) fn run<T>(
     execution: worth_execution::ExecutionRequest<'_, '_>,

@@ -1,6 +1,7 @@
 //! Retained consumed evidence comes only from a bound current accepted row.
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::BoundCurrentAcceptedOutput;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 
 impl ConsumedOutputEvidence {
     pub(in crate::domain_computation::primary_graph) fn retain_bound(

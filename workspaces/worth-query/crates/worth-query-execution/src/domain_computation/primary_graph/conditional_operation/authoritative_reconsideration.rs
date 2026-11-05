@@ -8,9 +8,7 @@ use worth_runtime_bridge::facade::{
 use super::signal_decision_reentry::{
     reconsider_retained_wake, WorthQueryConditionalTruthBasis, WorthQueryRetainedConditionalWake,
 };
-use crate::domain_computation::primary_graph::output_lineage::invalidation::{
-    CommitTouchInterest, TouchedCommits,
-};
+use {crate::domain_computation::primary_graph::vocabulary::output_lineage::commit_touches::CommitTouchInterest, crate::domain_computation::primary_graph::output_lineage::invalidation::TouchedCommits};
 
 /// Commits selected from the canonical subscription's retained touches. Any
 /// writer's commit on the branch is visible here, not only Query's own.

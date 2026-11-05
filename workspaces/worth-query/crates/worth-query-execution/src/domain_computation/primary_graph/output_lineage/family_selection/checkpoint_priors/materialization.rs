@@ -55,7 +55,7 @@ impl NativePriorCheckpointOutput<'_> {
                 .map_err(|error| Denial::allocation("native output entity name", error))?;
             copied_entity_name.push_str(entity_name);
             roles.push(
-                crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole {
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole {
                     role: copied_role,
                     posture,
                     entity_name: copied_entity_name,
@@ -67,7 +67,7 @@ impl NativePriorCheckpointOutput<'_> {
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
                 implementation,
                 producer: producer.into(),
-                posture: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
+                posture: crate::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
                 source: locator.source,
                 scope: self.scope,
                 source_partition: partition,

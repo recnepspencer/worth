@@ -9,13 +9,13 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-use super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::derived::PreparedSettlementRegistration;
 use super::derived::SettlementRegistrationCleanup;
-use super::derived::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use super::derived::StoppedSettlementRegistration;
 use super::equality;
-use super::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::mark_state::SettlementCurrentness;
 use super::read_basis_carry;
 use super::source_alignment::BranchMarkRoot;

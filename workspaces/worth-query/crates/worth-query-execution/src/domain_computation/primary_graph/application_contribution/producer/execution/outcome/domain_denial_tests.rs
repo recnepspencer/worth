@@ -1,9 +1,7 @@
 //! A handler's domain denial leaves the completion path as the producer's
 //! declared value, decodable by its binding, under the domain-denied kind.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    WorthQueryProducerDenialDecodeDenial, WorthQueryUndeclaredProducerDenial,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_contribution::denial_value::WorthQueryProducerDenialDecodeDenial, crate::domain_computation::primary_graph::WorthQueryUndeclaredProducerDenial};
 use worth_query_declaration::facade::application_schema::ValueDecodeBounds;
 
 #[derive(Clone, Debug, Eq, PartialEq, worth_foundational::facade::WorthValue)]

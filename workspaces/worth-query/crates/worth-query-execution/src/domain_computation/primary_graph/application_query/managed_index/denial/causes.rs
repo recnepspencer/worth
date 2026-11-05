@@ -59,8 +59,8 @@ pub enum WorthQueryManagedIndexRefusal {
 pub enum WorthQueryManagedIndexDenialCause<'a> {
     CurrentControl(&'a crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial),
     SourceVerification {
-        kind: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind,
-        authorization: Option<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>,
+        kind: crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+        authorization: Option<crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind>,
         execution: Option<worth_relational::facade::transactions::RelationalExecutionDenialCause>,
     },
     Refused(WorthQueryManagedIndexRefusal),
@@ -74,13 +74,13 @@ pub enum WorthQueryManagedIndexDenialCause<'a> {
         &'a worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial,
     ),
     Product(&'a crate::basis::WorthQueryProductBranchAdmissionDenial),
-    Principal(&'a crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
-    Scope(&'a crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
-    QueryAdmission(&'a application_query::WorthQueryApplicationQueryAdmissionDenial),
-    QueryRead(&'a application_query::WorthQueryApplicationOneShotDenial),
+    Principal(&'a crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial),
+    Scope(&'a crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial),
+    QueryAdmission(&'a crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial),
+    QueryRead(&'a crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial),
     LiveAdmission(&'a application_query::WorthQueryApplicationLiveOpenDenial),
     Source(&'a application_query::WorthQuerySourceExpectationDenial),
-    Work(&'a super::super::WorthQueryManagedIndexWorkDenial),
+    Work(&'a crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial),
     NativeSource(&'a worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial),
     NativeAdmission(&'a worth_relational::facade::mvcc::CompanionPreflightStop),
 }
@@ -111,16 +111,16 @@ pub(super) fn provider(cause: &ProviderExecutionDenial) -> Cause<'_> {
                     Cause::QueryAdmission(cause)
                 }
                 Stop::SourceFacts(cause) => Cause::Source(cause),
-                Stop::Read(application_query::WorthQueryAdmittedOneShotStop::Execution(cause)) => {
+                Stop::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop::Execution(cause)) => {
                     Cause::QueryRead(cause)
                 }
-                Stop::Read(application_query::WorthQueryAdmittedOneShotStop::Admission(cause)) => {
+                Stop::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop::Admission(cause)) => {
                     Cause::NativeAdmission(cause)
                 }
                 Stop::Basis(_) => Cause::Refused(Refusal::ForeignBasis),
                 Stop::Read(
-                    application_query::WorthQueryAdmittedOneShotStop::WorkCounterOverflow
-                    | application_query::WorthQueryAdmittedOneShotStop::WorkAccountingMismatch,
+                    crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop::WorkCounterOverflow
+                    | crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop::WorkAccountingMismatch,
                 ) => Cause::Refused(Refusal::CapacityAccountingOverflow),
                 Stop::Missing | Stop::Ambiguous | Stop::ForeignClosure => {
                     Cause::Refused(Refusal::ForeignContext)

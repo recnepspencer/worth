@@ -11,7 +11,7 @@ pub(super) use eligibility::require;
 /// Unsupported facts and unavailable canonical evidence never mean no writes.
 pub enum WorthQueryCorrectionRestoredSupportDenial {
     UnsupportedFact,
-    ManagedProvider(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
+    ManagedProvider(crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial),
     CanonicalEvidenceUnavailable,
     CanonicalAssociationMismatch,
     Native(worth_relational::facade::history::RelationalAuthoredWriteDenial),

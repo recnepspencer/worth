@@ -42,9 +42,7 @@ pub use demand::{
 };
 pub use output_roots::WorthQueryApplicationProgramRoots;
 pub use program_owner::SelectedOwnerOps;
-pub use program_owner::{
-    WorthQueryProgramOwner, WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
-};
+pub use {program_owner::WorthQueryProgramOwner, program_owner::WorthQuerySelectedProgramOwner};
 pub use program_runtime::{
     WorthQueryProgramApplicationRuntime, WorthQueryProgramSupportRetirementFailure,
     WorthQueryProgramSupportRetirementReceipt,

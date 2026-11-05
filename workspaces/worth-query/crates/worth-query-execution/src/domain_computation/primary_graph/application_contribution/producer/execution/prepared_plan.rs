@@ -1,8 +1,8 @@
 //! Sealed computes travel; producer completion and publication stay on the owner.
 pub(crate) mod canonical_apply;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot;
-use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::ComputedSlot;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute;
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) type ProducerExecutionPlan<
     'owner,

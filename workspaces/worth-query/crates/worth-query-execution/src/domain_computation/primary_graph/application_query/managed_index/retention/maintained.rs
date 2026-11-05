@@ -60,7 +60,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         {
             return Err(Denial::ForeignAssociation);
         }
-        let super::super::super::WorthQueryApplicationBasisSelectionIdentity::Product(product) =
+        let crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity::Product(product) =
             terminal.basis().selection()
         else {
             return Err(Denial::ForeignAssociation);

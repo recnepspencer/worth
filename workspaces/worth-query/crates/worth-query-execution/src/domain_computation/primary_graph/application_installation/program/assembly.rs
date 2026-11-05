@@ -1,5 +1,5 @@
 //! Assemble the one admitted program roster and native runtime into its installed owner.
-use super::super::program_admission::WorthQueryAdmittedProgramSupport;
+use crate::domain_computation::primary_graph::vocabulary::application_installation::program_admission::WorthQueryAdmittedProgramSupport;
 use super::super::WorthQueryInMemoryApplicationDenial;
 use super::supported_program::WorthQuerySupportedProgramRecord;
 use super::{

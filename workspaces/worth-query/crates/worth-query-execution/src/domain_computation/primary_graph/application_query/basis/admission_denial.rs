@@ -1,6 +1,4 @@
-use super::super::{
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
 
 pub(in crate::domain_computation::primary_graph::application_query) fn map_basis_denial(
     denial: worth_relational::facade::branch::RelationalBranchBasisDenial,
@@ -87,13 +85,13 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admission
 }
 
 pub(in crate::domain_computation::primary_graph::application_query) fn map_registration_denial(
-    denial: super::super::resource_lifecycle::WorthQueryApplicationBasisRegistrationDenial,
+    denial: crate::domain_computation::primary_graph::vocabulary::application_query::basis_registry::WorthQueryApplicationBasisRegistrationDenial,
 ) -> WorthQueryApplicationQueryAdmissionDenial {
     match denial {
-        super::super::resource_lifecycle::WorthQueryApplicationBasisRegistrationDenial::Basis(
+        crate::domain_computation::primary_graph::vocabulary::application_query::basis_registry::WorthQueryApplicationBasisRegistrationDenial::Basis(
             denial,
         ) => map_basis_denial(denial),
-        super::super::resource_lifecycle::WorthQueryApplicationBasisRegistrationDenial::Snapshot(
+        crate::domain_computation::primary_graph::vocabulary::application_query::basis_registry::WorthQueryApplicationBasisRegistrationDenial::Snapshot(
             denial,
         ) => {
             let kind = match denial {

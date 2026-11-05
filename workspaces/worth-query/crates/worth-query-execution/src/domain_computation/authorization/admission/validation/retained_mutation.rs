@@ -1,7 +1,7 @@
 //! Static authority shared with ordinary mutation admission after the exact
 //! installation owner has sealed a cold-compiled producer mutation binding.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryCurrentRetainedMutationBinding;
@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
 use super::denial;
 use super::validate_static_authority_prefix;
 use super::WorthQueryOperationAuthorizationDenial;
-use super::WorthQueryOperationAuthorizationDenialKind;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 
 pub(in crate::domain_computation) enum WorthQueryRetainedMutationStaticStop {
     Authorization(WorthQueryOperationAuthorizationDenial),

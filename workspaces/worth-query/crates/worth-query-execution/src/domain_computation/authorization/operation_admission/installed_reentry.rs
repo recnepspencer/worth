@@ -1,11 +1,7 @@
 //! Re-entry compares admission facts with the installation owner's retained handle.
 use super::brand_tag::BrandTag;
 use super::*;
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial as Denial,
-    WorthQueryOperationAuthorizationDenialKind as Kind,
-    WorthQueryOperationAuthorizationRefusalKind as Refusal,
-};
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial as Denial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Kind, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as Refusal};
 use crate::equality_type_id::EqualityTypeId;
 use worth_query_installation::facade::{InstalledOperationCatalog, InstalledOperationView};
 
@@ -15,7 +11,7 @@ impl<Schema, Operation, Input, Scope>
     #[inline]
     pub(in crate::domain_computation) fn validate_installed_entry(
         &self,
-        runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
         installed: &InstalledOperationCatalog,
     ) -> Result<(), Denial> {
@@ -26,7 +22,7 @@ impl<Schema, Operation, Input, Scope>
     #[inline]
     pub(in crate::domain_computation) fn validate_mutation_entry(
         &self,
-        runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
         installed: &InstalledOperationCatalog,
     ) -> Result<(), crate::domain_computation::primary_graph::MutationHandlerExecutionDenial> {
@@ -47,7 +43,7 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn validate_owned_brand(
         &self,
         tag: &BrandTag,
-        runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     ) -> Result<(), Denial> {
         self.validate_runtime_ownership(runtime, binding)?;
@@ -57,7 +53,7 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn validate_installed_entry_with_tag(
         &self,
         tag: &BrandTag,
-        runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
         installed: &InstalledOperationCatalog,
     ) -> Result<(), Denial> {
@@ -68,7 +64,7 @@ impl WorthQueryAdmittedOperation {
     fn validate_mutation_entry_with_tag(
         &self,
         tag: &BrandTag,
-        runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
         installed: &InstalledOperationCatalog,
     ) -> Result<(), crate::domain_computation::primary_graph::MutationHandlerExecutionDenial> {
@@ -79,7 +75,7 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn validate_projection_entry_with_tag(
         &self,
         tag: &BrandTag,
-        runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
         installed: &InstalledOperationCatalog,
     ) -> Result<(), Denial> {

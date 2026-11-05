@@ -226,7 +226,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
 
     fn require_owned_invariant(
         &self,
-        requirement: super::WorthQueryProducerInvariantRequirement,
+        requirement: crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         let installed = self
             .installed_schema
@@ -296,7 +296,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
     pub fn operation_body<Binding>(&mut self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
     where
         Binding: ApplicationMutationBinding<Schema, Result = (),
-            Denial = super::super::operation_body::WorthQueryOperationBodyDenial,
+            Denial = crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial,
             Decision = super::super::operation_body::WorthQueryOperationBodyDecision<Schema,
                 <<Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding<Schema>>::Scope>>,
 {

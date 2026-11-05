@@ -1,12 +1,7 @@
 //! The typed owner evidence a denial carries beside its kind.
 
-use super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitDenialStage,
-};
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind, super::WorthQueryApplicationCommitDenialStage};
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 use super::denial_cause::DenialCause;
 
@@ -32,7 +27,7 @@ impl WorthQueryApplicationCommitDenial {
     /// it grants no retry, capacity increase or cleanup authority.
     pub fn output_verification_capacity_stop(
         &self,
-    ) -> Option<crate::domain_computation::primary_graph::VerificationCapacityStop> {
+    ) -> Option<crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop> {
         match self.cause.as_deref() {
             Some(DenialCause::ProviderSession(failure)) => {
                 failure.output_verification_capacity_stop()

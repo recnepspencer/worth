@@ -3,8 +3,8 @@
 #[derive(Debug)]
 pub(super) enum DenialCause {
     DomainValue(worth_query_installation::facade::ApplicationValueDecodeDenial),
-    DomainValueAdmission(crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial),
-    UnobservedWrite(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationUnobservedWrite),
+    DomainValueAdmission(crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial),
+    UnobservedWrite(crate::domain_computation::primary_graph::vocabulary::application_attempt::unobserved_write::WorthQueryApplicationUnobservedWrite),
     SigningLifecycleAttempt(
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     ),
@@ -15,12 +15,12 @@ pub(super) enum DenialCause {
     /// The request's own authorization stopped the commit: its security
     /// basis on the branch, or what it may do there.
     RequestAuthority(
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+        crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
     ),
     Execution(
         Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     ),
 }

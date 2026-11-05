@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::invariant_projection::{
 use crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation;
 use worth_query_declaration::facade::application_schema::RelationDirection;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>

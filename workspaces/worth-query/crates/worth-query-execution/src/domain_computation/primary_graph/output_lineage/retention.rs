@@ -1,6 +1,4 @@
-use super::{
-    prepared_slot::CancelledLineageSlot, ProductCoordinate, WorthQueryApplicationOutputLineage,
-};
+use {super::prepared_slot::CancelledLineageSlot, crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate, super::WorthQueryApplicationOutputLineage};
 
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn release_occurrence(

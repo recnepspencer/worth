@@ -70,7 +70,7 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationDenial};
+use {crate::domain_computation::primary_graph::vocabulary::application_contribution::checkpoint::WorthQueryManagedComputationCheckpoint, super::WorthQueryManagedComputationDenial};
 
 /// The value a computation's input binding carries.
 type InputValue<Schema, Feature, Computation> = <<Computation as ApplicationManagedComputation<

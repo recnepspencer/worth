@@ -2,10 +2,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaBindingIdentity,
 };
 
-use super::{
-    WorthQueryApplicationBasisIdentity, WorthQueryApplicationQueryAdmissionDenial,
-    WorthQueryApplicationQueryAdmissionDenialKind,
-};
+use {crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
 /// Descriptive readiness of one installed primary-graph application runtime.

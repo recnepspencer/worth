@@ -5,15 +5,9 @@ use super::{
     WorthQueryObservedConventionalOperation,
 };
 use crate::domain_computation::authorization::admission::requirement_observation::RequirementObservationParentOps;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryPrincipalCurrentnessDependency, WorthQueryRetainedAuthorizationDecisionFacts,
-};
-use crate::domain_computation::primary_graph::{
-    validate_freshness_at_snapshot, WorthQueryApplicationEntityIdentity,
-    WorthQueryAuthenticatedPrincipal, WorthQueryPrincipalResolutionMode,
-};
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency, crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts};
+use {crate::domain_computation::primary_graph::validate_freshness_at_snapshot, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
 use worth_query_installation::facade::{
     ApplicationScalarValueBinding, ApplicationSchema, WorthQueryInstalledApplicationOperation,
@@ -128,13 +122,13 @@ where
                 .and_then(|truth| truth.validate_entity_freshness(execution, scope_identity))
                 .map_err(|cause| {
                     match cause.kind() {
-                        crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Stopped(cause) => {
+                        crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Stopped(cause) => {
                             super::super::denial::relational_read_denial(
                                 cause,
                                 scope_identity.entity_name(),
                             )
                         }
-                        crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(_) => {
+                        crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Refused(_) => {
                             denial(
                                 WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StaleScope),
                                 scope_identity.entity_name(),

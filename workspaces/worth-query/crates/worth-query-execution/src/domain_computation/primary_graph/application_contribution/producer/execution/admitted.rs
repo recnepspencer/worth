@@ -1,5 +1,6 @@
 use super::*;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 
 pub(super) fn execute_fresh<Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

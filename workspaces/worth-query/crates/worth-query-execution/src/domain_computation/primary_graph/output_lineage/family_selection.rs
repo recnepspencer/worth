@@ -1,6 +1,6 @@
 //! Candidate heads for every source partition in a producer-qualified output family.
-use super::ProductCoordinate;
-use super::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
 use super::WorthQueryCurrentOutputCandidate;
 use super::WorthQueryCurrentOutputFamilyResolution;
@@ -45,7 +45,7 @@ impl WorthQueryApplicationOutputLineage {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         family: &str,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,

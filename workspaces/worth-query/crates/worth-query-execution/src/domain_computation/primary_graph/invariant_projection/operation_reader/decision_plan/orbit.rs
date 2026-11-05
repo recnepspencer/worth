@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::aggregate_identity::WorthQueryAggr
 use crate::domain_computation::primary_graph::invariant_projection::{
     WorthQueryInvariantProjectionOrbit, WorthQueryInvariantProjectionTraversalDenialKind as Kind,
 };
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {

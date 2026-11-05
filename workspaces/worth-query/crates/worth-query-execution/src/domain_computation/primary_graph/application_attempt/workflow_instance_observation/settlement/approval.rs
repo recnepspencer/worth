@@ -51,7 +51,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         kind,
         &layout.approval.protocol_version,
         AspectValue::UInt64(
-            crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION,
         ),
         facts,
     )?;
@@ -126,7 +126,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         })?
     {
         return Err(WorthQueryApplicationAttemptDenial::new(
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::WorkflowApprovalPrincipalStale,
+            crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowApprovalPrincipalStale,
             "workflow approval principal evidence is stale",
         ));
     }

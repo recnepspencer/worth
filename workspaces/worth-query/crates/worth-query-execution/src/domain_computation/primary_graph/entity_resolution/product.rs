@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 mod retained_scope;
 use super::admit_request;
 use super::entity_denial;
@@ -8,12 +8,12 @@ use super::ApplicationScalarValueBinding;
 use super::ApplicationSchema;
 use super::EqualityPredicate;
 use super::WorthQueryApplicationEntityIdentity;
-use super::WorthQueryEntityResolutionDenial;
-use super::WorthQueryEntityResolutionDenialKind;
-use super::WorthQueryPrincipalResolutionMode;
+use crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 use super::WorthQueryRequestScope;
 use super::WritePosture;
-use crate::domain_computation::primary_graph::application_query::WorthQueryObservedScopeSelector;
+use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
 
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use worth_query_installation::facade::DeclaredApplicationFieldValue;
@@ -138,7 +138,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         self.product().relational_basis(),
                     )
                     .map_err(|denial| {
-use super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Currency;
+use crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Currency;
                         let kind = match denial {
                             Currency::Execution(cause) => WorthQueryEntityResolutionDenialKind::Stopped(cause),
                             Currency::Basis(_) | Currency::IndexUnavailable(_) =>

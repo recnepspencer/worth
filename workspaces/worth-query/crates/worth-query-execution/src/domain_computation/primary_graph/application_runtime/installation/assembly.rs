@@ -9,7 +9,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 pub(super) fn assemble_application_runtime<Schema>(
     phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
     graph: PublishedApplicationGraph<
-        crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge,
+        crate::domain_computation::primary_graph::vocabulary::managed_bridge::WorthQueryInstalledApplicationBridge,
     >,
     installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
     authorization: WorthQueryInstalledAuthorizationRegistry,

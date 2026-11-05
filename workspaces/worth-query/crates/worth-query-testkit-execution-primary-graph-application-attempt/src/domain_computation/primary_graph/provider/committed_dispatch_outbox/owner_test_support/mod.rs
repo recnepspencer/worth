@@ -14,7 +14,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::application
 use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::ExternalEffectCorrelationBasis;
 use worth_query_execution::facade::domain_computation::WorthQueryDispatchOutboxRecord;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_relational_branch_id;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
 
 pub fn commit_record(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,

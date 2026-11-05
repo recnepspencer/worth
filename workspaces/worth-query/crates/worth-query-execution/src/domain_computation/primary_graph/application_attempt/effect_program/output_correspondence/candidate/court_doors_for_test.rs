@@ -1,5 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
     #[doc(hidden)]

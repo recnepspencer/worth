@@ -7,14 +7,8 @@ use worth_relational::facade::indexes::{
 };
 
 use super::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::indexed_entity_selection::IndexedSelectionReobserveDenial;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum IndexedSelectionReobserveDenial {
-    UnexpectedFact,
-    Lookup(BoundedEntityFieldLookupDenialKind),
-    Overflow,
-    WorkBudgetExceeded,
-}
 
 /// Why an indexed lookup yields no selection fact.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -317,8 +311,8 @@ pub(in crate::domain_computation::primary_graph) fn currentness_with_remaining(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     remaining_work: &mut usize,
-) -> Result<bool, super::WorthQuerySourceCurrentnessFailure> {
-    use super::WorthQuerySourceCurrentnessFailure as Failure;
+) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure> {
+    use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Failure;
     let WorthQueryApplicationObservedFact::IndexedEntitySelection {
         index_id,
         definition,

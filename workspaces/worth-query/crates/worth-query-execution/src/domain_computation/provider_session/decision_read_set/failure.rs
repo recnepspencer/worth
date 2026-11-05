@@ -18,7 +18,7 @@ pub enum WorthQueryDecisionReadSetDenialKind {
         worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption,
     ),
     AllocationDenied,
-    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    ExecutionRequest(crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind),
     ActiveSnapshotCapacityExhausted {
         maximum_active_snapshots: usize,
     },
@@ -35,7 +35,7 @@ pub struct WorthQueryDecisionReadSetFailure {
     detail: Arc<str>,
     allocation: Option<ExecutionAllocationDenial>,
     managed_index:
-        Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
+        Option<crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial>,
     pub native_query_read_stop:
         Option<Arc<worth_relational::facade::runtime::QueryReadExecutionStop>>,
 }
@@ -87,7 +87,7 @@ impl WorthQueryDecisionReadSetFailure {
 
     pub(in crate::domain_computation) fn with_managed_index_denial(
         mut self,
-        cause: crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial,
+        cause: crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial,
     ) -> Self {
         self.managed_index = Some(cause);
         self
@@ -96,7 +96,7 @@ impl WorthQueryDecisionReadSetFailure {
     /// The original pure provider or controlled refusal during consistency.
     pub fn managed_index_denial(
         &self,
-    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial> {
+    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial> {
         self.managed_index.as_ref()
     }
 

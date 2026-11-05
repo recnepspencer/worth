@@ -17,7 +17,7 @@ pub use installation_authority::WorthQueryExecutionInstallationAuthority;
 pub use installation_authority::WorthQueryExecutionRuntimeInstallation;
 pub use output_demand_resources::WorthQueryOutputDemandLimits;
 pub use output_demand_resources::WorthQueryOutputDemandResourceProfile;
-pub use runtime_identity::WorthQueryRuntimeAuthorityIdentity;
+
 pub use runtime_root::WorthQueryExecutionInstallationCommitDenial;
 pub use runtime_root::WorthQueryExecutionRuntime;
 pub use runtime_root::WorthQueryExecutionRuntimeInstaller;

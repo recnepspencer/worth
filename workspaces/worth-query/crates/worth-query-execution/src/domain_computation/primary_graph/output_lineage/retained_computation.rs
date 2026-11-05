@@ -17,8 +17,8 @@ use worth_runtime_world::facade::ProductBranchObservation;
 
 mod changes;
 use super::recorded_output::RecordedOutput;
-use super::ProductCoordinate;
-use super::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
 use crate::domain_computation::primary_graph::application_contribution::ComputationPrior;
 use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;

@@ -8,11 +8,7 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledWorkflowDefinitionParts,
 };
 
-use super::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationEffectProgram, WorthQueryCompleteApplicationReadSet,
-    WorthQueryProjectedApplicationMutation,
-};
+use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationEffectProgram, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::visit_definition_facts,
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::BoundWorkflowDefinitionContract,
@@ -23,11 +19,7 @@ mod publication;
 mod retirement;
 
 use lineage::select_lineage;
-pub use publication::{
-    PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
-    PublishedWorkflowDefinitionRef, WorkflowDefinitionExpectedPredecessor,
-    WorkflowDefinitionPublicationOutcome,
-};
+pub use {publication::PerformedWorkflowDefinitionPublication, publication::PreparedWorkflowDefinitionPublication, publication::WorkflowDefinitionExpectedPredecessor, publication::WorkflowDefinitionPublicationOutcome};
 pub use retirement::{
     PerformedWorkflowDefinitionRetirement, PreparedWorkflowDefinitionRetirement,
     WorkflowDefinitionRetirementOutcome,
@@ -146,7 +138,7 @@ where
             read_set: self,
             effects,
             conditional_definition: None,
-            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
+            effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::Platform,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

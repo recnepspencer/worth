@@ -1,5 +1,7 @@
 //! Changed decision facts or consumed outputs permit another authoritative attempt.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 
 impl AcceptedCurrentCandidate {
     pub(in crate::domain_computation::primary_graph) fn decision_input_changed_at(

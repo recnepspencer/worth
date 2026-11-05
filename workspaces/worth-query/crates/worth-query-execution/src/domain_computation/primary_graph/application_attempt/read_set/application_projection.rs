@@ -15,7 +15,7 @@ pub struct CompletedFactProjection {
     physical: bool,
     bytes: u64,
     _memory: Option<ExecutionMemoryReservation>,
-    scopes: super::CompletedReadScopes,
+    scopes: crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
     preimages: BTreeMap<
         worth_relational::facade::identity::EntityId,
         BTreeMap<String, BTreeMap<String, BTreeMap<String, Vec<usize>>>>,
@@ -31,7 +31,7 @@ impl Eq for CompletedFactProjection {}
 impl CompletedFactProjection {
     pub(in crate::domain_computation::primary_graph) fn build(
         body: &FactPayload,
-        scopes: super::CompletedReadScopes,
+        scopes: crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
         control: StorageControl<'_, '_>,
     ) -> Result<Arc<Self>, StoreDenial> {
         let count = scopes.len();

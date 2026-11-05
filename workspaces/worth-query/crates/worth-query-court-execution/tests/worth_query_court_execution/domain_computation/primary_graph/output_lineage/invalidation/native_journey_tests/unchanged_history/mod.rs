@@ -1,5 +1,5 @@
 //! Same-position native replacements share their unchanged history allocation.
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
 

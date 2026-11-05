@@ -5,9 +5,9 @@ use std::sync::Arc;
 use im::OrdSet;
 use worth_relational::facade::history::CommitId;
 
-use super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::logical_marking::{NativeMarkingReport, WorthQueryNativeMarkingPrecision};
-use crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding;
+use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
 use crate::domain_computation::execution_observation;
 
 /// One affected output described by its actual lineage identity. These copied

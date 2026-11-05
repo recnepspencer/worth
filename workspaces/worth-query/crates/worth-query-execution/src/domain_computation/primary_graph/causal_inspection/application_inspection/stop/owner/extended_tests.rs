@@ -14,10 +14,7 @@ fn denial(cause: InspectionAdmissionDenial) -> WorthQueryApplicationInspectionDe
 
 #[test]
 fn inspection_preserves_principal_cause() {
-    use crate::domain_computation::primary_graph::{
-        WorthQueryPrincipalResolutionDenialKind as Kind,
-        WorthQueryPrincipalResolutionRefusalKind as Refusal,
-    };
+    use {crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind as Kind, crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as Refusal};
     let original = WorthQueryPrincipalResolutionDenial::new(
         Kind::Refused(Refusal::UnknownPrincipal),
         "principal binding",

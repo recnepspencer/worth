@@ -5,6 +5,7 @@ use {
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
 };
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 impl ObservedWorkflowInstance {
     /// Retains absence too: a custody commit after preparation must stale this candidate.
     /// Foreign custody pays existing bounded history reconstruction only when present.

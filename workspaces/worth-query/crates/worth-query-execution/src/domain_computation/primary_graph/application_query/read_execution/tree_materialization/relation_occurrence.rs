@@ -1,10 +1,7 @@
 //! Physical membership follows its selected child occurrence through projection and ordering.
 use worth_relational::facade::identity::{EntityId, RelationId};
 
-use super::{
-    projection_denial, ResultTreeWork, WorthQueryApplicationProjectionNode,
-    WorthQueryApplicationReadExecutionDenial,
-};
+use {super::projection_denial, super::ResultTreeWork, super::WorthQueryApplicationProjectionNode, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial};
 
 #[derive(Clone, Copy)]
 pub(super) struct RelationProjectionTarget {

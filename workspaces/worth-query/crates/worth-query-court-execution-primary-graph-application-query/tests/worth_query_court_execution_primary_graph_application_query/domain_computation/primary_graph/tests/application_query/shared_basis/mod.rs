@@ -2,7 +2,7 @@
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::admission::court_doors_for_test::AdmissionDoorsOps;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::shared_query_basis::court_doors_for_test::SharedQueryBasisDoorsOps;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationBasisReleaseOutcome;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 

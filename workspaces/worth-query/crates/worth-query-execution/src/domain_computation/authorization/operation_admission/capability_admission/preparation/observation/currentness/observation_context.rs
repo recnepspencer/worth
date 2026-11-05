@@ -8,7 +8,7 @@ use crate::domain_computation::authorization::{
 pub(in crate::domain_computation::authorization) struct WorthQueryCurrentCapabilityObservation<
     'observation,
 > {
-    session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+    session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     relational: &'observation worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &'observation worth_relational::facade::snapshots::SnapshotHandle,
     bridge: &'observation worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
@@ -34,7 +34,7 @@ impl WorthQueryCurrentCapabilityObservation<'_> {
 
     pub(in crate::domain_computation::authorization) const fn session_identity(
         &self,
-    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
         self.session
     }
     pub(in crate::domain_computation::authorization) const fn relational(

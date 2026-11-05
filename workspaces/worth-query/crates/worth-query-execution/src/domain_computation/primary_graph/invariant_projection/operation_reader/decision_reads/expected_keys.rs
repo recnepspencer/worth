@@ -37,7 +37,7 @@ impl ExpectedFactKeys {
     pub(in crate::domain_computation::primary_graph) fn component(
         &self,
         key: &crate::domain_computation::primary_graph::component_selection::ComponentSelectionKey,
-        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        admission: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         >,
@@ -49,8 +49,8 @@ impl ExpectedFactKeys {
     }
     pub(in crate::domain_computation::primary_graph) fn source_authorization(
         &self,
-        key: &crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorizationKey,
-        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        key: &crate::domain_computation::primary_graph::vocabulary::application_attempt::source_read_authorization::SourceReadAuthorizationKey,
+        admission: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         >,
@@ -65,8 +65,8 @@ impl ExpectedFactKeys {
     }
     pub(in crate::domain_computation::primary_graph) fn managed_source(
         &self,
-        key: &crate::domain_computation::primary_graph::application_attempt::ManagedSourceReadKey,
-        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        key: &crate::domain_computation::primary_graph::vocabulary::application_attempt::managed_source_read::ManagedSourceReadKey,
+        admission: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         >,
@@ -79,7 +79,7 @@ impl ExpectedFactKeys {
     pub(in crate::domain_computation::primary_graph) fn aggregate(
         &self,
         key: &crate::domain_computation::primary_graph::aggregate_observation::AggregateKey,
-        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        admission: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         >,
@@ -92,7 +92,7 @@ impl ExpectedFactKeys {
     pub(in crate::domain_computation::primary_graph) fn structural_walk(
         &self,
         key: &crate::domain_computation::primary_graph::structural_walk::StructuralWalkKey,
-        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        admission: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         >,

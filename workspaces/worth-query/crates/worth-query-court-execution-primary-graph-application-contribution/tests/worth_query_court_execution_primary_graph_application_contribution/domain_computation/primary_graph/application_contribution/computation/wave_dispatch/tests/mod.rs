@@ -1,12 +1,12 @@
 //! Canonical outcomes and original controls judge the production member wave.
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::ComputedMember;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::ComputedMember;
 pub use worth_execution::ExecutionMap;
 pub use worth_execution::MapKernelFailure;
 pub use worth_execution::MapOutcome;
 pub use worth_execution::MapStop;
 pub use worth_foundational::PartitionIdentity;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::PreparedMember;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::PreparedMember;
 pub use worth_query_execution::court_doors_for_test::domain_computation::request_execution::QueryRequestExecution;
 pub use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial;
 pub use worth_query_execution::facade::application_contribution::WorthQueryMemberExecution;

@@ -7,12 +7,7 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
-use super::{
-    denial, WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationCreationPartition, WorthQueryApplicationEffectEntity,
-    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationEntityKey,
-    WorthQueryApplicationRealizedEffect,
-};
+use {super::denial, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationCreationPartition, crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity, super::WorthQueryApplicationEffectProgramBuilder, super::WorthQueryApplicationEntityKey, super::WorthQueryApplicationRealizedEffect};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>

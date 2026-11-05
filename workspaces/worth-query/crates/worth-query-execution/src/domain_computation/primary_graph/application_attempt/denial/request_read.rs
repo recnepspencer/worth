@@ -1,8 +1,5 @@
 //! Native read causes retained at the application attempt boundary.
-use super::{
-    AttemptDenialCause, AttemptDenialMeaning, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind,
-};
+use {super::AttemptDenialCause, super::AttemptDenialMeaning, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 impl From<worth_relational::facade::transactions::RelationalExecutionDenialCause>
     for WorthQueryApplicationAttemptDenial
 {
@@ -29,7 +26,7 @@ impl WorthQueryApplicationAttemptDenial {
             | AttemptDenialMeaning::NativeExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause::StorageUnavailable(cause))
             | AttemptDenialMeaning::Authored {
                 kind: WorthQueryApplicationAttemptDenialKind::ExecutionRequest(
-                    crate::domain_computation::WorthQueryProviderSessionDenialKind::StorageUnavailable(cause),
+                    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::StorageUnavailable(cause),
                 ), ..
             } => Some(cause),
             _ => None,
@@ -47,16 +44,16 @@ impl WorthQueryApplicationAttemptDenial {
     }
 
     pub(in crate::domain_computation) fn principal_read_stopped(
-        stop: crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial,
+        stop: crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial,
         subject: &str,
     ) -> Self {
-        use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind as Principal;
+        use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind as Principal;
         let kind = match stop.kind() {
             Principal::Stopped(Err(
-                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+                crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
             )) => WorthQueryApplicationAttemptDenialKind::Cancelled,
             Principal::Stopped(Err(
-                crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+                crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
             )) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
             Principal::Stopped(Ok(kind)) => {
                 WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind)
@@ -83,7 +80,7 @@ impl WorthQueryApplicationAttemptDenial {
         stop: worth_relational::facade::runtime::QueryReadExecutionStop,
         subject: &str,
     ) -> Self {
-        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+        use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
         use WorthQueryApplicationAttemptDenialKind as Kind;
         let kind =
             match crate::domain_computation::primary_graph::provider::relational_execution_denial::query_read_execution_kind(
@@ -113,7 +110,7 @@ pub(super) fn relational_read_kind(
     ) {
         return WorthQueryApplicationAttemptDenialKind::ContentInconsistency;
     }
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
     match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
         Ok(kind) => WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind),
         Err(Control::Cancelled) => WorthQueryApplicationAttemptDenialKind::Cancelled,

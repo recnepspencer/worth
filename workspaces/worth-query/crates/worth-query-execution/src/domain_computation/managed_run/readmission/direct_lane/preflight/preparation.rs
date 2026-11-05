@@ -14,12 +14,7 @@ use super::super::super::evidence::WorthQueryReadmissionProgress;
 pub(crate) mod progression;
 mod validation;
 
-use crate::domain_computation::managed_run::{
-    retained_graph_execution::WorthQueryRetainedManagedGraphExecution,
-    run_affinity::{WorthQueryDirectRunAffinity, WorthQueryDirectRunReadmissionPending},
-    step_contract_admission::WorthQueryAdmittedManagedStepContract,
-    WorthQueryManagedRunCounters, WorthQueryYieldTransitionCounters, WorthQueryYieldedDirectRun,
-};
+use {crate::domain_computation::managed_run::retained_graph_execution::WorthQueryRetainedManagedGraphExecution, crate::domain_computation::managed_run::run_affinity::WorthQueryDirectRunAffinity, crate::domain_computation::managed_run::run_affinity::WorthQueryDirectRunReadmissionPending, crate::domain_computation::managed_run::step_contract_admission::WorthQueryAdmittedManagedStepContract, crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters, crate::domain_computation::managed_run::WorthQueryYieldTransitionCounters, crate::domain_computation::managed_run::WorthQueryYieldedDirectRun};
 use crate::domain_computation::WorthQueryExecutionRuntime;
 use progression::bridge_cleanup_recovery_required;
 use validation::validate_direct_resume_preflight;
@@ -132,7 +127,7 @@ fn begin_bridge_readmission(
         contract,
     } = provisional;
     let intent = resource.bridge_readmission_intent(
-        &super::super::WorthQueryDirectReadmissionTransitionPermit::mint(),
+        &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit::mint(),
     );
     let attempt = WorthQueryDirectBridgeReadmissionAttempt {
         state,
@@ -165,7 +160,7 @@ fn begin_bridge_readmission(
                 WorthQueryDirectYieldedParts {
                     state: WorthQueryDirectYieldedState {
                         affinity: attempt.resource.abort(
-                            super::super::WorthQueryDirectReadmissionTransitionPermit::mint(),
+                            crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit::mint(),
                         ),
                         retained: attempt.state,
                     },
@@ -211,7 +206,7 @@ impl WorthQueryDirectYieldedParts {
             yield_counters,
             inspection,
         ) = yielded.owner_into_readmission_parts(
-            &super::super::WorthQueryDirectReadmissionTransitionPermit::mint(),
+            &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit::mint(),
         );
         Self {
             state: WorthQueryDirectYieldedState {
@@ -239,7 +234,7 @@ impl WorthQueryDirectYieldedParts {
                 yield_counters: self.state.retained.yield_counters,
                 inspection: self.state.retained.inspection,
             },
-            &super::super::WorthQueryDirectReadmissionTransitionPermit::mint(),
+            &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit::mint(),
         )
     }
 }

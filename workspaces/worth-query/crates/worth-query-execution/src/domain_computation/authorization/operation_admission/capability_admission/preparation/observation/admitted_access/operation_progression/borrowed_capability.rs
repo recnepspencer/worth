@@ -1,5 +1,6 @@
 //! Explicit borrowed preconditions use the same native capability progression.
 use super::*;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 pub trait BorrowedCapabilityOps<Schema: ApplicationSchema>:
     crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 {
@@ -28,7 +29,7 @@ pub trait BorrowedCapabilityOps<Schema: ApplicationSchema>:
     {
         let phase_request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
+            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
         let execution = &phase_request;
         self.authorize_capability_operation_with_request(

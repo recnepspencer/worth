@@ -1,15 +1,6 @@
 //! Typed inverse execution shares the actual forward provider and installed entry.
-use super::super::{
-    invocation::{controlled, decoded_provider, provider_result},
-    SourceImageView, WorthQueryManagedIndexPredicateProvider as Provider,
-    WorthQueryManagedIndexSourceChange as Change, WorthQueryManagedIndexSourceRows as Rows,
-    WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial as Denial,
-};
-use super::{
-    probe::{storage, RetainedPredicateProbe},
-    tree::PredicateTree,
-    WatchSlot,
-};
+use {super::super::invocation::controlled, super::super::invocation::decoded_provider, super::super::invocation::provider_result, super::super::SourceImageView, super::super::WorthQueryManagedIndexPredicateProvider as Provider, super::super::WorthQueryManagedIndexSourceChange as Change, super::super::WorthQueryManagedIndexSourceRows as Rows, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial};
+use {super::probe::storage, super::probe::RetainedPredicateProbe, super::tree::PredicateTree, crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot};
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
 use std::sync::{Arc, Mutex};
 use worth_execution::ExecutionRequest;
@@ -44,7 +35,7 @@ pub(in crate::domain_computation::primary_graph::application_query) trait Predic
         budget: &worth_relational::facade::runtime::CustomInvariantReadBudget<'_>,
         receive: &mut dyn FnMut(
             WatchSlot,
-            &super::super::WorthQueryManagedIndexControl<'_>,
+            &crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl<'_>,
         ) -> Result<(), Denial>,
     ) -> Result<(), Denial>;
     fn route(
@@ -53,7 +44,7 @@ pub(in crate::domain_computation::primary_graph::application_query) trait Predic
         before: SourceImageView<'_>,
         after: SourceImageView<'_>,
         changes: &[Change],
-        receive: &mut dyn FnMut(WatchSlot, &crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexControl<'_>) -> Result<(), Denial>,
+        receive: &mut dyn FnMut(WatchSlot, &crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl<'_>) -> Result<(), Denial>,
     ) -> Result<(), Denial>;
     fn dispose(&self);
 }
@@ -193,7 +184,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P: Provider<S, 
         before: SourceImageView<'_>,
         after: SourceImageView<'_>,
         changes: &[Change],
-        receive: &mut dyn FnMut(WatchSlot, &crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexControl<'_>) -> Result<(), Denial>,
+        receive: &mut dyn FnMut(WatchSlot, &crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl<'_>) -> Result<(), Denial>,
     ) -> Result<(), Denial> {
         decoded_provider(execution, &self.bindings, |control, session| {
             let source_control = after
@@ -257,7 +248,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P: Provider<S, 
         budget: &worth_relational::facade::runtime::CustomInvariantReadBudget<'_>,
         receive: &mut dyn FnMut(
             WatchSlot,
-            &super::super::WorthQueryManagedIndexControl<'_>,
+            &crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl<'_>,
         ) -> Result<(), Denial>,
     ) -> Result<(), Denial> {
         controlled(execution, |control| {
@@ -286,9 +277,9 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P: Provider<S, 
 }
 fn decode<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
     probe: &RetainedPredicateProbe,
-    control: &super::super::WorthQueryManagedIndexControl<'_>,
+    control: &crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl<'_>,
     session: &crate::domain_computation::primary_graph::value_decode::ValueDecodeSession<'_>,
-) -> Result<super::super::WorthQueryManagedIndexProbeValue<S, I>, Denial> {
+) -> Result<crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue<S, I>, Denial> {
     session
         .decode_managed_probe::<I::ProbeBinding>(probe.raw())
         .ok_or_else(|| {

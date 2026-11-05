@@ -10,10 +10,7 @@ use super::{denial, observed_text, observed_u64};
 pub(crate) mod aspect_presence;
 mod traversal;
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
-use crate::domain_computation::primary_graph::application_attempt::{
-    observation::{observe_field, WorthQueryApplicationFieldObservation},
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
-};
+use {crate::domain_computation::primary_graph::application_attempt::observation::observe_field, crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::decode_direction,
     crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::WorkflowEvidenceDependencyKind,

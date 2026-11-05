@@ -85,7 +85,7 @@ impl<Schema, Operation, Input, Scope>
             let failure = match matching.target {
                 Ok(target) if self.output_correspondence.matches_predecessor_output(&matching.declaration, target) => None,
                 Ok(_) => Some(WorthQueryApplicationAttemptDenial::new(
-                    super::WorthQueryApplicationAttemptDenialKind::WorkflowPredecessorOutputMismatch,
+                    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowPredecessorOutputMismatch,
                     "selected output differs from the predecessor producer output",
                 )),
                 Err(denial) => Some(denial),
@@ -121,12 +121,12 @@ impl<Schema, Operation, Input, Scope>
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         self.effects.try_reserve(effects.len()).map_err(|_| {
             WorthQueryApplicationAttemptDenial::new(
-                super::WorthQueryApplicationAttemptDenialKind::AllocationDenied,
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::AllocationDenied,
                 "succession effect storage allocation refused",
             )
         })?;
         self.effects.extend(effects);
-        self.effect_posture = crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
+        self.effect_posture = crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
         self.read_set.workflow_deadline = authority.carry.deadline;
         self.read_set.new_commit_refusal = authority.refusal;
         self.read_set.workflow_succession_binding = Some(WorkflowSuccessionBindingProof {

@@ -72,15 +72,15 @@ impl SourceQueryReadClosure {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
 
-    ) -> Result<bool, crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure>{
-        use crate::domain_computation::primary_graph::application_attempt::Movement;
-        use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Stop;
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure>{
+        use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
+        use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Stop;
         for fact in self.facts.iter() {
             self.control.before_source_fact_comparison();
             let movement = fact
                 .source_currentness_in(runtime, execution, snapshot)
                 .map_err(|stop| Stop::OutputObservation(
-                    crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(stop)
+                    crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop(stop)
                 ))??;
             if movement.movement() != Movement::Unmoved {
                 return Ok(false);
@@ -101,7 +101,7 @@ impl SourceQueryReadClosure {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
 
-    ) -> Result<(), crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>{
+    ) -> Result<(), crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop>{
         self.support.validate_current(execution, runtime, snapshot).map_err(crate::domain_computation::primary_graph::source_facts::map_source_authorization_currentness)
     }
 }

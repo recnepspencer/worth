@@ -1,12 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::provider::application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot;
 
-impl WorthQueryApplicationAttemptWorkSnapshot {
-    #[doc(hidden)]
-    pub fn attempt_aborts_for_test(&self) -> &u64 {
-        &self.attempt_aborts
-    }
-}
 
 impl WorthQueryApplicationAttemptWorkSnapshot {
     #[doc(hidden)]

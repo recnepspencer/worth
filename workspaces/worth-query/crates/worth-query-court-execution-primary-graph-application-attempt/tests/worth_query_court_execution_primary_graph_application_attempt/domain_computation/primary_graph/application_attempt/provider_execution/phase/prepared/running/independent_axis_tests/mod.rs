@@ -36,7 +36,7 @@ pub struct TestAffinityView {
     pub installed_operation: String,
     pub resource_binding: String,
     pub operation_attempt:
-        Option<worth_query_execution::court_doors_for_test::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryOperationAdmissionIdentity>,
+        Option<worth_query_execution::court_doors_for_test::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity>,
     pub operation_slot: Option<String>,
     pub schema_binding: Option<worth_query_installation::facade::ApplicationSchemaBindingIdentity>,
     pub snapshot: Option<worth_relational::facade::snapshots::SnapshotHandle>,
@@ -77,7 +77,7 @@ impl WorthQueryApplicationAttemptAffinityView for TestAffinityView {
     }
     fn operation_attempt(
         &self,
-    ) -> Option<worth_query_execution::court_doors_for_test::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryOperationAdmissionIdentity>
+    ) -> Option<worth_query_execution::court_doors_for_test::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity>
 {
         self.operation_attempt
     }

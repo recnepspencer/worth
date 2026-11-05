@@ -15,4 +15,4 @@ pub(in crate::domain_computation::primary_graph) use reconstruction::{
     compile_node, observe_connection, reconstruct_compiled_definition,
 };
 pub(in crate::domain_computation::primary_graph) use reuse::WorkflowDefinitionCompilationReuse;
-pub use reuse::WorthQueryWorkflowCompilationReuseCounters;
+

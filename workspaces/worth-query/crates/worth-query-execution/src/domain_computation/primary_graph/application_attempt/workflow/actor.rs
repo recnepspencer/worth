@@ -34,10 +34,7 @@ pub(in crate::domain_computation) fn fund_actor_codec(
         bytes,
     )
     .map_err(|cause| {
-        use crate::domain_computation::primary_graph::{
-            WorthQueryApplicationAttemptDenial as Denial,
-            WorthQueryApplicationAttemptDenialKind as Kind,
-        };
+        use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
         let subject = "workflow actor JSON payload";
         match cause {
             facts::FactDecodeDenial::Execution(cause) => {
@@ -61,6 +58,6 @@ pub(in crate::domain_computation::primary_graph) fn decoded_denial(
     match cause {
         Cause::Actor(cause) => *cause,
         Cause::InvalidRequest => crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::InvalidAuthoritativeValue, subject),
+            crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::InvalidAuthoritativeValue, subject),
     }
 }

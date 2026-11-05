@@ -4,8 +4,8 @@ use worth_query_testkit_execution_primary_graph_application_attempt::domain_comp
 
 use std::sync::Arc;
 use worth_execution::ExecutionAllocationPolicy;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
 use crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
 use crate::domain_computation::primary_graph::tests::application_attempt::idempotency;
@@ -265,13 +265,13 @@ pub fn commit_own_write(
             .observed_source_facts_for_test()
             .unwrap()
             .len_for_test();
-        let boundary = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary::completed_for_test(count);
-        let context = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext::new_for_test(
+        let boundary = worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary::completed_for_test(count);
+        let context = worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext::new_for_test(
             worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract::canonical_bitwise(
                 worth_query_execution::facade::application_contribution::WorthQueryDecisionContextDependencies::KEY), Some([11;32]), None, None).unwrap();
         (*recorded.completed_decision_reuse_mut_for_test()) = boundary.seal_decision_reuse_for_test(
             context,
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse::default().key_for_test(),
+            worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse::default().key_for_test(),
         );
         (*recorded.completed_handler_facts_mut_for_test()) = Some(boundary);
         (*recorded.prepared_input_reuse_key_mut_for_test()) = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey::new_for_test(

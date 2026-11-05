@@ -1,6 +1,4 @@
-use super::super::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 /// Why an invariant projection for an admitted operation was refused.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

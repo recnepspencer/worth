@@ -15,7 +15,7 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::retirement::structural::tests;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::aggregate_observation::AggregateObservation;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::aggregate_observation::AggregateQuery;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::structural_walk::read::StructuralWalkQuery;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::identity;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::*;

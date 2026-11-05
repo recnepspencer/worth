@@ -3,10 +3,7 @@ use std::sync::Arc;
 use super::retained_graph_execution::WorthQueryRetainedManagedGraphExecution;
 use super::run_affinity::WorthQueryDirectRunAffinity;
 use super::WorthQueryManagedRelationalObservation;
-use super::{
-    WorthQueryManagedRunCounters, WorthQueryPausedDirectGraphExecution,
-    WorthQueryYieldTransitionCounters,
-};
+use {crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters, super::WorthQueryPausedDirectGraphExecution, super::WorthQueryYieldTransitionCounters};
 use worth_runtime_bridge::facade::BridgeYieldedExecutionBasis;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -143,7 +140,7 @@ impl WorthQueryYieldedDirectRun {
 
     pub(in crate::domain_computation::managed_run) fn owner_into_readmission_parts(
         self,
-        _owner: &super::WorthQueryDirectReadmissionTransitionPermit,
+        _owner: &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit,
     ) -> (
         WorthQueryDirectRunAffinity,
         WorthQueryManagedRelationalObservation,
@@ -166,7 +163,7 @@ impl WorthQueryYieldedDirectRun {
 
     pub(in crate::domain_computation::managed_run) fn owner_restore_from_readmission(
         restored: super::readmission::WorthQueryDirectYieldRestoredOwner,
-        _owner: &super::WorthQueryDirectReadmissionTransitionPermit,
+        _owner: &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit,
     ) -> Self {
         Self {
             affinity: restored.affinity,

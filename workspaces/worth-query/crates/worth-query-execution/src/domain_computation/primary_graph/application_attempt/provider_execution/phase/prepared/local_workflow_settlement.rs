@@ -3,11 +3,7 @@
 
 use super::WorthQueryProviderAttemptPreparation;
 use crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_workflow_operation_settlement_facts;
-use crate::domain_computation::primary_graph::application_attempt::{
-    workflow_transition_program::{receipt_identity_from_outcome, transition_entity_in_receipt},
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationCommitOutcomeIdentity,
-    WorthQueryApplicationRealizedEffect,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::receipt_identity_from_outcome, crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::transition_entity_in_receipt, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationRealizedEffect};
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 
 pub struct LocalWorkflowSettlementPublication {
@@ -58,7 +54,7 @@ impl WorthQueryProviderAttemptPreparation {
         let external = crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection::selected_external_contract(
             self.body_external_emission.as_ref(), admission.allowed_graph_contract().external_effect(),
         ).map_err(|detail| WorthQueryApplicationAttemptDenial::new(
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, detail,
+            crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, detail,
         ))?.is_some_and(|contract| contract.is_declared());
         let receipt_identity = receipt_identity_from_outcome(
             admission.runtime_authority().as_u64(),
@@ -110,13 +106,13 @@ impl WorthQueryProviderAttemptPreparation {
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         self.effects.try_reserve(settlement_effects.len()).map_err(|_| {
             WorthQueryApplicationAttemptDenial::new(
-                super::super::super::super::WorthQueryApplicationAttemptDenialKind::AllocationDenied,
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::AllocationDenied,
                 "workflow settlement effect allocation failed",
             )
         })?;
         self.effects.extend(settlement_effects);
         self.effect_posture =
-            crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
+            crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
         if external {
             return Ok((self, None));
         }

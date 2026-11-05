@@ -10,7 +10,7 @@ pub enum WorthQueryOutputDemandDenialKind {
     /// The original settled effect could not publish its World successor.
     RecoveryPublication(worth_runtime_world::facade::NoEffectCause),
     /// A fresh admitted read could not deliver the original published receipt.
-    PublicationReceipt(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
+    PublicationReceipt(crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency_resolution_denial::WorthQueryApplicationIdempotencyResolutionDenialKind),
     /// The current control owner is in use. No source result was handed off.
     CurrentControlBusy,
     ManagedIndexSourceDenied,
@@ -30,17 +30,17 @@ pub enum WorthQueryOutputDemandDenialKind {
     ),
     /// Re-admitting the demand's original source query could not resolve its principal.
     SourcePrincipal(
-        crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind,
+        crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind,
     ),
     /// Re-admitting the demand's original source query could not resolve its scope.
-    SourceScope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind),
+    SourceScope(crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind),
     /// The retained source query was refused before its read.
     SourceQueryAdmission(
-        crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind,
+        crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind,
     ),
     /// The retained source query was refused during its one-shot read.
     SourceQueryExecution(
-        crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind,
+        crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind,
     ),
     /// The observed source belongs to another runtime, schema binding, product
     /// commit, or product occurrence, or is not a product-branch source of the
@@ -57,13 +57,13 @@ pub enum WorthQueryOutputDemandDenialKind {
     /// longer installed.
     ProducerUnavailable,
     /// The producer attempted a field write without its completed decision observation.
-    UnobservedWrite(crate::domain_computation::primary_graph::WorthQueryApplicationUnobservedWrite),
+    UnobservedWrite(crate::domain_computation::primary_graph::vocabulary::application_attempt::unobserved_write::WorthQueryApplicationUnobservedWrite),
     /// The installed producer ran and its domain rejected the decision.
     ProducerDomainDenied,
     /// The selected original source could not supply a concrete resource quote.
     /// The admitted request lost its operation authorization before publication.
     RequestAuthorization(
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind,
+        crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind,
     ),
     /// The product branch could not be selected; the admission denial says why.
     ProductSelection(crate::basis::WorthQueryProductBranchAdmissionRefusalKind),
@@ -99,7 +99,7 @@ pub enum WorthQueryOutputDemandDenialKind {
     /// feature, or branch position.
     ForeignSettlement,
     /// A retained verification requirement names a fact absent from its retained body.
-    RetainedVerificationFactUnavailable(crate::domain_computation::primary_graph::provider::RebaseVerificationReason),
+    RetainedVerificationFactUnavailable(crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason),
     /// The exact retained provenance fact that disagrees with its real owner.
     SettlementProvenance(super::WorthQueryOutputSettlementProvenanceDenial),
     /// A retained or restored output lacks the dependency facts needed to reuse

@@ -128,7 +128,7 @@ impl<Query: 'static> PreparedOutputReadmissionSource<Query> {
             .ok_or_else(source_denial)?;
         if record.product_occurrence != occurrence
             || record.source_scope != Some(
-                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.source.source_root())
+                crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(self.source.source_root())
             )
         {
             return Err(source_denial());

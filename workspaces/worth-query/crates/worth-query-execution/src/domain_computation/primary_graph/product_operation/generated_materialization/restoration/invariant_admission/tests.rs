@@ -1,5 +1,5 @@
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement;
 use CustomInvariantNonApplicability as Basis;
 
 const REQUIREMENT: WorthQueryProducerInvariantRequirement =

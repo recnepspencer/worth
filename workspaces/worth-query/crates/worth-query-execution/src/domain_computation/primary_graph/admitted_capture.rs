@@ -1,25 +1,15 @@
 //! One original-request capture posture for opaque authored projections.
 pub(crate) mod retained_stage;
 pub(in crate::domain_computation) mod storage;
-pub(in crate::domain_computation) use retained_stage::{run_retained_stage, RetainedStorageDenial};
+
 use worth_execution::{
     ChargedBytes, ExecutionMemoryReservation, ExecutionRequest, ExecutionResultMemory,
     ExecutionWorkCeiling, MapKernelContext, MapKernelFailure, MapKernelStop, ScopeStop,
     WorkCeilingDenial,
 };
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
 
-pub enum CaptureStop<E> {
-    Request(WorkCeilingDenial),
-    Kernel(ScopeStop<E>),
-}
 
-pub fn checkpoint(context: &mut MapKernelContext<'_, '_>, work: u64) -> Result<(), MapKernelStop> {
-    if context.has_accounting() {
-        context.checkpoint(work)
-    } else {
-        context.poll()
-    }
-}
 
 pub(super) fn run_stage<Value: ChargedBytes, E: ChargedBytes>(
     execution: &ExecutionRequest<'_, '_>,

@@ -7,7 +7,7 @@ use super::super::super::super::authorization::{
     WorthQueryElevationApprovalBinding, WorthQueryElevationCloseBinding,
     WorthQueryElevationRequestBinding, WorthQueryRuntimeClock,
 };
-use super::super::super::WorthQueryElevationClosureKind;
+use crate::domain_computation::vocabulary::primary_graph::elevation_close_outcome::WorthQueryElevationClosureKind;
 
 pub enum WorthQueryElevationCommitCurrentness {
     Window {

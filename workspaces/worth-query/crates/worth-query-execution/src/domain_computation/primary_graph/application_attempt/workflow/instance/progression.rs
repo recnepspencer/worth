@@ -13,9 +13,7 @@ mod replay;
 mod retention;
 
 mod update;
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 pub(in crate::domain_computation::primary_graph) use locator::{
     WorkflowAssessmentEvidenceLocator, WorkflowTransitionLocator,
     WorkflowTransitionProgressObservation,
@@ -24,12 +22,8 @@ use navigation::unique_successor;
 pub(in crate::domain_computation::primary_graph) use replay::{
     WorkflowTransitionReplayProjection, WorkflowTransitionReplayRetention,
 };
-pub use retention::WorthQueryWorkflowInstanceProgressCounters;
-pub(in crate::domain_computation::primary_graph) use retention::{
-    default_progress_retention_shards, RetainedWorkflowInstanceProgressProjection,
-    WorkflowInstanceProgressKey, WorkflowInstanceProgressRetention,
-    WorkflowInstanceProgressRetentionDenial,
-};
+
+pub(in crate::domain_computation::primary_graph) use {retention::default_progress_retention_shards, retention::RetainedWorkflowInstanceProgressProjection, retention::WorkflowInstanceProgressRetention, retention::WorkflowInstanceProgressRetentionDenial};
 pub(in crate::domain_computation::primary_graph) use update::{
     PreparedWorkflowProgressUpdate, WorkflowTransitionProgressBasis,
 };

@@ -4,9 +4,7 @@ use super::{
     WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowInstanceDisposition,
 };
 use crate::basis::WorthQueryProductBranch;
-use crate::domain_computation::primary_graph::application_attempt::{
-    PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef};
 
 /// Explicit adoption intent, never an inventory, disclosure grant or prepared proof.
 /// Each opaque reference names a fact the caller already possesses. Preparation

@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     application_checkpoint::facts::FactPayload, fact_verification_observation,
 };
 use std::sync::Arc;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 
 pub struct PreparedComputationFacts {
     index: Arc<ComputationFactIndex>,
@@ -149,7 +150,7 @@ impl PreparedComputationFacts {
         contracts: Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         >,
-        scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+        scopes: crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
         root: worth_relational::facade::identity::EntityId,
         computation_ordinals: Arc<[usize]>,
         content: Option<super::super::super::FactContent>,

@@ -7,10 +7,7 @@ use super::super::{
     },
 };
 use super::*;
-use crate::domain_computation::{
-    authorization::application_disclosure::DiagnosticComparisonAdmission,
-    provider_session::WorthQueryGraphWorkSessionIdentity,
-};
+use {crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonAdmission, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity};
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
 
@@ -108,7 +105,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             .diagnostic
             .as_ref()
             .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?;
-        let loan = crate::domain_computation::primary_graph::admitted_capture::run_retained_stage(
+        let loan = crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage(
             execution,
             self.memory,
             |context, _| {

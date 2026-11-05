@@ -1,5 +1,7 @@
 //! Unit-only epoch construction; production epochs come from admitted observations.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceOccurrence;
 
 impl WorthQueryObservedSourceEpoch {
     pub(in crate::domain_computation::primary_graph) fn new(

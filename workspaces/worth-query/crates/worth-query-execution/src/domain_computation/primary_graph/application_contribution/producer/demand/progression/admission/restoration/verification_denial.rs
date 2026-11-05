@@ -3,7 +3,7 @@ use super::*;
 pub(super) fn from_stop(
     stop: crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementVerificationStop,
 ) -> WorthQueryOutputDemandDenial {
-    use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Read;
+    use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Read;
     use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementVerificationStop as Stop;
     match stop {
         Stop::SourceRead(Read::ManagedIndex(cause)) => {

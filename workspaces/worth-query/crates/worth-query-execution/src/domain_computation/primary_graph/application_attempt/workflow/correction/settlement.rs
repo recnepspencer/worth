@@ -1,12 +1,6 @@
 //! Exact canonical settlement admission for an occurrence's current continuation.
-use super::{
-    unavailable, WorkflowOperationOrigin, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind,
-};
-use crate::domain_computation::primary_graph::application_attempt::{
-    observe_adjacency, workflow_instance_observation::settlement::observe_transition_state,
-    WorthQueryApplicationAdjacencyDirection,
-};
+use {super::unavailable, super::WorkflowOperationOrigin, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {crate::domain_computation::primary_graph::application_attempt::observe_adjacency, crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::settlement::observe_transition_state, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection};
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::indexes::{BoundedEntityFieldLookupRequest, BoundedIndexParityMode};
 use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHandle};

@@ -11,23 +11,18 @@ mod reuse;
 mod selection;
 mod source;
 mod values;
-use super::super::super::operation_body::{BodyFieldExpectation, PreparedBodySource};
+use {crate::domain_computation::primary_graph::vocabulary::operation_body::field_expectation::BodyFieldExpectation, crate::domain_computation::primary_graph::vocabulary::operation_body::source::PreparedBodySource};
 use super::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding, ApplicationSchema, DecisionReader,
 };
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
-use {
-    super::super::super::HandlerExecutionDenial,
-    crate::domain_computation::request_execution::advancement_denial,
-    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-};
+use {super::super::super::HandlerExecutionDenial, crate::domain_computation::request_execution::advancement_denial, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
 enum BodySource<'a, Schema> {
     Scope,
     Principal,
     Related(
-        &'a crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity<Schema, ()>,
+        &'a crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity<Schema, ()>,
     ),
 }
 
@@ -39,8 +34,8 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
         bindings: &[worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding],
     ) -> super::super::super::HandlerResult<
-        Option<super::super::super::operation_body::PreparedBodyInputs>,
-        super::super::super::WorthQueryOperationBodyDenial,
+        Option<crate::domain_computation::primary_graph::vocabulary::operation_body::input::PreparedBodyInputs>,
+        crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial,
     > {
         super::super::super::operation_body::prepare_inputs(
             self.execution,
@@ -77,7 +72,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     pub(in crate::domain_computation::primary_graph) fn body_related_value(
         &mut self,
         field: &ApplicationFieldBindingLocus,
-        selected: &crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity<
+        selected: &crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity<
             Schema,
             (),
         >,
@@ -139,7 +134,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         &mut self,
         body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
     ) -> Result<
-        super::super::super::WorthQueryInvariantMutationTarget<
+        crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget<
             Schema,
             <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
@@ -161,7 +156,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         &mut self,
         body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
     ) -> Result<
-        super::super::super::WorthQueryCurrentBodyRequirementAssessment,
+        crate::domain_computation::primary_graph::vocabulary::operation_body::assessment::WorthQueryCurrentBodyRequirementAssessment,
         HandlerExecutionDenial,
     > {
         self.checkpoint().map_err(HandlerExecutionDenial::new)?;

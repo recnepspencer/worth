@@ -1,9 +1,5 @@
 //! Select the actual candidate-owned Create target, never a reconstructed ID.
-use super::{
-    denial, ApplicationMutationOutputRoleCardinality, EntityReference, OutputRoleUse, TypeId,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationOutputCorrespondenceCandidate, WorthQueryApplicationOutputPosture,
-};
+use {super::denial, super::ApplicationMutationOutputRoleCardinality, super::EntityReference, crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse, super::TypeId, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationOutputCorrespondenceCandidate, super::WorthQueryApplicationOutputPosture};
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
 };

@@ -50,7 +50,7 @@ struct WorthQueryProviderProgression<'a, Schema, Operation, Input, Scope> {
         Scope,
     >,
     prepared: WorthQueryPreparedApplicationProviderAttempt,
-    outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+    outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
     attempt_basis: WorthQueryApplicationAttemptBasis,
     authorization: crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization,
     idempotency: WorthQueryApplicationIdempotencyBinding,

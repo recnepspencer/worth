@@ -1,6 +1,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied;
-use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
+use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
 
 #[test]
 fn cleanup_failure_keeps_heads_indeterminate_posture_for_execution_refusals() {
@@ -49,7 +49,7 @@ fn cleanup_failure_preserves_the_complete_interrupted_commit_evidence() {
         WorthQueryApplicationCommitRecoveryKind as Recovery,
         WorthQueryApplicationUnresolvedCommitEvidence as Evidence,
     };
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Stop;
+    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Stop;
     for stop in [Stop::Cancelled, Stop::TimedOut] {
         let failure = WorthQueryProviderSessionFailure::checked_read_stopped(
             Err(stop),

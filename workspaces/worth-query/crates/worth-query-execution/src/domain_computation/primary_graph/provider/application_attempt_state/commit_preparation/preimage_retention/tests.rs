@@ -1,11 +1,6 @@
 //! Refusal values use the actual retention classifier and pre-effect receiver.
-use super::{retention_failure, WorthQueryPreImageRetentionDenial as Retention};
-use crate::domain_computation::{
-    WorthQueryProviderSessionCommitStop as Stop,
-    WorthQueryProviderSessionControlStopKind as Control,
-    WorthQueryProviderSessionDenialKind as Kind, WorthQueryProviderSessionProtocolStage as Stage,
-    WorthQueryProviderSessionRecoveryPosture as Posture,
-};
+use {super::retention_failure, crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial as Retention};
+use {crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop, crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind, crate::domain_computation::WorthQueryProviderSessionProtocolStage as Stage, crate::domain_computation::WorthQueryProviderSessionRecoveryPosture as Posture};
 use worth_relational::facade::content::{
     RelationalContentDenial as Content, RelationalContentRejection as Rejection,
 };
@@ -13,7 +8,7 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Ca
 
 #[test]
 fn retention_refusals_keep_exact_cause_and_pre_effect_posture() {
-    use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
+    use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
     for (denial, expected) in [
         (
             Retention::Content(Content::Execution(Cause::WorkExhausted)),

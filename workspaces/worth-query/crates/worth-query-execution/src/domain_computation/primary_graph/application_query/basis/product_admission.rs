@@ -3,9 +3,7 @@ use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusa
 use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::product_activation::InspectionScopedOps;
 use crate::domain_computation::primary_graph::product_operation::ApplicationBasisScopedOps;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
 
 pub(super) fn admit<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -152,10 +150,10 @@ fn map_product_admission_denial(
         }
         Product::Stopped(stop) => match stop {
             Ok(kind) => WorthQueryApplicationQueryAdmissionDenialKind::ExecutionRequest(kind),
-            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => {
+            Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled) => {
                 WorthQueryApplicationQueryAdmissionDenialKind::Cancelled
             }
-            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut) => {
+            Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut) => {
                 WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded
             }
         },

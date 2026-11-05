@@ -1,5 +1,5 @@
-use super::{WorthQueryGraphProviderStepDenial, WorthQueryGraphProviderStepDenialKind};
-use crate::domain_computation::WorthQueryGraphProviderFailure;
+use {crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial, crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind};
+use crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure;
 
 #[derive(Default)]
 pub(super) struct WorthQueryGraphProviderStepState {

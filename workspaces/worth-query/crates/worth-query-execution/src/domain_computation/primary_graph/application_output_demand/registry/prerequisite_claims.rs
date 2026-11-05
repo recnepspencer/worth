@@ -18,7 +18,7 @@ use super::WorthQueryOutputDemandKey;
 use super::WorthQueryOutputDemandRegistry;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 /// Claims the exact previously settled inputs of one running output before its
 /// product effect. The successful publication moves these claims into the

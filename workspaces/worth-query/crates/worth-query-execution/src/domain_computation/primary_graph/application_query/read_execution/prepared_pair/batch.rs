@@ -1,9 +1,5 @@
 //! A prepared read consumes its original exact schedule slot before execution.
-use super::super::super::{
-    batch::PlannedBatchItem, WorthQueryAdmittedApplicationQueryPlan,
-    WorthQueryApplicationQueryBatchAdmission,
-    WorthQueryApplicationQueryBatchResourceDenial as Resource,
-};
+use {super::super::super::batch::PlannedBatchItem, super::super::super::WorthQueryAdmittedApplicationQueryPlan, super::super::super::WorthQueryApplicationQueryBatchAdmission, crate::domain_computation::primary_graph::vocabulary::application_query::batch::WorthQueryApplicationQueryBatchResourceDenial as Resource};
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 pub(in crate::domain_computation::primary_graph::application_query) fn admit_batch_read<
     S: ApplicationSchema,

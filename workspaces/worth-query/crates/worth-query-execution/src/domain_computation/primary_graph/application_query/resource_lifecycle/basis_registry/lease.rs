@@ -1,9 +1,9 @@
 use super::super::lifecycle_count::release;
-use super::WorthQueryApplicationBasisIdentity;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
 use super::WorthQueryApplicationBasisRegistryState;
-use super::WorthQueryApplicationBasisReleaseOutcome;
-use super::WorthQueryApplicationBasisReleaseReceipt;
-use super::WorthQueryApplicationBasisSelectionIdentity;
+use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisReleaseOutcome;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt;
+use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 use std::sync::Arc;

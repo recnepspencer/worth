@@ -283,7 +283,7 @@ impl StableSchemaBinding {
 
 impl StableBasisIdentity {
     pub fn capture(
-        identity: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::resource_lifecycle::basis_registry::WorthQueryApplicationBasisIdentity,
+        identity: &worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
     ) -> Self {
         assert!(identity.runtime_instance_id() > 0);
         Self {

@@ -35,9 +35,9 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     /// The existing Live occurrence cannot fence this candidate preparation.
     ManagedPredicatePreparationUnavailable,
     /// Validation was refused by the execution owner before effects.
-    ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    ExecutionDenied(crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind),
     /// Validation was stopped by cancellation or its deadline.
-    ExecutionControlStopped(crate::domain_computation::WorthQueryProviderSessionControlStopKind),
+    ExecutionControlStopped(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind),
     /// Physical backing refusal; the original owner cause is retained separately.
     AllocationDenied,
     /// No installed invariant requirement exists for the requested slot.
@@ -113,7 +113,7 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     /// A producer-required invariant's receipt did not admit the publication;
     /// the admission denial keeps the receipt's verdict and basis.
     ProducerRequirementNotAdmitted(
-        crate::domain_computation::primary_graph::WorthQueryGeneratedOutputInvariantAdmissionDenial,
+        crate::domain_computation::vocabulary::primary_graph::invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial,
     ),
 }
 

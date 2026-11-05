@@ -1,6 +1,6 @@
 use worth_relational::facade::identity::{EntityId, KindId};
 
-use super::{WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationObservedRelation};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, super::WorthQueryApplicationObservedRelation};
 
 pub fn remains_equal(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -93,10 +93,10 @@ fn resolve_observation(
             Err(super::super::WorthQueryApplicationAttemptDenial::new(
                 match event.interruption() {
                     worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
-                        super::super::WorthQueryApplicationAttemptDenialKind::Cancelled
+                        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::Cancelled
                     }
                     worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => {
-                        super::super::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
+                        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
                     }
                 },
                 "adjacency observation",

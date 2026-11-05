@@ -58,7 +58,7 @@ pub(super) fn lineage<Spec: ApplicationWorkflowSpec>(
     let Some(lineage) = hit.candidate_entity_ids().first().copied() else {
         return Ok(None);
     };
-    let protocol=crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed(runtime,execution,snapshot,lineage,layout.lineage.entity_kind,&layout.lineage.protocol_version,|value|value==Some(&AspectValue::UInt64(crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION))).map_err(Denial::Relational)?;
+    let protocol=crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed(runtime,execution,snapshot,lineage,layout.lineage.entity_kind,&layout.lineage.protocol_version,|value|value==Some(&AspectValue::UInt64(crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION))).map_err(Denial::Relational)?;
     if protocol != Some(true) {
         return Err(Denial::Corrupt);
     }

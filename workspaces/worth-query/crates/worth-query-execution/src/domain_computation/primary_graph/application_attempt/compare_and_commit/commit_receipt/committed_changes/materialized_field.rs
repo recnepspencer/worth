@@ -1,8 +1,6 @@
 //! An immutable original envelope and full-generation patch seal a Native value position.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    admitted_capture::checkpoint, schema_layout::InstalledFieldCoordinate,
-};
+use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::primary_graph::schema_layout::InstalledFieldCoordinate};
 use worth_execution::{MapKernelContext, MapKernelStop};
 use worth_relational::facade::publication::{
     PublishedAuthoritativeFieldEffect as Effect, PublishedAuthoritativeFieldValueLocation,

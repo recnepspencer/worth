@@ -1,5 +1,5 @@
 //! Real Native probes and immutable pre-verification capture; no synthetic stamp.
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::full_verification::FullVerificationDecision;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::full_verification::FullVerificationStop;
@@ -55,7 +55,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
     handle.with_runtime_mut_for_test(request_execution, |runtime| {
         let (old_handle, old_basis) = snapshot(runtime);
         use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
-        use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
+        use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
 
         assert_eq!(
             ConsumedOutputEvidence::verify_many_with_admission_for_test(

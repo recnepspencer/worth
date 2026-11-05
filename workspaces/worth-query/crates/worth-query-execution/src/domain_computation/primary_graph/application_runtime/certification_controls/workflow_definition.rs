@@ -16,7 +16,7 @@ where
     pub fn workflow_definition_revisions_for_test(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
+        definition: &crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef,
     ) -> Result<
         Result<
             (Option<AspectValue>, Option<AspectValue>),

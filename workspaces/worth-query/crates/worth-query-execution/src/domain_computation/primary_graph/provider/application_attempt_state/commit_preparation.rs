@@ -13,11 +13,11 @@ use super::super::{
 pub(crate) mod preimage_retention;
 pub(crate) mod relational_commit;
 pub(in crate::domain_computation::primary_graph) use preimage_retention::WorthQueryPreImageRetentionWork;
-pub(crate) use preimage_retention::WorthQueryRetainedPreImageSeal;
+
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::ManagedUnpublishedAttempt;
-pub(in crate::domain_computation::primary_graph) use relational_commit::RebaseVerificationFailure;
-pub use relational_commit::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
+
+pub use {relational_commit::FactlessCurrentness, relational_commit::OwnEffectOnReads};
 pub(in crate::domain_computation::primary_graph) use relational_commit::{
     WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommittedApplication,
 };

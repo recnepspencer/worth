@@ -4,17 +4,11 @@ mod removal;
 #[cfg(test)]
 mod tests;
 use super::WorthQueryManagedIndexPredicateSummary as Summary;
-use crate::domain_computation::primary_graph::application_query::managed_index::{
-    WorthQueryManagedIndexControl as Control, WorthQueryManagedIndexStop as Stop,
-};
+use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
 use std::{cmp::Ordering, collections::BTreeMap};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot;
 
-/// Issued by the registration owner; equal probes retain distinct exact slots.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct WatchSlot(
-    pub(in crate::domain_computation::primary_graph::application_query) u64,
-);
 
 pub(super) struct Record<P, R, S> {
     pub(super) probe: P,

@@ -6,27 +6,11 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::mvcc::CompanionPublicationCompletionObserver;
 
 use super::RequiredWorkMembership;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::native_hints::NativeBranch;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::native_hints::NativeHint;
 
-pub struct NativeHint {
-    pub(super) observer: CompanionPublicationCompletionObserver,
-    pub(super) branch: Arc<NativeBranch>,
-    // The selection version at which this publication was seen installed
-    // (or aborted) before a head check. Only such a hint is covered.
-    pub(super) seen_settled_at: Option<u64>,
-    pub(super) next: Option<Box<NativeHint>>,
-}
 
-/// The final selected Arc, not the hint node, owns branch text and control
-/// block capacity. A stale selected worker can outlive an acknowledged node.
-pub struct NativeBranch {
-    branch: BranchId,
-}
 
-impl NativeBranch {
-    pub(in crate::domain_computation::primary_graph) fn branch_id(&self) -> &BranchId {
-        &self.branch
-    }
-}
 
 impl RequiredWorkMembership {
     pub(in crate::domain_computation::primary_graph) fn prepared_native_branch(
@@ -50,15 +34,5 @@ impl RequiredWorkMembership {
     }
 }
 
-impl Drop for NativeHint {
-    fn drop(&mut self) {
-        // Arbitrarily many distinct branch-cell attempts cannot recurse
-        // through Box<NativeHint> on the final membership owner.
-        let mut next = self.next.take();
-        while let Some(mut node) = next {
-            next = node.next.take();
-        }
-    }
-}
 
 mod court_doors_for_test;

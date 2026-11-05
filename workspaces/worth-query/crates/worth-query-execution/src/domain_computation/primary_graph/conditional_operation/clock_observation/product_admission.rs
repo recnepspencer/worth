@@ -1,9 +1,6 @@
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{
-    WorthQueryConditionalClockHandle, WorthQueryConditionalClockObservationDenial,
-    WorthQueryConditionalClockObservationDenialKind, WorthQueryConditionalClockObservationPort,
-};
+use {crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::WorthQueryConditionalClockHandle, super::WorthQueryConditionalClockObservationDenial, super::WorthQueryConditionalClockObservationDenialKind, super::WorthQueryConditionalClockObservationPort};
 
 impl<'runtime, Schema>
     crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<'runtime, Schema>

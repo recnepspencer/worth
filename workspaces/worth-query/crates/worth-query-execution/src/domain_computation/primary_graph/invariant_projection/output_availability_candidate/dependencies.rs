@@ -55,11 +55,11 @@ impl PostingDependencies {
         >,
         owner: &SourceInvalidationOwner,
     ) -> Result<(), Stop> {
-        super::super::consumed_output::reserve_pending(&mut self.sources, 1)?;
-        super::super::consumed_output::reserve_pending(&mut self.outputs, 1)?;
+        crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::reserve_pending(&mut self.sources, 1)?;
+        crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::reserve_pending(&mut self.outputs, 1)?;
         let output = owner
             .prepare_performed_output_facts(witness.ok_or(Stop::Unavailable)?)
-            .map_err(super::super::consumed_output::map_admission_stop)?
+            .map_err(crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop)?
             .ok_or(Stop::Unavailable)?;
         self.sources.push(source);
         self.outputs.push(output);
@@ -80,7 +80,7 @@ fn push_pending<'a>(
     values: &'a [ConsumedOutputEvidence],
     pending: &mut Vec<EvidenceView<'a>>,
 ) -> Result<(), Stop> {
-    super::super::consumed_output::reserve_pending(pending, values.len())?;
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::reserve_pending(pending, values.len())?;
     pending.extend(values.iter().map(EvidenceView::from));
     Ok(())
 }

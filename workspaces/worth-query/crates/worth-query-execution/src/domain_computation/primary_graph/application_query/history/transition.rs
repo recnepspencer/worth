@@ -9,12 +9,7 @@ use worth_relational::facade::{
 };
 use worth_runtime_world::facade::{CompositeCommitParent, ProductExactHistoryCursor};
 
-use super::{
-    cursor::{HistoryPosition, RetainedWorldCursor, RetainedWorldPage},
-    storage, WorthQueryApplicationHistoryCursor as Cursor,
-    WorthQueryApplicationHistoryDenial as Denial, WorthQueryApplicationHistoryPage as Page,
-    WorthQueryApplicationHistoryPageLimits as Limits,
-};
+use {super::cursor::HistoryPosition, super::cursor::RetainedWorldCursor, super::cursor::RetainedWorldPage, super::storage, super::WorthQueryApplicationHistoryCursor as Cursor, crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial, super::WorthQueryApplicationHistoryPage as Page, super::WorthQueryApplicationHistoryPageLimits as Limits};
 
 pub(super) struct HistoryTransition {
     pub(super) page: Page,

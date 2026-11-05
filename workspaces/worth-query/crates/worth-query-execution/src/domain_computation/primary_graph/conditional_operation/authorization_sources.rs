@@ -2,11 +2,7 @@
 //! reconstruction query; operation sources live in the `operation` submodule.
 
 use crate::domain_computation::primary_graph::application_query::AdmissionScopedOps as _;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryControls,
-    WorthQueryOperationAuthorizationDenial,
-};
+use {crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationQueryPlan, crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls, crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial};
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_query::ApplicationQueryParameterSet, application_schema::ApplicationSchema,

@@ -13,4 +13,3 @@ pub mod output_evaluation;
 pub mod registry;
 #[path = "scheduling/mod.rs"]
 pub mod scheduling;
-pub use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;

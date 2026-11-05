@@ -1,12 +1,6 @@
 //! Installed body reads use the ordinary tracked field-decision boundary.
-use super::{
-    ApplicationOperationDecisionReadTarget, ApplicationSchema,
-    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantDecisionPlanDenial,
-    WorthQueryInvariantDecisionPlanDenialKind, WorthQueryInvariantEntityIdentity,
-};
-use crate::domain_computation::primary_graph::operation_body::{
-    BodyFieldExpectation, PreparedBodySource, WorthQueryCurrentBodyRequirementAssessment,
-};
+use {super::ApplicationOperationDecisionReadTarget, super::ApplicationSchema, super::WorthQueryApplicationOperationInvariantProjectionReader, super::WorthQueryInvariantDecisionPlanDenial, super::WorthQueryInvariantDecisionPlanDenialKind, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
+use {crate::domain_computation::primary_graph::vocabulary::operation_body::field_expectation::BodyFieldExpectation, crate::domain_computation::primary_graph::vocabulary::operation_body::source::PreparedBodySource, crate::domain_computation::primary_graph::vocabulary::operation_body::assessment::WorthQueryCurrentBodyRequirementAssessment};
 use crate::domain_computation::primary_graph::HandlerExecutionDenial;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;

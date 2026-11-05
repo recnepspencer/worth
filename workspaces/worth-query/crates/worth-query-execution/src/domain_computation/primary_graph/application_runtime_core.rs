@@ -1,5 +1,7 @@
 //! State owned once by an application runtime, independent of its application types.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_runtime::WorthQueryApplicationLiveDeliveryCloseReceipt;
+use crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication;
 
 pub struct WorthQueryApplicationRuntimeCore {
     pub(super) execution: Option<WorthQueryExecutionRuntime>,
@@ -10,7 +12,7 @@ pub struct WorthQueryApplicationRuntimeCore {
     pub(in crate::domain_computation) authorization_clock: Arc<WorthQueryRuntimeClock>,
     pub(in crate::domain_computation::primary_graph) relational_branch_identity:
         worth_relational::facade::branch::RelationalBranchIdentity,
-    pub(crate) bridge: super::super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    pub(crate) bridge: crate::domain_computation::primary_graph::vocabulary::managed_bridge::WorthQueryInstalledApplicationBridge,
     pub(crate) product_runtime:
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     pub(in crate::domain_computation::primary_graph) recovered_program_source_delivery:
@@ -66,7 +68,7 @@ impl WorthQueryApplicationRuntimeCore {
     }
     pub(in crate::domain_computation) fn authority_identity(
         &self,
-    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
         self.execution().authority_identity()
     }
     pub(in crate::domain_computation) fn primary_graph(
@@ -147,7 +149,7 @@ impl WorthQueryApplicationRuntimeCore {
 impl WorthQueryApplicationRuntimeCore {
     pub(in crate::domain_computation) fn workflow_compilation_reuse_counters(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorthQueryWorkflowCompilationReuseCounters{
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::counters::WorthQueryWorkflowCompilationReuseCounters{
         self.retain_primary_graph_integration_handle()
             .expect("a published application runtime retains its primary graph")
             .workflow_compilation_reuse_counters()
@@ -157,7 +159,7 @@ impl WorthQueryApplicationRuntimeCore {
 impl WorthQueryApplicationRuntimeCore {
     pub(in crate::domain_computation) fn workflow_instance_progress_counters(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters{
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::retention_counters::WorthQueryWorkflowInstanceProgressCounters{
         self.retain_primary_graph_integration_handle()
             .expect("a published application runtime retains its primary graph")
             .workflow_instance_progress_counters()

@@ -1,7 +1,7 @@
 //! Atomic delegation resolution and exact parent-support observation.
 
 use crate::domain_computation::authorization::InstalledBasisScopedOps;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityDelegationRequestProjection;
@@ -20,10 +20,7 @@ use crate::domain_computation::authorization::capability_binding_lowering::relat
 use crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan;
 use crate::domain_computation::authorization::delegation_admission::WorthQueryCapabilityObservationSource;
 use crate::domain_computation::authorization::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryRetainedCapabilitySupport,
-};
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryRetainedCapabilitySupport};
 
 pub(in crate::domain_computation::authorization) struct WorthQueryDelegationResolvedRequest {
     parent: EntityId,

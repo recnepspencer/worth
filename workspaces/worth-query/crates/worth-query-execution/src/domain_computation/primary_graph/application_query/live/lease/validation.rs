@@ -5,8 +5,8 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use super::super::outcome::{
     WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
 };
-use crate::domain_computation::primary_graph::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
-use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
 
 pub(super) fn validate_live_binding<
     Schema,
@@ -66,14 +66,14 @@ pub(super) fn open_read_denial(
     match denial {
         WorthQueryAuthorizedApplicationReadDenial::StalePrincipal => open_denial(
             WorthQueryApplicationLiveOpenDenialKind::Admission(
-                super::super::super::WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
+                crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
             ),
             subject,
         ),
         WorthQueryAuthorizedApplicationReadDenial::StaleScope
         | WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope => open_denial(
             WorthQueryApplicationLiveOpenDenialKind::Admission(
-                super::super::super::WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
+                crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
             ),
             subject,
         ),
@@ -83,8 +83,8 @@ pub(super) fn open_read_denial(
             WorthQueryApplicationLiveOpenDenial::with_authorization(kind, authorization)
         }
         WorthQueryAuthorizedApplicationReadDenial::Read(read) => {
-            use super::super::super::read_execution::WorthQueryApplicationReadExecutionDenialKind as Read;
-            use super::super::super::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
+            use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind as Read;
+            use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
             let kind = match read.kind() {
                 Read::Content(cause) => WorthQueryApplicationLiveOpenDenialKind::Content(cause),
                 Read::Cancelled => {
@@ -112,7 +112,7 @@ pub(super) fn open_denial(
 }
 
 pub(super) fn subscription_capacity_denial(subject: &str) -> WorthQueryApplicationLiveOpenDenial {
-    use super::super::super::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
+    use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
     open_denial(
         WorthQueryApplicationLiveOpenDenialKind::Admission(Admission::RetentionCapacityExhausted),
         subject,

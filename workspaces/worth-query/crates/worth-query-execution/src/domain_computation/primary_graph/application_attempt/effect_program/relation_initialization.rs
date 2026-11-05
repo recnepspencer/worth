@@ -9,6 +9,9 @@ use worth_query_installation::facade::{
     ApplicationRelationFieldRef, ApplicationRelationRef, OperationLinks, OperationWrites,
     WorthQueryInstalledApplicationValueBindingCatalog,
 };
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationCreatedRelation;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>

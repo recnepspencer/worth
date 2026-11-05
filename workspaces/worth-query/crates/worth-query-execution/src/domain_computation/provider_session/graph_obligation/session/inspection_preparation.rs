@@ -3,6 +3,8 @@ use super::*;
 use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget;
 use std::sync::Arc;
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkIntentKind;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 impl WorthQueryManagedGraphWorkSession {
     pub(in crate::domain_computation) fn inspection_capacity_identity(

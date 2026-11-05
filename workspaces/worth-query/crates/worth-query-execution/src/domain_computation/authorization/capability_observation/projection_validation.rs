@@ -1,6 +1,6 @@
 //! Exact request-projection validation for capability observation.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::collections::BTreeSet;
 
 use worth_query_declaration::facade::application_capability::{
@@ -9,9 +9,7 @@ use worth_query_declaration::facade::application_capability::{
 
 use super::super::capability_registry::WorthQueryInstalledCapabilityPlan;
 use super::super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use super::super::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 use super::path_preparation;
 
 pub(super) fn validate_projection_shape(

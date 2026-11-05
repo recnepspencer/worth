@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::{
     RelationalAuthorizationEntityAnchor, RelationalAuthorizationFieldComparison,
     RelationalAuthorizationFieldConstraint, RelationalAuthorizationFieldOperand,
@@ -8,10 +8,7 @@ use worth_relational::facade::authorization::{
 
 use super::super::super::capability_registry::WorthQueryInstalledCapabilityPlan;
 use super::super::super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use super::super::super::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryRuntimeTimeSample,
-};
+use {super::super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::super::super::WorthQueryRuntimeTimeSample};
 
 use super::ObservedDelegationTransition;
 

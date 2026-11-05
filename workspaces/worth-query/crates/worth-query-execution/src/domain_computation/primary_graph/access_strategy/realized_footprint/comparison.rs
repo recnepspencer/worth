@@ -43,11 +43,11 @@ pub(super) fn with_resources<E>(
     admit: &mut impl FnMut(u64) -> Result<(), E>,
     reserve: &mut impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>,
     fault: &mut impl FnMut(
-        crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault,
+        crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault,
     ) -> E,
     compare: &mut impl FnMut(
         &mut dyn FnMut(u64) -> bool,
-        &mut crate::domain_computation::primary_graph::application_query::ContentScratch<'_>,
+        &mut crate::domain_computation::primary_graph::vocabulary::application_query::content_storage::ContentScratch<'_>,
     ) -> bool,
     frames: &mut dyn FnMut(&RelationalContentFrame, &RelationalContentFrame) -> Result<bool, E>,
 ) -> Result<bool, E> {
@@ -62,7 +62,7 @@ pub(super) fn with_resources<E>(
     };
     let equal = compare(
         &mut checkpoint,
-        &mut crate::domain_computation::primary_graph::application_query::ContentScratch {
+        &mut crate::domain_computation::primary_graph::vocabulary::application_query::content_storage::ContentScratch {
             frames: &mut frame_comparison,
             reserve: &mut reservation,
             fault: &mut storage_fault,

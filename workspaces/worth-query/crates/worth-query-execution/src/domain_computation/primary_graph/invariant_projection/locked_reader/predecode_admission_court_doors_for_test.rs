@@ -1,5 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 impl<Schema> WorthQueryApplicationInvariantProjectionReader<'_, Schema>
 where

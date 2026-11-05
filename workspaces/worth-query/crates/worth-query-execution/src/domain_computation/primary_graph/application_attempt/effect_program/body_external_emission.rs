@@ -1,6 +1,7 @@
 //! Only an earned native body selection can suppress a mandatory external slot.
 use super::*;
 use crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>

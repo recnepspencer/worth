@@ -100,7 +100,7 @@ impl WorthQueryApplicationManagedCleanup {
     pub fn retry_in_advancement(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-    ) -> Result<crate::domain_computation::WorthQueryDirectRunCleanupReceipt, Self> {
+    ) -> Result<crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt, Self> {
         use crate::domain_computation::primary_graph::application_contribution::execution_denial;
         let execution = match phase.checked_execution_request_for(&self.runtime) {
             Ok(execution) => execution,
@@ -115,7 +115,7 @@ impl WorthQueryApplicationManagedCleanup {
                 .run_with_checkpoint(lease, None, |context| {
                     context
                         .checkpoint(0)
-                        .map_err(execution_denial::advancement_checkpoint_stop)?;
+                        .map_err(crate::domain_computation::request_execution::execution_stop::advancement_checkpoint_stop)?;
                     let Self {
                         failure,
                         runtime,
@@ -141,7 +141,7 @@ impl WorthQueryApplicationManagedCleanup {
             }
             Ok(Err(stop)) | Err(stop) => {
                 let mut owner = owner.expect("scope refusal precedes native cleanup");
-                owner.last_denial = Some(execution_denial::advancement_scope_stop(stop));
+                owner.last_denial = Some(crate::domain_computation::request_execution::execution_stop::advancement_scope_stop(stop));
                 Err(owner)
             }
         }

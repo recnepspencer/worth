@@ -1,8 +1,6 @@
 //! What a full run under a producer records for the next run to carry.
 
-use crate::domain_computation::primary_graph::{
-    application_attempt::ComputationRead, invariant_projection::ComputationCallSequence,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead, crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 

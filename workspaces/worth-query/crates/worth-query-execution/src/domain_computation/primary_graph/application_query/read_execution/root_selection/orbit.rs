@@ -15,6 +15,8 @@ use worth_relational::facade::{
     runtime::{PinnedStructuralWalkDenialKind as WalkDenial, RelationalPinnedRead},
     transactions::RelationalExecutionDenialCause as Cause,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind;
 
 pub(super) fn select(
     execution: &ExecutionRequest<'_, '_>,

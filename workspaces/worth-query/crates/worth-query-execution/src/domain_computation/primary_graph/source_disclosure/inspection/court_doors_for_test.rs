@@ -1,12 +1,9 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::original::OriginalSourceDisclosure;
+use crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure;
+use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
 
-impl OriginalSourceInspectionDisclosure {
-    #[doc(hidden)]
-    pub fn scope_for_test(&self) -> &WorthQueryObservedScopeSelector {
-        Self::scope(self)
-    }
-}
 
 impl OriginalSourceInspectionDisclosure {
     #[doc(hidden)]

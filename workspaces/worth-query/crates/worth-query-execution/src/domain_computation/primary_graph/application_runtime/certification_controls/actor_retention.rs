@@ -12,7 +12,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
     > {
         let execution = phase.execution_request_for(&self.runtime.product_runtime).map_err(|_| {
             crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase,
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase,
                 "actor retention",
             )
         })?;

@@ -13,12 +13,7 @@ use worth_execution::{
 use worth_foundational::facade::PartitionIdentity;
 
 use super::*;
-use {
-    crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel,
-    crate::domain_computation::request_execution::execution_stop::checkpoint_denial,
-    crate::domain_computation::request_execution::execution_stop::lease_denial,
-    crate::domain_computation::request_execution::execution_stop::memory_denial,
-};
+use {crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel, crate::domain_computation::request_execution::execution_stop::checkpoint_denial, crate::domain_computation::request_execution::execution_stop::lease_denial, crate::domain_computation::request_execution::execution_stop::memory_denial};
 use {
     crate::domain_computation::request_execution::query_test_execution_authority_for_test,
     crate::domain_computation::request_execution::test_policy,

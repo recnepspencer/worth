@@ -1,8 +1,5 @@
 //! Both actual Native owners survive borrowed, allocation-free typed iteration.
-use super::super::{
-    WorthQueryInvariantEntityIdentity, WorthQueryInvariantProjectionWalk,
-    WorthQueryInvariantRelation,
-};
+use {crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::super::WorthQueryInvariantProjectionWalk, super::super::WorthQueryInvariantRelation};
 use crate::domain_computation::primary_graph::aggregate_identity::WorthQueryAggregateIdentity;
 use crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation;
 use std::sync::Arc;

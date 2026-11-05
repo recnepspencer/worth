@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use crate::domain_computation::{
-    WorthQueryConvergenceDomainEvidenceBindingDenial, WorthQueryManagedRunDenial,
-    WorthQueryManagedRunTerminalKind,
-};
+use {crate::domain_computation::WorthQueryConvergenceDomainEvidenceBindingDenial, crate::domain_computation::WorthQueryManagedRunDenial, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind};
 
 use super::{WorthQueryConvergenceDomainWorkEvidence, WorthQueryConvergenceEpochDenial};
 

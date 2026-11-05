@@ -1,9 +1,4 @@
-use super::{
-    WorthQueryCooperativeGraphProviderExecution, WorthQueryGraphCommitCall,
-    WorthQueryGraphProviderCall, WorthQueryGraphProviderExecution,
-    WorthQueryGraphProviderExecutionStart, WorthQueryGraphProviderFailure,
-    WorthQueryGraphProviderReceipt,
-};
+use {super::WorthQueryCooperativeGraphProviderExecution, super::WorthQueryGraphCommitCall, super::WorthQueryGraphProviderCall, super::WorthQueryGraphProviderExecution, super::WorthQueryGraphProviderExecutionStart, crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure, super::WorthQueryGraphProviderReceipt};
 
 pub trait WorthQueryGraphParticipationProvider<G>: Send + Sync + 'static {
     type Execution: WorthQueryGraphProviderExecution;

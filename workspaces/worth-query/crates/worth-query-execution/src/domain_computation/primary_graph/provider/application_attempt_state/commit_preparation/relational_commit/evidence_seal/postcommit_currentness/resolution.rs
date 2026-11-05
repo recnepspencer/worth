@@ -6,13 +6,13 @@ use worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial;
 use worth_relational::facade::runtime::RelationalFieldRevision;
 
 use crate::domain_computation::primary_graph::application_attempt::reobserve_indexed_entity_selection;
-use crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial;
-use crate::domain_computation::primary_graph::application_attempt::Movement;
-use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::indexed_entity_selection::IndexedSelectionReobserveDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
 
 use super::adjacency;
 use super::retirement;
-use super::RebaseVerificationFailure;
+use crate::domain_computation::primary_graph::vocabulary::provider::failure::RebaseVerificationFailure;
 use super::WorthQueryApplicationObservedFact as Fact;
 
 /// A fact a source query read. It stays at the revision it was read at, so
@@ -90,7 +90,7 @@ impl PreparedFactRebase {
                 locator,
             } = fact
         {
-            match crate::domain_computation::primary_graph::application_attempt::observe_aspect_absence(
+            match crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_aspect_absence(
                 runtime, execution, snapshot, *entity_id, *kind, locator,
             ) {
                 Err(cause) => return Ok(Err(RebaseVerificationFailure::execution(cause))),
@@ -107,9 +107,9 @@ impl PreparedFactRebase {
                 match fact.source_currentness_in(runtime, execution, snapshot)? {
                     Err(WorthQuerySourceCurrentnessFailure::ManagedIndex(cause)) => Err(RebaseVerificationFailure::managed_index(cause)),
                     Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => match stop {
-                        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::ManagedIndex(cause) => Err(RebaseVerificationFailure::managed_index(cause)),
-                        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::Execution(cause) => Err(RebaseVerificationFailure::execution(cause)),
-                        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::Interrupted(event) => return Err(CompanionPreflightStop::Interrupted(event)),
+                        crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop::ManagedIndex(cause) => Err(RebaseVerificationFailure::managed_index(cause)),
+                        crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop::Execution(cause) => Err(RebaseVerificationFailure::execution(cause)),
+                        crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop::Interrupted(event) => return Err(CompanionPreflightStop::Interrupted(event)),
                         _ => Err(unavailable.clone()),
                     },
                     Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
@@ -170,7 +170,7 @@ impl PreparedFactRebase {
                 aspect,
                 ..
             } => {
-                let present = crate::domain_computation::primary_graph::application_attempt::observe_aspect_presence(
+                let present = crate::domain_computation::primary_graph::vocabulary::application_attempt::aspect_presence::observe_aspect_presence(
                     runtime, execution, snapshot, *entity_id, *kind, aspect,
                 ).map_err(RebaseVerificationFailure::execution)?.ok_or_else(|| unavailable.clone())?;
                 Ok(Self::Replace(Fact::AspectPresence {

@@ -1,5 +1,5 @@
 //! Query-owned result interpretation consumes the exact Native presence outcome.
-use super::{projection_denial, WorthQueryApplicationReadExecutionDenial};
+use {super::projection_denial, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial};
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_query::ApplicationQueryResultFieldPresence as Presence;
 use worth_relational::facade::runtime::RelationalProjectedFieldObservation as Observation;
@@ -37,7 +37,7 @@ mod tests {
             Some(Observation::UnsupportedAspectShape),
         ] {
             let denial = value(observed, Presence::OptionalAspect, "bias").unwrap_err();
-            assert_eq!(denial.kind(), super::super::super::WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable);
+            assert_eq!(denial.kind(), crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable);
         }
         assert!(value(Some(Observation::AspectAbsent), Presence::Required, "bias").is_err());
         assert!(value(Some(Observation::FieldAbsent), Presence::Required, "bias").is_err());

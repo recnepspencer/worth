@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_inbound::transport_binding::WorthQueryInstalledTransportCompletionBinding;
 
 pub trait TransportBindingDoorsOps<Schema>:
     crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
@@ -21,9 +22,3 @@ where
 impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> TransportBindingDoorsOps<Schema> for HostRuntime where
     Schema: ApplicationSchema, {}
 
-impl WorthQueryInstalledTransportCompletionBinding {
-    #[doc(hidden)]
-    pub fn runtime_for_test(&self) -> WorthQueryRuntimeAuthorityIdentity {
-        Self::runtime(self)
-    }
-}

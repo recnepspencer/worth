@@ -3,12 +3,7 @@ use super::{
     ApplicationMutationBinding, ApplicationSchema, DecisionReader, HandlerExecutionDenial,
 };
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
-use {
-    crate::domain_computation::primary_graph::operation_body::PreparedBodyChildren,
-    crate::domain_computation::primary_graph::WorthQueryApplicationEffectEntity,
-    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-};
+use {crate::domain_computation::primary_graph::vocabulary::operation_body::children::PreparedBodyChildren, crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
     pub(in crate::domain_computation::primary_graph) fn body_child_custody(
         &self,

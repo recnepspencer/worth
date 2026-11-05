@@ -77,7 +77,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             Err(PublicationDenial::ClockMismatch) => {
                 drop(unpublished);
                 return Err(failure(
-                    WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                    WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
                     recovery,
                 ));
             }
@@ -131,7 +131,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 Ok(WorthQueryBranchAdoptionRecoveryOutcome::Performed { adoption, cleanup })
             }
             Err(PublicationDenial::ClockMismatch) => Err(failure(
-                WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
                 WorthQueryBranchAdoptionRecovery {
                     source,
                     target,

@@ -10,13 +10,9 @@ use worth_query_installation::facade::{
     WritePosture,
 };
 
-use super::super::application_attempt::OutputRoleUse;
-use super::super::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder,
-    WorthQueryInvariantMutationTarget,
-};
-use super::invariant::HandlerInterruption;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
+use {super::super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity, super::super::WorthQueryApplicationEffectProgramBuilder, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget};
+use crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption;
 
 mod aspect_removal;
 mod content;

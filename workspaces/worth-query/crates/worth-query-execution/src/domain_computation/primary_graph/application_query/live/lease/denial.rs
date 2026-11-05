@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::{
     application_query::ApplicationQueryLiveCauseBinding, application_schema::ApplicationSchema,
 };
@@ -8,15 +8,7 @@ use super::super::outcome::{
     WorthQueryApplicationLiveCauseDenialKind, WorthQueryApplicationLiveOutcome,
 };
 use super::WorthQueryApplicationLiveLease;
-use crate::domain_computation::primary_graph::{
-    application_query::{
-        authorized_read::WorthQueryAuthorizedApplicationReadDenial,
-        read_execution::WorthQueryApplicationReadExecutionDenialKind,
-        WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenialKind,
-        WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-    },
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection, crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind, crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 impl<
         Schema,
@@ -205,10 +197,10 @@ where
                 self.execution_denied_outcome(kind)
             }
             WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
-                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+                crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
             )) => self.cancelled_outcome(),
             WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
-                crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+                crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
             )) => self.deadline_exceeded_outcome(),
             WorthQueryOperationAuthorizationDenialKind::Refused(_) => self
                 .acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::AuthorizationDenied(
@@ -221,16 +213,16 @@ where
     pub fn end_with_read_stop(
         &mut self,
         cause: Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         match cause {
             Ok(kind) => self.execution_denied_outcome(kind),
-            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => {
+            Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled) => {
                 self.cancelled_outcome()
             }
-            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut) => {
+            Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut) => {
                 self.deadline_exceeded_outcome()
             }
         }
@@ -238,7 +230,7 @@ where
 
     pub(super) fn execution_denied_outcome(
         &mut self,
-        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        kind: crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         self.terminate_stopped_read();
         WorthQueryApplicationLiveOutcome::ExecutionRequest(kind)

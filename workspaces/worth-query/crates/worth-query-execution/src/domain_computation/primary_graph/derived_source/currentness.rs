@@ -1,6 +1,6 @@
 //! Reacquire through the same Native owner at a genuinely admitted selected pin.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Failure;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Failure;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     runtime::{

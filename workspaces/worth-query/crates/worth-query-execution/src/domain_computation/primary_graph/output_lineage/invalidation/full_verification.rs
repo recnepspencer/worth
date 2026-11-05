@@ -11,11 +11,11 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 use super::mark_state::MarkState;
 use super::mark_state::OutputFactCoverage;
 use super::source_alignment::SnapshotAlignedMarkState;
-use super::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::SourceInvalidationOwner;
-use crate::domain_computation::primary_graph::application_attempt::Movement;
-use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 

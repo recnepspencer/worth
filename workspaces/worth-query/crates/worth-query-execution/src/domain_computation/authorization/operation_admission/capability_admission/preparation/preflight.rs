@@ -1,6 +1,6 @@
 //! Named preflight checks for capability admission preparation.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityRequest, ApplicationCapabilityRequestProjection,
 };
@@ -17,11 +17,7 @@ use super::{denial, CapabilityAdmissionInput};
 use crate::domain_computation::authorization::capability_elevation_projection::validate_elevation_projection;
 use crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan;
 use crate::domain_computation::authorization::graph_work_session::start_capability_graph_work;
-use crate::domain_computation::authorization::{
-    bridge_authorization_binding_identity, WorthQueryOperationAdmissionIdentity,
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryRuntimeTimeSample,
-};
+use {crate::domain_computation::authorization::bridge_authorization_binding_identity, crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryRuntimeTimeSample};
 use crate::domain_computation::primary_graph::{
     WorthQueryApprovedElevation, WorthQueryAuthenticatedPrincipal,
 };

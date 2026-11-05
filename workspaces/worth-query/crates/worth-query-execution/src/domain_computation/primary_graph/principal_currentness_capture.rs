@@ -4,7 +4,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQueryAuthenticatedPrincipal;
 use crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency;
-use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 
 pub(in crate::domain_computation) enum PrincipalCurrentnessCaptureStop {
     MissingGraph,

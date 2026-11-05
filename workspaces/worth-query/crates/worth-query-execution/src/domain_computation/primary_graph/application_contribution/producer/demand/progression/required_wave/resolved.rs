@@ -4,7 +4,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 use crate::domain_computation::primary_graph::invariant_projection::SelectedPendingConsumedOutput;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 /// An exact old edge joined to the Ready cell resolved on this selected wave.
 pub(in crate::domain_computation::primary_graph) struct ResolvedConsumedPredecessor {

@@ -1,8 +1,6 @@
 //! Pay the existing policy preparation pass from the diagnostic request's payer.
 use super::*;
-use crate::domain_computation::primary_graph::admitted_capture::{
-    checkpoint, run_retained_stage, CaptureStop,
-};
+use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop};
 use worth_execution::{
     ExecutionMemoryReservation, ExecutionRequest, MapKernelContext, MapKernelFailure, MapKernelStop,
 };

@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph) trait CleanupScopedOps<
 {
     fn retained_accepted_for_cleanup_test(
         &self,
-        correlation: &crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
+        correlation: &crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity,
     ) -> Option<
         std::sync::Arc<
             crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence,

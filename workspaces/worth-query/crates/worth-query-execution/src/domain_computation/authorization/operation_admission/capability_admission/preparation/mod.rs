@@ -14,10 +14,7 @@ use worth_query_installation::facade::{
 };
 
 use crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan;
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAdmissionIdentity, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialKind, WorthQueryRuntimeTimeSample,
-};
+use {crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryRuntimeTimeSample};
 use crate::domain_computation::primary_graph::{
     WorthQueryApprovedElevation, WorthQueryAuthenticatedPrincipal,
 };

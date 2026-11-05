@@ -2,7 +2,7 @@ mod cleanup_failure;
 pub use cleanup_failure::{WorthQueryMutationCleanupFailure, WorthQueryMutationCleanupFailureKind};
 use std::sync::Arc;
 
-use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotRelease;
+use crate::domain_computation::vocabulary::primary_graph::snapshot_lease::WorthQueryApplicationSnapshotRelease;
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledGraphObligationSetIdentity,
@@ -10,10 +10,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::history::BranchId;
 use worth_runtime_bridge::facade::TruthBranchIdentity;
 
-use super::{
-    WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
-    WorthQueryManagedGraphWorkSession,
-};
+use {crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity, super::WorthQueryManagedGraphWorkSession};
 
 /// Private proof that the legacy managed-run engine is a worker of one exact
 /// graph-work session rather than a second application-mutation authority.
@@ -108,7 +105,7 @@ impl WorthQueryMutationRunBinding {
     pub(in crate::domain_computation) fn finish(
         self,
         running: crate::domain_computation::WorthQueryRunningDirectRun,
-        terminal: crate::domain_computation::WorthQueryManagedRunTerminalKind,
+        terminal: crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind,
         snapshot_release: WorthQueryApplicationSnapshotRelease,
         on_worker: bool,
     ) -> Result<WorthQueryMutationGraphWorkCompletion, WorthQueryMutationCleanupFailure> {
@@ -171,7 +168,7 @@ impl WorthQueryProviderSessionBoundMutationRun {
     pub(in crate::domain_computation) fn finish(
         self,
         running: crate::domain_computation::WorthQueryRunningDirectRun,
-        terminal: crate::domain_computation::WorthQueryManagedRunTerminalKind,
+        terminal: crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind,
         snapshot_release: WorthQueryApplicationSnapshotRelease,
         on_worker: bool,
     ) -> Result<WorthQueryMutationGraphWorkCompletion, WorthQueryMutationCleanupFailure> {

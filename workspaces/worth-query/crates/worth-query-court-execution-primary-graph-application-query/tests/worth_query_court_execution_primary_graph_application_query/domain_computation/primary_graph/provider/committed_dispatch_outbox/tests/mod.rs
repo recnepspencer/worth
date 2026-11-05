@@ -19,15 +19,15 @@ pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration::hex_bytes;
 pub use worth_query_execution::facade::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial as Denial;
 pub use worth_relational::facade::transactions::RecordRef;
-pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::WorthQueryDispatchOutboxLayout;
+pub use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout;
 pub use worth_query_execution::facade::domain_computation::WorthQueryDispatchOutboxRecord;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 pub use crate::domain_computation::primary_graph::provider::committed_dispatch_outbox::tests;
 pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::dispatch_outbox_create_intent;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
+pub use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_relational_branch_id;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
+pub use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
 
 #[test]
 fn owner_read_denies_missing_foreign_and_every_commit_affinity_substitution() {

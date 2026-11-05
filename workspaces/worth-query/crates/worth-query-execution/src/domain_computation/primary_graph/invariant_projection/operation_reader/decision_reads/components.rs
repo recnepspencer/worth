@@ -1,7 +1,7 @@
 //! Original aggregate bodies bound to this projection's admission and contracts.
 use super::structural_walks::WalkRecordDenial as Denial;
 use super::*;
-use crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity as Admission;
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity as Admission;
 use crate::domain_computation::primary_graph::component_selection::{
     ComponentSelection, ComponentSelectionKey,
 };

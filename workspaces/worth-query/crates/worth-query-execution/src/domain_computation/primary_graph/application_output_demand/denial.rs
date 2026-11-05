@@ -34,28 +34,28 @@ pub struct WorthQueryOutputDemandDenial {
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct DemandDenialEvidence {
     managed_source_query: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenial>>,
-    managed_index: Option<crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial>,
+    managed_index: Option<crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial>,
     output_comparison: Option<worth_runtime_bridge::facade::BridgeOutputComparisonDenial>,
     custom_invariant: Option<crate::domain_computation::WorthQueryCustomInvariantDenial>,
     producer_requirement: Option<
-        crate::domain_computation::primary_graph::WorthQueryGeneratedOutputInvariantAdmissionDenial,
+        crate::domain_computation::vocabulary::primary_graph::invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial,
     >,
     publication_stale: Option<ProducerPublicationStale>,
     publication_companion_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
     producer_admission_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
     commit_denial_kind:
-        Option<crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind>,
+        Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind>,
     commit_execution: Option<(
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
         Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     )>,
     requested_output:
         Option<crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead>,
     capacity_stop: Option<
-        crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop,
+        crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop,
     >,
     retirement: Option<std::sync::Arc<worth_relational::facade::publication::PublicationError>>,
 }
@@ -91,7 +91,7 @@ impl WorthQueryOutputDemandDenial {
     pub(in crate::domain_computation::primary_graph) fn release_managed_cleanup(
         &mut self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-    ) -> Result<Option<crate::domain_computation::WorthQueryDirectRunCleanupReceipt>, Self> {
+    ) -> Result<Option<crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt>, Self> {
         match self.cleanup.as_mut().map(|custody| custody.release(phase)) {
             Some(Err(denial)) => Err(denial),
             Some(Ok(receipt)) => Ok(receipt),
@@ -161,7 +161,7 @@ impl WorthQueryOutputDemandDenial {
     pub(in crate::domain_computation::primary_graph) fn with_capacity_stop(
         mut self,
         stop: Option<
-            crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop,
+            crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop,
         >,
     ) -> Self {
         if let Some(stop) = stop {
@@ -181,7 +181,7 @@ impl WorthQueryOutputDemandDenial {
     /// Diagnostic data grants no admission, currentness, retry or cleanup.
     pub fn output_verification_capacity_stop(
         &self,
-    ) -> Option<crate::domain_computation::primary_graph::VerificationCapacityStop> {
+    ) -> Option<crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop> {
         self.evidence
             .as_ref()
             .and_then(|evidence| evidence.capacity_stop)
@@ -234,7 +234,7 @@ impl WorthQueryOutputDemandDenial {
     /// The original pre-effect commit refusal, when this demand ran a producer.
     pub const fn commit_denial_kind(
         &self,
-    ) -> Option<crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind>
+    ) -> Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind>
     {
         match &self.evidence {
             Some(evidence) => evidence.commit_denial_kind,
@@ -244,7 +244,7 @@ impl WorthQueryOutputDemandDenial {
 
     pub(in crate::domain_computation::primary_graph) fn with_commit_denial_kind(
         mut self,
-        kind: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
+        kind: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
     ) -> Self {
         self.evidence_mut().commit_denial_kind = Some(kind);
         self
@@ -256,8 +256,8 @@ impl WorthQueryOutputDemandDenial {
     ) -> Option<(
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
         Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     )> {
         self.evidence
@@ -270,8 +270,8 @@ impl WorthQueryOutputDemandDenial {
         evidence: Option<(
             crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
             Result<
-                crate::domain_computation::WorthQueryProviderSessionDenialKind,
-                crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+                crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+                crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
             >,
         )>,
     ) -> Self {
@@ -320,7 +320,7 @@ impl WorthQueryOutputDemandDenial {
     pub(in crate::domain_computation::primary_graph) fn producer_domain_denied(
         subject: impl Into<std::borrow::Cow<'static, str>>,
         reason: Option<&'static str>,
-        value: crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerDenialValue,
+        value: crate::domain_computation::primary_graph::vocabulary::application_contribution::denial_value::WorthQueryProducerDenialValue,
     ) -> Self {
         let mut denial = Self::new(
             WorthQueryOutputDemandDenialKind::ProducerDomainDenied,
@@ -338,12 +338,12 @@ impl WorthQueryOutputDemandDenial {
         subject: impl Into<std::borrow::Cow<'static, str>>,
     ) -> Self {
         use crate::basis::WorthQueryProductBranchAdmissionDenial as Branch;
-        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+        use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
         let kind = match denial {
             Branch::Stopped(Err(Control::Cancelled)) => WorthQueryOutputDemandDenialKind::Cancelled,
             Branch::Stopped(Err(Control::TimedOut)) => WorthQueryOutputDemandDenialKind::TimedOut,
             Branch::Stopped(Ok(cause)) => WorthQueryOutputDemandDenialKind::SourceQueryExecution(
-                crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(cause)),
+                crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(cause)),
             Branch::Refused(refused) => WorthQueryOutputDemandDenialKind::ProductSelection(refused),
         };
         Self::new(kind, subject)

@@ -1,12 +1,6 @@
 use super::{WorthQueryGraphProviderMemoryArena, WorthQueryGraphProviderRetainedMemory};
-use crate::domain_computation::provider_session::graph_provider::bounded_step::{
-    WorthQueryCooperativeGraphProviderExecution, WorthQueryOwnedGraphProviderExecution,
-    WorthQueryProviderExecutionReleaseEvidence,
-};
-use crate::domain_computation::{
-    WorthQueryGraphProviderExecution, WorthQueryGraphProviderStepDenial,
-    WorthQueryGraphProviderStepDenialKind,
-};
+use {crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryCooperativeGraphProviderExecution, crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryOwnedGraphProviderExecution, crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence};
+use {crate::domain_computation::WorthQueryGraphProviderExecution, crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial, crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind};
 
 /// Step-external port that can provisionally rebind retained provider memory
 /// during the existing same-runtime readmission transaction.
@@ -84,11 +78,11 @@ impl<'scope> WorthQueryGraphProviderRestoreMemory<'scope> {
         admitted: WorthQueryCooperativeGraphProviderExecution<E>,
     ) -> Result<
         Box<dyn WorthQueryGraphProviderExecution>,
-        crate::domain_computation::WorthQueryGraphProviderFailure,
+        crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure,
     > {
         if let Some(denial) = &self.denial {
             return Err(
-                crate::domain_computation::WorthQueryGraphProviderFailure::new(denial.detail()),
+                crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure::new(denial.detail()),
             );
         }
         if admitted.arena_identity() != self.arena.snapshot().arena_identity()
@@ -99,7 +93,7 @@ impl<'scope> WorthQueryGraphProviderRestoreMemory<'scope> {
                 "cooperative provider execution belongs to another managed restore",
             ));
             return Err(
-                crate::domain_computation::WorthQueryGraphProviderFailure::new(
+                crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure::new(
                     self.denial
                         .as_ref()
                         .expect("foreign restore admission latches a denial")
@@ -108,7 +102,7 @@ impl<'scope> WorthQueryGraphProviderRestoreMemory<'scope> {
             );
         }
         self.admitted_execution.take().ok_or_else(|| {
-            crate::domain_computation::WorthQueryGraphProviderFailure::new(
+            crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure::new(
                 "cooperative provider restore admission no longer owns an execution",
             )
         })

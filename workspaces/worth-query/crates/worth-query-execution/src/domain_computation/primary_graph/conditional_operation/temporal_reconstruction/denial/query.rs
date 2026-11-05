@@ -1,7 +1,7 @@
 //! Reconstruction query admission preserves stops, capacity, and ordinary refusal.
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use super::*;
-use crate::domain_computation::primary_graph::{WorthQueryApplicationQueryAdmissionDenialKind as Query, WorthQueryOperationAuthorizationDenialKind as Authorization};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind as Query, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Authorization};
 use crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::{WorthQueryTemporalReentryDenial as Reentry, WorthQueryTemporalControlStop as Control};
 pub(super) fn admission(
     kind: Query,
@@ -10,10 +10,10 @@ pub(super) fn admission(
     match kind {
         Query::ExecutionRequest(kind) => read_stopped(Ok(kind)),
         Query::Cancelled => read_stopped(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
         )),
         Query::DeadlineExceeded => read_stopped(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
         )),
         Query::Authorization(kind) => authorization(kind, detail),
         Query::ActiveSnapshotCapacityExhausted {
@@ -75,10 +75,10 @@ pub(super) fn authorization(
     }) {
         Reentry::ExecutionStopped(kind) => read_stopped(Ok(kind)),
         Reentry::ControlStopped(Control::Cancelled) => read_stopped(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
         )),
         Reentry::ControlStopped(Control::TimedOut) => read_stopped(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
         )),
         Reentry::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,

@@ -1,5 +1,6 @@
 //! Current principal and capability decision facts at the retained native basis.
 use super::*;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 pub(super) fn validate_active_capability_currentness(
     installed: &crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry,
     execution: &worth_execution::ExecutionRequest<'_, '_>,

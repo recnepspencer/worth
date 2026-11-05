@@ -1,5 +1,6 @@
 //! Exactly-one Source completion uses the common real permission admission.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop;
 
 impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
     pub(in crate::domain_computation::primary_graph) fn read<Binding>(
@@ -7,7 +8,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         intent: Binding::Input,
         context_use: &std::cell::Cell<
-            crate::domain_computation::primary_graph::handler::DecisionContextUse,
+            crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse,
         >,
         native: &mut ApplicationQueryNativeAccess<'_>,
     ) -> Result<

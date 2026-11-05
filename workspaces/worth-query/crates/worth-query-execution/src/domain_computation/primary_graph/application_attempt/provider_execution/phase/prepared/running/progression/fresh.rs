@@ -10,12 +10,7 @@ use graph::application_attempt::provider_compare_denial::{
 use graph::application_attempt::provider_execution::outcome::{
     progression_denied, WorthQueryProviderProgressionOutcome as Progression,
 };
-use graph::application_attempt::{
-    provider_recomparison::recover_equivalent_commit_evidence,
-    WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDenial,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationStaleAttempt,
-    WorthQueryCommittedReceiptProjection,
-};
+use {graph::application_attempt::provider_recomparison::recover_equivalent_commit_evidence, graph::application_attempt::WorthQueryApplicationCommitAuthorityBinding, graph::application_attempt::WorthQueryApplicationCommitDenial, graph::application_attempt::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt, graph::application_attempt::WorthQueryCommittedReceiptProjection};
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
 use graph::provider::{WorthQueryPrimaryGraphProvider, WorthQueryProviderIdempotencyResolution};
 use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;

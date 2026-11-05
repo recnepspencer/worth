@@ -1,5 +1,5 @@
 //! Fixed history wrapper bounds accompany the existing Native/World backing owners.
-use super::WorthQueryApplicationHistoryDenial as Denial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial;
 
 pub(super) const fn arc_bytes<T>() -> usize {
     size_of::<T>() + 2 * size_of::<usize>()

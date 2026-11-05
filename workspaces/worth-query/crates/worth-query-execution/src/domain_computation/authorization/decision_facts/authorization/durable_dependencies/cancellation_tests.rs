@@ -28,8 +28,8 @@ impl WorthQueryAuthorizationDecisionFact {
         );
         crate::test_read_stops::every_consult(
             |request| retained.matches_with_retained_activation(request, &observed, runtime, snapshot).map_err(|denial| denial.kind()),
-            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)),
-            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })),
+            crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled)),
+            crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Stopped(Ok(crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })),
         );
         use crate::domain_computation::primary_graph::application_attempt::consult_observation::{
             Door, ReadConsultObservationForTest,
@@ -62,7 +62,7 @@ impl WorthQueryAuthorizationDecisionFact {
                 Some(k),
                 move || cancel.cancel(),
             );
-            assert_eq!(retained.matches_with_retained_activation(&execution, &observed, runtime, snapshot).map_err(|denial| denial.kind()), Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled))));
+            assert_eq!(retained.matches_with_retained_activation(&execution, &observed, runtime, snapshot).map_err(|denial| denial.kind()), Err(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled))));
             assert!(probe.consults() >= k);
         }
         for k in 1..=count {
@@ -106,13 +106,13 @@ impl WorthQueryAuthorizationDecisionFact {
                 probe.consults() >= k,
                 "the activation read reached consult {k}"
             );
-            assert_eq!(answer, Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(crate::facade::primary_graph::relational_execution_kind(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted, None))));
+            assert_eq!(answer, Err(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Stopped(crate::facade::primary_graph::relational_execution_kind(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted, None))));
         }
 
         source.cancel();
         assert_eq!(
             retained.matches_with_retained_activation(execution, &observed, runtime, snapshot).map_err(|denial| denial.kind()),
-            Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)))
+            Err(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled)))
         );
     }
 }

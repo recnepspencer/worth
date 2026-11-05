@@ -3,8 +3,8 @@
 use super::admission::admit;
 use super::admission::WorthQueryWorkflowReadDenial as Denial;
 use crate::domain_computation::primary_graph::application_attempt::observe_adjacency;
-use crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowInstanceDiscoveryIntent;
 use crate::domain_computation::primary_graph::index_currency::ensure_selected_field_indexes_admitted;
 use crate::domain_computation::primary_graph::index_currency::SelectedFieldIndexAdmissionStop;

@@ -1,6 +1,4 @@
-use crate::domain_computation::primary_graph::{
-    MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::MutationHandlerExecutionDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial;
 use {
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
@@ -75,7 +73,7 @@ pub(super) fn request_admission_denied(
 /// The request's principal did not resolve; the stop stays with the request.
 pub(super) fn principal_rejected(
     subject: &str,
-    error: crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial,
+    error: crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial,
 ) -> ProducerExecutionStop {
     let kind = WorthQueryOutputDemandDenialKind::of_principal_resolution(error.kind());
     request_admission_rejected(denial(kind, format!("{subject}: {error:?}")))
@@ -84,7 +82,7 @@ pub(super) fn principal_rejected(
 /// The request's scope did not resolve; the stop stays with the request.
 pub(super) fn scope_rejected(
     subject: &str,
-    error: crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial,
+    error: crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial,
 ) -> ProducerExecutionStop {
     let kind = WorthQueryOutputDemandDenialKind::of_scope_resolution(error.kind());
     request_admission_rejected(denial(kind, format!("{subject}: {error:?}")))
@@ -100,7 +98,7 @@ pub(super) fn request_authority_denied(
 /// The stop of a request refused authorization.
 pub(super) fn request_authority_stop(
     subject: &str,
-    kind: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    kind: crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
 ) -> WorthQueryOutputDemandDenial {
     denial(
         WorthQueryOutputDemandDenialKind::of_request_authorization(kind),
@@ -237,7 +235,7 @@ pub fn projection_budget(
     };
     match kind {
         Projection::InvariantAdmission(Invariant::ExecutionRequest(cause)) => {
-            use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+            use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
             Some(match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
                 Ok(cause) => request_execution::kind(cause),
                 Err(Control::Cancelled) => WorthQueryOutputDemandDenialKind::Cancelled,
@@ -314,8 +312,8 @@ pub(super) fn commit_execution_stopped(
     subject: &str,
     error: impl std::fmt::Debug,
     cause: Result<
-        crate::domain_computation::WorthQueryProviderSessionDenialKind,
-        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     >,
 ) -> WorthQueryOutputDemandDenial {
     denial(

@@ -3,9 +3,9 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::nati
 use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources;
 use worth_query_execution::facade::integration::WorthQueryProductWorldResources;
 use worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::commit_touches::CommitTouchEntities;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::commit_touches::CommitTouchInterest;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::commit_touches::CommitTouchEntities;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::commit_touches::CommitTouchInterest;
 
 #[test]
 fn no_position_policy_preserves_funded_history_and_original_reader_currentness() {

@@ -9,9 +9,7 @@ pub(super) use partitioning::NextPartitioning;
 use partitioning::Recomputed;
 mod preparation;
 
-use crate::domain_computation::primary_graph::{
-    application_attempt::ComputationRead, invariant_projection::ComputationCallSequence,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead, crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -19,9 +17,7 @@ use worth_execution::{MapKernelContext, MapKernelFailure, PartitionItemId};
 use worth_foundational::facade::PartitionIdentity;
 use worth_proof::CanonicalUniqueVec;
 
-use super::super::super::computation::nested_failure::{
-    MemberComputeFailure, NestedFailureTransport,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_contribution::nested_failure::MemberComputeFailure, crate::domain_computation::primary_graph::vocabulary::application_contribution::nested_failure::NestedFailureTransport};
 use super::super::super::execution_denial::PartitionRefusal;
 use super::super::items::{ItemDigests, Items};
 use super::super::plan::GatheredComputationPartition;
@@ -36,7 +32,7 @@ use super::retained::{
 use super::tree_update::{next_tree, same_bits};
 use super::{CompletedComputationRetention, PriorAbsence};
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
-use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
+use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 use crate::domain_computation::request_execution::QueryRequestExecution;
 
 /// An incremental run after `prepare`: every partition carried or gathered

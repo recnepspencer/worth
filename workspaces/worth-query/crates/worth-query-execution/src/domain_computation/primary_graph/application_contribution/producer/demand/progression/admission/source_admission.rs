@@ -88,7 +88,7 @@ fn admit_output_demand_with_source_admitted<
                         Family::IDENTITY,
                     )
                 })?;
-        let source_scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
+        let source_scope = crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(
             observed_source.source_root(),
         );
         // Only the exact retained-candidate selection has compared the full

@@ -2,7 +2,7 @@
 use super::super::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
-use super::{WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial};
+use {super::WorthQueryOperationBodyDecision, crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial};
 #[path = "handler/candidate.rs"]
 mod candidate;
 #[path = "handler/creation_initializers.rs"]
@@ -23,7 +23,7 @@ type Scope<Schema, Binding> = <<Binding as ApplicationMutationBinding<Schema>>::
 
 pub(in crate::domain_computation::primary_graph) struct OperationBodyHandler<Schema, Binding> {
     pub(super) body: ApplicationOperationBodyProgram,
-    pub(super) values: Vec<super::value::InstalledBodyValue>,
+    pub(super) values: Vec<crate::domain_computation::primary_graph::vocabulary::operation_body::operation_body_value::InstalledBodyValue>,
     pub(super) external_emission: Option<std::sync::Arc<worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalEffectRecipe>>,
     pub(super) marker: PhantomData<fn() -> (Schema, Binding)>,
     pub(super) input_bindings:
@@ -71,7 +71,7 @@ where
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
         if let Some(unmet) = findings.findings().iter().find(|finding| {
-            finding.status() == super::WorthQueryOperationBodyRequirementStatus::Unmet
+            finding.status() == crate::domain_computation::primary_graph::vocabulary::operation_body::requirement::WorthQueryOperationBodyRequirementStatus::Unmet
         }) {
             return HandlerResult::DomainDenied(match unmet.identity() {
                 Some(identity) => WorthQueryOperationBodyDenial::DeclaredRequirementUnmet {

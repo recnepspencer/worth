@@ -6,9 +6,7 @@ use super::WorthQueryRunningWorkflowRun;
 use crate::domain_computation::provider_session::graph_provider::bounded_step::{
     WorthQueryGraphProviderMemoryArena, WorthQueryGraphProviderMemorySnapshot,
 };
-use crate::domain_computation::{
-    WorthQueryGraphProviderStepReport, WorthQueryProviderExecutionReleaseEvidence,
-};
+use {crate::domain_computation::WorthQueryGraphProviderStepReport, crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence};
 
 impl WorthQueryRunningWorkflowRun {
     pub(in crate::domain_computation::managed_run) fn release_or_retain_queue_occupancy(
@@ -63,7 +61,7 @@ impl WorthQueryRunningWorkflowRun {
 
     pub(in crate::domain_computation::managed_run) fn record_safe_point(
         &mut self,
-        observation: &super::super::WorthQueryManagedSafePointObservation,
+        observation: &crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation,
     ) {
         self.affinity
             .provider_work_mut()

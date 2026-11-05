@@ -9,10 +9,7 @@ use super::{
     WorkflowDefinitionCompilationPosture,
 };
 use crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::publication_binding::WorkflowDefinitionPublicationRevisions;
-use crate::domain_computation::primary_graph::application_attempt::{
-    PublishedWorkflowDefinitionRef, WorthQueryApplicationAdjacencyDirection,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact};
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 
 pub(super) struct ObservedWorkflowPublicationHeader {
@@ -211,7 +208,7 @@ pub(super) fn observe_publication_header(
         lineage,
         layout.lineage.entity_kind,
         &layout.lineage.protocol_version,
-        crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION,
         &mut facts,
     )?;
     Ok(ObservedWorkflowPublicationHeader {

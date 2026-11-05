@@ -49,7 +49,7 @@ pub enum WorthQueryManagedDerivedViewDenial {
     /// The original shared-loan refusal for a closed pair read.
     BatchResource {
         root: worth_relational::facade::identity::EntityId,
-        denial: crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryBatchResourceDenial,
+        denial: crate::domain_computation::primary_graph::vocabulary::application_query::batch::WorthQueryApplicationQueryBatchResourceDenial,
     },
     /// The request asks for more workers than its parent permits.
     WorkerLimitExceedsParent,
@@ -101,7 +101,7 @@ pub enum WorthQueryManagedDerivedViewDenial {
     /// A Query read refused this root; the original semantic denial is retained.
     ReadDenied {
         root: worth_relational::facade::identity::EntityId,
-        denial: crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotDenial,
+        denial: crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial,
     },
     /// The view's revision counter is exhausted; open a new view.
     ViewRevisionExhausted,

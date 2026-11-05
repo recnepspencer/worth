@@ -66,7 +66,7 @@ pub(crate) fn ensure_selected_field_indexes_admitted(
             },
             basis,
             None,
-            super::super::index_maintenance_budget::ordinary_index_maintenance_budget(),
+            crate::domain_computation::vocabulary::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
             execution,
         )
         .map_err(|denial| match denial.kind {

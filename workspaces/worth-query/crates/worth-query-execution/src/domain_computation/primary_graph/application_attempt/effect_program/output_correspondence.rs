@@ -18,13 +18,14 @@ pub use family_entry::WorthQueryApplicationOutputFamilyEntry;
 
 mod projection;
 pub use projection::WorthQueryApplicationOutputEntity;
-pub use projection::WorthQueryApplicationOutputProjectionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial;
 
 pub(crate) mod role_use;
-pub(in crate::domain_computation::primary_graph) use role_use::OutputRoleUse;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
 
 mod typed;
 pub use typed::WorthQueryApplicationTypedOutputCorrespondence;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct CommittedOutputBinding {
@@ -34,13 +35,6 @@ struct CommittedOutputBinding {
     entity: EntityId,
 }
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryCheckpointOutputRole {
-    pub(in crate::domain_computation::primary_graph) role: String,
-    pub(in crate::domain_computation::primary_graph) posture: WorthQueryApplicationOutputPosture,
-    pub(in crate::domain_computation::primary_graph) entity_name: String,
-    pub(in crate::domain_computation::primary_graph) entity: EntityId,
-}
 
 /// Sealed role-to-identity correspondence resolved from one Relational commit.
 ///

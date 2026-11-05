@@ -106,7 +106,7 @@ fn observe_approval(
     let kind = layout.approval.entity_kind;
     fields.protocol(approval, kind, &layout.approval.protocol_version)?;
     let decision = fields.text(approval, kind, &layout.approval.decision)?;
-    use super::super::WorkflowApprovalDecision as Decision;
+    use crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision as Decision;
     let decision = match decision.bytes() {
         b"approve" => Decision::Approve,
         b"reject" => Decision::Reject,

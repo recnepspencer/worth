@@ -1,6 +1,6 @@
 //! Delegation-lineage and policy observation for one bound capability context.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::collections::BTreeSet;
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityDelegationRule;
@@ -31,10 +31,7 @@ impl ObservedDelegationTransition {
     }
 }
 use super::{WorthQueryDelegationDecisionFact, WorthQueryObservedCapabilityDecision};
-use crate::domain_computation::authorization::{
-    WorthQueryAuthorizationDecisionFact, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialKind, WorthQueryRetainedCapabilityRequest,
-};
+use {crate::domain_computation::authorization::WorthQueryAuthorizationDecisionFact, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryRetainedCapabilityRequest};
 
 pub(super) fn observe_lineage(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

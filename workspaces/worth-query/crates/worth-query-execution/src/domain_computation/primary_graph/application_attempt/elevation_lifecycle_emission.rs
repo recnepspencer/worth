@@ -2,7 +2,7 @@ use worth_query_declaration::lifecycle_effect_derivation_authority::DerivedAppli
 
 use super::effect_program::{WorthQueryApplicationEmission, WorthQueryApplicationRealizedEffect};
 use super::effect_validation::denial;
-use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
+use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 pub(super) fn append_lifecycle_emission(
     effects: &mut Vec<WorthQueryApplicationRealizedEffect>,

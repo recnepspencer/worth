@@ -10,7 +10,7 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_relational::facade::identity::EntityId;
 
-use super::{PublishedWorkflowDefinitionRef, WorkflowDefinitionExpectedPredecessor};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, super::WorkflowDefinitionExpectedPredecessor};
 use crate::basis::WorthQueryProductBranch;
 
 const DOMAIN: CanonicalBasisDomain =

@@ -14,7 +14,7 @@ impl<Schema, Operation, Input, Scope>
     ) {
         use crate::domain_computation::primary_graph::application_attempt::consult_observation::Door;
         use crate::domain_computation::primary_graph::application_attempt::consult_observation::ReadConsultObservationForTest;
-        use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as Kind;
+        use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind;
         use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact;
         let Some(WorthQueryRetainedAuthorizationDecisionFacts::Abilities {
             principal,
@@ -97,7 +97,7 @@ impl<Schema, Operation, Input, Scope>
                 probe.consults() >= k,
                 "the retained equality read reached consult {k}"
             );
-            assert_eq!(answer.unwrap_err().kind(), Kind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }));
+            assert_eq!(answer.unwrap_err().kind(), Kind::ExecutionRequest(crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }));
         }
     }
     pub(in crate::domain_computation) fn assert_cancelled_retained_activation_read(

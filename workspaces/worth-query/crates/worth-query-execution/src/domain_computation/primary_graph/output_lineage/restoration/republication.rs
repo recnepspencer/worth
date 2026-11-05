@@ -9,16 +9,16 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 use super::super::input_cutoff::performed_fact_sequence;
 use super::super::latest_output_matching;
-use super::super::CompletedDecisionReuseProof;
+use crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof;
 use super::super::PreparedInputReuseKey;
 use super::super::RecordedOutput;
-use super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::super::RecordedSourceIdentity;
 use super::super::SealedNativeOutputWitness;
-use super::super::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::super::WorthQueryApplicationOutputCorrespondence;
 use super::super::WorthQueryApplicationOutputLineage;
-use crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary;
+use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 
 /// What a restoration carries over from the retained performed record it
@@ -100,7 +100,7 @@ impl WorthQueryApplicationOutputLineage {
         output_binding: TypeId,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         suspended_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         suspended_generation: u64,
         source_partition_identity: [u8; 32],
@@ -192,7 +192,7 @@ impl WorthQueryApplicationOutputLineage {
         output_binding: TypeId,
         runtime_authority: u64,
         schema: ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
         source_identity: RecordedSourceIdentity,

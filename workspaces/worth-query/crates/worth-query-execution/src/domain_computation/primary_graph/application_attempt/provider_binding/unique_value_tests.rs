@@ -16,11 +16,7 @@ use super::{prepare_provider_attempt, WorthQueryApplicationRealizedEffect as Eff
 use crate::domain_computation::primary_graph::application_attempt::effect_program::{
     WorthQueryApplicationCreationPartition as Partition, WorthQueryApplicationOptionalFieldWrite,
 };
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind as Kind,
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitDenialStage, WorthQueryApplicationObservedFact as Fact,
-};
+use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialStage, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact};
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFieldFixture;
 
 const KIND: KindId = KindId(7);
@@ -237,7 +233,7 @@ fn lower(
         &|_, _| None,
         PartitionId::main(),
         effects.len(),
-        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
             crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(
         super::super::read_set::admit_array(
             facts.len(),

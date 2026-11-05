@@ -19,7 +19,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     effects: super::effect_accumulator::WorthQueryRegisteredProviderEffects,
     idempotency: super::super::WorthQueryApplicationIdempotencyBinding,
     original_authority: std::sync::Arc<super::super::WorthQueryApplicationCommitAuthorityBinding>,
-    outcome_identity: super::super::WorthQueryApplicationCommitOutcomeIdentity,
+    outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
     retained_authorization_fact_count: usize,
     external_effect: &'a worth_query_installation::facade::InstalledExternalEffectContract,
     preimage_demand: Option<&'a worth_query_installation::facade::InstalledPreImageDemand>,
@@ -31,7 +31,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
-        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+        &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement],
     source_fact_rebase: crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
 }

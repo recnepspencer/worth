@@ -3,7 +3,7 @@ use super::super::{
     WorthQueryDerivedRelationCountOwner, WorthQueryInstalledPartitionedComputation,
 };
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 use worth_query_declaration::facade::{
     application_program::*,
     application_schema::{

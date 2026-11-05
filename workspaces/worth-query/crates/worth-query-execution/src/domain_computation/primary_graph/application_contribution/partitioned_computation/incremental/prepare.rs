@@ -23,7 +23,7 @@ use super::super::{
 use super::next_tree::{NextPartitioning, PreparedIncremental};
 use super::retained::RetainedCall;
 use super::{enter, IncrementalRun, Reader, COMPARATOR};
-use crate::domain_computation::primary_graph::application_attempt::ComputationRead;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 use crate::domain_computation::request_execution::QueryRequestExecution;
 
 impl<Key, Item, Reduced> IncrementalRun<Key, Item, Reduced>

@@ -6,10 +6,7 @@ use worth_query_declaration::facade::{
 use worth_relational::facade::history::RelationalCanonicalRecordHistoryCursor;
 use worth_runtime_world::facade::{ProductExactHistoryCursor, ProductExactHistoryPage};
 
-use super::{
-    storage, WorthQueryApplicationHistoryDenial as Denial,
-    WorthQueryCapturedApplicationHistorySubjects,
-};
+use {super::storage, crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial, super::WorthQueryCapturedApplicationHistorySubjects};
 
 /// A pinned history position. It retains provenance and position, never read permission.
 pub struct WorthQueryApplicationHistoryCursor<

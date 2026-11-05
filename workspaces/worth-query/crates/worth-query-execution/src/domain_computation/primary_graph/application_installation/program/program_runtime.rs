@@ -253,11 +253,11 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                     selected.relational_basis(),
                 ) {
                     Ok(inspection) => inspection,
-                    Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) => {
+                    Err(crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) => {
                         let policy = retirement.inventory_unavailable(retained_program_bytes);
                         return Err(WorthQueryProgramSupportRetirementFailure::ReadExecution { stop, inventory: policy.partial_inventory().expect("partial inventory was recorded").clone() });
                     }
-                    Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered) => return Err(retirement.inventory_unavailable(retained_program_bytes).into()),
+                    Err(crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable | crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable | crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable | crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered) => return Err(retirement.inventory_unavailable(retained_program_bytes).into()),
                 };
             if inspection.revision() == revision {
                 current_branches = match current_branches.checked_add(1) {
@@ -311,8 +311,8 @@ pub enum WorthQueryProgramSupportRetirementFailure {
     Policy(worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial),
     ReadExecution {
         stop: Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
         inventory:
             worth_query_installation::facade::WorthQueryProgramSupportPartialRetirementInventory,

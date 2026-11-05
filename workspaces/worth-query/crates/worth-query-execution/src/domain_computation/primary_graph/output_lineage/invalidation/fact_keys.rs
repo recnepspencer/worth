@@ -3,11 +3,11 @@ use worth_foundational::facade::AspectKey;
 use worth_foundational::facade::CanonicalFieldPath;
 use worth_relational::facade::storage::AuthoritativeFieldComparisonKey;
 
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection as Direction;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 
 use super::fact_key::FactPostingKey as Key;
-use super::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 
 /// A retained fact is either addressable by native touches or requires a
 /// bounded full verification. Admission failure is never an empty key set.

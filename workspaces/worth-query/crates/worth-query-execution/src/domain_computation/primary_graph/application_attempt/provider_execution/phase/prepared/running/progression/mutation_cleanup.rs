@@ -1,9 +1,5 @@
-use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotRelease;
-use crate::domain_computation::{
-    WorthQueryManagedRunTerminalKind, WorthQueryMutationGraphWorkCompletion,
-    WorthQueryMutationRunBinding, WorthQueryProviderSessionBoundMutationRun,
-    WorthQueryRunningDirectRun,
-};
+use crate::domain_computation::vocabulary::primary_graph::snapshot_lease::WorthQueryApplicationSnapshotRelease;
+use {crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind, crate::domain_computation::WorthQueryMutationGraphWorkCompletion, crate::domain_computation::WorthQueryMutationRunBinding, crate::domain_computation::WorthQueryProviderSessionBoundMutationRun, crate::domain_computation::WorthQueryRunningDirectRun};
 
 /// Private cleanup owner for the managed mutation run.
 ///

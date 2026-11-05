@@ -1,21 +1,7 @@
 //! Complete target execution returns only consistency and exact target-pin custody.
-use super::super::{
-    invocation::controlled, source::service::ManagedSourceRoot,
-    WorthQueryManagedIndexStop as ManagedStop, WorthQueryManagedIndexWorkDenial as WorkDenial,
-};
+use {super::super::invocation::controlled, super::super::source::service::ManagedSourceRoot, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as ManagedStop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as WorkDenial};
 use super::*;
-use crate::domain_computation::primary_graph::{
-    access_strategy::{
-        coverage::CoverageFrame,
-        realized_footprint::{
-            CapturedInfluenceComparison, CapturedManagedInfluence,
-            ManagedHistoryRelevanceDenial as HistoryDenial, RetainedManagedInfluence,
-            RevalidatedManagedSource,
-        },
-    },
-    application_attempt::WorthQuerySourceCurrentnessFailure as Stop,
-    application_query::one_shot::outcome::material::MaterialCompletion,
-};
+use {crate::domain_computation::primary_graph::access_strategy::coverage::CoverageFrame, crate::domain_computation::primary_graph::access_strategy::realized_footprint::CapturedInfluenceComparison, crate::domain_computation::primary_graph::access_strategy::realized_footprint::CapturedManagedInfluence, crate::domain_computation::primary_graph::access_strategy::realized_footprint::ManagedHistoryRelevanceDenial as HistoryDenial, crate::domain_computation::primary_graph::access_strategy::realized_footprint::RetainedManagedInfluence, crate::domain_computation::primary_graph::access_strategy::realized_footprint::RevalidatedManagedSource, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Stop, crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     history::{RelationalAuthoredManagedSourceImpact, RelationalAuthoredWriteOccurrence},

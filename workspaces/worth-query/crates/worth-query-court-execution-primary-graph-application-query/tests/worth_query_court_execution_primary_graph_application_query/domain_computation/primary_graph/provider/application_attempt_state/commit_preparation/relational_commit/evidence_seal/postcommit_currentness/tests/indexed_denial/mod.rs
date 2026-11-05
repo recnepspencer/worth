@@ -160,8 +160,8 @@ fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
                     reason, ..
                 } if reason.reason_for_test() == &RebaseVerificationReason::IndexedSelectionFactDenied(
                     IndexedSelectionReobserveDenial::Lookup(BoundedEntityFieldLookupDenialKind::IndexNotInstalled))
-                    && worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::from(reason.clone())
-                        == worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::IndexedSelectionFactDenied(ordinal,
+                    && worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason::from(reason.clone())
+                        == worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason::IndexedSelectionFactDenied(ordinal,
                             IndexedSelectionReobserveDenial::Lookup(BoundedEntityFieldLookupDenialKind::IndexNotInstalled))
             ),
             "the native denial and its actual nonzero ordinal must survive rebase: {outcome:?}"

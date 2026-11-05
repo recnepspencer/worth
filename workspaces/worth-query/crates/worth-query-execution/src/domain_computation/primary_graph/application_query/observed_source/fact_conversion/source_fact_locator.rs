@@ -10,10 +10,10 @@ use worth_relational::facade::{
 #[derive(Eq, PartialEq, Ord, PartialOrd)]
 pub(super) enum SourceFactLocator {
     SourceAuthorization(
-        crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorizationKey,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::source_read_authorization::SourceReadAuthorizationKey,
     ),
     ManagedSource(
-        crate::domain_computation::primary_graph::application_attempt::ManagedSourceReadKey,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::managed_source_read::ManagedSourceReadKey,
     ),
     Components(
         crate::domain_computation::primary_graph::component_selection::ComponentSelectionKey,

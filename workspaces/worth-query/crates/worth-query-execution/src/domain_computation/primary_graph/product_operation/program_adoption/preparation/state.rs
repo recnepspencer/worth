@@ -255,7 +255,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         .prepare_relational_candidate(candidate, request, successor_observation_requested)
         .map_err(|denial| match denial {
             PublicationDenial::ClockMismatch => {
-                WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
+                WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
             },
 PublicationDenial::Stopped(stop) => {
                 WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(advancement_denial(stop))
@@ -315,17 +315,17 @@ pub(super) fn requirements<Schema: ApplicationSchema>(
     let source = *selected
         .inspect_selected_program()
         .map_err(|denial| match denial {
-            crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ReadExecution(cause) => WorthQueryBranchAdoptionPreparationDenial::ReadExecution(cause),
-            crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable => {
+            crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ReadExecution(cause) => WorthQueryBranchAdoptionPreparationDenial::ReadExecution(cause),
+            crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable => {
                 WorthQueryBranchAdoptionPreparationDenial::ProgramSupportUnavailable
             }
-            crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable => {
+            crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable => {
                 WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnavailable
             }
-            crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable => {
+            crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable => {
                 WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnreadable
             }
-            crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered => {
+            crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered => {
                 WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnrostered
             }
         })?

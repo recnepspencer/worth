@@ -15,7 +15,7 @@ pub struct CanonicalApplyCursor<
     slots: Vec<(
         OwnerPlan<'owner, Value, Stop>,
         Result<
-            crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::ComputedMember,
+            crate::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::ComputedMember,
             crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
         >,
     )>,
@@ -45,7 +45,7 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
         let members = plans
             .iter_mut()
             .map(
-                |plan| super::super::super::super::computation::wave_dispatch::PreparedMember {
+                |plan| crate::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::PreparedMember {
                     requests: std::mem::take(&mut plan.requests),
                 },
             )

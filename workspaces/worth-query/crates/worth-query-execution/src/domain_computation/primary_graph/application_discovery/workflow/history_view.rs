@@ -1,18 +1,18 @@
 //! Descriptive bounded transition, proposal and approval values, never command evidence.
 use super::{WorthQueryWorkflowReadBasis, WorthQueryWorkflowRecordedActor};
-use crate::domain_computation::primary_graph::application_attempt::PublishedWorkflowProposalRef;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::reference::PublishedWorkflowProposalRef;
 use worth_execution::{ExecutionArray, ExecutionImmutableBytes};
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 /// An approval at the exact data basis, not permission to perform the proposed operation.
 pub struct WorthQueryWorkflowApprovalRead {
     pub(in crate::domain_computation::primary_graph) decision:
-        crate::domain_computation::primary_graph::application_attempt::WorkflowApprovalDecision,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision,
     pub(in crate::domain_computation::primary_graph) proposal_identity: ExecutionImmutableBytes,
 }
 impl WorthQueryWorkflowApprovalRead {
     pub fn decision(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::WorkflowApprovalDecision
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision
     {
         self.decision
     }

@@ -1,5 +1,5 @@
 //! Unique native cleanup transfer; diagnostic copies never contain authority.
-use crate::domain_computation::WorthQueryDirectRunCleanupReceipt as Receipt;
+use crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt as Receipt;
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationCleanupRequired as Required,
     crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted,
@@ -86,7 +86,7 @@ impl CleanupOwner for NativeCleanupOwner {
                 }
             }
         }
-        use crate::domain_computation::WorthQueryManagedRunCleanupDisposition as Disposition;
+        use crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupDisposition as Disposition;
         if state.released_receipt.as_ref().is_some_and(|receipt| {
             match receipt.inspection().disposition() {
                 Disposition::CleanupComplete => false,

@@ -6,7 +6,7 @@ use super::publication_binding::WorkflowDefinitionPublicationBinding;
 
 mod counters;
 mod key;
-pub use counters::WorthQueryWorkflowCompilationReuseCounters;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::counters::WorthQueryWorkflowCompilationReuseCounters;
 pub(super) use key::{
     WorkflowDefinitionCompilationReuseDenial, WorkflowDefinitionPublicationReuseKey,
     WorkflowDefinitionSemanticReuseKey,

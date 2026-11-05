@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 use super::DemandRecord;
 use super::DemandRegistryState;

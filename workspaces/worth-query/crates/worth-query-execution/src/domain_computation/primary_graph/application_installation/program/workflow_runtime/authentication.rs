@@ -2,10 +2,7 @@ use sha2::{Digest, Sha256};
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventIntent;
 
-use crate::domain_computation::primary_graph::{
-    PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
-    WorkflowApprovalDecision,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::reference::PublishedWorkflowProposalRef, crate::domain_computation::primary_graph::RequiredWorkflowApproval, crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision};
 
 /// Stable signing meaning survives navigation to another occurrence, while a
 /// different proposal, definition, operation, decision or covered source does not.

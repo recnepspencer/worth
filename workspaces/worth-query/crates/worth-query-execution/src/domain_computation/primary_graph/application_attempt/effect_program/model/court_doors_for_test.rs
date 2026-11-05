@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
@@ -7,7 +8,7 @@ impl<Schema, Operation, Input, Scope>
     #[doc(hidden)]
     pub fn with_producer_required_invariants_for_test(
         self,
-        requirements: &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+        requirements: &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement],
     ) -> Self {
         Self::with_producer_required_invariants(self, requirements)
     }
@@ -31,24 +32,6 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
-impl<Schema, Entity> WorthQueryApplicationEffectEntity<Schema, Entity> {
-    #[doc(hidden)]
-    pub fn new_for_test(
-        reference: EntityReference,
-        entity: String,
-        created_effect: Option<usize>,
-        program: Arc<()>,
-        _marker: PhantomData<fn() -> (Schema, Entity)>,
-    ) -> Self {
-        Self {
-            reference,
-            entity,
-            created_effect,
-            program,
-            _marker,
-        }
-    }
-}
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>

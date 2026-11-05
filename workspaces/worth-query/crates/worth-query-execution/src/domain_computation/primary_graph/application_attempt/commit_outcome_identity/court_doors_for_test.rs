@@ -1,12 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity;
 
-impl WorthQueryApplicationCommitOutcomeIdentity {
-    #[doc(hidden)]
-    pub fn mint_for_test() -> Option<Self> {
-        Self::mint()
-    }
-}
 
 impl WorthQueryApplicationCommitOutcomeIdentity {
     #[doc(hidden)]

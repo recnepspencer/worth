@@ -158,7 +158,7 @@ where
 }
 fn local_mismatch(subject: &str) -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(
-        super::super::super::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
         subject,
     )
 }

@@ -9,14 +9,12 @@ use crate::domain_computation::application_aftermath::{
 };
 use crate::domain_computation::primary_graph::application_attempt::external_dispatch_attempt::WorthQueryExternalDispatchAdmissionDenial;
 use crate::domain_computation::primary_graph::provider::WorthQueryOutstandingInFlightDenial;
-use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial;
+use crate::domain_computation::vocabulary::primary_graph::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial;
 
 use crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportPendingReason;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage as Stage;
-use crate::domain_computation::{
-    WorthQueryProviderSessionControlStopKind as Control,
-    WorthQueryProviderSessionDenialKind as SessionKind,
-};
+use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as SessionKind};
+use crate::domain_computation::vocabulary::primary_graph::denial::WorthQueryExternalDispatchAttemptDenial;
 
 /// Why a host could not install an external-effect transport.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -25,30 +23,6 @@ pub enum WorthQueryExternalTransportInstallationDenial {
     AlreadyInstalled,
 }
 
-/// Why this runtime could not admit one runtime-affine physical attempt.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryExternalDispatchAttemptDenial {
-    /// The committed outbox was observed on another Relational runtime.
-    ForeignRelationalRuntime,
-    /// The committed publication belongs to another product world.
-    ForeignProductWorld,
-    /// The outbox commit and its product publication name different commits.
-    PublicationCommitMismatch,
-    /// An inbound-completing effect carries no co-committed operation slot,
-    /// so its completion could never be found by owner maintenance.
-    InboundOperationSlotMissing,
-    /// This runtime has no physical attempt identities left.
-    AttemptIdentityExhausted,
-    /// The outstanding-dispatch owner holds no entry for this effect.
-    OutstandingDispatchMissing,
-    /// The original dispatch's publication has not settled yet.
-    OriginalPublicationPending,
-    /// The outstanding-dispatch entry disagrees with the committed original.
-    OutstandingDispatchMismatch,
-    /// The installed limit on concurrent physical sends for this effect is
-    /// reached; it frees when an in-flight send settles.
-    InFlightCapacityExhausted,
-}
 
 /// Exact failure before an initial post-commit transport call could be made.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -95,7 +69,7 @@ pub enum WorthQueryExternalRedispatchDenial {
     FreshAuthority(WorthQueryRecoveryHandleDenialKind),
     /// Exact installed admission refusal before any effect or owner read.
     AdmissionAuthorization(
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+        crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
     ),
     /// The admitted request was cancelled before transport.
     AdmissionCancelled,

@@ -9,7 +9,7 @@ use worth_query_installation::facade::WorthQueryWorkflowNodeDependency;
 use worth_relational::facade::identity::EntityId;
 
 use super::codec::{WorkflowConnectionTag, WorkflowNodeTag};
-use super::CompiledWorkflowCondition;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::condition::CompiledWorkflowCondition;
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowAdoptionReadDenial,
@@ -66,7 +66,7 @@ pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies
     };
     let lineage_record = truth.entity(execution, lineage, layout.lineage.entity_kind)?;
     if lineage_record.u64(execution, &layout.lineage.protocol_version)?
-        != crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION
+        != crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION
     {
         return Err(WorkflowAdoptionReadDenial::UnreadableEntity { entity: lineage });
     }

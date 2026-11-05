@@ -11,7 +11,7 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-use super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::mark_state::MarkState;
 use super::mark_state::SettlementCurrentness;
 use super::source_alignment::BranchMarkRoot;

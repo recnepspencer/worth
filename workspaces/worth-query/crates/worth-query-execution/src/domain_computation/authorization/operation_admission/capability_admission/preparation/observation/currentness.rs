@@ -1,5 +1,5 @@
 //! Exact-snapshot currentness observation for one prepared capability admission.
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod approval_currentness;
 use approval_currentness::{
     validate_approval_lifecycle, validate_approval_support, validate_approved_use,
@@ -14,14 +14,8 @@ use super::{ObservedCapabilityAdmission, ObservedSeal, WorthQueryResolvedCapabil
 use crate::domain_computation::authorization::capability_observation::WorthQueryObservedCapabilityDecision;
 use crate::domain_computation::authorization::delegation_admission::WorthQueryCapabilityObservationSource;
 use crate::domain_computation::authorization::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryPrincipalCurrentnessDependency,
-};
-use crate::domain_computation::primary_graph::{
-    validate_freshness_at_snapshot, WorthQueryApprovedElevation,
-    WorthQueryPrimaryPrincipalBindingLayout, WorthQueryPrincipalResolutionMode,
-};
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency};
+use {crate::domain_computation::primary_graph::validate_freshness_at_snapshot, crate::domain_computation::primary_graph::WorthQueryApprovedElevation, crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 
 use super::super::PreparedCapabilityAdmission;
 
@@ -30,7 +24,7 @@ mod observation_context;
 pub(in crate::domain_computation::authorization) use observation_context::WorthQueryCurrentCapabilityObservation;
 
 struct CurrentCapabilityObservationAxes<'observation> {
-    session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+    session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     relational: &'observation worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &'observation worth_relational::facade::snapshots::SnapshotHandle,
     bridge: &'observation worth_runtime_bridge::facade::BridgeAuthorizationRuntime,

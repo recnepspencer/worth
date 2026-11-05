@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::{
@@ -16,16 +16,11 @@ use super::super::capability_registry::{
 use super::super::operation_progression::{
     progress_capability_operation, WorthQueryCapabilityOperationProgression,
 };
-use super::super::{
-    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {super::super::WorthQueryAdmittedApplicationCapabilityAccess, super::super::WorthQueryAdmittedApplicationOperation, super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 use super::context_identity::selected_elevation_entity;
 use super::operation_role::installed_lifecycle_owner;
 use super::transition_contract::{close_decision_reads, close_program_targets};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApprovedElevation, WorthQueryElevationClosureKind,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApprovedElevation, crate::domain_computation::vocabulary::primary_graph::elevation_close_outcome::WorthQueryElevationClosureKind};
 
 mod binding;
 pub(in crate::domain_computation) use binding::WorthQueryElevationCloseBinding;
@@ -103,7 +98,7 @@ where
     {
         let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
-            Err(_) => return Err(close_denial(approved, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
+            Err(_) => return Err(close_denial(approved, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
         self.authorize_elevation_close_with_request(
             &execution,

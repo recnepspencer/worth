@@ -7,7 +7,7 @@ use super::{
     WorthQueryOutputCheckpoint, WorthQueryOutputDemandInterest, WorthQueryOutputDemandKey,
     WorthQueryOutputDemandRegistry,
 };
-use crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding;
+use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
 use {
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,

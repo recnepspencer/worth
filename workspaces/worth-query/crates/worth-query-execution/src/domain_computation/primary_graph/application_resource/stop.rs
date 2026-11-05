@@ -3,7 +3,7 @@ use super::{
     admission::ResourceAdmissionDenial, provider::AttemptIssuanceDenial,
     storage::ResourceStorageDenial, value_capture::ResourceValueDenial,
 };
-use crate::domain_computation::primary_graph::admitted_capture::CaptureStop;
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
 use worth_execution::WorkCeilingDenial;
 
 /// Coarse refusal category without protected occurrence or Native details.
@@ -36,9 +36,9 @@ pub(super) enum ResourceCause {
     Control(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption),
     Advancement(crate::domain_computation::request_execution::WorthQueryAdvancementDenial),
     Selection(crate::basis::WorthQueryProductBranchAdmissionDenial),
-    Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
-    Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
-    ScopeCapture(Result<crate::domain_computation::WorthQueryProviderSessionDenialKind, crate::domain_computation::WorthQueryProviderSessionControlStopKind>),
+    Principal(crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial),
+    Scope(crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial),
+    ScopeCapture(Result<crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind, crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind>),
     ParameterCapture(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
     Admission(ResourceAdmissionDenial),
     Storage(ResourceStorageDenial),
@@ -57,7 +57,7 @@ pub(super) enum ResourceCause {
     Recovery(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial),
     RecoveryAffinity(ResourceRecoveryAffinity),
     EffectTerminal(crate::domain_computation::application_aftermath::external_effect::WorthQueryTerminalEffectRefusal),
-    EffectOutbox(crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial),
+    EffectOutbox(crate::domain_computation::vocabulary::primary_graph::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial),
 }
 
 pub(super) enum ResourceRecoveryAffinity {
@@ -144,7 +144,7 @@ impl WorthQueryResourceActionDenial {
     /// The failing fresh action requirement, without protected row or Native detail.
     pub fn action_authorization_denial_kind(
         &self,
-    ) -> Option<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>
+    ) -> Option<crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind>
     {
         match &self.cause {
             ResourceCause::Admission(ResourceAdmissionDenial::Authorization(cause)) => {

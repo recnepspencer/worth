@@ -1,7 +1,7 @@
 //! The runtime's consumer methods over `batch` in `domain_computation::primary_graph::application_query`; each only calls its subsystem.
 use crate::domain_computation::primary_graph::application_query::batch::*;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryBatchAdmission;
-use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryBatchResourceDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::batch::WorthQueryApplicationQueryBatchResourceDenial;
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;

@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_family_identity::OutputFamilyIdentity;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::{BTreeMap, HashSet};
 

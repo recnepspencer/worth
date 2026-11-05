@@ -3,7 +3,7 @@
 use worth_query_execution::facade::domain_computation::WorthQueryNativeMarkingPrecision;
 use worth_query_execution::facade::domain_computation::WorthQueryNativeMarkingWork;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountIdentity;
 use worth_relational::facade::identity::PartitionId;

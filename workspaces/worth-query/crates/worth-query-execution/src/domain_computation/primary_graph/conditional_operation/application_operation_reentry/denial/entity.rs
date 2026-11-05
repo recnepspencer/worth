@@ -1,6 +1,6 @@
 //! An index error names its stop before its refusal kind is inspected.
 use super::WorthQueryTemporalReentryDenial;
-use crate::domain_computation::primary_graph::{WorthQueryEntityResolutionDenial as Failure, WorthQueryEntityResolutionDenialKind as Error, WorthQueryEntityResolutionRefusalKind as Kind};
+use {crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial as Failure, crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind as Error, crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as Kind};
 use crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure as Terminal;
 impl WorthQueryTemporalReentryDenial {
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn from_entity(

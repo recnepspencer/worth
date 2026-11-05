@@ -5,8 +5,8 @@ use super::OutputPartitionIndex;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind;
 use crate::domain_computation::primary_graph::output_lineage::prepared_slot::denial;
-use crate::domain_computation::primary_graph::output_lineage::ProductCoordinate;
-use crate::domain_computation::primary_graph::output_lineage::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use std::sync::Arc;
 use std::sync::OnceLock;
 

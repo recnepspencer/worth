@@ -1,5 +1,5 @@
 use super::super::WorthQueryApplicationCommitReceipt;
-use super::{SemanticSource, WorthQueryApplicationOutputLineage};
+use {crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource, super::WorthQueryApplicationOutputLineage};
 
 impl WorthQueryApplicationOutputLineage {
     /// The exact committed record supplies its producer facts and original
@@ -40,7 +40,7 @@ impl WorthQueryApplicationOutputLineage {
                     && recorded.source_identity
                         == idempotency.source_identity().map(|identity| {
                             super::RecordedSourceIdentity::Runtime(
-                            super::super::application_query::WorthQueryRuntimeSourceIdentity::new(
+                            crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity::new(
                                 identity,
                             ),
                         )

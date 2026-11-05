@@ -181,7 +181,7 @@ trait ReceiverOwnOps<S: ApplicationSchema>:
                     || one_shot::plan_admission::admit_request(request, query),
                     |projection| {
                         one_shot::denial(
-                            super::super::WorthQueryApplicationOneShotDenialKind::Projection(
+                            crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind::Projection(
                                 projection.kind(),
                             ),
                             query,
@@ -271,7 +271,7 @@ trait ReceiverOwnOps<S: ApplicationSchema>:
             },
         )
         .map_err(|cause| {
-            ReceiverCause::Read(one_shot::map_authorized_read_denial(
+            ReceiverCause::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial(
                 cause,
                 plan.query.name(),
             ))

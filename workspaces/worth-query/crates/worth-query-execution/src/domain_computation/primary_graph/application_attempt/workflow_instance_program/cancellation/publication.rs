@@ -9,7 +9,7 @@ use super::super::super::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
     WorthQueryApplicationUncommitted,
 };
-use super::super::PublishedWorkflowInstanceRef;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
 
 #[must_use = "prepared workflow instance cancellation owns a live application attempt"]
 pub struct PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope> {

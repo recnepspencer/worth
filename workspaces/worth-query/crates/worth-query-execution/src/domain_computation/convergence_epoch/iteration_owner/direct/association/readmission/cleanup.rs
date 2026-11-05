@@ -9,11 +9,7 @@ use super::{
     DirectReadmissionTerminalRecoveryAssociation,
     DirectReadmissionYieldReassemblyRecoveryAssociation,
 };
-use crate::domain_computation::{
-    WorthQueryDirectReadmissionCleanupOutcome, WorthQueryDirectReadmissionCleanupPending,
-    WorthQueryDirectReadmissionCleanupRequired, WorthQueryManagedRunCleanupDisposition,
-    WorthQueryReadmissionEvidence,
-};
+use {crate::domain_computation::WorthQueryDirectReadmissionCleanupOutcome, crate::domain_computation::WorthQueryDirectReadmissionCleanupPending, crate::domain_computation::WorthQueryDirectReadmissionCleanupRequired, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupDisposition, crate::domain_computation::WorthQueryReadmissionEvidence};
 
 pub(in super::super::super) enum DirectAssociatedReadmissionCleanupOutcome {
     Complete(DirectReadmissionCleanupReceiptAssociation),

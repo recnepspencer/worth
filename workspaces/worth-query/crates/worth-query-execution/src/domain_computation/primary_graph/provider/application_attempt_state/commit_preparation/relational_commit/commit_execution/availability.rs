@@ -1,10 +1,10 @@
 //! Availability is non-driving, but its source and image remain commit dependencies.
 use super::*;
 mod validation;
-use crate::domain_computation::primary_graph::application_attempt::Movement;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
-use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
-use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop as VerificationStop;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop as VerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourcePublicationReadFence;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphApplicationDecisionFact as DecisionFact;
 
@@ -18,7 +18,7 @@ pub(super) fn prepare(
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let stop = consumed_output::verification_stop;
-    let map_admission = crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop;
+    let map_admission = crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop;
     let count = attempt.facts().len();
 
     let mut observations = attempt

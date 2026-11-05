@@ -11,7 +11,7 @@ use worth_runtime_world::facade::ProductBranchObservation;
 /// exactly one application effect program.
 pub struct WorthQueryAdmittedApplicationConditionalDefinition {
     runtime_authority:
-        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     application_binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     expected_product: ProductBranchObservation,
     identity: [u8; 32],
@@ -57,7 +57,7 @@ impl WorthQueryAdmittedApplicationConditionalDefinition {
 
     pub(in crate::domain_computation::primary_graph) fn admits_application(
         &self,
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         application_binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
         product: &ProductBranchObservation,
     ) -> bool {

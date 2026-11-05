@@ -1,9 +1,6 @@
 //! Commits presented outside the lane their operation's binding requires.
 
-use super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitDenialStage,
-};
+use {super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind, super::WorthQueryApplicationCommitDenialStage};
 
 impl WorthQueryApplicationCommitDenial {
     pub(in crate::domain_computation::primary_graph::application_attempt) const fn elevation_transition_required(

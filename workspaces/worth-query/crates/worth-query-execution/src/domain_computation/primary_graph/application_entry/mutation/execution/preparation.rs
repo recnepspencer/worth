@@ -135,7 +135,7 @@ pub(in crate::domain_computation::primary_graph) trait PreparationScopedOps<
         );
         let operation_scope_binding = admission.operation_scope_binding().clone();
         let context_use = std::cell::Cell::new(
-            crate::domain_computation::primary_graph::handler::DecisionContextUse::default(),
+            crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse::default(),
         );
         let interruption = std::cell::Cell::new(None);
         let mut handler_contacted = false;
@@ -204,8 +204,8 @@ pub(in crate::domain_computation::primary_graph) trait PreparationScopedOps<
         if let Some(interruption) = interruption.get() {
             return Err(WorthQueryMutationHandlerExecutionReport::new(
                 Ok(match interruption {
-                    super::super::HandlerInterruption::Cancelled => HandlerResult::Cancelled,
-                    super::super::HandlerInterruption::DeadlineExceeded => {
+                    crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption::Cancelled => HandlerResult::Cancelled,
+                    crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption::DeadlineExceeded => {
                         HandlerResult::DeadlineExceeded
                     }
                 }),

@@ -56,17 +56,17 @@ mod touch_keys;
 pub(crate) mod verification;
 pub(crate) mod verified_current;
 
-pub(in crate::domain_computation::primary_graph) use commit_touches::CommitTouchEntities;
-pub(in crate::domain_computation::primary_graph) use commit_touches::CommitTouchInterest;
+
+
 pub(in crate::domain_computation::primary_graph) use commit_touches::TouchedCommits;
 
 pub(in crate::domain_computation::primary_graph) use derived::ConsumedOutputCurrentness;
 pub(in crate::domain_computation::primary_graph) use derived::CurrentSettlementRegistrationCleanup;
 pub(in crate::domain_computation::primary_graph) use derived::PreparedCurrentSettlementRegistration;
-pub(in crate::domain_computation::primary_graph) use derived::SettlementRegistrationStop;
-pub(in crate::domain_computation::primary_graph) use derived::SourceSettlementCurrentness;
 
-pub(in crate::domain_computation::primary_graph) use mark_state::FullVerificationReason;
+
+
+
 pub(in crate::domain_computation) use owner::SourceInvalidationOwner;
 pub(in crate::domain_computation::primary_graph) use publication::collect_consumed_output_upstream;
 pub(in crate::domain_computation::primary_graph) use publication::register_completed;

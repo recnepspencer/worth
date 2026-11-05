@@ -1,6 +1,6 @@
 use worth_query_installation::facade::WorthQueryInstalledBoundedStepContract;
 
-use super::{WorthQueryGraphProviderStepDenial, WorthQueryGraphProviderStepDenialKind};
+use {crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial, crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind};
 
 pub(super) struct WorthQueryGraphProviderStepBudget {
     max_work_units: u64,

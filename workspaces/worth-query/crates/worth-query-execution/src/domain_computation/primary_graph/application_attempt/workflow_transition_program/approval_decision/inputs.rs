@@ -1,6 +1,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 pub(super) struct ObservedApprovalEvidence {
     pub(super) node_path: String,
@@ -22,10 +23,10 @@ pub(super) fn observe(
     layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
     graph_layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
     resource: worth_relational::facade::identity::EntityId,
-    instance: &super::super::super::PublishedWorkflowInstanceRef,
+    instance: &crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
     progress: &crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,
     approval: worth_relational::facade::identity::EntityId,
-    proposal: Option<&super::super::super::PublishedWorkflowProposalRef>,
+    proposal: Option<&crate::domain_computation::primary_graph::vocabulary::application_attempt::reference::PublishedWorkflowProposalRef>,
     handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     observation_request: &WorthQueryRequestScope,

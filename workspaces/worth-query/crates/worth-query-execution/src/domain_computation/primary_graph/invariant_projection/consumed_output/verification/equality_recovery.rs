@@ -2,6 +2,10 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::EqualityRecoveryRow;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::reserve_pending;
 
 enum RecoveryStep {
     Visit(Arc<RecordedSettlementIdentity>, bool),

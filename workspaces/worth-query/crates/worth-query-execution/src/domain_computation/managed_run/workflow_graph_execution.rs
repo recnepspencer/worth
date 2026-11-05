@@ -27,7 +27,7 @@ use super::managed_graph_execution::{
 use super::workflow_graph_chunk::{
     WorthQueryPendingWorkflowGraphChunk, WorthQueryPendingWorkflowGraphQueueState,
 };
-use super::{WorthQueryManagedRunTerminalKind, WorthQueryRunningWorkflowRun};
+use {crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind, super::WorthQueryRunningWorkflowRun};
 use crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryGraphProviderStepCompletion;
 use crate::domain_computation::{WorthQueryGraphProviderStepReport, WorthQueryGraphReadMaterial};
 
@@ -293,7 +293,7 @@ impl WorthQueryActiveWorkflowGraphExecution {
     pub(super) fn observe_safe_point(
         &mut self,
     ) -> Result<
-        super::WorthQueryManagedSafePointObservation,
+        crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation,
         super::WorthQueryManagedSafePointFailure,
     > {
         let observation = self.running.observe_safe_point()?;

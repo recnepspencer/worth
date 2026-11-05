@@ -41,7 +41,7 @@ pub(super) fn retain(
 ) -> Result<RelationalContentAttachments, Denial> {
     let mut retained = RelationalContentAttachments::default();
     for index in 0..count {
-        crate::domain_computation::primary_graph::content::retention_checkpoint(request)
+        crate::domain_computation::vocabulary::primary_graph::retention_work::checkpoint(request)
             .map_err(Denial::Content)?;
         if let Some(frame) = acquire(index)? {
             retained.attach(request, &frame).map_err(Denial::Content)?;

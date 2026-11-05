@@ -106,7 +106,7 @@ pub(in crate::domain_computation) fn encode_workflow_approval_support(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     authorization: &WorthQueryRetainedCapabilityAuthorization,
 ) -> Result<
-    crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText,
+    crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText,
     WorkflowApprovalRequestEncodingDenial,
 >{
     let request = authorization

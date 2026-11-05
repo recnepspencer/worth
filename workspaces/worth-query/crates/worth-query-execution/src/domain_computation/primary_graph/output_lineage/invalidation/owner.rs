@@ -14,7 +14,7 @@ pub struct SourceInvalidationOwner {
     pub(in crate::domain_computation::primary_graph) managed_views:
         Arc<crate::domain_computation::primary_graph::application_query::derived_view::ManagedDerivedViewRegistry>,
     pub(super) branches: Mutex<BranchCells>,
-    pub(super) released: Mutex<Vec<Arc<super::super::RecordedSettlementIdentity>>>,
+    pub(super) released: Mutex<Vec<Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>>>,
 }
 pub struct BranchCells {
     pub(super) cells: OrdMap<BranchId, CompanionBranchCellSlot<BranchMarkRoot>>,

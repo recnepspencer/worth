@@ -1,8 +1,6 @@
 use super::*;
 use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
-use crate::domain_computation::primary_graph::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryPrincipalResolutionMode,
-};
+use {crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema, Scope> ResourceActionRead<'_, Schema, Scope> {

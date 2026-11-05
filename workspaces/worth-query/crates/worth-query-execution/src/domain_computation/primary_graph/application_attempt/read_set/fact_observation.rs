@@ -10,9 +10,7 @@ use super::super::fact::{
 };
 use super::denial;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 /// The most work observing `key` can take, in the relational work units its
 /// read is bounded by, or `None` when nothing bounds it. An entity or a field
@@ -145,7 +143,7 @@ fn observe_fact_inner(
                     entity,
                 )
             })?;
-            let present = super::super::observation::observe_aspect_presence(
+            let present = crate::domain_computation::primary_graph::vocabulary::application_attempt::aspect_presence::observe_aspect_presence(
                 runtime, execution, snapshot, *entity_id, kind, aspect,
             )
             .map_err(|cause| {
@@ -176,7 +174,7 @@ fn observe_fact_inner(
                 )
             })?;
             let observation = if admitted {
-                super::super::observation::observe_field_observation_borrowed_admitted(
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_observation_borrowed_admitted(
                     runtime,
                     execution,
                     snapshot,
@@ -184,7 +182,7 @@ fn observe_fact_inner(
                     kind,
                     locator,
                     |raw| {
-                        super::super::observation::WorthQueryApplicationFieldObservation::from(raw)
+                        crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation::from(raw)
                     },
                 )
             } else {
@@ -199,7 +197,7 @@ fn observe_fact_inner(
                 )
             })?;
             let fact = match observation {
-                super::super::observation::WorthQueryApplicationFieldObservation::Present(
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation::Present(
                     value,
                 ) => WorthQueryApplicationObservedFact::Field {
                     entity_id: *entity_id,
@@ -207,7 +205,7 @@ fn observe_fact_inner(
                     locator: locator.clone(),
                     value,
                 },
-                super::super::observation::WorthQueryApplicationFieldObservation::Absent
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation::Absent
                     if layout.field_is_optional(entity, locator) =>
                 {
                     WorthQueryApplicationObservedFact::AbsentField {
@@ -216,15 +214,15 @@ fn observe_fact_inner(
                         locator: locator.clone(),
                     }
                 }
-                super::super::observation::WorthQueryApplicationFieldObservation::AspectAbsent
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation::AspectAbsent
                     if layout.aspect_is_optional(entity, locator) => {
                         WorthQueryApplicationObservedFact::OptionalAspectAbsent {
                             entity_id: *entity_id, kind, locator: locator.clone(),
                         }
                     }
-                super::super::observation::WorthQueryApplicationFieldObservation::AspectAbsent
-                | super::super::observation::WorthQueryApplicationFieldObservation::UnsupportedAspectShape
-                | super::super::observation::WorthQueryApplicationFieldObservation::Absent => {
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation::AspectAbsent
+                | crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation::UnsupportedAspectShape
+                | crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation::Absent => {
                     return Err(denial(
                         WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
                         entity,

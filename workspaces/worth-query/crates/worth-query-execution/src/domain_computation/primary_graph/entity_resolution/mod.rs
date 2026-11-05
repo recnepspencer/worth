@@ -1,6 +1,6 @@
 //! Exact Relational truth used to resolve one application entity.
 
-use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 mod admitted_scope;
 mod freshness;
@@ -52,7 +52,7 @@ pub(crate) mod product;
 pub(in crate::domain_computation) use product::WorthQueryIssuedSelectedScope;
 pub(crate) mod resolved;
 pub(crate) mod retained_selector;
-pub(in crate::domain_computation) use retained_selector::WorthQueryObservedScopeSelector;
+
 
 pub use resolved::WorthQueryApplicationEntityIdentity;
 use resolved::WorthQueryEntityResolutionSubject;
@@ -72,15 +72,12 @@ use worth_relational::facade::indexes::{
 };
 
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
-use super::{
-    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind, WorthQueryPrimaryGraph,
-    WorthQueryPrincipalResolutionMode,
-};
+use {crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial, crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind, super::WorthQueryPrimaryGraph, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 
 #[derive(Clone)]
 pub struct WorthQueryInstalledEntityResolutionContext {
     runtime_authority:
-        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     relational_runtime_instance_id: u64,
     binding_identity: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     layout: Arc<WorthQueryPrimaryGraphLayout>,

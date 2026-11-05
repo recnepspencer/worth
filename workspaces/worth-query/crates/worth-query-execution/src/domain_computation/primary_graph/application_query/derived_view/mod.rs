@@ -5,16 +5,14 @@ pub(in crate::domain_computation::primary_graph::application_query) use dependen
 pub(crate) mod reconstruction_denial;
 pub(crate) mod registration;
 pub(crate) mod registry;
-pub(in crate::domain_computation::primary_graph) use registry::PredicateNoticeDisposition;
+
 mod retention;
 
 use worth_foundational::facade::CanonicalDigestId;
 use worth_relational::facade::identity::EntityId;
 
-pub(in crate::domain_computation::primary_graph) use change_summary::changes_from_summary;
-pub(in crate::domain_computation::primary_graph) use publication::{
-    ViewChange, ViewPublicationBasis,
-};
+
+
 pub(in crate::domain_computation::primary_graph::application_query) use registry::PredicateRegistration;
 pub(in crate::domain_computation::primary_graph::application_query) use registry::RegisteredManagedIndex;
 pub(in crate::domain_computation::primary_graph::application_query) use registry::{

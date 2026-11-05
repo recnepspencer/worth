@@ -3,6 +3,8 @@
 use super::*;
 
 use worth_relational::facade::mvcc::CompanionPreflightStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 
 /// The latest output one binding recorded for a source, with everything
 /// selection compares before it reuses that output.
@@ -22,10 +24,10 @@ pub struct WorthQueryRetainedOutputCandidate {
     /// restored, or the owner could not register it. A commit that could not
     /// rebase its facts states that here and retains none of them.
     pub(in crate::domain_computation::primary_graph) verification_requirement:
-        Option<crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason>,
+        Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason>,
     /// The row's own settlement, as the owner knows it.
     pub(in crate::domain_computation::primary_graph) settlement_identity:
-        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+        Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
 
     pub(in crate::domain_computation::primary_graph) idempotency_key_identity: [u8; 32],
 }
@@ -38,7 +40,7 @@ impl WorthQueryApplicationOutputLineage {
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,
         output_bindings: &[TypeId],

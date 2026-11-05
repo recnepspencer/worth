@@ -63,7 +63,7 @@ impl DemandRecord {
     #[doc(hidden)]
     pub fn source_scope_for_test(
         &self,
-    ) -> &Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding>
+    ) -> &Option<crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding>
     {
         &self.source_scope
     }
@@ -87,7 +87,7 @@ impl DemandRecord {
     #[doc(hidden)]
     pub fn source_scope_mut_for_test(
         &mut self,
-    ) -> &mut Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding>
+    ) -> &mut Option<crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding>
     {
         &mut self.source_scope
     }
@@ -205,11 +205,11 @@ impl DemandRecord {
         pending_cleanup_queued: bool,
         closed_cleanup: cleanup::ClosedCleanupLinks,
         settlements: Vec<
-        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+        Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
     >,
         product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         source_scope: Option<
-            crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+            crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         >,
         source_commits: Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
         state: DemandState,
@@ -262,7 +262,7 @@ impl DemandRecord {
     pub fn settlements_for_test(
         &self,
     ) -> &Vec<
-        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+        Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
     > {
         &self.settlements
     }
@@ -325,7 +325,7 @@ impl DemandRecord {
     pub fn settlements_mut_for_test(
         &mut self,
     ) -> &mut Vec<
-        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+        Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
     > {
         &mut self.settlements
     }

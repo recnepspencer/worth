@@ -1,7 +1,7 @@
 //! Compare decisive meanings; scheduling and unavailable evidence cannot pass.
 
-use super::verification::ConsumedOutputVerification;
-use super::verification::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 use super::verification::EvidenceView;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationDecision;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationImage;
@@ -77,14 +77,14 @@ fn compare(
     let full = match full {
         Ok(FullVerificationDecision::Current) => DecisiveMeaning::Current,
         Ok(FullVerificationDecision::Changed) => DecisiveMeaning::Changed,
-        Err(FullVerificationStop::SourceRead(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause))) => return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::ManagedIndex(cause)),
-        Err(FullVerificationStop::SourceRead(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::OutputObservation(stop))) => return EquivalenceComparison::Inconclusive(stop),
+        Err(FullVerificationStop::SourceRead(crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause))) => return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::ManagedIndex(cause)),
+        Err(FullVerificationStop::SourceRead(crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure::OutputObservation(stop))) => return EquivalenceComparison::Inconclusive(stop),
         Err(FullVerificationStop::Admission(stop)) => {
-            return EquivalenceComparison::Inconclusive(super::verification::map_admission_stop(stop));
+            return EquivalenceComparison::Inconclusive(crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop(stop));
         }
-        Err(FullVerificationStop::SourceRead(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Execution(cause))) => return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::Execution(cause)),
+        Err(FullVerificationStop::SourceRead(crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure::Execution(cause))) => return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::Execution(cause)),
         Err(FullVerificationStop::SourceRead(
-            crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
         )) => return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::WorkExhausted),
         Err(FullVerificationStop::ActorImageChanged) => return EquivalenceComparison::Inconclusive(
             ConsumedOutputVerificationStop::RetryCurrentness(worth_relational::facade::mvcc::CompanionCellEditStop::TopologyGenerationChanged)),
@@ -99,13 +99,13 @@ fn compare(
 
 #[cfg(test)]
 mod tests {
-    use super::super::VerificationCapacityStop;
+    use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
     use super::*;
     use worth_relational::facade::mvcc::CompanionPreflightStop;
 
     #[test]
     fn source_request_stops_keep_their_value_in_equivalence() {
-        use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Read;
+        use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Read;
         use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
         for cause in [
             Cause::Cancelled,

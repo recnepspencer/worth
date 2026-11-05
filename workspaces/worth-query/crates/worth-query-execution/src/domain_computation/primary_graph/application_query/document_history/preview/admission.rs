@@ -3,9 +3,7 @@ use super::super::metadata::CompletedMetadataRead;
 use super::*;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryModelIdentity;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
 use std::sync::Arc;
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_installation::facade::{

@@ -15,24 +15,8 @@ use worth_relational::facade::{runtime::ProjectionAspectScope, storage::RecordLi
 
 use super::*;
 use crate::basis::WorthQueryProductBranchReadIdentity;
-use crate::domain_computation::{
-    authorization::WorthQueryOperationScopeEntityBinding,
-    execution_runtime::WorthQueryOutputDemandLimits,
-};
-use {
-    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture,
-    crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind,
-    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
-    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification,
-    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop,
-    crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity,
-    crate::domain_computation::primary_graph::output_reuse::require_installed_output_dependencies,
-    crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity,
-    crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource,
-    crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
-    crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement,
-    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding, crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits};
+use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture, crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind, crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence, crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification, crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop, crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity, crate::domain_computation::primary_graph::output_reuse::require_installed_output_dependencies, crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity, crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation, crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 
 pub trait RetainedObservationOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
     Schema: ApplicationSchema + 'static, {

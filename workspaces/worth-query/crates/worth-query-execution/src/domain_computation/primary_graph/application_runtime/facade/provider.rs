@@ -12,7 +12,7 @@ impl<Schema: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationR
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         receipt: &WorthQueryApplicationCommitReceipt,
-    ) -> Result<Option<WorthQueryCommittedDispatchOutboxObservation>, crate::domain_computation::primary_graph::provider::WorthQueryCommittedDispatchOutboxReadDenial>{
+    ) -> Result<Option<WorthQueryCommittedDispatchOutboxObservation>, crate::domain_computation::vocabulary::primary_graph::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial>{
         <Self as crate::domain_computation::primary_graph::provider::CommittedDispatchOutboxOps<
             Schema,
         >>::observe_committed_dispatch_outbox(self, phase, receipt)

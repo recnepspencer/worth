@@ -2,7 +2,7 @@
 //! input that compares as changed. Missing or withheld comparisons refuse another
 //! attempt; readers own currentness verification.
 use super::AcceptedCurrentCandidate;
-pub(super) use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
+pub(super) use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 
 pub(super) enum CapturedDecisionInput {
     Uncaptured,

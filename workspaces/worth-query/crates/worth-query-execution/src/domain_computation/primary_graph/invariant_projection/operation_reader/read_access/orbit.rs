@@ -1,9 +1,6 @@
 //! Operation-declared inspection only; publication facts have a separate issuer.
 use super::super::WorthQueryApplicationOperationInvariantProjectionReader;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAggregateIdentity, WorthQueryInvariantEntityIdentity,
-    WorthQueryInvariantProjectionOrbit, WorthQueryInvariantProjectionTraversalDenial,
-};
+use {crate::domain_computation::primary_graph::WorthQueryAggregateIdentity, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, crate::domain_computation::primary_graph::WorthQueryInvariantProjectionOrbit, crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenial};
 use worth_query_installation::facade::{ApplicationRelationRef, ApplicationSchema, OperationReads};
 
 impl<Schema: ApplicationSchema, Operation>

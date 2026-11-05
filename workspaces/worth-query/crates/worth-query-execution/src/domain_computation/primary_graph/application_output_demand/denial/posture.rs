@@ -1,6 +1,6 @@
 //! Retry meaning of typed output-demand stops.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use {
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture,
@@ -13,7 +13,7 @@ impl WorthQueryOutputDemandDenialKind {
         use WorthQueryOutputDemandRecoveryPosture::{Retryable, Terminal};
         match self {
             Self::PublicationReceipt(stop) => {
-                use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind as Read;
+                use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency_resolution_denial::WorthQueryApplicationIdempotencyResolutionDenialKind as Read;
                 match stop {
                     Read::ForeignAdmission
                     | Read::CommittedReceiptNotRetained { .. }
@@ -108,14 +108,14 @@ impl WorthQueryOutputDemandDenialKind {
     /// basis the branch has no room to observe now is a retryable product
     /// selection stop, as it is for the demand's own selection.
     pub(in crate::domain_computation::primary_graph) const fn of_request_authorization(
-        kind: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+        kind: crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
     ) -> Self {
-        use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
-        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+        use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Kind;
+        use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
         match kind {
             Kind::Stopped(Err(Control::Cancelled)) => Self::Cancelled,
             Kind::Stopped(Err(Control::TimedOut)) => Self::TimedOut,
-            Kind::Stopped(Ok(kind)) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind)),
+            Kind::Stopped(Ok(kind)) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind)),
             Kind::Refused(AuthorizationRefusal::ProductSecurityBasis(refusal)) => Self::ProductSelection(refusal),
             Kind::Refused(refusal) => Self::RequestAuthorization(refusal),
         }
@@ -124,25 +124,25 @@ impl WorthQueryOutputDemandDenialKind {
     /// The request's principal did not resolve: the request's interruption or
     /// budgets, or the principal it names. Never the producer's own stop.
     pub(in crate::domain_computation::primary_graph) const fn of_principal_resolution(
-        kind: crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind,
+        kind: crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind,
     ) -> Self {
-        use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind as Kind;
-        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+        use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind as Kind;
+        use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
         match kind {
             Kind::Stopped(Err(Control::Cancelled)) => Self::Cancelled,
             Kind::Stopped(Err(Control::TimedOut)) => Self::TimedOut,
-            Kind::Stopped(Ok(kind)) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind)),
+            Kind::Stopped(Ok(kind)) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind)),
             Kind::Refused(refusal) => Self::SourcePrincipal(refusal),
         }
     }
 
     /// The request's scope did not resolve, as [`Self::of_principal_resolution`].
     pub(in crate::domain_computation::primary_graph) fn of_scope_resolution(
-        kind: crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind,
+        kind: crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind,
     ) -> Self {
-        use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind as Kind;
+        use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind as Kind;
         match kind {
-            Kind::Stopped(cause) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(match crate::facade::primary_graph::relational_execution_kind(cause, None) { Ok(kind) => kind, Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => return Self::Cancelled, Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut) => return Self::TimedOut })),
+            Kind::Stopped(cause) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(match crate::facade::primary_graph::relational_execution_kind(cause, None) { Ok(kind) => kind, Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled) => return Self::Cancelled, Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut) => return Self::TimedOut })),
             Kind::Refused(refusal) => Self::SourceScope(refusal),
         }
     }

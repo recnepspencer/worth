@@ -2,6 +2,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::fact_verification_observation as observed;
 use worth_execution::{ExecutionRetainedRun, RetainedRunOutcome};
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::nested_failure::MemberComputeFailure;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::nested_failure::NestedFailureTransport;
 struct BorrowedGather<'a, Key, Gathered>(&'a GatheredComputationPartition<Key, Gathered>);
 pub(super) struct SettledPartitions<Reduced> {
     pub native_run: ExecutionRetainedRun<Reduced>,

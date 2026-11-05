@@ -1,9 +1,6 @@
 use worth_relational::facade::identity::{EntityId, KindId};
 
-use super::{
-    denial, WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationObservedFact, WorthQueryCompleteApplicationReadSet,
-};
+use {super::denial, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet};
 
 /// The observed links of one declared relation between two exact entities, as
 /// recorded in a decision read set.

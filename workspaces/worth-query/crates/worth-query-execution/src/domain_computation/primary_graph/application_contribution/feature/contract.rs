@@ -3,11 +3,7 @@ use super::super::super::{
     WorthQueryPrimaryGraphInstallationDenial as Denial,
     WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
 };
-use super::super::{
-    WorthQueryApplicationConditionalBinding as Conditional,
-    WorthQueryApplicationProducerBinding as Producer, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily,
-};
+use {super::super::WorthQueryApplicationConditionalBinding as Conditional, super::super::WorthQueryApplicationProducerBinding as Producer, crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture, super::super::WorthQueryProducerOutputFamily};
 use std::marker::PhantomData;
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, WorthQueryApplicationOutputRole},

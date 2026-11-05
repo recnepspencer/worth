@@ -87,7 +87,7 @@ fn ensure_recovered_output_source_bound<
         self.output_production().demands().ensure_prepared_output_source_bound(
             &prepared.source_commit,
             crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
-                scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
+                scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
                 identity: observed.output_source_epoch().ok_or_else(|| {
                     WorthQueryOutputDemandDenial::new(
                         WorthQueryOutputDemandDenialKind::ForeignSource,

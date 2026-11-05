@@ -1,6 +1,7 @@
 //! Checked source ownership retained across recorded idempotency resolution.
 use crate::domain_computation::primary_graph::application_query::observed_source::prepared_expectation::admission::PreparedExpectationAdmissionParentOps;
 use super::*;
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
 
 /// A checked source identity with its actual observed-source owner.
 /// No fact payload, allocation policy, or lease is stored in this phase.

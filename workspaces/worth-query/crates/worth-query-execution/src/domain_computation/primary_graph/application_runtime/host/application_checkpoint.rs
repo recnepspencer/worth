@@ -12,7 +12,7 @@ impl<Schema: ApplicationSchema> ApplicationCheckpointHost<Schema>
     }
     fn publication(
         &self,
-    ) -> &crate::domain_computation::primary_graph::bootstrap::WorthQueryPrimaryGraphPublication
+    ) -> &crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication
     {
         self.runtime.publication()
     }

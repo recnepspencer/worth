@@ -1,15 +1,11 @@
 use crate::domain_computation::artifact_owner::WorthQueryArtifactOccurrenceSnapshot;
 use crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryGraphProviderMemorySnapshot;
-use crate::domain_computation::{
-    WorthQueryGraphProviderStepReport, WorthQueryProviderExecutionReleaseEvidence,
-};
+use {crate::domain_computation::WorthQueryGraphProviderStepReport, crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence};
 
-use super::evidence::WorthQueryManagedProviderWorkEvidenceParts;
+use crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidenceParts;
 use super::retention::WorthQueryManagedProviderRetentionLedger;
 use super::WorthQueryManagedProviderCleanupAuthority;
-use super::{
-    WorthQueryManagedProviderExecutionReleaseSummary, WorthQueryManagedProviderWorkEvidence,
-};
+use {crate::domain_computation::vocabulary::managed_run::release_summary::WorthQueryManagedProviderExecutionReleaseSummary, crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence};
 
 pub(crate) struct WorthQueryManagedProviderWorkLedger {
     provider_session_identity:
@@ -34,9 +30,9 @@ pub(crate) struct WorthQueryManagedProviderWorkLedger {
     output_capacity_classification_count: usize,
     queue_request_lookup_count: usize,
     queue_state_mutation_count: usize,
-    last_safe_point: Option<super::super::WorthQueryManagedSafePointObservation>,
+    last_safe_point: Option<crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation>,
     last_step_failure:
-        Option<crate::domain_computation::WorthQueryGraphProviderStepFailureEvidence>,
+        Option<crate::domain_computation::vocabulary::provider_session::step_failure::WorthQueryGraphProviderStepFailureEvidence>,
     provider_execution_release: WorthQueryManagedProviderExecutionReleaseSummary,
     cleanup: WorthQueryManagedProviderCleanupAuthority,
 }
@@ -122,7 +118,7 @@ impl WorthQueryManagedProviderWorkLedger {
 
     pub(crate) fn record_safe_point(
         &mut self,
-        observation: &super::super::WorthQueryManagedSafePointObservation,
+        observation: &crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation,
     ) {
         let counters = observation.counters();
         self.safe_point_request_lookup_count = self

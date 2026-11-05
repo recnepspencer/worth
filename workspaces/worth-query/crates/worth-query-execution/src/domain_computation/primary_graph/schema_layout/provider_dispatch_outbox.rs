@@ -5,7 +5,7 @@ use worth_relational::facade::schema::{
     SchemaVersionId,
 };
 
-use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxLayout;
+use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout;
 
 use super::{
     planned_field_locator, register_entity, valid_aspect_key, valid_field_key,

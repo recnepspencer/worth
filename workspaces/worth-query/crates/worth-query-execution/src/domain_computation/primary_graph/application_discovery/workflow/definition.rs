@@ -13,6 +13,8 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowRea
 use worth_query_declaration::facade::application_program::ApplicationWorkflowReadRoute;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::ApplicationSchema;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 
 /// Exact metadata result owns its authentic data basis, never read permission.
 pub struct WorthQueryWorkflowDefinitionRead {

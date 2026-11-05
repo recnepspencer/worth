@@ -8,7 +8,7 @@ use worth_runtime_bridge::facade::{
     BridgeInstalledConditionalLowering, BridgeSealedRuntimeAssembly,
 };
 
-use crate::domain_computation::primary_graph::conditional_operation::QueryConditionalComputeContext;
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::providers::QueryConditionalComputeContext;
 use crate::domain_computation::primary_graph::conditional_operation::{
     prepare_dependency_conditional_installation, WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind,

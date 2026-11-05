@@ -1,10 +1,10 @@
 //! Native actor consequence with real source snapshots and delivered touches.
 //! The test-only relation mint exercises the actor, not producer authorization.
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 
 pub use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerificationStop;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::source_registration::StableEqualityConsequence;
@@ -224,7 +224,7 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
 request_execution,            &a0,
             &RetainedSourceFacts::for_test_for_test(false, Arc::from([unchanged_fact])).for_comparison().unwrap(),
             &[], None, &before, owner, runtime, &later_handle, &later,
-        ), Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerificationStop::PendingUpstream));
+        ), Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop::PendingUpstream));
         for handle in [before_handle, alias_handle, later_handle] {
             runtime.snapshots().release_snapshot(&handle).unwrap();
         }

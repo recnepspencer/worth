@@ -10,7 +10,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentit
 use worth_relational::facade::{history::RelationalRecordHistorySelection, identity::EntityId};
 
 use super::super::WorthQueryObservedResultSet;
-use super::{denial::WorthQueryApplicationHistoryDenial as Denial, SubjectPlan, SubjectQuery};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial, super::SubjectPlan, super::SubjectQuery};
 
 mod prepare;
 pub(in crate::domain_computation::primary_graph::application_query) use prepare::prepare as prepare_capture;
@@ -71,10 +71,10 @@ impl<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>
     ) -> Result<WorthQueryCapturedApplicationHistorySubjects<Schema, History>, Denial> {
         let source = observed.source();
         let same_root = match &source.selection {
-            super::super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity::Product(identity) => {
+            crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity::Product(identity) => {
                 identity.matches_observation(self.product.observation())
             }
-            super::super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity::Relational => false,
+            crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity::Relational => false,
         };
         if source.runtime_authority != self.runtime
             || source.schema_binding != self.schema

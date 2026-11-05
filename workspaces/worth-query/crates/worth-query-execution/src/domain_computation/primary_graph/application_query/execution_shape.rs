@@ -2,8 +2,8 @@ use worth_query_admission::facade::application_query::WorthQueryApplicationQuery
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
 use super::WorthQueryAdmittedApplicationQueryControls;
-use super::WorthQueryApplicationQueryAdmissionDenial;
-use super::WorthQueryApplicationQueryAdmissionDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
 
 /// One installed one-shot shape accepted by the same predicate as ordinary
 /// admission. The exact installed Query and lane must consume this proof.

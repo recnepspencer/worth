@@ -1,6 +1,6 @@
 //! Fresh Native member selection at the genuinely admitted comparison image.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Failure;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Failure;
 use worth_relational::facade::runtime::{
     PinnedAggregateReadDenialKind as Denial, RelationalPinnedReadAdmissionDenial, RelationalRuntime,
 };

@@ -6,8 +6,8 @@ pub(in crate::domain_computation::primary_graph::provider) use commit_execution:
 
 pub(in crate::domain_computation::primary_graph) use commit_execution::WorthQueryPrimaryGraphCommittedApplication;
 
-pub(in crate::domain_computation::primary_graph) use evidence_seal::RebaseVerificationFailure;
-pub use evidence_seal::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
+
+pub use {evidence_seal::FactlessCurrentness, evidence_seal::OwnEffectOnReads};
 pub(in crate::domain_computation::primary_graph) use evidence_seal::{
     WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommitEvidence,
 };
@@ -44,11 +44,7 @@ pub(super) fn commit_owner_validated(
         allocation_policy,
     )
     .map_err(|stop| {
-        use crate::domain_computation::{
-            WorthQueryProviderSessionCommitControlStopped as Stopped,
-            WorthQueryProviderSessionCommitStop as Stop,
-            WorthQueryProviderSessionControlStopKind as Kind,
-        };
+        use {crate::domain_computation::WorthQueryProviderSessionCommitControlStopped as Stopped, crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop, crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Kind};
         use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
         // Every pre-publication stage uses the original caller's posture.
         // A stopped lease with a live caller remains a preparation-retry denial.

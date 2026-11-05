@@ -3,9 +3,9 @@ use super::*;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
     pub(in crate::domain_computation::primary_graph) fn body_values(
         &mut self,
-        values: &[crate::domain_computation::primary_graph::operation_body::value::InstalledBodyValue],
+        values: &[crate::domain_computation::primary_graph::vocabulary::operation_body::operation_body_value::InstalledBodyValue],
     ) -> Result<
-        Option<crate::domain_computation::primary_graph::operation_body::value::PreparedBodyValues>,
+        Option<crate::domain_computation::primary_graph::vocabulary::operation_body::operation_body_value::PreparedBodyValues>,
         HandlerExecutionDenial,
     > {
         self.checkpoint().map_err(HandlerExecutionDenial::new)?;

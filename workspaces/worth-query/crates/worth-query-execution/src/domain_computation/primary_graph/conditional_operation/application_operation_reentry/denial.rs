@@ -6,7 +6,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) enum Wor
     RetentionCapacityExhausted,
     ControlStopped(super::WorthQueryTemporalControlStop),
     Terminal(super::WorthQueryTemporalAdmissionTerminalFailure),
-    ExecutionStopped(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    ExecutionStopped(crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind),
 }
 mod authorization;
 mod entity;
@@ -23,13 +23,11 @@ impl From<super::super::WorthQueryConditionalReentryFailure> for WorthQueryTempo
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+    use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 
     #[test]
     fn native_decode_cancellation_remains_control_stop_and_codec_refusal_remains_terminal() {
-        use crate::domain_computation::primary_graph::{
-            WorthQueryInvariantProjectionDenialKind as Kind, WorthQueryValueDecodeDenial as Decode,
-        };
+        use {crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenialKind as Kind, crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial as Decode};
         assert!(matches!(
             WorthQueryTemporalReentryDenial::invariant_kind(
                 Kind::ValueDecode(Decode::Checkpoint(
@@ -93,8 +91,8 @@ mod tests {
 
     #[test]
     fn owner_capacity_survives_reentry_mapping() {
-        let denial = crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial::new(
-            crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::ActiveSnapshotCapacityExhausted {
+        let denial = crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial::new(
+            crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots: 23,
             }),
             "temporal scope",

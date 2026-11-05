@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
@@ -13,9 +13,7 @@ use worth_relational::facade::identity::{EntityId, KindId};
 use super::super::capability_registry::WorthQueryInstalledCapabilityPlan;
 use super::denial;
 use super::support::WorthQueryDelegationResolvedRequest;
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 mod activation_material;
 mod program;

@@ -1,14 +1,8 @@
 //! Existing output stop vocabulary, retaining request/control/resource posture.
 use super::*;
 use crate::domain_computation::primary_graph::output_reuse;
-use {
-    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind,
-    crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop as QueryStop,
-    crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop as ReadStop,
-    crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as ReadKind,
-    crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind as AdmissionKind,
-    crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenialKind as CurrentKind,
-};
+use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind, crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop as QueryStop, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop as ReadStop, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as ReadKind, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind as AdmissionKind, crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenialKind as CurrentKind};
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 
 impl WorthQueryOutputAvailabilityDenial {
     /// Native refusal classification; diagnostic state grants no availability.
@@ -52,7 +46,7 @@ fn meter(
 }
 
 fn query_stop(stop: &QueryStop) -> WorthQueryOutputDemandDenial {
-    use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop as Basis;
+    use crate::domain_computation::primary_graph::vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop as Basis;
 
     let kind = match stop {
         QueryStop::CurrentControl(stop) => return stop.clone(),
@@ -95,7 +89,7 @@ fn query_stop(stop: &QueryStop) -> WorthQueryOutputDemandDenial {
         QueryStop::ForeignClosure => Kind::ForeignSource,
         QueryStop::SourceFacts(stop) => {
             if let Some(cause) = stop.execution_denial() {
-                return WorthQueryOutputDemandDenial::new(Kind::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_scope_stop(*cause)), "source query fact retention");
+                return WorthQueryOutputDemandDenial::new(Kind::ExecutionRequest(crate::domain_computation::request_execution::execution_stop::advancement_scope_stop(*cause)), "source query fact retention");
             }
             if let Some(interruption) = stop.retention_interruption() {
                 return WorthQueryOutputDemandDenial::new(match interruption {
@@ -103,7 +97,7 @@ fn query_stop(stop: &QueryStop) -> WorthQueryOutputDemandDenial {
                     worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::DeadlineExceeded => Kind::TimedOut,
                 }, "source query fact retention");
             }
-            use crate::domain_computation::primary_graph::WorthQuerySourceExpectationDenialKind as Source;
+            use crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind as Source;
             match stop.kind() {
                 Source::ManagedSourceExpansionUnsupported => {
                     Kind::ManagedSourceExpansionUnsupported

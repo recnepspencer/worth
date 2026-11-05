@@ -1,5 +1,5 @@
 //! Original complete-source backing for walk or material-selection custody.
-use super::super::admitted_capture::storage::tree_clone_bytes;
+use crate::domain_computation::vocabulary::primary_graph::storage::tree_clone_bytes;
 use super::super::structural_walk::{memory, StructuralWalkObservation};
 use std::sync::{Arc, Mutex};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};

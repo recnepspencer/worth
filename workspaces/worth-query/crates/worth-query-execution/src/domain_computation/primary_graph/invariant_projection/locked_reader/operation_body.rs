@@ -1,18 +1,9 @@
 //! Native body scalar read at the existing projection's observation and budget.
-use super::{
-    ApplicationSchema, WorthQueryApplicationInvariantProjectionReader,
-    WorthQueryInvariantEntityIdentity,
-};
-use crate::domain_computation::primary_graph::operation_body::BodyFieldExpectation;
-use crate::domain_computation::primary_graph::operation_body::PreparedBodySource;
+use {super::ApplicationSchema, super::WorthQueryApplicationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
+use crate::domain_computation::primary_graph::vocabulary::operation_body::field_expectation::BodyFieldExpectation;
+use crate::domain_computation::primary_graph::vocabulary::operation_body::source::PreparedBodySource;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
-use {
-    crate::domain_computation::primary_graph::HandlerExecutionDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
-    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-};
+use {crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
     /// Same canonical equivalence owner as native signing consequences. Both present
@@ -94,7 +85,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         );
         self.realized_scope.record(identity.entity_id);
         let reads = &mut self.work;
-        match crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed_admitted(
+        match crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed_admitted(
             self.runtime, self.execution, self.snapshot, identity.entity_id, identity.kind,
             locator, |raw| {
                 reads.record_fields(1);

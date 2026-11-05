@@ -1,5 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerApplicability;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement;
 
 impl DeclaredProducerBinding {
     #[doc(hidden)]
@@ -73,7 +75,7 @@ impl DeclaredProducerBinding {
     #[doc(hidden)]
     pub fn input_reuse_mut_for_test(
         &mut self,
-    ) -> &mut Option<super::super::WorthQueryProducerInputReuseContract> {
+    ) -> &mut Option<crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryProducerInputReuseContract> {
         &mut self.input_reuse
     }
 }
@@ -203,7 +205,7 @@ impl DeclaredProducerBinding {
         supported: Vec<WorthQueryProducerApplicability>,
         required_invariants: Vec<WorthQueryProducerInvariantRequirement>,
         reuse_policy: String,
-        input_reuse: Option<super::super::WorthQueryProducerInputReuseContract>,
+        input_reuse: Option<crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryProducerInputReuseContract>,
         output_equivalence: Option<
             super::super::super::native_field_contract::NativeFieldBindingExpectation,
         >,

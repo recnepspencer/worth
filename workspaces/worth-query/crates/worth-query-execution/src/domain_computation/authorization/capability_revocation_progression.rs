@@ -1,6 +1,6 @@
 //! Command/target binding for one exact capability revocation.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, CanonicalDigestWorkBudget};
 use worth_query_declaration::facade::{
     application_capability::{
@@ -20,10 +20,7 @@ use worth_relational::facade::identity::{EntityId, KindId};
 use super::operation_progression::{
     progress_capability_operation, WorthQueryCapabilityOperationProgression,
 };
-use super::{
-    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {super::WorthQueryAdmittedApplicationCapabilityAccess, super::WorthQueryAdmittedApplicationOperation, super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 pub(in crate::domain_computation) struct WorthQueryCapabilityRevocationBinding {
     proposal_identity: [u8; 32],
@@ -112,7 +109,7 @@ where
     {
         let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
-            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
+            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
         self.authorize_capability_revocation_with_request(
             &execution,

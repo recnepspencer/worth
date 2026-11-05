@@ -31,8 +31,8 @@ impl InspectionSubject<'_> {
         let valid = match self {
             Self::Query(original) => {
                 validate_original_affinity(runtime, installed, original)?;
-                let same = |selection: &crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity| matches!(selection,
-                    crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(original) if original.same_branch_occurrence_observation(selected.product().observation()));
+                let same = |selection: &crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity| matches!(selection,
+                    crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity::Product(original) if original.same_branch_occurrence_observation(selected.product().observation()));
                 same(&original.source.selection)
                     && same(original.basis.selection())
                     && original.source.retained_scope_selector().subject() == scope

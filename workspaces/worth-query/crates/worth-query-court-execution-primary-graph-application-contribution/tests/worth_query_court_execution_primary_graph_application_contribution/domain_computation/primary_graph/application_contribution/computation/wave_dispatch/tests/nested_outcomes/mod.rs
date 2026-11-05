@@ -1,5 +1,5 @@
 //! A child denial is owner-completion data, never a wave failure.
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::nested_failure::MemberComputeFailure;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_contribution::nested_failure::MemberComputeFailure;
 use crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::*;
 
 #[test]

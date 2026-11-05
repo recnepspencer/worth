@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
 use std::sync::Arc;
 use worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts as Contracts;
 use worth_relational::facade::{identity::EntityId, snapshots::SnapshotHandle};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 
 pub(in crate::domain_computation::primary_graph) struct NativeReadRefresh {
     prior: SealedComputationFacts,
@@ -170,7 +171,7 @@ impl NativeReadRefresh {
     pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn position(
         &self,
         key: &WorthQueryApplicationFactKey,
-    ) -> Option<super::super::InstalledScopePosition> {
+    ) -> Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition> {
         self.layout.scopes.position(self.ordinal(key)?)
     }
     pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn decisions(
@@ -226,7 +227,7 @@ impl NativeReadRefresh {
         projection: Arc<super::super::CompletedFactProjection>,
     ) -> (
         SealedComputationFacts,
-        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
         Arc<[usize]>,
         usize,
     ) {

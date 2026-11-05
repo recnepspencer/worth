@@ -1,8 +1,6 @@
 //! Resource completion never carries a Query read review or Query receipt.
-use super::{WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisReleaseReceipt,
-};
+use {crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity};
+use {crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity, crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt};
 use worth_query_admission::{
     facade::graph_obligation::WorthQueryGraphWorkPlanIdentity,
     integration::WorthQueryExecutionCapacityReleaseReceipt,

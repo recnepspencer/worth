@@ -8,7 +8,7 @@ use worth_query_installation::facade::{
 
 use super::WorthQueryExecutionBoundOperationAuthority;
 use crate::domain_computation::operation_binding::WorthQueryExecutionCommitPosture;
-use crate::domain_computation::provider_session::WorthQueryGraphProviderCallKind;
+use crate::domain_computation::vocabulary::provider_session::call_kind::WorthQueryGraphProviderCallKind;
 
 #[derive(Clone, Default)]
 pub struct WorthQueryExecutionResourceTopology {

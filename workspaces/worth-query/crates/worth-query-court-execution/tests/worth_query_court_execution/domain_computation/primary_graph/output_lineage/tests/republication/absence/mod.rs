@@ -88,7 +88,7 @@ fn republication_continues_an_opaque_reader_record() {
 
     republish_untracked(
         request_execution,
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse::default()
+        worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse::default()
             .raw_reader_for_test(),
     );
 }
@@ -100,14 +100,14 @@ fn republication_continues_a_request_context_record() {
 
     republish_untracked(
         request_execution,
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse::default()
+        worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse::default()
             .request_context_for_test(),
     );
 }
 
 pub fn republish_untracked(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    context: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse,
+    context: worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse,
 ) {
     staged(request_execution, |mut stage| {
         let selection = WorthQueryObservedSourceSelection::selecting_for_test(2);

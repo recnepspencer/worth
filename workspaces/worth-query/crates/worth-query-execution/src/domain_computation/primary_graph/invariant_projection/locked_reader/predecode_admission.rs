@@ -1,9 +1,6 @@
 //! Borrow one exact snapshot scalar without the ordinary observation's clone.
 use super::WorthQueryApplicationInvariantProjectionReader;
-use crate::domain_computation::primary_graph::{
-    application_attempt::observe_field_value_borrowed_admitted, HandlerExecutionDenial,
-    HandlerInterruption, WorthQueryInvariantEntityIdentity,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed_admitted, crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
 use worth_foundational::facade::AspectValue as ApplicationValue;
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,

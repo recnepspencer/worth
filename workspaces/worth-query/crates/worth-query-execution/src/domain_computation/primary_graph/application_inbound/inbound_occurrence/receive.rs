@@ -16,12 +16,8 @@ use super::{
     WorthQueryInboundSourcePosture, WorthQueryInboundVerifierHandle,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
-use crate::domain_computation::application_aftermath::{
-    ExternalEffectCorrelationIdentity, WorthQueryAcceptedInboundOccurrence,
-    WorthQueryInboundCustodyAdmission, WorthQueryInboundOccurrenceClaims,
-    WorthQueryInboundPublicationClaim, WorthQueryInboundVerificationDenial,
-};
-use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial;
+use {crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity, crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence, crate::domain_computation::application_aftermath::WorthQueryInboundCustodyAdmission, crate::domain_computation::application_aftermath::WorthQueryInboundOccurrenceClaims, crate::domain_computation::application_aftermath::WorthQueryInboundPublicationClaim, crate::domain_computation::application_aftermath::WorthQueryInboundVerificationDenial};
+use crate::domain_computation::vocabulary::primary_graph::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial;
 
 pub enum WorthQueryInboundAdmission {
     New(Arc<WorthQueryAcceptedInboundOccurrence>, bool),
@@ -70,12 +66,12 @@ pub enum WorthQueryInboundAdmissionDenial {
     /// Publication remains retryable; the execution owner retains its cause.
     PublicationExecutionDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        kind: crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
     },
     /// Cancellation or deadline during preparation remains retryable.
     PublicationExecutionControlStopped {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        kind: crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     },
     RecoveryStaleProduct,
     RecoveryUnavailable,

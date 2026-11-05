@@ -8,6 +8,8 @@ use crate::domain_computation::primary_graph::application_query::admission::perm
 use crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance;
 
 use crate::domain_computation::provider_session::WorthQueryPreparedProductReadSessionIdentity;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
 
 pub(in crate::domain_computation::primary_graph) trait PreparedPermissionScopedOps<
     Schema: ApplicationSchema,

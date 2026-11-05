@@ -5,7 +5,7 @@ use worth_foundational::facade::CanonicalDigestId;
 use worth_runtime_world::facade::{CompositeCommitIdentity, CompositePublicationAttemptIdentity};
 
 use super::WorthQueryInboundVerifierHandle;
-use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
 
 /// Read-only World identities of a completed inbound effect.

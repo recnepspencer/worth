@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
-use super::inspection::WorthQueryCompletedDirectRunCleanup;
-use super::{WorthQueryDirectRunCleanupReceipt, WorthQueryDirectRunTerminal};
+use crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryCompletedDirectRunCleanup;
+use {crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt, super::WorthQueryDirectRunTerminal};
 use crate::domain_computation::managed_run::bridge_terminal_disposition;
-use crate::domain_computation::{
-    WorthQueryManagedRunCleanupDisposition, WorthQueryManagedRunCleanupFailureKind,
-};
+use {crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupDisposition, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupFailureKind};
 
 #[must_use = "direct cleanup failure retains the exact terminal owner for retry"]
 pub struct WorthQueryDirectRunCleanupFailure {

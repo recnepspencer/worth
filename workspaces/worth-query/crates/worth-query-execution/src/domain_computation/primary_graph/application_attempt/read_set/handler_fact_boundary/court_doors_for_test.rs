@@ -1,9 +1,4 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
 
-impl CompletedHandlerFactBoundary {
-    #[doc(hidden)]
-    pub fn handler_fact_count_for_test(&self) -> usize {
-        Self::handler_fact_count(self)
-    }
-}

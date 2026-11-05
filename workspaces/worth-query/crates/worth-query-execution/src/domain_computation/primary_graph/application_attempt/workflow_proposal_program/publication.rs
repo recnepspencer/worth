@@ -6,11 +6,7 @@ use worth_query_declaration::facade::application_program::ApplicationProgramRevi
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 
-use super::super::{
-    PublishedWorkflowInstanceRef, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
-    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryApplicationUncommitted,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, super::super::WorthQueryApplicationEffectProgram, super::super::WorthQueryApplicationIdempotencyBinding, super::super::WorthQueryApplicationIdempotencyResolution, super::super::WorthQueryApplicationIdempotencyResolutionDenial, super::super::WorthQueryApplicationUncommitted};
 use crate::domain_computation::primary_graph::application_attempt::workflow::proposal::derive_workflow_proposal_context_identity;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 
@@ -34,7 +30,7 @@ pub struct PreparedWorkflowProposal<Schema, Operation, Input, Scope> {
 }
 
 mod reference;
-pub use reference::PublishedWorkflowProposalRef;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::reference::PublishedWorkflowProposalRef;
 mod read_only;
 pub(in crate::domain_computation::primary_graph) use read_only::observe as observe_read_only_proposal;
 /// A workflow proposal that landed: the proposal, the transition it opened, its commit

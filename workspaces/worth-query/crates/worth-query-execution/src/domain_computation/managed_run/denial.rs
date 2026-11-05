@@ -1,4 +1,4 @@
-use super::WorthQueryManagedRunCounters;
+use crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedRunDenialKind {

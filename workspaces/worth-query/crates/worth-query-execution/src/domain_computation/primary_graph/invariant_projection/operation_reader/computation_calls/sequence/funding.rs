@@ -1,5 +1,6 @@
 //! Complete conservative bounds for each immutable call-sequence view.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 pub(super) fn shape_bound(calls: usize) -> Option<u64> {
     (size_of::<CallShape>() as u64)
         .checked_add(2 * size_of::<usize>() as u64)?

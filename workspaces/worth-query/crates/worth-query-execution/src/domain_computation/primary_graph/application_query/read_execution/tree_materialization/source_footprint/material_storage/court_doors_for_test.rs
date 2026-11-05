@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
 
 impl<'a, 'request, 'authority> MaterialFootprintStorage<'a, 'request, 'authority> {
     #[doc(hidden)]

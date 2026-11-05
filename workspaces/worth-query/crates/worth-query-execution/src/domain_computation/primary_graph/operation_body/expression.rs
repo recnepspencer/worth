@@ -3,16 +3,7 @@ use worth_foundational::expression_api::{
     ExpressionDenialDetail, ExpressionInputs, ExpressionResource, ExpressionStep, MAX_SLICE_QUANTUM,
 };
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyExpression as Expression;
-use {
-    crate::domain_computation::primary_graph::operation_body::PreparedRequirementOperand,
-    crate::domain_computation::primary_graph::HandlerExecutionDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader,
-    crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity,
-    crate::domain_computation::request_execution::advancement_denial,
-    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-    crate::domain_computation::request_execution::QueryRequestExecution,
-    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-};
+use {crate::domain_computation::primary_graph::vocabulary::operation_body::value::PreparedRequirementOperand, crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, crate::domain_computation::request_execution::advancement_denial, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::QueryRequestExecution, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
 #[derive(Clone, Copy)]
 pub(super) enum Purpose<'a> {
     Requirement,

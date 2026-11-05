@@ -1,6 +1,6 @@
 //! Measured reader calls in canonical order, with checked range charges.
 use super::*;
-use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
+use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
 use std::{collections::BTreeSet, ops::Range};
 use {
     crate::domain_computation::request_execution::QueryMemoryReservation,
@@ -143,5 +143,6 @@ impl ComputationCallSequence {
 }
 
 use crate::domain_computation::primary_graph::fact_verification_observation as observed;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 
 mod court_doors_for_test;

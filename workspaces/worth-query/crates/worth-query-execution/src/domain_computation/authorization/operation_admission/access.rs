@@ -1,6 +1,6 @@
 //! Accessors and current-authority revalidation for admitted operations.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
@@ -10,14 +10,10 @@ use worth_query_installation::facade::{
 use worth_relational::facade::authorization::RelationalAuthorizationObservationCounters;
 
 use super::WorthQueryAdmittedOperation;
-use crate::domain_computation::authorization::{
-    WorthQueryAdmissionLapse, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialKind, WorthQueryOperationScopeBinding,
-    WorthQueryRetainedAuthorizationDecisionFacts, WorthQueryRetainedCapabilityAuthorization,
-};
+use {crate::domain_computation::authorization::WorthQueryAdmissionLapse, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryOperationScopeBinding, crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts, crate::domain_computation::authorization::WorthQueryRetainedCapabilityAuthorization};
 use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditions;
 
-use super::WorthQueryOperationAdmissionIdentity;
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
 
 #[path = "access/workflow_approval_snapshot.rs"]
 mod workflow_approval_snapshot;
@@ -44,7 +40,7 @@ impl WorthQueryAdmittedOperation {
 
     pub(in crate::domain_computation) fn belongs_to(
         &self,
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
     ) -> bool {
         self.runtime_authority == runtime_authority && &self.binding_identity == binding_identity
@@ -54,7 +50,7 @@ impl WorthQueryAdmittedOperation {
     /// admission is judged before it is known to be this runtime's.
     pub(in crate::domain_computation) fn validate_runtime_ownership(
         &self,
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         if self.runtime_authority != runtime_authority {
@@ -78,7 +74,7 @@ impl WorthQueryAdmittedOperation {
 
     pub(in crate::domain_computation) const fn runtime_authority(
         &self,
-    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
         self.runtime_authority
     }
 
@@ -356,13 +352,13 @@ impl WorthQueryAdmittedOperation {
     }
     pub(in crate::domain_computation) fn bind_source_expectation_kind(
         &mut self,
-        kind: crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind,
+        kind: crate::domain_computation::vocabulary::primary_graph::observed_source::WorthQuerySourceExpectationKind,
     ) {
         self.source_expectation_kind = Some(kind);
     }
     pub(in crate::domain_computation) const fn source_expectation_kind(
         &self,
-    ) -> Option<crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind> {
+    ) -> Option<crate::domain_computation::vocabulary::primary_graph::observed_source::WorthQuerySourceExpectationKind> {
         self.source_expectation_kind
     }
 

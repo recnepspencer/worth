@@ -1,5 +1,7 @@
 //! Pays and resolves the post-effect source-fact walk, preserving its first request stop.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::provider::failure::RebaseVerificationFailure;
+use crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason;
 pub(super) fn rebase(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,

@@ -2,10 +2,7 @@ use worth_query_declaration::facade::application_program::{
     ApplicationProgramIdentity, ApplicationProgramRevision,
 };
 
-use super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitDenialStage, WorthQueryProgramActivationUnresolved,
-};
+use {super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind, super::WorthQueryApplicationCommitDenialStage, super::WorthQueryProgramActivationUnresolved};
 
 impl WorthQueryApplicationCommitDenial {
     /// The attempt reached the direct commit entry for a program-owned operation.

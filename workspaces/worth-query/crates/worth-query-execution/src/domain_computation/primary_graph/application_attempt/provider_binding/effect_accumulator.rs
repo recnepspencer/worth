@@ -24,7 +24,7 @@ mod expected_steps;
 #[cfg(test)]
 mod ordering_tests;
 use commit_projections::materialize_commit_projections;
-pub(in crate::domain_computation::primary_graph) use expected_steps::WorthQueryExpectedEffectStepPreparationWork;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::expected_steps::WorthQueryExpectedEffectStepPreparationWork;
 use expected_steps::WorthQueryExpectedEffectSteps;
 
 pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts: FactSequence + ?Sized>
@@ -243,7 +243,7 @@ impl WorthQueryRegisteredProviderEffects {
         (
             Self,
             Option<
-                crate::domain_computation::application_aftermath::WorthQueryPendingDispatchOutbox,
+                crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryPendingDispatchOutbox,
             >,
         ),
         &'static str,

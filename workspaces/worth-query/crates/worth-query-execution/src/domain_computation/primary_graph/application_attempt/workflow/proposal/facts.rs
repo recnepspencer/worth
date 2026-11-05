@@ -51,7 +51,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_proposal_fact
             AspectValue::UInt64(if proposal.captured_identity.is_some() {
                 super::super::schema::version::WORKFLOW_CAPTURED_PROPOSAL_PROTOCOL_VERSION
             } else {
-                super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION
             }),
         ),
         (

@@ -8,7 +8,7 @@ pub trait ApplicationCheckpointHost<Schema>:
     fn application_checkpoint_host(&self) -> &dyn ApplicationCheckpointHost<Schema>;
     fn publication(
         &self,
-    ) -> &crate::domain_computation::primary_graph::bootstrap::WorthQueryPrimaryGraphPublication;
+    ) -> &crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication;
     fn output_demands(&self) -> &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry;
     fn recovered_outputs(&self) -> &crate::domain_computation::primary_graph::application_output_demand::WorthQueryRecoveredOutputs;
     fn application_branch_commit_lane_for_occurrence(&self, occurrence: worth_runtime_world::facade::ProductBranchIncarnation) -> std::sync::Arc<crate::domain_computation::primary_graph::provider::branch_commit_coordination::WorthQueryApplicationBranchCommitLane>;

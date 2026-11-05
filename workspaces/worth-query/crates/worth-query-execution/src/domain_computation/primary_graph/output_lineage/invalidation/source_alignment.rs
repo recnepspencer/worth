@@ -6,9 +6,9 @@ use worth_relational::facade::mvcc::CompanionBranchImage;
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
-use super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
-use super::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::mark_state::MarkState;
 use super::mark_state::SettlementCurrentness;
 

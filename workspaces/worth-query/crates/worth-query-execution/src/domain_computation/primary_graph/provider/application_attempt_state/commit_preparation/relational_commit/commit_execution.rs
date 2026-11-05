@@ -140,7 +140,7 @@ pub(super) fn commit(
         crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_policy, Some(attempt.affinity().publication_request())),
     )).map_err(stops::source_rebase_preparation_stop)?;
     let ordinary_index_budget =
-        crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget();
+        crate::domain_computation::vocabulary::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget();
     let ordinary_index_budget = if provider.take_tight_index_maintenance_budget() {
         worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
             maximum_work_units: Some(1),
@@ -260,7 +260,7 @@ fn publication_request_stop(
     use crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
     use crate::domain_computation::WorthQueryProviderSessionFailure;
     use crate::domain_computation::WorthQueryProviderSessionProtocolStage;
-    match crate::domain_computation::primary_graph::application_contribution::publication_execution_kind(cause) {
+    match crate::domain_computation::primary_graph::vocabulary::application_contribution::publication::publication_execution_kind(cause) {
         Ok(kind) => Stop::PreEffectDenied(WorthQueryProviderSessionFailure::checked_read_stopped(Ok(kind), WorthQueryProviderSessionProtocolStage::Commit, "World publication request stopped before effect")),
         Err(control) => Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(control, "World publication request stopped before effect")),
     }
@@ -271,7 +271,7 @@ fn world_no_effect(
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     use crate::domain_computation::WorthQueryProviderSessionCommitControlStopped;
     use crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind;
+    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind;
     use worth_runtime_world::facade::NoEffectCause;
     match no_effect.cause() {
         NoEffectCause::StaleExpectedProductHead => Stop::ProductStale(

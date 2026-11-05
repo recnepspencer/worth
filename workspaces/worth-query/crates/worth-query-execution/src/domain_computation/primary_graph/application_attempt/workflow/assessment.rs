@@ -75,7 +75,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_assessment_fa
             ),
             (
                 layout.assessment_evidence.protocol_version.clone(),
-                AspectValue::UInt64(super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION),
+                AspectValue::UInt64(crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION),
             ),
             (
                 layout.assessment_evidence.producer.clone(),

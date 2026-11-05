@@ -1,13 +1,9 @@
 //! Extend the approval's actual readset, build its installed body, then append native effects.
 use super::*;
 use crate::domain_computation::primary_graph::handler::OperationBodyScopedOps;
-use crate::domain_computation::primary_graph::{
-    application_entry::mutation::{
-        build_handler_candidate, DecisionReader, HandlerInterruption, HandlerResult,
-    },
-    DecisionContextUse,
-};
+use {crate::domain_computation::primary_graph::application_entry::mutation::build_handler_candidate, crate::domain_computation::primary_graph::application_entry::mutation::DecisionReader, crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption, crate::domain_computation::primary_graph::application_entry::mutation::HandlerResult, crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse};
 use std::cell::Cell;
+use crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial;
 
 pub(super) fn compose<Schema, Binding>(
     access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
@@ -59,7 +55,7 @@ where
     // Refuse an unimplemented future profile rather than erase its carried state.
     if !content_attachments.is_empty() || conditional_definition.is_some() || !output_correspondence.is_empty()
         || !producer_required_invariants.is_empty()
-        || effect_posture != crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform {
+        || effect_posture != crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::Platform {
         return Err(WorkflowApprovalBodyDenial::UnsupportedProfile);
     }
     if read_set
@@ -140,7 +136,7 @@ where
         .map_err(|_| WorkflowApprovalBodyDenial::UnsupportedProfile)?;
     // The body stays first: its native deferred signing slot retains its index.
     body.effects.extend(effects);
-    body.effect_posture = crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
+    body.effect_posture = crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
     body.retain_output_demand_observation |= retain_output_demand_observation;
     body.retain_client_observation |= retain_client_observation;
     body.output_currentness_facts = output_currentness_facts;

@@ -1,17 +1,5 @@
 //! Map the authorization owner's refusal at ordinary Source consumers.
-use crate::domain_computation::{
-    authorization::{
-        SourceReadSupportCurrentnessStop as Support,
-        WorthQueryOperationAuthorizationDenialKind as Authorization,
-        WorthQueryOperationAuthorizationRefusalKind as Refusal,
-    },
-    primary_graph::{
-        application_attempt::WorthQuerySourceCurrentnessFailure as Currentness,
-        invariant_projection::{
-            consumed_output::map_admission_stop, ConsumedOutputVerificationStop as Stop,
-        },
-    },
-};
+use {crate::domain_computation::authorization::SourceReadSupportCurrentnessStop as Support, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Authorization, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as Refusal, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Currentness, crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop, crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop as Stop};
 pub(in crate::domain_computation::primary_graph) fn map_source_authorization_currentness(
     stop: Support,
 ) -> Stop {
@@ -37,7 +25,7 @@ pub(in crate::domain_computation) fn validate_source_principal_facts(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
 ) -> Result<(), Support> {
-    use crate::domain_computation::primary_graph::application_attempt::Movement;
+    use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
     for fact in facts {
         let current = fact
             .source_currentness_in(runtime, execution, snapshot)

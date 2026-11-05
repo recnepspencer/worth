@@ -11,11 +11,7 @@ use super::elevation_lifecycle_facts::{
     lifecycle_facts_are_exact, WorthQueryElevationLifecycleFactExpectation,
     WorthQueryExpectedLifecycleRelation,
 };
-use super::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationEffectProgram, WorthQueryCompleteApplicationReadSet,
-    WorthQueryProjectedApplicationMutation,
-};
+use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationEffectProgram, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation};
 use crate::domain_computation::application_contract_admission::{
     application_contract_exactly_matches_program_targets, graph_reads_exactly_match_targets,
 };
@@ -63,7 +59,7 @@ impl<Schema, Operation, Input, Scope>
             read_set: self,
             effects,
             conditional_definition: None,
-            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
+            effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture::Application,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

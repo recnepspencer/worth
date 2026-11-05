@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 mod principal_target_read_observation;
 pub use principal_target_read_observation::principal_target_reads_on_this_thread_for_test;
 use std::sync::Arc;
@@ -15,8 +15,8 @@ use worth_relational::facade::runtime::{
 use worth_relational::facade::snapshots::SnapshotHandle;
 use worth_relational::facade::storage::RecordLifecycleState;
 
-use super::schema_layout::WorthQueryPrimaryPrincipalBindingLayout;
-use super::{WorthQueryPrincipalResolutionDenial, WorthQueryPrincipalResolutionDenialKind};
+use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
+use {crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial, crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind};
 
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct WorthQueryPrincipalMappingObservation {
@@ -309,7 +309,7 @@ fn principal_adjacency_revision(
         worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::Execution(cause) => super::resolution_denial::relational_read_denial(cause, binding),
         worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
             WorthQueryPrincipalResolutionDenial::new(
-                WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })),
+                WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })),
                 binding,
             )
         }

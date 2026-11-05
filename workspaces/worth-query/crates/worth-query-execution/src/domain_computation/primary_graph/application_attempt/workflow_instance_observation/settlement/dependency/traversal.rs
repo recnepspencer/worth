@@ -3,10 +3,7 @@ use crate::domain_computation::primary_graph::application_attempt::check_request
 use crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation;
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationObservedFact,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::runtime::{RelationalAdjacencyDirection, RelationalAdjacencyVisit};

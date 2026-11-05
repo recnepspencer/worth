@@ -91,7 +91,7 @@ pub fn text_at(
     locator: &AspectFieldLocator,
     require_charge: bool,
 ) -> String {
-    let symbol = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::predecode_admission::observe_field_value_borrowed(
+    let symbol = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed(
         runtime, execution, snapshot, entity, kind, locator, |value| match value {
             Some(AspectValue::String(InternedString::Symbol(symbol))) => Some(*symbol),
             _ => None,

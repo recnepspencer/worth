@@ -3,6 +3,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 
 /// One retained output as a retained observation selects it. Holding it
 /// keeps its lineage row. The row is the latest one at or before the
@@ -16,7 +18,7 @@ pub(in crate::domain_computation::primary_graph) struct ObservedRetainedOutput {
     pub(in crate::domain_computation::primary_graph) consumed_outputs:
         Arc<[ConsumedOutputEvidence]>,
     pub(in crate::domain_computation::primary_graph) verification_requirement:
-        Option<super::super::invalidation::FullVerificationReason>,
+        Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason>,
     pub(in crate::domain_computation::primary_graph) native_output_witness:
         Option<Arc<OnceLock<super::super::SealedNativeOutputWitness>>>,
 }
@@ -29,7 +31,7 @@ impl WorthQueryApplicationOutputLineage {
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         output_bindings: &[TypeId],
         source_partition_identity: [u8; 32],

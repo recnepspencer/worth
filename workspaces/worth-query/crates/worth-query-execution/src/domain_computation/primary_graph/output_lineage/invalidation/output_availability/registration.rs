@@ -1,5 +1,7 @@
 //! Same native image source-slot enrollment and alias extension.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 
 impl SourceInvalidationOwner {
     /// Establish a covered source's head-independent slot on the SAME native

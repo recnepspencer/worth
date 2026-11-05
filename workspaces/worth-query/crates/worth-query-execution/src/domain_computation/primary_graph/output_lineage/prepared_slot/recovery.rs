@@ -15,10 +15,10 @@ pub struct PreparedLineageRecoveryMetadata {
     prior_computation:
         Option<crate::domain_computation::primary_graph::output_lineage::PriorComputationRecord>,
     handler: Option<
-        crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary,
+        crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary,
     >,
     decision_reuse: Option<
-        crate::domain_computation::primary_graph::application_attempt::CompletedDecisionReuseProof,
+        crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof,
     >,
     reuse: Option<crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey>,
 }

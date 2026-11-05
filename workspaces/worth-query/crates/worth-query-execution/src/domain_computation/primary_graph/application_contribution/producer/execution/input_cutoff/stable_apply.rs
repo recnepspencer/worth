@@ -37,7 +37,7 @@ where
     prerequisites.reserve_identity(publication.identity())?;
     let registration = publication.prepare_current_registration(source_owner, prerequisites.work_membership())
         .map_err(|stop| match stop {
-            crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop::Admission(stop) => cutoff_admission_denial(stop),
+            crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop::Admission(stop) => cutoff_admission_denial(stop),
             _ => denial(WorthQueryOutputDemandDenialKind::PublicationStale, "producer input cutoff source changed during preparation"),
         })?;
     let displaced = publication.displaced_settlement();

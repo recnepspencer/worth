@@ -5,18 +5,7 @@ use super::{
     source_image::{SourceBinding, SourceImage},
 };
 use crate::domain_computation::primary_graph::application_query::AdmissionScopedOps as _;
-use crate::domain_computation::{
-    primary_graph::{
-        application_query::{
-            one_shot::outcome::material::MaterialCompletion,
-            WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryControls,
-            WorthQueryObservedScopeSelector,
-        },
-        source_facts::SourceFactsAllocation,
-        WorthQueryPrincipalResolutionMode, WorthQuerySelectedProductOperation,
-    },
-    provider_session::WorthQueryManagedGraphWorkSession,
-};
+use {crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryControls, crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation, crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession};
 use std::{num::NonZeroUsize, sync::Arc};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
@@ -44,10 +33,10 @@ pub(super) struct AcquisitionDenial {
 pub(super) enum AcquisitionCause {
     ForeignContext,
     Execution(Cause),
-    Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
-    Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
+    Principal(crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial),
+    Scope(crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial),
     Product(crate::basis::WorthQueryProductBranchAdmissionDenial),
-    Admission(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial),
+    Admission(crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial),
     Source(SourceDenial),
 }
 impl From<Cause> for AcquisitionCause {

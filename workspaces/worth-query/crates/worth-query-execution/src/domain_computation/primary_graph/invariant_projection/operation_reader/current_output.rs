@@ -1,4 +1,4 @@
-use super::super::WorthQueryInvariantEntityIdentity;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 mod certified_correspondence;
 pub(in crate::domain_computation::primary_graph::invariant_projection) use certified_correspondence::CertifiedOutputCorrespondence;
@@ -25,7 +25,7 @@ pub enum WorthQueryCurrentOutputDenialKind {
     /// installed for this operation's binding.
     FamilyUnavailable,
     SourceQueryAuthorization(
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+        crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
     ),
     /// No recorded output is current: each was produced from source state that
     /// has since changed. A change to the producer itself reports
@@ -63,7 +63,7 @@ pub enum WorthQueryCurrentOutputDenialKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryCurrentOutputDenial {
     managed_index:
-        Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
+        Option<crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial>,
     kind: WorthQueryCurrentOutputDenialKind,
     subject: String,
     pub(in crate::domain_computation::primary_graph) requested_output:

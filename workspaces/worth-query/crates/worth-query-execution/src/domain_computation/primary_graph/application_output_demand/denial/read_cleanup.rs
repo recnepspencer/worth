@@ -46,7 +46,7 @@ impl WorthQueryOutputReadCleanup {
     }
     pub fn receipt(
         &mut self,
-    ) -> Option<&crate::domain_computation::WorthQueryDirectRunCleanupReceipt> {
+    ) -> Option<&crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt> {
         self.custody.receipt()
     }
 }

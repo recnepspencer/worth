@@ -4,15 +4,9 @@ use worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind as Ki
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 #[test]
 fn grant_selection_names_deadlines_and_every_ceiling_as_operational_stops() {
-    use crate::domain_computation::{
-        WorthQueryProviderSessionControlStopKind as Control,
-        WorthQueryProviderSessionDenialKind as Session,
-    };
+    use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Session};
     use WorthQueryOperationAuthorizationDenialKind as Denial;
-    use {
-        crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
-        crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level,
-    };
+    use {crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
     assert_eq!(
         grant_lookup_denial_kind(Kind::Execution(Cause::Cancelled)),
         Denial::Stopped(Err(Control::Cancelled))
@@ -100,8 +94,8 @@ fn grant_selection_names_deadlines_and_every_ceiling_as_operational_stops() {
 
 #[test]
 fn grant_selection_retains_every_structural_execution_cause() {
-    use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
-    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
+    use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
+    use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Session;
     let resource = |denial| Session::ExecutionResource {
         denial,
         partition_identity: None,

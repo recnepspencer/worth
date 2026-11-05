@@ -1,5 +1,5 @@
 //! The runtime's consumer methods over `domain_computation::primary_graph::application_inbound`; each only calls its subsystem.
-use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 use crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence;
 use crate::domain_computation::application_aftermath::WorthQueryInboundCleanupReport;
 use crate::domain_computation::application_aftermath::WorthQueryInboundCustodyAdmission;
@@ -7,7 +7,7 @@ use crate::domain_computation::application_aftermath::WorthQueryInboundOccurrenc
 use crate::domain_computation::application_aftermath::WorthQueryInboundOccurrenceVerifier;
 use crate::domain_computation::application_aftermath::WorthQueryInboundPublicationClaim;
 use crate::domain_computation::application_aftermath::WorthQueryInboundVerificationDenial;
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::application_inbound::inbound_occurrence::receive::WorthQueryInboundAdmission;
 use crate::domain_computation::primary_graph::application_inbound::inbound_occurrence::receive::WorthQueryInboundAdmissionDenial as Denial;
 use crate::domain_computation::primary_graph::application_inbound::inbound_occurrence::receive::WorthQueryInboundReceipt;
@@ -27,7 +27,7 @@ use crate::domain_computation::primary_graph::application_runtime::WorthQueryPri
 use crate::domain_computation::primary_graph::provider::WorthQueryCanonicalInboundCompletion;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionReadDenial;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
-use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial;
+use crate::domain_computation::vocabulary::primary_graph::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial;
 use std::collections::btree_map::Entry;
 use std::num::NonZeroUsize;
 use std::sync::atomic::AtomicU64;

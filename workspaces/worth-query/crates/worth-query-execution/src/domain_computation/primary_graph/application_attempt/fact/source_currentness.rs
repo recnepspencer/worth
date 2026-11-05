@@ -1,15 +1,7 @@
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 mod comparison;
 use super::{FactMovement, WorthQueryApplicationObservedFact};
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQuerySourceCurrentnessFailure {
-    /// The fact's own recorded bound refuses the comparison.
-    WorkBudgetExceeded,
-    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
-    Unavailable,
-    ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
-    OutputObservation(crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop),
-}
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
 
 impl WorthQueryApplicationObservedFact {
     /// The extent retains actual bodies and its one admitted pin. It cannot

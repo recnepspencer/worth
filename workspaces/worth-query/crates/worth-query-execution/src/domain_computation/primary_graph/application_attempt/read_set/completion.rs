@@ -3,11 +3,7 @@ use super::complete_read_set_core::{
     CompleteReadSetCore, CompletedReadFacts, PreparedReadCompletion,
 };
 use super::mutation_read_attempt_core::MutationReadAttemptCore;
-use super::{
-    denial, observation_admission, CompletedHandlerFactBoundary, SealedComputationFacts,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryCompleteApplicationReadSet,
-};
+use {super::denial, super::observation_admission, crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary, super::SealedComputationFacts, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryCompleteApplicationReadSet};
 use worth_execution::ExecutionAllocationPolicy;
 
 impl MutationReadAttemptCore<'_, '_, '_> {
@@ -100,7 +96,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                     return false;
                 }
                 if let (
-                    super::InstalledScopePosition::SourceQuery,
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition::SourceQuery,
                     super::super::fact::WorthQueryApplicationFactKey::SourcePublication(read),
                     super::super::fact::WorthQueryApplicationObservedFact::SourcePublication {
                         observation,
@@ -117,7 +113,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                             .and_then(|expected| expected.source_publication(read))
                             .is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation));
                 }
-                if let (super::InstalledScopePosition::SourceQuery,
+                if let (crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition::SourceQuery,
                     super::super::fact::WorthQueryApplicationFactKey::SourceReadAuthorization(key),
                     super::super::fact::WorthQueryApplicationObservedFact::SourceReadAuthorization { observation },
                 ) = (scope, fact_key, fact) {
@@ -126,7 +122,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                     )).is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation));
                 }
                 if let (
-                    super::InstalledScopePosition::SourceQuery,
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition::SourceQuery,
                     super::super::fact::WorthQueryApplicationFactKey::ManagedIndexSource(key),
                     super::super::fact::WorthQueryApplicationObservedFact::ManagedIndexSource {
                         observation,
@@ -194,12 +190,12 @@ impl MutationReadAttemptCore<'_, '_, '_> {
         let attribution = reads.into_attribution();
         let _temporary_index_memory = completed.reserve_fact_index(|| attribution.as_ref().map(|reads| {
             reads.index_bytes().ok_or(
-                crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::CapacityOverflow,
+                crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::CapacityOverflow,
             )
         }).transpose(), allocation_policy)
             .map_err(|resource| denial(
                 WorthQueryApplicationAttemptDenialKind::ExecutionRequest(
-                    crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ExecutionResource {
                         denial: resource, partition_identity: None, policy_ancestor: None,
                     },
                 ), self.admission.operation(),
@@ -243,7 +239,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
             operation,
             check_authority,
         )?;
-        let installed_read_scopes = super::CompletedReadScopes::from_completed(
+        let installed_read_scopes = crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes::from_completed(
             self.admission.retain_graph_contract(),
             installed_read_scopes,
         );

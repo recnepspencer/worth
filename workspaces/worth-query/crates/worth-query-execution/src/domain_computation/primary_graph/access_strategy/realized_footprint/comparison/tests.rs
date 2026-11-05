@@ -32,7 +32,7 @@ fn final_poll_can_refuse_an_otherwise_equal_or_different_comparison() {
 #[test]
 fn swallowed_resource_refusals_preserve_first_cause_for_both_boolean_results() {
     use super::with_resources;
-    use crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault as Fault;
+    use crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault as Fault;
     use std::cell::Cell;
     for first in 0..3 {
         for equal in [false, true] {

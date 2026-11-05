@@ -5,39 +5,12 @@ use serde::{Serialize, Serializer};
 use worth_execution::{ExecutionByteBuffer, ExecutionImmutableBytes, ExecutionRequest};
 
 use crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDenial as Denial;
+use crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText;
 
-/// Clones retain the same text allocation and its original payer. No owned
-/// String can be extracted; an independent field copy requires fresh admission.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FundedActorText(ExecutionImmutableBytes);
 
-impl FundedActorText {
-    pub(in crate::domain_computation) fn bytes(&self) -> &ExecutionImmutableBytes {
-        &self.0
-    }
-    pub(in crate::domain_computation) fn as_str(&self) -> &str {
-        std::str::from_utf8(self.0.bytes()).expect("serde JSON emits UTF-8")
-    }
-}
 
-impl Serialize for FundedActorText {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(self.as_str())
-    }
-}
 
-impl std::ops::Deref for FundedActorText {
-    type Target = str;
-    fn deref(&self) -> &str {
-        self.as_str()
-    }
-}
 
-impl AsRef<str> for FundedActorText {
-    fn as_ref(&self) -> &str {
-        self.as_str()
-    }
-}
 
 pub fn encode(
     execution: &ExecutionRequest<'_, '_>,

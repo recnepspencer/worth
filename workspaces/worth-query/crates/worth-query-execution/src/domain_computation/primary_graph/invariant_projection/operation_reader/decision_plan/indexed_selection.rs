@@ -1,5 +1,5 @@
 use super::super::super::WorthQueryInvariantProjectionDenial;
-use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
@@ -14,11 +14,7 @@ use worth_relational::facade::indexes::{
 };
 
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
-use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationObservedFact, HandlerExecutionDenial,
-    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
-    WorthQueryInvariantEntityIdentity,
-};
+use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial, crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
 
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>

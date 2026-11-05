@@ -1,8 +1,4 @@
-use super::{
-    denial, observe_adjacency, settlement, ObservedWorkflowTransition,
-    WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationObservedFact,
-};
+use {super::denial, super::observe_adjacency, super::settlement, super::ObservedWorkflowTransition, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, super::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationObservedFact};
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget;
 use worth_relational::facade::identity::EntityId;
@@ -132,10 +128,10 @@ pub(super) fn observe(
             super::super::WorthQueryApplicationAttemptDenial::new(
                 match event.interruption() {
                     worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
-                        super::super::WorthQueryApplicationAttemptDenialKind::Cancelled
+                        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::Cancelled
                     }
                     worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => {
-                        super::super::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
+                        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
                     }
                 },
                 "workflow transition inventory",

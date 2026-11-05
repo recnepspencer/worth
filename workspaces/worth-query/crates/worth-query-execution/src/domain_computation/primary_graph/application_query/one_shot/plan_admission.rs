@@ -2,6 +2,8 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::application_query::installed_schema_currentness::InstalledSchemaCurrentnessParentOps;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind;
 
 pub(in crate::domain_computation::primary_graph::application_query) fn validate_one_shot_plan<
     Schema,

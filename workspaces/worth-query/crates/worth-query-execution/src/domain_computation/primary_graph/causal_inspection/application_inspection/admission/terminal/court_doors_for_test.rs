@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt;
 
 impl<'storage, Schema: ApplicationSchema, Scope> InspectionRead<'_, 'storage, Schema, Scope> {
     #[doc(hidden)]

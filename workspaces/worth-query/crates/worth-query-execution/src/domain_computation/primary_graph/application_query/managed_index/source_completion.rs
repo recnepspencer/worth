@@ -1,20 +1,6 @@
 //! One ordinary source execution, retained only after its genuine terminal.
 use super::source_image::{SourceImage, SourcePlan};
-use crate::domain_computation::primary_graph::{
-    application_query::{
-        authorized_read::{execute_authorized_read, refresh_governed_authorization},
-        disclosure::WorthQueryApplicationQueryGovernance,
-        one_shot::{
-            self,
-            outcome::{self, material::MaterialCompletion},
-        },
-        read_execution::{self, read_plan::ReadPlan, ReadInterruption},
-        WorthQueryApplicationOneShotDenial as Denial,
-        WorthQueryApplicationOneShotDenialKind as Kind,
-    },
-    source_facts::SourceFactsAllocation,
-    value_decode::ValueDecodeState,
-};
+use {crate::domain_computation::primary_graph::application_query::authorized_read::execute_authorized_read, crate::domain_computation::primary_graph::application_query::authorized_read::refresh_governed_authorization, crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance, crate::domain_computation::primary_graph::application_query::one_shot, crate::domain_computation::primary_graph::application_query::one_shot::outcome, crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion, crate::domain_computation::primary_graph::application_query::read_execution, crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan, crate::domain_computation::primary_graph::application_query::read_execution::ReadInterruption, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as Kind, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation, crate::domain_computation::primary_graph::value_decode::ValueDecodeState};
 use std::sync::Arc;
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
@@ -25,13 +11,13 @@ pub(super) enum SourceDenial {
     Admission(worth_relational::facade::mvcc::CompanionPreflightStop),
     Native(worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial),
     Read(Denial),
-    Work(super::WorthQueryManagedIndexWorkDenial),
+    Work(crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial),
     Source(super::super::WorthQuerySourceExpectationDenial),
 }
 impl From<worth_relational::facade::transactions::RelationalExecutionDenialCause> for SourceDenial {
     fn from(cause: worth_relational::facade::transactions::RelationalExecutionDenialCause) -> Self {
-        Self::Read(one_shot::map_authorized_read_denial(
-            super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
+        Self::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial(
+            crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
                 read_execution::relational_read_denial(cause, "managed-source"),
             ),
             "managed-source",
@@ -48,8 +34,8 @@ impl From<super::super::WorthQuerySourceExpectationDenial> for SourceDenial {
         Self::Source(cause)
     }
 }
-impl From<super::WorthQueryManagedIndexWorkDenial> for SourceDenial {
-    fn from(cause: super::WorthQueryManagedIndexWorkDenial) -> Self {
+impl From<crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial> for SourceDenial {
+    fn from(cause: crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial) -> Self {
         Self::Work(cause)
     }
 }
@@ -74,7 +60,7 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
     }
     one_shot::plan_admission::validate_one_shot_plan(execution, application, &plan)?;
     refresh_governed_authorization(execution, application, &mut plan)
-        .map_err(|cause| one_shot::map_authorized_read_denial(cause, query))?;
+        .map_err(|cause| crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial(cause, query))?;
     let binding = plan
         .query
         .binding_observation()
@@ -109,13 +95,13 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
         })
         .map_err(|cause| match native_denial {
             Some(cause) => SourceDenial::Native(cause),
-            None => SourceDenial::Read(one_shot::map_authorized_read_denial(cause, query)),
+            None => SourceDenial::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial(cause, query)),
         })?;
     let decode = ValueDecodeState::new(application.installed_schema().value_bindings().clone());
     let storage = MaterialCompletion::new(execution, &allocation);
     let failure = |cause| {
-        one_shot::map_authorized_read_denial(
-            super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
+        crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial(
+            crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
                 read_execution::relational_read_denial(cause, query),
             ),
             query,

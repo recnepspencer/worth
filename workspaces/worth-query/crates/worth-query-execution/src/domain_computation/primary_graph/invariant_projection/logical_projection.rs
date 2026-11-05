@@ -1,13 +1,7 @@
 //! Installed projection authority reads the same exact Native logical sources.
 mod component;
 mod source;
-use super::{
-    WorthQueryApplicationInvariantProjectionReader as Reader,
-    WorthQueryInvariantDerivedMemberRelation as Pair, WorthQueryInvariantEntityIdentity as Entity,
-    WorthQueryInvariantGraphMember as Member,
-    WorthQueryInvariantProjectionTraversalDenial as Denial,
-    WorthQueryInvariantProjectionTraversalDenialKind as Kind,
-};
+use {super::WorthQueryApplicationInvariantProjectionReader as Reader, super::WorthQueryInvariantDerivedMemberRelation as Pair, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity as Entity, super::WorthQueryInvariantGraphMember as Member, super::WorthQueryInvariantProjectionTraversalDenial as Denial, super::WorthQueryInvariantProjectionTraversalDenialKind as Kind};
 use crate::domain_computation::primary_graph::{
     component_selection::storage, schema_layout::MemberDomainBinding as Domain,
 };

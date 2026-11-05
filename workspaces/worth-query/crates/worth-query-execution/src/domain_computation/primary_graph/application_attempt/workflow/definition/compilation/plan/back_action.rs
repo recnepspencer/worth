@@ -23,7 +23,7 @@ impl CompiledWorkflowDefinition {
         match (action, actions.next()) {
             (Some(action), None) => Ok(action),
             _ => Err(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::new(
-                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
                 "workflow head has no single declared business Back action")),
         }
     }

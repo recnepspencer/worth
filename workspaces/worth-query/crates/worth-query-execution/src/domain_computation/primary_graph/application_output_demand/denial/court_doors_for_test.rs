@@ -30,7 +30,7 @@ impl WorthQueryOutputDemandDenial {
     pub fn producer_domain_denied_for_test(
         subject: impl Into<std::borrow::Cow<'static, str>>,
         reason: Option<&'static str>,
-        value: crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerDenialValue,
+        value: crate::domain_computation::primary_graph::vocabulary::application_contribution::denial_value::WorthQueryProducerDenialValue,
     ) -> Self {
         Self::producer_domain_denied(subject, reason, value)
     }

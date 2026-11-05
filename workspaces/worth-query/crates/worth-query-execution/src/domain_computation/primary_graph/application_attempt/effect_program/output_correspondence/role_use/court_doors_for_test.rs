@@ -1,15 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
 
-impl OutputRoleUse {
-    #[doc(hidden)]
-    pub fn fixed_for_test<Role>() -> Self
-    where
-        Role: WorthQueryApplicationOutputRole,
-    {
-        Self::fixed::<Role>()
-    }
-}
 
 impl OutputRoleUse {
     #[doc(hidden)]

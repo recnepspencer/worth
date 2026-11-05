@@ -1,7 +1,7 @@
 //! Permission withholding is distinct from a technical authorization failure.
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial as Denial;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as Refusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Kind;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as Refusal;
 /// Only evaluated permission outcomes may withhold audit. Technical causes remain errors.
 pub(super) fn permission_withheld(cause: &Denial) -> bool {
     !cause.causes().is_empty()

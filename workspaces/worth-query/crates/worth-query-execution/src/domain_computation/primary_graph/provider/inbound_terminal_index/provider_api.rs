@@ -6,9 +6,7 @@ use worth_runtime_world::facade::{
 };
 
 use super::{WorthQueryCanonicalInboundCompletion, WorthQueryInboundTerminalIndexDenial};
-use crate::domain_computation::application_aftermath::{
-    ExternalEffectCorrelationIdentity, WorthQueryInboundTerminalOwnerResult,
-};
+use {crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity, crate::domain_computation::application_aftermath::WorthQueryInboundTerminalOwnerResult};
 use crate::domain_computation::primary_graph::application_inbound::inbound_publication::PerformedInstalledTransportCompletion;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 

@@ -237,7 +237,7 @@ where
 }
 pub(super) struct PublishedApplicationGraph<Bridge> {
     runtime: WorthQueryExecutionRuntime,
-    publication: super::WorthQueryPrimaryGraphPublication,
+    publication: crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication,
     relational_branch_identity: worth_relational::facade::branch::RelationalBranchIdentity,
     bridge: Bridge,
     primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
@@ -377,7 +377,7 @@ fn seal_application_graph(
         super::super::managed_bridge::WorthQueryApplicationBridgeInstallation,
     >,
 ) -> Result<
-    PublishedApplicationGraph<super::super::managed_bridge::WorthQueryInstalledApplicationBridge>,
+    PublishedApplicationGraph<crate::domain_computation::primary_graph::vocabulary::managed_bridge::WorthQueryInstalledApplicationBridge>,
     WorthQueryPrimaryGraphInstallationDenial,
 > {
     Ok(PublishedApplicationGraph {

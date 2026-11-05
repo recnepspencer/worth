@@ -4,6 +4,8 @@ use worth_query_declaration::facade::application_resource::ApplicationResourceBi
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationResource, WorthQueryResourceAccessPurpose,
 };
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 impl WorthQueryManagedGraphWorkSession {
     #[allow(clippy::too_many_arguments)]

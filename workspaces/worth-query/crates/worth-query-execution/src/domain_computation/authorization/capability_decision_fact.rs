@@ -1,6 +1,6 @@
 //! Retained capability decision authority and its one-way commit transition.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline;
@@ -106,7 +106,7 @@ impl WorthQueryRetainedCapabilityAuthorization {
 
     pub(in crate::domain_computation) fn belongs_to_session(
         &self,
-        session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     ) -> bool {
         self.principal.session_identity() == session
             && self.decision.session_identity() == session
@@ -190,7 +190,7 @@ impl WorthQueryRetainedCapabilityAuthorization {
 
     pub(super) fn replace_current_session_decision(
         &mut self,
-        session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         capability_authority_identity: &str,
         grant: worth_relational::facade::identity::EntityId,
         sample: WorthQueryRuntimeTimeSample,
@@ -218,12 +218,12 @@ impl WorthQueryRetainedCapabilityAuthorization {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
-    ) -> Result<(), super::WorthQueryOperationAuthorizationDenialKind> {
+    ) -> Result<(), crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind> {
         if !self
             .principal
             .remains_current_in(execution, runtime, snapshot)?
         {
-            return Err(super::WorthQueryOperationAuthorizationDenialKind::Refused(
+            return Err(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::StalePrincipal,
             ));
         }
@@ -234,7 +234,7 @@ impl WorthQueryRetainedCapabilityAuthorization {
                 super::denial::relational_read_denial(cause, "capability currentness").kind()
             })?
         {
-            return Err(super::WorthQueryOperationAuthorizationDenialKind::Refused(
+            return Err(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::StaleAuthorization,
             ));
         }
@@ -246,7 +246,7 @@ impl WorthQueryRetainedCapabilityAuthorization {
                     super::denial::relational_read_denial(cause, "support currentness").kind()
                 })?
         {
-            return Err(super::WorthQueryOperationAuthorizationDenialKind::Refused(
+            return Err(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::StaleAuthorization,
             ));
         }
@@ -255,7 +255,7 @@ impl WorthQueryRetainedCapabilityAuthorization {
 
     pub(super) fn into_provider_commit_authorization(
         self,
-        admission_identity: super::WorthQueryOperationAdmissionIdentity,
+        admission_identity: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
     ) -> super::WorthQueryProviderCommitAuthorization {
         let supporting = self.supporting.map(Into::into);
         let mut decisions = vec![self.decision.clone()];
@@ -292,7 +292,7 @@ pub(in crate::domain_computation) struct WorthQueryCapabilityCommitBasis {
 impl WorthQueryCapabilityCommitBasis {
     pub(super) fn belongs_to_session(
         &self,
-        session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     ) -> bool {
         self.principal.session_identity() == session
             && self.decision.session_identity() == session

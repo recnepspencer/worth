@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::tests::application_attempt::authen
 use crate::domain_computation::primary_graph::tests::application_attempt::idempotency;
 use crate::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 use crate::domain_computation::primary_graph::tests::application_attempt::resolved_account;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
 use crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::AccountLabel;

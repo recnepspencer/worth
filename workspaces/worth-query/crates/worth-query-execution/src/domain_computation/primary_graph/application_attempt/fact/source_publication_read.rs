@@ -1,11 +1,5 @@
 //! Attribution of an actual source-query observation to its original attempt.
-use crate::domain_computation::{
-    authorization::WorthQueryOperationAdmissionIdentity,
-    primary_graph::{
-        application_contribution::OutputSourceAddress,
-        output_lineage::invalidation::ObservedSourcePublication,
-    },
-};
+use {crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity, crate::domain_computation::primary_graph::vocabulary::application_contribution::source_qualification::OutputSourceAddress, crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication};
 use std::{cmp::Ordering, sync::Arc};
 
 #[derive(Clone, Debug)]

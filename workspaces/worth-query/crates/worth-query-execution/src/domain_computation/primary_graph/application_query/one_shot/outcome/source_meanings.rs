@@ -1,17 +1,5 @@
 //! Complete concrete source meanings before the caller assembles typed observations.
-use crate::domain_computation::primary_graph::{
-    application_query::{
-        observed_source::{
-            source_identity::{
-                WorthQueryObservedSourceMeaning, WorthQueryObservedSourceMeaningRegistry,
-            },
-            WorthQueryObservedSourceFootprint,
-        },
-        resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity,
-    },
-    source_facts::SourceFactsAllocation,
-    source_read_equivalence::SourceReadEquivalence,
-};
+use {crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaning, crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry, crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint, crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation, crate::domain_computation::primary_graph::source_read_equivalence::SourceReadEquivalence};
 use std::sync::Arc;
 use worth_execution::{ExecutionArray, ExecutionRequest, ExecutionRequestArrayBuilder};
 use worth_query_admission::facade::authenticated_principal::{
@@ -19,10 +7,7 @@ use worth_query_admission::facade::authenticated_principal::{
 };
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
-use super::{
-    admit_request, denial, source_storage, WorthQueryApplicationOneShotDenial as Denial,
-    WorthQueryApplicationOneShotDenialKind as DenialKind,
-};
+use {super::admit_request, super::denial, super::source_storage, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as DenialKind};
 
 pub(super) struct SourceMeanings<'a, 'request, 'authority> {
     pub(super) execution: &'a ExecutionRequest<'request, 'authority>,
@@ -139,8 +124,8 @@ impl SourceMeanings<'_, '_, '_> {
 }
 
 pub(super) fn denied(cause: Cause, query: &str) -> Denial {
-    super::super::map_authorized_read_denial(
-        super::super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
+    crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial(
+        crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
             super::super::super::read_execution::relational_read_denial(cause, query),
         ),
         query,

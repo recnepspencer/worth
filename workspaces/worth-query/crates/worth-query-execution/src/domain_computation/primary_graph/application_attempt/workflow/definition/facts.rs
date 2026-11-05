@@ -7,7 +7,7 @@ use worth_query_declaration::facade::application_program::{
 use worth_relational::facade::identity::{EntityId, PartitionId, RelationId};
 use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
-use super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION;
 use super::super::schema::WorthQueryWorkflowLayout;
 use {
     crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCreationPartition,

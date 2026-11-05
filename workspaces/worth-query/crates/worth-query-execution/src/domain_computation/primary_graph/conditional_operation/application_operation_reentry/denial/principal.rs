@@ -1,7 +1,7 @@
 //! principal refusal at conditional reentry.
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use super::WorthQueryTemporalReentryDenial;
-use crate::domain_computation::primary_graph::{WorthQueryPrincipalResolutionDenialKind as Kind, WorthQueryPrincipalResolutionDenial as Failure};
+use {crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind as Kind, crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial as Failure};
 use crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure as Terminal;
 impl WorthQueryTemporalReentryDenial {
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn from_principal(

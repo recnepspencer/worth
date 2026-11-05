@@ -1,6 +1,8 @@
 //! Mutation truth and its authorization source have separate owner custody.
 use super::*;
 use crate::basis::WorthQueryProductObservationLease;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 pub(super) struct MutationProductBasis {
     pub(super) lease: Option<WorthQueryApplicationSnapshotLease>,

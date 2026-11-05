@@ -106,7 +106,7 @@ where
         let prepared = match publication.prepare_relational_candidate(candidate, request, false) {
             Ok(prepared) => prepared,
             Err(PublicationDenial::ClockMismatch) => {
-                return Outcome::Denied(evidence, Denial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
+                return Outcome::Denied(evidence, Denial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
             },
 Err(PublicationDenial::Stopped(stop)) => {
                 return Outcome::Denied(evidence, Denial::ExecutionDenied(advancement_denial(stop)))
@@ -135,7 +135,7 @@ Err(PublicationDenial::Stopped(stop)) => {
             Err(PublicationDenial::ClockMismatch) => {
                 self.primary_provider()
                     .clear_inbound_completion_publication_pending(&correlation);
-                Outcome::Denied(evidence, Denial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
+                Outcome::Denied(evidence, Denial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
             }
             Err(PublicationDenial::Stopped(stop)) => {
                 self.primary_provider()

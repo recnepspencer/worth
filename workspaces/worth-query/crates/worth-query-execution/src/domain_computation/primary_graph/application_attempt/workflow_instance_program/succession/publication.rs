@@ -2,7 +2,7 @@
 use super::super::super::{
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
 };
-use super::super::PublishedWorkflowInstanceRef;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
 use super::{
     mismatch, RequiredWorkflowSuccession, WorthQueryApplicationAttemptDenial,
     WorthQueryWorkflowSuccessionAdapter,
@@ -45,7 +45,7 @@ where
     Binding: super::ApplicationMutationBinding<Schema>,
     Role: super::WorthQueryApplicationOutputRole<Schema = Schema, Contract = Binding::Output>,
 {
-    use crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::OutputRoleUse;
+    use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
     let correspondence = receipt.output_correspondence();
     if correspondence.binding_type() != Some(super::TypeId::of::<Binding>()) {
         return Err(mismatch("foreign succession output binding"));

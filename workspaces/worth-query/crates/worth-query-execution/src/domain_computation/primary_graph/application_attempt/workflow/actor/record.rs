@@ -163,10 +163,7 @@ pub(in crate::domain_computation) fn validate_actor_applicability(
 /// Current native actor corruption is distinct from foreign occurrence affinity.
 pub(in crate::domain_computation) fn actor_record_corruption(
 ) -> crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial {
-    use crate::domain_computation::primary_graph::{
-        WorthQueryApplicationAttemptDenial as Denial,
-        WorthQueryApplicationAttemptDenialKind as Kind,
-    };
+    use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
     Denial::new(
         Kind::InvalidAuthoritativeValue,
         "current workflow actor record is malformed",

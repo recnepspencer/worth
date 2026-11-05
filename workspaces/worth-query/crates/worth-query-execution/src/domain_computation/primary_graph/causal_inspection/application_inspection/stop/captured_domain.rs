@@ -1,5 +1,6 @@
 //! Borrow only a captured domain refusal; resource owners retain the other cases.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
 pub(super) fn captured<E>(stop: &CaptureStop<E>) -> Option<&E> {
     match stop {
         CaptureStop::Kernel(worth_execution::ScopeStop::Failure(

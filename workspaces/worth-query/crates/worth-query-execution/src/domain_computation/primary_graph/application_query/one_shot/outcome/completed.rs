@@ -1,5 +1,7 @@
 //! Native query completion before selecting its public result or source closure.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind;
 
 pub(in crate::domain_computation::primary_graph::application_query) struct CompletedOneShotRead<
     Query,
@@ -57,8 +59,8 @@ impl<Query> CompletedOneShotRead<Query, ()> {
         let storage = material::MaterialCompletion::new(execution, &allocation);
         let terminal = self.read.receipt.into_managed_source_terminal(
             context, execution, &allocation, |units| storage.work(units),
-        ).map_err(|cause| super::super::map_authorized_read_denial(
-            super::super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
+        ).map_err(|cause| crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial(
+            crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
                 super::super::super::read_execution::relational_read_denial(cause, "managed-source"),
             ), "managed-source",
         ))?.ok_or_else(|| denial(
@@ -81,7 +83,7 @@ pub(super) fn complete_query(
     session: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
     observed: crate::domain_computation::provider_session::WorthQueryObservedGraphReadWork,
-    release: crate::domain_computation::primary_graph::WorthQueryApplicationBasisReleaseReceipt,
+    release: crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt,
     material: bool,
     query: &str,
 ) -> Result<

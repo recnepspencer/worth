@@ -5,10 +5,7 @@ use super::{
     publication_header::{observe_publication_header, observe_publication_revisions},
     WorkflowDefinitionCompilationPosture,
 };
-use crate::domain_computation::primary_graph::application_attempt::{
-    PublishedWorkflowDefinitionRef, WorthQueryApplicationAdjacencyDirection,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact};
 use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::publication_binding::ColdCompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_relational::facade::identity::{EntityId, KindId};

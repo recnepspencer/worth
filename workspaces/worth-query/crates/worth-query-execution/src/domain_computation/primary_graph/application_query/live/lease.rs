@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod basis_interruption;
 use std::marker::PhantomData;
 use std::rc::Rc;
@@ -82,7 +82,7 @@ pub struct WorthQueryApplicationLiveLease<
         Option<crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof>,
     initial_read_work:
         Option<crate::domain_computation::provider_session::WorthQueryObservedGraphReadWork>,
-    basis_release: Option<super::super::WorthQueryApplicationBasisReleaseReceipt>,
+    basis_release: Option<crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt>,
     read_completion:
         Option<crate::domain_computation::provider_session::WorthQueryGraphReadCompletion>,
     queue: WorthQueryLiveCauseQueue<
@@ -122,7 +122,7 @@ where
 {
     pub fn graph_work_session_identity(
         &self,
-    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
         self.graph_work
             .as_ref()
             .expect("an open live lease retains its graph-work session")
@@ -150,7 +150,7 @@ where
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         let phase_request = match phase.execution_request_for(self.runtime.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
+            Err(_) => return WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
         let execution = &phase_request;
 

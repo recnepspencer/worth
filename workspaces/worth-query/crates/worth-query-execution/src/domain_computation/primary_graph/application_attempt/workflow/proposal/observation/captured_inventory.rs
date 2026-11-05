@@ -6,6 +6,7 @@ use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 
 pub(in crate::domain_computation::primary_graph) fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

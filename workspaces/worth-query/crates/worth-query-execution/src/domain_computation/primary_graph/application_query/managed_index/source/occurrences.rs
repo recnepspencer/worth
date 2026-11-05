@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::{
     },
     source_facts::SourceFactsAllocation,
 };
-use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 use std::{collections::BTreeSet, sync::Arc};
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 mod postings;

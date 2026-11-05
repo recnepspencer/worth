@@ -21,7 +21,7 @@ impl WorthQueryApplicationCommitReceipt {
         &mut self,
     ) -> &mut Option<
         std::sync::Arc<
-            crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+            crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity,
         >,
     > {
         &mut self.exact_output_settlement
@@ -41,7 +41,7 @@ impl WorthQueryApplicationCommitReceipt {
         &self,
     ) -> Option<
         &std::sync::Arc<
-            crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+            crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity,
         >,
     > {
         Self::exact_output_settlement(self)
@@ -77,7 +77,7 @@ impl WorthQueryApplicationCommitReceipt {
     #[doc(hidden)]
     pub fn runtime_authority_for_test(
         &self,
-    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
         Self::runtime_authority(self)
     }
 }

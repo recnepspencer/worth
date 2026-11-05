@@ -59,5 +59,5 @@ pub use workflow_outcome::{
 };
 
 pub(super) use direct_lane::readmit_direct;
-pub(in crate::domain_computation) use direct_lane::WorthQueryDirectReadmissionTransitionPermit;
+
 pub(super) use workflow_progression::readmit_workflow;

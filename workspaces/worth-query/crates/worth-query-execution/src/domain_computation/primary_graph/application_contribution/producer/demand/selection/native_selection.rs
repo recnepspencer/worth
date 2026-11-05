@@ -2,6 +2,9 @@
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::selection::recovered_candidates::RecoveredCandidatesParentOps;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost;
+use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerApplicability;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture;
 
 pub(super) trait NativeSelectionParentOps<Schema: ApplicationSchema + 'static>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> {
 fn select_output_producer_with_remaining_core<Family>(
@@ -108,7 +111,7 @@ fn select_output_producer_with_remaining_core<Family>(
             .output_production()
             .producers()
             .family_output_bindings::<Family>();
-        let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
+        let scope = crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
         let mut lineage = self
             .provider_graph()
             .output_lineage

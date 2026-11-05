@@ -1,6 +1,7 @@
 //! Public operation reads retain the exact issued selection before releasing values.
 use super::super::decision_reads::structural_walks::WalkRecordDenial;
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Schema>>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {

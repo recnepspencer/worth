@@ -6,11 +6,11 @@ mod projection;
 use im::OrdSet;
 
 use super::mark_state::EqualOutputLink;
-use super::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::mark_state::MarkState;
-use super::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use crate::domain_computation::primary_graph::output_lineage::input_cutoff::StableEqualityConsequence;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 /// Register a sealed stable publication. Unsupported physical postings retain
 /// full verification and genuine output custody, without clean equality links.

@@ -7,13 +7,9 @@ use worth_query_admission::facade::resource_admission::{
 use worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority;
 
 use crate::domain_computation::artifact_owner::WorthQueryInstalledWorkflowArtifactContracts;
-use crate::domain_computation::execution_runtime::{
-    WorthQueryExecutionRuntime, WorthQueryRuntimeAuthorityIdentity,
-};
-use crate::domain_computation::operation_binding::{
-    WorthQueryExecutionCommitPosture, WorthQueryInstalledDomainExecutionAuthority,
-};
-use crate::domain_computation::provider_session::WorthQueryGraphProviderCallKind;
+use {crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime, crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity};
+use {crate::domain_computation::operation_binding::WorthQueryExecutionCommitPosture, crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority};
+use crate::domain_computation::vocabulary::provider_session::call_kind::WorthQueryGraphProviderCallKind;
 use crate::domain_computation::WorthQueryInstalledOperationExecutionSupport;
 
 mod application_binding;
@@ -36,7 +32,7 @@ pub struct WorthQueryExecutionBoundOperationAuthority {
     canonical_query_digest: Arc<str>,
     operation_resource_contract_identity: Arc<str>,
     provider_plan_declarations:
-        Arc<crate::domain_computation::provider_session::WorthQueryProviderPlanDeclarations>,
+        Arc<crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations>,
     commit_posture: WorthQueryExecutionCommitPosture,
     direct_resource_topology: WorthQueryExecutionResourceTopology,
     pub workflow_stage_resources:
@@ -47,7 +43,7 @@ pub struct WorthQueryExecutionBoundOperationAuthority {
     installed_domain: Arc<WorthQueryInstalledDomainExecutionAuthority>,
     graph_work_affinity: Option<WorthQueryApplicationGraphWorkAffinity>,
     application_operation_attempt:
-        Option<crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity>,
+        Option<crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity>,
     application_operation_slot: Option<Arc<str>>,
     application_schema_binding:
         Option<worth_query_installation::facade::ApplicationSchemaBindingIdentity>,
@@ -59,9 +55,9 @@ pub struct WorthQueryExecutionBoundOperationAuthority {
 #[derive(Clone, Copy)]
 pub struct WorthQueryApplicationGraphWorkAffinity {
     pub(crate) session:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     pub(crate) managed_run:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity,
+        crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity,
 }
 
 impl std::fmt::Debug for WorthQueryExecutionBoundOperationAuthority {
@@ -95,7 +91,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
 
     pub(crate) const fn application_operation_attempt(
         &self,
-    ) -> Option<crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity>
+    ) -> Option<crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity>
     {
         self.application_operation_attempt
     }

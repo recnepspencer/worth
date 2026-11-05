@@ -3,8 +3,6 @@
 pub mod aftermath_causality;
 #[path = "application_attempt_state/mod.rs"]
 pub mod application_attempt_state;
-#[path = "application_attempt_work/mod.rs"]
-pub mod application_attempt_work;
 #[path = "application_decision_fact/mod.rs"]
 pub mod application_decision_fact;
 #[path = "application_touch_admission/mod.rs"]

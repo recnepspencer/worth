@@ -1,6 +1,7 @@
 mod native_preparation;
 
 use super::WorthQueryProviderSessionProtocolCounters;
+use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProviderSessionRecoveryPosture {
@@ -18,69 +19,6 @@ pub enum WorthQueryProviderSessionProtocolStage {
     Abort,
 }
 
-/// A provider-session refusal that preserves its protocol or execution cause.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryProviderSessionDenialKind {
-    /// Retained content disagreed with its certified identity.
-    ContentInconsistency,
-    /// Exact Native content refusal, distinct from request/resource stops.
-    Content(worth_relational::facade::content::RelationalContentRejection),
-    /// The selected root refused the requested projection contract.
-    ProjectionContract {
-        denial: worth_relational::facade::runtime::RelationalProjectionContractDenial,
-        partition_identity: Option<u64>,
-    },
-    /// Retained history could not supply the requested visibility basis.
-    HistoricalVisibility {
-        denial: worth_relational::facade::runtime::HistoricalVisibilityDenial,
-        partition_identity: Option<u64>,
-    },
-    StorageUnavailable(worth_relational::facade::storage::RelationalStorageUnavailable),
-    ForeignOperationAttempt,
-    ForeignExecutionBasis,
-    ForeignGraphAuthority,
-    UndeclaredOperationScope,
-    ResourceEnvelopeMismatch,
-    /// An execution refusal retains Query's shared resource vocabulary.
-    ExecutionResource {
-        denial:
-            crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-        partition_identity: Option<u64>,
-        /// The refusing ancestor, only for a policy memory reservation.
-        policy_ancestor: Option<u32>,
-    },
-    ExecutionNestedPatternStopped {
-        partition_identity: Option<u64>,
-    },
-    ExecutionWorkerPanicked {
-        partition_identity: Option<u64>,
-    },
-    ExecutionIdentitiesNotCanonical {
-        partition_identity: Option<u64>,
-    },
-    /// A custom invariant declined the checked preparation contract.
-    ExecutionUncheckedCustomKernel {
-        partition_identity: Option<u64>,
-    },
-    ActiveSnapshotCapacityExhausted {
-        maximum_active_snapshots: usize,
-    },
-    RetentionCapacityExhausted,
-    RetentionIdentityExhausted,
-    SnapshotIdentityExhausted,
-    CandidateIdentityExhausted,
-    IndexMaintenanceBudgetExceeded,
-    IndexGenerationIdentityExhausted,
-    ProviderIdentityMismatch,
-    ProviderGenerationMismatch,
-    SessionProtocolUnsupported,
-    AllocationDenied,
-    ProviderRejected,
-    ProviderPanicked,
-    TokenNotMintedForPlan,
-    EmptyPhysicalSessionIdentity,
-    SessionIdentityExhausted,
-}
 
 /// A provider session's exact failure, protocol stage and recovery posture.
 /// Native preparation and allocation causes remain available for inspection;
@@ -88,9 +26,9 @@ pub enum WorthQueryProviderSessionDenialKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderSessionFailure {
     preimage:
-        Option<crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial>,
+        Option<crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial>,
     managed_index:
-        Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
+        Option<crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial>,
     kind: WorthQueryProviderSessionDenialKind,
     stage: WorthQueryProviderSessionProtocolStage,
     recovery_posture: WorthQueryProviderSessionRecoveryPosture,
@@ -99,15 +37,15 @@ pub struct WorthQueryProviderSessionFailure {
     allocation: Option<worth_execution::ExecutionAllocationDenial>,
     native_preparation: Option<std::sync::Arc<native_preparation::NativePreparationFailure>>,
     source_query_authorization: Option<
-        Box<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>,
+        Box<crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind>,
     >,
     output_verification_capacity:
-        Option<crate::domain_computation::primary_graph::VerificationCapacityStop>,
+        Option<crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop>,
     checked_read: Option<
         Box<
             Result<
                 WorthQueryProviderSessionDenialKind,
-                super::WorthQueryProviderSessionControlStopKind,
+                crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
             >,
         >,
     >,
@@ -116,14 +54,14 @@ pub struct WorthQueryProviderSessionFailure {
 impl WorthQueryProviderSessionFailure {
     pub(in crate::domain_computation) fn with_preimage_retention_denial(
         mut self,
-        cause: crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial,
+        cause: crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial,
     ) -> Self {
         self.preimage = Some(cause);
         self
     }
     pub fn preimage_retention_denial(
         &self,
-    ) -> Option<crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial>
+    ) -> Option<crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial>
     {
         self.preimage
     }
@@ -151,7 +89,7 @@ impl WorthQueryProviderSessionFailure {
 
     pub(in crate::domain_computation) fn with_output_verification_capacity_stop(
         mut self,
-        stop: crate::domain_computation::primary_graph::VerificationCapacityStop,
+        stop: crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop,
     ) -> Self {
         self.output_verification_capacity = Some(stop);
         self
@@ -162,14 +100,14 @@ impl WorthQueryProviderSessionFailure {
     /// data does not change the failure's category or recovery posture.
     pub const fn output_verification_capacity_stop(
         &self,
-    ) -> Option<crate::domain_computation::primary_graph::VerificationCapacityStop> {
+    ) -> Option<crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop> {
         self.output_verification_capacity
     }
 
     pub(in crate::domain_computation) fn checked_read_stopped(
         stop: Result<
             WorthQueryProviderSessionDenialKind,
-            super::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
         stage: WorthQueryProviderSessionProtocolStage,
         detail: impl Into<String>,
@@ -190,7 +128,7 @@ impl WorthQueryProviderSessionFailure {
     ) -> Option<
         Result<
             WorthQueryProviderSessionDenialKind,
-            super::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     > {
         self.checked_read.as_deref().copied()
@@ -199,14 +137,14 @@ impl WorthQueryProviderSessionFailure {
     /// Exact source-query permission refusal retained through precommit custody.
     pub fn source_query_authorization_stop(
         &self,
-    ) -> Option<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>
+    ) -> Option<crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind>
     {
         self.source_query_authorization.as_deref().copied()
     }
 
     pub(in crate::domain_computation) fn with_source_query_authorization_stop(
         mut self,
-        stop: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+        stop: crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
     ) -> Self {
         self.source_query_authorization = Some(Box::new(stop));
         self
@@ -302,18 +240,12 @@ mod court_doors_for_test;
 pub(in crate::domain_computation) fn advancement_denial_cause(
     denial: crate::domain_computation::request_execution::advancement::WorthQueryAdvancementDenial,
 ) -> Result<
-    crate::domain_computation::WorthQueryProviderSessionDenialKind,
-    crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
 > {
     use crate::domain_computation::request_execution::advancement::WorthQueryAdvancementDenial as Denial;
-    use crate::domain_computation::{
-        WorthQueryProviderSessionControlStopKind as Control,
-        WorthQueryProviderSessionDenialKind as Kind,
-    };
-    use {
-        crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
-        crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
-    };
+    use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind};
+    use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource};
     match denial {
         Denial::Resource(denial) => Ok(Kind::ExecutionResource {
             denial,

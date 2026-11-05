@@ -40,8 +40,8 @@ impl<Schema: ApplicationSchema> crate::basis::WorthQuerySourceProgramResolver
     > {
         match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution, self, source.relational_basis()) {
             Ok(selected) => Ok(Some(*selected.revision())),
-            Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) => Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop)),
-            Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered) => Ok(None),
+            Err(crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) => Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop)),
+            Err(crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable | crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable | crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable | crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered) => Ok(None),
         }
     }
 }

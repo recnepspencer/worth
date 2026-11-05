@@ -1,8 +1,5 @@
 //! Fresh authority for a completed native chain, not a birth or revived instance.
-use super::super::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationObservedFact,
-};
+use {super::super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::super::WorthQueryApplicationObservedFact};
 use std::sync::{Arc, Mutex};
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, WorthQueryApplicationOutputRole},

@@ -1,8 +1,6 @@
 //! Admission on the exact stored scalar before any carrier clone or decoding.
-use super::{DecisionReader, HandlerInterruption};
-use crate::domain_computation::primary_graph::{
-    HandlerExecutionDenial, WorthQueryInvariantEntityIdentity,
-};
+use {super::DecisionReader, crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption};
+use {crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
 use worth_foundational::facade::AspectValue as ApplicationValue;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_installation::facade::{

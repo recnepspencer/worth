@@ -1,14 +1,14 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RecordedSourceIdentity {
-    Runtime(super::super::application_query::WorthQueryRuntimeSourceIdentity),
-    Checkpoint(super::super::application_query::WorthQueryCheckpointSourceIdentity),
+    Runtime(crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity),
+    Checkpoint(crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity),
 }
 
 impl RecordedSourceIdentity {
     pub(super) fn matches_current(
         self,
-        runtime: super::super::application_query::WorthQueryRuntimeSourceIdentity,
-        checkpoint: super::super::application_query::WorthQueryCheckpointSourceIdentity,
+        runtime: crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity,
+        checkpoint: crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity,
     ) -> bool {
         match self {
             Self::Runtime(identity) => identity == runtime,
@@ -20,9 +20,7 @@ impl RecordedSourceIdentity {
 #[cfg(test)]
 mod tests {
     use super::RecordedSourceIdentity;
-    use crate::domain_computation::primary_graph::application_query::{
-        WorthQueryCheckpointSourceIdentity, WorthQueryRuntimeSourceIdentity,
-    };
+    use {crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity, crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity};
 
     #[test]
     fn matching_never_crosses_runtime_and_checkpoint_lanes() {

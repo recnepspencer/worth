@@ -10,7 +10,7 @@ use worth_query_installation::facade::{
 
 use super::authorization_basis::ErasedAuthorizationBasis;
 use super::original_input::ErasedOriginalInput;
-use super::WorthQueryOperationAdmissionIdentity;
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
 use crate::domain_computation::authorization::{
     WorthQueryOperationScopeBinding, WorthQueryRetainedAuthorizationDecisionFacts,
 };
@@ -22,7 +22,7 @@ use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditio
 /// phases that mint a brand construct it.
 pub(in crate::domain_computation) struct WorthQueryAdmittedOperation {
     pub(super) runtime_authority:
-        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     pub(super) binding_identity: ApplicationSchemaBindingIdentity,
     pub(super) operation: String,
     pub(super) operation_authority_identity: Arc<str>,
@@ -44,14 +44,14 @@ pub(in crate::domain_computation) struct WorthQueryAdmittedOperation {
     pub(super) governed_input_identity: Option<[u8; 32]>,
     pub(super) original_input: Option<ErasedOriginalInput>,
     pub(super) original_scope:
-        Option<Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>>,
-    pub(super) original_inspection_disclosure: Option<Arc<crate::domain_computation::primary_graph::source_disclosure::OriginalSourceInspectionDisclosure>>,
+        Option<Arc<crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector>>,
+    pub(super) original_inspection_disclosure: Option<Arc<crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure>>,
     pub(super) authorization_basis: ErasedAuthorizationBasis,
     pub(super) graph_work:
         crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     pub(super) source_partition_identity: Option<[u8; 32]>,
     pub(super) source_expectation_kind:
-        Option<crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind>,
+        Option<crate::domain_computation::vocabulary::primary_graph::observed_source::WorthQuerySourceExpectationKind>,
     pub(super) source_facts:
         Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
     pub(super) query_context: Option<

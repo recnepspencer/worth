@@ -1,7 +1,7 @@
 //! One prior-selection rule: local record, then exact captured fork horizons.
-use super::super::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use super::super::RecordedOutput;
-use super::super::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::super::WorthQueryApplicationOutputLineage;
 use std::sync::Arc;
 use std::sync::OnceLock;

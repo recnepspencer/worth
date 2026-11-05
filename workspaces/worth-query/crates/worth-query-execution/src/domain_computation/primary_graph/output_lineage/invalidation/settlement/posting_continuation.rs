@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 #[derive(Debug)]
 pub struct PostingRebaseBasis {

@@ -15,7 +15,7 @@ use super::installed_transport::{
     InstalledTransportCompletion, InstalledTransportPublicationOutcome,
     PerformedInstalledTransportCompletion,
 };
-use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup;
 use crate::domain_computation::primary_graph::{
     OutstandingDispatchInFlightLease, WorthQueryPrimaryGraphApplicationRuntime,
@@ -44,11 +44,11 @@ pub enum InstalledTransportPendingReason {
     },
     ExecutionDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        kind: crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
     },
     ExecutionControlStopped {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        kind: crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     },
     PublicationAtCapacity,
     ProductRecoveryRequired,

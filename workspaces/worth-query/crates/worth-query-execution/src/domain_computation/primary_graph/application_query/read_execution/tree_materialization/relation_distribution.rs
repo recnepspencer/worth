@@ -2,10 +2,7 @@ use worth_query_installation::facade::{
     WorthQueryInstalledGraphReadContract, WorthQueryInstalledGraphRelation,
 };
 
-use super::{
-    allocate_result_vector, order_collection, projection_denial, ResultTreeWork,
-    WorthQueryApplicationProjectionNode, WorthQueryApplicationReadExecutionDenial,
-};
+use {super::allocate_result_vector, super::order_collection, super::projection_denial, super::ResultTreeWork, super::WorthQueryApplicationProjectionNode, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial};
 use crate::domain_computation::primary_graph::application_query::projection::WorthQueryApplicationProjectedRelation;
 
 #[allow(clippy::too_many_arguments)]

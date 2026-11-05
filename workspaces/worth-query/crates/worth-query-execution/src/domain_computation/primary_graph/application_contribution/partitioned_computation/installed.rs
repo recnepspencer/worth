@@ -24,11 +24,11 @@ use super::{
     InputValue, WorthQueryComputationPartitionMembers, WorthQueryComputationReader,
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
 };
-use crate::domain_computation::primary_graph::application_attempt::ComputationRead;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 use crate::domain_computation::primary_graph::{
     DecisionReader, WorthQueryApplicationOperationInvariantProjectionReader,
 };
-use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
+use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 use crate::domain_computation::request_execution::QueryRequestExecution;
 
 mod certification;

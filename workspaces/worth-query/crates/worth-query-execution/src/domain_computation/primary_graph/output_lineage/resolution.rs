@@ -5,6 +5,8 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 mod succession;
 
 impl WorthQueryApplicationOutputLineage {

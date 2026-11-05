@@ -1,5 +1,6 @@
 use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
 
 pub enum AcceptedCheckpointFactSource {
     Committed(crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt),
@@ -56,7 +57,7 @@ impl WorthQueryOutputDemandRegistry {
                         let partition = stable.source_partition_identity()?;
                         let exact_source = stable.source_identity()
                             == Some(crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Runtime(
-                                crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity::new(
+                                crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity::new(
                                     key.source.runtime_idempotency_identity(),
                                 ),
                             ));

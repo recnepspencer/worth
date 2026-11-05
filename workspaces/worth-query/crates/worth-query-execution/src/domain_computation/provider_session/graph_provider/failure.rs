@@ -50,19 +50,4 @@ impl WorthQueryGraphReceiptAdmissionDenial {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryGraphProviderFailure {
-    detail: String,
-}
 
-impl WorthQueryGraphProviderFailure {
-    pub fn new(detail: impl Into<String>) -> Self {
-        Self {
-            detail: detail.into(),
-        }
-    }
-
-    pub fn detail(&self) -> &str {
-        &self.detail
-    }
-}

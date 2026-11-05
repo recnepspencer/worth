@@ -1,6 +1,6 @@
 //! Trusted-time binding for the exact selected elevation.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::{
     RelationalAuthorizationFieldComparison, RelationalAuthorizationPathPlan,
     RelationalAuthorizationPredicate,
@@ -9,10 +9,7 @@ use worth_relational::facade::authorization::{
 use super::super::capability_registry::{
     WorthQueryCapabilityPathTemplate, WorthQueryInstalledCapabilityPlan,
 };
-use super::super::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryRuntimeTimeSample,
-};
+use {super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::super::WorthQueryRuntimeTimeSample};
 
 pub(super) fn prepare_temporal_path(
     installed: &WorthQueryInstalledCapabilityPlan,

@@ -1,10 +1,7 @@
 use worth_query_installation::facade::WorthQueryInstalledBoundedStepContract;
 
-use super::{
-    interruption_classification::producer_terminal_kind, WorthQueryManagedRunTerminalKind,
-    WorthQueryManagedSafePointObservation,
-};
-use crate::domain_computation::WorthQueryGraphProviderCallKind;
+use {super::interruption_classification::producer_terminal_kind, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind, crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation};
+use crate::domain_computation::vocabulary::provider_session::call_kind::WorthQueryGraphProviderCallKind;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(super) struct WorthQueryProviderStepAdmissionCounters {

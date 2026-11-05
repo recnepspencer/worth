@@ -15,7 +15,7 @@ use worth_relational::facade::{
 use super::super::super::projection::{
     WorthQueryApplicationProjectedRelation, WorthQueryApplicationProjectionNode,
 };
-use super::super::{denial::WorthQueryApplicationHistoryDenial as Denial, request_stage};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial, super::super::request_stage};
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
 pub(super) struct CaptureWalk<'source, 'request, 'authority> {

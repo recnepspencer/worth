@@ -17,11 +17,7 @@ use worth_query_installation::facade::{
 };
 
 use super::super::invariant_projection::WorthQueryPriorOutputRead;
-use super::super::{
-    HandlerExecutionDenial, WorthQueryCurrentOutputSelection, WorthQueryInvariantEntityIdentity,
-    WorthQueryInvariantMutationTarget, WorthQueryInvariantProjectionTraversalDenial,
-    WorthQueryInvariantRelation, WorthQueryPriorOutputFamilyMember, WorthQueryProducerOutputFamily,
-};
+use {super::super::HandlerExecutionDenial, super::super::WorthQueryCurrentOutputSelection, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget, super::super::WorthQueryInvariantProjectionTraversalDenial, super::super::WorthQueryInvariantRelation, super::super::WorthQueryPriorOutputFamilyMember, super::super::WorthQueryProducerOutputFamily};
 use super::invariant::DecisionReader;
 
 mod indexed_selection;

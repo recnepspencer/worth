@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::application_checkpoint::tests::che
 
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture as Posture;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture as Posture;
 
 pub fn source_entity() -> Fact {
     Fact::SourceEntity {
@@ -111,7 +111,7 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
 
 #[test]
 fn current_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
 
     let mut stable = accepted_without_roles(b"producer", 0);
     let posture_at = 8 + b"producer".len();

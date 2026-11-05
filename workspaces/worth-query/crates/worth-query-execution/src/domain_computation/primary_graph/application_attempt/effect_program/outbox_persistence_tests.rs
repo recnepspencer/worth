@@ -22,12 +22,8 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::transactions::{CreateIntent, EntitySpec, MutationIntent};
 
-use crate::domain_computation::application_aftermath::{
-    dispatch_outbox_create_intent, WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord,
-};
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationCommitOutcomeIdentity, WorthQueryApplicationIdempotencyBinding,
-};
+use {crate::domain_computation::application_aftermath::dispatch_outbox_create_intent, crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout, crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding};
 use crate::domain_computation::primary_graph::provider::dispatch_outbox::{
     derive_dispatch_outbox_record, WorthQueryDispatchOutboxBasis,
 };

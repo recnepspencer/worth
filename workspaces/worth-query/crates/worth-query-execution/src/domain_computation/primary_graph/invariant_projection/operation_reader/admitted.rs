@@ -2,6 +2,7 @@
 use super::*;
 mod root;
 pub(super) use root::AdmittedReadRoot;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 /// The optional real source-query loan an admitted projection may read through.
 pub(super) struct SourceAccess<'access, Schema> {
@@ -12,7 +13,7 @@ pub(super) struct SourceAccess<'access, Schema> {
         >,
     >,
     pub(super) source_context_use: Option<
-        &'access std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>,
+        &'access std::cell::Cell<crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse>,
     >,
 }
 

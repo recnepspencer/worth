@@ -1,9 +1,5 @@
 //! Complete component inspection under installation-owned projection authority.
-use super::{
-    WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
-    WorthQueryInvariantProjectionTraversalDenial as Denial,
-    WorthQueryInvariantProjectionTraversalDenialKind as Kind,
-};
+use {super::WorthQueryApplicationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::WorthQueryInvariantProjectionTraversalDenial as Denial, super::WorthQueryInvariantProjectionTraversalDenialKind as Kind};
 use crate::domain_computation::primary_graph::{
     aggregate_observation::AggregateSelection, schema_layout::ComponentSetLayout,
 };

@@ -24,8 +24,8 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::FactMovement;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::source_currentness::WorthQuerySourceCurrentnessFailure;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_dependencies;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::OutputDependencySelection;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
@@ -160,8 +160,8 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
             reason,
             ..
         } if reason.reason_for_test() == &RebaseVerificationReason::NativeFactRevisionUnavailable
-            && worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::from(reason.clone())
-                == worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::NativeFactRevisionUnavailable(0)
+            && worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason::from(reason.clone())
+                == worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason::NativeFactRevisionUnavailable(0)
     ));
 }
 

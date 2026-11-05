@@ -80,7 +80,7 @@ impl DemandRegistryState {
 impl BoundOutputSource {
     #[doc(hidden)]
     pub fn new_for_test(
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         identity: SourceEpoch,
     ) -> Self {
         Self { scope, identity }

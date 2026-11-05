@@ -15,7 +15,7 @@ impl WorthQueryArtifactProductionAuthorityParts {
             worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority,
         >,
         domain_authority: Arc<
-            crate::domain_computation::WorthQueryInstalledDomainExecutionAuthority,
+            crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority,
         >,
         operation_identity: String,
         binding_identity: String,

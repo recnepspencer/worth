@@ -2,6 +2,8 @@
 use super::*;
 use std::cmp::Reverse;
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 
 type Publication<'a> = ((Reverse<usize>, u64), &'a RecordedOutput);
 

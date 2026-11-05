@@ -10,7 +10,7 @@ use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
 use super::super::WorthQueryAftermathDerivationFailure;
 use super::identity::ExternalEffectPostureIdentity;
-use super::ExternalEffectCorrelationIdentity;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.external-effect-causal-event");
@@ -21,7 +21,7 @@ const BUDGET: CanonicalDigestWorkBudget = match CanonicalDigestWorkBudget::new(1
 };
 
 pub(super) fn provider_commit_identity(
-    runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+    runtime: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     observation: &crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
 ) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
     let commit = observation.commit_reference();

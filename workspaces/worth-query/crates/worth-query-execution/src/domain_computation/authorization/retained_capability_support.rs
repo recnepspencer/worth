@@ -98,7 +98,7 @@ impl WorthQueryRetainedCapabilitySupport {
 
     pub(super) fn replace_current_session(
         &mut self,
-        session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         sample: WorthQueryRuntimeTimeSample,
         mut decision: WorthQueryAuthorizationDecisionFact,
     ) -> Result<(), ()> {

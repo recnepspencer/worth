@@ -9,13 +9,8 @@ use super::WorthQueryPrimaryGraphIntegrationHandle;
 mod selected_field;
 pub(crate) use selected_field::ensure_selected_field_indexes_admitted;
 pub(crate) use selected_field::SelectedFieldIndexAdmissionStop;
+use crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial;
 
-#[derive(Debug)]
-pub enum WorthQueryPrimaryIndexCurrencyDenial {
-    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
-    Basis(super::exact_basis_access::WorthQueryExactBasisSnapshotDenial),
-    IndexUnavailable(&'static str),
-}
 
 /// Probe the one selected published generation through the native index
 /// authority. The primary integration handle's installed index inventory is
@@ -126,8 +121,8 @@ fn require_complete_build(
 
 fn index_basis_denial(
     denial: worth_relational::facade::branch::RelationalBranchBasisDenial,
-) -> super::exact_basis_access::WorthQueryExactBasisSnapshotDenial {
-    use super::exact_basis_access::WorthQueryExactBasisSnapshotDenial as QueryDenial;
+) -> crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial {
+    use crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial as QueryDenial;
     use worth_relational::facade::branch::RelationalBranchBasisDenial as Denial;
     match denial {
         Denial::RetentionCapacityExhausted => QueryDenial::RetentionCapacityExhausted,

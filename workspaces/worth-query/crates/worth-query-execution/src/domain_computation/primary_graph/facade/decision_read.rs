@@ -2,31 +2,7 @@
 pub use super::super::aggregate_identity::{
     WorthQueryAggregateIdentity, WorthQueryAggregateLineage, WorthQueryAggregateLineageEvent,
 };
-pub use super::super::invariant_projection::{
-    VerificationCapacityStop, WorthQueryApplicationInvariantProjectionAuthority,
-    WorthQueryApplicationInvariantProjectionReader,
-    WorthQueryApplicationInvariantProjectionSnapshot,
-    WorthQueryApplicationOperationInvariantProjectionReader,
-    WorthQueryApplicationOperationInvariantProjectionSnapshot,
-    WorthQueryCompletedInvariantProjection, WorthQueryCompletedOperationInvariantProjection,
-    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
-    WorthQueryCurrentOutputSelection, WorthQueryInspectedOperationInvariantProjection,
-    WorthQueryInvariantAggregate, WorthQueryInvariantAggregateDenial,
-    WorthQueryInvariantAggregateDenialKind, WorthQueryInvariantDecisionPlanDenial,
-    WorthQueryInvariantDecisionPlanDenialKind, WorthQueryInvariantDerivedMemberRelation,
-    WorthQueryInvariantDerivedRelation, WorthQueryInvariantDerivedWalk,
-    WorthQueryInvariantDerivedWalkStep, WorthQueryInvariantEntityIdentity,
-    WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
-    WorthQueryInvariantMutationTarget, WorthQueryInvariantProjectionComponent,
-    WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionDenialKind,
-    WorthQueryInvariantProjectionOrbit, WorthQueryInvariantProjectionTraversalDenial,
-    WorthQueryInvariantProjectionTraversalDenialKind, WorthQueryInvariantProjectionWalk,
-    WorthQueryInvariantProjectionWalkIter, WorthQueryInvariantProjectionWalkStep,
-    WorthQueryInvariantProjectionWork, WorthQueryInvariantRelation,
-    WorthQueryOperationProjectionDenial, WorthQueryOperationProjectionDenialKind,
-    WorthQueryPreparedEntitySelection, WorthQueryPriorOutputFamilyMember,
-    WorthQueryRetainedSnapshotRead, WorthQueryValueDecodeDenial,
-};
+pub use {crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop, super::super::invariant_projection::WorthQueryApplicationInvariantProjectionAuthority, super::super::invariant_projection::WorthQueryApplicationInvariantProjectionReader, super::super::invariant_projection::WorthQueryApplicationInvariantProjectionSnapshot, super::super::invariant_projection::WorthQueryApplicationOperationInvariantProjectionReader, super::super::invariant_projection::WorthQueryApplicationOperationInvariantProjectionSnapshot, super::super::invariant_projection::WorthQueryCompletedInvariantProjection, super::super::invariant_projection::WorthQueryCompletedOperationInvariantProjection, super::super::invariant_projection::WorthQueryCurrentOutputDenial, super::super::invariant_projection::WorthQueryCurrentOutputDenialKind, super::super::invariant_projection::WorthQueryCurrentOutputSelection, super::super::invariant_projection::WorthQueryInspectedOperationInvariantProjection, super::super::invariant_projection::WorthQueryInvariantAggregate, super::super::invariant_projection::WorthQueryInvariantAggregateDenial, super::super::invariant_projection::WorthQueryInvariantAggregateDenialKind, super::super::invariant_projection::WorthQueryInvariantDecisionPlanDenial, super::super::invariant_projection::WorthQueryInvariantDecisionPlanDenialKind, super::super::invariant_projection::WorthQueryInvariantDerivedMemberRelation, super::super::invariant_projection::WorthQueryInvariantDerivedRelation, super::super::invariant_projection::WorthQueryInvariantDerivedWalk, super::super::invariant_projection::WorthQueryInvariantDerivedWalkStep, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::super::invariant_projection::WorthQueryInvariantGraphComponent, super::super::invariant_projection::WorthQueryInvariantGraphMember, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget, super::super::invariant_projection::WorthQueryInvariantProjectionComponent, super::super::invariant_projection::WorthQueryInvariantProjectionDenial, super::super::invariant_projection::WorthQueryInvariantProjectionDenialKind, super::super::invariant_projection::WorthQueryInvariantProjectionOrbit, super::super::invariant_projection::WorthQueryInvariantProjectionTraversalDenial, super::super::invariant_projection::WorthQueryInvariantProjectionTraversalDenialKind, super::super::invariant_projection::WorthQueryInvariantProjectionWalk, super::super::invariant_projection::WorthQueryInvariantProjectionWalkIter, super::super::invariant_projection::WorthQueryInvariantProjectionWalkStep, super::super::invariant_projection::WorthQueryInvariantProjectionWork, super::super::invariant_projection::WorthQueryInvariantRelation, super::super::invariant_projection::WorthQueryOperationProjectionDenial, super::super::invariant_projection::WorthQueryOperationProjectionDenialKind, super::super::invariant_projection::WorthQueryPreparedEntitySelection, super::super::invariant_projection::WorthQueryPriorOutputFamilyMember, super::super::invariant_projection::WorthQueryRetainedSnapshotRead, crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial};
 pub use super::super::invariant_projection::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
     WorthQueryOutputAvailabilityState,

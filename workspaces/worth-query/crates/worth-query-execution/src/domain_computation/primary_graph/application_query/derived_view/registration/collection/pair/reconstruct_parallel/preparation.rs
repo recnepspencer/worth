@@ -2,21 +2,7 @@
 
 use super::super::Denial;
 use crate::domain_computation::primary_graph::application_query::DispatchWitness;
-use crate::domain_computation::primary_graph::application_query::{
-    authorized_read::{
-        execute_authorized_read, refresh_governed_authorization,
-        WorthQueryAuthorizedApplicationReadDenial,
-    },
-    one_shot::{
-        map_authorized_read_denial, pair_plans::WorthQueryDerivedPairReadPlans,
-        plan_admission::validate_one_shot_plan,
-    },
-    read_execution::{
-        prepared_pair::{batch::admit_batch_read, PreparedPair, PreparedRead},
-        read_plan::ReadPlan,
-    },
-    WorthQueryApplicationAuthorizationWorkEvidence,
-};
+use {crate::domain_computation::primary_graph::application_query::authorized_read::execute_authorized_read, crate::domain_computation::primary_graph::application_query::authorized_read::refresh_governed_authorization, crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial, crate::domain_computation::primary_graph::application_query::one_shot::pair_plans::WorthQueryDerivedPairReadPlans, crate::domain_computation::primary_graph::application_query::one_shot::plan_admission::validate_one_shot_plan, crate::domain_computation::primary_graph::application_query::read_execution::prepared_pair::batch::admit_batch_read, crate::domain_computation::primary_graph::application_query::read_execution::prepared_pair::PreparedPair, crate::domain_computation::primary_graph::application_query::read_execution::prepared_pair::PreparedRead, crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationAuthorizationWorkEvidence};
 use worth_execution::MapKernelContext;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryAuthorization;
@@ -227,7 +213,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
     }
 
     fn admit_batch_reads(&mut self, root: EntityId) -> Result<(), Denial> {
-        use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryBatchResourceDenial as Resource;
+        use crate::domain_computation::primary_graph::vocabulary::application_query::batch::WorthQueryApplicationQueryBatchResourceDenial as Resource;
         let denied = |denial| Denial::BatchResource { root, denial };
         if self.first_batch.is_some() || self.second_batch.is_some() {
             return Err(denied(Resource::ForeignPlan));

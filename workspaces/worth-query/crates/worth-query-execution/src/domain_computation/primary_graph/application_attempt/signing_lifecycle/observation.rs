@@ -1,12 +1,7 @@
 //! Bounded current membership and immutable footprint observation retain native revisions.
 use super::super::signed_creation::PublishedCertifiedSubject as Provenance;
-use super::super::{
-    fact::{observe_adjacency_checked, AdjacencyObservationDenial},
-    WorthQueryApplicationAdjacencyDirection as Direction,
-};
-use super::{
-    attempt, capacity, refused, unavailable, EntityId, Fact, Kind, KindId, Lease, Outcome, Rule,
-};
+use {super::super::fact::observe_adjacency_checked, super::super::fact::AdjacencyObservationDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction};
+use {super::attempt, super::capacity, super::refused, super::unavailable, super::EntityId, super::Fact, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind, super::KindId, super::Lease, super::Outcome, super::Rule};
 use worth_relational::facade::{
     runtime::{
         AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection as NativeDirection,
@@ -65,10 +60,10 @@ pub(super) fn adjacency(
             attempt(super::super::WorthQueryApplicationAttemptDenial::new(
                 match event.interruption() {
                     worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
-                        super::super::WorthQueryApplicationAttemptDenialKind::Cancelled
+                        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::Cancelled
                     }
                     worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => {
-                        super::super::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
+                        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
                     }
                 },
                 "signing lifecycle history",
@@ -104,7 +99,7 @@ pub(super) fn footprint(
         .layout
         .entity_kind(rule.evidence_entity())
         .ok_or_else(unavailable)?;
-    let observed = super::super::observation::observe_field_value_borrowed(
+    let observed = crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed(
         runtime,
         request,
         lease.snapshot(),

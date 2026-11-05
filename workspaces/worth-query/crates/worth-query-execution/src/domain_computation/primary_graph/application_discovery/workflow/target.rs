@@ -4,7 +4,7 @@ use super::admission::WorthQueryWorkflowReadDenial as Denial;
 use super::original_intent::OriginalWorkflowCandidate;
 use super::view::WorthQueryWorkflowReadBasis;
 use crate::domain_computation::primary_graph::application_attempt::observe_adjacency;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;

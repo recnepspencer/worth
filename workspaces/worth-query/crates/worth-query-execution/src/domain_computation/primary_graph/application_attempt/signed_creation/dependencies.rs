@@ -104,7 +104,7 @@ fn source(
     }
 }
 fn resource(
-    cause: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+    cause: crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
 ) -> Denial {
     Denial::Execution(
         crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(cause),

@@ -3,6 +3,7 @@ use super::super::value_decode::{ValueDecodeSession, ValueDecodeState};
 use super::*;
 use std::cell::Cell;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 /// One request's reads of an existing retained snapshot. A swallowed field
 /// refusal vetoes the closure's output; the native pin remains borrowed.
@@ -101,7 +102,7 @@ impl<Schema: ApplicationSchema> WorthQueryRetainedSnapshotRead<'_, '_, '_, Schem
             return Ok(None);
         };
         let observed = snapshot.graph.with_runtime(self.execution, |runtime| {
-            super::super::application_attempt::observe_field_value_borrowed(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed(
                 runtime,
                 self.execution,
                 snapshot.snapshot(),

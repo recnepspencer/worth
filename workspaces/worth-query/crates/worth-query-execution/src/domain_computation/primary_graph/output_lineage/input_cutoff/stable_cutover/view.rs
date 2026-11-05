@@ -28,7 +28,7 @@ impl PublishedStableLineage {
     }
     pub(in crate::domain_computation::primary_graph) fn exact_settlement(
         &self,
-    ) -> &Arc<super::super::super::RecordedSettlementIdentity> {
+    ) -> &Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity> {
         &self.recorded().settlement_identity
     }
     pub(in crate::domain_computation::primary_graph) fn output_correspondence(
@@ -44,7 +44,7 @@ impl PublishedStableLineage {
     }
     pub(in crate::domain_computation::primary_graph) fn source_scope(
         &self,
-    ) -> crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding {
+    ) -> crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding {
         self.recorded().settlement_identity.source().scope
     }
     pub(in crate::domain_computation::primary_graph) fn source_partition_identity(

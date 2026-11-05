@@ -129,7 +129,7 @@ pub(in crate::domain_computation::primary_graph) trait AccessScopedOps<Schema: A
             &worth_query_installation::facade::WorthQueryValidatedPrincipalBinding,
         >,
         external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        selector: &crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector,
+        selector: &crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector,
         selected: &'selected WorthQuerySelectedProductOperation<'runtime, Schema>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         inspect: impl for<'fresh> FnOnce(
@@ -193,3 +193,4 @@ impl<
 
 pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::AccessDoorsOps;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;

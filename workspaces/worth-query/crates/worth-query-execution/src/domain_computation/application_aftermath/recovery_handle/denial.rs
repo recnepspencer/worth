@@ -11,7 +11,7 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     ),
     /// Exact installed admission refusal before any effect or owner read.
     AdmissionAuthorization(
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+        crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
     ),
     RecoveryNotAdmitted,
     /// This authoritative commit already opened its sole recovery handle.
@@ -42,12 +42,12 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     /// Publication remains pending with the execution owner's exact refusal.
     CompletionExecutionDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        kind: crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
     },
     /// Publication remains pending after the execution owner's control stop.
     CompletionExecutionControlStopped {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        kind: crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     },
     /// The terminal completion index cannot answer for this effect, so no
     /// attempt is admitted and the live handle is returned. It answers again
@@ -68,11 +68,11 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     TransportNotInstalled,
     /// Relational could not establish the exact committed dispatch owner row.
     DispatchOwnerReadDenied(
-        crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial,
+        crate::domain_computation::vocabulary::primary_graph::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial,
     ),
     /// This runtime could not mint a runtime-affine physical attempt.
     AttemptAdmissionDenied(
-        crate::domain_computation::primary_graph::WorthQueryExternalDispatchAttemptDenial,
+        crate::domain_computation::vocabulary::primary_graph::denial::WorthQueryExternalDispatchAttemptDenial,
     ),
     /// Canonical derivation of the dispatch event identity failed.
     CanonicalDerivationDenied,

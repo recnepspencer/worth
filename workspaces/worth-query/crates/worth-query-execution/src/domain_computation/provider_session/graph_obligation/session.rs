@@ -1,18 +1,15 @@
-use crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
 use worth_query_admission::facade::graph_obligation::WorthQueryAdmittedGraphWorkPlan;
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledGraphObligationSetIdentity,
 };
 use worth_relational::facade::identity::EntityId;
 
-use super::{
-    WorthQueryGraphReadOwnerPort, WorthQueryGraphWorkBranchAffinity,
-    WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
-};
+use {super::WorthQueryGraphReadOwnerPort, super::WorthQueryGraphWorkBranchAffinity, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity};
 
 mod affinity_access;
 
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease;
 
 mod inspection_preparation;

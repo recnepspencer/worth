@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::domain_computation::application_aftermath::WorthQueryExternalEffectDispatch;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt;
-use crate::domain_computation::primary_graph::application_inbound::inbound_occurrence::WorthQueryInstalledTransportCompletionBinding;
+use crate::domain_computation::primary_graph::vocabulary::application_inbound::transport_binding::WorthQueryInstalledTransportCompletionBinding;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 use crate::domain_computation::WorthQueryProductUnpublishedApplication;
 use worth_runtime_world::facade::ProductBranchIncarnation;

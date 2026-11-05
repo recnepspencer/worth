@@ -1,6 +1,4 @@
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisReleaseReceipt,
-};
+use {crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity, crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt};
 use worth_query_admission::{
     facade::{
         graph_obligation::WorthQueryGraphWorkPlanIdentity,
@@ -12,10 +10,7 @@ use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledGraphObligationSetIdentity,
 };
 
-use super::{
-    WorthQueryGraphReadDependencyEvidence, WorthQueryGraphWorkManagedRunIdentity,
-    WorthQueryGraphWorkSessionIdentity,
-};
+use {super::WorthQueryGraphReadDependencyEvidence, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryGraphReadCompletion {

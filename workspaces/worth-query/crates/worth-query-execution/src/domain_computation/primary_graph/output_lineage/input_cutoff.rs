@@ -13,7 +13,7 @@ pub(in crate::domain_computation::primary_graph) use stable_publication::Prepare
 pub(in crate::domain_computation::primary_graph) use stable_publication::StableEqualityConsequence;
 
 pub(in crate::domain_computation::primary_graph) use selected_basis::PreparedInputCutoffBasis;
-pub(in crate::domain_computation::primary_graph) use verification::cutoff_declines;
+
 pub(in crate::domain_computation::primary_graph) use verification::InputCutoffVerificationStop;
 pub(in crate::domain_computation::primary_graph) use verification::OwnedInputCutoffDecision;
 pub(in crate::domain_computation::primary_graph) use verification::VerifiedInputCutoff;
@@ -25,13 +25,13 @@ use std::sync::OnceLock;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_runtime_world::facade::ProductBranchObservation;
 
-use super::invalidation::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::PreparedInputReuseKey;
-use super::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use super::RecordedOutput;
-use super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::SealedNativeOutputWitness;
-use super::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 
@@ -82,7 +82,7 @@ impl RetainedInputCutoffCandidate {
 
     pub(in crate::domain_computation::primary_graph) fn completed_decision_reuse(
         &self,
-    ) -> Option<&super::CompletedDecisionReuseProof> {
+    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof> {
         self.originating_recorded()?
             .completed_decision_reuse
             .as_ref()

@@ -1,11 +1,7 @@
 use sha2::{Digest, Sha256};
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
-use {
-    super::RequiredWorkflowAssessment, super::WorthQueryObservedSource,
-    super::WorthQueryOutputDemandSettlement, super::WorthQueryWorkflowAssessmentPosture,
-    crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowAssessmentEvidenceMeaning,
-};
+use {super::RequiredWorkflowAssessment, super::WorthQueryObservedSource, super::WorthQueryOutputDemandSettlement, crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryWorkflowAssessmentPosture, crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowAssessmentEvidenceMeaning};
 
 pub(super) fn output_content_identity(
     receipt: &WorthQueryApplicationCommitReceipt,

@@ -1,12 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_family_identity::OutputFamilyIdentity;
 
-impl OutputFamilyIdentity {
-    #[doc(hidden)]
-    pub fn declared_for_test(identity: &'static str) -> Self {
-        Self::declared(identity)
-    }
-}
 
 impl OutputFamilyIdentity {
     #[doc(hidden)]

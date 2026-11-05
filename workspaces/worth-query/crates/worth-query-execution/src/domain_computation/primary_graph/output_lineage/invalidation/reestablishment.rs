@@ -7,15 +7,15 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-use super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::super::SealedNativeOutputWitness;
-use super::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::mark_state::SettlementCurrentness;
 use super::source_alignment::EqualOutputCurrentness;
 use super::source_alignment::SnapshotAlignedMarkState;
 use super::verification::SettlementVerificationStop;
 use super::SettlementRegistration;
-use super::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use super::SourceInvalidationOwner;
 
 impl SourceInvalidationOwner {

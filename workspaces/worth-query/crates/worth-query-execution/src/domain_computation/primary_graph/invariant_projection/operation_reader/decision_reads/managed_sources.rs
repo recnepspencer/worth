@@ -1,13 +1,7 @@
 //! Original Source bodies stay with the admitted reader; keys cannot reissue them.
 use super::*;
-use crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity as Admission;
-use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        ManagedSourceRead, ManagedSourceReadKey, SourceReadAuthorization,
-        SourceReadAuthorizationKey,
-    },
-    source_facts::SourceFactsAllocation,
-};
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity as Admission;
+use {crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead, crate::domain_computation::primary_graph::vocabulary::application_attempt::managed_source_read::ManagedSourceReadKey, crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_read_authorization::SourceReadAuthorizationKey, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation};
 use std::{collections::BTreeMap, sync::Arc};
 use worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts as Contracts;
 use worth_relational::facade::snapshots::SnapshotHandle;

@@ -5,6 +5,8 @@ use {
     crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputContract,
     crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::*,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 
 pub(super) fn profile(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

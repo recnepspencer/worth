@@ -12,7 +12,7 @@ use worth_relational::facade::{
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum ManagedHistoryRelevanceDenial {
     Native(RelationalAuthoredWriteDenial),
-    Provider(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
+    Provider(crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial),
 }
 impl CapturedManagedInfluence {
     pub(in crate::domain_computation::primary_graph) fn history_impact(

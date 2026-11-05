@@ -3,12 +3,8 @@
 use crate::domain_computation::authorization::graph_work_session::transition_capability_to_operation_graph_work;
 use crate::domain_computation::authorization::operation_progression::WorthQueryCapabilityOperationProgression;
 use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use crate::domain_computation::authorization::{
-    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryOperationScopeBinding,
-};
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use {crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess, crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryOperationScopeBinding};
 use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditions;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
@@ -70,7 +66,7 @@ where
     {
         let phase_request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
+            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
         let execution = &phase_request;
         self.authorize_capability_operation_with_request(

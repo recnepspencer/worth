@@ -1,9 +1,10 @@
 //! Retain admission's exact observed principal target before constructing any effects.
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryInvariantMutationTarget;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyCreationLinkSource as Source, ApplicationOperationBodyProgram,
 };
+use crate::domain_computation::primary_graph::vocabulary::operation_body::field_expectation::BodyFieldExpectation;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
     pub(in crate::domain_computation::primary_graph) fn body_principal_link(
         &mut self,
@@ -27,7 +28,7 @@ impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, 
             .body_field(&identity, field, BodyFieldExpectation::Present)?
         {
             return Err(HandlerExecutionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, field.entity())));
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, field.entity())));
         }
         self.reader
             .mutation_target(&identity)

@@ -6,10 +6,7 @@ use worth_query_installation::facade::{
 
 use super::{WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker};
 use crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalReentryDenial;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationEntityIdentity, WorthQueryApplicationOperationInvariantProjectionReader,
-    WorthQueryPrincipalResolutionMode, WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) struct WorthQueryCurrentTemporalIntent<
     Schema,
@@ -69,8 +66,8 @@ _execution: &worth_execution::ExecutionRequest<'_, '_>,
         let intent = match reader.resolve_entity(self.identity_field, identity) {
             Ok(intent) => intent,
             Err(denial) => match denial.kind() {
-                crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Stopped(_) => return Err(WorthQueryTemporalReentryDenial::from_entity(denial)),
-                crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(_) => return Ok(false),
+                crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Stopped(_) => return Err(WorthQueryTemporalReentryDenial::from_entity(denial)),
+                crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Refused(_) => return Ok(false),
             },
         };
         let currentness = (|| -> Result<(), String> {

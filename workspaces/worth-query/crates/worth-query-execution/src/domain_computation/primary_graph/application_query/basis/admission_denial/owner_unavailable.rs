@@ -1,8 +1,5 @@
 use super::{map_basis_denial, map_registration_denial};
-use crate::domain_computation::primary_graph::application_query::{
-    resource_lifecycle::WorthQueryApplicationBasisRegistrationDenial,
-    WorthQueryApplicationQueryAdmissionDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_query::basis_registry::WorthQueryApplicationBasisRegistrationDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
 
 #[test]

@@ -20,10 +20,7 @@ pub(in crate::domain_computation) use terminal_refusal::WorthQueryTerminalEffect
 pub use causal_event::ExternalEffectPosture;
 pub(in crate::domain_computation) use causal_event::WorthQueryAdmittedExternalDispatchAttempt;
 pub use classification::{ExternalEffectClassification, ExternalRailTransportFault};
-pub use correlation::{
-    derive_external_effect_correlation_identity, ExternalEffectCorrelationBasis,
-    ExternalEffectCorrelationIdentity,
-};
+pub use {correlation::derive_external_effect_correlation_identity, correlation::ExternalEffectCorrelationBasis};
 pub(in crate::domain_computation) use dispatch::dispatch_external_effect;
 pub use dispatch::{
     WorthQueryExternalDispatchCausalRelation, WorthQueryExternalDispatchPosture,
@@ -42,11 +39,8 @@ pub use inbound::{
     WorthQueryInboundOccurrenceVerifier, WorthQueryInboundVerificationDenial,
 };
 pub(crate) use outbox::dispatch_outbox_create_intent;
-pub(crate) use outbox::{
-    bind_dispatch_outbox_create_intent, WorthQueryDispatchOutboxRestoredFields,
-    WorthQueryPendingDispatchOutbox,
-};
-pub use outbox::{WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord};
+
+
 pub use posture::ExternalEffectPostureKind;
 pub use transport::{
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,

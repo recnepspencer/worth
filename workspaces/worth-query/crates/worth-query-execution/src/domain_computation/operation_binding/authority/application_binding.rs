@@ -11,13 +11,8 @@ use worth_query_installation::facade::{
 use super::topology::resource_topology;
 use super::WorthQueryExecutionBoundOperationAuthority;
 use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime;
-use crate::domain_computation::operation_binding::{
-    WorthQueryExecutionCommitPosture, WorthQueryInstalledDomainExecutionAuthority,
-    WorthQueryInstalledOperationExecutionSupport,
-};
-use crate::domain_computation::provider_session::{
-    WorthQueryApplicationEffectPosture, WorthQueryProviderPlanDeclarations,
-};
+use {crate::domain_computation::operation_binding::WorthQueryExecutionCommitPosture, crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority, crate::domain_computation::operation_binding::WorthQueryInstalledOperationExecutionSupport};
+use {crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture, crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations};
 
 pub(crate) struct WorthQueryApplicationOperationBindingInput<'a> {
     pub(crate) runtime: &'a WorthQueryExecutionRuntime,
@@ -30,11 +25,11 @@ pub(crate) struct WorthQueryApplicationOperationBindingInput<'a> {
     pub(crate) graph: &'a WorthQueryInstalledGraphParticipationAuthority,
     pub(crate) support: WorthQueryExecutionResourceSupportSnapshot,
     pub(crate) graph_work_session:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     pub(crate) graph_work_managed_run:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity,
+        crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity,
     pub(crate) operation_attempt:
-        crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
     pub(crate) schema_binding:
         &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     pub(crate) snapshot: &'a worth_relational::facade::snapshots::SnapshotHandle,

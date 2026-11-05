@@ -1,4 +1,4 @@
-use super::{WorthQueryExecutionRuntime, WorthQueryRuntimeAuthorityIdentity};
+use {super::WorthQueryExecutionRuntime, crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity};
 
 /// Opaque authority retained by the composition root that installed one
 /// execution runtime.

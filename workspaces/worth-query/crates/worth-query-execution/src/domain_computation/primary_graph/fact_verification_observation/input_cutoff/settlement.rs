@@ -1,8 +1,6 @@
 //! Fixed-size descriptions of the original native no-row answer at a cutoff.
-use crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::{
-    FullVerificationReason, SourceSettlementCurrentness,
-};
+use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
+use {crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason, crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness};
 use worth_relational::facade::{
     history::CommitId, identity::VersionId, runtime::PositionedRelationalSnapshot,
 };

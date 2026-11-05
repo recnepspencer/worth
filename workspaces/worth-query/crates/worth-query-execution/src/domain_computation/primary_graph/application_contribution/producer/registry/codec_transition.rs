@@ -1,10 +1,6 @@
 //! Admit native retirement origins against the sealed installed producer owner.
 use super::{DeclaredProducerBinding, WorthQueryInstalledApplicationProducerRegistry};
-use crate::domain_computation::primary_graph::{
-    application_contribution::WorthQueryProducerLifecyclePosture,
-    schema_layout::WorthQueryPrimaryGraphLayout, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture, crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind};
 use worth_execution::{
     ExecutionRequest, ExecutionWorkCeiling, MapKernelContext, WorkCeilingDenial,
 };

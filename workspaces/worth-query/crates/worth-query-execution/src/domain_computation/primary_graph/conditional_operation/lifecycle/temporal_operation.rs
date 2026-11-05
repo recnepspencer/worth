@@ -10,7 +10,7 @@ use worth_runtime_bridge::facade::{
 };
 
 use super::super::clock_observation::ErasedClockObservationOutcome;
-use super::super::installation::ConditionalClockLease;
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::ConditionalClockLease;
 use super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis;
 use super::{
     authoritative_clock_progression, bridge_clock_outcome, commit_watch, due_wake_retention,
@@ -241,7 +241,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             // The owner's retained touches decide relevance: exact watched
             // entities, or every commit for whole-graph dependencies and until
             // the bootstrap evaluation first catches up with the branch.
-            let interest = crate::domain_computation::primary_graph::output_lineage::invalidation::CommitTouchInterest {
+            let interest = crate::domain_computation::primary_graph::vocabulary::output_lineage::commit_touches::CommitTouchInterest {
                 entities: self.commit_watch.entities().into(),
                 every_commit: self.commit_watch.includes_whole_graph() || self.bootstrap_commit_catch_up_pending,
             };

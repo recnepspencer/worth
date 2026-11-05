@@ -31,7 +31,7 @@ pub(super) fn select<'a>(
             // Retain only that static settlement; never synthesize a source key.
             let verified = consumed.claim_verified_checkpoint_root(owner)
                 .map_err(|stop| match stop {
-                    crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop::Admission(stop) => match stop {
+                    crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop::Admission(stop) => match stop {
                         worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => prerequisite_denials::work_denial(),
                         _ => prerequisite_denials::capacity_denial(),
                     },

@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::commit_authority_binding::WorthQueryRetainedGovernedInput;
 
 impl WorthQueryRecoveryHandleBinding {
     #[doc(hidden)]
@@ -19,7 +20,7 @@ impl WorthQueryRecoveryHandleBinding {
     #[doc(hidden)]
     pub fn committed_dispatch_outbox_for_test(
         &self,
-    ) -> &Option<crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxBinding>
+    ) -> &Option<crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding>
     {
         &self.committed_dispatch_outbox
     }
@@ -93,7 +94,7 @@ impl WorthQueryRecoveryHandleBinding {
     pub fn committed_dispatch_outbox_mut_for_test(
         &mut self,
     ) -> &mut Option<
-        crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxBinding,
+        crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding,
     > {
         &mut self.committed_dispatch_outbox
     }

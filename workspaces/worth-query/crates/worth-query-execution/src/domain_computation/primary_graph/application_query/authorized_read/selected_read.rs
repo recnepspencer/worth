@@ -7,7 +7,7 @@ use super::validate_selected_authorization_currentness;
 use crate::domain_computation::primary_graph::application_query::read_execution::read_bounded_root_rows;
 use crate::domain_computation::primary_graph::application_query::read_execution::OneShotReadWorkObservation;
 use crate::domain_computation::primary_graph::application_query::read_execution::RawNonLiveKernelOutcome;
-use crate::domain_computation::primary_graph::application_query::read_execution::WorthQueryApplicationReadExecutionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
 
 use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationAuthorizationWorkEvidence;

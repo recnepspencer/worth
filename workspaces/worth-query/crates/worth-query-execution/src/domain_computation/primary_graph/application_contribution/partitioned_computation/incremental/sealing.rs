@@ -12,14 +12,14 @@ impl CompletedComputationRetention {
         &mut self,
         bytes: impl FnOnce() -> Result<
             Option<u64>,
-            crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+            crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
         >,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         Option<worth_execution::ExecutionMemoryReservation>,
-        crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+        crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
     >{
-        use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
+        use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
         match self {
             Self::Produced(run) => {
                 if let Some(memory) = &mut run.attribution_memory {

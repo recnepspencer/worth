@@ -1,11 +1,6 @@
 //! Exact Source support equality; disclosed-row equality has different meaning.
 use super::*;
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ProjectionContentComparisonFault {
-    CapacityOverflow,
-    AllocationFailed,
-    ContentInconsistency,
-}
+use crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault;
 
 impl WorthQueryApplicationDisclosedProjectionTree {
     pub fn same_one_hop_content<E>(
@@ -185,15 +180,3 @@ pub fn admit_pair_width<E>(
 
 mod traversal;
 
-impl ProjectionContentComparisonFault {
-    pub(in crate::domain_computation::primary_graph) fn into_native(
-        self,
-    ) -> worth_relational::facade::transactions::RelationalExecutionDenialCause {
-        use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
-        match self {
-            Self::CapacityOverflow => Native::ChargedBytesOverflow,
-            Self::AllocationFailed => Native::AllocationFailed,
-            Self::ContentInconsistency => Native::ContentInconsistency,
-        }
-    }
-}

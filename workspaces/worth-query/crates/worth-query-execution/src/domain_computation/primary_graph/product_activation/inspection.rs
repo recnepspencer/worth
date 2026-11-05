@@ -6,6 +6,7 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
 use worth_relational::facade::storage::RecordLifecycleState;
+use crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial;
 
 /// The rostered program actually carried by one selected product occurrence.
 /// This is descriptive operator evidence; it grants no mutation or adoption
@@ -26,25 +27,6 @@ impl WorthQuerySelectedProgramInspection {
     }
 }
 
-/// Why the program carried by a selected product could not be inspected.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQuerySelectedProgramInspectionDenial {
-    /// The caller's read request stopped.
-    ReadExecution(
-        Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
-        >,
-    ),
-    /// The runtime has no installed program support.
-    ProgramSupportUnavailable,
-    /// No program activation is published.
-    ProgramActivationUnavailable,
-    /// The product's program activation record could not be read.
-    ProgramActivationUnreadable,
-    /// The product's program revision is not on the installed roster.
-    ProgramActivationUnrostered,
-}
 
 pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
     Schema: ApplicationSchema,

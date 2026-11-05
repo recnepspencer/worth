@@ -15,7 +15,7 @@ use super::source_alignment::BranchMarkRoot;
 use super::source_alignment::SnapshotAlignedMarkState;
 use super::SettlementVerificationStop;
 use super::SourceInvalidationOwner;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 
 pub(in crate::domain_computation::primary_graph) struct EqualityRecoveryImage {

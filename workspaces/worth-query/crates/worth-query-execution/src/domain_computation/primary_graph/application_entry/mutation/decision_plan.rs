@@ -1,6 +1,6 @@
 //! The owner holds completion while sealed requests carry only prepared compute.
 use super::HandlerResult;
-use {crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot, crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute, crate::domain_computation::request_execution::QueryRequestExecution};
+use {crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::ComputedSlot, crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute, crate::domain_computation::request_execution::QueryRequestExecution};
 use std::any::Any;
 
 /// One handler's prepared computation requests and owner-only completion.
@@ -169,7 +169,7 @@ impl<Value: 'static, Denial: 'static> WorthQueryDecisionPlan<Value, Denial> {
     ) -> HandlerResult<Value, Denial> {
         let (requests, completion) = self.into_parts();
         let mut settled = crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::dispatch(
-            execution, vec![crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::PreparedMember {
+            execution, vec![crate::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::PreparedMember {
                 requests,
             }]);
         assert_eq!(settled.len(), 1, "one ordinary decision is one member");
@@ -206,7 +206,7 @@ impl<Value, Denial> DecisionCompletion<Value, Denial> {
         }) {
             Ok(Ok(result)) => result,
             Ok(Err(cause)) => execution_failure(
-                crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_checkpoint_stop(cause)),
+                crate::domain_computation::request_execution::execution_stop::advancement_checkpoint_stop(cause)),
             Err(cause) => execution_failure(cause),
         }
     }

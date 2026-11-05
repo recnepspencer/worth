@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::ConditionalClockLease;
 
 impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
     #[doc(hidden)]

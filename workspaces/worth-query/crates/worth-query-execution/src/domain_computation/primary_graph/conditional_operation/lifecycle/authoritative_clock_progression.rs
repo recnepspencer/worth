@@ -18,7 +18,7 @@ pub(super) struct AuthoritativeClockWork<'a, Schema> {
     pub(super) cursor: &'a mut Option<worth_relational::facade::publication::PatchStreamPosition>,
     pub(super) maximum_commits: usize,
     pub(super) interest:
-        crate::domain_computation::primary_graph::output_lineage::invalidation::CommitTouchInterest<
+        crate::domain_computation::primary_graph::vocabulary::output_lineage::commit_touches::CommitTouchInterest<
             'a,
         >,
     /// Receives every invalidation consumed from the subscription, so a

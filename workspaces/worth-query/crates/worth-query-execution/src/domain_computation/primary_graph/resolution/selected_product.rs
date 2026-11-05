@@ -1,10 +1,13 @@
 use super::*;
 use crate::domain_computation::primary_graph::resolution_denial::principal_index_currency_denial;
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 
 #[path = "selected_product/admitted.rs"]
 pub(crate) mod admitted;
 pub(in crate::domain_computation) use admitted::WorthQueryIssuedSelectedPrincipal;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 
 impl<Schema> super::super::WorthQuerySelectedProductOperation<'_, Schema>
 where

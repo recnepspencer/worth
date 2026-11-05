@@ -7,13 +7,13 @@ use worth_query_installation::facade::InstalledExternalEffectContract;
 use worth_relational::facade::transactions::RecordRef;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxResolution;
-use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::bind_dispatch_outbox_create_intent;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::application_aftermath::outbox::bind_dispatch_outbox_create_intent;
 use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::derive_external_effect_correlation_identity;
 use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::ExternalEffectCorrelationBasis;
 use worth_query_execution::facade::domain_computation::WorthQueryDispatchOutboxRecord;
-use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::WorthQueryPendingDispatchOutbox;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryPendingDispatchOutbox;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 
 #[test]

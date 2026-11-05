@@ -6,9 +6,7 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::{EntityId, KindId, VersionId};
 
-use super::super::{
-    WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
-};
+use {super::super::WorthQueryApplicationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
 use super::{denial, WorthQueryInvariantAggregateDenial, WorthQueryInvariantAggregateDenialKind};
 use crate::domain_computation::primary_graph::aggregate_projection::WorthQueryIncomingSumKey;
 

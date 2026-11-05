@@ -2,7 +2,7 @@
 
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::derived_view::reconstruction_denial as denial;
 use crate::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruct_parallel::read_ceiling_tests::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::denial::WorthQueryApplicationReadExecutionDenialKind as ReadKind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind as ReadKind;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind as OneShot;
 use worth_relational::facade::indexes::DerivedIndexId;
 #[derive(Clone, Copy)]

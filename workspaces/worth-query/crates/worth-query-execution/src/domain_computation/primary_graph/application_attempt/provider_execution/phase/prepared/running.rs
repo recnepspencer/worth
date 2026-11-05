@@ -19,10 +19,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationIdempotencyBinding,
 };
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::WorthQueryApplicationAttemptBasis;
-use crate::domain_computation::{
-    WorthQueryExecutionBoundOperationAuthority, WorthQueryManagedRunTerminalKind,
-    WorthQueryManagedTruthReadRequest,
-};
+use {crate::domain_computation::WorthQueryExecutionBoundOperationAuthority, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind, crate::domain_computation::WorthQueryManagedTruthReadRequest};
 
 pub(crate) mod progression;
 
@@ -40,7 +37,7 @@ pub struct WorthQueryRunningApplicationCommit<
     >,
     lease: WorthQueryApplicationSnapshotLease,
     provider_attempt: WorthQueryPreparedApplicationProviderAttempt,
-    outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+    outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
     workflow_settlement_publication: Option<LocalWorkflowSettlementPublication>,
     authorization: crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization,
     idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -151,7 +148,7 @@ fn bind_execution_operation<Schema, Operation, Input, Scope>(
     application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: &WorthQueryApplicationSnapshotLease,
-    effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
+    effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture,
     native_reference_invariants: &worth_query_installation::facade::WorthQueryInvariantExecutionContract,
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryExecutionBoundOperationAuthority, WorthQueryApplicationCommitOutcome>

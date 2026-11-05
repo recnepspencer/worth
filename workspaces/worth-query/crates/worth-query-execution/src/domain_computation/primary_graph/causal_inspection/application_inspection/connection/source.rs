@@ -1,6 +1,8 @@
 //! Original source affinity consumes the separately admitted source when selected.
 use super::*;
-use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
+use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
+use crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure;
 pub(super) fn validate(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     target: &WorthQueryApplicationInspectionTarget,

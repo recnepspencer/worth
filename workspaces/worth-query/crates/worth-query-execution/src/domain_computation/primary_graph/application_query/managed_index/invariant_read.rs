@@ -1,14 +1,7 @@
 //! A candidate read reborrows the actual observation and original request each time.
 mod projection;
-use super::{
-    invocation::decoded_provider, source::projection::project_row,
-    source::service::ManagedSourceRoot, WorthQueryManagedIndexProbeValue,
-    WorthQueryManagedIndexWorkDenial,
-};
-use crate::domain_computation::primary_graph::application_query::{
-    disclosure::WorthQueryApplicationQueryGovernance, WorthQueryApplicationProjection,
-    WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionRow,
-};
+use {super::invocation::decoded_provider, super::source::projection::project_row, super::source::service::ManagedSourceRoot, crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial};
+use {crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection, crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenial, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjectionRow};
 use worth_query_declaration::facade::{
     application_query::{ApplicationManagedIndexBinding, ApplicationQueryBinding},
     application_schema::{
@@ -18,48 +11,11 @@ use worth_query_declaration::facade::{
 use worth_relational::facade::runtime::{
     ManagedIndexSourcePreparationDenial as NativeDenial, ManagedIndexSourceRead,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ManagedSourceValue;
+use crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ReadPosture;
+use crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::WorthQueryManagedIndexInvariantDenial;
 
-pub type ManagedSourceValue<S, I> = <<<I as ApplicationManagedIndexBinding<S>>::SourceBinding as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
-#[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) enum ReadPosture {
-    Committed,
-    Proposed,
-}
 
-#[derive(Debug)]
-/// An invariant index read failed at its Native loan, probe, provider or projection boundary.
-pub enum WorthQueryManagedIndexInvariantDenial {
-    Native(NativeDenial),
-    Probe(worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial),
-    Provider(WorthQueryManagedIndexWorkDenial),
-    Projection(WorthQueryApplicationProjectionDenial),
-}
-impl From<NativeDenial> for WorthQueryManagedIndexInvariantDenial {
-    fn from(cause: NativeDenial) -> Self {
-        Self::Native(cause)
-    }
-}
-impl std::fmt::Display for WorthQueryManagedIndexInvariantDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(formatter, "{self:?}")
-    }
-}
-impl std::error::Error for WorthQueryManagedIndexInvariantDenial {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Provider(cause) => Some(cause),
-            Self::Native(NativeDenial::Provider(cause)) => Some(cause),
-            _ => None,
-        }
-    }
-}
-impl WorthQueryManagedIndexInvariantDenial {
-    /// No material was available for this particular read posture. This is
-    /// diagnostic only; an unavailable Source never means empty membership.
-    pub fn source_unavailable(&self) -> bool {
-        matches!(self, Self::Native(cause) if cause.source_unavailable())
-    }
-}
 
 pub(in crate::domain_computation::primary_graph) fn query<S, I>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

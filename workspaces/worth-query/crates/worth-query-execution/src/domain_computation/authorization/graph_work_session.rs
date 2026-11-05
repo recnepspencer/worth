@@ -1,4 +1,4 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkIntent;
 use worth_query_admission::integration::{
     admit_application_operation_graph_work, admit_application_operation_read_graph_work,
@@ -10,15 +10,12 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::EntityId;
 
-use crate::domain_computation::primary_graph::{
-    application_resource_request, WorthQueryApplicationSnapshotLease,
-    WorthQueryApplicationSnapshotLeaseDenial,
-};
+use {crate::domain_computation::vocabulary::primary_graph::resource_request::application_resource_request, crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease, crate::domain_computation::vocabulary::primary_graph::snapshot_lease::WorthQueryApplicationSnapshotLeaseDenial};
 use crate::domain_computation::provider_session::{
     WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,
 };
 
-use super::{WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind};
+use {super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 
 mod selected;
 pub(in crate::domain_computation) use selected::{

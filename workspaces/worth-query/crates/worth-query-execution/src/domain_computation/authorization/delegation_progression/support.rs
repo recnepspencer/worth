@@ -1,6 +1,6 @@
 //! Delegation progression consumes one access-bound exact support observation.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityDelegationRequest, ApplicationCapabilityRequest,
 };
@@ -10,10 +10,7 @@ use worth_query_installation::facade::{
 };
 
 pub(in crate::domain_computation::authorization) use super::super::operation_progression::WorthQueryDelegationResolvedRequest;
-use super::super::{
-    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialKind, WorthQueryRetainedCapabilitySupport,
-};
+use {super::super::WorthQueryAdmittedApplicationCapabilityAccess, super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::super::WorthQueryRetainedCapabilitySupport};
 
 pub(in crate::domain_computation::authorization) struct WorthQueryObservedDelegationSupport {
     resolved: WorthQueryDelegationResolvedRequest,

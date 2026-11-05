@@ -10,11 +10,11 @@ use worth_relational::facade::identity::{EntityId, KindId};
 use worth_relational::facade::mvcc::ValidatedMutationFootprint;
 use worth_relational::facade::transactions::RecordRef;
 
-use crate::domain_computation::application_aftermath::{
-    demanded_field_slot, WorthQueryPreImageRetentionDenial, WorthQueryRetainedPreImage,
-};
+use {crate::domain_computation::application_aftermath::demanded_field_slot, crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial, crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage};
 
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact;
+use crate::domain_computation::vocabulary::primary_graph::selection::WorthQueryRetainedPreImageFieldSeal;
+use crate::domain_computation::vocabulary::primary_graph::selection::WorthQueryRetainedPreImageSeal;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryObservedPreImageCandidate {
@@ -25,19 +25,7 @@ pub struct WorthQueryObservedPreImageCandidate {
     locator: AspectFieldLocator,
 }
 
-pub(crate) struct WorthQueryRetainedPreImageFieldSeal {
-    locus: InstalledPreImageLocus,
-    value: AspectValue,
-    encoded_bytes: usize,
-    target_record: RecordRef,
-    entity_kind: KindId,
-    locator: AspectFieldLocator,
-}
 
-pub(crate) struct WorthQueryRetainedPreImageSeal {
-    fields: Vec<WorthQueryRetainedPreImageFieldSeal>,
-    total_encoded_bytes: usize,
-}
 
 pub struct WorthQueryRetainedPreImageSelection {
     retained: WorthQueryRetainedPreImage,
@@ -250,32 +238,6 @@ fn candidate_matches_locus(
             .is_some_and(|field| field.as_str() == locus.field())
 }
 
-impl WorthQueryRetainedPreImageSeal {
-    pub(crate) fn into_parts(self) -> (Vec<WorthQueryRetainedPreImageFieldSeal>, usize) {
-        (self.fields, self.total_encoded_bytes)
-    }
-}
 
-impl WorthQueryRetainedPreImageFieldSeal {
-    pub(crate) fn into_parts(
-        self,
-    ) -> (
-        InstalledPreImageLocus,
-        AspectValue,
-        usize,
-        RecordRef,
-        KindId,
-        AspectFieldLocator,
-    ) {
-        (
-            self.locus,
-            self.value,
-            self.encoded_bytes,
-            self.target_record,
-            self.entity_kind,
-            self.locator,
-        )
-    }
-}
 
 mod court_doors_for_test;

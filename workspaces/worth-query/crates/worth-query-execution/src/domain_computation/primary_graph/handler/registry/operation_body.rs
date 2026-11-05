@@ -1,7 +1,5 @@
 //! Central implementation selection: authored bodies cannot be replaced.
-use super::super::super::operation_body::{
-    OperationBodyHandler, WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial,
-};
+use {super::super::super::operation_body::OperationBodyHandler, super::super::super::operation_body::WorthQueryOperationBodyDecision, crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial};
 use super::{
     denial, ApplicationMutationBinding, ApplicationSchema, ApplicationSchemaBindingIdentity,
     DenialKind, OperationHandler, PendingMutationHandlerRegistry,

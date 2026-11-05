@@ -40,7 +40,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryMutatio
     relational_invariant_executions: usize,
     relational_invariant_results: usize,
     expected_step_preparation_work:
-        super::super::application_attempt::WorthQueryExpectedEffectStepPreparationWork,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::expected_steps::WorthQueryExpectedEffectStepPreparationWork,
     installed_touch_admission:
         super::application_touch_admission::WorthQueryInstalledTouchAdmissionEvidence,
 }
@@ -54,7 +54,7 @@ impl WorthQueryPrimaryMutationWorkCounters {
         invariant_work_units: u64,
         relational_invariant_executions: usize,
         relational_invariant_results: usize,
-        expected_step_preparation_work: super::super::application_attempt::WorthQueryExpectedEffectStepPreparationWork,
+        expected_step_preparation_work: crate::domain_computation::primary_graph::vocabulary::application_attempt::expected_steps::WorthQueryExpectedEffectStepPreparationWork,
         installed_touch_admission: super::application_touch_admission::WorthQueryInstalledTouchAdmissionEvidence,
     ) -> Self {
         Self {

@@ -8,15 +8,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::progression::PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::application_attempt::workflow::instance::progression::WorkflowTransitionProgressBasis};
 
 mod selection;
-pub(in crate::domain_computation::primary_graph) use selection::{
-    select_assessment_collection, select_back_action_transition, select_current_proposal_need,
-    select_current_transition, select_navigation_back_transition,
-    select_proposal_replay_transition, select_proposal_transition,
-    select_settled_replay_transition, select_terminal_transition,
-    select_termination_action_transition, SelectedWorkflowApproval, SelectedWorkflowAssessment,
-    SelectedWorkflowCondition, SelectedWorkflowInbound, SelectedWorkflowOperation,
-    SelectedWorkflowProposal, SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
-};
+pub(in crate::domain_computation::primary_graph) use {selection::select_assessment_collection, selection::select_back_action_transition, selection::select_current_proposal_need, selection::select_current_transition, selection::select_navigation_back_transition, selection::select_proposal_replay_transition, selection::select_proposal_transition, selection::select_settled_replay_transition, selection::select_terminal_transition, selection::select_termination_action_transition, selection::SelectedWorkflowApproval, selection::SelectedWorkflowAssessment, selection::SelectedWorkflowInbound, selection::SelectedWorkflowOperation, selection::SelectedWorkflowProposal, selection::SelectedWorkflowTransition, selection::SelectedWorkflowTransitionKind};
 
 pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransition<
     Schema,
@@ -98,7 +90,7 @@ impl WorkflowOperationSettlementBasis {
     ) -> Result<PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial>{
         self.progress_basis.as_ref().ok_or_else(|| {
             crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::new(
-                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
                 "workflow transition progress basis is unavailable",
             )
         })?.prepare(
@@ -163,7 +155,7 @@ impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operati
     ) -> Result<PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial>{
         self.progress_basis.as_ref().ok_or_else(|| {
             crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::new(
-                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
                 "workflow transition progress basis is unavailable",
             )
         })?.prepare(
@@ -188,7 +180,7 @@ impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operati
     ) -> Result<PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial>{
         self.progress_basis.as_ref().ok_or_else(|| {
             crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::new(
-                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
+                crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
                 "assessment collection progress basis is unavailable",
             )
         })?.prepare_assessment_collection(

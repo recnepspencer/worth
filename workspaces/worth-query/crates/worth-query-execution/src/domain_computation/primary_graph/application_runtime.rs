@@ -9,10 +9,7 @@ use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime;
 use crate::domain_computation::managed_run::WorthQueryRecoveryHandleRegistry;
 
 use super::provider::WorthQueryPrimaryGraphProvider;
-use super::{
-    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind, WorthQueryPrimaryGraphPublication,
-};
+use {super::WorthQueryPrimaryGraphBootstrap, super::WorthQueryPrimaryGraphInstallationDenial, super::WorthQueryPrimaryGraphInstallationDenialKind, crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication};
 pub use crate::domain_computation::application_aftermath::WorthQueryInboundCleanupReport;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 
@@ -28,12 +25,8 @@ mod execution_memory;
 mod facade;
 mod host;
 mod teardown;
-pub use certification_cost::{
-    WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
-    WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,
-    WorthQueryCertificationWorldHistory, WorthQueryCertificationWorldRetention,
-};
-pub use execution_memory::WorthQueryExecutionLeaseDenial;
+pub use certification_cost::WorthQueryCertificationCostRuntimeExt;
+
 
 mod derived_relation;
 mod graph_participation;
@@ -43,10 +36,7 @@ pub(crate) mod operation_control;
 mod publication_entry;
 mod storage_retention;
 pub(in crate::domain_computation::primary_graph) use operation_control::WorthQueryApplicationAttemptOperationControl;
-pub use storage_retention::{
-    WorthQueryStorageRetentionDenial, WorthQueryStorageRetentionProgress,
-    WorthQueryStorageRetentionStop,
-};
+
 
 /// Purpose-scoped application runtime published from one typed primary graph.
 /// Publishing consumes the raw execution root and its installation authority.
@@ -217,7 +207,7 @@ where
     #[inline]
     pub fn workflow_compilation_reuse_counters(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorthQueryWorkflowCompilationReuseCounters{
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::counters::WorthQueryWorkflowCompilationReuseCounters{
         self.runtime.workflow_compilation_reuse_counters()
     }
 
@@ -225,7 +215,7 @@ where
     #[inline]
     pub fn workflow_instance_progress_counters(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters{
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::retention_counters::WorthQueryWorkflowInstanceProgressCounters{
         self.runtime.workflow_instance_progress_counters()
     }
 
@@ -259,29 +249,11 @@ where
     }
 }
 
-/// Receipt from closing this runtime's live delivery.
-///
-/// Later commits no longer enter live delivery. `owner_terminal()` is true once
-/// no live consumers remain.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationLiveDeliveryCloseReceipt {
-    remaining_live_consumers: usize,
-}
 
-impl WorthQueryApplicationLiveDeliveryCloseReceipt {
-    pub const fn remaining_live_consumers(self) -> usize {
-        self.remaining_live_consumers
-    }
-
-    pub const fn owner_terminal(self) -> bool {
-        self.remaining_live_consumers == 0
-    }
-}
 
 mod candidate_input_observation;
 
-pub(in crate::domain_computation::primary_graph) use operation_control::{
-    WorthQuerySourcePublicationHeadForTest, WorthQuerySourcePublicationImageForTest,
-};
+
+use crate::domain_computation::primary_graph::vocabulary::application_runtime::WorthQueryApplicationLiveDeliveryCloseReceipt;
 
 mod court_doors_for_test;

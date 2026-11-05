@@ -48,7 +48,7 @@ pub(in crate::domain_computation::primary_graph) fn read_selected(
     identity: worth_foundational::facade::ContentRefId,
     recipe: &worth_query_declaration::facade::application_schema::ApplicationContentBindingRecipe,
 ) -> Result<RelationalContentFrame, super::ContentReadDenial> {
-    use crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial as Stop;
+    use crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial as Stop;
     let Some(basis) = basis else {
         session.refuse_content(Stop::ContentBasisUnavailable);
         return Err(super::ContentReadDenial::UnavailableBasis);

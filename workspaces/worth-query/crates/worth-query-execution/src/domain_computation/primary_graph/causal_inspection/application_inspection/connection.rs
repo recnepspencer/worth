@@ -20,17 +20,7 @@ pub(super) enum ProducerExplanation {
 mod overlap;
 mod publication;
 mod source;
-use crate::domain_computation::{
-    authorization::application_disclosure::DiagnosticComparisonAdmission,
-    primary_graph::{
-        admitted_capture::{run_retained_stage, CaptureStop},
-        application_checkpoint::facts::FactPayload,
-        application_output_demand::OriginalSettledProducerSource,
-        source_disclosure::OriginalSourceInspectionDisclosure,
-        WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationCommitReceipt,
-        WorthQueryApplicationCommittedChanges, WorthQueryApplicationOutputCorrespondence,
-    },
-};
+use {crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonAdmission, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_output_demand::OriginalSettledProducerSource, crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure, crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity, crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges, crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence};
 pub use output_refusal::WorthQueryProducerOutputConnectionDenial;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
@@ -124,7 +114,7 @@ impl WorthQueryApplicationProducerConnection {
     /// Current settlement's actual readiness, distinct from execution or suppression.
     pub fn readiness_decision(
         &self,
-    ) -> crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision {
+    ) -> crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision {
         crate::domain_computation::primary_graph::conditional_operation::classify_bridge_signal_observation(&self.native)
     }
     pub fn has_performed_invalidation(&self) -> bool {

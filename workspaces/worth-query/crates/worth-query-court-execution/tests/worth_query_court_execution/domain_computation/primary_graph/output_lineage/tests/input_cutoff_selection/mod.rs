@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_runtime_world::facade::ProductBranchCreationIntent;
@@ -12,8 +12,8 @@ use worth_runtime_world::facade::SignalBranchCreationPlan;
 use crate::domain_computation::primary_graph::output_lineage::tests::checkpoint_identity;
 use crate::domain_computation::primary_graph::output_lineage::tests::RestoredOutputBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryOperationScopeBinding;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 

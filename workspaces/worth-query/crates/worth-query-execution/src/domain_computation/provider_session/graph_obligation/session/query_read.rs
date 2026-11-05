@@ -1,6 +1,4 @@
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisReleaseReceipt,
-};
+use {crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity, crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt};
 
 use super::super::read_terminal::WorthQueryGraphReadCompletionParts;
 use super::{WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSession};
@@ -66,8 +64,8 @@ fn same_managed_product<Stop>(
 
 /// Issued by the genuine Query session; selectors cannot construct this context.
 pub(in crate::domain_computation) struct WorthQueryQuerySourceContext {
-    session: super::WorthQueryGraphWorkSessionIdentity,
-    runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+    session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
+    runtime: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     principal: worth_relational::facade::identity::EntityId,
     scope: worth_relational::facade::identity::EntityId,
     product: crate::basis::WorthQueryProductObservationLease,
@@ -84,12 +82,12 @@ impl WorthQueryQuerySourceContext {
     }
     pub(in crate::domain_computation) fn session(
         &self,
-    ) -> super::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
         self.session
     }
     pub(in crate::domain_computation) fn runtime(
         &self,
-    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
         self.runtime
     }
     pub(in crate::domain_computation) fn principal(

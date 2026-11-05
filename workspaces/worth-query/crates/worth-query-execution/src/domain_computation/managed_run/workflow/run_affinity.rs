@@ -12,10 +12,7 @@ use crate::domain_computation::{
     WorthQueryExecutionResourceAttemptEvidence, WorthQueryWorkflowExecutionResourceAttempt,
 };
 
-use super::super::provider_work::{
-    WorthQueryManagedProviderCleanupAuthority, WorthQueryManagedProviderWorkEvidence,
-    WorthQueryManagedProviderWorkLedger,
-};
+use {super::super::provider_work::WorthQueryManagedProviderCleanupAuthority, crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence, super::super::provider_work::WorthQueryManagedProviderWorkLedger};
 use super::super::readmission::{
     WorthQueryWorkflowReadmissionProgressionPermit, WorthQueryWorkflowReadmissionRecoveryPermit,
 };
@@ -30,16 +27,9 @@ pub(in crate::domain_computation::managed_run) use cleanup::{
     WorthQueryWorkflowAffinityCleanupReceipt, WorthQueryWorkflowYieldReleasePending,
 };
 pub(in crate::domain_computation::managed_run::workflow) use terminal::WorthQueryWorkflowRunTerminalAffinity;
+use crate::domain_computation::vocabulary::managed_run::run_affinity::WorthQueryWorkflowRunTransitionPermit;
 
-pub(in crate::domain_computation) struct WorthQueryWorkflowRunTransitionPermit {
-    _owner: (),
-}
 
-impl WorthQueryWorkflowRunTransitionPermit {
-    const fn mint() -> Self {
-        Self { _owner: () }
-    }
-}
 
 /// Move-only association between one logical workflow run, its current live
 /// resource attempt, and the provider-work ledger bound to that attempt.
@@ -159,7 +149,7 @@ impl WorthQueryWorkflowRunAffinity {
 
     pub(in crate::domain_computation::managed_run) fn record_provider_execution_release(
         &mut self,
-        evidence: &crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryProviderExecutionReleaseEvidence,
+        evidence: &crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence,
     ) {
         self.provider_work
             .record_provider_execution_release(evidence);
@@ -198,7 +188,7 @@ impl WorthQueryWorkflowRunAffinity {
 
     pub(super) fn provider_plan_session(
         &self,
-        _owner: &super::WorthQueryWorkflowProviderPlanPermit,
+        _owner: &crate::domain_computation::vocabulary::managed_run::provider_plan_admission::WorthQueryWorkflowProviderPlanPermit,
     ) -> &crate::domain_computation::WorthQueryExecutionProviderSession {
         self.attempt
             .provider_session_for_managed_run(&WorthQueryWorkflowRunTransitionPermit::mint())
@@ -206,7 +196,7 @@ impl WorthQueryWorkflowRunAffinity {
 
     pub(super) fn provider_plan_operation(
         &self,
-        _owner: &super::WorthQueryWorkflowProviderPlanPermit,
+        _owner: &crate::domain_computation::vocabulary::managed_run::provider_plan_admission::WorthQueryWorkflowProviderPlanPermit,
     ) -> &crate::domain_computation::WorthQueryExecutionBoundOperationAuthority {
         self.attempt.binding_authority()
     }

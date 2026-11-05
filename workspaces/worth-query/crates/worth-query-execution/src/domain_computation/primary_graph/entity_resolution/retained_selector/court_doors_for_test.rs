@@ -1,9 +1,4 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
 
-impl WorthQueryObservedScopeSelector {
-    #[doc(hidden)]
-    pub fn subject_for_test(&self) -> EntityId {
-        Self::subject(self)
-    }
-}

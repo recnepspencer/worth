@@ -14,8 +14,8 @@ pub enum WorthQueryManagedDirectRunAdmissionFailureKind {
     InstalledStepContract,
     ReadExecution(
         Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     ),
     BridgeExecutionBasis,
@@ -55,7 +55,7 @@ impl WorthQueryManagedDirectRunAdmissionFailure {
 
     pub fn release(
         self,
-    ) -> crate::domain_computation::WorthQueryDirectExecutionAttemptReleaseReceipt {
+    ) -> crate::domain_computation::vocabulary::provider_session::direct_attempt::WorthQueryDirectExecutionAttemptReleaseReceipt {
         self.resource_attempt.release()
     }
 }

@@ -9,7 +9,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedCurrentInputs<'a
     product: &'a crate::basis::WorthQueryProductBranchLease,
     consumed: &'a std::collections::BTreeMap<
         std::sync::Arc<
-            crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+            crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity,
         >,
         ConsumedOutputEvidence,
     >,

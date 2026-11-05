@@ -1,6 +1,7 @@
 //! Detach one exact settlement; physical keys leave only with the final binding.
 
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 pub fn remove(
     state: &mut MarkState,

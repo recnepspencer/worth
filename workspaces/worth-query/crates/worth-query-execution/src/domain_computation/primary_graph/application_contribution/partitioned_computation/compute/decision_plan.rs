@@ -1,9 +1,7 @@
 //! Prepare on the owner, compute through its sealed request, complete on the owner.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_contribution::computation::prepared_request::PreparedCompute,
-    application_entry::mutation::{HandlerResult, WorthQueryDecisionPlan},
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute, crate::domain_computation::primary_graph::application_entry::mutation::HandlerResult, crate::domain_computation::primary_graph::application_entry::mutation::WorthQueryDecisionPlan};
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::nested_failure::MemberComputeFailure;
 
 impl<Schema, Feature, Computation, Owner>
     WorthQueryPreparedPartitionedComputation<Schema, Feature, Computation, Owner>

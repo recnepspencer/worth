@@ -58,7 +58,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .installed_mutation_binding::<Binding>()
             .map_err(|_| Denial::UnsupportedTargetProgram)?;
         let actor = self.resolve_authenticated_principal(phase, binding.principal_binding(), principal,
-            request, crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary)
+            request, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode::Ordinary)
             .map_err(Denial::Principal)?;
         let entity = actor.principal_entity_id();
         let identity = actor.binding_identity();

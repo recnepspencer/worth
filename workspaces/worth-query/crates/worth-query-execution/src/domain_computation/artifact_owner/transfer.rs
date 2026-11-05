@@ -4,7 +4,7 @@ pub struct WorthQueryArtifactTransferAdmission {
     pub(super) expected_contract:
         Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>,
     pub(super) domain_authority:
-        Arc<crate::domain_computation::WorthQueryInstalledDomainExecutionAuthority>,
+        Arc<crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority>,
     pub(super) operation_identity: String,
     pub(super) binding_identity: String,
     pub(super) run_identity: String,
@@ -48,7 +48,7 @@ pub(crate) struct WorthQueryArtifactTransferAdmissionParts {
     pub(crate) expected_contract:
         Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>,
     pub(crate) domain_authority:
-        Arc<crate::domain_computation::WorthQueryInstalledDomainExecutionAuthority>,
+        Arc<crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority>,
     pub(crate) operation_identity: String,
     pub(crate) binding_identity: String,
     pub(crate) run_identity: String,

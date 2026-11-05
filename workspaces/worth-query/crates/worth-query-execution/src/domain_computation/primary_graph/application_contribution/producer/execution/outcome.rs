@@ -4,10 +4,7 @@ use super::denial::{
 };
 use crate::domain_computation::primary_graph as graph;
 use crate::domain_computation::primary_graph::application_output_demand::denial::ProducerPublicationStale;
-use graph::{
-    HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationNoEffectCause,
-};
+use {graph::HandlerResult, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind, graph::WorthQueryApplicationCommitOutcome, graph::WorthQueryApplicationCommitReceipt, graph::WorthQueryApplicationNoEffectCause};
 use {
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,

@@ -76,46 +76,9 @@ pub(in crate::domain_computation) use selected_conventional::{
 
 use authorization_basis::ErasedAuthorizationBasis;
 
-static NEXT_OPERATION_ADMISSION_IDENTITY: AtomicU64 = AtomicU64::new(1);
 const RESOURCE_LABEL: &str = "worth-query-application-admission:";
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryOperationAdmissionIdentity(u64);
 
-impl WorthQueryOperationAdmissionIdentity {
-    pub(in crate::domain_computation::authorization) fn mint() -> Option<Self> {
-        Self::mint_from(&NEXT_OPERATION_ADMISSION_IDENTITY)
-    }
-
-    pub(in crate::domain_computation::authorization) fn resource_binding_identity(
-        self,
-    ) -> Arc<str> {
-        Arc::from(format!("{RESOURCE_LABEL}{}", self.0))
-    }
-
-    fn mint_from(counter: &AtomicU64) -> Option<Self> {
-        {
-            let update_counter = counter;
-            let mut current = update_counter.load(Ordering::Relaxed);
-            loop {
-                let Some(updated_value) = current.checked_add(1) else {
-                    break Err(current);
-                };
-                match update_counter.compare_exchange_weak(
-                    current,
-                    updated_value,
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(previous) => break Ok(previous),
-                    Err(reloaded_value) => current = reloaded_value,
-                }
-            }
-        }
-        .ok()
-        .map(Self)
-    }
-}
 
 /// Query-owned proof that one installed operation was authorized for one exact
 /// current principal and typed scope.
@@ -260,7 +223,7 @@ where
 mod tests {
     use std::sync::atomic::AtomicU64;
 
-    use super::WorthQueryOperationAdmissionIdentity;
+    use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
 
     #[test]
     fn operation_admission_identity_exhaustion_cannot_wrap() {

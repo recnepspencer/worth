@@ -35,7 +35,7 @@ pub struct WorthQueryHistoryOutputAuthority<'phase, 'scope> {
     current: WorthQueryProductObservationLease,
     original: Arc<WorthQueryApplicationReadObservation>,
     request: AdmittedRequestCurrentness,
-    principal: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    principal: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     selection: HistoryAuthorityLifetime,
     callback: HistoryAuthorityLifetime,
 }
@@ -127,7 +127,7 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
             E,
         >,
     ) -> bool {
-        self.principal == crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
+        self.principal == crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(
                 access.principal().principal_entity_id(),
             )
     }

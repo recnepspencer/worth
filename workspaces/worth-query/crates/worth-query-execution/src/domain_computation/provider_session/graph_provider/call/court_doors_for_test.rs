@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure;
 
 impl WorthQueryGraphProviderCall {
     #[doc(hidden)]

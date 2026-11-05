@@ -2,6 +2,8 @@
 use super::*;
 use crate::domain_computation::authorization::RequirementObservationScopedOps;
 use crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
 
 type ReadAuthorization = (
     WorthQueryRetainedAuthorizationDecisionFacts,
@@ -87,8 +89,8 @@ pub(super) trait ReadAuthorizationParentOps<Schema: ApplicationSchema>:
                     graph,
                     execution,
                     || crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
-                        crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(
-                            crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::ForeignRuntime,
+                        crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(
+                            crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind::ForeignRuntime,
                         ),
                         query.name(),
                     ),

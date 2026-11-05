@@ -1,6 +1,4 @@
 //! Doors under `domain_computation::primary_graph`.
-#[path = "admitted_capture/mod.rs"]
-pub mod admitted_capture;
 #[path = "aggregate_observation/mod.rs"]
 pub mod aggregate_observation;
 #[path = "application_attempt/mod.rs"]
@@ -37,8 +35,6 @@ pub mod exact_basis_access;
 pub mod fact_verification_observation;
 #[path = "handler/mod.rs"]
 pub mod handler;
-#[path = "index_currency/mod.rs"]
-pub mod index_currency;
 #[path = "index_maintenance_budget/mod.rs"]
 pub mod index_maintenance_budget;
 #[path = "index_refresh/mod.rs"]
@@ -49,10 +45,6 @@ pub mod invariant_projection;
 pub mod live_delivery;
 #[path = "merge_unique_values/mod.rs"]
 pub mod merge_unique_values;
-#[path = "output_binding_identity/mod.rs"]
-pub mod output_binding_identity;
-#[path = "output_family_identity/mod.rs"]
-pub mod output_family_identity;
 #[path = "output_lineage/mod.rs"]
 pub mod output_lineage;
 #[path = "output_reuse/mod.rs"]
@@ -63,8 +55,6 @@ pub mod product_operation;
 pub mod program_occurrence;
 #[path = "provider/mod.rs"]
 pub mod provider;
-#[path = "publication_request_denial/mod.rs"]
-pub mod publication_request_denial;
 #[path = "resolution_denial/mod.rs"]
 pub mod resolution_denial;
 #[path = "root/mod.rs"]
@@ -79,6 +69,8 @@ pub mod source_facts;
 pub mod structural_walk;
 #[path = "value_decode/mod.rs"]
 pub mod value_decode;
-pub use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenialKind;
+#[path = "vocabulary/mod.rs"]
+pub mod vocabulary;
+pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind;
 pub use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome::WorthQueryApplicationCommitOutcome;
 pub use crate::domain_computation::primary_graph::entity_key::WorthQueryApplicationEntityKey;

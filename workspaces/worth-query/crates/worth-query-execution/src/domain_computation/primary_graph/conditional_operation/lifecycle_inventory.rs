@@ -4,7 +4,7 @@ use super::inspection::WorthQueryConditionalRuntimeInspection;
 
 pub struct WorthQueryConditionalOperationLiveness {
     pub(super) binding: Weak<()>,
-    pub(super) lease: Weak<super::installation::ConditionalClockLease>,
+    pub(super) lease: Weak<crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::ConditionalClockLease>,
     pub(super) wakes: Vec<Weak<()>>,
     pub(super) intents: Vec<Weak<()>>,
     pub(super) attempts: Vec<Weak<()>>,
@@ -17,7 +17,7 @@ pub struct WorthQueryConditionalOperationLiveness {
 /// after close or drop to confirm everything was released.
 pub struct WorthQueryConditionalRuntimeLifecycleProbe {
     bindings: Vec<Weak<()>>,
-    leases: Vec<Weak<super::installation::ConditionalClockLease>>,
+    leases: Vec<Weak<crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::ConditionalClockLease>>,
     wakes: Vec<Weak<()>>,
     intents: Vec<Weak<()>>,
     attempts: Vec<Weak<()>>,

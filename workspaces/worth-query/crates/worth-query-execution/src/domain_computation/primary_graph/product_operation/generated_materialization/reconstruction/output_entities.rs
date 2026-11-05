@@ -3,10 +3,8 @@ use super::{
     WorthQueryGeneratedEntity, WorthQueryGeneratedOutputReconstruction,
     WorthQueryGeneratedOutputReconstructionDenial, WorthQueryRetainedGeneratedOutputEntity,
 };
-use crate::domain_computation::primary_graph::application_attempt::OutputRoleUse;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationProducerBinding,
-};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding};
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::marker::PhantomData;
 use std::sync::Arc;

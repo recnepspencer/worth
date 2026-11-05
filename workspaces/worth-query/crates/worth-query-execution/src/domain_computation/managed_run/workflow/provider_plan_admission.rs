@@ -8,16 +8,9 @@ use crate::domain_computation::{
     WorthQueryExecutionProviderSession, WorthQueryExecutionResourceAttemptEvidence,
     WorthQueryProviderSessionFailure,
 };
+use crate::domain_computation::vocabulary::managed_run::provider_plan_admission::WorthQueryWorkflowProviderPlanPermit;
 
-pub(in crate::domain_computation) struct WorthQueryWorkflowProviderPlanPermit {
-    _owner: (),
-}
 
-impl WorthQueryWorkflowProviderPlanPermit {
-    fn mint() -> Self {
-        Self { _owner: () }
-    }
-}
 
 impl WorthQueryRunningWorkflowRun {
     pub fn admit_stage_provider_execution_plan(

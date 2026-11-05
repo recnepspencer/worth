@@ -11,7 +11,7 @@ pub(crate) mod sizing;
 impl WorthQueryApplicationCheckpoint {
     pub(in crate::domain_computation::primary_graph) fn encode(
         native: worth_relational::facade::durability::RelationalNativeCheckpoint,
-        publication: &super::super::WorthQueryPrimaryGraphPublication,
+        publication: &crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication,
         accepted_outputs: &[super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity],
         policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
     ) -> Result<

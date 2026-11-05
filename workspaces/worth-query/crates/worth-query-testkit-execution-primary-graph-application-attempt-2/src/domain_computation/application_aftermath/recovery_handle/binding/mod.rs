@@ -3,7 +3,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdem
 use worth_query_installation::facade::WorthQueryInstalledAftermathContract;
 use worth_query_execution::facade::domain_computation::WorthQueryOperationScopeBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleBinding;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::commit_authority_binding::WorthQueryRetainedGovernedInput;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::commit_authority_binding::WorthQueryRetainedGovernedInput;
 #[cfg(all())]
 pub struct WorthQueryRecoveryHandleBindingAxisProbe {
     pub binding: WorthQueryRecoveryHandleBinding,

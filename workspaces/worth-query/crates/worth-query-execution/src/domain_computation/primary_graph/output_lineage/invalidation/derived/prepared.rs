@@ -10,10 +10,10 @@ use worth_relational::facade::mvcc::CompanionDerivedRootPreparationStop;
 use worth_relational::facade::mvcc::CompanionDerivedRootStopped;
 use worth_relational::facade::mvcc::PreparedCompanionDerivedRoot;
 
-use super::super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::super::source_alignment::BranchMarkRoot;
 use super::super::SourceInvalidationOwner;
-use super::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
 
 pub(super) struct PreparedRegistrationWorkCue {
@@ -36,7 +36,7 @@ pub struct SettlementRegistrationCleanup {
     _completion_cues: Option<super::completion_cues::PublishedCompletionCues>,
     _image: CompanionBranchImage<BranchMarkRoot>,
     _native: CompanionDerivedRootCleanup<BranchMarkRoot>,
-    _prior_work_hint: Option<crate::domain_computation::primary_graph::application_output_demand::ReplacedRequiredWorkHint>,
+    _prior_work_hint: Option<crate::domain_computation::primary_graph::vocabulary::application_output_demand::required_work::ReplacedRequiredWorkHint>,
 }
 
 pub struct StoppedSettlementRegistration {

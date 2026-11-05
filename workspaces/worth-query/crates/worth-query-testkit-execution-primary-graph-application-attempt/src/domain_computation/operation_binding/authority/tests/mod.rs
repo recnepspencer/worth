@@ -77,7 +77,7 @@ pub fn direct_authority_with_graph(
         worth_query_execution::facade::domain_computation::WorthQueryExecutionCommitPosture::ReadOnly,
     );
     (*authority.provider_plan_declarations_mut_for_test()) = Arc::new(
-        worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_direct_for_test(
+        worth_query_execution::court_doors_for_test::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations::test_direct_for_test(
             graph.role(),
             Some(access),
             false,
@@ -94,7 +94,7 @@ pub fn direct_authority_with_graph_and_decision_facts(
 ) -> WorthQueryExecutionBoundOperationAuthority {
     let mut authority = direct_authority_with_graph(runtime, plan, graph, access);
     (*authority.provider_plan_declarations_mut_for_test()) = Arc::new(
-        worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_direct_with_decision_facts_for_test(
+        worth_query_execution::court_doors_for_test::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations::test_direct_with_decision_facts_for_test(
             graph.role(),
             access,
             families,
@@ -117,7 +117,7 @@ pub fn direct_authority_with_graph_effect(
         worth_query_execution::facade::domain_computation::WorthQueryExecutionCommitPosture::ReadOnly,
     );
     (*authority.provider_plan_declarations_mut_for_test()) = Arc::new(
-        worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_direct_for_test(
+        worth_query_execution::court_doors_for_test::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations::test_direct_for_test(
             graph.role(),
             None,
             true,
@@ -133,7 +133,7 @@ pub fn direct_authority_with_graph_effect_and_decision_facts(
 ) -> WorthQueryExecutionBoundOperationAuthority {
     let mut authority = direct_authority_with_graph_effect(runtime, plan, graph);
     (*authority.provider_plan_declarations_mut_for_test()) = Arc::new(
-        worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_effect_with_decision_facts_for_test(
+        worth_query_execution::court_doors_for_test::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations::test_effect_with_decision_facts_for_test(
             graph.role(),
             families,
         ),
@@ -152,7 +152,7 @@ pub fn direct_authority_with_graph_effect_decision_facts_and_invariants(
     let mut authority =
         direct_authority_with_graph_effect_and_decision_facts(runtime, plan, graph, families);
     (*authority.provider_plan_declarations_mut_for_test()) = Arc::new(
-        worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_effect_with_decision_facts_and_invariants_for_test(
+        worth_query_execution::court_doors_for_test::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations::test_effect_with_decision_facts_and_invariants_for_test(
             graph.role(),
             (*authority.provider_plan_declarations_for_test()).decision_fact_families_for_test().to_vec(),
             invariants,
@@ -226,7 +226,7 @@ pub fn workflow_authority_with_stage_graph(
         worth_query_execution::facade::domain_computation::WorthQueryExecutionCommitPosture::ReadOnly,
     );
     (*authority.provider_plan_declarations_mut_for_test()) = Arc::new(
-        worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_workflow_stage_for_test(
+        worth_query_execution::court_doors_for_test::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations::test_workflow_stage_for_test(
             stage_identity,
             graph.role(),
             access,

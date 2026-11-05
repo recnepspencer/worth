@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind;
 
 pub(super) fn validate_common_authority(
     observation: WorthQueryProviderPlanAuthorityObservation<'_>,

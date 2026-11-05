@@ -1,9 +1,6 @@
 //! Content references retain field absence evidence instead of collapsing it into Option.
 use super::WorthQueryApplicationInvariantProjectionReader as Reader;
-use crate::domain_computation::primary_graph::{
-    application_attempt::observe_field_observation_borrowed_admitted,
-    WorthQueryValueDecodeDenial as Stop,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_observation_borrowed_admitted, crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial as Stop};
 use worth_foundational::facade::{AspectFieldLocator, ContentRefId};
 use worth_query_declaration::facade::application_schema::ContentRefApplicationValueBinding;
 use worth_query_installation::facade::ApplicationSchema;

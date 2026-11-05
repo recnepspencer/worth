@@ -1,28 +1,8 @@
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct WorthQueryRuntimeSourceIdentity([u8; 32]);
+use crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity;
+use crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity;
 
-impl WorthQueryRuntimeSourceIdentity {
-    pub(in crate::domain_computation::primary_graph) const fn new(identity: [u8; 32]) -> Self {
-        Self(identity)
-    }
 
-    pub(in crate::domain_computation::primary_graph) const fn bytes(self) -> [u8; 32] {
-        self.0
-    }
-}
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct WorthQueryCheckpointSourceIdentity([u8; 32]);
-
-impl WorthQueryCheckpointSourceIdentity {
-    pub(in crate::domain_computation::primary_graph) const fn new(identity: [u8; 32]) -> Self {
-        Self(identity)
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn bytes(self) -> [u8; 32] {
-        self.0
-    }
-}
 
 impl<Query> super::super::WorthQueryObservedSource<Query> {
     /// Runtime-local source commitment retained from the immutable basis.

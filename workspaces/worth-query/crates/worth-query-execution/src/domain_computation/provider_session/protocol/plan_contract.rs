@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::declared_closure::WorthQueryProviderPlanDeclarations;
+use crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations;
 use super::execution_plan::WorthQueryValidatedProviderPlan;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -25,7 +25,7 @@ impl WorthQueryProviderOperationScope {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderExecutionPlanContract {
     runtime_authority:
-        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     identity: Arc<str>,
     operation_identity: Arc<str>,
     binding_identity: Arc<str>,
@@ -59,7 +59,7 @@ pub struct WorthQueryProviderExecutionPlanContract {
     graph_work_session: Option<u64>,
     graph_work_managed_run: Option<u64>,
     application_operation_attempt:
-        Option<crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity>,
+        Option<crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity>,
     application_operation_slot: Option<Arc<str>>,
     application_schema_binding:
         Option<worth_query_installation::facade::ApplicationSchemaBindingIdentity>,
@@ -136,7 +136,7 @@ impl WorthQueryProviderExecutionPlanContract {
 
     pub(crate) const fn runtime_authority(
         &self,
-    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
         self.runtime_authority
     }
 
@@ -194,7 +194,7 @@ impl WorthQueryProviderExecutionPlanContract {
 
     pub(crate) const fn application_operation_attempt(
         &self,
-    ) -> Option<crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity>
+    ) -> Option<crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity>
     {
         self.application_operation_attempt
     }

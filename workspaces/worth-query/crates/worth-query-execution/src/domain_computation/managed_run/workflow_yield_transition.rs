@@ -11,12 +11,7 @@ use super::workflow_yield_freeze::freeze_and_finalize_workflow_yield;
 use super::workflow_yield_recovery::{
     terminalized_recovery, WorthQueryTerminalizedWorkflowYieldRecovery,
 };
-use super::{
-    WorthQueryManagedRunCounters, WorthQueryPausedWorkflowGraphExecution,
-    WorthQueryWorkflowYieldDenied, WorthQueryWorkflowYieldOutcome, WorthQueryYieldRecoveryKind,
-    WorthQueryYieldRecoveryResourceEvidence, WorthQueryYieldTransitionCounters,
-    WorthQueryYieldedWorkflowRun,
-};
+use {crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters, super::WorthQueryPausedWorkflowGraphExecution, super::WorthQueryWorkflowYieldDenied, super::WorthQueryWorkflowYieldOutcome, super::WorthQueryYieldRecoveryKind, super::WorthQueryYieldRecoveryResourceEvidence, super::WorthQueryYieldTransitionCounters, super::WorthQueryYieldedWorkflowRun};
 use crate::domain_computation::artifact_owner::{
     WorthQueryArtifactOccurrenceLedger, WorthQueryFrozenWorkflowArtifactAuthority,
 };
@@ -159,7 +154,7 @@ pub(super) struct WorthQueryWorkflowYieldMintedOwner {
         crate::domain_computation::artifact_owner::WorthQueryFrozenWorkflowArtifactAuthority,
     pub(super) artifact_evidence:
         crate::domain_computation::artifact_owner::WorthQueryWorkflowArtifactRegistryEvidence,
-    pub(super) run_counters: super::WorthQueryManagedRunCounters,
+    pub(super) run_counters: crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters,
     pub(super) provider_artifact_occurrences: std::sync::Arc<
         crate::domain_computation::artifact_owner::WorthQueryArtifactOccurrenceLedger,
     >,

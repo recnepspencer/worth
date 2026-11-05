@@ -2,14 +2,7 @@
 mod currentness;
 mod plan;
 mod preparation;
-use crate::domain_computation::{
-    authorization::{
-        application_disclosure::WorthQueryApplicationQueryGovernance,
-        WorthQueryRetainedAuthorizationDecisionFacts,
-    },
-    primary_graph::{WorthQueryApplicationBasisIdentity, WorthQueryApplicationEntityIdentity},
-    provider_session::{WorthQueryManagedGraphWorkSession, WorthQuerySessionResourceReadProof},
-};
+use {crate::domain_computation::authorization::application_disclosure::WorthQueryApplicationQueryGovernance, crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts, crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession, crate::domain_computation::provider_session::WorthQuerySessionResourceReadProof};
 pub(super) use preparation::prepare;
 use std::sync::Arc;
 use worth_foundational::facade::CanonicalDigestId;
@@ -29,12 +22,12 @@ pub(super) enum ResourceAdmissionDenial {
     MissingPrincipalBinding,
     Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial),
     DisclosureAuthorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial),
-    Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
+    Scope(crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial),
     Security(crate::basis::WorthQueryProductBranchAdmissionDenial),
     Contract(crate::domain_computation::authorization::application_disclosure::contract::WorthQueryApplicationDisclosureContractDenial),
     Governance(crate::domain_computation::authorization::application_disclosure::WorthQueryApplicationQueryGovernanceDenialKind),
     FacetDenied,
-    Plan(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<plan::ResourcePlanDenial>),
+    Plan(crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop<plan::ResourcePlanDenial>),
     Session(crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSessionStartDenial),
     Read(crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial),
 }
@@ -68,7 +61,7 @@ impl ResourceActionTerminal {
     pub(super) fn complete(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        release: crate::domain_computation::primary_graph::WorthQueryApplicationBasisReleaseReceipt,
+        release: crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt,
     ) -> Result<
         crate::domain_computation::provider_session::WorthQueryResourceReadCompletion,
         ResourceAdmissionDenial,

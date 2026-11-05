@@ -4,16 +4,6 @@ pub(crate) mod planning;
 pub(in crate::domain_computation::primary_graph) use planning::PlannedBatchItem;
 pub use planning::WorthQueryApplicationQueryBatchReadPlan;
 
-/// A scheduled read cannot be admitted to its exact installed batch plan.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationQueryBatchResourceDenial {
-    ItemLimit { required: usize, maximum: usize },
-    CounterOverflow,
-    AllocationFailed,
-    ForeignPlan,
-    UnplannedRead,
-    PlanningFrozen,
-}
 
 /// Exact scheduled slots issued from installed queries; not disclosure authority.
 #[derive(Clone)]
@@ -41,3 +31,4 @@ impl WorthQueryApplicationQueryBatchAdmission {
     }
 }
 pub use planning::PlanningOps;
+use crate::domain_computation::primary_graph::vocabulary::application_query::batch::WorthQueryApplicationQueryBatchResourceDenial;

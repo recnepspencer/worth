@@ -80,7 +80,7 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
             let lineage = graph.output_lineage.lock().unwrap();
             let keeping = roles.iter().all(|role| role.posture == RequiredOutputRolePosture::Preserve);
             let binding = if keeping { worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<Binding<Schema, true>>() } else { worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<Binding<Schema, false>>() };
-            let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource::new_for_test((*runtime.runtime_for_test()).authority_identity_for_test().as_u64(), runtime.installed_schema().binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(source_entity), lineage.binding_identity_for_test(binding).unwrap());
+            let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource::new_for_test((*runtime.runtime_for_test()).authority_identity_for_test().as_u64(), runtime.installed_schema().binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(source_entity), lineage.binding_identity_for_test(binding).unwrap());
 
             let (occurrence, generation, slot) = match recorded {
                 Some(identity) => {

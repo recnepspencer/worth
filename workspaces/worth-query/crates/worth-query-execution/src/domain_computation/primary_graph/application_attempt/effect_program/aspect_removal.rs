@@ -6,6 +6,8 @@ use worth_query_declaration::facade::application_schema::{
     OperationRemovesAspects,
 };
 use worth_relational::facade::identity::EntityId;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {

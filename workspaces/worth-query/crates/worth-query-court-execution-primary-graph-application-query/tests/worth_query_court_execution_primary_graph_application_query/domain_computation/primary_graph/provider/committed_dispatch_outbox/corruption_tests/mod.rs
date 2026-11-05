@@ -25,14 +25,14 @@ use worth_query_execution::facade::primary_graph::WorthQueryCommittedDispatchOut
 use worth_query_execution::facade::domain_computation::WorthQueryDispatchOutboxRecord;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::provider::committed_dispatch_outbox::tests;
-use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::bind_dispatch_outbox_create_intent;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::application_aftermath::outbox::bind_dispatch_outbox_create_intent;
 use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::derive_external_effect_correlation_identity;
 use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::ExternalEffectCorrelationBasis;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcomeIdentity;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_relational_branch_id;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
+use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
 
 #[test]
 fn every_valid_persisted_field_substitution_breaks_whole_record_affinity() {
@@ -296,7 +296,7 @@ pub fn committed_substituted_row(
 }
 
 pub fn corrupted_spec(
-    layout: &worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::WorthQueryDispatchOutboxLayout,
+    layout: &worth_query_execution::court_doors_for_test::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout,
     expected: EntitySpec,
     field: usize,
     replacement: AspectValue,
@@ -330,7 +330,7 @@ pub fn valid_field_substitutions() -> Vec<(usize, AspectValue)> {
 }
 
 pub fn field_locator(
-    layout: &worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::WorthQueryDispatchOutboxLayout,
+    layout: &worth_query_execution::court_doors_for_test::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout,
     field: usize,
 ) -> worth_foundational::facade::AspectFieldLocator {
     [

@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind;
 
 impl WorthQueryProviderSessionCommitControlStopped {
     #[doc(hidden)]

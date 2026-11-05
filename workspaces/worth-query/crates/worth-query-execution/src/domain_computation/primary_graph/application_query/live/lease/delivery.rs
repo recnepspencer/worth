@@ -114,7 +114,7 @@ where
             Ok((result, receipt, governance)) => {
                 if let Err(cause) = decode.check(execution) {
                     return self.handle_projection_denial(
-                        crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjectionDenialKind::ValueDecode(cause),
+                        crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind::ValueDecode(cause),
                     );
                 }
                 let request = self.controls.request().clone();

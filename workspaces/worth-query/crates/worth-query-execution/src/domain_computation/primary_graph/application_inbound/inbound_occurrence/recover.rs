@@ -20,11 +20,7 @@ use super::receive::{
     WorthQueryInboundAdmissionDenial as Denial, WorthQueryInboundReceiptPosture as Posture,
 };
 use super::WorthQueryInboundSourcePosture;
-use crate::domain_computation::application_aftermath::{
-    ExternalEffectCorrelationIdentity, WorthQueryAcceptedInboundOccurrence,
-    WorthQueryInboundCustody, WorthQueryInboundPublicationClaim,
-    WorthQueryInboundRecoveryState as State, WorthQueryInboundTerminalOwnerResult,
-};
+use {crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity, crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence, crate::domain_computation::application_aftermath::WorthQueryInboundCustody, crate::domain_computation::application_aftermath::WorthQueryInboundPublicationClaim, crate::domain_computation::application_aftermath::WorthQueryInboundRecoveryState as State, crate::domain_computation::application_aftermath::WorthQueryInboundTerminalOwnerResult};
 use crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt;
 use crate::domain_computation::WorthQueryProductUnpublishedApplication;
 use {
@@ -312,7 +308,7 @@ trait RecoverOwnOps<Schema: ApplicationSchema>:
             Err(PublicationDenial::ClockMismatch) => {
                 return RecoveryStep::Retain(
                     State::Active(recovery),
-                    Err(Denial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),
+                    Err(Denial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),
                 )
             },
 Err(PublicationDenial::Stopped(stop)) => {
@@ -359,7 +355,7 @@ Err(PublicationDenial::Stopped(stop)) => {
             }
             Err(PublicationDenial::ClockMismatch) => RecoveryStep::Retain(
                 State::Active(recovery),
-                Err(Denial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),
+                Err(Denial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),
             ),
 Err(PublicationDenial::Stopped(stop)) => RecoveryStep::Retain(
                 State::Active(recovery),

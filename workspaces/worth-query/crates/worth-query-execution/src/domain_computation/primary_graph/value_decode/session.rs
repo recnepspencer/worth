@@ -1,4 +1,4 @@
-use super::WorthQueryValueDecodeDenial as Stop;
+use crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial as Stop;
 mod content;
 mod installed;
 use worth_execution::MapKernelStop;

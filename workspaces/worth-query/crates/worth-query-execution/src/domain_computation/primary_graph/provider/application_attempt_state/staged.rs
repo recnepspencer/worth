@@ -55,7 +55,7 @@ impl WorthQueryStagedApplicationAttempt<'_> {
 
     pub(in crate::domain_computation::primary_graph::provider) const fn expected_step_preparation_work(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryExpectedEffectStepPreparationWork{
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::expected_steps::WorthQueryExpectedEffectStepPreparationWork{
         self.attempt.expected_step_preparation_work()
     }
 
@@ -96,7 +96,7 @@ impl WorthQueryStagedApplicationAttempt<'_> {
 
     pub(in crate::domain_computation::primary_graph::provider) fn producer_required_invariants(
         &self,
-    ) -> &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement]
+    ) -> &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement]
     {
         self.attempt.producer_required_invariants()
     }

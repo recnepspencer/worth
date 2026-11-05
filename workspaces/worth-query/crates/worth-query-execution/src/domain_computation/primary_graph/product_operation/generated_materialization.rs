@@ -23,17 +23,8 @@ mod preparation_execution;
 pub(crate) mod restoration;
 mod suspend;
 mod suspension_failure;
-pub(in crate::domain_computation::primary_graph) use restoration::admit_required_invariants;
-pub use restoration::{
-    WorthQueryGeneratedOutputInvariantAdmissionDenial,
-    WorthQueryGeneratedOutputPublicationNoEffect,
-    WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputRestorationFailure,
-    WorthQueryGeneratedOutputRestorationFailureCause, WorthQueryGeneratedOutputRestorationReceipt,
-    WorthQueryGeneratedOutputRestorationRecovery,
-    WorthQueryGeneratedOutputRestorationRecoveryFailure,
-    WorthQueryGeneratedOutputRestorationRecoveryStage, WorthQueryRestoredGeneratedOutput,
-    WorthQueryUnpublishedGeneratedOutputRestoration,
-};
+
+pub use {restoration::WorthQueryGeneratedOutputPublicationNoEffect, restoration::WorthQueryGeneratedOutputPublicationNoEffectCause, restoration::WorthQueryGeneratedOutputRestorationFailure, restoration::WorthQueryGeneratedOutputRestorationFailureCause, restoration::WorthQueryGeneratedOutputRestorationReceipt, restoration::WorthQueryGeneratedOutputRestorationRecovery, restoration::WorthQueryGeneratedOutputRestorationRecoveryFailure, restoration::WorthQueryGeneratedOutputRestorationRecoveryStage, restoration::WorthQueryRestoredGeneratedOutput, restoration::WorthQueryUnpublishedGeneratedOutputRestoration};
 use suspend::suspended_output;
 
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding;
@@ -49,9 +40,9 @@ pub struct ProducerQualification {
     binding_identity: &'static str,
     provider_identity: &'static str,
     runtime_source_identity:
-        crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
+        crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity,
     checkpoint_source_identity:
-        crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
+        crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity,
     recorded_source_identity:
         crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity,
     source_partition_identity: [u8; 32],
@@ -60,7 +51,7 @@ pub struct ProducerQualification {
     idempotency_key_identity: [u8; 32],
     runtime_authority: u64,
     schema: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
-    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     output_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     output_generation: u64,
     observed_source_facts:

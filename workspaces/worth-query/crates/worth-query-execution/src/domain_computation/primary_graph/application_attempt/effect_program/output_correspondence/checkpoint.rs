@@ -1,9 +1,5 @@
 //! Reconstruct correspondence only after admitting its independent owned payload.
-use super::{
-    CommittedOutputBinding, CorrespondenceStorage, TypeId,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputRoleNameDenial,
-    WorthQueryCheckpointOutputRole,
-};
+use {super::CommittedOutputBinding, super::CorrespondenceStorage, super::TypeId, super::WorthQueryApplicationOutputCorrespondence, super::WorthQueryApplicationOutputRoleNameDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole};
 use crate::domain_computation::primary_graph::application_checkpoint::{
     CheckpointDecodeDenial, CheckpointMetadataFunding,
 };

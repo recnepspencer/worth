@@ -1,5 +1,8 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 
 impl PreparedOutputLineageSlot {
     #[doc(hidden)]
@@ -47,9 +50,9 @@ impl PreparedOutputLineageSlot {
         partition_cell: Arc<OnceLock<usize>>,
         cancellation: Option<Box<CancelledLineageSlot>>,
         completed_handler_facts: Option<
-        crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary,
+        crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary,
     >,
-        completed_decision_reuse: Option<super::super::CompletedDecisionReuseProof>,
+        completed_decision_reuse: Option<crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof>,
         prepared_input_reuse_key: Option<super::super::PreparedInputReuseKey>,
         native_output_witness: Option<Arc<OnceLock<super::super::SealedNativeOutputWitness>>>,
         required_publication: Option<

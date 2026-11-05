@@ -1,10 +1,4 @@
-use super::{
-    cooperative_execution::next_cooperative_execution_admission_identity,
-    WorthQueryCooperativeGraphProviderExecution, WorthQueryGraphProviderExecution,
-    WorthQueryGraphProviderMemoryArena, WorthQueryGraphProviderRetainedMemory,
-    WorthQueryGraphProviderStepDenial, WorthQueryGraphProviderStepDenialKind,
-    WorthQueryOwnedGraphProviderExecution, WorthQueryProviderExecutionReleaseEvidence,
-};
+use {super::cooperative_execution::next_cooperative_execution_admission_identity, super::WorthQueryCooperativeGraphProviderExecution, super::WorthQueryGraphProviderExecution, super::WorthQueryGraphProviderMemoryArena, super::WorthQueryGraphProviderRetainedMemory, crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial, crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind, super::WorthQueryOwnedGraphProviderExecution, crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence};
 
 /// Provider-facing construction port bound to one admitted managed execution.
 ///
@@ -81,7 +75,7 @@ impl<'scope> WorthQueryGraphProviderExecutionStart<'scope> {
         admitted: WorthQueryCooperativeGraphProviderExecution<E>,
     ) -> Result<
         Box<dyn WorthQueryGraphProviderExecution>,
-        crate::domain_computation::WorthQueryGraphProviderFailure,
+        crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure,
     > {
         if admitted.arena_identity() != self.memory.snapshot().arena_identity()
             || admitted.admission_identity() != self.execution_admission_identity
@@ -92,11 +86,11 @@ impl<'scope> WorthQueryGraphProviderExecutionStart<'scope> {
             );
             self.denial = Some(denial.clone());
             return Err(
-                crate::domain_computation::WorthQueryGraphProviderFailure::new(denial.detail()),
+                crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure::new(denial.detail()),
             );
         }
         self.admitted_execution.take().ok_or_else(|| {
-            crate::domain_computation::WorthQueryGraphProviderFailure::new(
+            crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure::new(
                 "cooperative provider execution admission no longer owns an execution",
             )
         })

@@ -3,11 +3,9 @@
 use super::super::capability_registry::{
     WorthQueryCapabilityDecisionRuleBindings, WorthQueryInstalledCapabilityPlan,
 };
-use super::super::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
+use {super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 use super::invalid_policy;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 pub(super) fn decision_denial_causes(
     bindings: &WorthQueryCapabilityDecisionRuleBindings,

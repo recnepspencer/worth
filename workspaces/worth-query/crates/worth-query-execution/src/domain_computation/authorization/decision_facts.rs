@@ -1,11 +1,8 @@
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationCounters;
 use worth_runtime_bridge::facade::BridgeAuthorizationRuntime;
 
-use super::{
-    WorthQueryCapabilityCommitBasis, WorthQueryOperationAdmissionIdentity,
-    WorthQueryRetainedCapabilityAuthorization,
-};
+use {super::WorthQueryCapabilityCommitBasis, crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity, super::WorthQueryRetainedCapabilityAuthorization};
 mod admitted_currentness;
 mod source_read_support;
 pub(in crate::domain_computation) use admitted_currentness::AuthorizationCurrentnessStop;
@@ -100,7 +97,7 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
 
     pub(in crate::domain_computation) fn belongs_to_session(
         &self,
-        session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     ) -> bool {
         match self {
             Self::Capability(authorization) => authorization.belongs_to_session(session),
@@ -157,15 +154,15 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
-    ) -> Result<(), super::WorthQueryOperationAuthorizationDenialKind> {
+    ) -> Result<(), crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind> {
         if !self.principal_remains_current_in(execution, runtime, snapshot)? {
-            return Err(super::WorthQueryOperationAuthorizationDenialKind::Refused(
+            return Err(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::StalePrincipal,
             ));
         }
         self.decisions_remain_current_in(execution, runtime, snapshot, bridge)?
             .then_some(())
-            .ok_or(super::WorthQueryOperationAuthorizationDenialKind::Refused(
+            .ok_or(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::StaleAuthorization,
             ))
     }
@@ -175,7 +172,7 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> Result<bool, super::WorthQueryOperationAuthorizationDenialKind> {
+    ) -> Result<bool, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind> {
         principal(self).remains_current_in(execution, runtime, snapshot)
     }
 
@@ -185,15 +182,15 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
-    ) -> Result<bool, super::WorthQueryOperationAuthorizationDenialKind> {
+    ) -> Result<bool, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind> {
         match self {
             Self::Capability(authorization) => {
                 match authorization.validate_currentness_in(execution, runtime, snapshot, bridge) {
                     Ok(()) => Ok(true),
-                    Err(kind @ super::WorthQueryOperationAuthorizationDenialKind::Stopped(_)) => {
+                    Err(kind @ crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Stopped(_)) => {
                         Err(kind)
                     }
-                    Err(super::WorthQueryOperationAuthorizationDenialKind::Refused(_)) => Ok(false),
+                    Err(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(_)) => Ok(false),
                 }
             }
             Self::Principal(_) | Self::Abilities { .. } => {
@@ -302,7 +299,7 @@ impl WorthQueryCommitAuthorizationBasis {
 
     pub(super) fn belongs_to_session(
         &self,
-        session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     ) -> bool {
         match self {
             Self::Observed { authorization, .. } => authorization.belongs_to_session(session),
@@ -329,7 +326,7 @@ impl WorthQueryObservedCommitBasis {
 
     fn belongs_to_session(
         &self,
-        session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     ) -> bool {
         self.principal.session_identity() == session
             && self
@@ -343,7 +340,7 @@ impl WorthQueryObservedCommitBasis {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> Result<bool, super::WorthQueryOperationAuthorizationDenialKind> {
+    ) -> Result<bool, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind> {
         self.principal
             .remains_current_in(execution, runtime, snapshot)
     }
@@ -354,7 +351,7 @@ impl WorthQueryObservedCommitBasis {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
-    ) -> Result<bool, super::WorthQueryOperationAuthorizationDenialKind> {
+    ) -> Result<bool, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind> {
         for fact in &self.decisions {
             if !fact
                 .remains_current_in(execution, runtime, snapshot, bridge)

@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::EvidenceView;
 use im::OrdSet;
 use std::sync::Arc;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 
 impl WorthQueryApplicationOutputLineage {
     pub(super) fn supporting_publication_sources(
@@ -48,7 +49,7 @@ impl WorthQueryApplicationOutputLineage {
             }
             let family = family.ok_or_else(|| stop(Kind::ProducerUnavailable))?;
             for (binding, _) in family {
-                crate::domain_computation::primary_graph::invariant_projection::consumed_output::reserve_pending(aliases, 1)
+                crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::reserve_pending(aliases, 1)
                     .map_err(|stop| crate::domain_computation::primary_graph::output_reuse::verification_denial(stop, "availability completion aliases"))?;
                 let mut alias = source.clone();
                 alias.output_binding = self
@@ -65,7 +66,7 @@ impl WorthQueryApplicationOutputLineage {
         values: &'a [crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence],
         pending: &mut Vec<EvidenceView<'a>>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        crate::domain_computation::primary_graph::invariant_projection::consumed_output::reserve_pending(pending, values.len())
+        crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::reserve_pending(pending, values.len())
             .map_err(|stop| crate::domain_computation::primary_graph::output_reuse::verification_denial(stop, "availability support closure"))?;
         pending.extend(values.iter().map(EvidenceView::from));
         Ok(())

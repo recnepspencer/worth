@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
 
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::installation::clock_handle::ConditionalClockLease;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::ConditionalClockLease;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::clock_observation::erased::ErasedClockObservationOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryConditionalClockObservationFailureKind;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::lifecycle::registry::WorthQueryConditionalOperationRegistry;

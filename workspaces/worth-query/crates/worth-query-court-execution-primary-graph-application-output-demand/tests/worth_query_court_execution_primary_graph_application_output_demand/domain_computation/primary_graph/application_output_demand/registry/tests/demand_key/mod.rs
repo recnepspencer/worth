@@ -85,7 +85,7 @@ fn incomparable_preserve_bindings_do_not_pick_a_successor_by_iteration_order() {
 fn family_scope_profile_and_source_movement_do_not_forge_a_successor() {
     let initial = initial();
     let mut foreign = initial.clone();
-    (*foreign.family_mut_for_test()) = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity::declared_for_test("other-output-family");
+    (*foreign.family_mut_for_test()) = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_family_identity::OutputFamilyIdentity::declared_for_test("other-output-family");
     assert!(!initial.same_occurrence_for_test(&foreign));
     assert!(!initial.same_semantic_source_for_test(&foreign));
     assert_eq!(initial.replacement_order_for_test(&foreign), None);

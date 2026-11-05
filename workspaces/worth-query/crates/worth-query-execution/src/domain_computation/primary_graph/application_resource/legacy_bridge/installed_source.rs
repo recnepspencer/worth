@@ -1,5 +1,5 @@
 use super::{WorthQueryOwnedAsyncRuntimeDenial as Denial, WorthQueryOwnedAsyncRuntimeServices};
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 use worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration;
 
 /// Installed descriptive correspondence. Entry rechecks the actual owner catalog.

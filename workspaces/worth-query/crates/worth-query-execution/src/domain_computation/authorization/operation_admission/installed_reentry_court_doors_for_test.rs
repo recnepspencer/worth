@@ -7,7 +7,7 @@ impl<Schema, Operation, Input, Scope>
     #[doc(hidden)]
     pub fn validate_installed_entry_for_test(
         &self,
-        runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        runtime: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
         binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
         installed: &InstalledOperationCatalog,
     ) -> Result<(), Denial> {

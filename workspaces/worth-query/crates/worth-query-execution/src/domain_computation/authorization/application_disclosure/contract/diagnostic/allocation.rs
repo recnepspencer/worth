@@ -1,9 +1,11 @@
 //! Quote the existing compiler's rule, mask, key and simultaneous tree copies.
 use super::*;
-use crate::domain_computation::primary_graph::admitted_capture::storage::tree_clone_bytes;
+use crate::domain_computation::vocabulary::primary_graph::storage::tree_clone_bytes;
 use std::{alloc::Layout, sync::atomic::AtomicUsize};
 use worth_execution::MapKernelContext;
 use worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence;
+use crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial;
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
 
 type Failure = MapKernelFailure<DiagnosticContractDenial>;
 

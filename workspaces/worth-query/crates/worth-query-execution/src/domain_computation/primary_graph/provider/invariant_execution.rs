@@ -173,7 +173,7 @@ impl WorthQueryPrimaryGraphProvider {
             &material.requirements,
             semantic_work,
         )?;
-        super::super::product_operation::admit_required_invariants(
+        crate::domain_computation::primary_graph::vocabulary::product_operation::invariant_admission::admit_required_invariants(
             candidate
                 .invariant_evidence()
                 .custom_invariant_execution_receipts(),

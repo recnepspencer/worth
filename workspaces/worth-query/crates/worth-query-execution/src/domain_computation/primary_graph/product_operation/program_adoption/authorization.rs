@@ -10,11 +10,7 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationOperationRef,
 };
 use worth_query_installation::facade::ApplicationSchema;
-use {
-    crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode,
-    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
-    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
-};
+use {crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation, crate::domain_computation::request_execution::WorthQueryAdvancementPhase};
 
 /// Why the selected source program refused inspection or adoption.
 /// Authorization refusals perform no adoption effects and preserve carried custody.
@@ -25,14 +21,14 @@ pub enum WorthQueryProgramAdoptionAuthorizationDenial {
         requested: crate::basis::WorthQueryProductBranch,
     },
     ProductSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
-    Inspection(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial),
+    Inspection(crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial),
     CapabilityNotDeclared,
     InstalledMeaningChanged,
     PrincipalInstallation(
         worth_query_installation::facade::WorthQueryPrincipalBindingInstallationDenial,
     ),
     PrincipalResolution(
-        crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial,
+        crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial,
     ),
     OperationInstallation(
         worth_query_installation::facade::WorthQueryApplicationOperationInstallationDenial,

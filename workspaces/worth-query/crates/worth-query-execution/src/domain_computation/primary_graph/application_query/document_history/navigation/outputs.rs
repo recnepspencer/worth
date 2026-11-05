@@ -43,7 +43,7 @@ trait OutputsOwnOps<S: ApplicationSchema>:
             || control.security_product.observation() != read.current_product().observation()
             || control.basis.selected_product().observation() != read.current_product().observation()
             || !control.controls.is_current_product_one_shot()
-            || crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(control.principal.principal_entity_id()) != read.principal()
+            || crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(control.principal.principal_entity_id()) != read.principal()
         { return Err(ReadDenial::Authority(NavigationDenial::ForeignDocument)); }
         read.confirm(document, ())
             .map_err(|cause| ReadDenial::Authority(NavigationDenial::Document(cause)))?;

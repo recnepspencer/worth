@@ -4,7 +4,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn unknown
     detail: &'static str,
 ) -> super::super::WorthQueryApplicationUnresolvedCommitEvidence {
     let failure = crate::domain_computation::provider_session::WorthQueryProviderSessionFailure::new(
-        crate::domain_computation::provider_session::WorthQueryProviderSessionDenialKind::ProviderRejected,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ProviderRejected,
         crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolStage::Commit,
         detail,
         crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolCounters::default(),

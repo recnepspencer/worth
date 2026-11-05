@@ -124,7 +124,7 @@ pub(super) struct RetiredTerminalCleanup {
     _released: Vec<Arc<WorthQueryOutputDemandKey>>,
     _checkpoint: Option<super::prerequisite_claims::CheckpointPrerequisiteClaims>,
     _settlements: Vec<
-        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+        Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
     >,
     _retired_members: Vec<super::required_members::DetachedRequiredMember>,
     _obligations: Vec<super::PerformedOutputObligation>,

@@ -1,12 +1,8 @@
 //! All actual candidate bodies remain influence, including exact rejected rows.
-use super::super::{
-    source::{occurrences::PersistentSourceRows, projection::Entry},
-    WorthQueryManagedIndexControl as Control, WorthQueryManagedIndexSourceSlot as Slot,
-    WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial as Denial,
-};
+use {super::super::source::occurrences::PersistentSourceRows, super::super::source::projection::Entry, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot as Slot, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial};
 use crate::domain_computation::primary_graph::access_strategy::coverage::ReceivedSelection;
 use crate::domain_computation::primary_graph::access_strategy::ordered_storage;
-use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 use worth_relational::facade::identity::EntityId;
@@ -74,7 +70,7 @@ impl CapturedCandidateRows {
         other: &Self,
         whole_source: bool,
         checkpoint: &mut dyn FnMut(u64) -> bool,
-        scratch: &mut crate::domain_computation::primary_graph::application_query::ContentScratch<
+        scratch: &mut crate::domain_computation::primary_graph::vocabulary::application_query::content_storage::ContentScratch<
             '_,
         >,
     ) -> bool {
@@ -156,7 +152,7 @@ impl CapturedCandidateRows {
                         .same_content(current, &mut |work| control.checkpoint(work),
                             &mut |bytes| control.reserve_content_memory(bytes),
                             &mut |cause| {
-                                use crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault as Fault;
+                                use crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault as Fault;
                                 control.refuse(match cause {
                                     Fault::ContentInconsistency => Stop::Content(worth_relational::facade::content::RelationalContentDenial::EncodingInconsistency),
                                     Fault::CapacityOverflow => Stop::CapacityOverflow,

@@ -1,6 +1,6 @@
 //! Read ceilings and computation ceilings share the operation's execution outcome.
 use super::WorthQueryTemporalReentryDenial as Denial;
-use crate::domain_computation::{WorthQueryProviderSessionControlStopKind as Control, WorthQueryProviderSessionDenialKind as Kind};
+use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind};
 use crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::{WorthQueryTemporalControlStop, WorthQueryTemporalTerminalFailure as Terminal};
 impl Denial {
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn from_read_stop(

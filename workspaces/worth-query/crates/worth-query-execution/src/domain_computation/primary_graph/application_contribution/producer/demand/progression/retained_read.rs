@@ -18,17 +18,17 @@ use crate::domain_computation::primary_graph::application_output_demand::denial:
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::application_query::FreshQueryPermissionStop;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
-use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
-use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenial;
-use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
 use crate::domain_computation::primary_graph::WorthQueryApplicationProjection;
-use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial;
-use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
 use crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls;
-use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial;
+use crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
 use worth_query_declaration::facade::{
     application_query::{ApplicationQueryBinding, ApplicationQueryScopeBinding},
     application_schema::ApplicationStructuredValueBinding,

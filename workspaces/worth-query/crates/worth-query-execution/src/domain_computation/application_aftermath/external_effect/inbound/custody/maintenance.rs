@@ -3,7 +3,7 @@
 use std::ops::Bound::{Excluded, Unbounded};
 
 use super::{PublicationState, WorthQueryInboundCustody};
-use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 
 impl WorthQueryInboundCustody {
     /// Select at most `maximum_work` pending correlations for this operation.

@@ -74,8 +74,8 @@ impl AggregateObservation<Key> {
     pub(in crate::domain_computation::primary_graph) fn remains_equal_at(
         &self, pin:&RelationalPinnedRead, execution:&ExecutionRequest<'_, '_>,
         context:&mut MapKernelContext<'_, '_>, control:Option<&dyn Fn()->Result<(),Cause>>,
-    )->Result<bool,crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure>{
-        use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Failure;
+    )->Result<bool,crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure>{
+        use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Failure;
         use worth_relational::facade::runtime::PinnedAggregateReadDenialKind as Denial;
         let mut poll = || {
             AggregateObservation::checkpoint(context).map_err(Failure::Execution)?;

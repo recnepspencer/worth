@@ -2,10 +2,7 @@ use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 use super::{RawNonLiveKernelOutcome, RawOneShotRows};
-use crate::domain_computation::primary_graph::application_query::{
-    WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
-    WorthQueryApplicationProjectionDenialKind, WorthQueryApplicationProjectionRow,
-};
+use {crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection, crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenial, crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjectionRow};
 
 pub(in crate::domain_computation::primary_graph::application_query) struct ProjectedNonLiveKernelOutcome<
     QueryResult,
@@ -125,13 +122,13 @@ where
 /// Internal completion carrier only: () is not the application's result binding.
 pub(in crate::domain_computation::primary_graph::application_query) fn project_non_live_kernel_source(
     kernel: RawNonLiveKernelOutcome,
-    work: impl FnOnce(usize) -> Result<(), super::super::WorthQueryApplicationOneShotDenial>,
+    work: impl FnOnce(usize) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial>,
 ) -> Result<
     (
         ProjectedNonLiveKernelOutcome<()>,
         super::super::projection::WorthQueryApplicationDisclosedProjectionTree,
     ),
-    super::super::WorthQueryApplicationOneShotDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial,
 > {
     let RawNonLiveKernelOutcome { mut raw } = kernel;
     let result_count = raw.rows.raw_rows().len();

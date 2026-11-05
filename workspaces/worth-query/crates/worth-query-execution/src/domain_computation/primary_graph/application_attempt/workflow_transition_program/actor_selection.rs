@@ -21,6 +21,7 @@ use {
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
 };
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 #[derive(Clone, Debug)]
 pub struct WorkflowRecordedActorObservation {
@@ -98,7 +99,7 @@ impl WorthQueryWorkflowActorContext {
             ));
         }
         let layout = graph.workflow();
-        let published = super::super::PublishedWorkflowDefinitionRef::retained(
+        let published = crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef::retained(
             self.instance.branch(),
             self.instance.definition_entity_id(),
             self.instance.definition_content_identity().clone(),

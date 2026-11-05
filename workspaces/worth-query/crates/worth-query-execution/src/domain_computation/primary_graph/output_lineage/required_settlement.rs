@@ -10,10 +10,10 @@ use crate::domain_computation::primary_graph::application_output_demand::ReadyCo
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority;
 
 use super::input_cutoff::RetainedInputCutoffCandidate;
-use super::invalidation::FullVerificationReason;
-use super::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use super::RecordedSourceIdentity;
-use super::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
 
 pub(crate) mod current_accepted;
@@ -62,7 +62,7 @@ impl AcceptedCurrentCandidate {
     /// identity remains pinned by the accepted candidate during the read.
     pub(in crate::domain_computation::primary_graph) fn recorded_identity(
         &self,
-    ) -> &super::RecordedSettlementIdentity {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity {
         self.selected.settlement_identity().as_ref()
     }
 
@@ -127,7 +127,7 @@ impl WorthQueryApplicationOutputLineage {
                             generation: publication.product_generation().get(),
                         },
                         RecordedSourceIdentity::Runtime(
-                            super::super::application_query::WorthQueryRuntimeSourceIdentity::new(
+                            crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity::new(
                                 source,
                             ),
                         ),

@@ -8,6 +8,8 @@ use crate::{
     },
 };
 use std::collections::BTreeMap;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
 
 pub(in crate::domain_computation::primary_graph) struct BorrowedOperationProjection<
     Schema,
@@ -21,7 +23,7 @@ pub(in crate::domain_computation::primary_graph) struct BorrowedOperationProject
     pub(in crate::domain_computation::primary_graph) facts: DecisionReads,
     pub(in crate::domain_computation::primary_graph) source_facts: RetainedSourceFacts,
     pub(in crate::domain_computation::primary_graph) consumed_outputs: BTreeMap<
-        Arc<super::super::super::output_lineage::RecordedSettlementIdentity>,
+        Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
         super::super::ConsumedOutputEvidence,
     >,
     marker: PhantomData<fn() -> (Schema, Operation)>,

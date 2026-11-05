@@ -1,6 +1,7 @@
 //! Preserve the pure provider or original controlled failure during consistency.
 use super::*;
-use crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial as Cause;
+use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Cause;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 impl WorthQueryApplicationAttemptDenial {
     pub(in crate::domain_computation::primary_graph) fn managed_index(
         cause: Cause,

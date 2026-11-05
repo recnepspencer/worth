@@ -14,7 +14,7 @@ use worth_relational::facade::transactions::{
     RelationSpec, WorkerIntentBatch,
 };
 
-use super::bootstrap::WorthQueryPrincipalBootstrapRow;
+use crate::domain_computation::primary_graph::vocabulary::bootstrap::WorthQueryPrincipalBootstrapRow;
 use super::typed_bootstrap::{
     WorthQueryTypedEntityBootstrapRow, WorthQueryTypedRelationBootstrapRow,
 };
@@ -330,8 +330,8 @@ pub fn identity_indexes_built(
 
 fn installation_execution_kind(
     translated: Result<
-        crate::domain_computation::WorthQueryProviderSessionDenialKind,
-        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     >,
 ) -> WorthQueryPrimaryGraphInstallationDenialKind {
     match translated {

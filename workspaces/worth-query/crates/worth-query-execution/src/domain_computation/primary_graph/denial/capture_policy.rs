@@ -10,7 +10,7 @@ impl From<crate::domain_computation::request_execution::advancement::WorthQueryC
         refusal: crate::domain_computation::request_execution::advancement::WorthQueryCapturePolicyRefusal,
     ) -> Self {
         use crate::domain_computation::request_execution::advancement::WorthQueryCapturePolicyRefusal as Refusal;
-        use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
+        use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind;
         let (kind, subject) = match refusal {
             Refusal::UnleasedFunding => (
                 Kind::ResourceEnvelopeMismatch,
@@ -18,7 +18,7 @@ impl From<crate::domain_computation::request_execution::advancement::WorthQueryC
             ),
             Refusal::ForeignCaptureLease => (
                 Kind::ExecutionResource {
-                    denial: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::NestedLeaseMisuse,
+                    denial: crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::NestedLeaseMisuse,
                     partition_identity: None,
                     policy_ancestor: None,
                 },

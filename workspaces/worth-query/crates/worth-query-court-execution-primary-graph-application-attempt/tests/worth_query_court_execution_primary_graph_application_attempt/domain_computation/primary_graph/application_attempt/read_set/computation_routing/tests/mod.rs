@@ -7,7 +7,7 @@ use worth_relational::facade::identity::PartitionId;
 
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationFactAttribution;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationFactReaders;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::SealedComputationFacts;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
@@ -54,7 +54,7 @@ fn every_consuming_partition_survives_in_the_facts_reverse_index() {
         WorthQueryApplicationFactKey::Adjacency {
         relation: "owner".into(),
         anchor: entity(1),
-        direction: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Incoming,
+        direction: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Incoming,
         maximum_work_units: limit,
     }
     };
@@ -75,7 +75,7 @@ fn every_consuming_partition_survives_in_the_facts_reverse_index() {
         WorthQueryApplicationObservedFact::Adjacency {
             relation_kind: KindId::new(3),
             anchor: entity(1),
-            direction: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Incoming,
+            direction: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Incoming,
             maximum_work_units: 9,
             relations: Vec::new(),
         },

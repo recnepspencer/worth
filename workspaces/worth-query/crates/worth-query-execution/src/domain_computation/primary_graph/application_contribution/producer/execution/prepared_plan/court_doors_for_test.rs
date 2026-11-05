@@ -1,5 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::ComputedSlot;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute;
 
 impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
     #[doc(hidden)]

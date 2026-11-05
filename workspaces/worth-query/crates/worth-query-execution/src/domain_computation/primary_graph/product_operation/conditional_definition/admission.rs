@@ -1,7 +1,9 @@
 //! One definition successor issuer for selected entries and admitted handlers.
 use super::*;
 use crate::basis::WorthQueryProductBranchLease;
-use crate::domain_computation::primary_graph::conditional_operation::QueryTemporalPredicateProvider;
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::predicate_observation::QueryTemporalPredicateProvider;
+use crate::domain_computation::primary_graph::vocabulary::product_operation::conditional_definition::WorthQueryApplicationConditionalDefinitionAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::WorthQueryConditionalClockHandle;
 
 pub(in crate::domain_computation::primary_graph) trait AdmissionScopedOps<Schema: ApplicationSchema>:
     crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
@@ -84,12 +86,3 @@ where
     Ok((predecessor, request))
 }
 
-impl std::fmt::Display for WorthQueryApplicationConditionalDefinitionAdmissionDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "conditional definition admission refused: {self:?}"
-        )
-    }
-}
-impl std::error::Error for WorthQueryApplicationConditionalDefinitionAdmissionDenial {}

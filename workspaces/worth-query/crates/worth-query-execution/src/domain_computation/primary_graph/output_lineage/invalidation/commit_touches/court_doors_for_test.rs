@@ -1,5 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::commit_touches::CommitTouchEntities;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::commit_touches::CommitTouchInterest;
 
 impl SourceInvalidationOwner {
     #[doc(hidden)]
@@ -50,12 +52,3 @@ impl TouchedCommit {
     }
 }
 
-impl<'a> CommitTouchInterest<'a> {
-    #[doc(hidden)]
-    pub fn new_for_test(entities: CommitTouchEntities<'a>, every_commit: bool) -> Self {
-        Self {
-            entities,
-            every_commit,
-        }
-    }
-}

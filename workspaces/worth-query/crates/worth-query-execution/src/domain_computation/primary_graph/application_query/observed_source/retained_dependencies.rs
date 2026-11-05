@@ -13,6 +13,8 @@ use worth_query_installation::facade::ApplicationSchema;
 mod comparison;
 mod coverage;
 use coverage::RetainedQuerySource;
+use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
+use crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind;
 
 mod storage_court;
 
@@ -238,7 +240,7 @@ fn retain_joined_descriptors<'a>(
 fn check_request(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), WorthQueryRequiredSetCurrentnessDenial> {
-    use crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_checkpoint_stop;
+    use crate::domain_computation::request_execution::execution_stop::advancement_checkpoint_stop;
     execution
         .check_live()
         .map_err(|cause| execution_denial(advancement_checkpoint_stop(cause)))

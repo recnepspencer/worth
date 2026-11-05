@@ -5,6 +5,7 @@ use worth_runtime_bridge::facade::{
     RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,
     RuntimeBridgeRelationalSource, TruthSnapshotIdentity,
 };
+use crate::domain_computation::vocabulary::managed_run::relational_observation::WorthQueryManagedRelationalObservationReleaseReceipt;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryManagedRelationalObservationIdentity {
@@ -83,18 +84,7 @@ impl WorthQueryManagedRelationalObservation {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryManagedRelationalObservationReleaseReceipt {
-    bridge_release: Option<RelationalBridgeObservationReleaseReceipt>,
-}
 
-impl WorthQueryManagedRelationalObservationReleaseReceipt {
-    pub fn released(&self) -> bool {
-        self.bridge_release
-            .as_ref()
-            .is_some_and(RelationalBridgeObservationReleaseReceipt::released)
-    }
-}
 
 mod court_doors_for_test;
 

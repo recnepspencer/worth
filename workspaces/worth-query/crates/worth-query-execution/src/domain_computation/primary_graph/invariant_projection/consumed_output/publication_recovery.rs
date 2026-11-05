@@ -1,31 +1,16 @@
 //! A freshly performed consumer restores missing derived upstream rows.
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
-use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness;
 use std::sync::Arc;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::publication_recovery::PublicationRecoveryStop;
 
-pub(in crate::domain_computation::primary_graph) enum PublicationRecoveryStop {
-    Reason(FullVerificationReason),
-    Closure(super::ConsumedOutputVerificationStop),
-    Registration(crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop),
-    Admission(worth_relational::facade::mvcc::CompanionPreflightStop),
-}
 
-impl PublicationRecoveryStop {
-    fn reason(self) -> FullVerificationReason {
-        match self {
-            Self::Reason(reason) => reason,
-            Self::Closure(_) | Self::Registration(_) | Self::Admission(_) => {
-                FullVerificationReason::RegistrationIncomplete
-            }
-        }
-    }
-}
 
 enum Visit<'a> {
     Enter(&'a ConsumedOutputEvidence),
@@ -68,7 +53,7 @@ impl ConsumedOutputEvidence {
                     checked.insert(Arc::clone(evidence.identity()));
                     let state = owner
                         .currentness(selected, evidence.identity())
-                        .map_err(|stop| PublicationRecoveryStop::Registration(crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop::Admission(stop)))?;
+                        .map_err(|stop| PublicationRecoveryStop::Registration(crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop::Admission(stop)))?;
                     if !state.no_row_answers() {
                         continue;
                     }

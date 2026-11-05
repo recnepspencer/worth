@@ -2,6 +2,10 @@
 use super::super::admission::rich::PreparedRichMaterialization;
 use super::*;
 use worth_runtime_bridge::facade::BridgeIdentityEvidence;
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
+use crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial;
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
+use crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage;
 pub struct FundedRichInspectionReport {
     pub(in super::super) reference: FundedInspectionReport,
     pub(in super::super) body: PreparedRichMaterialization,

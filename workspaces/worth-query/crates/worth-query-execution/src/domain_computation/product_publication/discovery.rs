@@ -116,7 +116,7 @@ pub(crate) trait DiscoveryScopedOps<Schema: ApplicationSchema>:
                             recovery_failure(
                                 retained.take().expect("one refused release"),
                                 WorthQueryProductUnpublishedRecoveryReleaseDenial::Execution(
-                                    execution_denial::advancement_checkpoint_stop(stop),
+                                    crate::domain_computation::request_execution::execution_stop::advancement_checkpoint_stop(stop),
                                 ),
                             )
                         })?;
@@ -138,7 +138,7 @@ pub(crate) trait DiscoveryScopedOps<Schema: ApplicationSchema>:
             Ok(Err(denial)) | Err(denial) => Err(recovery_failure(
                 retained.expect("unstarted release retains its record"),
                 WorthQueryProductUnpublishedRecoveryReleaseDenial::Execution(
-                    execution_denial::advancement_scope_stop(denial),
+                    crate::domain_computation::request_execution::execution_stop::advancement_scope_stop(denial),
                 ),
             )),
             Ok(Ok(_)) => unreachable!("completed release callback ran"),

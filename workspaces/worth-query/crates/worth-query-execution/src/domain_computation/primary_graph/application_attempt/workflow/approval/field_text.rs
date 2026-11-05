@@ -1,8 +1,6 @@
 //! Native custody for the five approval authorization envelopes.
 use super::WorkflowApprovalMeaning;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     branch::AdmittedRelationalBranchBasis,
@@ -26,7 +24,7 @@ impl WorkflowApprovalFieldText {
         basis: &AdmittedRelationalBranchBasis,
         meaning: &WorkflowApprovalMeaning,
     ) -> Result<Self, Denial> {
-        let receive = |text: &super::super::actor::encoding::FundedActorText| {
+        let receive = |text: &crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText| {
             runtime
                 .admit_field_text(execution, basis, text.bytes())
                 .map_err(denial)

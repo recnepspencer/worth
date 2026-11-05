@@ -1,12 +1,13 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind;
 
 impl WorthQueryProviderSessionFailure {
     #[doc(hidden)]
     pub fn checked_read_stopped_for_test(
         stop: Result<
             WorthQueryProviderSessionDenialKind,
-            super::super::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
         stage: WorthQueryProviderSessionProtocolStage,
         detail: impl Into<String>,
@@ -29,7 +30,7 @@ impl WorthQueryProviderSessionFailure {
     #[doc(hidden)]
     pub fn with_output_verification_capacity_stop_for_test(
         self,
-        stop: crate::domain_computation::primary_graph::VerificationCapacityStop,
+        stop: crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop,
     ) -> Self {
         Self::with_output_verification_capacity_stop(self, stop)
     }

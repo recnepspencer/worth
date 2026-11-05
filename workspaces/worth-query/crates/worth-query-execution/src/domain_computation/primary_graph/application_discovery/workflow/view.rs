@@ -1,6 +1,6 @@
 //! Governed data values. No view or historical actor grants command authority.
 use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::ReadOnlyWorkflowHistory;
-use crate::domain_computation::primary_graph::application_attempt::PublishedWorkflowInstanceRef;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 use std::sync::Arc;
 use worth_execution::ExecutionArray;

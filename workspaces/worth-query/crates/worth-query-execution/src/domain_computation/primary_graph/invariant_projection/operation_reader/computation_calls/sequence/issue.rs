@@ -1,6 +1,7 @@
 //! Canonical call storage; only explicitly accounted runs perform admission.
 use super::funding::shape_bound;
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 impl ComputationCallSequence {
     pub(in crate::domain_computation::primary_graph) fn build<'a, I>(
         calls: impl Fn() -> I,

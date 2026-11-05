@@ -1,21 +1,7 @@
 //! How a conditional operation's wake was decided and how its processing
 //! ended.
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision;
 
-/// How the signal graph decided a wake's condition.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryConditionalSignalDecision {
-    /// The condition changed; the operation may run.
-    Eligible,
-    /// No dependency changed, so the operation is suppressed.
-    DependencyUnchanged,
-    /// The condition was recomputed and reverted to its previous value, so the
-    /// operation is suppressed.
-    RevertedClean,
-    /// The condition was suppressed before computing.
-    Suppressed,
-    /// The decision was deferred until a later condition, time, or demand.
-    Deferred,
-}
 
 /// How processing one due wake ended during a clock observation.
 ///
@@ -64,14 +50,14 @@ pub enum WorthQueryConditionalExecutionCause {
     InterruptedDuringReentry,
     /// The original execution refusal, whether retryable or terminal.
     ApplicationCommitDenied(
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
     ),
     /// Execution evidence whose HEAD application category and stage are preserved.
     ApplicationExecutionDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
         cause: Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     },
     /// The product branch head changed.

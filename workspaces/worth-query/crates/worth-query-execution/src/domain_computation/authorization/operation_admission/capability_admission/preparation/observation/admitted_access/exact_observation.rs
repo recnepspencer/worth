@@ -1,6 +1,6 @@
 //! Runtime-, schema-, plan-, session-, and snapshot-bound capability observation.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityFieldBinding, ApplicationCapabilityRequestProjection,
@@ -12,13 +12,9 @@ use super::super::request_resolution::{
     resolve_capability_request, resolve_erased_selector, WorthQueryResolvedCapabilityRequest,
 };
 use super::WorthQueryAdmittedApplicationCapabilityAccess;
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
-use crate::domain_computation::primary_graph::{
-    WorthQueryEntityResolutionTruth, WorthQueryPrincipalResolutionMode, WorthQueryResolvedEntity,
-};
-use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {crate::domain_computation::primary_graph::WorthQueryEntityResolutionTruth, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode, crate::domain_computation::primary_graph::WorthQueryResolvedEntity};
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 
 mod delegation;
 mod elevation;

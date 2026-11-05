@@ -2,7 +2,7 @@ use crate::domain_computation::primary_graph::application_contribution::Admissio
 use crate::domain_computation::primary_graph::application_contribution::SourceCustodyScopedOps;
 use crate::domain_computation::primary_graph::application_contribution::SourceRecoveryScopedOps;
 use crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost;
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,

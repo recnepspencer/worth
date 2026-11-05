@@ -1,8 +1,5 @@
 //! Provider ordinals are canonical full-GEN roots, independent of Source ORDER BY.
-use super::{
-    invocation::controlled, WorthQueryManagedIndexControl as Control,
-    WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial as Denial,
-};
+use {super::invocation::controlled, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial};
 use crate::domain_computation::primary_graph::application_query::{
     projection::WorthQueryApplicationDisclosedProjectionTree as Tree,
     read_execution::fallible_heap::{self, Heap},

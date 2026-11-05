@@ -30,7 +30,7 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         requested_key: WorthQueryOutputDemandKey,
         selected_output: Option<SelectedOutputAdmission<'_>>,
-        source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        source_scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         admission_kind: DemandAdmissionKind,
         expected_source_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,

@@ -1,6 +1,6 @@
 //! Operation-precondition binding phase owner.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_schema::TypedMutationPreconditions,
@@ -15,7 +15,7 @@ use super::{ValidatedCapabilityOperation, ValidatedConventionalOperation};
 pub(crate) mod transition;
 pub use transition::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use transition::WorthQueryAdmittedApplicationOperation;
-pub(in crate::domain_computation) use transition::WorthQueryOperationAdmissionIdentity;
+
 pub(in crate::domain_computation) use transition::{
     admit_capability_access, admit_encoded_capability_access,
 };
@@ -91,7 +91,7 @@ where
     let operation = validated.operation;
     let graph = runtime.primary_graph().ok_or_else(|| {
         WorthQueryOperationAuthorizationDenial::new(
-            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignRuntime),
+            crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignRuntime),
             operation.operation(),
         )
     })?;
@@ -104,7 +104,7 @@ where
     )
     .map_err(|()| {
         WorthQueryOperationAuthorizationDenial::new(
-            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::MutationPreconditionRejected),
+            crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::MutationPreconditionRejected),
             operation.operation(),
         )
     })?;

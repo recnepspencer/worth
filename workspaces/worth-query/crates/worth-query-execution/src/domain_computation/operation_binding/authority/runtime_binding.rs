@@ -153,7 +153,7 @@ impl<L: BasisOperationLane> ValidatedOperationBinding<'_, L> {
             canonical_query_digest: semantics.canonical_query.query().digest().as_str().into(),
             operation_resource_contract_identity: semantics.resources.canonical_identity().into(),
             provider_plan_declarations: Arc::new(
-                crate::domain_computation::provider_session::WorthQueryProviderPlanDeclarations::from_semantics(
+                crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations::from_semantics(
                     semantics,
                 ),
             ),
@@ -176,7 +176,7 @@ impl<L: BasisOperationLane> ValidatedOperationBinding<'_, L> {
             ),
             installed_support: self.installed_support,
             installed_domain:
-                crate::domain_computation::operation_binding::WorthQueryInstalledDomainExecutionAuthority::mint(
+                crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority::mint(
                     self.runtime.authority_identity(),
                     self.operation.owner(),
                     self.operation.generation(),

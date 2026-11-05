@@ -29,7 +29,7 @@ pub enum WorthQueryPrimaryGraphApplicationDecisionFact {
     },
     Principal(WorthQueryPrincipalCurrentnessDependency),
     Authorization {
-        session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         locator: Arc<str>,
         decision: crate::domain_computation::authorization::WorthQueryAuthorizationDecisionFact,
     },
@@ -99,7 +99,7 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
 
     pub(in crate::domain_computation) fn session_identity(
         &self,
-    ) -> Option<crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity>
+    ) -> Option<crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity>
     {
         match self {
             Self::Principal(dependency) => Some(dependency.session_identity()),
@@ -149,8 +149,8 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
                 fact.remains_equal_in(runtime, execution, snapshot)?
             }
             Self::Principal(dependency) => {
-                use super::super::WorthQueryApplicationAttemptDenialKind as Attempt;
-                use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Authorization;
+                use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Attempt;
+                use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Authorization;
                 match dependency.remains_current_in(execution, runtime, snapshot) {
                     Ok(current) => current,
                     Err(kind) => {
@@ -158,8 +158,8 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
                             Authorization::Stopped(Ok(kind)) => {
                                 Some(Attempt::ExecutionRequest(kind))
                             }
-                            Authorization::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)) => Some(Attempt::Cancelled),
-                            Authorization::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut)) => Some(Attempt::DeadlineExceeded),
+                            Authorization::Stopped(Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled)) => Some(Attempt::Cancelled),
+                            Authorization::Stopped(Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut)) => Some(Attempt::DeadlineExceeded),
                             _ => None,
                         };
                         match stop {

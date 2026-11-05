@@ -1,6 +1,6 @@
 //! Logical field text resolved against the SAME native retained symbol dictionary.
 use super::admission::WorthQueryWorkflowReadDenial as Denial;
-use crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
 use worth_relational::facade::{
     identity::{EntityId, KindId},

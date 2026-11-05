@@ -1,5 +1,6 @@
 //! Exact consumer custody and the successors matched to its consumed roots.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 /// Old consumed identities, each joined to the successor row whose exact
 /// Ready was already certified Current on this selected wave, whether this

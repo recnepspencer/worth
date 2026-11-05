@@ -23,7 +23,7 @@ pub(crate) struct WorthQueryRuntimeArtifactBinding {
     pub(super) contract:
         Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>,
     pub(super) domain_authority:
-        Arc<crate::domain_computation::WorthQueryInstalledDomainExecutionAuthority>,
+        Arc<crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority>,
     pub(super) operation_identity: String,
     pub(super) binding_identity: String,
     pub(super) run_identity: String,

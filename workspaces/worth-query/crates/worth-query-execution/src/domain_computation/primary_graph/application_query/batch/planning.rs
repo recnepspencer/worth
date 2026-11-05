@@ -9,6 +9,7 @@ use worth_query_installation::facade::{
 };
 
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::batch::WorthQueryApplicationQueryBatchResourceDenial;
 
 /// An owner-issued schedule for an installed binding and actual
 /// planned read count. It grants no scope, authorization, or currentness.

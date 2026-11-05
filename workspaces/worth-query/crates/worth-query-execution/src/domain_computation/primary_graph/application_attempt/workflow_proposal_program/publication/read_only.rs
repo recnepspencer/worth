@@ -1,8 +1,5 @@
 //! Read-only locator projection at one validated native instance/transition basis.
-use super::{
-    reference::{ProposalText, PublishedWorkflowProposalRef},
-    *,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::reference::ProposalText, crate::domain_computation::primary_graph::vocabulary::application_attempt::reference::PublishedWorkflowProposalRef, super::*};
 use {crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::read_fields::identity, crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::read_fields::ReadFields, crate::domain_computation::primary_graph::application_discovery::WorthQueryWorkflowReadDenial as Denial, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 pub(in crate::domain_computation::primary_graph) fn observe(
     fields: &ReadFields<'_, '_, '_>,
@@ -22,7 +19,7 @@ pub(in crate::domain_computation::primary_graph) fn observe(
     }
     let kind = layout.proposal.entity_kind;
     match fields.u64(entity, kind, &layout.proposal.protocol_version)? {
-        crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION => {},
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION => {},
         crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_CAPTURED_PROPOSAL_PROTOCOL_VERSION => {
             let captured = fields.text(entity, kind, &layout.proposal.captured_identity)?;
             identity(captured.bytes())?;

@@ -1,6 +1,7 @@
 //! One current-output denial rule for verification and evidence retention.
 
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 
 pub(super) fn from_stop(
     stop: ConsumedOutputVerificationStop,
@@ -43,7 +44,7 @@ pub(super) fn from_stop(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop;
+    use crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop;
     use worth_relational::facade::mvcc::CompanionPreflightStop;
 
     #[test]

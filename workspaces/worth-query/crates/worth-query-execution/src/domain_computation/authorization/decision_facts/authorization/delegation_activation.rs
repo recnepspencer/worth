@@ -10,7 +10,7 @@ use super::{add_counters, observation_is_current};
 #[derive(Clone)]
 pub(in crate::domain_computation::authorization) struct WorthQueryDelegationActivationDecisionFact {
     session_identity:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     narrowing: Arc<RelationalAuthorizationObservationEvidence>,
     native_dependencies:
         worth_relational::facade::authorization::RelationalAuthorizationDependencyWire,
@@ -23,7 +23,7 @@ impl WorthQueryDelegationActivationDecisionFact {
 
     pub(in crate::domain_computation::authorization) fn new(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session_identity: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         narrowing: RelationalAuthorizationObservationEvidence,
     ) -> Result<
@@ -41,14 +41,14 @@ impl WorthQueryDelegationActivationDecisionFact {
 
     pub(super) fn belongs_to_session(
         &self,
-        session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     ) -> bool {
         self.session_identity == session
     }
 
     pub(super) fn retained_for_session(
         &self,
-        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session_identity: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     ) -> Self {
         Self {
             session_identity,

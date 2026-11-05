@@ -41,7 +41,7 @@ pub struct SharedReadScope {
 enum ScopeBacking {
     Installed {
         installed:
-            crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
         ordinal: usize,
     },
     OwnerFixture(Arc<WorthQueryOperationGraphReadScope>),
@@ -58,7 +58,7 @@ impl AsRef<WorthQueryOperationGraphReadScope> for SharedReadScope {
 }
 impl SharedReadScope {
     pub(super) fn at(
-        installed: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+        installed: crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
         ordinal: usize,
     ) -> Self {
         Self {
@@ -68,7 +68,7 @@ impl SharedReadScope {
 }
 
 pub(in crate::domain_computation) struct CompletedApplicationFacts {
-    installed: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+    installed: crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
     original: FactPayload,
     binding_memory: Option<worth_execution::ExecutionMemoryReservation>,
     binding_bytes: Option<u64>,
@@ -85,7 +85,7 @@ pub(in crate::domain_computation) struct CompletedApplicationFacts {
 }
 impl CompletedApplicationFacts {
     pub(in crate::domain_computation::primary_graph) fn new(
-        installed: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+        installed: crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
         original: FactPayload,
     ) -> Self {
         Self {

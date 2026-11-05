@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
 use super::super::super::application_output_demand::AcceptedCheckpointFactSource;
-use super::super::super::application_output_demand::CheckpointOutputSlot;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::CheckpointOutputSlot;
 use super::super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity as Identity;
 use super::super::super::output_lineage::NativePriorCheckpointOutput;
 use super::super::super::output_lineage::WorthQueryApplicationOutputLineage;

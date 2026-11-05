@@ -4,17 +4,14 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-use super::{
-    RecordedOutput, RecordedOutputMutable, RecordedSourceIdentity, SemanticSource,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
-};
+use {super::RecordedOutput, super::RecordedOutputMutable, super::RecordedSourceIdentity, crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource, super::WorthQueryApplicationOutputCorrespondence, super::WorthQueryApplicationOutputLineage};
 
 pub(crate) mod republication;
 
 /// A recorded checkpoint output and the source facts its verification covers.
 pub struct RestoredRecord {
     pub(in crate::domain_computation::primary_graph) identity:
-        Arc<super::RecordedSettlementIdentity>,
+        Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
     pub(in crate::domain_computation::primary_graph) facts: super::RetainedSourceFacts,
 }
 
@@ -26,10 +23,10 @@ impl WorthQueryApplicationOutputLineage {
         output_binding: TypeId,
         runtime_authority: u64,
         schema: ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         source_partition_identity: [u8; 32],
-    ) -> Option<Arc<super::RecordedSettlementIdentity>> {
+    ) -> Option<Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>> {
         let source = SemanticSource {
             runtime_authority,
             schema,
@@ -60,7 +57,7 @@ impl WorthQueryApplicationOutputLineage {
         output_binding: TypeId,
         runtime_authority: u64,
         schema: ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
         source_identity: RecordedSourceIdentity,
@@ -106,7 +103,7 @@ impl WorthQueryApplicationOutputLineage {
         output_binding: TypeId,
         runtime_authority: u64,
         schema: ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
         source_identity: RecordedSourceIdentity,
@@ -156,7 +153,7 @@ impl WorthQueryApplicationOutputLineage {
         if existing_slot.is_none()
             && self.partition_index.has_address(
                 &source,
-                super::ProductCoordinate {
+                crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate {
                     occurrence,
                     generation: generation_number,
                 },
@@ -217,13 +214,13 @@ impl WorthQueryApplicationOutputLineage {
             prepared_input_reuse_key: None,
             native_output_witness: verified_witness.map(OnceLock::from).unwrap_or_default(),
             mutable: Mutex::new(RecordedOutputMutable::new(
-                Some(super::invalidation::FullVerificationReason::CheckpointRestore),
+                Some(crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason::CheckpointRestore),
                 (Some(observed_source_facts)).map(|facts| computation_source.retain_facts(facts)),
                 super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored),
             )),
-            settlement_identity: super::RecordedSettlementIdentity::retain(
+            settlement_identity: crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity::retain(
                 &source,
-                super::ProductCoordinate {
+                crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate {
                     occurrence,
                     generation: generation_number,
                 },
@@ -260,7 +257,7 @@ impl WorthQueryApplicationOutputLineage {
     /// full. The row keeps its first proof, which is the one returned.
     pub(in crate::domain_computation::primary_graph) fn retain_restored_witness(
         &self,
-        identity: &super::RecordedSettlementIdentity,
+        identity: &crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity,
         witness: Arc<OnceLock<super::SealedNativeOutputWitness>>,
     ) -> Arc<OnceLock<super::SealedNativeOutputWitness>> {
         let coordinate = identity.coordinate();
@@ -283,7 +280,7 @@ impl WorthQueryApplicationOutputLineage {
         output_binding: TypeId,
         runtime_authority: u64,
         schema: ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
@@ -307,7 +304,7 @@ impl WorthQueryApplicationOutputLineage {
             .partition_index
             .latest(
                 &source,
-                super::ProductCoordinate {
+                crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate {
                     occurrence,
                     generation,
                 },
@@ -319,7 +316,7 @@ impl WorthQueryApplicationOutputLineage {
         }
         if self.partition_index.has_address(
             &source,
-            super::ProductCoordinate {
+            crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate {
                 occurrence,
                 generation,
             },
@@ -351,13 +348,13 @@ impl WorthQueryApplicationOutputLineage {
             prepared_input_reuse_key: None,
             native_output_witness: OnceLock::new(),
             mutable: Mutex::new(RecordedOutputMutable::new(
-                Some(super::invalidation::FullVerificationReason::CheckpointRestore),
+                Some(crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason::CheckpointRestore),
                 None,
                 super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored),
             )),
-            settlement_identity: super::RecordedSettlementIdentity::retain(
+            settlement_identity: crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity::retain(
                 &source,
-                super::ProductCoordinate {
+                crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate {
                     occurrence,
                     generation,
                 },

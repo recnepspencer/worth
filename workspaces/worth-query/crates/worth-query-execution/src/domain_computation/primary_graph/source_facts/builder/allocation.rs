@@ -1,6 +1,6 @@
 //! Admit source fact growth and explicit predecessor copies against one original grant.
 use super::*;
-use crate::domain_computation::primary_graph::admitted_capture::storage::tree_clone_bytes;
+use crate::domain_computation::vocabulary::primary_graph::storage::tree_clone_bytes;
 
 impl SourceFactsBuilder {
     pub(in crate::domain_computation::primary_graph) fn protect(

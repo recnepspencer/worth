@@ -7,10 +7,7 @@ use crate::domain_computation::authorization::{
     WorthQueryElevationApprovalBinding, WorthQueryElevationCloseBinding,
     WorthQueryElevationRequestBinding, WorthQueryMandatoryReviewBinding,
 };
-use crate::domain_computation::primary_graph::{
-    application_attempt::CompletedHandlerFactBoundary, ComputationPrior,
-    RequiredOutputDemandContext, SealedComputationRetention,
-};
+use {crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary, crate::domain_computation::primary_graph::ComputationPrior, crate::domain_computation::primary_graph::RequiredOutputDemandContext, crate::domain_computation::primary_graph::SealedComputationRetention};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
@@ -18,14 +15,14 @@ impl<Schema, Operation, Input, Scope>
     #[inline]
     pub(in crate::domain_computation) fn graph_work_session_identity(
         &self,
-    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
         self.core.graph_work_session_identity()
     }
 
     #[inline]
     pub(in crate::domain_computation) fn graph_work_managed_run_identity(
         &self,
-    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity {
         self.core.graph_work_managed_run_identity()
     }
 
@@ -105,7 +102,7 @@ impl<Schema, Operation, Input, Scope>
     #[inline]
     pub(in crate::domain_computation) fn record_decision_context_use(
         &mut self,
-        use_mask: crate::domain_computation::primary_graph::DecisionContextUse,
+        use_mask: crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse,
     ) {
         self.core.record_decision_context_use(use_mask)
     }
@@ -222,7 +219,7 @@ impl<Schema, Operation, Input, Scope>
     pub(in crate::domain_computation) fn original_scope(
         &self,
     ) -> Option<
-        &std::sync::Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>,
+        &std::sync::Arc<crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector>,
     > {
         self.core.original_scope()
     }
@@ -237,7 +234,7 @@ impl<Schema, Operation, Input, Scope>
     #[inline]
     pub(in crate::domain_computation) fn retain_original_inspection_disclosure(
         &mut self,
-        disclosure: Option<std::sync::Arc<crate::domain_computation::primary_graph::source_disclosure::OriginalSourceInspectionDisclosure>>,
+        disclosure: Option<std::sync::Arc<crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure>>,
     ) {
         self.core.retain_original_inspection_disclosure(disclosure)
     }
@@ -245,7 +242,7 @@ impl<Schema, Operation, Input, Scope>
     #[inline]
     pub(in crate::domain_computation) fn original_inspection_disclosure(
         &self,
-    ) -> Option<&std::sync::Arc<crate::domain_computation::primary_graph::source_disclosure::OriginalSourceInspectionDisclosure>>{
+    ) -> Option<&std::sync::Arc<crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure>>{
         self.core.original_inspection_disclosure()
     }
 
@@ -277,7 +274,7 @@ impl<Schema, Operation, Input, Scope>
         &self,
     ) -> Option<
         &std::sync::Arc<
-            crate::domain_computation::application_aftermath::OriginalCorrectionDisclosure,
+            crate::domain_computation::vocabulary::application_aftermath::original::OriginalCorrectionDisclosure,
         >,
     > {
         self.core.original_correction_disclosure()

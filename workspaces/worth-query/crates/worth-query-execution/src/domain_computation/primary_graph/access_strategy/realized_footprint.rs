@@ -1,7 +1,7 @@
 //! Retained consistency authority exposes no rows, READ grant or publication.
 mod comparison;
 mod history;
-use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Stop;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Stop;
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
 pub(in crate::domain_computation::primary_graph) use history::ManagedHistoryRelevanceDenial;
 use std::sync::Arc;
@@ -16,7 +16,7 @@ use worth_relational::facade::{
 /// Which already captured descriptive evidence the caller compares.
 pub(in crate::domain_computation::primary_graph) enum CapturedInfluenceComparison<'a, 'b> {
     Content(
-        &'a mut crate::domain_computation::primary_graph::application_query::ContentScratch<'b>,
+        &'a mut crate::domain_computation::primary_graph::vocabulary::application_query::content_storage::ContentScratch<'b>,
     ),
     SelectedMembership,
 }
@@ -108,7 +108,7 @@ impl CapturedManagedInfluence {
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
         reserve: &mut impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>,
-        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault) -> E,
+        fault: &mut impl FnMut(crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault) -> E,
         frames: &mut dyn FnMut(
             &worth_relational::facade::content::RelationalContentFrame,
             &worth_relational::facade::content::RelationalContentFrame,

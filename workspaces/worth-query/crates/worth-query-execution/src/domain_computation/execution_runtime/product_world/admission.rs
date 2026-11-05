@@ -169,12 +169,12 @@ pub(super) fn map_world_denial(
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect,
         ) => WorthQueryProductBranchAdmissionDenial::Stopped(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,
         )),
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect,
         ) => WorthQueryProductBranchAdmissionDenial::Stopped(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut,
         )),
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::CapacityExhausted) => {
             WorthQueryProductBranchAdmissionDenial::Refused(

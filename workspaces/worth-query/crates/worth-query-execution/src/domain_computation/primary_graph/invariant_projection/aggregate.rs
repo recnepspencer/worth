@@ -13,7 +13,7 @@ use worth_query_installation::facade::{
     ApplicationSignedAggregateValueBinding, DeclaredApplicationFieldValue, WritePosture,
 };
 
-use super::{WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantEntityIdentity};
+use {super::WorthQueryApplicationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
 
 /// Why an aggregate over incoming relations could not be computed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -21,8 +21,8 @@ pub enum WorthQueryInvariantAggregateDenialKind {
     /// The caller's read request stopped.
     ReadExecution(
         Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     ),
     /// The relation is not installed.

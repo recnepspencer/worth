@@ -4,7 +4,7 @@
 //! constructed disclosure proof. Callers cannot assert disclosure with a bool.
 
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_installation::facade::ApplicationSchema;

@@ -1,11 +1,6 @@
 use worth_relational::facade::durability::{DurabilityError, RecoveryFailureClass};
 
-use super::super::super::{
-    application_output_demand::{
-        WorthQueryAcceptedOutputCheckpointIdentity, WorthQueryAcceptedOutputCheckpointPosture,
-    },
-    WorthQueryApplicationOutputPosture, WorthQueryPrimaryGraphPublication,
-};
+use {super::super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity, crate::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture, super::super::super::WorthQueryApplicationOutputPosture, crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication};
 use super::super::{WorthQueryCheckpointCaptureDenial, FORMAT_VERSION};
 use super::sizing::ValidatedCheckpointSize;
 
@@ -96,7 +91,7 @@ impl<'a> ReservedFrameWriter<'a> {
 
     fn scope(
         &mut self,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     ) -> Result<(), WorthQueryCheckpointCaptureDenial> {
         self.bytes(&scope.partition_id().to_be_bytes())?;
         self.bytes(&scope.local_slot().to_be_bytes())?;

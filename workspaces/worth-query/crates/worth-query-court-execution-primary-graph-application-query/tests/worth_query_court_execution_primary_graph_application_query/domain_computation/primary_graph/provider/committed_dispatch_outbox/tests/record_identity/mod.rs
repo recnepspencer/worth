@@ -15,7 +15,7 @@ fn unrelated_identical_row_cannot_make_owner_mapping_ambiguous() {
         .graph_for_test())
         .with_runtime_mut_for_test(request_execution, |runtime| {
             let (intent, pending) =
-            worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::bind_dispatch_outbox_create_intent(
+            worth_query_execution::court_doors_for_test::domain_computation::vocabulary::application_aftermath::outbox::bind_dispatch_outbox_create_intent(
                 Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
                 Some(&record),
                 worth_relational::facade::identity::PartitionId::main(),

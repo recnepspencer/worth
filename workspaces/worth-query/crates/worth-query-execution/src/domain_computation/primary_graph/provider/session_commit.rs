@@ -4,16 +4,13 @@ mod evidence;
 pub(crate) mod outbox_commit;
 pub(crate) mod receipt_basis_retention;
 
-pub(crate) use super::application_attempt_state::WorthQueryRetainedPreImageSeal;
+
 pub(in crate::domain_computation::primary_graph) use super::application_attempt_state::{
     WorthQueryMutationWorkCommitSeal, WorthQueryPreImageRetentionWork,
 };
 pub(in crate::domain_computation::primary_graph) use evidence::WorthQueryCompletedCommitEvidenceStore;
-pub(in crate::domain_computation) use outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
-pub(in crate::domain_computation::primary_graph) use outbox_commit::{
-    WorthQueryCommittedDispatchOutboxBindingDenial, WorthQueryCommittedDispatchOutboxReceiptSeal,
-    WorthQueryCommittedDispatchOutboxResolution,
-};
+
+pub(in crate::domain_computation::primary_graph) use {outbox_commit::WorthQueryCommittedDispatchOutboxReceiptSeal, outbox_commit::WorthQueryCommittedDispatchOutboxResolution};
 pub(in crate::domain_computation::primary_graph) use receipt_basis_retention::{
     WorthQueryReceiptBasisRetentionStore, WorthQueryRetainedApplicationCommitBasis,
 };
@@ -64,7 +61,7 @@ pub(super) fn provider_failure(
     detail: &'static str,
 ) -> WorthQueryProviderSessionFailure {
     WorthQueryProviderSessionFailure::new(
-        crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ProviderRejected,
         stage,
         detail,
         crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
@@ -73,25 +70,25 @@ pub(super) fn provider_failure(
 
 pub(super) fn snapshot_admission_failure(
     stage: WorthQueryProviderSessionProtocolStage,
-    denial: crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial,
+    denial: crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial,
     detail: &'static str,
 ) -> WorthQueryProviderSessionFailure {
     let kind = match denial {
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted {
+        crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
-        } => crate::domain_computation::WorthQueryProviderSessionDenialKind::ActiveSnapshotCapacityExhausted {
+        } => crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         },
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionCapacityExhausted
+        crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::RetentionCapacityExhausted
         }
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
+        crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted => {
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
         }
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted
+        crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted => {
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted
         }
-        _ => crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+        _ => crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ProviderRejected,
     };
     WorthQueryProviderSessionFailure::new(
         kind,

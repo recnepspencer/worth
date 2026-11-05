@@ -5,28 +5,28 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
 
-use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 
 mod equivalence;
 mod pending_dependency;
 mod publication_recovery;
-pub(in crate::domain_computation::primary_graph) use publication_recovery::PublicationRecoveryStop;
+
 mod rebound;
 mod requested_read;
 mod test_support;
 pub(crate) mod verification;
 pub(in crate::domain_computation::primary_graph) use pending_dependency::SelectedPendingConsumedOutput;
-pub(in crate::domain_computation::primary_graph) use verification::map_admission_stop;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop;
 pub(in crate::domain_computation::primary_graph) use verification::map_verification_stop;
-pub(in crate::domain_computation::primary_graph) use verification::reserve_pending;
-pub(in crate::domain_computation::primary_graph) use verification::ConsumedOutputVerification;
-pub(in crate::domain_computation::primary_graph) use verification::ConsumedOutputVerificationStop;
+
+
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 pub(in crate::domain_computation::primary_graph) use verification::EvidenceView;
-pub use verification::VerificationCapacityStop;
+
 
 /// One output actually selected by a projected read. The lineage owner minted
 /// the identity; Arc only shares retained evidence and is not an identity.
@@ -137,7 +137,7 @@ impl ConsumedOutputEvidence {
         }
         Ok(matches!(
             owner.currentness(&self.selected_native_root, &self.identity)?,
-            crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness::Clean
+            crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness::Clean
         ))
     }
 

@@ -17,6 +17,7 @@ use worth_relational::facade::{
 };
 mod predicates;
 use super::super::denial::relational_read_denial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn select(

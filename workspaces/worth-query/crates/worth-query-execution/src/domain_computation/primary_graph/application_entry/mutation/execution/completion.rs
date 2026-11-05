@@ -10,7 +10,7 @@ type Report<Schema, Binding> = WorthQueryMutationHandlerExecutionReport<
 type Projection<Schema, Binding> = crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, <Binding as ApplicationMutationBinding<Schema>>::Operation>;
 
 type PreparedHandlerParts<'authority, Schema, Binding> = (
-    Vec<crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute>,
+    Vec<crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute>,
     MutationCompletion<'authority, Schema, Binding>,
     crate::domain_computation::primary_graph::application_output_demand::PreparedRequiredInputs,
 );
@@ -131,7 +131,7 @@ where
         self,
         runtime: &dyn crate::domain_computation::primary_graph::application_entry::host::ApplicationEntryHost<Schema>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
-        slots: Vec<crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot>,
+        slots: Vec<crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::ComputedSlot>,
         execution: &QueryRequestExecution<'_>,
     ) -> Report<Schema, Binding> {
         (self.complete)(

@@ -19,7 +19,7 @@ impl WorthQueryCanonicalInboundCompletion {
     #[doc(hidden)]
     pub fn matches_original_dispatch_for_test(
         &self,
-        record: &crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+        record: &crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
         original_relational_commit: &RelationalCommitReceipt,
         original_world_commit: &CompositeCommitIdentity,
         original_incarnation: ProductBranchIncarnation,

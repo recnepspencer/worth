@@ -1,7 +1,7 @@
 //! A Current acknowledgment cannot discharge a cause on a different Product.
 
 use std::sync::Arc;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::current_basis::CurrentBasis;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_contribution::current_basis::CurrentBasis;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::CurrentProof;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::PerformedMembers;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::own_write_fixture::with_committed_own_write;

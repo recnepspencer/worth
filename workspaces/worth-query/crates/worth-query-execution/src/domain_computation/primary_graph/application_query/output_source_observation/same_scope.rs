@@ -3,6 +3,8 @@ use super::*;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryParameterSet, ApplicationQueryScopeResolutionMode,
 };
+use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 
 impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
     pub(in crate::domain_computation::primary_graph::application_query) fn with_same_scope_plan<

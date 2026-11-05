@@ -166,7 +166,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
         assert_eq!(
             // The current revision's original producer emits canonical scalar text;
             // only started_program_revision promises managed Symbol custody.
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::predecode_admission::observe_field_value_borrowed(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed(
                 runtime, &execution, before.1.snapshot_handle(), instance,
                 (*(*layout.instance_for_test()).entity_kind_for_test()), &(*(*layout.instance_for_test()).program_revision_for_test()),
                 |value| value == Some(&AspectValue::String(InternedString::Raw(original.to_string()))),

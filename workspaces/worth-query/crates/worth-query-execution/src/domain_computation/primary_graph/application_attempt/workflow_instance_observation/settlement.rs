@@ -221,7 +221,7 @@ pub(super) fn observe_assessment_evidence(
         kind,
         &layout.assessment_evidence.protocol_version,
         AspectValue::UInt64(
-            crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION,
         ),
         facts,
     )?;

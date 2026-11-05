@@ -77,7 +77,7 @@ pub enum CompiledWorkflowNodeKind {
         subject: worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
         applicability: CompiledWorkflowAssessmentApplicability,
     },
-    Condition(super::super::CompiledWorkflowCondition),
+    Condition(crate::domain_computation::primary_graph::vocabulary::application_attempt::condition::CompiledWorkflowCondition),
     Approval {
         capability: String,
         capability_type: String,

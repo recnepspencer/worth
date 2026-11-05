@@ -19,10 +19,10 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::OnceLock;
 
-use super::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use super::RecordedOutput;
-use super::RecordedSettlementIdentity;
-use super::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
 
@@ -42,9 +42,9 @@ pub struct PreparedOutputLineageSlot {
     pub(super) partition_cell: Arc<OnceLock<usize>>,
     cancellation: Option<Box<CancelledLineageSlot>>,
     pub(super) completed_handler_facts: Option<
-        crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary,
+        crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary,
     >,
-    pub(super) completed_decision_reuse: Option<super::CompletedDecisionReuseProof>,
+    pub(super) completed_decision_reuse: Option<crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof>,
     pub(super) prepared_input_reuse_key: Option<super::PreparedInputReuseKey>,
     pub(super) native_output_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     /// A sealed partitioned computation run and the record its prior state
@@ -117,7 +117,7 @@ pub(in crate::domain_computation::primary_graph) struct RecordedLineageSlot {
 impl PreparedOutputLineageSlot {
     pub(in crate::domain_computation::primary_graph) fn retain_completed_handler_facts(
         &mut self,
-        boundary: crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary,
+        boundary: crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary,
     ) {
         assert!(self.completed_handler_facts.is_none());
         self.completed_handler_facts = Some(boundary);
@@ -134,7 +134,7 @@ impl PreparedOutputLineageSlot {
 
     pub(in crate::domain_computation::primary_graph) fn retain_completed_decision_reuse(
         &mut self,
-        proof: super::CompletedDecisionReuseProof,
+        proof: crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof,
     ) {
         assert!(self.completed_decision_reuse.replace(proof).is_none());
     }
@@ -245,8 +245,8 @@ impl WorthQueryApplicationOutputLineage {
         application: &WorthQueryPrimaryGraphCommittedApplication,
         consumed_outputs: Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
         prepared: &PreparedOutputLineageSlot,
-        completed_handler_facts: Option<crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary>,
-        completed_decision_reuse: Option<super::CompletedDecisionReuseProof>,
+        completed_handler_facts: Option<crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary>,
+        completed_decision_reuse: Option<crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof>,
         prepared_input_reuse_key: Option<super::PreparedInputReuseKey>,
         native_prior_checkpoint: Option<
             super::native_prior_checkpoint::NativePriorCheckpointLocator,

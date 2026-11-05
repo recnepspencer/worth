@@ -1,6 +1,6 @@
 use worth_relational::facade::identity::RelationId;
 
-use super::WorthQueryInvariantEntityIdentity;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 use std::marker::PhantomData;
 
 /// A relation observed by an invariant projection, with the identities of its

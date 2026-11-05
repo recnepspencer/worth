@@ -9,7 +9,7 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::identity::EntityId;
 use worth_runtime_world::facade::ProductBranchIncarnation;
 
-use super::super::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use super::super::WorthQueryApplicationOutputLineage;
 
 pub(crate) mod denial;
@@ -31,7 +31,7 @@ fn copy_text(value: &str) -> Result<String, Denial> {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct OutputFamilyRole {
     pub(in crate::domain_computation::primary_graph) family:
-        super::super::super::output_family_identity::OutputFamilyIdentity,
+        crate::domain_computation::primary_graph::vocabulary::output_family_identity::OutputFamilyIdentity,
     pub(in crate::domain_computation::primary_graph) role: String,
 }
 
@@ -40,7 +40,7 @@ pub(in crate::domain_computation::primary_graph) struct OutputFamilyRole {
 pub struct NativePriorCheckpointOutput<'a> {
     pub(in crate::domain_computation::primary_graph) family_role: OutputFamilyRole,
     pub(in crate::domain_computation::primary_graph) scope:
-        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
     pub(in crate::domain_computation::primary_graph) binding: TypeId,
     pub(in crate::domain_computation::primary_graph) idempotency_key: [u8; 32],
     producing_implementation:

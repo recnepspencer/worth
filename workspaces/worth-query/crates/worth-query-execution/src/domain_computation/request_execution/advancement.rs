@@ -35,11 +35,11 @@ impl WorthQueryAdvancementDenial {
                 worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator
             ),
             Self::Resource(Resource::MemoryLimit { level, .. }) => match level {
-                crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Process => {
+                crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Process => {
                     true
                 }
-                crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Policy
-                | crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Declared => {
+                crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Policy
+                | crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Declared => {
                     false
                 }
             },

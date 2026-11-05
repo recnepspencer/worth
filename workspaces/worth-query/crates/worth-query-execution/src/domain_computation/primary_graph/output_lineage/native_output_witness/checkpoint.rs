@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::Movement;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 
 mod fact_index;
 
@@ -36,13 +36,13 @@ impl SealedNativeOutputWitness {
             // The fact owner reserves on this carried meter before reading
             // and settles the actual probe debit on success or failure.
             match fact.source_currentness_in(relational, execution, snapshot)? {
-                Err(stop @ crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::ManagedIndex(_)) => return Err(super::super::invalidation::SettlementVerificationStop::SourceRead(stop)),
-                Err(stop @ crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::OutputObservation(_)) => return Err(super::super::invalidation::SettlementVerificationStop::SourceRead(stop)),
+                Err(stop @ crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure::ManagedIndex(_)) => return Err(super::super::invalidation::SettlementVerificationStop::SourceRead(stop)),
+                Err(stop @ crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure::OutputObservation(_)) => return Err(super::super::invalidation::SettlementVerificationStop::SourceRead(stop)),
                 Ok(movement) if movement.movement() == Movement::Unmoved => {}
-                Err(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
-                    return Err(super::super::invalidation::SettlementVerificationStop::SourceRead(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Execution(cause)));
+                Err(crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
+                    return Err(super::super::invalidation::SettlementVerificationStop::SourceRead(crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure::Execution(cause)));
                 }
-                Ok(_) | Err(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Unavailable | crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => return Ok(false),
+                Ok(_) | Err(crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure::Unavailable | crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => return Ok(false),
             }
         }
         Ok(true)

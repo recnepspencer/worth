@@ -1,5 +1,5 @@
 use super::super::super::WorthQueryInvariantProjectionDenial;
-use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use std::marker::PhantomData;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
@@ -18,10 +18,8 @@ use super::{
     WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantDecisionPlanDenial,
     WorthQueryInvariantDecisionPlanDenialKind,
 };
-use crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity;
-use crate::domain_computation::primary_graph::{
-    HandlerExecutionDenial, WorthQueryEntityResolutionDenialKind, WorthQueryInvariantEntityIdentity,
-};
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
+use {crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
 
 /// A declared equality target prepared at one actual projection and operation
 /// admission. It grants no mutation or latest-head authority and stores no policy.
@@ -42,7 +40,7 @@ pub struct WorthQueryPreparedEntitySelection<
     authority_identity: u64,
     binding_identity: ApplicationSchemaBindingIdentity,
     runtime_authority:
-        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
     _operation: PhantomData<fn() -> Operation>,
 }

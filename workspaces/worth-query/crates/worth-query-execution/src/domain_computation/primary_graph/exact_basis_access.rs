@@ -4,6 +4,7 @@ use worth_relational::facade::{
     snapshots::{RelationalSnapshotAdmissionDenial, SnapshotHandle},
 };
 use worth_relational::facade::{branch::RelationalBranchBasisDenial, history::BranchId};
+use crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial;
 
 pub fn open_exact_basis_snapshot(
     runtime: &mut RelationalRuntime,
@@ -14,22 +15,6 @@ pub fn open_exact_basis_snapshot(
         .snapshot_for_observation(&basis.observation())
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryExactBasisSnapshotDenial {
-    BranchIdentityUnavailable,
-    BranchObservationUnavailable,
-    BranchMaterializationSuspended,
-    RetentionCapacityExhausted,
-    RetentionIdentityExhausted,
-    ForeignRuntime {
-        expected_runtime_instance_id: u64,
-        actual_runtime_instance_id: u64,
-    },
-    ActiveSnapshotCapacityExhausted {
-        maximum_active_snapshots: usize,
-    },
-    SnapshotIdentityExhausted,
-}
 
 fn observation_denial(denial: RelationalBranchBasisDenial) -> WorthQueryExactBasisSnapshotDenial {
     match denial {
@@ -46,27 +31,6 @@ fn observation_denial(denial: RelationalBranchBasisDenial) -> WorthQueryExactBas
     }
 }
 
-impl From<RelationalSnapshotAdmissionDenial> for WorthQueryExactBasisSnapshotDenial {
-    fn from(denial: RelationalSnapshotAdmissionDenial) -> Self {
-        match denial {
-            RelationalSnapshotAdmissionDenial::ForeignRuntime {
-                expected_runtime_instance_id,
-                actual_runtime_instance_id,
-            } => Self::ForeignRuntime {
-                expected_runtime_instance_id,
-                actual_runtime_instance_id,
-            },
-            RelationalSnapshotAdmissionDenial::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            } => Self::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            },
-            RelationalSnapshotAdmissionDenial::SnapshotIdentityExhausted => {
-                Self::SnapshotIdentityExhausted
-            }
-        }
-    }
-}
 
 /// Opens an ephemeral snapshot from the Relational owner's exact current
 /// branch observation. The descriptive branch name never selects storage on

@@ -79,7 +79,7 @@ pub fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
 }
 
 pub fn assert_no_managed_attempt_work(
-    work: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot,
+    work: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::provider::application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot,
 ) {
     assert_eq!((*work.managed_bridge_plans_for_test()), 0);
     assert_eq!((*work.provider_session_readmissions_for_test()), 0);

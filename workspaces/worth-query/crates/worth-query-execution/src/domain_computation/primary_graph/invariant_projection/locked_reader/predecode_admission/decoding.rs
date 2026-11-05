@@ -1,5 +1,5 @@
 //! Domain admission gates the unchanged declared scalar decoder.
-use crate::domain_computation::primary_graph::{HandlerExecutionDenial, HandlerInterruption};
+use {crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption};
 use worth_foundational::facade::AspectValue;
 
 #[allow(clippy::type_complexity)]

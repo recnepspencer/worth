@@ -1,7 +1,7 @@
 //! Independent consumed readers and restored marks share one original fact allocation.
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 
@@ -37,7 +37,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
             );
             assert_eq!(ConsumedOutputEvidence::verify_at_observation_for_test(
                 &execution, &identity, &facts, &[],
-                Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::CheckpointRestore),
+                Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason::CheckpointRestore),
                 &witness, owner, runtime, &snapshot_handle, &basis,
             ).unwrap(), ConsumedOutputVerification::Current);
 

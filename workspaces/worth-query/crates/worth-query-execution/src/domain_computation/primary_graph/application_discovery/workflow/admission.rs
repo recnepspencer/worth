@@ -2,7 +2,7 @@
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
 
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
@@ -33,9 +33,9 @@ pub enum WorthQueryWorkflowReadDenial {
     UnsupportedInstanceProtocol(u64),
     Relational(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Phase(crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase),
-    Inspection(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial),
+    Inspection(crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial),
     Execution(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
-    Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
+    Principal(crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial),
     Authorization(WorthQueryOperationAuthorizationDenial),
 }
 

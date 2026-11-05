@@ -1,7 +1,7 @@
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_installation::facade::ApplicationSchema;
 
-pub use super::super::handler::{CandidateWriter, DecisionReader, HandlerInterruption};
+pub use {super::super::handler::CandidateWriter, super::super::handler::DecisionReader, crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption};
 mod decision_plan;
 pub use decision_plan::WorthQueryDecisionPlan;
 mod completed_candidate;

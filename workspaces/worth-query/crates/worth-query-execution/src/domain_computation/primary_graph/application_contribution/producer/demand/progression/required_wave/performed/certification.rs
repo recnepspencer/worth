@@ -3,7 +3,7 @@ use super::super::*;
 use super::PerformedMembers;
 use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
 pub(crate) mod current_basis;
-pub(in crate::domain_computation::primary_graph) use current_basis::CurrentBasis;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::current_basis::CurrentBasis;
 
 impl PerformedMembers {
     fn current<T>(

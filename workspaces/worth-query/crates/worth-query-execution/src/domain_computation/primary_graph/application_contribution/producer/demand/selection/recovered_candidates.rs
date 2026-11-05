@@ -10,7 +10,7 @@ fn record_recovered_output_candidates<Family>(
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
         >,
         observation: &crate::basis::WorthQueryProductBranchReadIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         output_bindings: &[TypeId],
         lineage: &mut crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage,
     ) where
@@ -52,7 +52,7 @@ fn record_recovered_output_candidates<Family>(
                 observation.reference_generation().get(),
                 std::sync::Arc::clone(&recovered.correspondence),
                 crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(
-                    crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new(checkpoint.source),
+                    crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity::new(checkpoint.source),
                 ),
                 checkpoint.source_partition,
                 checkpoint.producer_dependency,

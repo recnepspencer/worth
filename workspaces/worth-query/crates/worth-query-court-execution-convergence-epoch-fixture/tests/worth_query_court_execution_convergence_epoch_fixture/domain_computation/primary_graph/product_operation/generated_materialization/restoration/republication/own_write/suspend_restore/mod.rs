@@ -24,8 +24,8 @@ pub fn suspend_restore_and_read() {
             (*application.runtime_for_test()).authority_identity_for_test().as_u64(),
             &(*application.installed_schema_for_test()).binding_identity(), receipt.principal_scope().scope(),
             observation.lifecycle_incarnation(), observation.reference_generation().get(),
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([11;32]),
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([11;32]),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([11;32]),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([11;32]),
         ).expect("the real committed record qualifies its suspension");
         // Provider registration is irrelevant to record continuity; all runtime,
         // correspondence, facts and source identity come from that exact record.
@@ -41,7 +41,7 @@ pub fn suspend_restore_and_read() {
             scope,
             observed_source_facts,
         ) = exact.into_parts_for_test();
-        let producer = ProducerQualification::new_for_test(TypeId::of_for_test::<OwnWriteOutputs>(), TypeId::of_for_test::<OwnWriteOutputs>(), "test-own-write", "test-own-write", worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([11;32]), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([11;32]), source_identity, source_partition_identity, producer_dependency_identity, producing_implementation, idempotency_key_identity, runtime_authority, schema, scope, observation.lifecycle_incarnation(), observation.reference_generation().get(), observed_source_facts);
+        let producer = ProducerQualification::new_for_test(TypeId::of_for_test::<OwnWriteOutputs>(), TypeId::of_for_test::<OwnWriteOutputs>(), "test-own-write", "test-own-write", worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([11;32]), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([11;32]), source_identity, source_partition_identity, producer_dependency_identity, producing_implementation, idempotency_key_identity, runtime_authority, schema, scope, observation.lifecycle_incarnation(), observation.reference_generation().get(), observed_source_facts);
         let generated = receipt
             .output_correspondence()
             .created_entity_ids()

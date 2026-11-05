@@ -1,5 +1,6 @@
 //! The registry reserves a real settlement vacancy, never a byte quote.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 impl super::super::WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn reserve_settlement_vacancy(
         &self,

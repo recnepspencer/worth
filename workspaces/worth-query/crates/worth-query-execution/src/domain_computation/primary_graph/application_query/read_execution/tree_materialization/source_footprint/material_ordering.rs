@@ -9,6 +9,7 @@ use worth_execution::{
     ExecutionRequestArrayDenial as ArrayStop,
 };
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
 type Denial = WorthQueryApplicationReadExecutionDenial;
 fn refused(cause: Cause) -> Denial {
     super::super::super::denial::relational_read_denial(cause, "managed footprint order")

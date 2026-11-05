@@ -1,6 +1,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::denial::ProducerPublicationStale;
-use crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop;
+use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 
 pub(super) fn ready_work_denial(subject: &'static str) -> ProducerExecutionStop {
     WorthQueryOutputDemandDenial::new(
@@ -48,7 +49,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     subject: &'static str,
     stop: CurrentAcceptedStop,
 ) -> ProducerExecutionStop {
-    use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
+    use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
     let native_stop = match &stop {
         CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(stop))
         | CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::CapacityExhausted(
@@ -132,9 +133,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 
 #[cfg(test)]
 mod tests {
-    use super::VerificationCapacityStop::{Meter, ScratchAllocationRefused};
+    use {crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop::Meter, crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop::ScratchAllocationRefused};
     use super::*;
-    use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop as Verification;
+    use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop as Verification;
     use worth_relational::facade::mvcc::CompanionPreflightStop;
 
     /// Ready readmission keeps the verifier's capacity cause, including its

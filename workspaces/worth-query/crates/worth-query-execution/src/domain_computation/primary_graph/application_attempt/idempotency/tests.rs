@@ -9,7 +9,7 @@ use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
 #[test]
 fn correction_source_extends_intent_without_replacing_the_actual_inverse_input() {
-    use super::WorthQueryRecordedIntentMatch;
+    use crate::domain_computation::primary_graph::vocabulary::application_attempt::recorded_intent::WorthQueryRecordedIntentMatch;
     let inverse = WorthQueryApplicationIdempotencyBinding::new([1; 32], [2; 32]);
     let first = inverse
         .bind_correction_command(&[6; 32], &[3; 32])

@@ -1,5 +1,6 @@
 //! A pending reservation pins the exact root through insertion or rollback.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot;
 pub(in crate::domain_computation::primary_graph::application_query) struct PredicateRootReservation
 {
     axis: Arc<SourcePredicateAxis>,

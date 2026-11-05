@@ -44,8 +44,8 @@ impl WorthQueryProviderSessionTerminalBinding {
 
     pub(in crate::domain_computation) fn admits_mutation_run(
         &self,
-        session: super::super::WorthQueryGraphWorkSessionIdentity,
-        managed_run: super::super::WorthQueryGraphWorkManagedRunIdentity,
+        session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
+        managed_run: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity,
         worker: &str,
     ) -> bool {
         self.inner.plan.managed_run_identity() == worker

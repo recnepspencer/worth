@@ -2,6 +2,8 @@
 
 use super::*;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 
 pub(in crate::domain_computation::primary_graph::output_lineage) struct FamilyPublicationHead<'a> {
     pub(in crate::domain_computation::primary_graph::output_lineage) coordinate: ProductCoordinate,

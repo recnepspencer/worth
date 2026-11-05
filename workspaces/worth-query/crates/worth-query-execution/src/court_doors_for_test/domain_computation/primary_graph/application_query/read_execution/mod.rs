@@ -1,8 +1,6 @@
 //! Doors under `domain_computation::primary_graph::application_query::read_execution`.
 #[path = "continuation_page/mod.rs"]
 pub mod continuation_page;
-#[path = "denial/mod.rs"]
-pub mod denial;
 #[path = "dispatch_witness/mod.rs"]
 pub mod dispatch_witness;
 #[path = "entry_observation/mod.rs"]

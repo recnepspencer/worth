@@ -83,7 +83,7 @@ trait OwnerCloseOwnOps<S: ApplicationSchema>:
             worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                 .run_with_checkpoint(lease, None, |context| {
                     context.checkpoint(1).map_err(|stop| {
-                        Denial::Execution(execution_denial::advancement_checkpoint_stop(stop))
+                        Denial::Execution(crate::domain_computation::request_execution::execution_stop::advancement_checkpoint_stop(stop))
                     })?;
                     recovery
                         .continue_owner_settlement()
@@ -96,7 +96,7 @@ trait OwnerCloseOwnOps<S: ApplicationSchema>:
             Ok(Ok((Err(denial), _))) => Err(recovery_failure(recovery, denial)),
             Ok(Err(denial)) | Err(denial) => Err(recovery_failure(
                 recovery,
-                Denial::Execution(execution_denial::advancement_scope_stop(denial)),
+                Denial::Execution(crate::domain_computation::request_execution::execution_stop::advancement_scope_stop(denial)),
             )),
         }
     }

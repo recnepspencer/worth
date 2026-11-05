@@ -1,10 +1,6 @@
 //! Lazy complete Entry content; the immutable Entry pays its inline cache.
 use super::projection::Entry;
-use crate::domain_computation::primary_graph::application_query::{
-    derived_view::ViewDependency,
-    managed_index::{WorthQueryManagedIndexControl as Control, WorthQueryManagedIndexStop as Stop},
-    projection::ContentWriter,
-};
+use {crate::domain_computation::primary_graph::application_query::derived_view::ViewDependency, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::primary_graph::application_query::projection::ContentWriter};
 impl Entry {
     pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn content(
         &self,
@@ -76,7 +72,7 @@ impl Entry {
         admit: &mut impl FnMut(u64) -> Result<(), E>,
         reserve: &mut (impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>
                   + ?Sized),
-        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault) -> E,
+        fault: &mut impl FnMut(crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault) -> E,
         frames: &mut dyn FnMut(
             &worth_relational::facade::content::RelationalContentFrame,
             &worth_relational::facade::content::RelationalContentFrame,

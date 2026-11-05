@@ -4,7 +4,7 @@ use worth_runtime_bridge::facade::{
 
 use crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryGraphProviderMemoryArena;
 
-use super::WorthQueryManagedProviderWorkEvidence;
+use crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence;
 
 #[derive(Default)]
 pub(crate) struct WorthQueryManagedProviderCleanupAuthority {

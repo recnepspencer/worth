@@ -3,8 +3,6 @@
 pub mod admission;
 #[path = "admission_preparation/mod.rs"]
 pub mod admission_preparation;
-#[path = "authorized_read/mod.rs"]
-pub mod authorized_read;
 #[path = "basis/mod.rs"]
 pub mod basis;
 #[path = "controls/mod.rs"]

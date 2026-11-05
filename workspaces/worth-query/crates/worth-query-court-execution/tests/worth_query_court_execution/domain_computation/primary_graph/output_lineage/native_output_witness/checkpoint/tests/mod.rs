@@ -3,7 +3,7 @@ pub use std::sync::Arc;
 pub use worth_relational::facade::identity::EntityId;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
 pub use worth_relational::facade::identity::KindId;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness::PreparedNativeOutputWitness;
 pub use worth_relational::facade::runtime::RelationalRuntime;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness::SealedNativeOutputWitness;
@@ -13,7 +13,7 @@ pub use worth_query_declaration::facade::application_operation::ApplicationMutat
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
 pub use crate::domain_computation::primary_graph::output_lineage::native_output_witness::checkpoint::tests;
 
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_dependencies;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_witness;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::OutputDependencySelection;

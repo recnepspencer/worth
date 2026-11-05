@@ -8,11 +8,7 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause as Cause,
 };
 
-use super::{
-    WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
-    WorthQueryInvariantProjectionTraversalDenial as Denial,
-    WorthQueryInvariantProjectionTraversalDenialKind as Kind,
-};
+use {super::WorthQueryApplicationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::WorthQueryInvariantProjectionTraversalDenial as Denial, super::WorthQueryInvariantProjectionTraversalDenialKind as Kind};
 
 mod result;
 use crate::domain_computation::primary_graph::structural_walk::{

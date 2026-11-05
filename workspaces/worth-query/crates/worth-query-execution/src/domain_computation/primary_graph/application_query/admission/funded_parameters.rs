@@ -1,11 +1,7 @@
 //! Opaque authored projection and admitted immutable query parameter custody.
 mod stage;
-use crate::domain_computation::primary_graph::application_contribution::execution_denial::{
-    publication_execution_kind, scope_stop_kind,
-};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_contribution::publication::publication_execution_kind, crate::domain_computation::primary_graph::vocabulary::application_contribution::scope::scope_stop_kind};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
 use stage::{checkpoint, run_stage};
 use std::sync::Arc;
 use worth_execution::ExecutionMemoryReservation;
@@ -21,6 +17,7 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity;
+use crate::domain_computation::vocabulary::primary_graph::funded_parameters::CapturedApplicationQueryParameters;
 
 struct Projected<Query>(ApplicationQueryParameterSet<Query>);
 impl<Query> ChargedBytes for Projected<Query> {
@@ -137,36 +134,4 @@ fn overflow() -> Denial {
     ))
 }
 
-pub(in crate::domain_computation) struct CapturedApplicationQueryParameters {
-    query: WorthQueryInstalledApplicationQueryIdentity,
-    parameters: Arc<WorthQueryAdmittedApplicationQueryParameters>,
-    // Last to drop: parameters cannot outlive their original reservation.
-    _funding: Option<ExecutionMemoryReservation>,
-}
 
-impl CapturedApplicationQueryParameters {
-    fn captured(
-        query: WorthQueryInstalledApplicationQueryIdentity,
-        parameters: WorthQueryAdmittedApplicationQueryParameters,
-        funding: Option<ExecutionMemoryReservation>,
-    ) -> Self {
-        Self {
-            query,
-            parameters: Arc::new(parameters),
-            _funding: funding,
-        }
-    }
-    pub(in crate::domain_computation) fn query(
-        &self,
-    ) -> &WorthQueryInstalledApplicationQueryIdentity {
-        &self.query
-    }
-    pub(in crate::domain_computation) fn parameters(
-        &self,
-    ) -> &WorthQueryAdmittedApplicationQueryParameters {
-        &self.parameters
-    }
-    pub(in crate::domain_computation) fn same_capture(&self, other: &Self) -> bool {
-        self.query == other.query && Arc::ptr_eq(&self.parameters, &other.parameters)
-    }
-}

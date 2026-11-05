@@ -28,8 +28,8 @@ pub(super) use queue::RequiredWorkPop;
 pub(super) use queue::RequiredWorkQueue;
 
 pub(super) use discontinuity::DiscontinuityCursors;
-use native_hints::NativeBranch;
-pub(in crate::domain_computation::primary_graph) use native_hints::NativeHint;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::native_hints::NativeBranch;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::native_hints::NativeHint;
 
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -42,7 +42,8 @@ use super::WorthQueryOutputDemandRegistry;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::required_work::ReplacedRequiredWorkHint;
 
 pub struct RequiredWorkMembership {
     key: Arc<WorthQueryOutputDemandKey>,
@@ -73,7 +74,7 @@ struct MembershipState {
     local_settlement: Option<Arc<RecordedSettlementIdentity>>,
     next: Option<Arc<RequiredWorkMembership>>,
     current_basis:
-        Option<crate::domain_computation::primary_graph::application_contribution::CurrentBasis>,
+        Option<crate::domain_computation::primary_graph::vocabulary::application_contribution::current_basis::CurrentBasis>,
 }
 
 pub struct SelectedRequiredWork {
@@ -98,10 +99,6 @@ pub enum SelectedRequiredWorkKind {
     UnresolvedInitial,
 }
 
-pub struct ReplacedRequiredWorkHint {
-    _native: Option<Box<NativeHint>>,
-    _settlement: Option<Arc<RecordedSettlementIdentity>>,
-}
 
 impl RequiredWorkMembership {
     pub(super) fn new(key: Arc<WorthQueryOutputDemandKey>, queue: &Arc<RequiredWorkQueue>) -> Self {

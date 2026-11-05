@@ -126,7 +126,7 @@ trait SecurityBasisOwnOps<Schema: ApplicationSchema>:
                     )
                 })
                 .map_err(|denial| {
-                    use super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Currency;
+                    use crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Currency;
                     match denial {
                         Currency::Execution(cause) => WorthQueryProductBranchAdmissionDenial::Stopped(
                             crate::facade::primary_graph::relational_execution_kind(cause, None)),

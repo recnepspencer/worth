@@ -51,8 +51,8 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     /// The caller's read request stopped.
     ReadExecution(
         Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
     ),
     /// The preparation call could not enter its execution request.

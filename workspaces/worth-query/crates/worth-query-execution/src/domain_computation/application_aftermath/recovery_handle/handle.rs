@@ -64,7 +64,7 @@ impl WorthQueryRecoveryHandle {
     /// Execution-runtime authority identity this handle's registry belongs to (Q8.20).
     pub(crate) fn runtime_authority(
         &self,
-    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
         self.registry.runtime_authority()
     }
 

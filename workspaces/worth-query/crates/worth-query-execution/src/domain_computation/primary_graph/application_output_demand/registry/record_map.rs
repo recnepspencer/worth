@@ -14,7 +14,7 @@ pub(super) use mutation::RecordMutation;
 type Map = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
 #[derive(Default)]
 pub struct DemandRecords(Map, BTreeMap<
-    crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceCoordinate,
+    crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceCoordinate,
     std::collections::BTreeSet<WorthQueryOutputDemandKey>>,
     super::cleanup::ClosedCleanupQueue,
     super::publication_head::PublicationHeads,

@@ -3,21 +3,18 @@ use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-use super::{
-    latest_output_matching, SemanticSource, WorthQueryApplicationOutputLineage,
-    WorthQueryExactRecordedOutput,
-};
+use {super::latest_output_matching, crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource, super::WorthQueryApplicationOutputLineage, super::WorthQueryExactRecordedOutput};
 
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn qualified_output<Binding: 'static>(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,
-        runtime_identity: crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
-        checkpoint_identity: crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
+        runtime_identity: crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity,
+        checkpoint_identity: crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity,
     ) -> Option<WorthQueryExactRecordedOutput> {
         let source = SemanticSource {
             runtime_authority,

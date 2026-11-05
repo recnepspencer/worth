@@ -3,25 +3,11 @@ use worth_relational::facade::runtime::{
     AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection,
 };
 
-use super::{
-    denial, ObservedWorkflowTransition, PublishedWorkflowInstanceRef,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationObservedFact,
-};
+use {super::denial, super::ObservedWorkflowTransition, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationObservedFact};
 use crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition;
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::select_settled_replay_transition,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::RetainedWorkflowInstanceProgressProjection,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgressKey,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgressRetentionDenial,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressBasis,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressObservation,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayProjection,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayRetention,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::select_settled_replay_transition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::RetainedWorkflowInstanceProgressProjection, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress, crate::domain_computation::primary_graph::vocabulary::application_attempt::retention::WorkflowInstanceProgressKey, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgressRetentionDenial, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressBasis, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressObservation, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayProjection, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayRetention};
 
 pub(super) struct WorkflowProgressObservation {
     key: WorkflowInstanceProgressKey,

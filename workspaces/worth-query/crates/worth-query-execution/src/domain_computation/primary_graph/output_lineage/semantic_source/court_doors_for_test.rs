@@ -1,28 +1,13 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 
-impl SemanticSource {
-    #[doc(hidden)]
-    pub fn new_for_test(
-        runtime_authority: u64,
-        schema: ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        output_binding: super::super::super::output_binding_identity::OutputBindingIdentity,
-    ) -> Self {
-        Self {
-            runtime_authority,
-            schema,
-            scope,
-            output_binding,
-        }
-    }
-}
 
 impl SemanticSource {
     #[doc(hidden)]
     pub fn output_binding_for_test(
         &self,
-    ) -> &super::super::super::output_binding_identity::OutputBindingIdentity {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity {
         &self.output_binding
     }
 }
@@ -45,7 +30,7 @@ impl SemanticSource {
     #[doc(hidden)]
     pub fn output_binding_mut_for_test(
         &mut self,
-    ) -> &mut super::super::super::output_binding_identity::OutputBindingIdentity {
+    ) -> &mut crate::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity {
         &mut self.output_binding
     }
 }

@@ -1,14 +1,14 @@
 //! One exact-root principal identity lookup under the carried request meter.
 
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
 use worth_relational::facade::indexes::BoundedIndexParityMode;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::runtime::VisibilityProjectionView;
 
-use super::super::WorthQueryPrincipalResolutionDenialKind;
-use super::WorthQueryPrincipalResolutionMode;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 use super::WorthQueryPrincipalSnapshotResolution;
 
 #[derive(Debug)]

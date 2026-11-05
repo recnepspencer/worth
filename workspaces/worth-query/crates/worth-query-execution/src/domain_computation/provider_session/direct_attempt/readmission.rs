@@ -22,7 +22,7 @@ impl WorthQueryDirectResourceReadmissionPending {
     pub(crate) fn begin(
         yielded_attempt: WorthQueryDirectExecutionResourceAttempt,
         call: WorthQueryGraphProviderCallReadmissionPlan,
-        _owner: &crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit,
+        _owner: &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit,
     ) -> (Self, WorthQueryGraphProviderCall) {
         let fresh_attempt_identity = WorthQueryExecutionAttemptIdentity::mint();
         let fresh_provider_session = WorthQueryExecutionProviderSession::mint(
@@ -47,14 +47,14 @@ impl WorthQueryDirectResourceReadmissionPending {
 
     pub(crate) fn attempt_identity(
         &self,
-        _owner: &crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit,
+        _owner: &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit,
     ) -> &WorthQueryExecutionAttemptIdentity {
         &self.fresh_attempt_identity
     }
 
     pub(crate) fn yielded_binding_authority(
         &self,
-        _owner: &crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit,
+        _owner: &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit,
     ) -> &crate::domain_computation::operation_binding::WorthQueryExecutionBoundOperationAuthority
     {
         self.yielded_attempt.binding_authority()
@@ -62,14 +62,14 @@ impl WorthQueryDirectResourceReadmissionPending {
 
     pub(crate) fn abort(
         self,
-        _owner: crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit,
+        _owner: crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit,
     ) -> WorthQueryDirectExecutionResourceAttempt {
         self.yielded_attempt
     }
 
     pub(crate) fn commit(
         self,
-        _owner: crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit,
+        _owner: crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit,
     ) -> WorthQueryDirectExecutionResourceAttempt {
         let Self {
             yielded_attempt,
@@ -95,7 +95,7 @@ impl WorthQueryDirectResourceReadmissionPending {
 
     pub(crate) fn provider_work_rebinding(
         &self,
-        _owner: &crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit,
+        _owner: &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit,
     ) -> WorthQueryDirectProviderWorkRebinding {
         WorthQueryDirectProviderWorkRebinding {
             yielded: self

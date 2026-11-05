@@ -152,7 +152,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         // Exact lineage selection and the output witness precede the native mark.
         // Missing/dirty/discontinuous rows retain the original funded comparison.
         if let Some(selected) = currentness_basis(relational, snapshot)? {
-            use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
+            use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness;
             currentness_live(execution)?;
             let current = crate::domain_computation::primary_graph::output_reuse::owner_read(
                 owner.currentness(&selected, &read.identity),

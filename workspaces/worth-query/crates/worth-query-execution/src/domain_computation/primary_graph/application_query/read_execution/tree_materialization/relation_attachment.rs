@@ -12,13 +12,8 @@ use worth_relational::facade::identity::EntityId;
 use super::relation_distribution::distribute_relation_rows;
 use super::relation_occurrence::{attach_occurrences, RelationProjectionTarget};
 use super::relation_target_filter::retain_matching_targets;
-use super::{
-    project_nodes, ActiveResultTreeCollectionSelection, ResultTreeWork, TargetedCollectionChild,
-    WorthQueryApplicationProjectionNode, WorthQueryApplicationReadExecutionDenial,
-};
-use crate::domain_computation::primary_graph::application_query::read_execution::{
-    read_execution_denial, WorthQueryApplicationReadExecutionDenialKind,
-};
+use {super::project_nodes, super::ActiveResultTreeCollectionSelection, super::ResultTreeWork, super::TargetedCollectionChild, super::WorthQueryApplicationProjectionNode, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial};
+use {crate::domain_computation::primary_graph::application_query::read_execution::read_execution_denial, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind};
 
 mod omitted_relation;
 mod ordered;

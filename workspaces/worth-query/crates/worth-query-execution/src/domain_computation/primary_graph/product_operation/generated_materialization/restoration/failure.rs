@@ -3,10 +3,7 @@ use worth_relational::facade::{
     transactions::{ConflictClass, InvariantViolationFields, TransactionCommitError},
 };
 
-use super::{
-    WorthQueryGeneratedOutputInvariantAdmissionDenial,
-    WorthQueryGeneratedOutputPublicationNoEffect, WorthQueryGeneratedOutputRestorationFailure,
-};
+use {crate::domain_computation::vocabulary::primary_graph::invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial, super::WorthQueryGeneratedOutputPublicationNoEffect, super::WorthQueryGeneratedOutputRestorationFailure};
 use crate::domain_computation::primary_graph::WorthQuerySuspendedGeneratedOutput;
 
 /// Why a restoration was rejected. Nothing was published.
@@ -26,9 +23,9 @@ pub enum WorthQueryGeneratedOutputRestorationFailureCause {
     /// The prepared restoration's invariant evidence was not admitted.
     InvariantAdmission(WorthQueryGeneratedOutputInvariantAdmissionDenial),
     /// The execution owner refused restoration before publication.
-    ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    ExecutionDenied(crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind),
     /// The execution owner stopped restoration before publication.
-    ExecutionControlStopped(crate::domain_computation::WorthQueryProviderSessionControlStopKind),
+    ExecutionControlStopped(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind),
     /// The restoration could not be prepared.
     Preparation,
     /// A custom invariant rejected the prepared restoration; the fields name it

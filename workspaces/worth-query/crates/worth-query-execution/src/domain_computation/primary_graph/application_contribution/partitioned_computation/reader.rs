@@ -12,11 +12,7 @@ use worth_query_installation::facade::{
     WritePosture,
 };
 
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantDecisionPlanDenial,
-    WorthQueryInvariantEntityIdentity, WorthQueryInvariantProjectionTraversalDenial,
-    WorthQueryInvariantRelation,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader, crate::domain_computation::primary_graph::WorthQueryInvariantDecisionPlanDenial, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenial, crate::domain_computation::primary_graph::WorthQueryInvariantRelation};
 
 /// The handler's reader for the length of one owner call.
 ///
@@ -122,7 +118,7 @@ where
 pub enum WorthQueryComputationReadDenial {
     OutputAvailability(Box<crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial>),
     /// The retained computation's fact comparison stopped under its request.
-    RetainedFact(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind),
+    RetainedFact(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind),
     Field(WorthQueryInvariantDecisionPlanDenial),
     Relations(WorthQueryInvariantProjectionTraversalDenial),
 }

@@ -1,7 +1,4 @@
-use crate::domain_computation::primary_graph::application_query::{
-    WorthQueryApplicationBasisIdentity, WorthQueryApplicationOutputDemandSource,
-    WorthQueryObservedSource,
-};
+use {crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOutputDemandSource, crate::domain_computation::primary_graph::application_query::WorthQueryObservedSource};
 
 /// Original native evidence retained by one disclosed application query.
 ///

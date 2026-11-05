@@ -1,13 +1,6 @@
 //! Reuse delegates to the existing physical fact and Native comparison owners.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        WorthQueryApplicationObservedFact as Fact,
-        WorthQueryApplicationSourceAdjacencyEndpoints as Endpoints,
-        WorthQuerySourceCurrentnessFailure as Failure,
-    },
-    source_read_verification::SourceReadVerification,
-};
+use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationSourceAdjacencyEndpoints as Endpoints, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Failure, crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification};
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
 use worth_relational::facade::{

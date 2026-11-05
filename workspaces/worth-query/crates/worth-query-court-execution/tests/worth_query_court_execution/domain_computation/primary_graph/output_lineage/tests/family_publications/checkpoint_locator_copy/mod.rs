@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::output_lineage::tests::family_publications::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::capture::native_priors::merge as merge_native_checkpoint_priors;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity as Identity;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture as Posture;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture as Posture;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_prior_checkpoint::NativePriorCheckpointLocator;
 use worth_relational::facade::mvcc::RequiredOutputProducingImplementation as Implementation;
 

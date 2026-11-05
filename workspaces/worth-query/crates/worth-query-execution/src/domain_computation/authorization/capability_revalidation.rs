@@ -1,7 +1,7 @@
 //! Current capability re-admission at privileged transitions.
 mod active_currentness;
 mod denial;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use denial::{denial, inconsistent_refresh};
 mod installed_basis;
 mod prepared_read;
@@ -10,16 +10,13 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::delegation_admission::WorthQueryCapabilityObservationSource;
 use super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use super::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryRetainedCapabilityAuthorization,
-};
+use {super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::WorthQueryRetainedCapabilityAuthorization};
 
 mod observation;
 pub(in crate::domain_computation::authorization) use observation::WorthQueryCapabilityRevalidationObservation;
 
 struct WorthQueryCapabilityRefresh<'refresh> {
-    session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+    session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     product: &'refresh crate::basis::WorthQueryProductObservationLease,
     installed: &'refresh super::capability_registry::WorthQueryInstalledCapabilityPlan,
     sample: super::WorthQueryRuntimeTimeSample,
@@ -165,7 +162,7 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authorization: &mut WorthQueryRetainedCapabilityAuthorization,
-        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session_identity: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         product: &crate::basis::WorthQueryProductObservationLease,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         let refresh = self.prepare_capability_refresh(
@@ -185,7 +182,7 @@ where
         &'refresh self,
         request: &WorthQueryRetainedCapabilityRequest,
         authority_identity: &str,
-        session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         product: &'refresh crate::basis::WorthQueryProductObservationLease,
         time: WorthQueryCapabilityRefreshTime<'_>,
     ) -> Result<WorthQueryCapabilityRefresh<'refresh>, WorthQueryOperationAuthorizationDenial> {

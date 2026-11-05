@@ -1,8 +1,5 @@
 //! Exact equality-index currency consumed by one admitted capability projection.
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryOperationAuthorizationRefusalKind,
-};
+use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind};
 use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequestProjection;
 use worth_query_installation::facade::ApplicationSchema;
@@ -14,7 +11,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Scope, Context>(
     session: &WorthQueryManagedGraphWorkSession,
     projection: &ApplicationCapabilityRequestProjection<Schema, Scope, Context>,
     operation: &str,
-    principal: &crate::domain_computation::primary_graph::WorthQueryPrimaryPrincipalBindingLayout,
+    principal: &crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout,
 ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
     let denied = |cause: String| {
         WorthQueryOperationAuthorizationDenial::new(
@@ -75,7 +72,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Scope, Context>(
     handle.with_runtime_mut(execution, |runtime| {
         runtime.index_authority().refresh_field_indexes_for_basis(
             DerivedIndexBuildRequest { source_commit_id, branch_id: observation.identity().branch_id().clone(), index_ids: indexes },
-            basis, None, crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(), execution,
+            basis, None, crate::domain_computation::vocabulary::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(), execution,
         ).map(|_| ()).map_err(|cause| denied(format!("capability selector index preparation: {cause:?}")))
     })
 }

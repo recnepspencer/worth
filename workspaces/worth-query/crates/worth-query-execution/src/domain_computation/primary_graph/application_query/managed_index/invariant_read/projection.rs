@@ -1,7 +1,9 @@
 //! Materialize candidates only through the current Native loan's occurrence and fields.
-use super::super::WorthQueryManagedIndexSourceSlot;
+use crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot;
 use super::*;
 use worth_relational::facade::runtime::{ManagedIndexSourceOccurrence, ManagedIndexSourceRows};
+use crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ManagedSourceValue;
+use crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::WorthQueryManagedIndexInvariantDenial;
 type Denial = WorthQueryManagedIndexInvariantDenial;
 
 pub(super) fn read<S, I>(
@@ -56,7 +58,7 @@ where
 }
 fn admit_occurrence(
     rows: &ManagedIndexSourceRows<'_>,
-    owner: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+    owner: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     slot: &WorthQueryManagedIndexSourceSlot,
 ) -> Result<ManagedIndexSourceOccurrence, Denial> {
     if slot.owner != owner || slot.ordinal != 0 {

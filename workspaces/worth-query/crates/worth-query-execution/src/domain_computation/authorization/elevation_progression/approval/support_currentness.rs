@@ -1,15 +1,12 @@
 //! Fresh observation of the exact governed support carried by a request receipt.
 
 use crate::domain_computation::authorization::InstalledBasisScopedOps;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::capability_registry::WorthQueryInstalledCapabilityPlan;
-use super::super::super::{
-    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialKind, WorthQueryRuntimeTimeSample,
-};
+use {super::super::super::WorthQueryAdmittedApplicationCapabilityAccess, super::super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::super::super::WorthQueryRuntimeTimeSample};
 use super::super::WorthQueryElevationRequestBinding;
 use crate::domain_computation::primary_graph::WorthQueryRequestedElevation;
 

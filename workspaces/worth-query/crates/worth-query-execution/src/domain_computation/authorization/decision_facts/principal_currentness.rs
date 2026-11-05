@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryPrincipalBindingLayout;
+use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalFreshnessEvidence;
 
 #[derive(Clone)]
 pub struct WorthQueryPrincipalCurrentnessDependency {
     session_identity:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     binding: Arc<str>,
     layout: WorthQueryPrimaryPrincipalBindingLayout,
     freshness: WorthQueryPrincipalFreshnessEvidence,
@@ -23,7 +23,7 @@ impl WorthQueryPrincipalCurrentnessDependency {
         self.freshness.durable_view(&self.binding)
     }
     pub(in crate::domain_computation) fn capture<Schema, Principal, PrincipalIdentity>(
-        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session_identity: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         layout: &WorthQueryPrimaryPrincipalBindingLayout,
     ) -> Self {
@@ -38,7 +38,7 @@ impl WorthQueryPrincipalCurrentnessDependency {
 
     pub(in crate::domain_computation) const fn session_identity(
         &self,
-    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
         self.session_identity
     }
 
@@ -52,7 +52,7 @@ impl WorthQueryPrincipalCurrentnessDependency {
 
     pub(in crate::domain_computation) fn retained_for_session(
         &self,
-        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        session_identity: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     ) -> Self {
         Self {
             session_identity,
@@ -80,7 +80,7 @@ impl WorthQueryPrincipalCurrentnessDependency {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<
         bool,
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+        crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
     > {
         self.freshness
             .remains_current_in(execution, runtime, snapshot, &self.layout, &self.binding)

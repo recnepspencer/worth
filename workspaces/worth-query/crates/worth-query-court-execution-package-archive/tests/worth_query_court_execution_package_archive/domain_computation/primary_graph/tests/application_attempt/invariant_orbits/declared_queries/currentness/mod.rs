@@ -46,11 +46,11 @@ fn retained_query_aggregate_identity_is_not_hidden_by_its_walk_companion() {
             let mut extent = None;
             let aggregate_fact = WorthQueryApplicationObservedFact::Aggregate { observation: Arc::clone(aggregate) };
             let movement = aggregate_fact.source_currentness_with_for_test(runtime, &execution, lease.snapshot_for_test(), &mut extent, None).unwrap().unwrap().movement_for_test();
-            assert_eq!(movement == worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Unmoved, index == winner);
+            assert_eq!(movement == worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement::Unmoved, index == winner);
             let again = aggregate_fact.source_currentness_with_for_test(runtime, &execution, lease.snapshot_for_test(), &mut extent, None).unwrap().unwrap().movement_for_test();
             assert_eq!(movement, again);
             let walk_fact = WorthQueryApplicationObservedFact::StructuralWalk { observation: Arc::clone(walk) };
-            assert_eq!(walk_fact.source_currentness_with_for_test(runtime, &execution, lease.snapshot_for_test(), &mut extent, None).unwrap().unwrap().movement_for_test(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Moved);
+            assert_eq!(walk_fact.source_currentness_with_for_test(runtime, &execution, lease.snapshot_for_test(), &mut extent, None).unwrap().unwrap().movement_for_test(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement::Moved);
         });
     }
 }

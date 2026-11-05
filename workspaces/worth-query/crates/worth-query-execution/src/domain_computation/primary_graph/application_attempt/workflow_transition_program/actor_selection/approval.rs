@@ -27,7 +27,7 @@ pub(super) fn approval_actor(
     if parent != instance {
         return Err(affinity("original approval parent changed"));
     }
-    let direction = super::super::super::WorthQueryApplicationAdjacencyDirection::Outgoing;
+    let direction = crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Outgoing;
     let relations = super::super::super::observe_adjacency(
         runtime,
         execution,
@@ -69,7 +69,7 @@ pub(super) fn approval_actor(
     }
     exact(execution, runtime, snapshot, entity, layout.approval.entity_kind,
         &layout.approval.protocol_version, worth_foundational::facade::AspectValue::UInt64(
-            crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION), facts)?;
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION), facts)?;
     for (original, retained) in [
         (
             &layout.instance.identity,

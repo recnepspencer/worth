@@ -15,8 +15,8 @@ use super::scheduling;
 use super::InstalledProducerExecutor;
 use super::WorthQueryApplicationProducerBinding;
 use super::WorthQueryInstalledOutputProducerRoutes;
-use super::WorthQueryProducerApplicability;
-use super::WorthQueryProducerInvariantRequirement;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerApplicability;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement;
 use super::WorthQueryProducerOutputFamily;
 use super::WorthQuerySelectedApplicationProducer;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
@@ -63,7 +63,7 @@ pub struct DeclaredProducerBinding
     pub(in crate::domain_computation::primary_graph::application_contribution) installed_output_equivalence:
         Option<Arc<super::output_equivalence_contract::InstalledProducerOutputEquivalence>>,
     pub(in crate::domain_computation::primary_graph::application_contribution) input_reuse:
-        Option<super::WorthQueryProducerInputReuseContract>,
+        Option<crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryProducerInputReuseContract>,
     pub(in crate::domain_computation::primary_graph::application_contribution) binding_type: TypeId,
     pub(in crate::domain_computation::primary_graph::application_contribution) source_type: TypeId,
     pub(in crate::domain_computation::primary_graph::application_contribution) operation_binding_type:
@@ -245,7 +245,7 @@ where
                 reuses_live_output_only: !selected.declaration.applicability.iter().any(
                     |applicability| {
                         applicability.lifecycle()
-                            == super::WorthQueryProducerLifecyclePosture::Preserve
+                            == crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture::Preserve
                     },
                 ),
             },

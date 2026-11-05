@@ -1,4 +1,4 @@
-use super::super::{PublishedWorkflowDefinitionRef, WorkflowInstancePreparationDenial};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, super::super::WorkflowInstancePreparationDenial};
 use super::{
     mismatch, ApplicationMutationBinding, ApplicationSchema, ApplicationWorkflowSpec, Arc, Mutex,
     RequiredWorkflowBirth, TypeId, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot,

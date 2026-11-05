@@ -5,10 +5,7 @@ use worth_query_installation::facade::{
     WorthQueryNamedClock, WorthQueryNamedClockSource, WorthQueryTemporalIntentProjector,
 };
 
-use super::installation::{
-    ConditionalClockLease, WorthQueryConditionalRuntimeInstallationDenial,
-    WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryPendingConditionalOperation,
-};
+use {crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::ConditionalClockLease, super::installation::WorthQueryConditionalRuntimeInstallationDenial, super::installation::WorthQueryConditionalRuntimeInstallationDenialKind, super::installation::WorthQueryPendingConditionalOperation};
 use super::lifecycle::WorthQueryInstalledTemporalOperation;
 use super::publication::ConditionalRuntimeAffinity;
 

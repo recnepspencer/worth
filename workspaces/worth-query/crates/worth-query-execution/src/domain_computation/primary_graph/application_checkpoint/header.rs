@@ -38,7 +38,7 @@ impl CheckpointDecodeDenial {
         Self {
             kind: Kind::ExecutionDenied {
                 kind:
-                    crate::domain_computation::WorthQueryProviderSessionDenialKind::AllocationDenied,
+                    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::AllocationDenied,
             },
             message: "checkpoint metadata allocation refused".to_owned(),
         }
@@ -63,7 +63,7 @@ impl CheckpointDecodeDenial {
             FactDecodeDenial::Retention(StoreDenial::Allocation(cause)) => match cause.classify() {
                 ExecutionAllocationDenialClass::Request(stop) => Self::execution(stop),
                 ExecutionAllocationDenialClass::Physical(_) => Self {
-                    kind: Kind::ExecutionDenied { kind: crate::domain_computation::WorthQueryProviderSessionDenialKind::AllocationDenied },
+                    kind: Kind::ExecutionDenied { kind: crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::AllocationDenied },
                     message: cause.to_string(),
                 },
             },

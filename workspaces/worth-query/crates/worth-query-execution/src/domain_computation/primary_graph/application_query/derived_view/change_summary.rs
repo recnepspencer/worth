@@ -5,72 +5,8 @@ use worth_relational::facade::{
     transactions::RecordRef,
 };
 
-use super::ViewChange;
+use crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewChange;
 
-pub(in crate::domain_computation::primary_graph) fn changes_from_summary(
-    summary: &PreparedRelationalChangeSummary,
-    maximum_changes: usize,
-) -> Option<Vec<ViewChange>> {
-    let mut required = 0usize;
-    for record in &summary.records {
-        // Relation adjacency has no safe bounded target without endpoints.
-        if matches!(record.target, RecordRef::Relation(_))
-            && record.before_endpoints.is_none()
-            && record.after_endpoints.is_none()
-        {
-            return None;
-        }
-        let additional = match record.target {
-            RecordRef::Entity(_) => record.aspect_scopes.len().checked_add(usize::from(
-                record.structural_change != RecordStructuralChange::Updated,
-            ))?,
-            RecordRef::Relation(_) => 4,
-        };
-        required = required.checked_add(additional)?;
-        if required > maximum_changes {
-            return None;
-        }
-    }
-    let mut changes = Vec::with_capacity(required);
-    for record in &summary.records {
-        match record.target {
-            RecordRef::Entity(entity) => {
-                // Relational's exact native field transition projection
-                // publishes scopes for changed values. An updated record with
-                // no scopes has no field revision changes or lifecycle change.
-                if record.structural_change != RecordStructuralChange::Updated {
-                    changes.push(ViewChange::Entity(entity));
-                }
-                for scope in &record.aspect_scopes {
-                    changes.push(match &scope.field_path {
-                        Some(path) => {
-                            ViewChange::Field(entity, scope.aspect_key.clone(), path.clone())
-                        }
-                        None => ViewChange::Aspect(entity, scope.aspect_key.clone()),
-                    });
-                }
-            }
-            RecordRef::Relation(_) => {
-                for endpoints in [record.before_endpoints, record.after_endpoints]
-                    .into_iter()
-                    .flatten()
-                {
-                    changes.push(ViewChange::Adjacency(
-                        endpoints.source,
-                        endpoints.kind_id,
-                        0,
-                    ));
-                    changes.push(ViewChange::Adjacency(
-                        endpoints.target,
-                        endpoints.kind_id,
-                        1,
-                    ));
-                }
-            }
-        }
-    }
-    Some(changes)
-}
 
 #[cfg(test)]
 mod tests {
@@ -90,7 +26,7 @@ mod tests {
         transactions::RecordRef,
     };
 
-    use super::{changes_from_summary, ViewChange};
+    use {crate::domain_computation::primary_graph::vocabulary::application_query::change_summary::changes_from_summary, crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewChange};
     use crate::domain_computation::primary_graph::application_query::derived_view::{
         dependency::ViewDependency, publication::DependencyIndex,
     };

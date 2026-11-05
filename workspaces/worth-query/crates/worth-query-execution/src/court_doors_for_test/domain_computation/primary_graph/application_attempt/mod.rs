@@ -1,6 +1,4 @@
 //! Doors under `domain_computation::primary_graph::application_attempt`.
-#[path = "commit_authority_binding/mod.rs"]
-pub mod commit_authority_binding;
 #[path = "dependency_identity/mod.rs"]
 pub mod dependency_identity;
 #[path = "effect_program/mod.rs"]

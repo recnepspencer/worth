@@ -1,7 +1,5 @@
 //! Provider-exposed physical topology, separate from matching or a coverage witness.
-use super::super::{
-    WorthQueryManagedIndexNodeId as NodeId, WorthQueryManagedIndexSourceSlot as Slot,
-};
+use {super::super::WorthQueryManagedIndexNodeId as NodeId, crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot as Slot};
 
 /// One node's own Source occurrence and actual binary children.
 /// Query checks the whole retained correspondence; construction grants no authority.

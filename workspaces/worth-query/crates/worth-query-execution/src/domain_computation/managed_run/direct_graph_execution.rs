@@ -24,9 +24,7 @@ use super::interruption_classification::producer_terminal_kind;
 use super::managed_graph_execution::{
     WorthQueryManagedGraphExecution, WorthQueryManagedProviderStep,
 };
-use super::{
-    WorthQueryDirectRunTerminal, WorthQueryManagedRunTerminalKind, WorthQueryRunningDirectRun,
-};
+use {super::WorthQueryDirectRunTerminal, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind, super::WorthQueryRunningDirectRun};
 use crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryGraphProviderStepCompletion;
 use crate::domain_computation::{WorthQueryGraphProviderStepReport, WorthQueryGraphReadMaterial};
 
@@ -287,7 +285,7 @@ impl WorthQueryActiveDirectGraphExecution {
     pub(super) fn observe_safe_point(
         &mut self,
     ) -> Result<
-        super::WorthQueryManagedSafePointObservation,
+        crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation,
         super::WorthQueryManagedSafePointFailure,
     > {
         let observation = self.running.observe_safe_point()?;

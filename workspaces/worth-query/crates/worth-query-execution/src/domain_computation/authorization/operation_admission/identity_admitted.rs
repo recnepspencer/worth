@@ -3,7 +3,7 @@
 use std::fmt::Write;
 use std::sync::Arc;
 
-use super::WorthQueryOperationAdmissionIdentity;
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
 use super::RESOURCE_LABEL;
 
 pub(super) enum AdmittedOperationIdentityStop {

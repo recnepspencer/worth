@@ -11,9 +11,9 @@ use crate::domain_computation::primary_graph::application_output_demand::denial:
 mod supporting_sources;
 
 use super::partition_index::SourcePartitionPublication;
-use super::ProductCoordinate;
-use super::RecordedSettlementIdentity;
-use super::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
 use super::WorthQueryCurrentOutputCandidate;
 
@@ -150,7 +150,7 @@ impl WorthQueryApplicationOutputLineage {
                     .ok_or_else(|| stop(Kind::WorkBudgetExceeded))?;
             }
         }
-        if published.is_empty() && (source.lifecycle() != crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture::Initial
+        if published.is_empty() && (source.lifecycle() != crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture::Initial
             || !self.source_publication_coverage.complete()) {
             return Err(stop(Kind::IncompleteDependencyCoverage));
         }

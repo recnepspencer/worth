@@ -26,7 +26,8 @@ mod required_proposal;
 pub use required_proposal::RequiredWorkflowProposal;
 #[path = "publication/transition_replay.rs"]
 mod transition_replay;
-pub use approval::{RequiredWorkflowApproval, WorkflowApprovalDecision};
+pub use approval::RequiredWorkflowApproval;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision;
 pub use actor::RequiredWorkflowActor;
 pub use assessment_evidence::PerformedWorkflowAssessmentEvidence;
 pub(super) use commit::project;
@@ -216,56 +217,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAssessment<Schema, Operati
     }
 }
 
-/// A condition the instance waits on: the published expression and the
-/// operands it reads, each an installed query result supplied by its binding.
-/// True selects the satisfied successor and false the unsatisfied one.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RequiredWorkflowCondition {
-    pub(super) instance: worth_relational::facade::identity::EntityId,
-    pub(super) node_path: String,
-    pub(super) transition_identity: String,
-    pub(super) occurrence: u64,
-    pub(super) condition:
-        crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowCondition,
-}
 
-impl RequiredWorkflowCondition {
-    pub(in crate::domain_computation::primary_graph) fn from_selected(
-        instance: worth_relational::facade::identity::EntityId,
-        node_path: String,
-        transition_identity: String,
-        occurrence: u64,
-        selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowCondition,
-    ) -> Self {
-        Self {
-            instance,
-            node_path,
-            transition_identity,
-            occurrence,
-            condition: selected.condition,
-        }
-    }
-
-    pub const fn instance(&self) -> worth_relational::facade::identity::EntityId {
-        self.instance
-    }
-    pub fn node_path(&self) -> &str {
-        &self.node_path
-    }
-    pub fn transition_identity(&self) -> &str {
-        &self.transition_identity
-    }
-    pub const fn occurrence(&self) -> u64 {
-        self.occurrence
-    }
-    /// Operands in name order.
-    pub fn operands(
-        &self,
-    ) -> &[crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowConditionOperand]
-{
-        &self.condition.operands
-    }
-}
 
 /// A workflow transition that landed: the node it reached, whether that node is terminal,
 /// its commit receipt, whether it replayed, and the assessment evidence, approval or
@@ -386,3 +338,4 @@ pub enum WorkflowProgressOutcome {
     IdempotencyDenied(super::super::WorthQueryApplicationIdempotencyResolutionDenial),
 }
 pub(in crate::domain_computation::primary_graph) use commit::CommitScopedOps;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_transition_program_publication::RequiredWorkflowCondition;

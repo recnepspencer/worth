@@ -14,11 +14,7 @@ use worth_relational::facade::indexes::DerivedIndexId;
 use super::super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::super::effect_validation::denial;
 use super::super::fact::{observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal};
-use super::super::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationObservedFact, WorthQueryCompleteApplicationReadSet,
-    WorthQueryProjectedApplicationMutation,
-};
+use {super::super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::super::WorthQueryApplicationObservedFact, super::super::WorthQueryCompleteApplicationReadSet, super::super::WorthQueryProjectedApplicationMutation};
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFieldIndex;
 
 /// Two candidates tell a free value from a taken one, and a held value from

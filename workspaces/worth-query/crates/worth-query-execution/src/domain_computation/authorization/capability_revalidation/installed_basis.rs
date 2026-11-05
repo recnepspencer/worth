@@ -1,5 +1,6 @@
 use super::*;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 
 pub(in crate::domain_computation::authorization) trait InstalledBasisScopedOps<Schema>:
     crate::domain_computation::authorization::host::AuthorizationHost<Schema>

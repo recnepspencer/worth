@@ -1,6 +1,6 @@
 //! Exact operation-authority validation phase owner.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
@@ -18,7 +18,7 @@ use super::WorthQueryCapabilityOperationProgression;
 pub(crate) mod precondition_binding;
 pub use precondition_binding::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use precondition_binding::WorthQueryAdmittedApplicationOperation;
-pub(in crate::domain_computation) use precondition_binding::WorthQueryOperationAdmissionIdentity;
+
 pub(in crate::domain_computation) use precondition_binding::{
     admit_capability_access, admit_encoded_capability_access,
 };
@@ -95,7 +95,7 @@ where
     )?;
     if operation.contracts().authorization().requires_capability() {
         return Err(WorthQueryOperationAuthorizationDenial::new(
-            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityRequired),
+            crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityRequired),
             operation.operation(),
         ));
     }

@@ -10,6 +10,8 @@ pub(in crate::domain_computation::primary_graph) use control::SourceFactExpansio
 mod retention_validation;
 mod source_fact_locator;
 use source_fact_locator::SourceFactLocator;
+use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
+use crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind;
 
 pub(in crate::domain_computation::primary_graph::application_query) struct PreparedSourceFactMaterialization<
     'source,

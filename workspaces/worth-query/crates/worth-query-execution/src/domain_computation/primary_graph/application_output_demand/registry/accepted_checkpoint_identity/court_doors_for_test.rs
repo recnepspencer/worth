@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
 
 impl WorthQueryAcceptedOutputCheckpointIdentity {
     #[doc(hidden)]
@@ -19,7 +20,7 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
     #[doc(hidden)]
     pub fn scope_for_test(
         &self,
-    ) -> &crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding {
+    ) -> &crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding {
         &self.scope
     }
 }
@@ -47,7 +48,7 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
 
 impl WorthQueryAcceptedOutputCheckpointIdentity {
     #[doc(hidden)]
-    pub fn roles_for_test(&self) -> &std::sync::Arc<Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>>{
+    pub fn roles_for_test(&self) -> &std::sync::Arc<Vec<crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole>>{
         &self.roles
     }
 }
@@ -84,7 +85,7 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
 
 impl WorthQueryAcceptedOutputCheckpointIdentity {
     #[doc(hidden)]
-    pub fn roles_mut_for_test(&mut self) -> &mut std::sync::Arc<Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>>{
+    pub fn roles_mut_for_test(&mut self) -> &mut std::sync::Arc<Vec<crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole>>{
         &mut self.roles
     }
 }
@@ -133,11 +134,11 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
         producer: std::sync::Arc<String>,
         posture: WorthQueryAcceptedOutputCheckpointPosture,
         source: [u8; 32],
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         source_partition: [u8; 32],
         producer_dependency: Option<[u8; 32]>,
         idempotency_key: [u8; 32],
-        roles: std::sync::Arc<Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>>,
+        roles: std::sync::Arc<Vec<crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole>>,
         producer_facts: Option<std::sync::Arc<Vec<u8>>>,
         producer_fact_wire_version: u16,
         metadata: Option<std::sync::Arc<

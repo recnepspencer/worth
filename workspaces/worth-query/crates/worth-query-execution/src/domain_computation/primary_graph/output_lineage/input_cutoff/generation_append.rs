@@ -1,9 +1,9 @@
 //! Selected generation storage prepared before stable source publication.
 
 use super::super::prepared_slot::denial;
-use super::super::ProductCoordinate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use super::super::RecordedGeneration;
-use super::super::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::super::WorthQueryApplicationOutputLineage;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind;

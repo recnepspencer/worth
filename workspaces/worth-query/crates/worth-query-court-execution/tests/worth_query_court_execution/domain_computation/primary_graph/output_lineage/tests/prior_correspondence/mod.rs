@@ -29,8 +29,8 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
     );
     let partition = [0x11; 32];
     let source_identity = checkpoint_identity([0x31; 32]);
-    let runtime_identity = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([0x99; 32]);
-    let checkpoint_identity = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([0x31; 32]);
+    let runtime_identity = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([0x99; 32]);
+    let checkpoint_identity = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([0x31; 32]);
     let correspondence = Arc::new(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
             TypeId::of_for_test::<RestoredOutputBinding>(),

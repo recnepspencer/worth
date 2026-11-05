@@ -6,6 +6,7 @@ use worth_relational::facade::mvcc::CompanionPublicationCompletion;
 
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::CurrentProof;
+use crate::domain_computation::primary_graph::vocabulary::application_output_demand::required_work::ReplacedRequiredWorkHint;
 
 impl SelectedRequiredWork {
     /// Stamp the member's same-branch hints whose publication has already

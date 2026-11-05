@@ -4,7 +4,7 @@ use super::super::super::{
     rich::{source::SourceDetail, OriginalQueryDetail},
 };
 use super::*;
-use crate::domain_computation::primary_graph::admitted_capture::run_retained_stage;
+use crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage;
 impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
     pub(in super::super::super) fn materialize_source_rich<Q, P, R, S>(
         &mut self,

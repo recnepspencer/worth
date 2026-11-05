@@ -16,6 +16,7 @@ use worth_runtime_bridge::facade::{
 use super::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
+use crate::domain_computation::primary_graph::vocabulary::managed_bridge::WorthQueryInstalledApplicationBridge;
 
 #[derive(Clone)]
 struct WorthQueryApplicationBridgeSource {
@@ -52,36 +53,7 @@ impl WorthQueryApplicationBridgeInstallation {
     }
 }
 
-pub struct WorthQueryInstalledApplicationBridge {
-    ordinary: RuntimeBridge,
-    conditional: std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>,
-}
 
-impl WorthQueryInstalledApplicationBridge {
-    pub(super) fn ordinary(&self) -> &RuntimeBridge {
-        &self.ordinary
-    }
-
-    pub fn conditional(&self) -> std::sync::RwLockReadGuard<'_, BridgeSealedRuntimeAssembly> {
-        self.conditional
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-    }
-
-    pub(super) fn conditional_lifecycle(
-        &self,
-    ) -> std::sync::RwLockWriteGuard<'_, BridgeSealedRuntimeAssembly> {
-        self.conditional
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-    }
-
-    pub(super) fn conditional_operations(
-        &self,
-    ) -> std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>> {
-        std::sync::Arc::clone(&self.conditional)
-    }
-}
 
 pub(super) fn install_application_bridge<Schema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,

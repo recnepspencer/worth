@@ -1,12 +1,12 @@
 //! Parameter-specific translation of the sole original-request capture owner.
 use super::{request_stopped, stopped, Denial};
-use crate::domain_computation::primary_graph::admitted_capture::{self, CaptureStop};
+use {crate::domain_computation::primary_graph::admitted_capture, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop};
 use worth_execution::{
     ChargedBytes, ExecutionMemoryReservation, ExecutionRequest, ExecutionResultMemory,
     MapKernelContext, MapKernelFailure,
 };
 
-pub(super) use admitted_capture::checkpoint;
+pub(super) use crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
 
 pub(super) fn run_stage<Value: ChargedBytes>(
     execution: &ExecutionRequest<'_, '_>,

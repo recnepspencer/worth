@@ -10,8 +10,8 @@ pub(super) fn append(
 ) {
     kind(entries, prefix, "source-publication");
     push(entries, format!("{prefix}.posture"), CanonicalBasisEntryKind::Identity, text(match observed.posture() {
-        crate::domain_computation::primary_graph::invariant_projection::ObservedOutputPosture::Current => "current",
-        crate::domain_computation::primary_graph::invariant_projection::ObservedOutputPosture::Pending => "pending",
+        crate::domain_computation::primary_graph::vocabulary::invariant_projection::output_availability_candidate::ObservedOutputPosture::Current => "current",
+        crate::domain_computation::primary_graph::vocabulary::invariant_projection::output_availability_candidate::ObservedOutputPosture::Pending => "pending",
     }));
     let address = observed.address();
     let schema = address.schema();

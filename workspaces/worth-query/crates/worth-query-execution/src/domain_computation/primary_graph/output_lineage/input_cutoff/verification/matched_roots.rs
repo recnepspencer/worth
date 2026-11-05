@@ -5,7 +5,7 @@ use std::sync::Arc;
 use im::OrdSet;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
-use super::super::super::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::InputCutoffVerificationStop;
 use crate::domain_computation::primary_graph::application_contribution::MatchedRequiredPredecessors;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;

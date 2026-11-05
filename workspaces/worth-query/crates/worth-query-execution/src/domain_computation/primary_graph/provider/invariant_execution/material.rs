@@ -10,7 +10,7 @@ pub(super) struct ApplicationInvariantCandidateMaterial {
     pub(super) semantic: ApplicationInvariantSemanticMaterial,
     pub(super) requirements: Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
     pub(super) producer_required_invariants:
-        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+        &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement],
     pub(super) content_attachments: worth_relational::facade::content::RelationalContentAttachments,
     pub(super) authored_restoration: Option<(worth_relational::facade::history::CommitId, worth_relational::facade::identity::EntityId, worth_relational::facade::transactions::CreatedEntityRef)>,
     pub(super) restoration_publication: Option<worth_relational::facade::mvcc::RequiredOutputPublication>,
@@ -19,7 +19,7 @@ pub(super) struct ApplicationInvariantCandidateMaterial {
     pub(super) product:
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     pub(super) decision_facts: usize,
-    pub(super) expected_step_preparation_work: crate::domain_computation::primary_graph::application_attempt::WorthQueryExpectedEffectStepPreparationWork,
+    pub(super) expected_step_preparation_work: crate::domain_computation::primary_graph::vocabulary::application_attempt::expected_steps::WorthQueryExpectedEffectStepPreparationWork,
     pub(super) aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,

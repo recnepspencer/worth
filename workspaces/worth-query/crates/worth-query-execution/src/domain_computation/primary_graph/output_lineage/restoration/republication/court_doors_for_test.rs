@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 impl WorthQueryApplicationOutputLineage {
     #[doc(hidden)]
@@ -8,7 +9,7 @@ impl WorthQueryApplicationOutputLineage {
         output_binding: TypeId,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         suspended_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         suspended_generation: u64,
         source_partition_identity: [u8; 32],
@@ -42,7 +43,7 @@ impl WorthQueryApplicationOutputLineage {
         output_binding: TypeId,
         runtime_authority: u64,
         schema: ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
         source_identity: RecordedSourceIdentity,

@@ -13,13 +13,8 @@ use worth_query_installation::facade::ApplicationSchema;
 pub(crate) mod demand;
 mod denial_value;
 pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
-pub(in crate::domain_computation::primary_graph) use demand::{CurrentBasis, CurrentProof};
-pub use denial_value::{
-    WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,
-    WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialProjection,
-    WorthQueryProducerDenialValue, WorthQueryProjectedProducerDenial,
-    WorthQueryUndeclaredProducerDenial,
-};
+pub(in crate::domain_computation::primary_graph) use demand::CurrentProof;
+pub use {denial_value::WorthQueryProducerDenialDeclaration, denial_value::WorthQueryProducerDenialProjection, denial_value::WorthQueryProjectedProducerDenial, denial_value::WorthQueryUndeclaredProducerDenial};
 pub use {
     demand::WorthQueryAdmittedOutputDemand, demand::WorthQueryOutputDemandAdvance,
     demand::WorthQuerySelectedApplicationProducer,
@@ -38,19 +33,8 @@ pub(in crate::domain_computation::primary_graph) use output_evaluation::{
     ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
 };
 mod input_reuse_contract;
-pub use input_reuse_contract::{
-    WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,
-};
+use crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryProducerInputReuseContract;
 
-#[derive(Clone, Eq, PartialEq)]
-pub enum WorthQueryProducerCommitAuthority {
-    Ordinary,
-    ProgramOutput,
-    SelectedProgram {
-        identity: worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
-        revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
-    },
-}
 mod readiness;
 pub(in crate::domain_computation::primary_graph) use readiness::{
     evaluate_output_readiness, install_output_readiness_routes, PendingOutputReadiness,
@@ -62,41 +46,10 @@ pub(in crate::domain_computation::primary_graph) use scheduling::{
     schedule_output_producer, schedule_output_producer_on_selected,
     WorthQueryInstalledOutputProducerRoutes,
 };
-pub(in crate::domain_computation::primary_graph) use source_qualification::{
-    OutputSourceAddress, QualifiedOutputSource,
-};
+pub(in crate::domain_computation::primary_graph) use source_qualification::QualifiedOutputSource;
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum WorthQueryProducerLifecyclePosture {
-    Initial,
-    Preserve,
-}
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryProducerApplicability {
-    profile_kind: &'static str,
-    lifecycle: WorthQueryProducerLifecyclePosture,
-}
 
-impl WorthQueryProducerApplicability {
-    pub const fn new(
-        profile_kind: &'static str,
-        lifecycle: WorthQueryProducerLifecyclePosture,
-    ) -> Self {
-        Self {
-            profile_kind,
-            lifecycle,
-        }
-    }
-
-    pub const fn profile_kind(self) -> &'static str {
-        self.profile_kind
-    }
-
-    pub const fn lifecycle(self) -> WorthQueryProducerLifecyclePosture {
-        self.lifecycle
-    }
-}
 
 pub trait WorthQueryProducerOutputFamily<Schema>: Sized + 'static
 where
@@ -122,11 +75,6 @@ pub(super) type ProducerSourceQuery<Schema, Binding> =
 pub(super) type ProducerSourceValue<Schema, Binding> =
     <<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryWorkflowAssessmentPosture {
-    Passing,
-    Failing,
-}
 
 /// Assessment meaning owned by the installed output-family contract rather
 /// than selected by a workflow caller.
@@ -152,45 +100,7 @@ where
     ) -> <<Self::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Input;
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryProducerInvariantRequirement {
-    identifier: &'static str,
-    major: u16,
-    minor: u16,
-    execution_point: ApplicationInvariantExecutionPoint,
-}
 
-impl WorthQueryProducerInvariantRequirement {
-    pub const fn new(
-        identifier: &'static str,
-        major: u16,
-        minor: u16,
-        execution_point: ApplicationInvariantExecutionPoint,
-    ) -> Self {
-        Self {
-            identifier,
-            major,
-            minor,
-            execution_point,
-        }
-    }
-
-    pub const fn identifier(self) -> &'static str {
-        self.identifier
-    }
-
-    pub const fn major(self) -> u16 {
-        self.major
-    }
-
-    pub const fn minor(self) -> u16 {
-        self.minor
-    }
-
-    pub const fn execution_point(self) -> ApplicationInvariantExecutionPoint {
-        self.execution_point
-    }
-}
 
 pub trait WorthQueryApplicationProducerProvider<Schema, Binding>: Send + Sync + 'static
 where
@@ -295,3 +205,6 @@ pub(in crate::domain_computation::primary_graph) use registry::InstalledProducer
 pub(in crate::domain_computation::primary_graph) use registry::PendingProducerRegistry;
 pub use registry::WorthQueryInstalledApplicationProducerRegistry;
 pub(in crate::domain_computation::primary_graph) use source_qualification::SourceQualificationScopedOps;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerApplicability;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryWorkflowAssessmentPosture;

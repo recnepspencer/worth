@@ -115,7 +115,7 @@ impl WorthQueryDirectResumePreflightValidated {
         let WorthQueryDirectYieldedState { affinity, retained } = self.state;
         let resource = affinity.begin_readmission(
             self.call,
-            &crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit::mint(),
+            &crate::domain_computation::vocabulary::managed_run::direct_lane::WorthQueryDirectReadmissionTransitionPermit::mint(),
         );
         progress.minted_fresh_resource_attempt();
         WorthQueryDirectProvisionalResourceAttempt {

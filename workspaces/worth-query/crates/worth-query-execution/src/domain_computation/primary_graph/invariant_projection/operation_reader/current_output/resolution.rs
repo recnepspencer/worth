@@ -29,11 +29,11 @@ use super::WorthQueryCurrentOutputSelection;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerOutputFamily;
 use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
-use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputVerification;
-use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
-use crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 impl<'reader, 'runtime, Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
@@ -168,7 +168,7 @@ where
                 execution,
                 self.runtime_authority.as_u64(),
                 self.binding_identity,
-                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
+                crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(
                     producer.entity_id(),
                 ),
                 Family::IDENTITY,

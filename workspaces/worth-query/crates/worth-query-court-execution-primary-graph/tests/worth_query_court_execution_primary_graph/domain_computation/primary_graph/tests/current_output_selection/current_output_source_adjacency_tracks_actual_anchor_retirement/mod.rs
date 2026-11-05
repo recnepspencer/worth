@@ -58,7 +58,7 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement() {
         let snapshot = original.application_basis_for_test().snapshot_handle();
         assert_eq!(
             fact.source_currentness_in_for_test(runtime, &host_custody.borrowed_request_for_test(), snapshot).unwrap().map(|movement| movement.movement_for_test()),
-            Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Unmoved)
+            Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement::Unmoved)
         );
 
     }) }).expect("the fixture read owns its installed host call");
@@ -73,13 +73,13 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement() {
         let snapshot = retired.application_basis_for_test().snapshot_handle();
         assert_eq!(
             fact.source_currentness_in_for_test(runtime, &host_custody.borrowed_request_for_test(), snapshot).unwrap().map(|movement| movement.movement_for_test()),
-            Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Moved)
+            Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement::Moved)
         );
 
         // Retirement in a later basis does not rewrite the old source basis.
         assert_eq!(
             fact.source_currentness_in_for_test(runtime, &host_custody.borrowed_request_for_test(), original.application_basis_for_test().snapshot_handle()).unwrap().map(|movement| movement.movement_for_test()),
-            Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Unmoved)
+            Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement::Unmoved)
         );
     }) }).expect("the fixture read owns its installed host call");
 }
