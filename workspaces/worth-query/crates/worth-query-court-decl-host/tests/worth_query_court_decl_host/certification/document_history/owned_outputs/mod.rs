@@ -13,6 +13,7 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 mod schema;
 use schema::*;
 mod courts;
+mod custody;
 mod edit;
 mod family;
 mod navigation;

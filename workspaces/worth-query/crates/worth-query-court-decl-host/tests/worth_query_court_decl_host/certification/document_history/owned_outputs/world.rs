@@ -21,6 +21,34 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
     }
 }
 pub fn install() -> Host {
+    install_with(host_limits(
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
+    ))
+}
+/// The same world whose every request is a worker-only lease without accounting.
+pub fn install_worker_only() -> Host {
+    use worth_query_host::facade::runtime::*;
+    let clock =
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system();
+    let world =
+        worth_query_testkit_document_retention::facade::document_world_resources::world_resources(
+            256,
+            4 * 1024 * 1024,
+            256,
+            clock,
+        )
+        .with_execution_policy(ExecutionRequestPolicy::for_workers(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            std::num::NonZeroUsize::new(8).unwrap(),
+        ));
+    install_with(WorthQueryInMemoryApplicationLimits::new(
+        world,
+        WorthQueryApplicationQueryResourceProfile::new(std::num::NonZeroUsize::new(128).unwrap()),
+        SignalConditionalEvaluationBudget::development(),
+    ))
+}
+fn install_with(limits: WorthQueryInMemoryApplicationLimits) -> Host {
     let schema = Schema::declaration().unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<Schema, program::Program>::begin()
@@ -30,7 +58,7 @@ pub fn install() -> Host {
         schema,
         ((),),
         ApplicationBuildIdentity::parse("91830000-0000-0000-0000-000000005356").unwrap(),
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        limits,
         |_, graph, installed| {
             graph.bind_principal(
                 &installed.principal_binding(Actor::reference()).unwrap(),

@@ -185,14 +185,18 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                         RelationalTransactionIntent::ordinary(),
                     )
                     .map_err(Denial::Transaction)?;
-                let port = native.preparation_port();
-                let selection = port
-                    .admit_owned_graph_selection(&execution, transaction, graph)
-                    .map_err(Denial::GraphPreparation)?;
-                drop(
-                    port.prepare_owned_graph_selection(&execution, selection, None)
-                        .map_err(Denial::GraphPreparation)?,
-                );
+                drop(super::output_custody::prepare(
+                    &execution,
+                    native,
+                    application
+                        .runtime
+                        .primary_provider
+                        .graph
+                        .application_publication
+                        .as_deref(),
+                    transaction,
+                    graph,
+                )?);
                 return Ok(());
             }
             let transaction = native

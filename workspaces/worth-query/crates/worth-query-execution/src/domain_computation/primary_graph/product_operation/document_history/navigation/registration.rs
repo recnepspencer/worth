@@ -190,6 +190,7 @@ where
             requested,
             intent,
             phase: NavigationPhase::Prepared,
+            output_transport: None,
             head_slot: Some(head_slot),
             prior_cleanup: None,
             selection_pause: None,

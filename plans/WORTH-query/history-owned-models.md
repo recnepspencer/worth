@@ -769,3 +769,29 @@ selected step's branch coordinate. Slice order, each with courts and mutants:
    producing build contacts exactly that family. Mutations: regenerate instead
    of select (skip slice 1), skip evidence (ordinary fence), and drop one
    family from verification.
+
+### D1196 #57 slice 1 landed: navigation output custody and lineage transport
+
+- Native exposes `RelationalInstalledApplicationPublicationAuthority::owns_source_scopes`
+  and `RelationalRequiredOutputPublication::same_origin`.
+- `navigation/output_custody.rs` is the one owned-graph preparation for eligibility and
+  progression. When the publisher owns source scopes and Native finds owned producer
+  publications, it prepares `prepare_historical_output_selections`, admits them with the
+  installed owner and passes `RequiredOutputPublication::HistoricalSelection`. Otherwise it
+  passes none, so a missing ownership substrate still refuses typed at Native coverage.
+- Before World, progression prepares Native's publication custody for the exact candidate
+  envelope (`prepare_required_output_publications`) and resolves every restored route to the
+  selected step's own lineage row (`output_lineage/historical_transport.rs`). The row must
+  hold that route's Native publication or its recovered locator; a missing or ambiguous row
+  refuses `OutputLineage(SelectedSourceMismatch)` before any effect. At the performed
+  selection commit, each row is recorded again at the new product coordinate with its facts,
+  witness, implementation, correspondence and idempotency, naming the committed
+  HistoricalSelection publication. Its new settlement has no mark row, so selection still
+  verifies it in full and today selects Preserve; slice 2 supplies the evidence gates.
+- Courts (`owned_outputs::custody`, serial and worker-only): undo and redo restore custody
+  with zero producer contacts; a later settlement is Preserve for both families and keeps
+  the original output identities. The former typed refusal court is retired because it flipped.
+- Mutations: passing no custody returns the `OwnedPublicationRequiresCascade` refusal and
+  fails both courts. Skipping the transport survives slice 1: in this fixture the selected
+  and head rows coincide, and Native's transition-successor readmission names the current
+  publication for Preserve. Slice 2's zero-contact court is the transport's kill evidence.

@@ -7,6 +7,7 @@ mod eligibility;
 pub(crate) mod output_authority;
 mod output_completion;
 mod output_correspondence;
+mod output_custody;
 mod output_lookup;
 mod output_profile;
 pub(in crate::domain_computation::primary_graph) use output_lookup::{
@@ -96,6 +97,9 @@ pub enum WorthQueryHistoryNavigationDenial {
     Preparation(worth_relational::facade::mvcc::RelationalRetainedEntitySelectionPreparationError),
     OwnedGraph(worth_relational::facade::branch::RelationalOwnedModelSelectionDenial),
     GraphPreparation(worth_relational::facade::mvcc::RelationalOwnedGraphSelectionPreparationError),
+    /// The selected step retains no exact lineage row for a producer route
+    /// Native restores, or its lookup stopped.
+    OutputLineage(worth_relational::facade::mvcc::CompanionPreflightStop),
     SelectorSnapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
     SelectorMaintenance(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial),
     Publication(worth_runtime_world::facade::NoEffectCompositePublication),

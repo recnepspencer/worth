@@ -2,25 +2,24 @@
 use super::*;
 use family::Request;
 use worth_query_host::facade::product::WorthQueryProductBranch;
-use worth_relational::facade::{
-    mvcc::{
-        RelationalOwnedGraphSelectionPreparationError as GraphPreparation, TransactionCommitError,
-    },
-    publication::AuthoredRetirementRefusal,
-};
 
-struct Edited<'a> {
-    document: world::Document<'a>,
-    before: WorthQueryHistoryNodeId,
-    branch: WorthQueryProductBranch,
-    selection: WorthQueryHistorySelection,
-    outputs: (query::Row, query::Row),
+pub(super) struct Edited<'a> {
+    pub(super) document: world::Document<'a>,
+    pub(super) before: WorthQueryHistoryNodeId,
+    pub(super) after: WorthQueryHistoryNodeId,
+    pub(super) branch: WorthQueryProductBranch,
+    pub(super) selection: WorthQueryHistorySelection,
+    pub(super) outputs: (query::Row, query::Row),
 }
 
 /// Settle both families on the current world (Initial), attach the model
 /// history and record one model edit. With `resettle`, settle both families
 /// again on the edited branch (Preserve). Counts actual producer handler entries.
-fn edited<'a>(host: &'a world::Host, request: &Request<'_, '_, '_>, resettle: bool) -> Edited<'a> {
+pub(super) fn edited<'a>(
+    host: &'a world::Host,
+    request: &Request<'_, '_, '_>,
+    resettle: bool,
+) -> Edited<'a> {
     let contacts = host.producer_contacts_on_this_thread_for_test();
     first::settle(host, request, "a");
     second::settle(host, request, "a");
@@ -60,6 +59,7 @@ fn edited<'a>(host: &'a world::Host, request: &Request<'_, '_, '_>, resettle: bo
     };
     assert_eq!(step.label(), Some("Edit model"));
     let selection = document.selection(request).unwrap();
+    let after = document.current_step(request).unwrap().id();
     let branch = selection.physical_endpoint().product_branch();
     assert_eq!(world::model(host, branch).value, 2);
     if !resettle {
@@ -71,6 +71,7 @@ fn edited<'a>(host: &'a world::Host, request: &Request<'_, '_, '_>, resettle: bo
         return Edited {
             document,
             before,
+            after,
             branch,
             selection,
             outputs,
@@ -97,6 +98,7 @@ fn edited<'a>(host: &'a world::Host, request: &Request<'_, '_, '_>, resettle: bo
     Edited {
         document,
         before,
+        after,
         branch,
         selection,
         outputs,
@@ -115,18 +117,19 @@ fn two_families_settle_after_a_recorded_model_edit() {
         .unwrap();
 }
 
-/// Prepare and advance a checkout of the pre-edit step until it ends.
-fn checkout(
+/// Prepare and advance a checkout of one recorded step until it ends.
+pub(super) fn checkout(
     document: &world::Document<'_>,
     request: &Request<'_, '_, '_>,
-    before: WorthQueryHistoryNodeId,
+    target: WorthQueryHistoryNodeId,
     expected: WorthQueryHistorySelection,
+    idempotency: u128,
 ) -> Result<WorthQueryHistorySelection, (&'static str, WorthQueryHistoryNavigationAdvanceDenial)> {
     let mut navigation = document
         .navigate::<navigation::Navigation>()
-        .checkout(before)
+        .checkout(target)
         .expected_selection(expected)
-        .idempotency(0x5356_0001)
+        .idempotency(idempotency)
         .prepare(request)
         .map_err(|cause| ("prepare", cause))?;
     for _ in 0..32 {
@@ -146,53 +149,6 @@ fn checkout(
     panic!("bounded checkout must end");
 }
 
-/// Outputs settled before attach; the edit alone is recorded. Native refuses
-/// the owned-graph checkout at `prepare` with the model's owned producer
-/// publication (`OwnedPublicationRequiresCascade`), because Query does not yet
-/// pass HistoricalSelection output custody.
-#[test]
-fn owned_graph_checkout_over_producer_publications_refuses_typed_today() {
-    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    let host = world::install();
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.request(&principal, &scope);
-    let Edited {
-        document,
-        before,
-        branch,
-        selection,
-        outputs,
-    } = edited(&host, &request, false);
-    let model = world::model(&host, branch);
-    let contacts = host.producer_contacts_on_this_thread_for_test();
-    let refusal = checkout(&document, &request, before, selection.clone())
-        .expect_err("checkout over owned producer publications must refuse today");
-    let (
-        "prepare",
-        WorthQueryHistoryNavigationAdvanceDenial::Navigation(
-            WorthQueryHistoryNavigationDenial::GraphPreparation(GraphPreparation::Preparation(
-                TransactionCommitError::Publication { error, .. },
-            )),
-        ),
-    ) = &refusal
-    else {
-        panic!("expected Native owned-publication refusal at prepare: {refusal:?}")
-    };
-    let Some(AuthoredRetirementRefusal::OwnedPublicationRequiresCascade { owner, .. }) =
-        error.authored_retirement_refusal()
-    else {
-        panic!("expected OwnedPublicationRequiresCascade: {refusal:?}")
-    };
-    assert_eq!(owner, model.native_id, "the refusal names the source model");
-    assert_eq!(document.selection(&request).unwrap(), selection);
-    assert_eq!(world::model(&host, branch), model);
-    assert_eq!(world::outputs(&host, branch), outputs);
-    assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
-    host.with_host_advancement(|phase| document.close(&phase).unwrap())
-        .unwrap();
-}
-
 /// Settling producers on the document branch outside the history moves its
 /// head: every later selection and checkout refuses `HeadDiverged` first.
 #[test]
@@ -208,6 +164,7 @@ fn out_of_history_settlement_on_the_document_branch_diverges_its_head() {
         branch,
         selection,
         outputs,
+        ..
     } = edited(&host, &request, true);
     let model = world::model(&host, branch);
     let contacts = host.producer_contacts_on_this_thread_for_test();
@@ -223,7 +180,7 @@ fn out_of_history_settlement_on_the_document_branch_diverges_its_head() {
     };
     let current = document.selection(&request).expect_err("diverged head");
     assert!(diverged(&current), "{current:?}");
-    let refusal = checkout(&document, &request, before, selection)
+    let refusal = checkout(&document, &request, before, selection, 0x5356_0001)
         .expect_err("a diverged head must refuse checkout");
     assert!(
         matches!(&refusal, ("prepare", cause) if diverged(cause)),

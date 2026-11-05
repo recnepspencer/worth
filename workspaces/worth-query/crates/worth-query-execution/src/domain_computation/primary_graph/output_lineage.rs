@@ -48,6 +48,8 @@ pub(in crate::domain_computation::primary_graph) use restoration::PriorOutputOri
 pub(crate) mod retained_computation;
 pub(in crate::domain_computation::primary_graph) use retained_computation::PriorComputationRecord;
 mod fork_origin;
+mod historical_transport;
+pub(in crate::domain_computation::primary_graph) use historical_transport::PreparedHistoricalTransport;
 mod retention;
 pub(crate) mod settlement_identity;
 
