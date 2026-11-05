@@ -48,7 +48,28 @@ impl AspectValue {
                 .len()
                 .checked_add(value.denominator.as_str().len())?,
             Self::String(InternedString::Raw(value)) => value.len(),
-            _ => 0,
+            Self::InlineBytes(value) => value.as_bytes().len(),
+            Self::Null
+            | Self::Bool(_)
+            | Self::Int8(_)
+            | Self::Int16(_)
+            | Self::Int32(_)
+            | Self::Int64(_)
+            | Self::UInt8(_)
+            | Self::UInt16(_)
+            | Self::UInt32(_)
+            | Self::UInt64(_)
+            | Self::Float32(_)
+            | Self::Float64(_)
+            | Self::String(InternedString::Symbol(_))
+            | Self::Bytes(_)
+            | Self::Uuid(_)
+            | Self::Date(_)
+            | Self::Time(_)
+            | Self::Timestamp(_)
+            | Self::TimestampTz(_)
+            | Self::EntityRef(_)
+            | Self::ContentRef(_) => 0,
         })
     }
 
