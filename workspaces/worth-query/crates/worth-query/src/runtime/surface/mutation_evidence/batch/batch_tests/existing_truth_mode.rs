@@ -6,8 +6,8 @@ use crate::runtime::{
 use worth_foundational::facade::{AspectKey, CanonicalFieldPath, FieldKey};
 
 #[test]
-fn summary_digest_changes_with_mutation_family() {
-    let backend_verified = backend_verified_assertion();
+fn summary_digest_changes_with_mutation_family() -> Result<(), IdentityDerivationDenial> {
+    let backend_verified = backend_verified_assertion()?;
 
     let update = super::super::summarize_existing_truth_modes(
         &[WorthQueryMutationFamily::Update],
@@ -19,6 +19,8 @@ fn summary_digest_changes_with_mutation_family() {
     );
 
     assert_ne!(update.4, delete.4);
+
+    Ok(())
 }
 
 #[test]
@@ -27,7 +29,7 @@ fn summary_digest_changes_with_assertion_mode() -> Result<(), IdentityDerivation
         1,
         retained_assertion_identity("retained-assertion")?,
     );
-    let backend_verified = backend_verified_assertion();
+    let backend_verified = backend_verified_assertion()?;
 
     let retained_summary = super::super::summarize_existing_truth_modes(
         &[WorthQueryMutationFamily::Assertion],
@@ -59,8 +61,9 @@ fn summary_panics_on_invalid_family_mode_pair() -> Result<(), IdentityDerivation
     Ok(())
 }
 
-fn backend_verified_assertion() -> WorthQueryExistingTruthAssertionEvidence {
-    WorthQueryExistingTruthAssertionEvidence::backend_verified(
+fn backend_verified_assertion(
+) -> Result<WorthQueryExistingTruthAssertionEvidence, IdentityDerivationDenial> {
+    Ok(WorthQueryExistingTruthAssertionEvidence::backend_verified(
         &crate::runtime::WorthQueryVerifiedExistingTruthAssertion::new(
             &crate::runtime::WorthQueryExistingTruthTargetBinding::direct_entity(
                 crate::runtime::WorthQueryMutationAuthorityIdentity::existing_truth_binding_authority(
@@ -80,10 +83,10 @@ fn backend_verified_assertion() -> WorthQueryExistingTruthAssertionEvidence {
                 ),
             )
             .expect("aspect should build")],
-            crate::memory_workspace::admit_external_snapshot_label("snapshot:test"),
+            crate::memory_workspace::admit_external_snapshot_label("snapshot:test")?,
         )
         .expect("verified assertion should build"),
-    )
+    ))
 }
 
 fn title_value_touch() -> WorthQueryAspectTouch {

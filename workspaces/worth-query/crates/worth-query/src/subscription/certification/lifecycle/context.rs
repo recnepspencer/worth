@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::super::evidence_identities::{
     lifecycle_context_basis_posture_identity, lifecycle_context_query_identity,
@@ -46,22 +47,24 @@ impl SubscriptionLifecycleCertificationContext {
     pub fn from_live_selection(
         live: &LiveQueryAdmissionArtifact,
         selection: &QuerySubscriptionFamilySelection,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let subscription_family_identity =
-            lifecycle_subscription_family_identity(selection.family());
+            lifecycle_subscription_family_identity(selection.family())?;
         let subscription_equivalence_identity =
             lifecycle_subscription_equivalence_identity(selection.equivalence_basis());
-        let query_scope_identity = lifecycle_context_query_identity(live);
-        Self::admitted(
+        let query_scope_identity = lifecycle_context_query_identity(live)?;
+        Ok(Self::admitted(
             query_scope_identity,
             subscription_family_identity,
             subscription_equivalence_identity,
             live.policy_context_identity().clone(),
             live.tenant_context_identity().clone(),
             live.relationship_proof_context_identity().clone(),
-            lifecycle_context_view_shape_identity(live.view_family().map(|family| family.as_str())),
-            lifecycle_context_basis_posture_identity(live.basis_posture().as_str()),
-        )
+            lifecycle_context_view_shape_identity(
+                live.view_family().map(|family| family.as_str()),
+            )?,
+            lifecycle_context_basis_posture_identity(live.basis_posture().as_str())?,
+        ))
     }
 
     pub fn query_scope_identity(&self) -> &WorthQueryEvidenceIdentity {

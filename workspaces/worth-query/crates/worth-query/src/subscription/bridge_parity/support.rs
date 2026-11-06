@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::super::evidence_projection::subscription_evidence_projection;
@@ -58,12 +59,15 @@ pub struct QuerySubscriptionBridgeParityCounters {
 impl QuerySubscriptionBridgeParityCounters {
     pub fn counter_projection(
         &self,
-    ) -> QueryProjectionIdentity<String, QuerySubscriptionIdentityKind> {
-        subscription_evidence_projection(&self.counter_identity())
+    ) -> Result<
+        QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
+        IdentityDerivationDenial,
+    > {
+        Ok(subscription_evidence_projection(&self.counter_identity()?))
     }
 
-    pub fn counter_identity(&self) -> WorthQueryEvidenceIdentity {
-        bridge_parity_counter_identity(self)
+    pub fn counter_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(bridge_parity_counter_identity(self)?)
     }
 
     pub fn subscription_bridge_parity_comparison_count(&self) -> u64 {
@@ -119,20 +123,20 @@ impl SubscriptionBridgeParityWidth {
         compared_slice_dimension_count: usize,
         compared_basis_dimension_count: usize,
         compared_signal_dimension_count: usize,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let width_identity = bridge_parity_width_identity(
             compared_family_dimension_count,
             compared_slice_dimension_count,
             compared_basis_dimension_count,
             compared_signal_dimension_count,
-        );
-        Self {
+        )?;
+        Ok(Self {
             compared_family_dimension_count,
             compared_slice_dimension_count,
             compared_basis_dimension_count,
             compared_signal_dimension_count,
             width_identity,
-        }
+        })
     }
 
     pub fn compared_family_dimension_count(&self) -> usize {
@@ -178,20 +182,20 @@ impl BridgeParityReceipt {
         parity_class: QuerySubscriptionBridgeParityClass,
         comparison_width: SubscriptionBridgeParityWidth,
         semantic_rebuild_count: usize,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let receipt_identity = bridge_parity_receipt_identity(
             witness_assembly_posture,
             parity_class,
             comparison_width.width_identity(),
             semantic_rebuild_count,
-        );
-        Self {
+        )?;
+        Ok(Self {
             witness_assembly_posture,
             parity_class,
             comparison_width,
             semantic_rebuild_count,
             receipt_identity,
-        }
+        })
     }
 
     pub fn witness_assembly_posture(&self) -> &BridgeWitnessAssemblyPosture {
@@ -237,7 +241,7 @@ impl QuerySubscriptionBridgeParityFailure {
         reason: impl Into<String>,
         source_identity: WorthQueryEvidenceIdentity,
         evidence: &[WorthQueryEvidenceIdentity],
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let reason = reason.into();
         let failure_identity = bridge_parity_failure_identity(
             failure_kind,
@@ -245,14 +249,14 @@ impl QuerySubscriptionBridgeParityFailure {
             &reason,
             &source_identity,
             evidence,
-        );
-        Self {
+        )?;
+        Ok(Self {
             failure_kind,
             parity_class,
             reason,
             source_identity,
             failure_identity,
-        }
+        })
     }
 
     pub fn failure_kind(&self) -> &QuerySubscriptionBridgeParityFailureKind {

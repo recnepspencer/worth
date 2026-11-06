@@ -1,4 +1,5 @@
 use super::super::lane::WorkflowCertificationLane;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::fixtures::{execution_preflights, preview_bridge::active_preview_artifacts};
 use crate::preview::{
     admit_authoritative_preview_comparison_candidate, admit_preview_promotion_parity_comparison,
@@ -16,7 +17,7 @@ use crate::workflow::{
 };
 use worth_relational::facade::history::BranchId;
 
-pub(super) fn merge_lowering_lane() -> WorkflowCertificationLane {
+pub(super) fn merge_lowering_lane() -> Result<WorkflowCertificationLane, IdentityDerivationDenial> {
     let preflight = execution_preflights::direct_runtime_preflight();
     let binding = bind_workflow_context(WorkflowBindingSource::RuntimePreflight(&preflight))
         .expect("runtime binding should admit");
@@ -39,8 +40,8 @@ pub(super) fn merge_lowering_lane() -> WorkflowCertificationLane {
         ),
     )
     .expect("merge lowering should succeed");
-    let outcome = shape_merge_authority_outcome(&lowered);
-    let replay = build_workflow_replay_bundle(&outcome);
+    let outcome = shape_merge_authority_outcome(&lowered)?;
+    let replay = build_workflow_replay_bundle(&outcome)?;
 
     let mut lane = WorkflowCertificationLane::from_declaration(&declaration);
     lane.lowered_request_digest = Some(lowered.lowering_for_reporting().to_string());
@@ -60,10 +61,11 @@ pub(super) fn merge_lowering_lane() -> WorkflowCertificationLane {
         Some(lowered.counters().workflow_executor_rediscovery_count());
     lane.replay_executor_rediscovery_count =
         Some(replay.counters().workflow_executor_rediscovery_count());
-    lane
+    Ok(lane)
 }
 
-pub(super) fn writeback_lowering_lane() -> WorkflowCertificationLane {
+pub(super) fn writeback_lowering_lane(
+) -> Result<WorkflowCertificationLane, IdentityDerivationDenial> {
     let preflight = execution_preflights::direct_runtime_preflight();
     let binding = bind_workflow_context(WorkflowBindingSource::RuntimePreflight(&preflight))
         .expect("runtime binding should admit");
@@ -83,8 +85,8 @@ pub(super) fn writeback_lowering_lane() -> WorkflowCertificationLane {
         WritebackLoweringInput::projected_state_diff(),
     )
     .expect("writeback lowering should succeed");
-    let outcome = crate::workflow::shape_writeback_authority_outcome(&lowered);
-    let replay = build_workflow_replay_bundle(&outcome);
+    let outcome = crate::workflow::shape_writeback_authority_outcome(&lowered)?;
+    let replay = build_workflow_replay_bundle(&outcome)?;
 
     let mut lane = WorkflowCertificationLane::from_declaration(&declaration);
     lane.lowered_request_digest = Some(lowered.lowering_for_reporting().to_string());
@@ -104,7 +106,7 @@ pub(super) fn writeback_lowering_lane() -> WorkflowCertificationLane {
         Some(lowered.counters().workflow_executor_rediscovery_count());
     lane.replay_executor_rediscovery_count =
         Some(replay.counters().workflow_executor_rediscovery_count());
-    lane
+    Ok(lane)
 }
 
 pub(super) fn preview_merge_lowering_lane() -> WorkflowCertificationLane {

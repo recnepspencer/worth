@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 pub(super) fn admit_atomic_batch_symbolic_references(
     planned_symbolic_targets: &BTreeMap<
         WorthQuerySameBatchSymbolicTargetKey,
@@ -23,17 +24,17 @@ pub(super) fn record_planned_same_batch_symbolic_target(
         WorthQuerySameBatchSymbolicTarget,
     >,
     command: &WorthQueryWriteCommand,
-) {
+) -> Result<(), IdentityDerivationDenial> {
     if !matches!(command.mutation_family(), WorthQueryMutationFamily::Insert) {
-        return;
+        return Ok(());
     }
     let Some(reference) = command.symbolic_target_reference() else {
-        return;
+        return Ok(());
     };
     let planned_identity = crate::memory_workspace::admit_authored_entity_label(format!(
         "planned-symbolic:{}",
         reference.symbol()
-    ));
+    ))?;
     planned_symbolic_targets.insert(
         WorthQuerySameBatchSymbolicTargetKey::from_reference(reference),
         WorthQuerySameBatchSymbolicTarget::new(
@@ -41,6 +42,8 @@ pub(super) fn record_planned_same_batch_symbolic_target(
             command.declared_collection_identity(),
         ),
     );
+
+    Ok(())
 }
 
 pub(super) fn symbolic_aspect_resolution_evidence_for_command(

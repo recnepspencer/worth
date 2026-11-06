@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::error::QuerySubscriptionFamilySelectionError;
 use super::super::evidence_identities::{
@@ -29,22 +30,24 @@ pub struct QuerySubscriptionDiagnosticSelectionContext {
 }
 
 impl QuerySubscriptionDiagnosticSelectionContext {
-    pub fn from_selection(selection: &QuerySubscriptionFamilySelection) -> Self {
+    pub fn from_selection(
+        selection: &QuerySubscriptionFamilySelection,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let context_identity = diagnostic_selection_context_selected_identity(
             selection.equivalence_basis().evidence_identity(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             kind: QuerySubscriptionDiagnosticSelectionContextKind::Selected {
                 selection: selection.clone(),
                 context_identity,
             },
-        }
+        })
     }
 
     pub fn from_selection_denial(
         live: &LiveQueryAdmissionArtifact,
         error: &QuerySubscriptionFamilySelectionError,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let query_family_label = match live.view_family() {
             Some(view_family) => format!(
                 "selection_unresolved:{}:{}",
@@ -62,8 +65,8 @@ impl QuerySubscriptionDiagnosticSelectionContext {
             &declaration_family_label,
             live.basis_posture().as_str(),
             &live_graph_access_posture_label,
-        );
-        Self {
+        )?;
+        Ok(Self {
             kind: QuerySubscriptionDiagnosticSelectionContextKind::Denied {
                 source_identity,
                 query_family_label,
@@ -72,7 +75,7 @@ impl QuerySubscriptionDiagnosticSelectionContext {
                 live_graph_access_posture_label,
                 context_identity,
             },
-        }
+        })
     }
 
     pub fn query_family_label(&self) -> &str {

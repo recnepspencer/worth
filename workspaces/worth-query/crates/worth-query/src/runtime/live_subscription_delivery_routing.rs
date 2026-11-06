@@ -1,4 +1,5 @@
 use crate::declarative_live::{DeclarativeLiveQueryRequest, DeclarativeLiveViewShape};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{WorthQueryMutationKind, WorthQueryMutationReceipt};
 use crate::subscription::{
     advance_subscription_acknowledgement, build_active_delivery_work_packet,
@@ -49,7 +50,7 @@ impl RelevantLiveSubscriptionDeltaRoute<'_> {
             self.delta_kind,
             self.state,
             patch_width,
-        );
+        )?;
         let live_graph_read_maintenance = live_graph_read_maintenance_receipt(
             &view_name,
             self.state,
@@ -145,16 +146,18 @@ fn admitted_subscription_maintenance_delta(
     delta_kind: QuerySubscriptionMaintenanceDeltaKind,
     state: &WorthQueryRuntimeLiveSubscriptionState,
     patch_width: u64,
-) -> QuerySubscriptionMaintenanceDelta {
+) -> Result<QuerySubscriptionMaintenanceDelta, IdentityDerivationDenial> {
     let commit_evidence = receipt.commit_identity.evidence_identity();
     let entity_evidence = delta.entity_identity.evidence_identity();
-    QuerySubscriptionMaintenanceDelta::admitted_with_typed_scope(
-        delta_kind,
-        state.active_lane_handle.lane_digest().clone(),
-        &commit_evidence,
-        delta.target_collection_identity().evidence_identity(),
-        &entity_evidence,
-        MaintenanceDeltaWidth::measured(patch_width),
+    Ok(
+        QuerySubscriptionMaintenanceDelta::admitted_with_typed_scope(
+            delta_kind,
+            state.active_lane_handle.lane_digest().clone(),
+            &commit_evidence,
+            delta.target_collection_identity().evidence_identity(),
+            &entity_evidence,
+            MaintenanceDeltaWidth::measured(patch_width),
+        )?,
     )
 }
 

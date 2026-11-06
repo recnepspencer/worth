@@ -1,6 +1,7 @@
 use super::authoritative_declaration;
 use super::bridge::certification_bridge;
 use super::runtime::certification_runtime;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::runtime::{
     CausalEvidenceFamily, CausalInspection, CausalInspectionMaterializationPolicy,
     CausalInspectionRedactionPolicy, QueryObservationReceipt, WorthQueryInspection,
@@ -21,7 +22,7 @@ pub(in crate::intent_admission::certification) struct CertifiedInspectionAdvisor
 
 pub(in crate::intent_admission::certification) fn certified_inspection_advisory_redaction_fixture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> CertifiedInspectionAdvisoryRedactionFixture {
+) -> Result<CertifiedInspectionAdvisoryRedactionFixture, IdentityDerivationDenial> {
     let inspection_basis = crate::basis_lifecycle::basis_lifecycle()
         .current_head()
         .inspect()
@@ -49,7 +50,7 @@ pub(in crate::intent_admission::certification) fn certified_inspection_advisory_
             QueryObservationReceipt::from_intent_receipt_inspection(
                 inspection,
                 inspection_basis.clone(),
-            )
+            )?
         }
         other => panic!("expected intent receipt inspection, got {other:?}"),
     };
@@ -83,7 +84,7 @@ pub(in crate::intent_admission::certification) fn certified_inspection_advisory_
         .expect("redacted inspection artifact should materialize");
 
     let boundary_audit =
-        CausalInspectionBoundaryAudit::from_query_artifact_public_surface(&redacted);
+        CausalInspectionBoundaryAudit::from_query_artifact_public_surface(&redacted)?;
     let execution_provenance_chain_digest = inspection_result
         .receipt()
         .execution_provenance()
@@ -96,7 +97,7 @@ pub(in crate::intent_admission::certification) fn certified_inspection_advisory_
         .expect("lattice inspection receipt should retain decision trace")
         .trace_digest()
         .to_string();
-    CertifiedInspectionAdvisoryRedactionFixture {
+    Ok(CertifiedInspectionAdvisoryRedactionFixture {
         request_digest,
         eligibility_digest,
         decision_trace_digest,
@@ -105,5 +106,5 @@ pub(in crate::intent_admission::certification) fn certified_inspection_advisory_
         redacted_artifact_digest: redacted.artifact_for_reporting().to_string(),
         causal_identity_digest: redacted.causal_identity_for_reporting().to_string(),
         boundary_audit_digest: boundary_audit.audit_digest().to_string(),
-    }
+    })
 }

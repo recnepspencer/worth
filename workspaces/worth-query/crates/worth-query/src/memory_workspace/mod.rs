@@ -141,17 +141,17 @@ impl WorthQueryMutationDelta {
         entity_identity: WorthQueryEntityIdentity,
         kind: WorthQueryMutationKind,
         touched_aspects: Vec<crate::runtime::WorthQueryAspectTouch>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let collection = collection.into();
-        Self {
+        Ok(Self {
             collection_identity: crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
                 "mutation-delta-collection",
                 collection,
-            ),
+            )?,
             entity_identity,
             kind,
             touched_aspects,
-        }
+        })
     }
 
     pub(crate) fn from_collection_identity(

@@ -226,7 +226,7 @@ mod tests {
         row: WorthQueryRetainedMaterializedRow,
     ) -> Result<WorthQueryDerivedArtifactBinding, IdentityDerivationDenial> {
         let snapshot_identity =
-            crate::memory_workspace::admit_external_snapshot_label("snapshot:test");
+            crate::memory_workspace::admit_external_snapshot_label("snapshot:test")?;
         let materialization = WorthQueryDerivedMaterializationResult::from_retained_rows(
             vec![row],
             WorthQueryDerivedMaterializationReceipt::test_only(

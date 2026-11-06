@@ -5,6 +5,7 @@ use crate::application::{
     WorthQueryDeclarationProgressionChecked, WorthQueryDeclarationProgressionRecipe,
     WorthQueryDeclarationProgressionTerminalError, WorthQueryDomainEntryMarker,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::WorthQueryInstalledDomainDeclarationContext;
 use crate::application::WorthQueryDomainOperatingContext;
@@ -15,11 +16,14 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub(crate) fn declaration_progression_recipe<I>(
         &self,
         legal: WorthQueryDeclarationLegalityEvidence<D, I>,
-    ) -> WorthQueryDeclarationProgressionRecipe<D, I>
+    ) -> Result<WorthQueryDeclarationProgressionRecipe<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        worth_query_declaration_progression_recipe(legal, self.retained_world_basis())
+        Ok(worth_query_declaration_progression_recipe(
+            legal,
+            self.retained_world_basis()?,
+        ))
     }
 
     pub fn progress_declaration<I>(
@@ -86,11 +90,13 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn progress_declaration_checked<I>(
         &self,
         legal: WorthQueryDeclarationLegalityEvidence<D, I>,
-    ) -> WorthQueryDeclarationProgressionChecked<D, I>
+    ) -> Result<WorthQueryDeclarationProgressionChecked<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        worth_query_checked_declaration_progression(self.declaration_progression_recipe(legal))
+        Ok(worth_query_checked_declaration_progression(
+            self.declaration_progression_recipe(legal)?,
+        ))
     }
 
     #[cfg(test)]

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeSet;
 
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
@@ -40,13 +41,13 @@ impl QuerySubscriptionFamilyCoverageMatrix {
 
 pub fn build_query_subscription_family_coverage_matrix(
     rows: Vec<QuerySubscriptionFamilyCoverageRow>,
-) -> QuerySubscriptionFamilyCoverageMatrix {
+) -> Result<QuerySubscriptionFamilyCoverageMatrix, IdentityDerivationDenial> {
     let family_coverage_identity =
-        coverage_matrix_identity(rows.iter().map(|row| row.row_identity()));
-    QuerySubscriptionFamilyCoverageMatrix {
+        coverage_matrix_identity(rows.iter().map(|row| row.row_identity()))?;
+    Ok(QuerySubscriptionFamilyCoverageMatrix {
         rows,
         family_coverage_identity,
-    }
+    })
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -100,13 +100,13 @@ pub(crate) fn synthetic_preview_workflow_binding(
     source_label: &str,
     preview_session_identity: BridgePreviewSessionIdentity,
     evaluation_class: WorkflowPreviewEvaluationClass,
-) -> WorkflowContextBinding {
-    synthetic_preview_workflow_binding_scoped(
+) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
+    Ok(synthetic_preview_workflow_binding_scoped(
         source_label,
         "unscoped",
         preview_session_identity,
         evaluation_class,
-    )
+    )?)
 }
 
 pub(crate) fn synthetic_preview_workflow_binding_scoped(
@@ -114,14 +114,14 @@ pub(crate) fn synthetic_preview_workflow_binding_scoped(
     binding_scope_digest: &str,
     preview_session_identity: BridgePreviewSessionIdentity,
     evaluation_class: WorkflowPreviewEvaluationClass,
-) -> WorkflowContextBinding {
-    synthetic_preview_workflow_binding_request_scoped(
+) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
+    Ok(synthetic_preview_workflow_binding_request_scoped(
         source_label,
         binding_scope_digest,
         preview_session_identity,
         evaluation_class,
         PreviewWorkflowFoundationRequest::compare_basis_pair(),
-    )
+    )?)
 }
 
 pub(crate) fn synthetic_preview_workflow_binding_request_scoped(
@@ -130,24 +130,24 @@ pub(crate) fn synthetic_preview_workflow_binding_request_scoped(
     preview_session_identity: BridgePreviewSessionIdentity,
     evaluation_class: WorkflowPreviewEvaluationClass,
     request_family: PreviewWorkflowFoundationRequest,
-) -> WorkflowContextBinding {
+) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
     let binding_scope = workflow_scope_from_label(binding_scope_label);
     let source_identity = synthetic_preview_workflow_source_identity(
         source_label,
         &binding_scope,
         &evaluation_class,
         &preview_session_identity,
-    );
+    )?;
     let query_identity = synthetic_preview_workflow_query_identity(
         source_label,
         &binding_scope,
         &preview_session_identity,
-    );
+    )?;
     let basis_identity = synthetic_preview_workflow_basis_identity(
         source_label,
         &binding_scope,
         &preview_session_identity,
-    );
+    )?;
     let binding_identity = workflow_context_binding_identity(
         &source_identity,
         &query_identity,
@@ -155,8 +155,8 @@ pub(crate) fn synthetic_preview_workflow_binding_request_scoped(
         &basis_identity,
         None,
         binding_scope_for_context_binding(&binding_scope),
-    );
-    WorkflowContextBinding {
+    )?;
+    Ok(WorkflowContextBinding {
         binding_identity,
         source_identity,
         query_identity,
@@ -173,7 +173,7 @@ pub(crate) fn synthetic_preview_workflow_binding_request_scoped(
             workflow_executor_rediscovery_count: 0,
             ..WorkflowCounters::default()
         },
-    }
+    })
 }
 
 pub(super) fn bind_preview_foundation(

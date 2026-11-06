@@ -43,11 +43,11 @@ impl QuerySubscriptionEquivalenceBasis {
     pub(super) fn new(
         input: &LiveQueryAdmissionArtifact,
         classification: &FamilyClassification,
-    ) -> Self {
-        let equivalence_identity = compose_equivalence_identity(input, classification);
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let equivalence_identity = compose_equivalence_identity(input, classification)?;
         let digest = QuerySubscriptionMeaningDigest::from_evidence_identity(&equivalence_identity);
         let digest_part_count = equivalence_digest_part_count(input, classification);
-        Self {
+        Ok(Self {
             digest,
             equivalence_identity,
             digest_part_count,
@@ -58,7 +58,7 @@ impl QuerySubscriptionEquivalenceBasis {
             cost_posture: classification.cost_posture.clone(),
             basis_posture: input.basis_posture.clone(),
             bridge_posture: classification.bridge_posture.clone(),
-        }
+        })
     }
 
     pub fn evidence_identity(&self) -> &WorthQueryEvidenceIdentity {

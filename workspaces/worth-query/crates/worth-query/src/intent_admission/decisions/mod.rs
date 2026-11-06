@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::{
@@ -18,12 +19,12 @@ pub(crate) const INTENT_ADMISSION_DECISIONS_EXPORTED_SURFACE: &[&str] = &[
 
 pub(crate) fn admit_runtime_intent_request(
     request: WorthQueryRawIntentAdmissionRequest,
-) -> WorthQueryIntentAdmissionDecision {
-    let eligibility = WorthQueryIntentAdmissionEligibility::from_request(request);
-    match eligibility.pre_decision_posture() {
+) -> Result<WorthQueryIntentAdmissionDecision, IdentityDerivationDenial> {
+    let eligibility = WorthQueryIntentAdmissionEligibility::from_request(request)?;
+    Ok(match eligibility.pre_decision_posture() {
         WorthQueryIntentAdmissionPreDecisionPosture::Admitted => {
             WorthQueryIntentAdmissionDecision::Admitted(
-                WorthQueryAdmittedIntentPlan::from_eligibility(eligibility),
+                WorthQueryAdmittedIntentPlan::from_eligibility(eligibility)?,
             )
         }
         WorthQueryIntentAdmissionPreDecisionPosture::Deferred { stage, message } => {
@@ -45,7 +46,7 @@ pub(crate) fn admit_runtime_intent_request(
                 ),
             )
         }
-    }
+    })
 }
 
 #[derive(Clone, Debug, PartialEq)]

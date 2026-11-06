@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{WorthQueryIntentDeclaration, WorthQueryIntentInput, WorthQueryRuntimeError};
 
 use super::fixture::stateful_bridge_task_runtime;
@@ -50,7 +51,7 @@ pub(super) fn unsupported_intent_rejection(
 
 pub(super) fn duplicate_aspect_authoring_rejection(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> AspectApiFinalizationRejectionBundle {
+) -> Result<AspectApiFinalizationRejectionBundle, IdentityDerivationDenial> {
     let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("aspect-api.duplicate-denial")
         .expect("workspace should open");
@@ -59,7 +60,7 @@ pub(super) fn duplicate_aspect_authoring_rejection(
     let error = workspace
         .update(
             request_execution,
-            crate::memory_workspace::admit_authored_entity_label("entity:1:1:1"),
+            crate::memory_workspace::admit_authored_entity_label("entity:1:1:1")?,
             |task| {
                 task.clear(title_value_touch())
                     .set_aspect(title_value_touch(), string_aspect_value("Buy milk"))
@@ -67,7 +68,7 @@ pub(super) fn duplicate_aspect_authoring_rejection(
         )
         .expect_err("duplicate aspect authoring should fail closed");
 
-    match error {
+    Ok(match error {
         WorthQueryRuntimeError::Workspace(error) => AspectApiFinalizationRejectionBundle {
             failure_class: AspectApiFinalizationFailureClass::AuthoringDenied,
             failure_kind: "workspace-authoring".to_string(),
@@ -81,7 +82,7 @@ pub(super) fn duplicate_aspect_authoring_rejection(
             closeout_digest: closeout.closeout_digest().to_string(),
         },
         other => panic!("expected workspace authoring denial, got {other:?}"),
-    }
+    })
 }
 
 fn string_aspect_value(value: impl Into<String>) -> crate::runtime::WorthQueryAuthoredAspectValue {

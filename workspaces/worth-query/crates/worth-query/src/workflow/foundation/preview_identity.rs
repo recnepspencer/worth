@@ -37,11 +37,11 @@ pub(super) fn preview_workflow_foundation_binding_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("validated_query"),
-                &workflow_validated_query_digest_evidence(foundation.validated_query_digest()),
+                &workflow_validated_query_digest_evidence(foundation.validated_query_digest())?,
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("canonical_query"),
-                &workflow_canonical_query_digest_evidence(foundation.canonical_query_digest()),
+                &workflow_canonical_query_digest_evidence(foundation.canonical_query_digest())?,
             )
             .field_shape(
                 WorthQueryEvidenceTag::new("lifecycle"),
@@ -72,7 +72,7 @@ pub(super) fn preview_workflow_foundation_source_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("binding"),
-                &preview_workflow_foundation_binding_identity(foundation),
+                &preview_workflow_foundation_binding_identity(foundation)?,
             )
             .seal()?,
     )
@@ -89,11 +89,11 @@ pub(super) fn preview_workflow_foundation_basis_inner_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("binding"),
-                &preview_workflow_foundation_binding_identity(foundation),
+                &preview_workflow_foundation_binding_identity(foundation)?,
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("validated_query"),
-                &workflow_validated_query_digest_evidence(foundation.validated_query_digest()),
+                &workflow_validated_query_digest_evidence(foundation.validated_query_digest())?,
             )
             .field_bridge_authority_identity(
                 WorthQueryEvidenceTag::new("preview_session"),
@@ -116,15 +116,15 @@ pub(super) fn preview_promotion_comparison_binding_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("validated_query"),
-                &workflow_validated_query_digest_evidence(comparison.validated_query_digest()),
+                &workflow_validated_query_digest_evidence(comparison.validated_query_digest())?,
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("canonical_query"),
-                &workflow_canonical_query_digest_evidence(comparison.canonical_query_digest()),
+                &workflow_canonical_query_digest_evidence(comparison.canonical_query_digest())?,
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("candidate_result"),
-                &preview_candidate_result_identity(comparison.candidate_result_digest()),
+                &preview_candidate_result_identity(comparison.candidate_result_digest())?,
             )
             .seal()?,
     )
@@ -158,7 +158,7 @@ pub(super) fn preview_promotion_comparison_source_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("binding"),
-                &preview_promotion_comparison_binding_identity(comparison),
+                &preview_promotion_comparison_binding_identity(comparison)?,
             )
             .seal()?,
     )
@@ -175,11 +175,11 @@ pub(super) fn preview_promotion_comparison_basis_inner_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("binding"),
-                &preview_promotion_comparison_binding_identity(comparison),
+                &preview_promotion_comparison_binding_identity(comparison)?,
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("validated_query"),
-                &workflow_validated_query_digest_evidence(comparison.validated_query_digest()),
+                &workflow_validated_query_digest_evidence(comparison.validated_query_digest())?,
             )
             .seal()?,
     )

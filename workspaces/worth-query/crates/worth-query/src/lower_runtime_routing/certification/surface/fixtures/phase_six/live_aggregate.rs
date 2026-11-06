@@ -225,7 +225,7 @@ fn live_aggregate_fixture() -> Result<LiveAggregateFixture, IdentityDerivationDe
                 NonZeroUsize::new(2).expect("projection width"),
                 NonZeroUsize::new(1).expect("ordering width"),
             ),
-        );
+        )?;
     let selection = select_query_subscription_family(live_admission, work_budget())
         .expect("live aggregate fixture should select a subscription family");
     let subscription_family = selection.family().clone();
@@ -239,7 +239,7 @@ fn live_aggregate_fixture() -> Result<LiveAggregateFixture, IdentityDerivationDe
     let admission_identity = admission.evidence_identity().clone();
     let basis_binding_identity = admission.basis_binding_identity().clone();
     let signal_strategy_identity = admission.signal_strategy_identity().clone();
-    let activation = prepare_subscription_activation(admission);
+    let activation = prepare_subscription_activation(admission)?;
     let activation_receipt = crate::runtime::SubscriptionActivationReceipt::from_activation(
         LIVE_AGGREGATE_VIEW_NAME,
         &activation,
@@ -256,7 +256,7 @@ fn live_aggregate_fixture() -> Result<LiveAggregateFixture, IdentityDerivationDe
         activation_receipt,
     )?;
     let (attachment, active_lane_counters, consumer_attachment_counters) =
-        installation_attachment(&activation);
+        installation_attachment(&activation)?;
     let installation = WorthQueryRuntimeLiveSubscriptionInstallation::new(
         LIVE_AGGREGATE_VIEW_NAME,
         crate::runtime::live_subscription_source_identity(
@@ -330,11 +330,14 @@ fn phase_six_snapshot_identity(
 
 fn installation_attachment(
     activation: &SubscriptionActivationInput,
-) -> (
-    crate::subscription::SubscriptionConsumerAttachment,
-    crate::subscription::ActiveSubscriptionCounters,
-    crate::subscription::ActiveSubscriptionCounters,
-) {
+) -> Result<
+    (
+        crate::subscription::SubscriptionConsumerAttachment,
+        crate::subscription::ActiveSubscriptionCounters,
+        crate::subscription::ActiveSubscriptionCounters,
+    ),
+    IdentityDerivationDenial,
+> {
     let mut active_runtime = ActiveSubscriptionRuntime::new();
     let active_lane_admission =
         admit_active_subscription_lane(activation.clone(), active_lifecycle_budget())
@@ -348,14 +351,14 @@ fn installation_attachment(
         SubscriptionConsumerAttachmentRequest::admitted(
             "runtime-live-aggregate",
             activation.activation_projection().label(),
-        ),
+        )?,
         consumer_attachment_budget(),
     )
     .expect("live aggregate fixture should attach a subscription consumer");
     let consumer_attachment_counters = active_runtime.counters().clone();
-    (
+    Ok((
         attachment,
         active_lane_counters,
         consumer_attachment_counters,
-    )
+    ))
 }

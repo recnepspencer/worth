@@ -61,7 +61,7 @@ pub(super) fn lower_runtime_live_subscription_read_binding(
         view_name,
         request,
         session,
-        crate::subscription::QuerySubscriptionFutureSelection::ordinary(),
+        crate::subscription::QuerySubscriptionFutureSelection::ordinary()?,
     )
 }
 
@@ -90,7 +90,7 @@ fn lower_runtime_live_subscription_session(
             view_family,
             future_selection,
             dimensions,
-        );
+        )?;
     let selection = select_runtime_subscription_family(view_name, live_admission)?;
     let subscription_family = selection.family().clone();
     let declaration =
@@ -155,7 +155,7 @@ fn lower_runtime_live_subscription_session(
             "signal_strategy",
             admission.signal_strategy_identity(),
         )?,
-        activation: prepare_subscription_activation(admission),
+        activation: prepare_subscription_activation(admission)?,
     })
 }
 

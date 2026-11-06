@@ -69,8 +69,8 @@ impl WorthQueryEntityIdentity {
             Arc<str>,
             QueryEntityIdentityKind,
         >,
-    ) -> Self {
-        super::super::truth_identity_admission::admit_authored_entity_token(token)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(super::super::truth_identity_admission::admit_authored_entity_token(token)?)
     }
 
     pub(crate) fn relational_record_parts(&self) -> Option<RelationalBridgeRecordIdentityParts> {
@@ -89,21 +89,26 @@ impl WorthQueryEntityIdentity {
             .filter(|parts| parts.kind() == RelationalBridgeRecordIdentityKind::Entity)
     }
 
-    pub fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
-        match &self.inner {
+    pub fn evidence_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(match &self.inner {
             WorthQueryEntityIdentityInner::RelationalRecord { relational_record } => {
-                entity_evidence_from_relational_record(*relational_record)
+                entity_evidence_from_relational_record(*relational_record)?
             }
             WorthQueryEntityIdentityInner::Preview { evidence_identity } => {
                 evidence_identity.clone()
             }
-        }
+        })
     }
 
-    pub(crate) fn terminal_projection_for_reporting(&self) -> String {
-        self.evidence_identity()
+    pub(crate) fn terminal_projection_for_reporting(
+        &self,
+    ) -> Result<String, IdentityDerivationDenial> {
+        Ok(self
+            .evidence_identity()?
             .terminal_projection_for_reporting()
-            .to_string()
+            .to_string())
     }
 
     pub fn is_same_current_identity_as(&self, candidate: &Self) -> bool {
@@ -114,21 +119,27 @@ impl WorthQueryEntityIdentity {
         self._authority.is_some()
     }
 
-    pub(crate) fn admit_runtime_write_authority(mut self) -> Self {
+    pub(crate) fn admit_runtime_write_authority(
+        mut self,
+    ) -> Result<Self, IdentityDerivationDenial> {
         if self._authority.is_none() {
-            let basis = self.evidence_identity();
+            let basis = self.evidence_identity()?;
             self._authority = Some(admit_foundational_authority_identity(
                 Arc::<str>::from(basis.terminal_projection_for_reporting()),
                 query_receipt_admission_authority(),
             ));
         }
-        self
+        Ok(self)
     }
 
-    pub(crate) fn compare_for_candidate_index(&self, candidate: &Self) -> std::cmp::Ordering {
-        self.evidence_identity()
+    pub(crate) fn compare_for_candidate_index(
+        &self,
+        candidate: &Self,
+    ) -> Result<std::cmp::Ordering, IdentityDerivationDenial> {
+        Ok(self
+            .evidence_identity()?
             .compare_same_scheme(&candidate.evidence_identity())
-            .unwrap_or(std::cmp::Ordering::Equal)
+            .unwrap_or(std::cmp::Ordering::Equal))
     }
 }
 

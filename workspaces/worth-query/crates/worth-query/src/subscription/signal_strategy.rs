@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::bridge_family::BridgeSubscriptionDeclarationFamilyKind;
 use super::evidence_identities::signal_strategy_request_identity;
@@ -25,7 +26,9 @@ pub struct QuerySubscriptionSignalStrategyRequest {
 }
 
 impl QuerySubscriptionSignalStrategyRequest {
-    pub(super) fn for_bridge_family(family: &BridgeSubscriptionDeclarationFamilyKind) -> Self {
+    pub(super) fn for_bridge_family(
+        family: &BridgeSubscriptionDeclarationFamilyKind,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let request_kind = match family {
             BridgeSubscriptionDeclarationFamilyKind::DetailExact => {
                 QuerySubscriptionSignalStrategyRequestKind::ExactDetailSignals
@@ -34,11 +37,11 @@ impl QuerySubscriptionSignalStrategyRequest {
                 QuerySubscriptionSignalStrategyRequestKind::CollectionMembershipSignals
             }
         };
-        let evidence_identity = signal_strategy_request_identity(&request_kind);
-        Self {
+        let evidence_identity = signal_strategy_request_identity(&request_kind)?;
+        Ok(Self {
             request_kind,
             evidence_identity,
-        }
+        })
     }
 
     pub fn request_kind(&self) -> &QuerySubscriptionSignalStrategyRequestKind {

@@ -100,7 +100,7 @@ impl WorthQueryRuntime {
     ) -> Result<WorthQueryComputedInspectionEvidence, WorthQueryRuntimeError> {
         let review = self.review_runtime_derived_inspection(view.name().to_string())?;
         let handoff = self.resolve_reviewed_admitted_derived_inspection_handoff(review)?;
-        let binding = self.prepare_derived_inspection_execution_binding(handoff);
+        let binding = self.prepare_derived_inspection_execution_binding(handoff)?;
         self.execute_derived_inspection_execution_binding(execution, binding)
             .map(|result| result.evidence().clone())
     }

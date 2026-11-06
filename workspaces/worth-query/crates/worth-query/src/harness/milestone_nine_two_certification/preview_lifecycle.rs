@@ -5,6 +5,7 @@ use super::subscription_fixtures::{
     lowering_budget, scale_slope_report, slice_budget, work_budget,
 };
 use super::SubscriptionLifecycleCertificationBundle;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::digest_parts;
 use crate::live::LiveQueryFamily;
 use crate::subscription::{
@@ -22,19 +23,21 @@ use crate::subscription::{
     SubscriptionLifecycleCloseRequest, SubscriptionLifecyclePreviewCertification,
 };
 
-pub(super) fn preview_discard_lane() -> SubscriptionLifecycleCertificationBundle {
+pub(super) fn preview_discard_lane(
+) -> Result<SubscriptionLifecycleCertificationBundle, IdentityDerivationDenial> {
     let live = LiveQueryAdmissionArtifact::for_test(
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )?;
     let selection = select_query_subscription_family(live.clone(), work_budget()).unwrap();
-    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection);
+    let context =
+        SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection)?;
     let declaration = declare_query_subscription(selection, slice_budget()).unwrap();
     let lowering = lower_query_subscription_to_bridge(declaration, lowering_budget()).unwrap();
     let admission = admit_query_subscription(lowering, admission_budget()).unwrap();
-    let activation = prepare_subscription_activation(admission.clone());
-    let scale_report = scale_slope_report(&activation, 1, 0);
+    let activation = prepare_subscription_activation(admission.clone())?;
+    let scale_report = scale_slope_report(&activation, 1, 0)?;
     let mut runtime = ActiveSubscriptionRuntime::new();
     let active_admission =
         admit_active_subscription_lane(activation.clone(), active_budget()).unwrap();
@@ -42,7 +45,7 @@ pub(super) fn preview_discard_lane() -> SubscriptionLifecycleCertificationBundle
     let attachment = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("preview-consumer", "cursor"),
+        SubscriptionConsumerAttachmentRequest::admitted("preview-consumer", "cursor")?,
         attachment_budget(),
     )
     .unwrap();
@@ -52,7 +55,7 @@ pub(super) fn preview_discard_lane() -> SubscriptionLifecycleCertificationBundle
         attachment.lane_digest().clone(),
         "preview",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )?;
     let (delta, lowering_report, lowering_counters) =
         lower_query_subscription_maintenance_delta(delta).unwrap();
     let evidence = deliver_to_attachment(
@@ -78,7 +81,7 @@ pub(super) fn preview_discard_lane() -> SubscriptionLifecycleCertificationBundle
         PreviewResidueWidth::measured(0),
         PreviewResidueWidth::measured(1),
         PreviewResidueWidth::measured(1),
-    );
+    )?;
     let isolation = admit_preview_subscription_isolation(
         &evidence.acknowledged_attachment,
         "preview-epoch",
@@ -132,22 +135,24 @@ pub(super) fn preview_discard_lane() -> SubscriptionLifecycleCertificationBundle
     ]);
     bundle.counter_snapshot = digest_parts(&counter_evidence);
     bundle.counter_evidence = counter_evidence;
-    bundle
+    Ok(bundle)
 }
 
-pub(super) fn preview_promotion_lane() -> SubscriptionLifecycleCertificationBundle {
+pub(super) fn preview_promotion_lane(
+) -> Result<SubscriptionLifecycleCertificationBundle, IdentityDerivationDenial> {
     let live = LiveQueryAdmissionArtifact::for_test(
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )?;
     let selection = select_query_subscription_family(live.clone(), work_budget()).unwrap();
-    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection);
+    let context =
+        SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection)?;
     let declaration = declare_query_subscription(selection, slice_budget()).unwrap();
     let lowering = lower_query_subscription_to_bridge(declaration, lowering_budget()).unwrap();
     let admission = admit_query_subscription(lowering, admission_budget()).unwrap();
-    let activation = prepare_subscription_activation(admission.clone());
-    let scale_report = scale_slope_report(&activation, 1, 0);
+    let activation = prepare_subscription_activation(admission.clone())?;
+    let scale_report = scale_slope_report(&activation, 1, 0)?;
     let mut runtime = ActiveSubscriptionRuntime::new();
     let active_admission =
         admit_active_subscription_lane(activation.clone(), active_budget()).unwrap();
@@ -155,7 +160,7 @@ pub(super) fn preview_promotion_lane() -> SubscriptionLifecycleCertificationBund
     let attachment = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("preview-consumer", "cursor"),
+        SubscriptionConsumerAttachmentRequest::admitted("preview-consumer", "cursor")?,
         attachment_budget(),
     )
     .unwrap();
@@ -165,7 +170,7 @@ pub(super) fn preview_promotion_lane() -> SubscriptionLifecycleCertificationBund
         attachment.lane_digest().clone(),
         "preview-promotion",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )?;
     let (delta, lowering_report, lowering_counters) =
         lower_query_subscription_maintenance_delta(delta).unwrap();
     let evidence = deliver_to_attachment(
@@ -191,14 +196,14 @@ pub(super) fn preview_promotion_lane() -> SubscriptionLifecycleCertificationBund
         PreviewResidueWidth::measured(0),
         PreviewResidueWidth::measured(1),
         PreviewResidueWidth::measured(0),
-    );
+    )?;
     let isolation = admit_preview_subscription_isolation(
         &evidence.acknowledged_attachment,
         "preview-epoch-promotion",
         PreviewResidueWidth::measured(1),
     )
     .unwrap();
-    let authoritative = active_attachment(&mut runtime).0;
+    let authoritative = active_attachment(&mut runtime)?.0;
     let handoff = promote_preview_subscription(
         isolation.clone(),
         &residue_report,
@@ -244,5 +249,5 @@ pub(super) fn preview_promotion_lane() -> SubscriptionLifecycleCertificationBund
     ));
     bundle.counter_snapshot = digest_parts(&counter_evidence);
     bundle.counter_evidence = counter_evidence;
-    bundle
+    Ok(bundle)
 }

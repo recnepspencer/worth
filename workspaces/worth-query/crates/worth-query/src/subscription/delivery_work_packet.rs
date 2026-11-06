@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::active_budget::ActiveSubscriptionAllocationPosture;
 use super::active_counters::ActiveSubscriptionCounters;
@@ -243,8 +244,8 @@ fn work_packet_identity(
     request: &ActiveDeliveryWorkPacketRequest,
     widths: &ActiveDeliveryWorkWidths,
     performance_receipt: &SubscriptionPerformanceReceipt,
-) -> WorthQueryEvidenceIdentity {
-    lifecycle_work_packet_identity(
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(lifecycle_work_packet_identity(
         request.active_lane_digest.evidence_identity(),
         request.attachment_digest.evidence_identity(),
         request.maintenance_delta.evidence_identity(),
@@ -258,7 +259,7 @@ fn work_packet_identity(
         widths.allocation_scope,
         request.allocation_posture,
         performance_receipt.performance_receipt_identity(),
-    )
+    )?)
 }
 
 fn retain_work_packet_counters(

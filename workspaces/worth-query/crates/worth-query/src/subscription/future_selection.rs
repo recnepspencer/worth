@@ -63,50 +63,60 @@ pub struct QuerySubscriptionFutureSelection {
 }
 
 impl QuerySubscriptionFutureSelection {
-    pub fn ordinary() -> Self {
-        Self::new(
+    pub fn ordinary() -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionFutureSelectionClass::Ordinary,
             false,
             Vec::new(),
-        )
+        )?)
     }
 
-    pub fn temporal() -> Self {
-        Self::new(
+    pub fn temporal() -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionFutureSelectionClass::Temporal,
             false,
             Vec::new(),
-        )
+        )?)
     }
 
-    pub fn async_resource(requests_completion_lifecycle: bool) -> Self {
-        Self::async_resource_with_identity(requests_completion_lifecycle, Vec::new())
+    pub fn async_resource(
+        requests_completion_lifecycle: bool,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::async_resource_with_identity(
+            requests_completion_lifecycle,
+            Vec::new(),
+        )?)
     }
 
     pub fn async_resource_with_identity(
         requests_completion_lifecycle: bool,
         async_request_identity: Vec<QuerySubscriptionAsyncRequestIdentityPart>,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionFutureSelectionClass::AsyncResource,
             requests_completion_lifecycle,
             async_request_identity,
-        )
+        )?)
     }
 
-    pub fn temporal_async(requests_completion_lifecycle: bool) -> Self {
-        Self::temporal_async_with_identity(requests_completion_lifecycle, Vec::new())
+    pub fn temporal_async(
+        requests_completion_lifecycle: bool,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::temporal_async_with_identity(
+            requests_completion_lifecycle,
+            Vec::new(),
+        )?)
     }
 
     pub fn temporal_async_with_identity(
         requests_completion_lifecycle: bool,
         async_request_identity: Vec<QuerySubscriptionAsyncRequestIdentityPart>,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionFutureSelectionClass::TemporalAsync,
             requests_completion_lifecycle,
             async_request_identity,
-        )
+        )?)
     }
 
     fn new(

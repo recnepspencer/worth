@@ -50,7 +50,7 @@ pub(crate) fn representative_historical_bridge_lowering_row(
             .declaration_identity()
             .bridge_admission_evidence()
             .terminal_projection_for_reporting(),
-    );
+    )?;
     let request = HistoricalEvaluationRequest::delta_replay(
         &basis,
         4,

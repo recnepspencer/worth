@@ -67,43 +67,61 @@ fn preview_entity_evidence_from_admitted(
 
 pub fn admit_external_commit_token(
     token: QueryExternalIdentityToken<Arc<str>, QueryCommitIdentityKind>,
-) -> WorthQueryCommitIdentity {
+) -> Result<WorthQueryCommitIdentity, IdentityDerivationDenial> {
     let admitted = admit_foundational_external_identity_token(
         token,
         query_truth_identity_admission_authority(),
     );
-    WorthQueryCommitIdentity::preview(preview_commit_evidence_from_admitted(&admitted))
+    Ok(WorthQueryCommitIdentity::preview(
+        preview_commit_evidence_from_admitted(&admitted)?,
+    ))
 }
 
 pub fn admit_external_snapshot_token(
     token: QueryExternalIdentityToken<Arc<str>, QuerySnapshotIdentityKind>,
-) -> WorthQuerySnapshotIdentity {
+) -> Result<WorthQuerySnapshotIdentity, IdentityDerivationDenial> {
     let admitted = admit_foundational_external_identity_token(
         token,
         query_truth_identity_admission_authority(),
     );
-    WorthQuerySnapshotIdentity::preview(preview_snapshot_evidence_from_admitted(&admitted))
+    Ok(WorthQuerySnapshotIdentity::preview(
+        preview_snapshot_evidence_from_admitted(&admitted)?,
+    ))
 }
 
 pub fn admit_authored_entity_token(
     token: QueryExternalIdentityToken<Arc<str>, QueryEntityIdentityKind>,
-) -> WorthQueryEntityIdentity {
+) -> Result<WorthQueryEntityIdentity, IdentityDerivationDenial> {
     let admitted = admit_foundational_external_identity_token(
         token,
         query_truth_identity_admission_authority(),
     );
-    WorthQueryEntityIdentity::preview(preview_entity_evidence_from_admitted(&admitted))
+    Ok(WorthQueryEntityIdentity::preview(
+        preview_entity_evidence_from_admitted(&admitted)?,
+    ))
 }
 
 #[cfg(test)]
-pub(crate) fn admit_external_commit_label(label: impl AsRef<str>) -> WorthQueryCommitIdentity {
-    admit_external_commit_token(QueryExternalIdentityToken::new(Arc::from(label.as_ref())))
+pub(crate) fn admit_external_commit_label(
+    label: impl AsRef<str>,
+) -> Result<WorthQueryCommitIdentity, IdentityDerivationDenial> {
+    Ok(admit_external_commit_token(
+        QueryExternalIdentityToken::new(Arc::from(label.as_ref())),
+    )?)
 }
 
-pub(crate) fn admit_external_snapshot_label(label: impl AsRef<str>) -> WorthQuerySnapshotIdentity {
-    admit_external_snapshot_token(QueryExternalIdentityToken::new(Arc::from(label.as_ref())))
+pub(crate) fn admit_external_snapshot_label(
+    label: impl AsRef<str>,
+) -> Result<WorthQuerySnapshotIdentity, IdentityDerivationDenial> {
+    Ok(admit_external_snapshot_token(
+        QueryExternalIdentityToken::new(Arc::from(label.as_ref())),
+    )?)
 }
 
-pub(crate) fn admit_authored_entity_label(label: impl AsRef<str>) -> WorthQueryEntityIdentity {
-    admit_authored_entity_token(QueryExternalIdentityToken::new(Arc::from(label.as_ref())))
+pub(crate) fn admit_authored_entity_label(
+    label: impl AsRef<str>,
+) -> Result<WorthQueryEntityIdentity, IdentityDerivationDenial> {
+    Ok(admit_authored_entity_token(
+        QueryExternalIdentityToken::new(Arc::from(label.as_ref())),
+    )?)
 }

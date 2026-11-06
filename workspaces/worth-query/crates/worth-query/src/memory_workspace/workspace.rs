@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod runtime_builder;
 use super::*;
 use crate::runtime::WorthQueryAspectTouch;
@@ -179,7 +180,7 @@ impl WorthQueryMemoryWorkspace {
             receipt
                 .deltas
                 .push(WorthQueryMutationDelta::from_collection_identity(
-                    self.mutation_delta_collection_identity(),
+                    self.mutation_delta_collection_identity()?,
                     entity_identity,
                     WorthQueryMutationKind::Deleted,
                     Vec::new(),
@@ -374,10 +375,13 @@ impl WorthQueryMemoryWorkspace {
 
     pub(super) fn mutation_delta_collection_identity(
         &self,
-    ) -> crate::runtime::WorthQueryMutationTargetCollectionIdentity {
-        crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
-            "memory-workspace-mutation-delta-collection",
-            &self.kind_name,
+    ) -> Result<crate::runtime::WorthQueryMutationTargetCollectionIdentity, IdentityDerivationDenial>
+    {
+        Ok(
+            crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
+                "memory-workspace-mutation-delta-collection",
+                &self.kind_name,
+            )?,
         )
     }
 }

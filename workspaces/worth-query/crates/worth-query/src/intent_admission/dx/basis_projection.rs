@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::{BasisLifecycleIntentDraft, ScopedObservationBasis};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::{
     WorthQueryBasisObservationPlan, WorthQueryProjectionConsumptionPlan,
 };
@@ -38,10 +39,12 @@ pub struct WorthQueryBasisObservationIntentAuthoring {
 }
 
 impl WorthQueryBasisObservationIntentAuthoring {
-    pub fn review(self) -> WorthQueryBasisObservationIntentReview {
-        WorthQueryBasisObservationIntentReview {
-            review: WorthQueryRuntimeIntentAdmissionReviewData::from_request(self.request),
-        }
+    pub fn review(
+        self,
+    ) -> Result<WorthQueryBasisObservationIntentReview, IdentityDerivationDenial> {
+        Ok(WorthQueryBasisObservationIntentReview {
+            review: WorthQueryRuntimeIntentAdmissionReviewData::from_request(self.request)?,
+        })
     }
 
     pub fn admit(
@@ -111,10 +114,12 @@ pub struct WorthQueryProjectionConsumptionIntentAuthoring {
 }
 
 impl WorthQueryProjectionConsumptionIntentAuthoring {
-    pub fn review(self) -> WorthQueryProjectionConsumptionIntentReview {
-        WorthQueryProjectionConsumptionIntentReview {
-            review: WorthQueryRuntimeIntentAdmissionReviewData::from_request(self.request),
-        }
+    pub fn review(
+        self,
+    ) -> Result<WorthQueryProjectionConsumptionIntentReview, IdentityDerivationDenial> {
+        Ok(WorthQueryProjectionConsumptionIntentReview {
+            review: WorthQueryRuntimeIntentAdmissionReviewData::from_request(self.request)?,
+        })
     }
 
     pub fn admit(

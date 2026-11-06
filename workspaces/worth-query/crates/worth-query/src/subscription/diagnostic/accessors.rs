@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::super::evidence_projection::subscription_evidence_projection;
@@ -14,8 +15,11 @@ use super::trace::{QuerySubscriptionDiagnosticStageTrace, QuerySubscriptionDiagn
 impl QuerySubscriptionDiagnosticCounters {
     pub fn counter_projection(
         &self,
-    ) -> QueryProjectionIdentity<String, QuerySubscriptionIdentityKind> {
-        subscription_evidence_projection(&self.evidence_identity())
+    ) -> Result<
+        QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
+        IdentityDerivationDenial,
+    > {
+        Ok(subscription_evidence_projection(&self.evidence_identity()?))
     }
 }
 

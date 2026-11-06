@@ -76,7 +76,7 @@ impl WorthQueryBindingTarget {
         .field_shape(WorthQueryEvidenceTag::new("kind"), self.kind.as_str())
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("target"),
-            &self.target_identity(),
+            &self.target_identity()?,
         )
         .field_value(WorthQueryEvidenceTag::new("binding"), &self.binding_digest)
         .seal()?)

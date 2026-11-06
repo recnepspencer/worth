@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::attachment_digest::SubscriptionConsumerAttachmentDigest;
 use super::evidence_identities::{
@@ -30,27 +31,35 @@ pub struct SubscriptionAcknowledgementFrontier {
 }
 
 impl SubscriptionAcknowledgementFrontier {
-    pub(super) fn initial(attachment_digest: SubscriptionConsumerAttachmentDigest) -> Self {
-        Self::new(attachment_digest, QueryDeliverySequence::initial())
+    pub(super) fn initial(
+        attachment_digest: SubscriptionConsumerAttachmentDigest,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
+            attachment_digest,
+            QueryDeliverySequence::initial(),
+        )?)
     }
 
-    pub(super) fn advance(&self, sequence: QueryDeliverySequence) -> Self {
-        Self::new(self.attachment_digest.clone(), sequence)
+    pub(super) fn advance(
+        &self,
+        sequence: QueryDeliverySequence,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(self.attachment_digest.clone(), sequence)?)
     }
 
     fn new(
         attachment_digest: SubscriptionConsumerAttachmentDigest,
         acknowledged_sequence: QueryDeliverySequence,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let frontier_identity = lifecycle_acknowledgement_frontier_identity(
             attachment_digest.evidence_identity(),
             acknowledged_sequence.get(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             attachment_digest,
             acknowledged_sequence,
             frontier_identity,
-        }
+        })
     }
 
     pub(crate) fn attachment_digest(&self) -> &SubscriptionConsumerAttachmentDigest {
@@ -77,16 +86,16 @@ impl QueryDeliveryBatchReceipt {
     pub(super) fn new(
         attachment_digest: SubscriptionConsumerAttachmentDigest,
         sequence: QueryDeliverySequence,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let receipt_identity = lifecycle_delivery_batch_receipt_identity(
             attachment_digest.evidence_identity(),
             sequence.get(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             attachment_digest,
             sequence,
             receipt_identity,
-        }
+        })
     }
 
     pub(crate) fn attachment_digest(&self) -> &SubscriptionConsumerAttachmentDigest {

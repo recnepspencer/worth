@@ -51,20 +51,20 @@ impl QuerySubscriptionMaintenanceDelta {
         active_lane_digest: ActiveSubscriptionLaneDigest,
         scope_identity: &WorthQueryEvidenceIdentity,
         width: MaintenanceDeltaWidth,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let maintenance_delta_identity = lifecycle_maintenance_delta_identity(
             kind,
             active_lane_digest.evidence_identity(),
             scope_identity,
             width.get(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             kind,
             active_lane_digest,
             scope_identity: scope_identity.clone(),
             width,
             maintenance_delta_identity,
-        }
+        })
     }
 
     pub fn admitted_with_scope_label(
@@ -72,13 +72,13 @@ impl QuerySubscriptionMaintenanceDelta {
         active_lane_digest: ActiveSubscriptionLaneDigest,
         scope_label: &str,
         width: MaintenanceDeltaWidth,
-    ) -> Self {
-        Self::admitted(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::admitted(
             kind,
             active_lane_digest,
-            &lifecycle_maintenance_delta_scope_identity(scope_label),
+            &lifecycle_maintenance_delta_scope_identity(scope_label)?,
             width,
-        )
+        )?)
     }
 
     pub fn admitted_with_typed_scope(
@@ -88,7 +88,7 @@ impl QuerySubscriptionMaintenanceDelta {
         collection_identity: &WorthQueryEvidenceIdentity,
         entity_identity: &WorthQueryEvidenceIdentity,
         width: MaintenanceDeltaWidth,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let maintenance_delta_identity = lifecycle_maintenance_delta_identity_typed(
             kind,
             active_lane_digest.evidence_identity(),
@@ -96,14 +96,14 @@ impl QuerySubscriptionMaintenanceDelta {
             collection_identity,
             entity_identity,
             width.get(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             kind,
             active_lane_digest,
             scope_identity: collection_identity.clone(),
             width,
             maintenance_delta_identity,
-        }
+        })
     }
 
     pub fn kind(&self) -> QuerySubscriptionMaintenanceDeltaKind {

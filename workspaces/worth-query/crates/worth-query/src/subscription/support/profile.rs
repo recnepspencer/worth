@@ -72,31 +72,37 @@ pub struct QuerySubscriptionSupportProfile {
 }
 
 impl QuerySubscriptionSupportProfile {
-    pub(crate) fn admitted(source_identity: &WorthQueryEvidenceIdentity) -> Self {
-        Self::new(
+    pub(crate) fn admitted(
+        source_identity: &WorthQueryEvidenceIdentity,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionRuntimeBackedSupport::Admitted,
             QuerySubscriptionActiveLifecycleSupport::Admitted,
             QuerySubscriptionLifecycleCloseoutSupport::Admitted,
             source_identity,
-        )
+        )?)
     }
 
-    pub(crate) fn denied(source_identity: &WorthQueryEvidenceIdentity) -> Self {
-        Self::new(
+    pub(crate) fn denied(
+        source_identity: &WorthQueryEvidenceIdentity,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionRuntimeBackedSupport::Denied,
             QuerySubscriptionActiveLifecycleSupport::Denied,
             QuerySubscriptionLifecycleCloseoutSupport::Denied,
             source_identity,
-        )
+        )?)
     }
 
-    pub(crate) fn active_runtime_admitted(source_identity: &WorthQueryEvidenceIdentity) -> Self {
-        Self::new(
+    pub(crate) fn active_runtime_admitted(
+        source_identity: &WorthQueryEvidenceIdentity,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionRuntimeBackedSupport::Admitted,
             QuerySubscriptionActiveLifecycleSupport::Admitted,
             QuerySubscriptionLifecycleCloseoutSupport::Admitted,
             source_identity,
-        )
+        )?)
     }
 
     fn new(

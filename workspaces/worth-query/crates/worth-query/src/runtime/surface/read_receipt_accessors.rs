@@ -260,7 +260,7 @@ impl WorthQueryReadReceipt {
             result_digest: result_digest.into(),
             snapshot_identity: crate::memory_workspace::admit_external_snapshot_label(
                 "snapshot:test",
-            ),
+            )?,
             scope_class: WorthQueryReadScopeClass::ExplicitBroadSearch,
             execution_engine,
             fallback_class: WorthQueryReadFallbackClass::None,

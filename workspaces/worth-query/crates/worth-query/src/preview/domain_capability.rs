@@ -37,11 +37,11 @@ pub(crate) fn materialize_contributed_preview_workflow_foundation_artifact(
             .field_evidence_identity(WorthQueryEvidenceTag::new("binding"), &binding_identity)
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("canonical"),
-                &workflow_canonical_query_digest_evidence(&canonical_query_digest),
+                &workflow_canonical_query_digest_evidence(&canonical_query_digest)?,
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("validated"),
-                &workflow_validated_query_digest_evidence(&validated_query_digest),
+                &workflow_validated_query_digest_evidence(&validated_query_digest)?,
             )
             .field_shape(
                 WorthQueryEvidenceTag::new("request"),

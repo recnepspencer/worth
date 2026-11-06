@@ -10,6 +10,7 @@ use super::super::maintenance_delta::{
 use super::class::SubscriptionContinuationClass;
 use super::evidence::SubscriptionContinuationEvidence;
 use super::report::SubscriptionContinuationReport;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 pub fn apply_subscription_continuation(
     window: QueryDeliveryWindow,
@@ -32,10 +33,13 @@ pub fn apply_subscription_continuation(
 
 pub fn lower_subscription_continuation_report(
     report: &SubscriptionContinuationReport,
-) -> (
-    QuerySubscriptionMaintenanceDelta,
-    ActiveSubscriptionCounters,
-) {
+) -> Result<
+    (
+        QuerySubscriptionMaintenanceDelta,
+        ActiveSubscriptionCounters,
+    ),
+    IdentityDerivationDenial,
+> {
     let mut counters = ActiveSubscriptionCounters::default();
     counters.continuation_remap_width = report.remap_width();
     match report.continuation_class() {
@@ -60,6 +64,6 @@ pub fn lower_subscription_continuation_report(
         report.active_lane_digest().clone(),
         report.evidence_identity(),
         MaintenanceDeltaWidth::measured(report.remap_width()),
-    );
-    (delta, counters)
+    )?;
+    Ok((delta, counters))
 }

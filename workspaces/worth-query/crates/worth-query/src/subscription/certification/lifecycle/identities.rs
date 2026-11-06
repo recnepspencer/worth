@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::admit_query_subscription_authority_identity;
 
 use super::super::super::acknowledgement::SubscriptionAcknowledgementFrontier;
@@ -22,7 +23,7 @@ fn lifecycle_counter_identities(
     closeout_counters: &WorthQueryEvidenceIdentity,
     continuation_report_identity: Option<&WorthQueryEvidenceIdentity>,
     preview_counter_identities: &[WorthQueryEvidenceIdentity],
-) -> Vec<WorthQueryEvidenceIdentity> {
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
     let mut identities = vec![
         lifecycle_labeled_counter_identity("admission", admission_counters),
         lifecycle_labeled_counter_identity("active", active_counters),
@@ -52,10 +53,10 @@ fn lifecycle_counter_identities(
         identities.push(lifecycle_labeled_counter_identity(
             "continuation",
             report_identity,
-        ));
+        )?);
     }
     identities.extend(preview_counter_identities.iter().cloned());
-    identities
+    Ok(identities)
 }
 
 pub(super) fn assemble_lifecycle_bundle(

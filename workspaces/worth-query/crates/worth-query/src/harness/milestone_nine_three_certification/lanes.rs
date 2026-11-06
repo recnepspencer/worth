@@ -3,6 +3,7 @@ use super::lane_fixtures::{
     active_budget, attachment_budget, continuation_harness_identity, delivery_budget, roomy_budget,
     roomy_lowering_budget, roomy_slice_budget,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::live::LiveQueryFamily;
 use crate::subscription::*;
 use crate::view_shape_live::LiveViewShapeFamily;
@@ -41,14 +42,15 @@ pub(super) fn lane_for(
     scenario: LaneScenario,
     coverage_posture: CoverageResolutionPosture,
     admission_width: usize,
-) -> CertifiedLaneArtifacts {
+) -> Result<CertifiedLaneArtifacts, IdentityDerivationDenial> {
     let live = LiveQueryAdmissionArtifact::for_test(
         live_family,
         view_family,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )?;
     let selection = select_query_subscription_family(live.clone(), roomy_budget()).unwrap();
-    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection);
+    let context =
+        SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection)?;
     let declaration = declare_query_subscription(selection.clone(), roomy_slice_budget()).unwrap();
     let lowering =
         lower_query_subscription_to_bridge(declaration.clone(), roomy_lowering_budget()).unwrap();
@@ -57,7 +59,7 @@ pub(super) fn lane_for(
         QuerySubscriptionAdmissionBudget::admitted(admission_width, 8, 1, 1, 1),
     )
     .unwrap();
-    let activation = prepare_subscription_activation(admission.clone());
+    let activation = prepare_subscription_activation(admission.clone())?;
     let witness =
         build_query_subscription_manual_bridge_witness(&declaration, &lowering, &activation)
             .unwrap();
@@ -73,17 +75,17 @@ pub(super) fn lane_for(
             QuerySubscriptionScaleFixtureSize::Small,
             10,
             &activation,
-        ),
+        )?,
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Medium,
             100,
             &activation,
-        ),
+        )?,
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Large,
             1000,
             &activation,
-        ),
+        )?,
     )
     .unwrap();
 
@@ -93,7 +95,7 @@ pub(super) fn lane_for(
     let attachment = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("certification-consumer", "cursor"),
+        SubscriptionConsumerAttachmentRequest::admitted("certification-consumer", "cursor")?,
         attachment_budget(),
     )
     .unwrap();
@@ -108,16 +110,16 @@ pub(super) fn lane_for(
             let evidence = admit_subscription_continuation_evidence(
                 attachment.lane_digest().clone(),
                 SubscriptionContinuationClass::IdentityRemap,
-                continuation_harness_identity("employee:old"),
-                continuation_harness_identity("employee:new"),
-                continuation_harness_identity("basis:current"),
-                continuation_harness_identity("identity-evolution-authority"),
+                continuation_harness_identity("employee:old")?,
+                continuation_harness_identity("employee:new")?,
+                continuation_harness_identity("basis:current")?,
+                continuation_harness_identity("identity-evolution-authority")?,
                 ContinuationRemapWidth::measured(1),
             )
             .unwrap();
             let (continued_window, report) =
                 apply_active_subscription_continuation(&mut runtime, window, evidence).unwrap();
-            let (delta, _) = lower_subscription_continuation_report(&report);
+            let (delta, _) = lower_subscription_continuation_report(&report)?;
             let (delta, lowering_report, _) =
                 lower_query_subscription_maintenance_delta(delta).unwrap();
             continuation_report = Some(report);
@@ -131,7 +133,7 @@ pub(super) fn lane_for(
                 attachment.lane_digest().clone(),
                 "affected-scope",
                 MaintenanceDeltaWidth::measured(1),
-            );
+            )?;
             let (delta, lowering_report, _) =
                 lower_query_subscription_maintenance_delta(delta).unwrap();
             (window, delta, lowering_report, 0)
@@ -153,7 +155,7 @@ pub(super) fn lane_for(
             PreviewResidueWidth::measured(0),
             PreviewResidueWidth::measured(1),
             PreviewResidueWidth::measured(1),
-        );
+        )?;
         let discard = discard_preview_subscription(isolation.clone(), residue.clone()).unwrap();
         preview_isolation = Some(isolation);
         preview_residue = Some(residue);
@@ -204,7 +206,7 @@ pub(super) fn lane_for(
     let lifecycle_bundle = certify_subscription_lifecycle(
         context,
         &admission,
-        &prepare_subscription_activation(admission.clone()),
+        &prepare_subscription_activation(admission.clone())?,
         &scale_report,
         &active_admission,
         &handle,
@@ -225,14 +227,14 @@ pub(super) fn lane_for(
             &declaration,
             &admission,
             &active_admission,
-        ),
+        )?,
         LaneScenario::Continuation => QuerySubscriptionSupportSubject::continuation(
             &declaration,
             &admission,
             continuation_report.as_ref().unwrap(),
-        ),
+        )?,
         LaneScenario::PreviewDiscard => {
-            QuerySubscriptionSupportSubject::preview_closeout(&declaration, &admission, &closeout)
+            QuerySubscriptionSupportSubject::preview_closeout(&declaration, &admission, &closeout)?
         }
     };
     let (support_report, support_lookup_receipt) = report_query_subscription_support(
@@ -267,7 +269,7 @@ pub(super) fn lane_for(
     .unwrap();
 
     let hostile =
-        denied_support_artifacts_from_parts(&selection, &declaration, &lowering, &admission);
+        denied_support_artifacts_from_parts(&selection, &declaration, &lowering, &admission)?;
     let matrix = build_query_subscription_family_coverage_matrix(vec![
         QuerySubscriptionFamilyCoverageRow::admitted(
             declaration.family(),
@@ -288,7 +290,7 @@ pub(super) fn lane_for(
             QuerySubscriptionLifecycleCoverageClass::ActiveLifecycle,
         )
         .unwrap(),
-    ]);
+    ])?;
     let handle =
         build_certified_family_coverage_handle(&matrix, declaration.family(), coverage_posture)
             .unwrap();
@@ -303,7 +305,7 @@ pub(super) fn lane_for(
     let (runtime_bundle, coverage_receipt) =
         certify_query_subscription_runtime_family(scope).unwrap();
 
-    CertifiedLaneArtifacts {
+    Ok(CertifiedLaneArtifacts {
         selection,
         declaration,
         lowering,
@@ -327,7 +329,7 @@ pub(super) fn lane_for(
             .as_ref()
             .map(|value| value.isolation_projection().label().to_string())
             .unwrap_or_else(|| "none".to_string()),
-    }
+    })
 }
 
 pub(super) fn lifecycle_class_for(

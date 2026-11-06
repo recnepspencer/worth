@@ -75,25 +75,27 @@ fn bridge_existing_truth_binding_preserves_relational_record_identity(
 #[should_panic(
     expected = "existing-truth binding evidence must carry a relational record target identity"
 )]
-fn existing_truth_binding_evidence_rejects_non_relational_target_identity() -> Result<(), crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+fn existing_truth_binding_evidence_rejects_non_relational_target_identity(
+) -> Result<(), IdentityDerivationDenial> {
     let binding = crate::runtime::WorthQueryExistingTruthTargetBinding::direct_entity(
         crate::runtime::WorthQueryMutationAuthorityIdentity::existing_truth_binding_authority(
             crate::runtime::WorthQueryExistingTruthBindingAuthorityLabel::new("authority:left")
                 .expect("existing-truth authority label"),
         )
         .expect("existing-truth authority identity"),
-        crate::memory_workspace::admit_authored_entity_label("Task:legacy"),
+        crate::memory_workspace::admit_authored_entity_label("Task:legacy")?,
     )
     .expect("binding constructor should still expose the boundary failure to evidence");
 
     let _ = WorthQueryExistingTruthBindingEvidence::from_binding(&binding)?;
 
-Ok(())
+    Ok(())
 }
 
 #[test]
-fn symbolic_target_batch_digest_changes_with_symbol_identity() {
-    let resolved_identity = crate::memory_workspace::admit_authored_entity_label("entity:task");
+fn symbolic_target_batch_digest_changes_with_symbol_identity(
+) -> Result<(), IdentityDerivationDenial> {
+    let resolved_identity = crate::memory_workspace::admit_authored_entity_label("entity:task")?;
     let left = WorthQuerySymbolicTargetReferenceEvidence::test_only(
         "draft:left",
         resolved_identity.clone(),
@@ -111,6 +113,8 @@ fn symbolic_target_batch_digest_changes_with_symbol_identity() {
         batch_symbolic_target_reference_digest(&[Some(right)]).expect("right digest should exist");
 
     assert_ne!(left_digest, right_digest);
+
+    Ok(())
 }
 
 #[test]

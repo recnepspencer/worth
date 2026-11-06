@@ -3,6 +3,7 @@ use crate::basis_lifecycle::{
     ScopedSubscriptionDeclarationBasis,
 };
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{
     project_query_subscription_evidence, QueryProjectionIdentity, QuerySubscriptionIdentityKind,
 };
@@ -117,7 +118,7 @@ impl SubscriptionActivationInput {
 
 pub fn prepare_subscription_activation(
     admission: QuerySubscriptionAdmissionArtifact,
-) -> SubscriptionActivationInput {
+) -> Result<SubscriptionActivationInput, IdentityDerivationDenial> {
     let mut counters = admission.counters().clone();
     counters.activation_input_count = 1;
     let checkpoint_identity = activation_checkpoint_identity(
@@ -125,7 +126,7 @@ pub fn prepare_subscription_activation(
         admission.basis_binding_identity(),
         admission.future_selection().projection_identity(),
         admission.signal_strategy_identity(),
-    );
+    )?;
     let activation_identity = activation_input_identity(
         admission.evidence_identity(),
         admission.query_declaration_identity(),
@@ -135,9 +136,9 @@ pub fn prepare_subscription_activation(
         admission.signal_strategy_identity(),
         admission.future_selection().projection_identity(),
         &counters.evidence_identity(),
-    );
+    )?;
     let scoped_activation_basis = activate_subscription_basis(admission.scoped_declaration_basis());
-    SubscriptionActivationInput {
+    Ok(SubscriptionActivationInput {
         activation_identity,
         admission_identity: admission.evidence_identity().clone(),
         query_declaration_identity: admission.query_declaration_identity().clone(),
@@ -149,5 +150,5 @@ pub fn prepare_subscription_activation(
         checkpoint_identity,
         signal_strategy_identity: admission.signal_strategy_identity().clone(),
         counters,
-    }
+    })
 }

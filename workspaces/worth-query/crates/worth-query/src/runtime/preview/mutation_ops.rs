@@ -136,7 +136,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             WorthQueryWriteCommand::Delete {
                 entity_identity: crate::memory_workspace::admit_authored_entity_label(
                     entity_identity.into(),
-                ),
+                )?,
             },
         )
     }

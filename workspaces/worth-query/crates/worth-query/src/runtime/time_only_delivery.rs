@@ -45,7 +45,7 @@ pub(crate) fn emit_time_only_live_subscription_delivery(
         runtime_time_only_delivery_window_budget(),
     )
     .map_err(|error| time_only_delivery_error(view_name, error))?;
-    let cause = QuerySubscriptionDeliveryCause::time_only(cause_kind, evidence_digest);
+    let cause = QuerySubscriptionDeliveryCause::time_only(cause_kind, evidence_digest)?;
     let batch = emit_query_time_only_delivery_batch(active_subscriptions, window, cause)
         .map_err(|error| time_only_delivery_error(view_name, error))?;
     let delivery_receipt = batch.receipt().clone();

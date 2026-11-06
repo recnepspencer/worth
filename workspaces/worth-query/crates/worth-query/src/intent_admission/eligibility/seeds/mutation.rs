@@ -350,7 +350,7 @@ fn symbolic_aspect_reference_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("target"),
-                &symbolic_target_reference_identity(reference.reference()),
+                &symbolic_target_reference_identity(reference.reference())?,
             )
             .seal()?,
     )

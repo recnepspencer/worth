@@ -38,6 +38,7 @@ use super::delivery_work_packet::{ActiveDeliveryWorkPacket, ActiveDeliveryWorkPa
 use super::maintenance_delta::{
     QueryMaintenanceDeltaLoweringReport, QuerySubscriptionMaintenanceDelta,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct ActiveSubscriptionRuntime {
@@ -271,15 +272,15 @@ pub(crate) fn prepare_subscription_lifecycle_close(
 pub(crate) fn commit_prepared_subscription_lifecycle_close(
     runtime: &mut ActiveSubscriptionRuntime,
     prepared: PreparedSubscriptionLifecycleClose,
-) -> SubscriptionLifecycleCloseout {
+) -> Result<SubscriptionLifecycleCloseout, IdentityDerivationDenial> {
     let lane_terminal = runtime.registry.commit_prepared_attachment_close(
         &prepared.lane_digest,
         prepared.lane_index,
         prepared.request.attachment_digest(),
     );
-    let closeout = SubscriptionLifecycleCloseout::new(prepared.request, lane_terminal);
+    let closeout = SubscriptionLifecycleCloseout::new(prepared.request, lane_terminal)?;
     runtime.counters = closeout.counters().clone();
-    closeout
+    Ok(closeout)
 }
 
 pub(crate) fn validate_subscription_lifecycle_close(

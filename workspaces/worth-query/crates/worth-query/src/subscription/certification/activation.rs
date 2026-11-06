@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::activation::SubscriptionActivationInput;
 use super::super::admission::QuerySubscriptionAdmissionArtifact;
@@ -38,8 +39,8 @@ impl QuerySubscriptionCertificationError {
         denial_kind: QuerySubscriptionCertificationDenialKind,
         message: &'static str,
         evidence: &[WorthQueryEvidenceIdentity],
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             denial_kind,
             message,
             failure_identity: subscription_certification_failure_identity(
@@ -47,8 +48,8 @@ impl QuerySubscriptionCertificationError {
                 denial_kind.as_str(),
                 message,
                 evidence,
-            ),
-        }
+            )?,
+        })
     }
 
     pub fn denial_kind(&self) -> &QuerySubscriptionCertificationDenialKind {

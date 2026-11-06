@@ -105,7 +105,7 @@ fn extract_query_context_rows(
                             row_identity.clone(),
                             crate::memory_workspace::admit_authored_entity_label(
                                 row_identity.clone(),
-                            ),
+                            )?,
                         ));
                 }
                 ProjectionFactKind::ViewLocalIdentity => {

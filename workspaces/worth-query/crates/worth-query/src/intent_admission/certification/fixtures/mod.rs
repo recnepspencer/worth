@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod basis_projection;
 mod bridge;
 mod effect;
@@ -147,16 +148,16 @@ pub(super) struct LegacyDelegationParityFixture {
 
 pub(super) fn certified_admitted_intent_fixture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> CertifiedAdmittedIntentFixture {
+) -> Result<CertifiedAdmittedIntentFixture, IdentityDerivationDenial> {
     let declaration = authoritative_declaration("certification-admitted-intent");
     let request =
         WorthQueryRawIntentAdmissionRequest::authoritative_runtime_entrypoint(declaration.clone())
             .expect("authoritative request should build");
     let _eligibility = crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(
         request.clone(),
-    );
-    let decision = admit_runtime_intent_request(request.clone());
-    match &decision {
+    )?;
+    let decision = admit_runtime_intent_request(request.clone())?;
+    Ok(match &decision {
         WorthQueryIntentAdmissionDecision::Admitted(plan) => {
             let mut runtime = certification_runtime(execution);
             let plan = plan.clone();
@@ -184,17 +185,18 @@ pub(super) fn certified_admitted_intent_fixture(
             }
         }
         other => panic!("expected admitted decision, got {other:?}"),
-    }
+    })
 }
 
-pub(super) fn certified_advisory_intent_fixture() -> CertifiedAdvisoryIntentFixture {
+pub(super) fn certified_advisory_intent_fixture(
+) -> Result<CertifiedAdvisoryIntentFixture, IdentityDerivationDenial> {
     let declaration = authoritative_declaration("certification-advisory-intent");
     let request =
         WorthQueryRawIntentAdmissionRequest::authoritative_runtime_entrypoint(declaration)
             .expect("authoritative request should build");
     let eligibility = crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(
         request.clone(),
-    );
+    )?;
     let advisory = WorthQueryIntentAdvisoryDecision::new(
         request.family(),
         request.entrypoint(),
@@ -207,39 +209,40 @@ pub(super) fn certified_advisory_intent_fixture() -> CertifiedAdvisoryIntentFixt
     let review = WorthQueryRuntimeIntentAdmissionReviewData::from_decision(
         request.clone(),
         decision.clone(),
-    );
+    )?;
     let trace = review
         .decision_trace_envelope()
         .expect("advisory review should preserve a trace")
         .clone();
-    CertifiedAdvisoryIntentFixture {
+    Ok(CertifiedAdvisoryIntentFixture {
         request,
         decision,
         trace,
-    }
+    })
 }
 
-pub(super) fn certified_violation_intent_fixture() -> CertifiedViolationIntentFixture {
+pub(super) fn certified_violation_intent_fixture(
+) -> Result<CertifiedViolationIntentFixture, IdentityDerivationDenial> {
     let declaration = authoritative_declaration("certification-violation-intent");
     let request = WorthQueryRawIntentAdmissionRequest::effect_runtime_entrypoint(declaration)
         .expect("violation request should still build");
     let _eligibility = crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(
         request.clone(),
-    );
-    let decision = admit_runtime_intent_request(request.clone());
+    )?;
+    let decision = admit_runtime_intent_request(request.clone())?;
     let review = WorthQueryRuntimeIntentAdmissionReviewData::from_decision(
         request.clone(),
         decision.clone(),
-    );
+    )?;
     let trace = review
         .decision_trace_envelope()
         .expect("violation review should preserve a trace")
         .clone();
-    CertifiedViolationIntentFixture {
+    Ok(CertifiedViolationIntentFixture {
         request,
         decision,
         trace,
-    }
+    })
 }
 
 pub(super) fn certified_failure_intent_fixture(
@@ -279,7 +282,7 @@ pub(super) fn certified_failure_intent_fixture(
 
 pub(super) fn legacy_delegation_parity_fixture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> LegacyDelegationParityFixture {
+) -> Result<LegacyDelegationParityFixture, IdentityDerivationDenial> {
     let read_fixture = read_delegation_parity_fixture(execution);
     let declaration = authoritative_declaration("certification-authoritative-parity-intent");
     let mut delegated_runtime = certification_runtime(execution);
@@ -311,7 +314,7 @@ pub(super) fn legacy_delegation_parity_fixture(
             "effects.certification.reconcile",
             WorthQueryEffectTrigger::live_view(&delegated_live, [title_value_touch()]),
             "strategy.intent.reconcile",
-        ))
+        )?)
         .expect("effect should declare");
     delegated_effect_runtime
         .write(
@@ -351,7 +354,7 @@ pub(super) fn legacy_delegation_parity_fixture(
             "effects.certification.reconcile",
             WorthQueryEffectTrigger::live_view(&canonical_live, [title_value_touch()]),
             "strategy.intent.reconcile",
-        ))
+        )?)
         .expect("canonical effect should declare");
     canonical_effect_runtime
         .write(
@@ -381,7 +384,7 @@ pub(super) fn legacy_delegation_parity_fixture(
         .execute_effect_intent_execution_binding(execution, canonical_binding)
         .expect("canonical effect execution should succeed");
 
-    LegacyDelegationParityFixture {
+    Ok(LegacyDelegationParityFixture {
         authoritative_legacy,
         authoritative_canonical,
         effect_legacy,
@@ -390,7 +393,7 @@ pub(super) fn legacy_delegation_parity_fixture(
         read_current_canonical: read_fixture.current_canonical,
         read_basis_legacy: read_fixture.basis_legacy,
         read_basis_canonical: read_fixture.basis_canonical,
-    }
+    })
 }
 
 mod authoritative_declaration;

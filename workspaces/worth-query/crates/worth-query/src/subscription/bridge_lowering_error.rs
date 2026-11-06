@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::counters::QuerySubscriptionDeclarationCounters;
 use super::diagnostic::{QuerySubscriptionDiagnosticEvidence, QuerySubscriptionDiagnosticStage};
@@ -39,20 +40,20 @@ impl QuerySubscriptionBridgeLoweringError {
         diagnostic_stage: QuerySubscriptionDiagnosticStage,
         source_identity: &WorthQueryEvidenceIdentity,
         counters: QuerySubscriptionDeclarationCounters,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let message = message.into();
         let diagnostic = QuerySubscriptionDiagnosticEvidence::denied(
             diagnostic_stage,
             message.clone(),
             source_identity,
             &counters.evidence_identity(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             denial_kind,
             message,
             diagnostic,
             counters,
-        }
+        })
     }
 
     pub fn denial_kind(&self) -> &QuerySubscriptionBridgeLoweringDenialKind {

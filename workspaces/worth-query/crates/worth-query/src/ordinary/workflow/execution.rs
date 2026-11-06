@@ -4,6 +4,7 @@ use super::{
     WorthQueryWorkflowCounters, WorthQueryWorkflowFamily, WorthQueryWorkflowOutcome,
     WorthQueryWorkflowRequest, WorthQueryWorkflowStop, WorthQueryWorkflowStopSource,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{WorthQueryOrdinaryAuthorityDrift, WorthQueryWorkspace};
 
 impl WorthQueryWorkflowRequest {
@@ -11,27 +12,33 @@ impl WorthQueryWorkflowRequest {
         self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
-    ) -> WorthQueryWorkflowOutcome {
+    ) -> Result<WorthQueryWorkflowOutcome, IdentityDerivationDenial> {
         let counters = WorthQueryWorkflowCounters::context_checked();
         let (identity, family, label, mutation, inspection_policy) = self.declaration.into_parts();
         if self.context.authority.session_label() != Some(&label) {
-            return WorthQueryWorkflowOutcome::Stopped(WorthQueryWorkflowStop::denied(
-                WorthQueryWorkflowStopSource::CrossSession,
-                counters,
+            return Ok(WorthQueryWorkflowOutcome::Stopped(
+                WorthQueryWorkflowStop::denied(
+                    WorthQueryWorkflowStopSource::CrossSession,
+                    counters,
+                ),
             ));
         }
         debug_assert_eq!(family, WorthQueryWorkflowFamily::PreviewPromotion);
         match workspace.ordinary_authority_drift(request_execution, &self.context.authority) {
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner => {
-                return WorthQueryWorkflowOutcome::Stopped(WorthQueryWorkflowStop::denied(
-                    WorthQueryWorkflowStopSource::ForeignAuthority,
-                    counters,
+                return Ok(WorthQueryWorkflowOutcome::Stopped(
+                    WorthQueryWorkflowStop::denied(
+                        WorthQueryWorkflowStopSource::ForeignAuthority,
+                        counters,
+                    ),
                 ));
             }
             WorthQueryOrdinaryAuthorityDrift::StaleSnapshot => {
-                return WorthQueryWorkflowOutcome::Stopped(WorthQueryWorkflowStop::denied(
-                    WorthQueryWorkflowStopSource::StalePreview,
-                    counters,
+                return Ok(WorthQueryWorkflowOutcome::Stopped(
+                    WorthQueryWorkflowStop::denied(
+                        WorthQueryWorkflowStopSource::StalePreview,
+                        counters,
+                    ),
                 ));
             }
             WorthQueryOrdinaryAuthorityDrift::Current => {}
@@ -41,11 +48,11 @@ impl WorthQueryWorkflowRequest {
             crate::runtime::WorthQueryOrdinaryAuthorityFamily::PromotionPreview
         );
         debug_assert!(self.context.authority.preview_basis().is_some());
-        let eligibility = WorthQueryPromotionEligibility::from_authority(&self.context.authority);
+        let eligibility = WorthQueryPromotionEligibility::from_authority(&self.context.authority)?;
         let admitted_effect = WorthQueryAdmittedWorkflowEffect::new(
             identity.evidence_identity(),
             &self.context.authority,
-        );
+        )?;
         let basis_admission = self
             .context
             .authority
@@ -54,9 +61,9 @@ impl WorthQueryWorkflowRequest {
         let (command, _) = mutation.into_parts();
         let materialize_inspection = inspection_policy.materializes_rich_inspection();
         if materialize_inspection && let Err(error) = workspace.admit_ordinary_rich_inspection() {
-            return WorthQueryWorkflowOutcome::Stopped(
+            return Ok(WorthQueryWorkflowOutcome::Stopped(
                 WorthQueryWorkflowStop::inspection_unavailable(error, counters),
-            );
+            ));
         }
         let counters = counters.execution_attempted();
         let execution = match workspace.execute_ordinary_preview_promotion(
@@ -68,8 +75,8 @@ impl WorthQueryWorkflowRequest {
         ) {
             Ok(execution) => execution,
             Err(error) => {
-                return WorthQueryWorkflowOutcome::Stopped(WorthQueryWorkflowStop::runtime(
-                    error, counters,
+                return Ok(WorthQueryWorkflowOutcome::Stopped(
+                    WorthQueryWorkflowStop::runtime(error, counters),
                 ));
             }
         };
@@ -80,13 +87,15 @@ impl WorthQueryWorkflowRequest {
             execution.aftermath_identity().clone(),
             execution.inspection_identity().cloned(),
         );
-        WorthQueryWorkflowOutcome::Completed(WorthQueryWorkflowCompletion::new(
-            eligibility,
-            admitted_effect,
-            lowered_plan,
-            aftermath,
-            execution.into_outcome(),
-            counters.execution_completed(materialize_inspection),
+        Ok(WorthQueryWorkflowOutcome::Completed(
+            WorthQueryWorkflowCompletion::new(
+                eligibility,
+                admitted_effect,
+                lowered_plan,
+                aftermath,
+                execution.into_outcome(),
+                counters.execution_completed(materialize_inspection),
+            ),
         ))
     }
 }

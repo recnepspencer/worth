@@ -48,19 +48,22 @@ impl WorthQueryCommitIdentity {
         })
     }
 
-    pub fn bridge_admission_evidence(&self) -> BridgeIdentityEvidence {
-        match &self.inner {
+    pub fn bridge_admission_evidence(
+        &self,
+    ) -> Result<BridgeIdentityEvidence, IdentityDerivationDenial> {
+        Ok(match &self.inner {
             WorthQueryCommitIdentityInner::RelationalBridge { bridge_identity } => {
                 bridge_identity.bridge_admission_evidence()
             }
-            _ => self.evidence_identity().bridge_evidence_identity(),
-        }
+            _ => self.evidence_identity()?.bridge_evidence_identity(),
+        })
     }
 
-    pub fn terminal_projection_for_reporting(&self) -> String {
-        self.evidence_identity()
+    pub fn terminal_projection_for_reporting(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(self
+            .evidence_identity()?
             .terminal_projection_for_reporting()
-            .to_string()
+            .to_string())
     }
 
     pub fn is_same_current_identity_as(&self, candidate: &Self) -> bool {
@@ -71,15 +74,17 @@ impl WorthQueryCommitIdentity {
         self._authority.is_some()
     }
 
-    pub(crate) fn admit_runtime_write_authority(mut self) -> Self {
+    pub(crate) fn admit_runtime_write_authority(
+        mut self,
+    ) -> Result<Self, IdentityDerivationDenial> {
         if self._authority.is_none() {
-            let basis = self.evidence_identity();
+            let basis = self.evidence_identity()?;
             self._authority = Some(admit_foundational_authority_identity(
                 Arc::<str>::from(basis.terminal_projection_for_reporting()),
                 query_receipt_admission_authority(),
             ));
         }
-        self
+        Ok(self)
     }
 
     pub(crate) fn relational_commit_id(&self) -> Option<u64> {

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod inspection;
 mod nonruntime;
 mod read;
@@ -29,19 +30,22 @@ use runtime::{
 
 pub(super) fn resolve_eligibility_facts(
     request: &WorthQueryRawIntentAdmissionRequest,
-) -> (
-    WorthQueryIntentAdmissionSupportEligibility,
-    WorthQueryIntentAdmissionCapabilityEligibility,
-    WorthQueryIntentAdmissionPolicyEligibility,
-    WorthQueryIntentAdmissionBasisEligibility,
-    WorthQueryIntentAdmissionInvariantEligibility,
-    WorthQueryIntentAdmissionProjectionSourceEligibility,
-    WorthQueryIntentAdmissionRoutingSupportEligibility,
-    WorthQueryIntentAdmissionSourceLaneEligibility,
-    WorthQueryIntentAdmissionAuthorityLaneEligibility,
-    WorthQueryIntentAdmissionPreDecisionPosture,
-) {
-    match request.entrypoint() {
+) -> Result<
+    (
+        WorthQueryIntentAdmissionSupportEligibility,
+        WorthQueryIntentAdmissionCapabilityEligibility,
+        WorthQueryIntentAdmissionPolicyEligibility,
+        WorthQueryIntentAdmissionBasisEligibility,
+        WorthQueryIntentAdmissionInvariantEligibility,
+        WorthQueryIntentAdmissionProjectionSourceEligibility,
+        WorthQueryIntentAdmissionRoutingSupportEligibility,
+        WorthQueryIntentAdmissionSourceLaneEligibility,
+        WorthQueryIntentAdmissionAuthorityLaneEligibility,
+        WorthQueryIntentAdmissionPreDecisionPosture,
+    ),
+    IdentityDerivationDenial,
+> {
+    Ok(match request.entrypoint() {
         WorthQueryIntentAdmissionCoveredEntrypoint::ExecuteIntent => {
             resolve_authoritative_runtime_floor_eligibility(request)
         }
@@ -75,12 +79,12 @@ pub(super) fn resolve_eligibility_facts(
             resolve_basis_observation_eligibility(request)
         }
         WorthQueryIntentAdmissionCoveredEntrypoint::ProjectionConsumption => {
-            resolve_projection_consumption_eligibility(request)
+            resolve_projection_consumption_eligibility(request)?
         }
         WorthQueryIntentAdmissionCoveredEntrypoint::ExecuteInspectionNeighborDeferred => {
             resolve_deferred_neighbor_eligibility(
                 "inspection-materialization-neighbor-deferred-until-covered",
             )
         }
-    }
+    })
 }

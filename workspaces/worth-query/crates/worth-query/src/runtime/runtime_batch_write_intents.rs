@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::dx::non_admitted_runtime_violation;
 use crate::intent_admission::{
     WorthQueryAuthoritativeMutationBatchExecutionBinding,
@@ -48,7 +49,7 @@ impl WorthQueryRuntime {
         Ok(
             crate::intent_admission::dx::WorthQueryRuntimeIntentAdmissionReviewData::from_request(
                 request,
-            ),
+            )?,
         )
     }
 
@@ -62,8 +63,9 @@ impl WorthQueryRuntime {
     pub(crate) fn prepare_authoritative_mutation_batch_execution_binding(
         &self,
         handoff: WorthQueryAuthoritativeMutationBatchExecutionHandoff,
-    ) -> WorthQueryAuthoritativeMutationBatchExecutionBinding {
-        WorthQueryAuthoritativeMutationBatchExecutionBinding::from_handoff(handoff)
+    ) -> Result<WorthQueryAuthoritativeMutationBatchExecutionBinding, IdentityDerivationDenial>
+    {
+        Ok(WorthQueryAuthoritativeMutationBatchExecutionBinding::from_handoff(handoff)?)
     }
 
     pub(crate) fn execute_authoritative_mutation_batch_execution_binding(
@@ -100,7 +102,7 @@ fn admitted_authoritative_mutation_batch_handoff_from_review(
     match review.decision().clone() {
         WorthQueryIntentAdmissionDecision::Admitted(
             crate::intent_admission::WorthQueryAdmittedIntentPlan::AuthoritativeMutationBatch(plan),
-        ) => Ok(WorthQueryAuthoritativeMutationBatchExecutionHandoff::from_plan(plan)),
+        ) => Ok(WorthQueryAuthoritativeMutationBatchExecutionHandoff::from_plan(plan)?),
         WorthQueryIntentAdmissionDecision::Admitted(_)
         | WorthQueryIntentAdmissionDecision::Advisory(_)
         | WorthQueryIntentAdmissionDecision::Violation(_) => {

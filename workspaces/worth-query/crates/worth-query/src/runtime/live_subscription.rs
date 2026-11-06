@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -16,19 +17,31 @@ pub struct WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity {
 }
 
 impl WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity {
-    pub fn subscription_policy(policy_label: impl Into<String>) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn subscription_policy(
+        policy_label: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::new("subscription_budget_policy", policy_label)?)
     }
 
-    pub fn active_lifecycle_policy(policy_label: impl Into<String>) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn active_lifecycle_policy(
+        policy_label: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::new("active_lifecycle_budget_policy", policy_label)?)
     }
 
-    pub fn consumer_attachment_policy(policy_label: impl Into<String>) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::new("consumer_attachment_budget_policy", policy_label)?)
+    pub fn consumer_attachment_policy(
+        policy_label: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
+            "consumer_attachment_budget_policy",
+            policy_label,
+        )?)
     }
 
-    fn new(role: &'static str, policy_label: impl Into<String>) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    fn new(
+        role: &'static str,
+        policy_label: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let policy_label = policy_label.into();
         let policy_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
@@ -113,7 +126,7 @@ impl WorthQueryRuntimeLiveSubscriptionInstallation {
         consumer_attachment_counters: ActiveSubscriptionCounters,
         support_source_identity: WorthQueryEvidenceIdentity,
         counters: QuerySubscriptionDeclarationCounters,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let view_name = view_name.into();
         let query_identity = live_subscription_input_identity("query", &query_source_identity)?;
         let view_shape_identity =
@@ -121,7 +134,7 @@ impl WorthQueryRuntimeLiveSubscriptionInstallation {
         let canonical_result_shape_identity =
             crate::identity::canonical_result_shape_evidence_identity(
                 &canonical_result_shape_digest,
-            );
+            )?;
         let subscription_declaration_identity = live_subscription_input_identity(
             "subscription_declaration",
             &subscription_declaration_source_identity,
@@ -323,44 +336,50 @@ impl WorthQueryRuntimeLiveSubscriptionInstallation {
 fn live_subscription_input_identity(
     role: &str,
     source_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "runtime_live_subscription_input_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("role"), role)
-        .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
-        .seal()?)
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "runtime_live_subscription_input_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("role"), role)
+            .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
+            .seal()?,
+    )
 }
 
 pub(crate) fn live_subscription_view_shape_source_identity(
     family: crate::view_shape_live::LiveViewShapeFamily,
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "runtime_live_subscription_view_shape_source_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("role"), "live_view")
-        .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
-        .field_shape(
-            WorthQueryEvidenceTag::new("underlying"),
-            family.underlying_live_family().as_str(),
-        )
-        .seal()?)
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "runtime_live_subscription_view_shape_source_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("role"), "live_view")
+            .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
+            .field_shape(
+                WorthQueryEvidenceTag::new("underlying"),
+                family.underlying_live_family().as_str(),
+            )
+            .seal()?,
+    )
 }
 
 pub(crate) fn live_subscription_source_identity(
     role: &str,
     source_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "runtime_live_subscription_source_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("role"), role)
-        .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
-        .seal()?)
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "runtime_live_subscription_source_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("role"), role)
+            .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
+            .seal()?,
+    )
 }

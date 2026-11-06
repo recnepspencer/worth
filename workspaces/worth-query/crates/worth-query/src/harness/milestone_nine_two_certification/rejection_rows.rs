@@ -8,6 +8,7 @@ use super::{
     MilestoneNineTwoPerturbationClass, MilestoneNineTwoRejectionBundle,
     MilestoneNineTwoRejectionRow,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::live::LiveQueryFamily;
 use crate::subscription::QuerySubscriptionMaintenanceDeltaKind;
 
@@ -55,8 +56,8 @@ fn rejection_row(
     row_name: &'static str,
     perturbation_class: MilestoneNineTwoPerturbationClass,
     hostile_lane: MilestoneNineTwoRejectionBundle,
-) -> MilestoneNineTwoRejectionRow {
-    MilestoneNineTwoRejectionRow {
+) -> Result<MilestoneNineTwoRejectionRow, IdentityDerivationDenial> {
+    Ok(MilestoneNineTwoRejectionRow {
         row_name,
         perturbation_class,
         control_lane: lifecycle_lane(
@@ -66,7 +67,7 @@ fn rejection_row(
             "control",
             1,
             0,
-        ),
+        )?,
         hostile_lane,
         parity_lane: lifecycle_lane(
             LiveQueryFamily::Detail,
@@ -75,6 +76,6 @@ fn rejection_row(
             "control",
             1,
             0,
-        ),
-    }
+        )?,
+    })
 }

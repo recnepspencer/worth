@@ -66,7 +66,7 @@ fn lower_admitted_policy(
     policy: &ResolvedTruthViewPolicy,
     source_record: Option<&SourceMaterializationRecord>,
     requested_path_class: &RequestedHistoricalPathClass,
-) -> HistoricalCapabilityDescriptor {
+) -> Result<HistoricalCapabilityDescriptor, IdentityDerivationDenial> {
     let retention_available = matches!(
         policy.retention_admission(),
         TruthViewRetentionAdmission::SnapshotResident
@@ -104,20 +104,20 @@ fn lower_admitted_policy(
         _ => None,
     };
 
-    HistoricalCapabilityDescriptor::new(
+    Ok(HistoricalCapabilityDescriptor::new(
         bridge_historical_basis(
             declaration
                 .declaration_identity()
                 .bridge_admission_evidence()
                 .terminal_projection_for_reporting(),
-        ),
+        )?,
         admitted_path_class,
         replay_permitted,
         replay_required,
         retention_available,
         historical_lookup_available,
         lower_reuse_descriptor(source_record),
-    )
+    ))
 }
 
 pub(crate) fn lower_materialization_from_decision_log(

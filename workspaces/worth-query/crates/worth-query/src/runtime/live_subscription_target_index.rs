@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::declarative_live::{DeclarativeLiveQueryRequest, DeclarativeLiveViewShape};
@@ -249,7 +250,8 @@ mod tests {
     };
 
     #[test]
-    fn collection_field_and_whole_aspect_indexes_ignore_unrelated_target_scale() {
+    fn collection_field_and_whole_aspect_indexes_ignore_unrelated_target_scale(
+    ) -> Result<(), IdentityDerivationDenial> {
         let mut index = WorthQueryLiveSubscriptionTargetIndex::default();
         for ordinal in 0..64 {
             index.register(
@@ -271,14 +273,16 @@ mod tests {
         index.register(second.clone(), &request("Vertex", "identity", "id"));
 
         let affected = index
-            .affected_targets(&field_mutation("Vertex", "identity", &["id"]))
+            .affected_targets(&field_mutation("Vertex", "identity", &["id"])?)
             .targets;
         assert_eq!(affected, BTreeSet::from([first, second]));
 
         let whole_aspect = index
-            .affected_targets(&whole_aspect_mutation("Vertex", "identity"))
+            .affected_targets(&whole_aspect_mutation("Vertex", "identity")?)
             .targets;
         assert_eq!(whole_aspect.len(), 66);
+
+        Ok(())
     }
 
     #[test]
@@ -322,8 +326,11 @@ mod tests {
             .clone()
     }
 
-    fn whole_aspect_mutation(collection: &str, aspect: &str) -> WorthQueryMutationDelta {
-        WorthQueryMutationDelta::from_touched_aspects(
+    fn whole_aspect_mutation(
+        collection: &str,
+        aspect: &str,
+    ) -> Result<WorthQueryMutationDelta, IdentityDerivationDenial> {
+        Ok(WorthQueryMutationDelta::from_touched_aspects(
             collection,
             crate::memory_workspace::WorthQueryEntityIdentity::from_relational_record(
                 worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(1, 1, 1),
@@ -332,11 +339,15 @@ mod tests {
             vec![crate::runtime::WorthQueryAspectTouch::whole_aspect(
                 worth_foundational::facade::AspectKey::new(aspect).unwrap(),
             )],
-        )
+        )?)
     }
 
-    fn field_mutation(collection: &str, aspect: &str, fields: &[&str]) -> WorthQueryMutationDelta {
-        WorthQueryMutationDelta::from_touched_aspects(
+    fn field_mutation(
+        collection: &str,
+        aspect: &str,
+        fields: &[&str],
+    ) -> Result<WorthQueryMutationDelta, IdentityDerivationDenial> {
+        Ok(WorthQueryMutationDelta::from_touched_aspects(
             collection,
             crate::memory_workspace::WorthQueryEntityIdentity::from_relational_record(
                 worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(1, 1, 1),
@@ -351,6 +362,6 @@ mod tests {
                 )
                 .unwrap(),
             )],
-        )
+        )?)
     }
 }

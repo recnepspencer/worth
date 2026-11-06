@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::super::fixtures::{
@@ -100,19 +101,19 @@ impl WorthQueryIntentAdmissionSlopeReport {
 
 pub fn worth_query_intent_admission_slope_report(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryIntentAdmissionSlopeReport {
-    let admitted = certified_admitted_intent_fixture(execution);
-    let advisory = certified_advisory_intent_fixture();
-    let violation = certified_violation_intent_fixture();
+) -> Result<WorthQueryIntentAdmissionSlopeReport, IdentityDerivationDenial> {
+    let admitted = certified_admitted_intent_fixture(execution)?;
+    let advisory = certified_advisory_intent_fixture()?;
+    let violation = certified_violation_intent_fixture()?;
     let failure = certified_failure_intent_fixture(execution);
     let read = certified_read_intent_fixture(execution);
     let family_inventory = worth_query_intent_admission_family_inventory();
     let coverage_inventory = worth_query_intent_admission_coverage_inventory();
     let support_matrix = worth_query_intent_admission_support_matrix();
-    let parity_report = worth_query_intent_admission_legacy_parity_report(execution);
+    let parity_report = worth_query_intent_admission_legacy_parity_report(execution)?;
     let representative_family_report =
-        worth_query_intent_admission_representative_family_report(execution);
-    let parity_fixture = legacy_delegation_parity_fixture(execution);
+        worth_query_intent_admission_representative_family_report(execution)?;
+    let parity_fixture = legacy_delegation_parity_fixture(execution)?;
 
     let decision_trace_width = [
         admitted.trace.rows().len(),
@@ -279,7 +280,7 @@ pub fn worth_query_intent_admission_slope_report(
     .flatten()
     .collect::<Vec<_>>();
 
-    WorthQueryIntentAdmissionSlopeReport {
+    Ok(WorthQueryIntentAdmissionSlopeReport {
         counter_snapshot,
         admission_classification_slope_digest: slope_digest(
             &width_runs,
@@ -310,7 +311,7 @@ pub fn worth_query_intent_admission_slope_report(
             WorthQueryIntentAdmissionSlopeLane::DecisionCertificationCoverage,
         ),
         width_runs,
-    }
+    })
 }
 
 fn execution_provenance_components(

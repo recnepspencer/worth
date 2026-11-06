@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::super::evidence_identities::subscription_family_capability_identity;
 use super::super::super::family::QuerySubscriptionFamily;
@@ -72,10 +73,12 @@ pub struct SubscriptionFamilyCapabilityDigest {
 }
 
 impl SubscriptionFamilyCapabilityDigest {
-    pub(crate) fn for_family(family: &QuerySubscriptionFamily) -> Self {
-        Self {
-            capability_identity: subscription_family_capability_identity(family),
-        }
+    pub(crate) fn for_family(
+        family: &QuerySubscriptionFamily,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
+            capability_identity: subscription_family_capability_identity(family)?,
+        })
     }
 
     pub fn capability_identity(&self) -> &WorthQueryEvidenceIdentity {

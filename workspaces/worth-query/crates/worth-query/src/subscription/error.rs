@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::counters::QuerySubscriptionDeclarationCounters;
 use super::diagnostic::{QuerySubscriptionDiagnosticEvidence, QuerySubscriptionDiagnosticStage};
@@ -55,20 +56,20 @@ impl QuerySubscriptionFamilySelectionError {
         diagnostic_stage: QuerySubscriptionDiagnosticStage,
         source_identity: &WorthQueryEvidenceIdentity,
         counters: QuerySubscriptionDeclarationCounters,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let message = message.into();
         let diagnostic = QuerySubscriptionDiagnosticEvidence::denied(
             diagnostic_stage,
             message.clone(),
             source_identity,
             &counters.evidence_identity(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             failure_class,
             message,
             diagnostic,
             counters,
-        }
+        })
     }
 
     pub fn failure_class(&self) -> &QuerySubscriptionFamilySelectionFailureClass {

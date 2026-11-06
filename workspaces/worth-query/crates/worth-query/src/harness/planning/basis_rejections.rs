@@ -1,4 +1,5 @@
 use super::{direct_validated_bundle, runtime_basis_intent, runtime_resolved_identity};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::foundation::resolve_snapshot_basis;
 use crate::facade::foundation::{
     BasisAuthorityFamily, BasisResolutionError, BasisResolutionMode, ExecutionBasisIntent,
@@ -7,13 +8,13 @@ use crate::facade::foundation::{
 use crate::facade::policy::{plan_validated_bundle, planning_request_context_for_direct};
 
 #[test]
-fn plan_and_resolved_basis_preflight_successfully_couple() {
+fn plan_and_resolved_basis_preflight_successfully_couple() -> Result<(), IdentityDerivationDenial> {
     let bundle = direct_validated_bundle();
     let request = planning_request_context_for_direct(&bundle, runtime_basis_intent()).unwrap();
     let planned = plan_validated_bundle(&bundle, request).unwrap();
     let basis = resolve_snapshot_basis(
         runtime_basis_intent(),
-        runtime_resolved_identity(bundle.query().schema_basis().clone()),
+        runtime_resolved_identity(bundle.query().schema_basis().clone())?,
         BasisResolutionMode::RuntimeDirect,
     )
     .unwrap();
@@ -24,6 +25,8 @@ fn plan_and_resolved_basis_preflight_successfully_couple() {
         preflight.basis().proof().digest()
     );
     assert_eq!(preflight.report().snapshot_basis_resolution_count(), 1);
+
+    Ok(())
 }
 
 #[test]
@@ -43,14 +46,14 @@ fn store_backend_planning_is_rejected_until_parity_is_admitted() {
 }
 
 #[test]
-fn resolve_snapshot_basis_rejects_identity_mismatch() {
+fn resolve_snapshot_basis_rejects_identity_mismatch() -> Result<(), IdentityDerivationDenial> {
     let bundle = direct_validated_bundle();
     let error = resolve_snapshot_basis(
         runtime_basis_intent(),
         ResolvedSnapshotIdentity::new(
             BasisAuthorityFamily::Store,
             Some("workspace-main".to_string()),
-            crate::memory_workspace::admit_external_snapshot_label("snapshot-2")
+            crate::memory_workspace::admit_external_snapshot_label("snapshot-2")?
                 .evidence_identity(),
             bundle.query().schema_basis().clone(),
             SnapshotLineageClass::CurrentHead,
@@ -60,6 +63,8 @@ fn resolve_snapshot_basis_rejects_identity_mismatch() {
     .unwrap_err();
 
     assert_eq!(error, BasisResolutionError::ResolutionIdentityMismatch);
+
+    Ok(())
 }
 
 #[test]

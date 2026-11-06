@@ -32,15 +32,15 @@ impl WorthQueryManagedLiveCheckpointReceipt {
         basis_binding_identity: &WorthQueryEvidenceIdentity,
         pending_delivery_batch_count: usize,
         last_delivery_sequence: Option<u64>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let continuation_identity = continuation_identity(
             resource_name,
             installation_identity,
             basis_binding_identity,
             pending_delivery_batch_count,
             last_delivery_sequence,
-        );
-        Self {
+        )?;
+        Ok(Self {
             resource_name: resource_name.to_string(),
             installation_identity: installation_identity.clone(),
             basis_binding_identity: basis_binding_identity.clone(),
@@ -48,7 +48,7 @@ impl WorthQueryManagedLiveCheckpointReceipt {
             pending_delivery_batch_count,
             last_delivery_sequence,
             continuation_identity,
-        }
+        })
     }
 
     pub fn resource_name(&self) -> &str {

@@ -56,35 +56,39 @@ pub trait WorthQueryGenericInspectionIntentTarget<'a> {
 }
 
 impl WorthQueryGenericInspectionIntentSeed {
-    pub(crate) fn from_target(target: WorthQueryInspectionTarget<'_>) -> Option<Self> {
-        match target {
-            WorthQueryInspectionTarget::LiveView { name } => Some(Self::from_live_view_name(name)),
+    pub(crate) fn from_target(
+        target: WorthQueryInspectionTarget<'_>,
+    ) -> Result<Option<Self>, IdentityDerivationDenial> {
+        Ok(match target {
+            WorthQueryInspectionTarget::LiveView { name } => Some(Self::from_live_view_name(name)?),
             WorthQueryInspectionTarget::DerivedView { .. } => None,
-            WorthQueryInspectionTarget::Effect { name } => Some(Self::from_effect_name(name)),
-            WorthQueryInspectionTarget::WriteReceipt(receipt) => Some(Self::write_receipt(receipt)),
+            WorthQueryInspectionTarget::Effect { name } => Some(Self::from_effect_name(name)?),
+            WorthQueryInspectionTarget::WriteReceipt(receipt) => {
+                Some(Self::write_receipt(receipt)?)
+            }
             WorthQueryInspectionTarget::BatchWriteReceipt(receipt) => {
-                Some(Self::batch_write_receipt(receipt))
+                Some(Self::batch_write_receipt(receipt)?)
             }
             WorthQueryInspectionTarget::IntentReceipt(receipt) => {
-                Some(Self::intent_receipt(receipt))
+                Some(Self::intent_receipt(receipt)?)
             }
             WorthQueryInspectionTarget::IntentDenial(evidence) => {
-                Some(Self::intent_denial(evidence))
+                Some(Self::intent_denial(evidence)?)
             }
             WorthQueryInspectionTarget::EffectIntentReceipt(receipt) => {
-                Some(Self::effect_intent_receipt(receipt))
+                Some(Self::effect_intent_receipt(receipt)?)
             }
             WorthQueryInspectionTarget::PreviewBinding(binding) => {
-                Some(Self::preview_binding(binding))
+                Some(Self::preview_binding(binding)?)
             }
             WorthQueryInspectionTarget::PreviewOutcome(outcome) => {
-                Some(Self::preview_outcome(outcome))
+                Some(Self::preview_outcome(outcome)?)
             }
             WorthQueryInspectionTarget::PreviewIntentReceipt(receipt) => {
-                Some(Self::preview_intent_receipt(receipt))
+                Some(Self::preview_intent_receipt(receipt)?)
             }
             WorthQueryInspectionTarget::BranchIntentReceipt(receipt) => {
-                Some(Self::branch_intent_receipt(receipt))
+                Some(Self::branch_intent_receipt(receipt)?)
             }
             WorthQueryInspectionTarget::AdmittedWorldBasis(_)
             | WorthQueryInspectionTarget::ScopedObservationBasis(_)
@@ -95,11 +99,13 @@ impl WorthQueryGenericInspectionIntentSeed {
             | WorthQueryInspectionTarget::ScopedSubscriptionDeclarationBasis(_)
             | WorthQueryInspectionTarget::ScopedSubscriptionActivationBasis(_)
             | WorthQueryInspectionTarget::ScopedPreviewCloseoutBasis(_) => None,
-        }
+        })
     }
 
-    pub(crate) fn live_view<T>(view: &WorthQueryLiveView<T>) -> Self {
-        Self::from_live_view_name(view.name())
+    pub(crate) fn live_view<T>(
+        view: &WorthQueryLiveView<T>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_live_view_name(view.name())?)
     }
 
     fn from_live_view_name(view_name: &str) -> Result<Self, IdentityDerivationDenial> {
@@ -116,8 +122,10 @@ impl WorthQueryGenericInspectionIntentSeed {
         ))
     }
 
-    pub(crate) fn effect<T>(effect: &WorthQueryEffectHandle<T>) -> Self {
-        Self::from_effect_name(effect.name())
+    pub(crate) fn effect<T>(
+        effect: &WorthQueryEffectHandle<T>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_effect_name(effect.name())?)
     }
 
     fn from_effect_name(effect_name: &str) -> Result<Self, IdentityDerivationDenial> {
@@ -181,37 +189,43 @@ impl WorthQueryGenericInspectionIntentSeed {
         ))
     }
 
-    pub(crate) fn intent_receipt(receipt: &WorthQueryIntentReceipt) -> Self {
-        Self::new(
+    pub(crate) fn intent_receipt(
+        receipt: &WorthQueryIntentReceipt,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryGenericInspectionIntentTargetSeed::IntentReceipt(receipt.clone()),
             WorthQueryGenericInspectionRequestLabel::new(format!(
                 "inspect.intent_receipt.{}",
                 receipt.intent_name()
             )),
-            receipt_seed_input_digest("intent_receipt", receipt.receipt_identity()),
-        )
+            receipt_seed_input_digest("intent_receipt", receipt.receipt_identity())?,
+        ))
     }
 
-    pub(crate) fn intent_denial(evidence: &WorthQueryIntentDenialEvidence) -> Self {
-        Self::new(
+    pub(crate) fn intent_denial(
+        evidence: &WorthQueryIntentDenialEvidence,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryGenericInspectionIntentTargetSeed::IntentDenial(evidence.clone()),
             WorthQueryGenericInspectionRequestLabel::new(format!(
                 "inspect.intent_denial.{}",
                 evidence.intent_name()
             )),
-            receipt_seed_input_digest("intent_denial", evidence.denial_digest()),
-        )
+            receipt_seed_input_digest("intent_denial", evidence.denial_digest())?,
+        ))
     }
 
-    pub(crate) fn effect_intent_receipt(receipt: &WorthQueryEffectIntentReceipt) -> Self {
-        Self::new(
+    pub(crate) fn effect_intent_receipt(
+        receipt: &WorthQueryEffectIntentReceipt,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryGenericInspectionIntentTargetSeed::EffectIntentReceipt(receipt.clone()),
             WorthQueryGenericInspectionRequestLabel::new(format!(
                 "inspect.effect_intent_receipt.{}",
                 receipt.effect_name()
             )),
-            receipt_seed_input_digest("effect_intent_receipt", receipt.receipt_identity()),
-        )
+            receipt_seed_input_digest("effect_intent_receipt", receipt.receipt_identity())?,
+        ))
     }
 
     pub(crate) fn preview_binding(
@@ -264,26 +278,30 @@ impl WorthQueryGenericInspectionIntentSeed {
         ))
     }
 
-    pub(crate) fn preview_intent_receipt(receipt: &WorthQueryPreviewIntentReceipt) -> Self {
-        Self::new(
+    pub(crate) fn preview_intent_receipt(
+        receipt: &WorthQueryPreviewIntentReceipt,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryGenericInspectionIntentTargetSeed::PreviewIntentReceipt(receipt.clone()),
             WorthQueryGenericInspectionRequestLabel::new(format!(
                 "inspect.preview_intent_receipt.{}",
                 receipt.intent_name()
             )),
-            receipt_seed_input_digest("preview_intent_receipt", receipt.receipt_identity()),
-        )
+            receipt_seed_input_digest("preview_intent_receipt", receipt.receipt_identity())?,
+        ))
     }
 
-    pub(crate) fn branch_intent_receipt(receipt: &WorthQueryBranchIntentReceipt) -> Self {
-        Self::new(
+    pub(crate) fn branch_intent_receipt(
+        receipt: &WorthQueryBranchIntentReceipt,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryGenericInspectionIntentTargetSeed::BranchIntentReceipt(receipt.clone()),
             WorthQueryGenericInspectionRequestLabel::new(format!(
                 "inspect.branch_intent_receipt.{}",
                 receipt.intent_name()
             )),
-            receipt_seed_input_digest("branch_intent_receipt", receipt.receipt_identity()),
-        )
+            receipt_seed_input_digest("branch_intent_receipt", receipt.receipt_identity())?,
+        ))
     }
 
     fn new(

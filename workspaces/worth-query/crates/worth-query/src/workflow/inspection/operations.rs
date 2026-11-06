@@ -17,6 +17,7 @@ use super::report::{
     QueryPostMergeInspectionArtifact,
 };
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[cfg(test)]
 use crate::workflow::foundation::WorkflowDeclarationFamily;
 use crate::workflow::foundation::{QueryWorkflowDeclaration, WorkflowPredictionDriftOutcome};
@@ -154,38 +155,38 @@ pub(crate) fn inspect_merge_conflicts(
 
 pub fn shape_mutation_authority_outcome(
     declaration: &LoweredMutationIntentDeclaration,
-) -> WorkflowAuthorityOutcomeArtifact {
-    shape_authority_outcome(
+) -> Result<WorkflowAuthorityOutcomeArtifact, IdentityDerivationDenial> {
+    Ok(shape_authority_outcome(
         declaration.declaration(),
         WorkflowAuthorityOutcomeFamily::MutationLoweringAdmitted,
         declaration.lowering_identity(),
         declaration.counters().clone(),
         1,
-    )
+    )?)
 }
 
 pub fn shape_merge_authority_outcome(
     declaration: &LoweredMergeWorkflowDeclaration,
-) -> WorkflowAuthorityOutcomeArtifact {
-    shape_authority_outcome(
+) -> Result<WorkflowAuthorityOutcomeArtifact, IdentityDerivationDenial> {
+    Ok(shape_authority_outcome(
         declaration.declaration(),
         WorkflowAuthorityOutcomeFamily::MergeLoweringAdmitted,
         declaration.lowering_identity(),
         declaration.counters().clone(),
         1,
-    )
+    )?)
 }
 
 pub fn shape_writeback_authority_outcome(
     declaration: &QueryWritebackDeclaration,
-) -> WorkflowAuthorityOutcomeArtifact {
-    shape_authority_outcome(
+) -> Result<WorkflowAuthorityOutcomeArtifact, IdentityDerivationDenial> {
+    Ok(shape_authority_outcome(
         declaration.declaration(),
         WorkflowAuthorityOutcomeFamily::WritebackLoweringAdmitted,
         declaration.lowering_identity(),
         declaration.counters().clone(),
         1,
-    )
+    )?)
 }
 
 #[cfg(test)]
@@ -274,13 +275,13 @@ pub(crate) fn inspect_post_merge_outcome(
 
 pub fn build_workflow_replay_bundle(
     outcome: &WorkflowAuthorityOutcomeArtifact,
-) -> WorkflowReplayBundle {
-    let delivery_or_failure_identity = delivery_or_failure_identity(outcome);
-    let bundle_identity = workflow_replay_bundle_identity(outcome, &delivery_or_failure_identity);
+) -> Result<WorkflowReplayBundle, IdentityDerivationDenial> {
+    let delivery_or_failure_identity = delivery_or_failure_identity(outcome)?;
+    let bundle_identity = workflow_replay_bundle_identity(outcome, &delivery_or_failure_identity)?;
 
     let counters = outcome.counters().with_replay_bundle_issued();
 
-    WorkflowReplayBundle {
+    Ok(WorkflowReplayBundle {
         bundle_identity,
         query_identity: outcome.source_query_identity().clone(),
         plan_identity: outcome.source_plan_identity().clone(),
@@ -291,7 +292,7 @@ pub fn build_workflow_replay_bundle(
         authoritative_outcome_identity: outcome.authoritative_outcome_identity().clone(),
         delivery_or_failure_identity,
         counters,
-    }
+    })
 }
 
 fn shape_authority_outcome(
@@ -300,13 +301,13 @@ fn shape_authority_outcome(
     request_identity: &WorthQueryEvidenceIdentity,
     counters: WorkflowLoweringCounters,
     realized_width: usize,
-) -> WorkflowAuthorityOutcomeArtifact {
+) -> Result<WorkflowAuthorityOutcomeArtifact, IdentityDerivationDenial> {
     let authority_request_identity =
-        workflow_authority_request_identity(family.clone(), request_identity);
+        workflow_authority_request_identity(family.clone(), request_identity)?;
     let authoritative_outcome_identity =
-        workflow_authoritative_outcome_identity(declaration, &family, &authority_request_identity);
+        workflow_authoritative_outcome_identity(declaration, &family, &authority_request_identity)?;
 
-    WorkflowAuthorityOutcomeArtifact {
+    Ok(WorkflowAuthorityOutcomeArtifact {
         family,
         authority_target_family: declaration.report().authority_target_family().clone(),
         source_query_identity: declaration.binding().query_identity().clone(),
@@ -330,5 +331,5 @@ fn shape_authority_outcome(
         explicit_rebind: None,
         realized_width,
         counters,
-    }
+    })
 }

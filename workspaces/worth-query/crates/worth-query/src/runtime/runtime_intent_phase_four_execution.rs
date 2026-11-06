@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::{
     admit_authoritative_execution, admit_effect_execution, intent_runtime_facade_family,
     WorthQueryAdmittedIntentExecutionHandoff, WorthQueryAuthoritativeIntentExecutionBinding,
@@ -10,18 +11,22 @@ impl WorthQueryRuntime {
     pub(crate) fn prepare_authoritative_intent_execution_binding(
         &self,
         handoff: WorthQueryAuthoritativeIntentExecutionHandoff,
-    ) -> WorthQueryAuthoritativeIntentExecutionBinding {
-        WorthQueryAuthoritativeIntentExecutionBinding::from_handoff(handoff)
+    ) -> Result<WorthQueryAuthoritativeIntentExecutionBinding, IdentityDerivationDenial> {
+        Ok(WorthQueryAuthoritativeIntentExecutionBinding::from_handoff(
+            handoff,
+        )?)
     }
 
     pub(crate) fn prepare_effect_intent_execution_binding(
         &self,
         handoff: WorthQueryEffectTriggeredIntentExecutionHandoff,
         pending_delivery: &WorthQueryEffectDelivery,
-    ) -> WorthQueryEffectTriggeredIntentExecutionBinding {
-        WorthQueryEffectTriggeredIntentExecutionBinding::from_handoff_and_delivery(
-            handoff,
-            pending_delivery,
+    ) -> Result<WorthQueryEffectTriggeredIntentExecutionBinding, IdentityDerivationDenial> {
+        Ok(
+            WorthQueryEffectTriggeredIntentExecutionBinding::from_handoff_and_delivery(
+                handoff,
+                pending_delivery,
+            )?,
         )
     }
 
@@ -190,39 +195,43 @@ impl WorthQueryRuntime {
 fn authoritative_execution_provenance(
     binding: &WorthQueryAuthoritativeIntentExecutionBinding,
     execution: &WorthQueryIntentExecution,
-) -> Result<WorthQueryIntentExecutionProvenance, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+) -> Result<WorthQueryIntentExecutionProvenance, IdentityDerivationDenial> {
     let snapshot_identity = execution
         .mutation_receipt()
         .snapshot_identity
         .evidence_identity();
-    Ok(WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
-        binding.family(),
-        binding.entrypoint(),
-        binding.execution_seam(),
-        binding.handoff().decision_digest(),
-        binding.handoff().handoff_digest(),
-        binding.binding_digest(),
-        execution.outcome_digest(),
-        &snapshot_identity,
-    )?)
+    Ok(
+        WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
+            binding.family(),
+            binding.entrypoint(),
+            binding.execution_seam(),
+            binding.handoff().decision_digest(),
+            binding.handoff().handoff_digest(),
+            binding.binding_digest(),
+            execution.outcome_digest(),
+            &snapshot_identity,
+        )?,
+    )
 }
 
 fn effect_execution_provenance(
     binding: &WorthQueryEffectTriggeredIntentExecutionBinding,
     execution: &WorthQueryIntentExecution,
-) -> Result<WorthQueryIntentExecutionProvenance, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+) -> Result<WorthQueryIntentExecutionProvenance, IdentityDerivationDenial> {
     let snapshot_identity = execution
         .mutation_receipt()
         .snapshot_identity
         .evidence_identity();
-    Ok(WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
-        binding.family(),
-        binding.entrypoint(),
-        binding.execution_seam(),
-        binding.handoff().decision_digest(),
-        binding.handoff().handoff_digest(),
-        binding.binding_digest(),
-        execution.outcome_digest(),
-        &snapshot_identity,
-    )?)
+    Ok(
+        WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
+            binding.family(),
+            binding.entrypoint(),
+            binding.execution_seam(),
+            binding.handoff().decision_digest(),
+            binding.handoff().handoff_digest(),
+            binding.binding_digest(),
+            execution.outcome_digest(),
+            &snapshot_identity,
+        )?,
+    )
 }

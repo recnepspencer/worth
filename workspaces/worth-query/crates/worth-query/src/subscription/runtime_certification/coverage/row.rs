@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::subscription::bridge_parity::QuerySubscriptionBridgeParityExplanation;
 use crate::subscription::certification::SubscriptionLifecycleCertificationBundle;
 use crate::subscription::diagnostic::{
@@ -196,7 +197,7 @@ impl QuerySubscriptionFamilyCoverageRow {
         diagnostic_bundle_identity: &WorthQueryEvidenceIdentity,
         failure_identity: Option<&WorthQueryEvidenceIdentity>,
         lifecycle_class: QuerySubscriptionLifecycleCoverageClass,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let row_identity = coverage_row_identity(
             family.as_str(),
             row_class.as_str(),
@@ -216,8 +217,8 @@ impl QuerySubscriptionFamilyCoverageRow {
             diagnostic_bundle_identity,
             lifecycle_class.as_str(),
             failure_identity,
-        );
-        Self {
+        )?;
+        Ok(Self {
             family: family.clone(),
             row_class,
             query_scope_identity: lifecycle.query_scope_identity().clone(),
@@ -239,7 +240,7 @@ impl QuerySubscriptionFamilyCoverageRow {
             view_shape_identity: lifecycle.view_shape_identity().clone(),
             lifecycle_class,
             row_identity,
-        }
+        })
     }
 
     pub fn family(&self) -> &QuerySubscriptionFamily {

@@ -162,7 +162,7 @@ impl WorthQueryOrdinaryRuntimePosture {
             basis_posture,
             remask_posture,
             support_evidence_identity,
-        ))
+        )?)
     }
 
     pub fn new_with_support_identity(

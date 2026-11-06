@@ -9,6 +9,7 @@ use super::identities::{
 };
 use super::scope::QuerySubscriptionRuntimeCertificationScope;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::subscription::validation_evidence::{
     validation_role_evidence_identity, validation_shape_role_evidence_identity,
     validation_usize_role_evidence_identity,
@@ -27,18 +28,18 @@ impl SubscriptionCertificationCoverageWidth {
         admitted_row_count: usize,
         hostile_row_count: usize,
         covered_variation_axis_count: usize,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let width_identity = coverage_width_identity(
             admitted_row_count,
             hostile_row_count,
             covered_variation_axis_count,
-        );
-        Self {
+        )?;
+        Ok(Self {
             admitted_row_count,
             hostile_row_count,
             covered_variation_axis_count,
             width_identity,
-        }
+        })
     }
 
     pub fn admitted_row_count(&self) -> usize {
@@ -73,20 +74,20 @@ impl CertificationCoverageReceipt {
         family_coverage_index_lookup_count: usize,
         covered_row_width: SubscriptionCertificationCoverageWidth,
         uncovered_variation_width: usize,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let receipt_identity = coverage_receipt_identity(
             coverage_resolution_posture,
             family_coverage_index_lookup_count,
             covered_row_width.width_identity(),
             uncovered_variation_width,
-        );
-        Self {
+        )?;
+        Ok(Self {
             coverage_resolution_posture,
             family_coverage_index_lookup_count,
             covered_row_width,
             uncovered_variation_width,
             receipt_identity,
-        }
+        })
     }
 
     pub fn coverage_resolution_posture(&self) -> &CoverageResolutionPosture {

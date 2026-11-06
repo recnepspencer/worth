@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::live::LiveQueryFamily;
 use crate::subscription::{
     admit_active_subscription_lane, admit_query_subscription, attach_subscription_consumer,
@@ -19,83 +20,88 @@ pub(super) fn activation_for(
     live_family: LiveQueryFamily,
     view_family: Option<LiveViewShapeFamily>,
     construction_source: QuerySubscriptionConstructionSource,
-) -> SubscriptionActivationInput {
-    let live = LiveQueryAdmissionArtifact::for_test(live_family, view_family, construction_source);
-    activation_from_live(live)
+) -> Result<SubscriptionActivationInput, IdentityDerivationDenial> {
+    let live = LiveQueryAdmissionArtifact::for_test(live_family, view_family, construction_source)?;
+    Ok(activation_from_live(live)?)
 }
 
-pub(super) fn activation_with_context(policy: &str) -> SubscriptionActivationInput {
+pub(super) fn activation_with_context(
+    policy: &str,
+) -> Result<SubscriptionActivationInput, IdentityDerivationDenial> {
     let live = LiveQueryAdmissionArtifact::for_test_with_context(
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::FacadeLive,
         crate::subscription::QuerySubscriptionBasisPosture::CurrentHead,
-        crate::subscription::QuerySubscriptionFutureSelection::ordinary(),
+        crate::subscription::QuerySubscriptionFutureSelection::ordinary()?,
         Some(policy.to_string()),
         Some("tenant".to_string()),
         Some("relationship-proof".to_string()),
         crate::subscription::QuerySubscriptionRelationshipProofPosture::Admitted,
-    );
-    activation_from_live(live)
+    )?;
+    Ok(activation_from_live(live)?)
 }
 
 pub(super) fn activation_from_live(
     live: LiveQueryAdmissionArtifact,
-) -> SubscriptionActivationInput {
+) -> Result<SubscriptionActivationInput, IdentityDerivationDenial> {
     let selection = select_query_subscription_family(live, work_budget()).unwrap();
     let declaration = declare_query_subscription(selection, slice_budget()).unwrap();
     let lowering = lower_query_subscription_to_bridge(declaration, lowering_budget()).unwrap();
     let admission = admit_query_subscription(lowering, admission_budget()).unwrap();
-    prepare_subscription_activation(admission)
+    Ok(prepare_subscription_activation(admission)?)
 }
 
 pub(super) fn active_attachment(
     runtime: &mut crate::subscription::ActiveSubscriptionRuntime,
-) -> (
-    crate::subscription::ActiveSubscriptionLaneHandle,
-    crate::subscription::SubscriptionConsumerAttachment,
-) {
+) -> Result<
+    (
+        crate::subscription::ActiveSubscriptionLaneHandle,
+        crate::subscription::SubscriptionConsumerAttachment,
+    ),
+    IdentityDerivationDenial,
+> {
     let activation = activation_for(
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )?;
     let admission = admit_active_subscription_lane(activation, active_budget()).unwrap();
     let handle = open_active_subscription_lane(runtime, admission).unwrap();
     let attachment = attach_subscription_consumer(
         runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("preview-consumer", "cursor"),
+        SubscriptionConsumerAttachmentRequest::admitted("preview-consumer", "cursor")?,
         attachment_budget(),
     )
     .unwrap();
-    (handle, attachment)
+    Ok((handle, attachment))
 }
 
 pub(super) fn scale_slope_report(
     activation: &SubscriptionActivationInput,
     patch_width: u64,
     continuation_width: u64,
-) -> crate::subscription::QuerySubscriptionScaleSlopeReport {
+) -> Result<crate::subscription::QuerySubscriptionScaleSlopeReport, IdentityDerivationDenial> {
     let row_factor = 10 + patch_width + continuation_width;
-    certify_query_subscription_scale_slope(
+    Ok(certify_query_subscription_scale_slope(
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Small,
             row_factor,
             activation,
-        ),
+        )?,
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Medium,
             row_factor * 10,
             activation,
-        ),
+        )?,
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Large,
             row_factor * 100,
             activation,
-        ),
+        )?,
     )
-    .unwrap()
+    .unwrap())
 }
 
 pub(super) fn scale_axis_evidence(patch_width: u64, continuation_width: u64) -> Vec<String> {

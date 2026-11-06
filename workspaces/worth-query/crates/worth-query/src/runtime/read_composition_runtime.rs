@@ -1,4 +1,5 @@
 use crate::declarative_live::canonicalize_declarative_request;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::projection_consumption::ProjectionMaterializedFactPosture;
 use crate::query_context::{
@@ -167,7 +168,7 @@ pub(super) fn materialized_fact_posture_for_read_graph(
     runtime: &WorthQueryRuntime,
     read_graph: &WorthQueryReadGraph,
     basis_identity: &crate::WorthQueryEvidenceIdentity,
-) -> Option<ProjectionMaterializedFactPosture> {
+) -> Result<Option<ProjectionMaterializedFactPosture>, IdentityDerivationDenial> {
     let lower_declaration_digest =
         canonicalize_declarative_request(read_graph.declarative_request())
             .ok()?
@@ -181,7 +182,7 @@ pub(super) fn materialized_fact_posture_for_read_graph(
         .filter(|state| state.request == *read_graph.declarative_request());
     let state = if let Some(state) = exact_request_matches.next() {
         if exact_request_matches.next().is_some() {
-            return None;
+            return Ok(None);
         }
         state
     } else {
@@ -190,17 +191,18 @@ pub(super) fn materialized_fact_posture_for_read_graph(
         });
         let state = canonical_matches.next()?;
         if canonical_matches.next().is_some() {
-            return None;
+            return Ok(None);
         }
         state
     };
-    Some(materialized_fact_posture_from_live_subscription_state(
-        state,
-        basis_identity,
+    Ok(Some(
+        materialized_fact_posture_from_live_subscription_state(state, basis_identity)?,
     ))
 }
 
-fn query_context_basis_digest_identity(basis_digest: &str) -> Result<crate::WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+fn query_context_basis_digest_identity(
+    basis_digest: &str,
+) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::QueryContextCompatibilityBasisLabel,
     )

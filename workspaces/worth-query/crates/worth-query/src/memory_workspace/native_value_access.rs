@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::{AspectKey, AspectValue, CanonicalFieldPath, FieldKey};
 
 use super::WorthQueryEntity;
@@ -39,7 +40,8 @@ mod tests {
     use std::collections::BTreeMap;
 
     #[test]
-    fn dotted_aspect_reads_the_exact_canonical_scalar_path() {
+    fn dotted_aspect_reads_the_exact_canonical_scalar_path() -> Result<(), IdentityDerivationDenial>
+    {
         let aspect = AspectKey::new("Portfolio.Facts").unwrap();
         let relative = CanonicalFieldPath::new([FieldKey::new("desk").unwrap()]).unwrap();
         let storage = CanonicalFieldPath::new([
@@ -49,7 +51,7 @@ mod tests {
         ])
         .unwrap();
         let entity = WorthQueryEntity::from_native_field_values(
-            admit_authored_entity_label("position-1"),
+            admit_authored_entity_label("position-1")?,
             BTreeMap::from([(storage, AspectValue::String("rates".into()))]),
         );
         let expected = AspectValue::String("rates".into());
@@ -58,5 +60,7 @@ mod tests {
             aspect_relative_scalar(&entity, &aspect, &relative),
             Some(&expected)
         );
+
+        Ok(())
     }
 }

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod basis_rejections;
 mod execution;
 mod plan_shapes;
@@ -129,12 +130,12 @@ fn runtime_basis_intent() -> ExecutionBasisIntent {
 
 fn runtime_resolved_identity(
     schema_basis: crate::facade::foundation::SchemaBasisDigest,
-) -> ResolvedSnapshotIdentity {
-    ResolvedSnapshotIdentity::new(
+) -> Result<ResolvedSnapshotIdentity, IdentityDerivationDenial> {
+    Ok(ResolvedSnapshotIdentity::new(
         BasisAuthorityFamily::Runtime,
         Some("workspace-main".to_string()),
-        crate::memory_workspace::admit_external_snapshot_label("snapshot-1").evidence_identity(),
+        crate::memory_workspace::admit_external_snapshot_label("snapshot-1")?.evidence_identity(),
         schema_basis,
         SnapshotLineageClass::CurrentHead,
-    )
+    ))
 }

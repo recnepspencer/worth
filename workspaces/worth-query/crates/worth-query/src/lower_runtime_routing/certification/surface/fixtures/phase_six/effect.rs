@@ -45,7 +45,7 @@ pub(crate) fn representative_effect_relational_mutation_row(
     let raw = RawEffectIntent::Mutation {
         binding: runtime_workflow_binding_for_snapshot_identity(exact_branch_snapshot_identity(
             &runtime, "main",
-        )),
+        ))?,
         request: workflow_request(
             WorkflowDeclarationFamily::MutationLoweringNarrow,
             WorkflowAuthorityTargetFamily::RelationalMutation,
@@ -64,7 +64,7 @@ pub(crate) fn representative_effect_relational_mutation_row(
     let executed = scope_admitted_effect_plan(admit_effect(
         raw,
         EffectAuthoringBasis::from(branch_mutation_basis("main")),
-    ))
+    )?)?
     .lower()
     .expect("relational mutation should lower")
     .execute_with(
@@ -110,7 +110,7 @@ pub(crate) fn representative_effect_relational_merge_row(
         BranchId("candidate".to_string()),
     );
     let raw = RawEffectIntent::Merge {
-        binding: runtime_workflow_binding(),
+        binding: runtime_workflow_binding()?,
         request: workflow_request(
             WorkflowDeclarationFamily::MergeLoweringNarrow,
             WorkflowAuthorityTargetFamily::RelationalMerge,
@@ -123,7 +123,7 @@ pub(crate) fn representative_effect_relational_merge_row(
     let executed = scope_admitted_effect_plan(admit_effect(
         raw,
         EffectAuthoringBasis::from(branch_mutation_basis("main")),
-    ))
+    )?)?
     .lower()
     .expect("relational merge should lower")
     .execute_with(
@@ -150,7 +150,7 @@ pub(crate) fn representative_effect_bridge_writeback_row(
 ) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let bridge = test_bridge_with_writeback_authority();
     let raw = RawEffectIntent::Writeback {
-        binding: runtime_workflow_binding(),
+        binding: runtime_workflow_binding()?,
         request: workflow_request(
             WorkflowDeclarationFamily::WritebackLoweringNarrow,
             WorkflowAuthorityTargetFamily::BridgeWriteback,
@@ -160,7 +160,7 @@ pub(crate) fn representative_effect_bridge_writeback_row(
     let executed = scope_admitted_effect_plan(admit_effect(
         raw,
         EffectAuthoringBasis::from(branch_mutation_basis("branch-a")),
-    ))
+    )?)?
     .lower()
     .expect("bridge writeback should lower")
     .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
@@ -182,13 +182,13 @@ pub(crate) fn representative_effect_bridge_writeback_row(
 fn admit_effect(
     raw: RawEffectIntent,
     basis: EffectAuthoringBasis,
-) -> crate::effect_lifecycle::AdmittedEffectIntent {
+) -> Result<crate::effect_lifecycle::AdmittedEffectIntent, IdentityDerivationDenial> {
     let normalized =
         normalize_raw_effect_intent(&basis, raw).expect("effect fixture should normalize");
-    match evaluate_effect_eligibility(normalized) {
+    Ok(match evaluate_effect_eligibility(normalized)? {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted effect fixture, got {other:?}"),
-    }
+    })
 }
 
 fn branch_mutation_basis(
@@ -207,20 +207,21 @@ fn branch_mutation_basis(
     scope_basis_for_mutation_preparation(admit_basis_capability(eligibility))
 }
 
-fn runtime_workflow_binding() -> crate::workflow::WorkflowContextBinding {
-    synthetic_runtime_workflow_binding_for_snapshot_identity(
+fn runtime_workflow_binding(
+) -> Result<crate::workflow::WorkflowContextBinding, IdentityDerivationDenial> {
+    Ok(synthetic_runtime_workflow_binding_for_snapshot_identity(
         "lower-runtime-effect-phase-six",
-        crate::memory_workspace::admit_external_snapshot_label("snapshot-1"),
-    )
+        crate::memory_workspace::admit_external_snapshot_label("snapshot-1")?,
+    )?)
 }
 
 fn runtime_workflow_binding_for_snapshot_identity(
     snapshot_identity: crate::memory_workspace::WorthQuerySnapshotIdentity,
-) -> crate::workflow::WorkflowContextBinding {
-    synthetic_runtime_workflow_binding_for_snapshot_identity(
+) -> Result<crate::workflow::WorkflowContextBinding, IdentityDerivationDenial> {
+    Ok(synthetic_runtime_workflow_binding_for_snapshot_identity(
         "lower-runtime-effect-phase-six",
         snapshot_identity,
-    )
+    )?)
 }
 
 fn workflow_request(

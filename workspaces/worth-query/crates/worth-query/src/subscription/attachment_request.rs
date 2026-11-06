@@ -29,7 +29,7 @@ impl SubscriptionConsumerAttachmentRequest {
             &delivery_cursor_seed,
         )
         .seal()?;
-        let delivery_cursor_seed_identity = delivery_cursor_seed_identity(&delivery_cursor_seed);
+        let delivery_cursor_seed_identity = delivery_cursor_seed_identity(&delivery_cursor_seed)?;
         Ok(Self {
             consumer_identity,
             delivery_cursor_seed_identity,

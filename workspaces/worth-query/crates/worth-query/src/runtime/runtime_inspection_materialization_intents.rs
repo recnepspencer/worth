@@ -1,5 +1,6 @@
 use super::runtime_inspection_materialization_identity::bundle_snapshot_identity;
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::dx::{
     non_admitted_runtime_violation, WorthQueryRuntimeIntentAdmissionReviewData,
 };
@@ -191,7 +192,7 @@ impl WorthQueryRuntime {
                 })?;
         Ok(WorthQueryRuntimeIntentAdmissionReviewData::from_request(
             request,
-        ))
+        )?)
     }
 
     pub(crate) fn review_runtime_derived_inspection(
@@ -207,7 +208,7 @@ impl WorthQueryRuntime {
                 })?;
         Ok(WorthQueryRuntimeIntentAdmissionReviewData::from_request(
             request,
-        ))
+        )?)
     }
 
     pub(crate) fn resolve_reviewed_admitted_derived_materialization_handoff(
@@ -257,15 +258,17 @@ impl WorthQueryRuntime {
     pub(crate) fn prepare_derived_materialization_execution_binding(
         &self,
         handoff: WorthQueryDerivedMaterializationExecutionHandoff,
-    ) -> WorthQueryDerivedMaterializationExecutionBinding {
-        WorthQueryDerivedMaterializationExecutionBinding::from_handoff(handoff)
+    ) -> Result<WorthQueryDerivedMaterializationExecutionBinding, IdentityDerivationDenial> {
+        Ok(WorthQueryDerivedMaterializationExecutionBinding::from_handoff(handoff)?)
     }
 
     pub(crate) fn prepare_derived_inspection_execution_binding(
         &self,
         handoff: WorthQueryDerivedInspectionExecutionHandoff,
-    ) -> WorthQueryDerivedInspectionExecutionBinding {
-        WorthQueryDerivedInspectionExecutionBinding::from_handoff(handoff)
+    ) -> Result<WorthQueryDerivedInspectionExecutionBinding, IdentityDerivationDenial> {
+        Ok(WorthQueryDerivedInspectionExecutionBinding::from_handoff(
+            handoff,
+        )?)
     }
 
     pub(crate) fn execute_derived_materialization_execution_binding(

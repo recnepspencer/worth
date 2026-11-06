@@ -25,7 +25,7 @@ impl WorthQueryRuntime {
             &name,
             &request,
             schema_view.clone(),
-            crate::subscription::QuerySubscriptionFutureSelection::ordinary(),
+            crate::subscription::QuerySubscriptionFutureSelection::ordinary()?,
         )?;
         self.finish_live_view_declaration(name, request, schema_view, activation, None)
     }

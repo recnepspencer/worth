@@ -28,7 +28,8 @@ fn retained_row(
 }
 
 fn binding() -> Result<WorthQueryDerivedArtifactBinding, IdentityDerivationDenial> {
-    let snapshot_identity = crate::memory_workspace::admit_external_snapshot_label("snapshot:test");
+    let snapshot_identity =
+        crate::memory_workspace::admit_external_snapshot_label("snapshot:test")?;
     let materialization = WorthQueryDerivedMaterializationResult::from_retained_rows(
         vec![retained_row([
             ("authority_snapshot_id", AspectValue::Int64(7)),

@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::super::evidence_identities::{support_matrix_identity, support_matrix_row_identity};
@@ -25,14 +26,14 @@ impl QuerySubscriptionSupportMatrixRow {
         family: &QuerySubscriptionFamily,
         support_class: QuerySubscriptionSupportClass,
         posture: QuerySubscriptionSupportPosture,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let row_identity =
-            support_matrix_row_identity(family, support_class.as_str(), posture.as_str());
-        Self {
+            support_matrix_row_identity(family, support_class.as_str(), posture.as_str())?;
+        Ok(Self {
             support_class,
             posture,
             row_identity,
-        }
+        })
     }
 
     pub fn support_class(&self) -> &QuerySubscriptionSupportClass {
@@ -65,7 +66,7 @@ impl QuerySubscriptionSupportMatrix {
         family: &QuerySubscriptionFamily,
         profile: Option<&QuerySubscriptionSupportProfile>,
         subject: &QuerySubscriptionSupportSubject,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let capability_digest = SubscriptionFamilyCapabilityDigest::for_family(family);
         let coverage = SupportCoverageStage::for_subject(subject);
         let rows = QuerySubscriptionSupportClass::all()
@@ -81,13 +82,13 @@ impl QuerySubscriptionSupportMatrix {
         let row_refs: Vec<&WorthQueryEvidenceIdentity> =
             rows.iter().map(|row| row.row_identity()).collect();
         let matrix_identity =
-            support_matrix_identity(family, capability_digest.capability_identity(), row_refs);
-        Self {
+            support_matrix_identity(family, capability_digest.capability_identity(), row_refs)?;
+        Ok(Self {
             family: family.clone(),
             capability_digest,
             rows,
             matrix_identity,
-        }
+        })
     }
 
     pub fn family(&self) -> &QuerySubscriptionFamily {

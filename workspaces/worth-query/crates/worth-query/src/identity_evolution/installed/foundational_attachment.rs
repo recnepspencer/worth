@@ -111,12 +111,12 @@ impl FoundationalInstalledLineageIdentities {
         semantic: &WorthQueryEvidenceIdentity,
         basis_digest: &str,
         effect_receipt_identity: &str,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let source_basis_evidence_identity =
-            boundary_identity("installed-lineage-source-v1", basis_digest);
+            boundary_identity("installed-lineage-source-v1", basis_digest)?;
         let receipt_evidence_identity =
-            boundary_identity("installed-lineage-receipt-v1", effect_receipt_identity);
-        Self {
+            boundary_identity("installed-lineage-receipt-v1", effect_receipt_identity)?;
+        Ok(Self {
             subject: crate::domain_installation::foundational_boundary_handle(semantic),
             artifact: crate::domain_installation::foundational_boundary_artifact_id(
                 &receipt_evidence_identity,
@@ -124,7 +124,7 @@ impl FoundationalInstalledLineageIdentities {
             subject_evidence_identity: semantic.clone(),
             source_basis_evidence_identity,
             receipt_evidence_identity,
-        }
+        })
     }
 
     pub(super) fn attested_lineage(

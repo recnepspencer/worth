@@ -147,7 +147,7 @@ impl WorthQueryRuntime {
         ))?;
         Ok(WorthQueryRuntimeIntentAdmissionReviewData::from_request(
             request,
-        ))
+        )?)
     }
 
     pub(crate) fn resolve_reviewed_admitted_read_execution_handoff(
@@ -187,7 +187,7 @@ impl WorthQueryRuntime {
         Ok(WorthQueryReadExecutionBinding::from_handoff(
             handoff,
             graph_read_access_plan,
-        ))
+        )?)
     }
 
     #[cfg(test)]
@@ -200,7 +200,7 @@ impl WorthQueryRuntime {
         Ok(WorthQueryReadExecutionBinding::from_handoff(
             handoff,
             graph_read_access_plan,
-        ))
+        )?)
     }
 
     pub(crate) fn execute_read_execution_binding(

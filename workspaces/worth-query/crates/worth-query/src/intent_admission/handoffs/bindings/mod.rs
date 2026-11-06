@@ -59,16 +59,18 @@ pub struct WorthQueryAuthoritativeMutationBatchExecutionBinding {
 }
 
 impl WorthQueryAuthoritativeIntentExecutionBinding {
-    pub(crate) fn from_handoff(handoff: WorthQueryAuthoritativeIntentExecutionHandoff) -> Self {
+    pub(crate) fn from_handoff(
+        handoff: WorthQueryAuthoritativeIntentExecutionHandoff,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let binding_digest = intent_execution_binding_identity(
             "authoritative-intent-execution",
             handoff.handoff_digest(),
             None,
-        );
-        Self {
+        )?;
+        Ok(Self {
             handoff,
             binding_digest,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryIntentAdmissionFamily {
@@ -100,21 +102,21 @@ impl WorthQueryEffectTriggeredIntentExecutionBinding {
     pub(crate) fn from_handoff_and_delivery(
         handoff: WorthQueryEffectTriggeredIntentExecutionHandoff,
         pending_delivery: &WorthQueryEffectDelivery,
-    ) -> Self {
-        let pending_delivery_digest = hash_effect_pending_delivery(pending_delivery);
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let pending_delivery_digest = hash_effect_pending_delivery(pending_delivery)?;
         let binding_digest = intent_execution_binding_identity(
             "effect-intent-execution",
             handoff.handoff_digest(),
             Some(&pending_delivery_digest),
-        );
-        Self {
+        )?;
+        Ok(Self {
             handoff,
             effect_name: pending_delivery.effect_name().to_string(),
             trigger_commit_identity: pending_delivery.commit_identity().clone(),
             write_adjacent_trigger: pending_delivery.write_adjacent_trigger().clone(),
             pending_delivery_digest,
             binding_digest,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryIntentAdmissionFamily {
@@ -160,26 +162,28 @@ impl WorthQueryEffectTriggeredIntentExecutionBinding {
     pub(crate) fn matches_pending_delivery(
         &self,
         pending_delivery: &WorthQueryEffectDelivery,
-    ) -> bool {
-        self.effect_name == pending_delivery.effect_name()
+    ) -> Result<bool, IdentityDerivationDenial> {
+        Ok(self.effect_name == pending_delivery.effect_name()
             && self
                 .trigger_commit_identity
                 .is_same_current_identity_as(pending_delivery.commit_identity())
-            && self.pending_delivery_digest == hash_effect_pending_delivery(pending_delivery)
+            && self.pending_delivery_digest == hash_effect_pending_delivery(pending_delivery)?)
     }
 }
 
 impl WorthQueryAuthoritativeMutationExecutionBinding {
-    pub(crate) fn from_handoff(handoff: WorthQueryAuthoritativeMutationExecutionHandoff) -> Self {
+    pub(crate) fn from_handoff(
+        handoff: WorthQueryAuthoritativeMutationExecutionHandoff,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let binding_digest = intent_execution_binding_identity(
             "authoritative-mutation-execution",
             handoff.handoff_digest(),
             None,
-        );
-        Self {
+        )?;
+        Ok(Self {
             handoff,
             binding_digest,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryIntentAdmissionFamily {
@@ -210,16 +214,16 @@ impl WorthQueryAuthoritativeMutationExecutionBinding {
 impl WorthQueryAuthoritativeMutationBatchExecutionBinding {
     pub(crate) fn from_handoff(
         handoff: WorthQueryAuthoritativeMutationBatchExecutionHandoff,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let binding_digest = intent_execution_binding_identity(
             "authoritative-mutation-batch-execution",
             handoff.handoff_digest(),
             None,
-        );
-        Self {
+        )?;
+        Ok(Self {
             handoff,
             binding_digest,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryIntentAdmissionFamily {

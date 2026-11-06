@@ -74,7 +74,7 @@ pub(crate) fn representative_live_view_schema_row(
 pub(crate) fn representative_write_authority_row(
 ) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let command = WorthQueryWriteCommand::Delete {
-        entity_identity: representative_entity_identity("task-7"),
+        entity_identity: representative_entity_identity("task-7")?,
     };
     let mutation_receipt = WorthQueryMutationReceipt::from_authoritative_parts(
         representative_commit_identity("commit-route-write-7")?,
@@ -224,8 +224,10 @@ fn representative_snapshot_identity(
     ))
 }
 
-fn representative_entity_identity(label: impl AsRef<str>) -> WorthQueryEntityIdentity {
-    crate::memory_workspace::admit_authored_entity_label(label)
+fn representative_entity_identity(
+    label: impl AsRef<str>,
+) -> Result<WorthQueryEntityIdentity, IdentityDerivationDenial> {
+    Ok(crate::memory_workspace::admit_authored_entity_label(label)?)
 }
 
 pub(crate) fn representative_live_view_source_row(

@@ -3,6 +3,7 @@ use crate::authorized_projection::{
     PolicyAspectMask, PolicyInfluenceSet,
 };
 use crate::canonicalization::CanonicalResultShapeArtifact;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -161,16 +162,18 @@ impl WorthQueryProjectionOutcome {
         }
     }
 
-    pub(crate) fn with_query_context_advisory_for_certification(self) -> Self {
-        match self {
+    pub(crate) fn with_query_context_advisory_for_certification(
+        self,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(match self {
             Self::Completed(authority) => Self::Advisory(WorthQueryProjectionAdvisory {
                 authority,
                 warnings: ProjectionConsumptionWarnings::for_certification(
                     crate::projection_consumption::ProjectionConsumptionWarningKind::QueryContextRowBound,
-                ),
+                )?,
             }),
             other => other,
-        }
+        })
     }
 
     pub fn authority(&self) -> Option<&WorthQueryConsumedProjectionAuthority> {

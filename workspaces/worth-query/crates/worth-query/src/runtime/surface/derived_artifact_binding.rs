@@ -169,18 +169,21 @@ mod tests {
         .expect("retained row should build")
     }
 
-    fn retained_row(view_name: &str, value: &str) -> WorthQueryDerivedMaterializationResult {
-        WorthQueryDerivedMaterializationResult::from_retained_rows(
+    fn retained_row(
+        view_name: &str,
+        value: &str,
+    ) -> Result<WorthQueryDerivedMaterializationResult, IdentityDerivationDenial> {
+        Ok(WorthQueryDerivedMaterializationResult::from_retained_rows(
             vec![scalar_row(
                 "value",
                 crate::runtime::WorthQueryAuthoredAspectMutation::native_string_value(value),
             )],
             WorthQueryDerivedMaterializationReceipt::test_only(
                 view_name,
-                crate::memory_workspace::admit_external_snapshot_label("snapshot-test"),
+                crate::memory_workspace::admit_external_snapshot_label("snapshot-test")?,
                 format!("{view_name}-digest"),
             ),
-        )
+        ))
     }
 
     fn binding() -> Result<
@@ -196,19 +199,19 @@ mod tests {
         let second = WorthQueryDerivedViewHandle::new("derived.second");
         let third = WorthQueryDerivedViewHandle::new("derived.third");
         let bundle = WorthQueryDerivedMaterializationBundle::new(
-            crate::memory_workspace::admit_external_snapshot_label("snapshot-test"),
+            crate::memory_workspace::admit_external_snapshot_label("snapshot-test")?,
             BTreeMap::from([
                 (
                     WorthQueryDerivedMaterializationTarget::from(&first),
-                    retained_row(first.name(), "first"),
+                    retained_row(first.name(), "first")?,
                 ),
                 (
                     WorthQueryDerivedMaterializationTarget::from(&second),
-                    retained_row(second.name(), "second"),
+                    retained_row(second.name(), "second")?,
                 ),
                 (
                     WorthQueryDerivedMaterializationTarget::from(&third),
-                    retained_row(third.name(), "third"),
+                    retained_row(third.name(), "third")?,
                 ),
             ]),
         )?;

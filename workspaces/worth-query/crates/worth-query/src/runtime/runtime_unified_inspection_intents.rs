@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::dx::{
     non_admitted_runtime_violation, WorthQueryRuntimeIntentAdmissionReviewData,
 };
@@ -20,7 +21,7 @@ impl WorthQueryRuntime {
         .expect("live view names should always lower into unified inspection seeds");
         let review = self.review_unified_inspection(seed)?;
         let handoff = self.resolve_reviewed_admitted_unified_inspection_handoff(review)?;
-        let binding = self.prepare_unified_inspection_execution_binding(handoff);
+        let binding = self.prepare_unified_inspection_execution_binding(handoff)?;
         self.execute_unified_inspection_execution_binding(execution, binding)
     }
 
@@ -34,7 +35,7 @@ impl WorthQueryRuntime {
                 .expect("generic inspection seed should always author successfully");
         Ok(WorthQueryRuntimeIntentAdmissionReviewData::from_request(
             request,
-        ))
+        )?)
     }
 
     pub(crate) fn resolve_reviewed_admitted_unified_inspection_handoff(
@@ -60,8 +61,10 @@ impl WorthQueryRuntime {
     pub(crate) fn prepare_unified_inspection_execution_binding(
         &self,
         handoff: WorthQueryUnifiedInspectionExecutionHandoff,
-    ) -> WorthQueryUnifiedInspectionExecutionBinding {
-        WorthQueryUnifiedInspectionExecutionBinding::from_handoff(handoff)
+    ) -> Result<WorthQueryUnifiedInspectionExecutionBinding, IdentityDerivationDenial> {
+        Ok(WorthQueryUnifiedInspectionExecutionBinding::from_handoff(
+            handoff,
+        )?)
     }
 
     pub(crate) fn execute_unified_inspection_execution_binding(

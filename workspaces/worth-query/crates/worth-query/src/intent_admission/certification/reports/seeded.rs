@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::super::fixtures::{
@@ -117,8 +118,8 @@ pub fn worth_query_intent_admission_seeded_certification_report(
 fn seed_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     seed: u64,
-) -> WorthQueryIntentAdmissionSeedReplayRow {
-    let replay_digest = executed_artifact_digest(execution, seed);
+) -> Result<WorthQueryIntentAdmissionSeedReplayRow, IdentityDerivationDenial> {
+    let replay_digest = executed_artifact_digest(execution, seed)?;
     let row_digest = hash_parts(&[
         "worth_query_intent_admission_seed_row_v1".to_string(),
         format!("seed:{seed}"),
@@ -129,36 +130,36 @@ fn seed_row(
         format!("surface:{}", execution_surface_choice(seed)),
         format!("failure-path:{}", failure_path_choice(seed)),
     ]);
-    WorthQueryIntentAdmissionSeedReplayRow {
+    Ok(WorthQueryIntentAdmissionSeedReplayRow {
         seed,
         replay_digest,
         row_digest,
-    }
+    })
 }
 
 fn executed_artifact_digest(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     seed: u64,
-) -> String {
-    match seed % 5 {
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(match seed % 5 {
         0 => certified_failure_intent_fixture(execution).failure_digest,
-        1 => certified_admitted_intent_fixture(execution)
+        1 => certified_admitted_intent_fixture(execution)?
             .receipt
             .receipt_digest()
             .to_string(),
-        2 => certified_advisory_intent_fixture()
+        2 => certified_advisory_intent_fixture()?
             .trace
             .trace_digest()
             .to_string(),
-        3 => legacy_delegation_parity_fixture(execution)
+        3 => legacy_delegation_parity_fixture(execution)?
             .effect_canonical
             .receipt_digest()
             .to_string(),
-        _ => certified_violation_intent_fixture()
+        _ => certified_violation_intent_fixture()?
             .trace
             .trace_digest()
             .to_string(),
-    }
+    })
 }
 
 fn family_choice(seed: u64) -> &'static str {

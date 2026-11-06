@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::evidence_identities::patch_group_identity;
 use super::maintenance_delta::QuerySubscriptionMaintenanceDeltaKind;
@@ -73,13 +74,13 @@ impl QueryPatchGroup {
         kind: QueryPatchGroupKind,
         source_identity: &WorthQueryEvidenceIdentity,
         width: u64,
-    ) -> Self {
-        let patch_group_identity = patch_group_identity(kind, source_identity, width);
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let patch_group_identity = patch_group_identity(kind, source_identity, width)?;
+        Ok(Self {
             kind,
             width,
             patch_group_identity,
-        }
+        })
     }
 
     pub fn kind(&self) -> QueryPatchGroupKind {

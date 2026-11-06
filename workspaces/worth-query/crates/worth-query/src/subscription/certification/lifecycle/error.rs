@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::identity::subscription_certification_failure_identity;
 use super::vocabulary::SubscriptionLifecycleCertificationDenialKind;
@@ -15,8 +16,8 @@ impl SubscriptionLifecycleCertificationError {
         denial_kind: SubscriptionLifecycleCertificationDenialKind,
         message: &'static str,
         evidence: &[WorthQueryEvidenceIdentity],
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             denial_kind,
             message,
             failure_identity: subscription_certification_failure_identity(
@@ -24,8 +25,8 @@ impl SubscriptionLifecycleCertificationError {
                 denial_kind.as_str(),
                 message,
                 evidence,
-            ),
-        }
+            )?,
+        })
     }
 
     pub fn denial_kind(&self) -> &SubscriptionLifecycleCertificationDenialKind {

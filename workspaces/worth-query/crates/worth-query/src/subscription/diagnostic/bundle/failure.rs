@@ -120,85 +120,95 @@ impl QuerySubscriptionDiagnosticFailure {
         counter_identity: WorthQueryEvidenceIdentity,
         failure_kind: &str,
         diagnostic_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
-        let failure_identity = diagnostic_failure_identity(failure_kind, diagnostic_identity);
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let failure_identity = diagnostic_failure_identity(failure_kind, diagnostic_identity)?;
+        Ok(Self {
             stage,
             outcome: QuerySubscriptionDiagnosticOutcome::Denied,
             reason: reason.into(),
             source_identity,
             counter_identity,
             failure_identity,
-        }
+        })
     }
 
-    pub fn from_family_selection_error(error: &QuerySubscriptionFamilySelectionError) -> Self {
-        Self::new(
+    pub fn from_family_selection_error(
+        error: &QuerySubscriptionFamilySelectionError,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             *error.diagnostic().stage(),
             error.message(),
             error.diagnostic().source_identity().clone(),
             error.counters().evidence_identity(),
             error.failure_class().as_str(),
             error.diagnostic().evidence_identity(),
-        )
+        )?)
     }
 
-    pub fn from_declaration_denial(error: &QuerySubscriptionDeclarationDenial) -> Self {
-        Self::new(
+    pub fn from_declaration_denial(
+        error: &QuerySubscriptionDeclarationDenial,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             *error.diagnostic().stage(),
             error.message(),
             error.diagnostic().source_identity().clone(),
             error.counters().evidence_identity(),
             error.denial_kind().as_str(),
             error.diagnostic().evidence_identity(),
-        )
+        )?)
     }
 
-    pub fn from_bridge_lowering_error(error: &QuerySubscriptionBridgeLoweringError) -> Self {
-        Self::new(
+    pub fn from_bridge_lowering_error(
+        error: &QuerySubscriptionBridgeLoweringError,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             *error.diagnostic().stage(),
             error.message(),
             error.diagnostic().source_identity().clone(),
             error.counters().evidence_identity(),
             error.denial_kind().as_str(),
             error.diagnostic().evidence_identity(),
-        )
+        )?)
     }
 
-    pub fn from_admission_error(error: &QuerySubscriptionAdmissionError) -> Self {
-        Self::new(
+    pub fn from_admission_error(
+        error: &QuerySubscriptionAdmissionError,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             *error.pipeline_diagnostic().stage(),
             error.message(),
             error.pipeline_diagnostic().source_identity().clone(),
             error.counters().evidence_identity(),
             error.denial_kind().as_str(),
             error.pipeline_diagnostic().evidence_identity(),
-        )
+        )?)
     }
 
-    pub fn from_support_report_error(error: &QuerySubscriptionSupportReportError) -> Self {
-        Self::new(
+    pub fn from_support_report_error(
+        error: &QuerySubscriptionSupportReportError,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionDiagnosticStage::SupportReporting,
             error.message(),
             error.failure_identity().clone(),
             error.failure_identity().clone(),
             error.denial_kind().as_str(),
             error.failure_identity(),
-        )
+        )?)
     }
 
     pub fn from_lifecycle_certification_error(
         error: &SubscriptionLifecycleCertificationError,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let failure_identity = error.failure_identity().clone();
-        Self::new(
+        Ok(Self::new(
             QuerySubscriptionDiagnosticStage::Certification,
             error.message(),
             failure_identity.clone(),
             failure_identity.clone(),
             "lifecycle_certification",
             &failure_identity,
-        )
+        )?)
     }
 
     pub fn stage(&self) -> &QuerySubscriptionDiagnosticStage {

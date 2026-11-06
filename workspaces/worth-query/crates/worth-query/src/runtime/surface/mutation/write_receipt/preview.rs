@@ -135,7 +135,7 @@ pub(super) fn preview_receipt_delta(
                 WorthQueryEntityIdentity::preview(preview_identity.clone()),
                 crate::memory_workspace::WorthQueryMutationKind::Created,
                 command.declared_aspect_touches(),
-            )
+            )?
         }
         WorthQueryWriteCommand::UpdateAspect {
             entity_identity,
@@ -147,7 +147,7 @@ pub(super) fn preview_receipt_delta(
             vec![crate::runtime::WorthQueryAspectTouch::from_parsed_target(
                 aspect.parsed_target().clone(),
             )],
-        ),
+        )?,
         WorthQueryWriteCommand::UpdateAspects {
             entity_identity, ..
         } => crate::memory_workspace::WorthQueryMutationDelta::from_touched_aspects(
@@ -155,7 +155,7 @@ pub(super) fn preview_receipt_delta(
             entity_identity.clone(),
             crate::memory_workspace::WorthQueryMutationKind::Updated,
             command.declared_aspect_touches(),
-        ),
+        )?,
         WorthQueryWriteCommand::UpdateExistingAspects { binding, .. } => {
             crate::memory_workspace::WorthQueryMutationDelta::from_touched_aspects(
                 binding
@@ -165,7 +165,7 @@ pub(super) fn preview_receipt_delta(
                 binding.resolved_entity_artifact_identity(),
                 crate::memory_workspace::WorthQueryMutationKind::Updated,
                 command.declared_aspect_touches(),
-            )
+            )?
         }
         WorthQueryWriteCommand::VerifyThenUpdateExistingAspects { binding, .. } => {
             crate::memory_workspace::WorthQueryMutationDelta::from_touched_aspects(
@@ -176,7 +176,7 @@ pub(super) fn preview_receipt_delta(
                 binding.resolved_entity_artifact_identity(),
                 crate::memory_workspace::WorthQueryMutationKind::Updated,
                 command.declared_aspect_touches(),
-            )
+            )?
         }
         WorthQueryWriteCommand::VerifyThenDeleteExistingAspects {
             binding,
@@ -190,7 +190,7 @@ pub(super) fn preview_receipt_delta(
             binding.resolved_entity_artifact_identity(),
             crate::memory_workspace::WorthQueryMutationKind::Deleted,
             touched_aspects.to_vec(),
-        ),
+        )?,
         WorthQueryWriteCommand::AssertExistingAspects { binding, .. }
         | WorthQueryWriteCommand::VerifyExistingAspects { binding, .. } => {
             crate::memory_workspace::WorthQueryMutationDelta::from_touched_aspects(
@@ -201,7 +201,7 @@ pub(super) fn preview_receipt_delta(
                 binding.resolved_entity_artifact_identity(),
                 crate::memory_workspace::WorthQueryMutationKind::Updated,
                 command.declared_aspect_touches(),
-            )
+            )?
         }
         WorthQueryWriteCommand::UpdateSymbolicAspects { reference, .. } => {
             crate::memory_workspace::WorthQueryMutationDelta::from_touched_aspects(
@@ -212,7 +212,7 @@ pub(super) fn preview_receipt_delta(
                 preview_symbolic_entity_identity(reference)?,
                 crate::memory_workspace::WorthQueryMutationKind::Updated,
                 command.declared_aspect_touches(),
-            )
+            )?
         }
         WorthQueryWriteCommand::DeleteAspects {
             entity_identity,
@@ -227,7 +227,7 @@ pub(super) fn preview_receipt_delta(
             entity_identity.clone(),
             crate::memory_workspace::WorthQueryMutationKind::Deleted,
             touched_aspects.to_vec(),
-        ),
+        )?,
         WorthQueryWriteCommand::DeleteExistingAspects {
             binding,
             touched_aspects,
@@ -240,7 +240,7 @@ pub(super) fn preview_receipt_delta(
             binding.resolved_entity_artifact_identity(),
             crate::memory_workspace::WorthQueryMutationKind::Deleted,
             touched_aspects.to_vec(),
-        ),
+        )?,
         WorthQueryWriteCommand::DeleteSymbolicAspects {
             reference,
             touched_aspects,
@@ -253,14 +253,14 @@ pub(super) fn preview_receipt_delta(
             preview_symbolic_entity_identity(reference)?,
             crate::memory_workspace::WorthQueryMutationKind::Deleted,
             touched_aspects.to_vec(),
-        ),
+        )?,
         WorthQueryWriteCommand::Delete { entity_identity } => {
             crate::memory_workspace::WorthQueryMutationDelta::from_touched_aspects(
                 "preview",
                 entity_identity.clone(),
                 crate::memory_workspace::WorthQueryMutationKind::Deleted,
                 Vec::new(),
-            )
+            )?
         }
     })
 }

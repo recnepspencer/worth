@@ -1,4 +1,5 @@
 use super::MilestoneNineOneCertificationBundle;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::digest_parts;
 use crate::live::LiveQueryFamily;
 use crate::subscription::{
@@ -16,13 +17,13 @@ pub(super) fn certified_lane(
     live_family: LiveQueryFamily,
     view_family: Option<LiveViewShapeFamily>,
     construction_source: QuerySubscriptionConstructionSource,
-) -> MilestoneNineOneCertificationBundle {
-    certified_lane_with_scale(
+) -> Result<MilestoneNineOneCertificationBundle, IdentityDerivationDenial> {
+    Ok(certified_lane_with_scale(
         live_family,
         view_family,
         construction_source,
         [10, 100, 1000],
-    )
+    )?)
 }
 
 pub(super) fn certified_lane_with_basis(
@@ -30,16 +31,16 @@ pub(super) fn certified_lane_with_basis(
     view_family: Option<LiveViewShapeFamily>,
     construction_source: QuerySubscriptionConstructionSource,
     basis_posture: crate::subscription::QuerySubscriptionBasisPosture,
-) -> MilestoneNineOneCertificationBundle {
-    certified_lane_from_live(
+) -> Result<MilestoneNineOneCertificationBundle, IdentityDerivationDenial> {
+    Ok(certified_lane_from_live(
         LiveQueryAdmissionArtifact::for_test_with_basis(
             live_family,
             view_family,
             construction_source,
             basis_posture,
-        ),
+        )?,
         [10, 100, 1000],
-    )
+    )?)
 }
 
 pub(super) fn certified_lane_with_scale(
@@ -47,11 +48,11 @@ pub(super) fn certified_lane_with_scale(
     view_family: Option<LiveViewShapeFamily>,
     construction_source: QuerySubscriptionConstructionSource,
     row_counts: [u64; 3],
-) -> MilestoneNineOneCertificationBundle {
-    certified_lane_from_live(
-        LiveQueryAdmissionArtifact::for_test(live_family, view_family, construction_source),
+) -> Result<MilestoneNineOneCertificationBundle, IdentityDerivationDenial> {
+    Ok(certified_lane_from_live(
+        LiveQueryAdmissionArtifact::for_test(live_family, view_family, construction_source)?,
         row_counts,
-    )
+    )?)
 }
 
 pub(super) fn certified_lane_with_context(
@@ -61,27 +62,27 @@ pub(super) fn certified_lane_with_context(
     policy_digest: &str,
     tenant_digest: &str,
     relationship_proof_digest: &str,
-) -> MilestoneNineOneCertificationBundle {
-    certified_lane_from_live(
+) -> Result<MilestoneNineOneCertificationBundle, IdentityDerivationDenial> {
+    Ok(certified_lane_from_live(
         LiveQueryAdmissionArtifact::for_test_with_context(
             live_family,
             view_family,
             construction_source,
             crate::subscription::QuerySubscriptionBasisPosture::CurrentHead,
-            crate::subscription::QuerySubscriptionFutureSelection::ordinary(),
+            crate::subscription::QuerySubscriptionFutureSelection::ordinary()?,
             Some(policy_digest.to_string()),
             Some(tenant_digest.to_string()),
             Some(relationship_proof_digest.to_string()),
             QuerySubscriptionRelationshipProofPosture::Admitted,
-        ),
+        )?,
         [10, 100, 1000],
-    )
+    )?)
 }
 
 fn certified_lane_from_live(
     live: LiveQueryAdmissionArtifact,
     row_counts: [u64; 3],
-) -> MilestoneNineOneCertificationBundle {
+) -> Result<MilestoneNineOneCertificationBundle, IdentityDerivationDenial> {
     let query_digest = live.query_projection().label().to_string();
     let live_family_digest =
         digest_parts(&[format!("live_family:{}", live.live_family().as_str())]);
@@ -147,29 +148,29 @@ fn certified_lane_from_live(
         format!("support:{support_profile_digest}"),
         format!("diagnostics:{diagnostics_digest}"),
     ]);
-    let activation = prepare_subscription_activation(admission.clone());
+    let activation = prepare_subscription_activation(admission.clone())?;
     let scale_report = certify_query_subscription_scale_slope(
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Small,
             row_counts[0],
             &activation,
-        ),
+        )?,
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Medium,
             row_counts[1],
             &activation,
-        ),
+        )?,
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Large,
             row_counts[2],
             &activation,
-        ),
+        )?,
     )
     .unwrap();
     let certification =
         certify_query_subscription_activation(admission, activation, scale_report).unwrap();
 
-    MilestoneNineOneCertificationBundle {
+    Ok(MilestoneNineOneCertificationBundle {
         query_digest,
         live_family_digest,
         subscription_family_digest,
@@ -215,24 +216,27 @@ fn certified_lane_from_live(
         fixture_digest,
         compile_fail_boundary_digest: super::bundle_projection::compile_fail_boundary_digest(),
         support_matrix_digest,
-    }
+    })
 }
 
 pub(super) fn admitted_activation(
     live_family: LiveQueryFamily,
     view_family: Option<LiveViewShapeFamily>,
     construction_source: QuerySubscriptionConstructionSource,
-) -> (
-    crate::subscription::QuerySubscriptionAdmissionArtifact,
-    crate::subscription::SubscriptionActivationInput,
-) {
-    let live = LiveQueryAdmissionArtifact::for_test(live_family, view_family, construction_source);
+) -> Result<
+    (
+        crate::subscription::QuerySubscriptionAdmissionArtifact,
+        crate::subscription::SubscriptionActivationInput,
+    ),
+    IdentityDerivationDenial,
+> {
+    let live = LiveQueryAdmissionArtifact::for_test(live_family, view_family, construction_source)?;
     let selection = select_query_subscription_family(live, work_budget()).unwrap();
     let declaration = declare_query_subscription(selection, slice_budget()).unwrap();
     let lowering = lower_query_subscription_to_bridge(declaration, lowering_budget()).unwrap();
     let admission = admit_query_subscription(lowering, admission_budget()).unwrap();
-    let activation = prepare_subscription_activation(admission.clone());
-    (admission, activation)
+    let activation = prepare_subscription_activation(admission.clone())?;
+    Ok((admission, activation))
 }
 
 pub(super) fn work_budget() -> QuerySubscriptionWorkBudget {

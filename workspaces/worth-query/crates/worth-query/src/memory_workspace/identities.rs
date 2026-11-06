@@ -76,8 +76,8 @@ impl WorthQueryCommitIdentity {
             std::sync::Arc<str>,
             crate::identity_authority::QueryCommitIdentityKind,
         >,
-    ) -> Self {
-        super::truth_identity_admission::admit_external_commit_token(token)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(super::truth_identity_admission::admit_external_commit_token(token)?)
     }
 
     pub fn absent() -> Self {
@@ -175,8 +175,8 @@ impl WorthQuerySnapshotIdentity {
             std::sync::Arc<str>,
             crate::identity_authority::QuerySnapshotIdentityKind,
         >,
-    ) -> Self {
-        super::truth_identity_admission::admit_external_snapshot_token(token)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(super::truth_identity_admission::admit_external_snapshot_token(token)?)
     }
 
     pub(crate) fn bridge_identity(&self) -> Option<&TruthSnapshotIdentity> {
@@ -231,22 +231,25 @@ impl WorthQuerySnapshotIdentity {
         })
     }
 
-    pub fn bridge_admission_evidence(&self) -> BridgeIdentityEvidence {
-        match &self.inner {
+    pub fn bridge_admission_evidence(
+        &self,
+    ) -> Result<BridgeIdentityEvidence, IdentityDerivationDenial> {
+        Ok(match &self.inner {
             WorthQuerySnapshotIdentityInner::RelationalBridge {
                 bridge_identity, ..
             } => bridge_identity.bridge_admission_evidence(),
             WorthQuerySnapshotIdentityInner::EmptyRelationalState
             | WorthQuerySnapshotIdentityInner::Preview { .. } => {
-                self.evidence_identity().bridge_evidence_identity()
+                self.evidence_identity()?.bridge_evidence_identity()
             }
-        }
+        })
     }
 
-    pub fn terminal_projection_for_reporting(&self) -> String {
-        self.evidence_identity()
+    pub fn terminal_projection_for_reporting(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(self
+            .evidence_identity()?
             .terminal_projection_for_reporting()
-            .to_string()
+            .to_string())
     }
 
     pub fn is_same_current_identity_as(&self, candidate: &Self) -> bool {
@@ -257,23 +260,28 @@ impl WorthQuerySnapshotIdentity {
         self._authority.is_some()
     }
 
-    pub(crate) fn admit_runtime_backend_authority(mut self) -> Self {
+    pub(crate) fn admit_runtime_backend_authority(
+        mut self,
+    ) -> Result<Self, IdentityDerivationDenial> {
         if self._authority.is_none() {
-            let authority_basis = self.evidence_identity();
+            let authority_basis = self.evidence_identity()?;
             self._authority = Some(admit_foundational_authority_identity(
                 Arc::<str>::from(authority_basis.terminal_projection_for_reporting()),
                 query_runtime_backend_authority(),
             ));
         }
-        self
+        Ok(self)
     }
 
-    pub(crate) fn matches_admitted_historical_projection(&self, declared_basis: &str) -> bool {
-        declared_basis == self.evidence_identity().as_str()
+    pub(crate) fn matches_admitted_historical_projection(
+        &self,
+        declared_basis: &str,
+    ) -> Result<bool, IdentityDerivationDenial> {
+        Ok(declared_basis == self.evidence_identity()?.as_str()
             || declared_basis
                 == self
-                    .bridge_admission_evidence()
-                    .terminal_projection_for_reporting()
+                    .bridge_admission_evidence()?
+                    .terminal_projection_for_reporting())
     }
 }
 

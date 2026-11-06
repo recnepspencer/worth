@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::identities::{
     coverage_evidence_variation_set_identity, lifecycle_class_variation_set_identity,
@@ -126,14 +127,14 @@ variation_set_impl!(
 impl QuerySubscriptionLifecycleClassVariationSet {
     pub(super) fn from_set(
         values: std::collections::BTreeSet<QuerySubscriptionLifecycleCoverageClass>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let classes = values.into_iter().collect::<Vec<_>>();
         let variation_identity =
-            lifecycle_class_variation_set_identity(classes.iter().map(|value| value.as_str()));
-        Self {
+            lifecycle_class_variation_set_identity(classes.iter().map(|value| value.as_str()))?;
+        Ok(Self {
             classes,
             variation_identity,
-        }
+        })
     }
 
     pub fn classes(&self) -> &[QuerySubscriptionLifecycleCoverageClass] {

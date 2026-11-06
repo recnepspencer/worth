@@ -96,16 +96,16 @@ impl WorthQueryWorkflowDeclaration {
 pub fn declare(
     label: WorthQuerySessionLabel,
     mutation: WorthQueryMutationDeclaration,
-) -> WorthQueryWorkflowDeclaration {
+) -> Result<WorthQueryWorkflowDeclaration, IdentityDerivationDenial> {
     let family = WorthQueryWorkflowFamily::PreviewPromotion;
     let inspection_policy = mutation.inspection_policy();
-    WorthQueryWorkflowDeclaration {
-        identity: workflow_identity(family, &label, &mutation),
+    Ok(WorthQueryWorkflowDeclaration {
+        identity: workflow_identity(family, &label, &mutation)?,
         family,
         label,
         mutation,
         inspection_policy,
-    }
+    })
 }
 
 fn workflow_identity(

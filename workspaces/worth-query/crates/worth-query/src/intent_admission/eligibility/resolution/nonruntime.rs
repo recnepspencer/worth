@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::{evaluate_basis_observation_eligibility, DeniedBasisCapabilityKind};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::{
     evaluate_projection_consumption_eligibility, ProjectionConsumptionEligibility,
 };
@@ -55,11 +56,11 @@ pub(super) fn resolve_basis_observation_eligibility(
 
 pub(super) fn resolve_projection_consumption_eligibility(
     request: &WorthQueryRawIntentAdmissionRequest,
-) -> EligibilityFacts {
+) -> Result<EligibilityFacts, IdentityDerivationDenial> {
     let declaration = request
         .projection_consumption_declaration()
         .expect("projection request must preserve declaration");
-    match evaluate_projection_consumption_eligibility(declaration) {
+    Ok(match evaluate_projection_consumption_eligibility(declaration)? {
         ProjectionConsumptionEligibility::Admitted(_) => (
             WorthQueryIntentAdmissionSupportEligibility::Admitted,
             WorthQueryIntentAdmissionCapabilityEligibility::Admitted,
@@ -89,7 +90,7 @@ pub(super) fn resolve_projection_consumption_eligibility(
         ProjectionConsumptionEligibility::Deferred(_) => deferred_projection_facts(),
         ProjectionConsumptionEligibility::Denied(_)
         | ProjectionConsumptionEligibility::SourceMismatch(_) => violated_projection_facts(),
-    }
+    })
 }
 
 pub(super) fn resolve_deferred_neighbor_eligibility(detail: &'static str) -> EligibilityFacts {

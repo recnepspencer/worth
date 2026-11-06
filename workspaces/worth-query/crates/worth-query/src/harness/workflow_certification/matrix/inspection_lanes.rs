@@ -1,4 +1,5 @@
 use super::super::lane::WorkflowCertificationLane;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::fixtures::{
     execution_preflights,
     relational_merge_inspection::{
@@ -143,7 +144,8 @@ pub(super) fn denied_conflict_inspection_lane(
     lane
 }
 
-pub(super) fn post_merge_inspection_lane() -> WorkflowCertificationLane {
+pub(super) fn post_merge_inspection_lane(
+) -> Result<WorkflowCertificationLane, IdentityDerivationDenial> {
     let preflight = execution_preflights::direct_runtime_preflight();
     let binding = bind_workflow_context(WorkflowBindingSource::RuntimePreflight(&preflight))
         .expect("runtime binding should admit");
@@ -166,7 +168,7 @@ pub(super) fn post_merge_inspection_lane() -> WorkflowCertificationLane {
         ),
     )
     .expect("merge lowering should succeed");
-    let outcome = shape_merge_authority_outcome(&lowered);
+    let outcome = shape_merge_authority_outcome(&lowered)?;
     let inspection_declaration = admit_query_workflow_declaration(
         &binding,
         WorkflowDeclarationRequest::new(
@@ -197,5 +199,5 @@ pub(super) fn post_merge_inspection_lane() -> WorkflowCertificationLane {
     lane.inspection_row_width = Some(inspection.counters().workflow_inspection_row_width());
     lane.inspection_executor_rediscovery_count =
         Some(inspection.counters().workflow_executor_rediscovery_count());
-    lane
+    Ok(lane)
 }

@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::active_budget::ActiveSubscriptionAllocationPosture;
@@ -184,7 +185,10 @@ pub struct SubscriptionLifecycleCloseout {
 }
 
 impl SubscriptionLifecycleCloseout {
-    pub(super) fn new(request: SubscriptionLifecycleCloseRequest, lane_terminal: bool) -> Self {
+    pub(super) fn new(
+        request: SubscriptionLifecycleCloseRequest,
+        lane_terminal: bool,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let closeout_kind = request.closeout_kind();
         let mut counters = ActiveSubscriptionCounters::default();
         counters.consumer_attachment_close_count = 1;
@@ -194,7 +198,7 @@ impl SubscriptionLifecycleCloseout {
         }
         let source_identity = request.source_identity();
         let support_profile =
-            QuerySubscriptionSupportProfile::active_runtime_admitted(&source_identity);
+            QuerySubscriptionSupportProfile::active_runtime_admitted(&source_identity)?;
         let active_lane_digest = request.lane_digest().clone();
         let attachment_digest = request.attachment_digest().clone();
         let future_selection = request.future_selection().clone();
@@ -207,7 +211,7 @@ impl SubscriptionLifecycleCloseout {
             ActiveDeliveryDensityPosture::SparseDelta,
             ActiveSubscriptionAllocationPosture::LifecycleArena,
             &source_identity,
-        );
+        )?;
         counters.subscription_performance_receipt_count = 1;
         counters.subscription_budget_consumption_width = performance_receipt.consumed_width();
         counters.subscription_budget_remaining_width = performance_receipt.remaining_width();
@@ -223,8 +227,8 @@ impl SubscriptionLifecycleCloseout {
             performance_receipt.performance_receipt_identity(),
             &counters.evidence_identity(),
             &source_identity,
-        );
-        Self {
+        )?;
+        Ok(Self {
             active_lane_digest,
             attachment_digest,
             future_selection,
@@ -237,7 +241,7 @@ impl SubscriptionLifecycleCloseout {
             performance_receipt,
             counters,
             closeout_identity,
-        }
+        })
     }
 
     pub(crate) fn active_lane_digest(&self) -> &ActiveSubscriptionLaneDigest {

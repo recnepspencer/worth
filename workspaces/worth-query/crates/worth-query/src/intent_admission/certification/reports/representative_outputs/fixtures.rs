@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::runtime::WorthQueryIntentAdmissionDecision;
 use crate::identity::hash_parts;
 use crate::intent_admission::{
@@ -39,15 +40,17 @@ pub(super) struct RepresentativeEligibilityDigests {
 }
 
 impl RepresentativeOutputFixtures {
-    pub(super) fn load(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Self {
-        Self {
-            admitted: certified_admitted_intent_fixture(execution),
-            advisory: certified_advisory_intent_fixture(),
-            violation: certified_violation_intent_fixture(),
+    pub(super) fn load(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
+            admitted: certified_admitted_intent_fixture(execution)?,
+            advisory: certified_advisory_intent_fixture()?,
+            violation: certified_violation_intent_fixture()?,
             failure: certified_failure_intent_fixture(execution),
             read: certified_read_intent_fixture(execution),
             routing: certified_routing_intent_fixture(execution),
-        }
+        })
     }
 
     pub(super) fn eligibility(&self) -> RepresentativeEligibilityDigests {
@@ -82,10 +85,11 @@ pub(super) fn basis_observation_fixture_digest_output() -> OutputRow {
     )
 }
 
-pub(super) fn projection_consumption_fixture_digest_output() -> OutputRow {
-    let admitted = certified_projection_consumption_admitted_fixture();
-    let warning = certified_projection_consumption_warning_fixture();
-    output(
+pub(super) fn projection_consumption_fixture_digest_output(
+) -> Result<OutputRow, IdentityDerivationDenial> {
+    let admitted = certified_projection_consumption_admitted_fixture()?;
+    let warning = certified_projection_consumption_warning_fixture()?;
+    Ok(output(
         "projection_consumption_fixture_digest",
         hash_parts(&[
             admitted.request.request_digest().to_string(),
@@ -102,7 +106,7 @@ pub(super) fn projection_consumption_fixture_digest_output() -> OutputRow {
                 .map(|warnings| warnings.warning_digest().to_string())
                 .unwrap_or_else(|| "no-warnings".to_string()),
         ]),
-    )
+    ))
 }
 
 pub(super) fn decision_digest(decision: &WorthQueryIntentAdmissionDecision) -> String {

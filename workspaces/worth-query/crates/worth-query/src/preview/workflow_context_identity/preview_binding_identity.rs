@@ -16,7 +16,7 @@ pub(in crate::preview) fn compose_preview_session_binding_tuple_digest(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("canonical_query"),
-                &workflow_canonical_query_digest_evidence(binding.canonical_query_digest()),
+                &workflow_canonical_query_digest_evidence(binding.canonical_query_digest())?,
             )
             .field_shape(
                 WorthQueryEvidenceTag::new("canonical_result_shape"),
@@ -24,7 +24,7 @@ pub(in crate::preview) fn compose_preview_session_binding_tuple_digest(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("validated_query"),
-                &workflow_validated_query_digest_evidence(binding.validated_query_digest()),
+                &workflow_validated_query_digest_evidence(binding.validated_query_digest())?,
             )
             .field_shape(
                 WorthQueryEvidenceTag::new("validated_result_shape"),
@@ -82,11 +82,11 @@ pub(in crate::preview) fn compose_preview_binding_tuple_workflow_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("canonical_query"),
-                &workflow_canonical_query_digest_evidence(binding_tuple.canonical_query_digest()),
+                &workflow_canonical_query_digest_evidence(binding_tuple.canonical_query_digest())?,
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("validated_query"),
-                &workflow_validated_query_digest_evidence(binding_tuple.validated_query_digest()),
+                &workflow_validated_query_digest_evidence(binding_tuple.validated_query_digest())?,
             )
             .seal()?,
     )
@@ -113,11 +113,11 @@ pub(in crate::preview) fn compose_preview_declaration_digest_workflow_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("canonical_query"),
-                &workflow_canonical_query_digest_evidence(binding_tuple.canonical_query_digest()),
+                &workflow_canonical_query_digest_evidence(binding_tuple.canonical_query_digest())?,
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("validated_query"),
-                &workflow_validated_query_digest_evidence(binding_tuple.validated_query_digest()),
+                &workflow_validated_query_digest_evidence(binding_tuple.validated_query_digest())?,
             )
             .seal()?,
     )

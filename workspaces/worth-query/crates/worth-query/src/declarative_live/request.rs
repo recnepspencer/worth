@@ -1,5 +1,6 @@
 use crate::authoring::{AspectFieldKey, OrderingDirection, TraversalSelector};
 use crate::authorized_projection::AuthorizedDeclarativeProjection;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_evolution::{InspectorIdentityArtifact, InspectorIdentityClassification};
 use crate::view_shape::ViewShapeDescriptor;
 use worth_foundational::facade::AspectKey;
@@ -204,10 +205,13 @@ impl DeclarativeLiveQueryRequest {
 
     pub fn target_collection_identity(
         &self,
-    ) -> crate::runtime::WorthQueryMutationTargetCollectionIdentity {
-        crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
-            "declarative-live-request-target",
-            self.target.clone(),
+    ) -> Result<crate::runtime::WorthQueryMutationTargetCollectionIdentity, IdentityDerivationDenial>
+    {
+        Ok(
+            crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
+                "declarative-live-request-target",
+                self.target.clone(),
+            )?,
         )
     }
 

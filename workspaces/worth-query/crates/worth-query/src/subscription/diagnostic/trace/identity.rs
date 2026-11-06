@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::super::evidence_identities::diagnostic_trace_identity;
 use super::super::bundle::QuerySubscriptionDiagnosticCounters;
@@ -11,27 +12,27 @@ pub(super) fn stage_evidence_from_state(
     reason: String,
     source_identity: &WorthQueryEvidenceIdentity,
     counter_identity: &WorthQueryEvidenceIdentity,
-) -> QuerySubscriptionDiagnosticEvidence {
-    if admitted {
+) -> Result<QuerySubscriptionDiagnosticEvidence, IdentityDerivationDenial> {
+    Ok(if admitted {
         QuerySubscriptionDiagnosticEvidence::admitted(
             stage,
             reason,
             source_identity,
             counter_identity,
-        )
+        )?
     } else {
         QuerySubscriptionDiagnosticEvidence::denied(
             stage,
             reason,
             source_identity,
             counter_identity,
-        )
-    }
+        )?
+    })
 }
 
 pub(super) fn trace_from_stage_evidence(
     stage_evidence: Vec<QuerySubscriptionDiagnosticEvidence>,
-) -> QuerySubscriptionDiagnosticTrace {
+) -> Result<QuerySubscriptionDiagnosticTrace, IdentityDerivationDenial> {
     let terminal_stage = *stage_evidence
         .last()
         .map(|evidence| evidence.stage())
@@ -50,12 +51,12 @@ pub(super) fn trace_from_stage_evidence(
         terminal_stage.as_str(),
         &counters.evidence_identity(),
         stage_trace_refs,
-    );
-    QuerySubscriptionDiagnosticTrace::from_parts(
+    )?;
+    Ok(QuerySubscriptionDiagnosticTrace::from_parts(
         terminal_stage,
         stage_traces,
         counter_snapshot,
         trace_identity,
         counters,
-    )
+    ))
 }

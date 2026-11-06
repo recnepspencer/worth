@@ -31,7 +31,7 @@ impl WorthQueryRuntime {
                         bridge_request.request_identity_for_reporting(),
                     ),
                 ],
-            );
+            )?;
         self.declare_bridge_async_live_view_with_selection(
             request_execution,
             name,

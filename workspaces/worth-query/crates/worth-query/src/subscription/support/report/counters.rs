@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::super::super::evidence_identities::support_counters_identity;
@@ -17,8 +18,10 @@ pub struct QuerySubscriptionSupportCounters {
 }
 
 impl QuerySubscriptionSupportCounters {
-    pub fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
-        support_counters_identity(
+    pub fn evidence_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(support_counters_identity(
             self.support_report_request_count,
             self.supported_family_count,
             self.denied_family_count,
@@ -27,14 +30,17 @@ impl QuerySubscriptionSupportCounters {
             self.support_matrix_emission_count,
             self.support_family_index_lookup_count,
             self.support_matrix_scan_debt_count,
-        )
+        )?)
     }
 
     pub fn counter_projection(
         &self,
-    ) -> QueryProjectionIdentity<String, QuerySubscriptionIdentityKind> {
-        let identity = self.evidence_identity();
-        subscription_evidence_projection(&identity)
+    ) -> Result<
+        QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
+        IdentityDerivationDenial,
+    > {
+        let identity = self.evidence_identity()?;
+        Ok(subscription_evidence_projection(&identity))
     }
 
     pub fn support_report_request_count(&self) -> u64 {

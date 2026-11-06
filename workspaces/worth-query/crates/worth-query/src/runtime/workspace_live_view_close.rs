@@ -81,7 +81,7 @@ impl WorthQueryRuntime {
             .close_live_view(view.name())
             .map_err(|error| close_error(view.name(), error.to_string()))?;
         let closeout =
-            commit_prepared_subscription_lifecycle_close(&mut self.active_subscriptions, prepared);
+            commit_prepared_subscription_lifecycle_close(&mut self.active_subscriptions, prepared)?;
 
         self.live_subscriptions.remove(&target);
         self.materialized_read_views.remove(&target);

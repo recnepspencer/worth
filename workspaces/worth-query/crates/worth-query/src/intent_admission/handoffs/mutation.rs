@@ -43,8 +43,10 @@ pub struct WorthQueryAuthoritativeMutationBatchExecutionHandoff {
 }
 
 impl WorthQueryAuthoritativeMutationExecutionHandoff {
-    pub(crate) fn from_plan(plan: WorthQueryAuthoritativeMutationExecutionPlan) -> Self {
-        Self {
+    pub(crate) fn from_plan(
+        plan: WorthQueryAuthoritativeMutationExecutionPlan,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             command: plan.command().clone(),
             verified_existing_truth_assertion: plan.verified_existing_truth_assertion().cloned(),
             admitted_mutation: plan.admitted_mutation().clone(),
@@ -58,9 +60,9 @@ impl WorthQueryAuthoritativeMutationExecutionHandoff {
                 plan.execution_seam()
                     .expect("authoritative mutation handoff requires execution seam"),
                 plan.decision_digest(),
-                command_handoff_fingerprint(plan.command()),
-            ),
-        }
+                command_handoff_fingerprint(plan.command())?,
+            )?,
+        })
     }
 
     pub(crate) fn admitted_mutation(&self) -> &WorthQueryBackendAdmissibleMutation {
@@ -111,9 +113,11 @@ impl WorthQueryAuthoritativeMutationExecutionHandoff {
 }
 
 impl WorthQueryAuthoritativeMutationBatchExecutionHandoff {
-    pub(crate) fn from_plan(plan: WorthQueryAuthoritativeMutationBatchExecutionPlan) -> Self {
+    pub(crate) fn from_plan(
+        plan: WorthQueryAuthoritativeMutationBatchExecutionPlan,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let commands = plan.batch_seed().commands().to_vec();
-        Self {
+        Ok(Self {
             commands: commands.clone(),
             graph_composition_breadth: plan.batch_seed().graph_composition_breadth().clone(),
             graph_composition_program: plan.batch_seed().graph_composition_program().clone(),
@@ -127,9 +131,9 @@ impl WorthQueryAuthoritativeMutationBatchExecutionHandoff {
                 plan.execution_seam()
                     .expect("authoritative mutation batch handoff requires execution seam"),
                 plan.decision_digest(),
-                batch_handoff_fingerprint(&commands),
-            ),
-        }
+                batch_handoff_fingerprint(&commands)?,
+            )?,
+        })
     }
 
     pub fn family(&self) -> WorthQueryIntentAdmissionFamily {

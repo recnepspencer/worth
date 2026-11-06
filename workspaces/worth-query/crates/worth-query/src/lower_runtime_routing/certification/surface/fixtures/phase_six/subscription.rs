@@ -70,7 +70,7 @@ pub(crate) fn representative_subscription_activation_row(
             NonZeroUsize::new(2).expect("projection width"),
             NonZeroUsize::new(1).expect("ordering width"),
         ),
-    );
+    )?;
     let selection = select_query_subscription_family(live, work_budget())
         .expect("subscription activation fixture should select family");
     let declaration = declare_query_subscription(selection, slice_budget())
@@ -79,7 +79,7 @@ pub(crate) fn representative_subscription_activation_row(
         .expect("subscription activation fixture should lower to bridge");
     let admission = admit_query_subscription(lowering, admission_budget())
         .expect("subscription activation fixture should admit");
-    let activation = prepare_subscription_activation(admission);
+    let activation = prepare_subscription_activation(admission)?;
     let activation_receipt = SubscriptionActivationReceipt::from_activation(
         "tasks.subscription",
         &activation,

@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::basis_lifecycle;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::{
     worth_query_basis_observation_intent, worth_query_projection_consumption_intent,
     WorthQueryAdmittedIntentPlan, WorthQueryBasisObservationPlan,
@@ -65,8 +66,8 @@ pub(in crate::intent_admission::certification) fn certified_basis_observation_in
 }
 
 pub(in crate::intent_admission::certification) fn certified_projection_consumption_admitted_fixture(
-) -> CertifiedProjectionConsumptionAdmittedFixture {
-    let declaration = intent_admission_admitted_projection_declaration();
+) -> Result<CertifiedProjectionConsumptionAdmittedFixture, IdentityDerivationDenial> {
+    let declaration = intent_admission_admitted_projection_declaration()?;
     let review = worth_query_projection_consumption_intent(declaration)
         .expect("projection intent should build")
         .review();
@@ -82,17 +83,17 @@ pub(in crate::intent_admission::certification) fn certified_projection_consumpti
         .admit()
         .expect("projection should admit")
         .bind_contract();
-    CertifiedProjectionConsumptionAdmittedFixture {
+    Ok(CertifiedProjectionConsumptionAdmittedFixture {
         request,
         eligibility,
         plan,
         contract_digest: contract.contract_digest().to_string(),
-    }
+    })
 }
 
 pub(in crate::intent_admission::certification) fn certified_projection_consumption_warning_fixture(
-) -> CertifiedProjectionConsumptionWarningFixture {
-    let declaration = intent_admission_warning_projection_declaration();
+) -> Result<CertifiedProjectionConsumptionWarningFixture, IdentityDerivationDenial> {
+    let declaration = intent_admission_warning_projection_declaration()?;
     let review = worth_query_projection_consumption_intent(declaration)
         .expect("warning projection intent should build")
         .review();
@@ -108,10 +109,10 @@ pub(in crate::intent_admission::certification) fn certified_projection_consumpti
         .admit()
         .expect("warning-bearing projection should admit")
         .bind_contract();
-    CertifiedProjectionConsumptionWarningFixture {
+    Ok(CertifiedProjectionConsumptionWarningFixture {
         request,
         eligibility,
         plan,
         contract_digest: contract.contract_digest().to_string(),
-    }
+    })
 }

@@ -4,6 +4,7 @@ use super::super::lane::{
 use super::super::row_catalog::WorkflowRejectionRowSpec;
 use super::runtime_lanes::{preview_foundation_lane, runtime_conflict_lane};
 use crate::aspect_field_authoring::single_native_string_aspect_field_patch;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::RejectionCertificationRow;
 use crate::harness::fixtures::{execution_preflights, preview_bridge::active_preview_artifacts};
 use crate::preview::{
@@ -23,10 +24,13 @@ use worth_relational::facade::identity::{EntityId, PartitionId};
 
 pub(super) fn rejection_row(
     spec: &WorkflowRejectionRowSpec,
-) -> RejectionCertificationRow<
-    WorkflowPerturbationClass,
-    WorkflowCertificationLane,
-    WorkflowCertificationRejection,
+) -> Result<
+    RejectionCertificationRow<
+        WorkflowPerturbationClass,
+        WorkflowCertificationLane,
+        WorkflowCertificationRejection,
+    >,
+    IdentityDerivationDenial,
 > {
     let control_lane = runtime_conflict_lane();
     let parity_lane = preview_foundation_lane();
@@ -291,7 +295,7 @@ pub(super) fn rejection_row(
                 },
             )
             .expect("mutation lowering should succeed");
-            let outcome = crate::workflow::shape_mutation_authority_outcome(&lowered);
+            let outcome = crate::workflow::shape_mutation_authority_outcome(&lowered)?;
             let inspection_declaration = admit_query_workflow_declaration(
                 &binding,
                 WorkflowDeclarationRequest::new(
@@ -310,11 +314,11 @@ pub(super) fn rejection_row(
         other => panic!("unknown workflow rejection row {other}"),
     };
 
-    RejectionCertificationRow {
+    Ok(RejectionCertificationRow {
         row_name: spec.row_name,
         perturbation_class: spec.perturbation_class,
         control_lane,
         hostile_lane,
         parity_lane,
-    }
+    })
 }

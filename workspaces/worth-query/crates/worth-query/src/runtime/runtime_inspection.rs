@@ -221,7 +221,7 @@ impl WorthQueryRuntime {
             WorthQueryInspectionTarget::DerivedView { name } => {
                 let review = self.review_runtime_derived_inspection(name.to_string())?;
                 let handoff = self.resolve_reviewed_admitted_derived_inspection_handoff(review)?;
-                let binding = self.prepare_derived_inspection_execution_binding(handoff);
+                let binding = self.prepare_derived_inspection_execution_binding(handoff)?;
                 let result =
                     self.execute_derived_inspection_execution_binding(execution, binding)?;
                 Ok(WorthQueryInspection::DerivedView(result.evidence().clone()))
@@ -231,7 +231,7 @@ impl WorthQueryRuntime {
                     .expect("derived inspection targets should route through the derived inspection lane");
                 let review = self.review_unified_inspection(seed)?;
                 let handoff = self.resolve_reviewed_admitted_unified_inspection_handoff(review)?;
-                let binding = self.prepare_unified_inspection_execution_binding(handoff);
+                let binding = self.prepare_unified_inspection_execution_binding(handoff)?;
                 let result =
                     self.execute_unified_inspection_execution_binding(execution, binding)?;
                 Ok(result.inspection().clone())
