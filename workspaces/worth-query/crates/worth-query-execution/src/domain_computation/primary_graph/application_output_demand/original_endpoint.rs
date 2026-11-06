@@ -38,7 +38,7 @@ fn checkpoint(context: &mut MapKernelContext<'_, '_>, len: usize) -> Result<(), 
 /// Both iterators borrow the same immutable original root/dependent collection.
 /// World facts link intermediate references; only the final reference needs a
 /// retained read. That read may come from a later-settled original sibling.
-pub(super) fn derive<'a>(
+pub(in crate::domain_computation::primary_graph) fn derive<'a>(
     execution: &ExecutionRequest<'_, '_>,
     source: &Arc<Read>,
     settlements: &mut dyn Iterator<Item = &'a WorthQueryOutputDemandSettlement>,

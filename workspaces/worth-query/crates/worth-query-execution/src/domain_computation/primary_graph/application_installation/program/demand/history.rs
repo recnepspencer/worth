@@ -3,6 +3,8 @@ use super::*;
 mod dependent;
 mod discovery;
 mod permission;
+mod verified_dependent;
+mod verified_discovery;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedHistoryProgramOutput, WorthQueryApplicationProjection,
     WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputAuthority,

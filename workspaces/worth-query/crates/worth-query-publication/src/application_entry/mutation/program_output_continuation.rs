@@ -151,6 +151,17 @@ where
         None
     }
 
+    fn start_verified(
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        parent_demand: &ParentDemand,
+        parent: &worth_query_execution::publication_boundary::document_history::WorthQueryVerifiedHistoryParent<Schema, Program, ParentDemand>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        controls: WorthQueryOutputDemandControls,
+    ) -> Result<
+        Box<dyn ProgramOutputContinuation<Schema, Program>>,
+        WorthQueryRequiredOutputPreparationDenial,
+    >;
+
     fn start(
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,

@@ -81,6 +81,19 @@ where
         )
     }
 
+    fn start_verified(
+        _: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        _: &ParentDemand,
+        _: &worth_query_execution::publication_boundary::document_history::WorthQueryVerifiedHistoryParent<Schema, Program, ParentDemand>,
+        _: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        _: WorthQueryOutputDemandControls,
+    ) -> Result<
+        Box<dyn ProgramOutputContinuation<Schema, Program>>,
+        WorthQueryRequiredOutputPreparationDenial,
+    > {
+        Ok(Box::new(CompleteContinuation { open: true }))
+    }
+
     fn start(
         _: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         _: &ParentDemand,

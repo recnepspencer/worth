@@ -216,6 +216,14 @@ pub struct ProgramOutputRecord {
 }
 
 impl ProgramOutputRecord {
+    pub(in crate::application_entry) fn retain_settlement(
+        &self,
+    ) -> std::sync::Arc<
+        worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement,
+    > {
+        std::sync::Arc::clone(&self.retained_settlement)
+    }
+
     pub(in crate::application_entry) fn retained_settlement(
         &self,
     ) -> &worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement {

@@ -20,8 +20,13 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::ApplicationSchema;
 mod dependent;
 mod progression;
-pub(in crate::domain_computation::primary_graph) use dependent::HistoryDependentSource;
-pub use dependent::{WorthQueryHistoryDependentOutputRead, WorthQueryHistoryOutputDiscovery};
+pub(in crate::domain_computation::primary_graph) use dependent::{
+    HistoryDependentParent, HistoryDependentSource,
+};
+pub use dependent::{
+    WorthQueryHistoryDependentOutputRead, WorthQueryHistoryOutputDiscovery,
+    WorthQueryVerifiedHistoryParent,
+};
 pub use progression::{
     WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryProgramOutputAdvance,
     WorthQuerySettledHistoryProgramOutput,

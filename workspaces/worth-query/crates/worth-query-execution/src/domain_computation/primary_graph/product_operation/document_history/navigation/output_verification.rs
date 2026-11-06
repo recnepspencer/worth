@@ -81,6 +81,20 @@ pub(super) fn profile_is_current<S: ApplicationSchema>(
     if !profile.leaf {
         return Ok(false);
     }
+    selected_profile_root_is_current(execution, native, evidence, selected, profile)
+}
+
+/// This proves one restored root route only. Its descendants still require
+/// actual discovery and complete-set qualification, even when every route is current.
+pub(in crate::domain_computation::primary_graph) fn selected_profile_root_is_current<
+    S: ApplicationSchema,
+>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    native: &RelationalRuntime,
+    evidence: &RelationalHistoricalSelectionRead,
+    selected: &WorthQuerySelectedProductOperation<'_, S>,
+    profile: &WorthQueryHistoryOutputProfile,
+) -> Result<bool, Denial> {
     let mut count = 0;
     let mut current = true;
     for route in evidence

@@ -1,5 +1,6 @@
 //! Original tree evidence is retained separately from collection qualification.
 use super::*;
+mod verified;
 use crate::domain_computation::primary_graph::{
     application_output_demand::{qualify_output_collection, OriginalOutputTree},
     structural_walk::memory,
@@ -13,7 +14,8 @@ type Original = WorthQueryOriginalReadOutputDenial;
 /// Original complete tree custody; it supplies no currentness or permission.
 pub struct WorthQueryRetainedHistoryOutputTree {
     profile: WorthQueryHistoryOutputProfile,
-    original: OriginalOutputTree,
+    source: Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>,
+    kind: HistoryRetainedOutputTree,
 }
 
 pub(super) struct HistoryForestCompletion {
@@ -64,7 +66,8 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         )?;
         Ok(Arc::new(WorthQueryRetainedHistoryOutputTree {
             profile: source.profile.clone(),
-            original,
+            source: Arc::clone(&source.source),
+            kind: HistoryRetainedOutputTree::Original(original),
         }))
     }
 }
@@ -108,12 +111,23 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             });
         }
         require_fallback_subset(&execution, profile, trees)?;
+        let mut has_verified = false;
+        for tree in trees {
+            checkpoint(&execution)?;
+            has_verified |= matches!(tree.kind, HistoryRetainedOutputTree::Verified(_));
+        }
+        if has_verified {
+            return self.qualify_verified_history_forest(phase, access, authority, trees);
+        }
         let original = qualify_output_collection(
             self,
             phase,
             access,
             authority.request(),
-            trees.iter().map(|tree| &tree.original),
+            trees.iter().filter_map(|tree| match &tree.kind {
+                HistoryRetainedOutputTree::Original(original) => Some(original),
+                _ => None,
+            }),
         )?;
         let selected = self
             .select_application_read_observation(phase, original.original_endpoint())
@@ -122,7 +136,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             &execution,
             &selected,
             authority,
-            trees.iter().flat_map(|tree| tree.original.settlements()),
+            trees.iter().flat_map(|tree| tree.settlements()),
         )?;
         self.require_skipped_history_roots(&execution, authority, &selected, trees)?;
         let owner = self
@@ -139,7 +153,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let retained = retain_fallback_trees(&execution, trees)?;
         Ok(WorthQueryCompletedHistoryOutputs {
             profile: profile.clone(),
-            original,
+            original: HistoryCompletedOutputBasis::Original(original),
             forest: Some(retained),
         })
     }
@@ -263,4 +277,29 @@ fn retain_fallback_trees(
         _trees: trees.to_vec(),
         _memory: memory,
     })
+}
+
+enum HistoryRetainedOutputTree {
+    Original(OriginalOutputTree),
+    Verified(verified::VerifiedHistoryOutputTree),
+}
+impl WorthQueryRetainedHistoryOutputTree {
+    fn settlements(&self) -> impl Iterator<Item = &WorthQueryOutputDemandSettlement> + Clone {
+        let original = match &self.kind {
+            HistoryRetainedOutputTree::Original(tree) => Some(tree),
+            _ => None,
+        };
+        let verified = match &self.kind {
+            HistoryRetainedOutputTree::Verified(tree) => Some(tree),
+            _ => None,
+        };
+        original
+            .into_iter()
+            .flat_map(OriginalOutputTree::settlements)
+            .chain(
+                verified
+                    .into_iter()
+                    .flat_map(|tree| tree.dependents.iter().map(Arc::as_ref)),
+            )
+    }
 }

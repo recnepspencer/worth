@@ -42,6 +42,30 @@ where
         Right::validate_history_group_outputs(application)
     }
 
+    fn start_verified(
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        parent_demand: &ParentDemand,
+        parent: &worth_query_execution::publication_boundary::document_history::WorthQueryVerifiedHistoryParent<Schema, Program, ParentDemand>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        controls: WorthQueryOutputDemandControls,
+    ) -> Result<
+        Box<dyn ProgramOutputContinuation<Schema, Program>>,
+        WorthQueryRequiredOutputPreparationDenial,
+    > {
+        Ok(Box::new(BranchContinuation {
+            left: Left::start_verified(application, parent_demand, parent, request, controls)?,
+            right: Right::start_verified(application, parent_demand, parent, request, controls)?,
+            complete: [false, false],
+            next_advance: 0,
+            outputs: Vec::new(),
+            dependencies: [None, None],
+            basis: crate::application_entry::WorthQueryApplicationReadObservation::new(
+                std::sync::Arc::clone(parent.observation()),
+            ),
+            work: ProgramOutputTraversalWork::default(),
+        }))
+    }
+
     fn start(
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,

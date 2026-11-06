@@ -1,9 +1,12 @@
 //! An actual declared edge's source read retains its parent and query meaning.
 use super::*;
+mod verified;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOneShotResult, WorthQueryApplicationOutputDemandSource,
     WorthQueryHistoryOutputReadDenial, WorthQueryOutputDemandSettlement,
 };
+pub(in crate::domain_computation::primary_graph) use verified::VerifiedHistoryParentCustody;
+pub use verified::WorthQueryVerifiedHistoryParent;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity;
 
 pub(in crate::domain_computation::primary_graph) struct HistoryDependentSource<
@@ -12,7 +15,7 @@ pub(in crate::domain_computation::primary_graph) struct HistoryDependentSource<
     'scope,
 > {
     pub authority: &'authority WorthQueryHistoryOutputAuthority<'phase, 'scope>,
-    pub parent: &'authority Arc<WorthQueryOutputDemandSettlement>,
+    pub parent: HistoryDependentParent,
     pub connection: std::any::TypeId,
     pub source: &'authority Arc<WorthQueryApplicationReadObservation>,
     pub minimum: &'authority WorthQueryApplicationReadObservation,
@@ -56,7 +59,7 @@ impl<Q, R> WorthQueryHistoryDependentOutputRead<'_, '_, '_, Q, R> {
                 .into_output_demand_source(),
             profile: self.source.authority.profile().clone(),
             original: Arc::clone(self.source.authority.original()),
-            parent: Arc::clone(self.source.parent),
+            parent: self.source.parent,
             connection: self.source.connection,
             binding: self.source.discovery_binding,
             query: self.source.query,
@@ -92,7 +95,7 @@ pub struct WorthQueryHistoryOutputDiscovery<Q, R> {
     pub(in crate::domain_computation::primary_graph) profile: WorthQueryHistoryOutputProfile,
     pub(in crate::domain_computation::primary_graph) original:
         Arc<WorthQueryApplicationReadObservation>,
-    pub(in crate::domain_computation::primary_graph) parent: Arc<WorthQueryOutputDemandSettlement>,
+    pub(in crate::domain_computation::primary_graph) parent: HistoryDependentParent,
     pub(in crate::domain_computation::primary_graph) connection: std::any::TypeId,
     pub(in crate::domain_computation::primary_graph) binding: std::any::TypeId,
     pub(in crate::domain_computation::primary_graph) query:
@@ -104,5 +107,21 @@ pub struct WorthQueryHistoryOutputDiscovery<Q, R> {
 impl<Q, R> WorthQueryHistoryOutputDiscovery<Q, R> {
     pub fn rows(&self) -> &[R] {
         self.source.rows()
+    }
+}
+
+/// Exact parent identity carried by a read; neither posture converts to the other.
+#[derive(Clone)]
+pub(in crate::domain_computation::primary_graph) enum HistoryDependentParent {
+    Settled(Arc<WorthQueryOutputDemandSettlement>),
+    Verified(Arc<VerifiedHistoryParentCustody>),
+}
+impl HistoryDependentParent {
+    pub(in crate::domain_computation::primary_graph) fn same_custody(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Settled(a), Self::Settled(b)) => Arc::ptr_eq(a, b),
+            (Self::Verified(a), Self::Verified(b)) => Arc::ptr_eq(a, b),
+            _ => false,
+        }
     }
 }

@@ -68,7 +68,7 @@ impl<S: ApplicationSchema + 'static, P: worth_query_declaration::facade::applica
             let execution = phase.checked_execution_request_for(&self.runtime().runtime.product_runtime)
                 .map_err(|cause| control(WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
             let completed = self.qualify_original_history_outputs::<R>(phase, access, authority.request(), source, root, dependents.clone(), dependencies).map_err(Denial::Original)?;
-            let selected_output = self.runtime().select_application_read_observation(phase, completed.original.original_endpoint())
+            let selected_output = self.runtime().select_application_read_observation(phase, completed.original.endpoint())
                 .map_err(|cause| Denial::Original(crate::domain_computation::primary_graph::WorthQueryOriginalReadOutputDenial::Observation(cause)))?;
             require(&execution, &selected_output, authority, std::iter::once(root).chain(dependents))?;
             Ok(completed)

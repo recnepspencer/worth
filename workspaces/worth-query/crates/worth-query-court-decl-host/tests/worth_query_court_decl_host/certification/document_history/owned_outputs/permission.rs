@@ -2,6 +2,8 @@
 use super::*;
 worth_query_ability!(pub ReadMember scoped_to Member, in Schema);
 worth_query_policy!(pub SourceReadPolicy in Schema);
+worth_query_ability!(pub ReadFirst scoped_to FirstOutput, in Schema);
+worth_query_policy!(pub FirstReadPolicy in Schema);
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
@@ -14,6 +16,13 @@ pub fn declare(
         .forward(ModelMember::reference())
         .allow(Member::reference());
     schema
+        .ability(ReadFirst::reference())
+        .policy(FirstReadPolicy::reference())
+        .ability_policy(
+            ReadFirst::reference(),
+            FirstReadPolicy::reference(),
+            [first_path(1), first_path(3), first_path(5)],
+        )
         .ability(ReadMember::reference())
         .policy(SourceReadPolicy::reference())
         .ability_policy(
@@ -21,4 +30,15 @@ pub fn declare(
             SourceReadPolicy::reference(),
             [allow],
         )
+}
+
+fn first_path(value: u64) -> ApplicationAuthorizationPath {
+    ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
+        .forward(navigation::grant::Owner::reference())
+        .where_equal(
+            ModelValue::reference(),
+            ApplicationEncodedScalarValue::try_new(value).unwrap(),
+        )
+        .reverse(FirstOf::reference())
+        .allow(FirstOutput::reference())
 }

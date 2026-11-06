@@ -114,8 +114,15 @@ where
             return Err(Denial::ManagedCleanup);
         }
         if let (Some(tree), Some((branch, _))) = (&mut self.tree, &self.original) {
-            tree.close_read_request(phase, application, *branch)
-                .map_err(Denial::Close)?;
+            match tree {
+                HistoryOutputTraversal::Original(tree) => tree
+                    .close_read_request(phase, application, *branch)
+                    .map_err(Denial::Close)?,
+                HistoryOutputTraversal::Verified(tree) => tree
+                    .continuation
+                    .close_read_request(phase, application, *branch)
+                    .map_err(Denial::Close)?,
+            }
         }
         self.tree = None;
         self.settlement = None;

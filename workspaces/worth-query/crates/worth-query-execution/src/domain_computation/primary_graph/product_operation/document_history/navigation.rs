@@ -42,10 +42,15 @@ pub use output_completion::{
 pub use output_profile::{
     WorthQueryHistoryOutputNavigationAdvance, WorthQueryHistoryOutputProfile,
 };
-pub(in crate::domain_computation::primary_graph) use output_source::HistoryDependentSource;
 pub use output_source::WorthQueryHistoryRootOutputAdmissionDenial;
+pub(in crate::domain_computation::primary_graph) use output_source::{
+    HistoryDependentParent, HistoryDependentSource,
+};
 pub use output_source::{WorthQueryAdmittedHistoryProgramOutput, WorthQueryHistoryOutputSource};
-pub use output_source::{WorthQueryHistoryDependentOutputRead, WorthQueryHistoryOutputDiscovery};
+pub use output_source::{
+    WorthQueryHistoryDependentOutputRead, WorthQueryHistoryOutputDiscovery,
+    WorthQueryVerifiedHistoryParent,
+};
 pub use output_source::{
     WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryProgramOutputAdvance,
     WorthQuerySettledHistoryProgramOutput,

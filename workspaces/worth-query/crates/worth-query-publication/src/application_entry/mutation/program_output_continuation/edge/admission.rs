@@ -62,6 +62,30 @@ where
                 std::sync::Arc::clone(&basis.retained),
             ))
         }
+        (ParentAuthorityKind::Verified(parent), Some(history)) => {
+            let owned_demand = demand.clone();
+            let admitted = request.query(demand.source_intent()).with_admitted_query(phase,
+                |_, binding, external, control| {
+                    let access = worth_query_execution::publication_boundary::program_publication_access();
+                    let read = application.execute_verified_history_dependent_output_query::<ParentDemand, Connection, Source<Schema, ChildDemand<Schema, Connection>>>(
+                        phase, &access, parent, history.authority, &basis.retained, &minimum.retained,
+                        binding, external, control,
+                    ).map_err(crate::application_entry::WorthQueryApplicationRequestQueryDenial::HistoryOutput)?;
+                    Ok(application.admit_verified_history_program_dependent_output::<ParentDemand, Connection>(
+                        phase, &access, parent, read,
+                        controls.resolve(application.runtime().output_demand_resource_profile()),
+                    ))
+                },
+            ).map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?
+                .map_err(|cause| WorthQueryRequiredOutputPreparationDenial::Demand(
+                    crate::application_entry::WorthQueryApplicationOutputDemandDenial::History(cause),
+                ))?;
+            Ok(WorthQueryApplicationProgramDemandHandle::new_history(
+                admitted,
+                owned_demand,
+                std::sync::Arc::clone(&basis.retained),
+            ))
+        }
         _ => Err(history_mismatch()),
     }
 }

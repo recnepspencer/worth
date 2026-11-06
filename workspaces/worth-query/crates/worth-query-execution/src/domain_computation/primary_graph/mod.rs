@@ -124,6 +124,7 @@ pub use product_operation::document_history::{
     WorthQueryHistoryRetentionChangePauseForTest, WorthQueryHistoryRetentionStatus,
     WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
     WorthQueryRetainedHistoryOutputTree, WorthQuerySettledHistoryProgramOutput,
+    WorthQueryVerifiedHistoryParent,
 };
 pub(in crate::domain_computation) use product_operation::SharedSelectedProductOperation;
 pub use product_operation::WorthQueryHistoryOutputControlDenial;

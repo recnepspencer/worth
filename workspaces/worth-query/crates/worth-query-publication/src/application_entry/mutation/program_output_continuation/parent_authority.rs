@@ -1,6 +1,8 @@
 //! The same SDK tree retains the actual kind of Native parent custody.
 use super::*;
-use worth_query_execution::publication_boundary::document_history::WorthQuerySettledHistoryProgramOutput;
+use worth_query_execution::publication_boundary::document_history::{
+    WorthQuerySettledHistoryProgramOutput, WorthQueryVerifiedHistoryParent,
+};
 
 /// Sealed traversal custody. Neither kind can be converted into the other.
 #[doc(hidden)]
@@ -21,6 +23,7 @@ where
 {
     Ordinary(std::sync::Arc<WorthQuerySettledProgramOutput<S, P, D>>),
     History(std::sync::Arc<WorthQuerySettledHistoryProgramOutput<S, P, D>>),
+    Verified(WorthQueryVerifiedHistoryParent<S, P, D>),
 }
 
 impl<S, P, D> ProgramOutputParentAuthority<S, P, D>
@@ -43,6 +46,13 @@ where
             kind: ParentAuthorityKind::History(std::sync::Arc::new(value)),
         }
     }
+    pub(in crate::application_entry) fn verified(
+        value: WorthQueryVerifiedHistoryParent<S, P, D>,
+    ) -> Self {
+        Self {
+            kind: ParentAuthorityKind::Verified(value),
+        }
+    }
     pub(in crate::application_entry) fn kind(&self) -> &ParentAuthorityKind<S, P, D> {
         &self.kind
     }
@@ -59,6 +69,9 @@ where
             kind: match &self.kind {
                 ParentAuthorityKind::Ordinary(value) => {
                     ParentAuthorityKind::Ordinary(std::sync::Arc::clone(value))
+                }
+                ParentAuthorityKind::Verified(value) => {
+                    ParentAuthorityKind::Verified(value.clone())
                 }
                 ParentAuthorityKind::History(value) => {
                     ParentAuthorityKind::History(std::sync::Arc::clone(value))

@@ -47,7 +47,7 @@ pub use navigation::{
     WorthQueryHistoryOutputQualificationDenial, WorthQueryHistoryOutputSource,
     WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRootOutputAdmissionDenial,
     WorthQueryHistorySelection, WorthQueryRetainedHistoryOutputTree,
-    WorthQuerySettledHistoryProgramOutput,
+    WorthQuerySettledHistoryProgramOutput, WorthQueryVerifiedHistoryParent,
 };
 mod observation;
 mod operation_context;

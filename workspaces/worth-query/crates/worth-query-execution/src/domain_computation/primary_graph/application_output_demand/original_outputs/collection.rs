@@ -57,6 +57,30 @@ impl OriginalOutputTree {
         })
     }
 
+    pub(in crate::domain_computation::primary_graph) fn require_current_at<S: ApplicationSchema>(
+        &self,
+        selected: crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            S,
+        >,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        access: &WorthQueryProgramPublicationAccess,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<(), Denial> {
+        selected
+            .qualify_completed_output_set(
+                phase,
+                access,
+                scope,
+                &self.root,
+                self.dependents.iter().map(Arc::as_ref),
+                self.dependencies.as_ref(),
+                0,
+            )
+            .map(|_| ())
+            .map_err(Denial::Currentness)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn settlements(
         &self,
     ) -> impl Iterator<Item = &Settlement> + Clone {

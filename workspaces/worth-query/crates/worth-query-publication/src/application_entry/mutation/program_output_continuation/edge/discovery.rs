@@ -76,6 +76,14 @@ where
                     read.into_discovery().map(EdgeDiscoveryCustody::History)
                         .map_err(crate::application_entry::WorthQueryApplicationRequestQueryDenial::HistoryOutput)
                 }).map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery),
+            (ParentAuthorityKind::Verified(parent), Some(history)) => request.query(intent)
+                .with_admitted_query(phase, |_, binding, external, control| {
+                    application.execute_verified_history_discovery::<ParentDemand, Connection>(
+                        phase, &worth_query_execution::publication_boundary::program_publication_access(),
+                        parent, history.authority, binding, external, control,
+                    ).map(EdgeDiscoveryCustody::History)
+                        .map_err(crate::application_entry::WorthQueryApplicationRequestQueryDenial::HistoryOutput)
+                }).map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery),
             _ => Err(history_mismatch()),
         }
     }
@@ -93,6 +101,11 @@ where
                 request.at(&self.basis).retain_query_dependencies(phase, source),
             (EdgeDiscoveryCustody::History(source), ParentAuthorityKind::History(parent), Some(history)) =>
                 application.retain_history_discovery_dependencies::<ParentDemand, Connection>(
+                    phase, &worth_query_execution::publication_boundary::program_publication_access(),
+                    parent, history.authority, source, request.principal, request.scope,
+                ).map_err(history_read_denial),
+            (EdgeDiscoveryCustody::History(source), ParentAuthorityKind::Verified(parent), Some(history)) =>
+                application.retain_verified_history_discovery_dependencies::<ParentDemand, Connection>(
                     phase, &worth_query_execution::publication_boundary::program_publication_access(),
                     parent, history.authority, source, request.principal, request.scope,
                 ).map_err(history_read_denial),

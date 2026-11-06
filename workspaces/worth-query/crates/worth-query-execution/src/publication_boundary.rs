@@ -52,6 +52,7 @@ pub mod document_history {
         WorthQueryHistoryOutputDiscovery, WorthQueryHistoryOutputReadDenial,
         WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRootOutputAdmissionDenial,
         WorthQueryHistoryRootOutputRead, WorthQuerySettledHistoryProgramOutput,
+        WorthQueryVerifiedHistoryParent,
     };
     pub use crate::domain_computation::primary_graph::{
         WorthQueryCompletedHistoryOutputs, WorthQueryHistoryOutputQualificationDenial,

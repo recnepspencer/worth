@@ -129,6 +129,25 @@ where
             state.original = Some((branch, Arc::clone(&original)));
         }
         let frame = ProgramOutputHistoryFrame { authority, branch };
+        if state.tree.is_none()
+            && !selecting
+            && matches!(completion, TreeCompletionMode::Forest)
+            && self.profile.uses_owned_model_graph()
+            && std::any::TypeId::of::<R::Dependents>()
+                != std::any::TypeId::of::<
+                    worth_query_declaration::facade::application_program::ApplicationOutputLeaf,
+                >()
+        {
+            self.try_start_verified(phase, request, authority, &mut state)?;
+        }
+        if state
+            .tree
+            .as_ref()
+            .and_then(HistoryOutputTraversal::verified)
+            .is_some()
+        {
+            return self.progress_verified(phase, request, frame, selecting, &mut state);
+        }
         if state.tree.is_none() {
             if selecting {
                 return Err(Denial::ForeignSource);
@@ -169,15 +188,21 @@ where
                 Arc::clone(&original),
             );
             state.source = Some(source);
-            state.tree = Some(WorthQueryApplicationProgramOutputHandle::new_initial(
-                crate::application_entry::WorthQueryApplicationReadObservation::new(original),
-                root,
-                tree_demand,
-                self.controls,
+            state.tree = Some(HistoryOutputTraversal::Original(
+                WorthQueryApplicationProgramOutputHandle::new_initial(
+                    crate::application_entry::WorthQueryApplicationReadObservation::new(original),
+                    root,
+                    tree_demand,
+                    self.controls,
+                ),
             ));
         }
         let has_settlement = state.settlement.is_some();
-        let tree = state.tree.as_mut().expect("the original tree is retained");
+        let tree = state
+            .tree
+            .as_mut()
+            .and_then(HistoryOutputTraversal::original_mut)
+            .expect("the original tree is retained");
         if selecting || has_settlement {
             tree.authorize_history_in_advancement(phase, &self.application, request, frame)
                 .map_err(Denial::Preparation)?;
@@ -210,6 +235,7 @@ where
         state
             .tree
             .as_mut()
+            .and_then(HistoryOutputTraversal::original_mut)
             .expect("retained tree")
             .drain_read_request(phase, &self.application, branch)
             .map_err(Denial::Close)?;

@@ -55,7 +55,7 @@ pub fn install() -> Host {
 pub fn install_worker_only() -> Host {
     install_with(worker_limits())
 }
-fn worker_limits() -> WorthQueryInMemoryApplicationLimits {
+pub(super) fn worker_limits() -> WorthQueryInMemoryApplicationLimits {
     use worth_query_host::facade::runtime::*;
     let clock =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system();
@@ -78,9 +78,28 @@ fn worker_limits() -> WorthQueryInMemoryApplicationLimits {
     )
 }
 fn install_with(limits: WorthQueryInMemoryApplicationLimits) -> Host {
+    install_program::<program::Program>(limits)
+}
+pub(super) fn install_program<P>(
+    limits: WorthQueryInMemoryApplicationLimits,
+) -> WorthQueryProgramApplicationRuntime<Schema, P>
+where
+    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
+    P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
+{
+    install_program_with_value::<P>(limits, 1)
+}
+pub(super) fn install_program_with_value<P>(
+    limits: WorthQueryInMemoryApplicationLimits,
+    initial_value: u64,
+) -> WorthQueryProgramApplicationRuntime<Schema, P>
+where
+    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
+    P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
+{
     let schema = Schema::declaration().unwrap();
     in_memory_program(
-        ApplicationProgramAuthoring::<Schema, program::Program>::begin()
+        ApplicationProgramAuthoring::<Schema, P>::begin()
             .with_schema(&schema)
             .validated_program()
             .unwrap(),
@@ -102,7 +121,7 @@ fn install_with(limits: WorthQueryInMemoryApplicationLimits) -> Host {
                     WorthQueryApplicationEntityKey::new("a").unwrap(),
                 )
                 .field(ModelKey::reference(), "a".to_owned())
-                .field(ModelValue::reference(), 1),
+                .field(ModelValue::reference(), initial_value),
             )?;
             graph.bind_entity(
                 WorthQueryApplicationEntitySeed::new(
@@ -124,7 +143,9 @@ fn install_with(limits: WorthQueryInMemoryApplicationLimits) -> Host {
     .unwrap()
 }
 /// Attach the model history on a fresh owned head forked from the current world.
-pub fn attach(host: &Host) -> Document<'_> {
+pub fn attach<P: ApplicationProgramDefinition<Schema>>(
+    host: &WorthQueryProgramApplicationRuntime<Schema, P>,
+) -> Document<'_> {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     host.with_host_advancement(|phase| {

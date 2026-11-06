@@ -1312,3 +1312,76 @@ is copied from the existing Proof descriptor and carries no issuer custody.
 The capture observer is owned, thread-affine and clears on unwind. No framework,
 format or producer path is added. A new complete lane run follows; the prior
 complete workspace results belong to38adee58d5. No issue READY is implied.
+
+
+### D1214 verified historical parents: boundary review and implementation plan
+
+Root selected option 1. The existing history dependent/discovery owner will mint
+an opaque verified parent after the exact D route passes canonical lineage,
+custody, implementation, source-fact and witness currentness. It is a distinct
+runtime observation posture, never an ordinary or history settlement. The
+program/profile, full-generation source and branch incarnation remain bound to
+the navigation's original candidate. Every read still enters through current-C
+authorization before D identity is inspected.
+
+The ordinary settled path stays authoritative for actual producer fallbacks.
+The verified path runs the installed DiscoveryBinding over the verified output;
+its complete dependent set comes from those actual rows and retained query
+dependencies, not Native's route census. Native membership cross-checks coverage.
+Changed build/connection meaning or stale output enters actual fallback; malformed
+custody or parent evidence preserves a typed refusal before adoption.
+
+Implementation order:
+1. Add the sealed parent posture at navigation/output_source/dependent and mint
+   it through the existing program history owner, using canonical currentness.
+   Add a separate discovery entrance and retention path with current-C checks.
+2. Thread that posture through the sealed SDK graph traversal and qualification.
+   Healthy roots stay unadmitted; completed verified discovery is distinct from
+   real root settlements. Recheck the complete graph at the final exact endpoint.
+3. Public generic non-leaf courts: exact discovered children with zero root
+   contacts; actual stale-parent fallback; corrupt lineage/witness no-effect
+   refusal; changed discovery/connection fallback; current-C permission denial.
+   Include worker-only execution. Kill roster-substitution, skipped parent
+   evidence and historical-grant mutants, restoring SHA-256 exactly.
+4. Run focused owner/public history checks, boundary/context, format and scoped
+   caps, then full root/Query comparison against the same clean master.
+
+The earlier complete Query process ended without a final result during its
+charge sweep; its partial logs remain interrupted evidence. The supplementary
+clean-master graph run finished and reproduced lookup-growth's population
+assertion. No partial full-run totals establish issue qualification.
+
+
+D1214 checkpoint evidence (not issue completion): the opaque verified-parent
+posture, real installed discovery/retention, and actual child demand admission
+are implemented. No verified parent converts to a settlement. A retained tree
+holds either an original root or a verified root, never both. Mixed completion
+derives its endpoint only from authentic producer publication movements, checks
+all real child settlements/discovery dependencies there, then checks the verified
+root and the complete Native route set through the existing currentness owner.
+The settled path's original refusal ordering and text are preserved.
+
+Six public courts pass: healthy/stale non-leaf, an empty computed set while a
+matching Native publication exists, and a C-denied/D-granted discovery read;
+each has a worker-only variant. The empty-set court proves no child source opens
+merely because Native has a matching route. The stale-parent court independently
+reads the parent's regenerated value. All 160 public history courts pass after
+exact mutation restoration. Boundary/context, dirty 400-line caps, rustfmt/diff
+and the verified-to-settled negative doctest pass.
+
+Compiled mutation (a), skip discovery and rely on Native route verification,
+fails all six courts. Mutation (b), bypass canonical parent lineage/witness
+currentness, fails four, including the independent stale-parent value oracle.
+Every changed file restores identical SHA-256; active-d1214-mutant.json is null.
+Evidence is d1214-mutations-ab-results.json and d1214-pristine-* under
+build-cache/history53-d1207. No independent reviewer was assigned; the primary
+structural pass retained phase signatures as explicit inputs and separated
+parent meaning from posture-specific diagnostics.
+
+Still required for D1214: corrupt-parent no-effect and changed-discovery-meaning
+courts; the D-grant mutation; and the historical-source discovery entrance when
+its scope is absent at C. That entrance must use the D1207 current-C permission
+owner with exact private-candidate identity, without another ownership reader or
+per-step discovery material. Nested later sources, multi-tree edit recording,
+codec-retired selection, remaining issue courts and #56 remain in sequence.
+No full-workspace equivalence or READY is claimed by this checkpoint.

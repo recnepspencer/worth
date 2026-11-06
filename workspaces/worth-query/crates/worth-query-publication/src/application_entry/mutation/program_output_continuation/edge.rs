@@ -115,6 +115,24 @@ where
         Children::validate_history_group_outputs(application)
     }
 
+    fn start_verified(
+        _: &WorthQueryProgramApplicationRuntime<Schema, Program>, parent_demand: &ParentDemand,
+        parent: &worth_query_execution::publication_boundary::document_history::WorthQueryVerifiedHistoryParent<Schema, Program, ParentDemand>,
+        _: &WorthQueryApplicationRequest<'_, '_, '_, Schema>, controls: WorthQueryOutputDemandControls,
+    ) -> Result<Box<dyn ProgramOutputContinuation<Schema, Program>>, WorthQueryRequiredOutputPreparationDenial> {
+        // The Query-owned parent cannot be cloned into a different posture.
+        // Clone the SDK carrier only after Query shares this exact read custody.
+        Ok(Box::new(EdgeContinuation::<Schema, Program, ParentDemand, Connection, Children> {
+            parent_demand: parent_demand.clone(),
+            parent_authority: ProgramOutputParentAuthority::verified(parent.clone()),
+            nodes: None, discovery_source: None, dependencies: None, next_admission: 0, next_advance: 0,
+            outputs: Vec::new(), work: ProgramOutputTraversalWork::default(), controls,
+            basis: crate::application_entry::WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(parent.observation())),
+            minimum_observation: crate::application_entry::WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(parent.observation())),
+            marker: std::marker::PhantomData,
+        }))
+    }
+
     fn start(
         _: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,
@@ -197,15 +215,18 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         history: ProgramOutputHistoryFrame<'_, '_, '_>,
     ) -> Result<(), WorthQueryRequiredOutputPreparationDenial> {
-        let ParentAuthorityKind::History(parent) = self.parent_authority.kind() else {
-            return Err(history_mismatch());
-        };
         if let Some(discovery) = &self.discovery_source {
             let EdgeDiscoveryCustody::History(discovery) = discovery else { return Err(history_mismatch()); };
-            application.authorize_history_discovery::<ParentDemand, Connection>(phase,
-                &worth_query_execution::publication_boundary::program_publication_access(),
-                parent, history.authority, discovery, request.principal, request.scope,
-            ).map_err(history_read_denial)?;
+            let access = worth_query_execution::publication_boundary::program_publication_access();
+            match self.parent_authority.kind() {
+                ParentAuthorityKind::History(parent) => application.authorize_history_discovery::<ParentDemand, Connection>(
+                    phase, &access, parent, history.authority, discovery, request.principal, request.scope,
+                ),
+                ParentAuthorityKind::Verified(parent) => application.authorize_verified_history_discovery::<ParentDemand, Connection>(
+                    phase, &access, parent, history.authority, discovery, request.principal, request.scope,
+                ),
+                _ => return Err(history_mismatch()),
+            }.map_err(history_read_denial)?;
         }
         if let Some(nodes) = &self.nodes {
             for node in nodes {
@@ -238,7 +259,7 @@ where
         if !std::ptr::eq(application.runtime(), request.application) {
             return Err(WorthQueryRequiredOutputPreparationDenial::ForeignProgram);
         }
-        if !matches!((self.parent_authority.kind(), history), (ParentAuthorityKind::Ordinary(_), None) | (ParentAuthorityKind::History(_), Some(_))) {
+        if !matches!((self.parent_authority.kind(), history), (ParentAuthorityKind::Ordinary(_), None) | (ParentAuthorityKind::History(_), Some(_)) | (ParentAuthorityKind::Verified(_), Some(_))) {
             return Err(history_mismatch());
         }
         if self.discovery_source.is_none() && self.dependencies.is_none() {

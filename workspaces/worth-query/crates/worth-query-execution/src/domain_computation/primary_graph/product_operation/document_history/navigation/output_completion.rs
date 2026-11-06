@@ -24,7 +24,7 @@ use worth_query_installation::facade::ApplicationSchema;
 /// admission. This is neither a selectable observation nor current permission.
 pub struct WorthQueryCompletedHistoryOutputs {
     pub(super) profile: WorthQueryHistoryOutputProfile,
-    pub(super) original: WorthQueryCompletedOriginalReadOutputs,
+    pub(super) original: HistoryCompletedOutputBasis,
     forest: Option<forest::HistoryForestCompletion>,
 }
 
@@ -84,7 +84,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         drop(selected);
         Ok(WorthQueryCompletedHistoryOutputs {
             profile: source.profile.clone(),
-            original,
+            original: HistoryCompletedOutputBasis::Original(original),
             forest: None,
         })
     }
@@ -101,8 +101,8 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         let NavigationPhase::AwaitingOutputs { exact, .. } = &self.phase else {
             return Err(Denial::IntentDrift);
         };
-        let source = outputs.original.original_source();
-        let endpoint = outputs.original.original_endpoint();
+        let source = outputs.original.source();
+        let endpoint = outputs.original.endpoint();
         if outputs.forest.is_some() != profile.is_output_forest()
             || !outputs.profile.same_custody(profile)
             || profile.model != self.model
@@ -155,5 +155,33 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         };
         drop(exact);
         Ok(())
+    }
+}
+
+/// A verified root never acquires an original-root settlement or receipt.
+pub(super) enum HistoryCompletedOutputBasis {
+    Original(WorthQueryCompletedOriginalReadOutputs),
+    Verified {
+        source: Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>,
+        endpoint:
+            Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>,
+    },
+}
+impl HistoryCompletedOutputBasis {
+    pub(super) fn source(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation {
+        match self {
+            Self::Original(value) => value.original_source(),
+            Self::Verified { source, .. } => source,
+        }
+    }
+    pub(super) fn endpoint(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation {
+        match self {
+            Self::Original(value) => value.original_endpoint(),
+            Self::Verified { endpoint, .. } => endpoint,
+        }
     }
 }

@@ -34,6 +34,52 @@ impl WorthQueryHistoryOutputIntent {
         B: ApplicationQueryBinding<S>,
         Rows<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
+        self.execute_graph_source_in_posture(runtime, phase, authority, installed, external, true)
+            .map(|(result, truth)| {
+                (
+                    result.expect("the read posture executes its projection"),
+                    truth,
+                )
+            })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn authorize_graph_source<S, B>(
+        &self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
+        installed: &WorthQueryInstalledApplicationQueryBinding<S, B>,
+        external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+    ) -> Result<(), WorthQueryHistoryOutputReadDenial>
+    where
+        S: ApplicationSchema,
+        B: ApplicationQueryBinding<S>,
+        Rows<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+    {
+        self.execute_graph_source_in_posture(runtime, phase, authority, installed, external, false)
+            .map(|_| ())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn execute_graph_source_in_posture<S, B>(
+        &self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
+        installed: &WorthQueryInstalledApplicationQueryBinding<S, B>,
+        external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+        read: bool,
+    ) -> Result<
+        (
+            Option<WorthQueryApplicationOneShotResult<B::Query, Rows<S, B>>>,
+            crate::basis::WorthQueryProductObservationLease,
+        ),
+        WorthQueryHistoryOutputReadDenial,
+    >
+    where
+        S: ApplicationSchema,
+        B: ApplicationQueryBinding<S>,
+        Rows<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+    {
         use WorthQueryHistoryOutputReadDenial as Stop;
         let request = authority.request();
         authority
@@ -132,12 +178,19 @@ impl WorthQueryHistoryOutputIntent {
             }.map_err(Stop::Admission)?;
             permission.require_history_principal(authority.producer_invocation()).map_err(Stop::Admission)?;
             let plan = runtime.finish_prepared_application_query_permission(&execution, permission).map_err(Stop::Admission)?;
+            if read {
             let reader = crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::new(
                 runtime, &truth, Some(&control), Some(authority.producer_invocation()), external, request,
             ).map_err(Stop::Demand)?;
             let result = reader.read_admitted_result::<B>(&execution, plan, &mut native)
                 .map_err(|cause| Stop::Demand(crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial::source_query_stop(cause).demand_stop()))?;
-            Ok(result)
+            Ok(Some(result))
+            } else {
+                // Finishing this real permission establishes C control and D
+                // identity; no producer-source projection or claim is opened.
+                drop(plan);
+                Ok(None)
+            }
         };
         let result = match current_scope {
             Ok(scope) if scope.scope().entity_id() == self.backing.scope.subject() => prepare(scope.scope(), Some(&scope)),

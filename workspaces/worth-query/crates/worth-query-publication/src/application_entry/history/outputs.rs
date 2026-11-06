@@ -9,6 +9,7 @@ mod progression;
 mod registry;
 mod retained;
 mod tree;
+mod verified;
 pub use denial::WorthQueryHistoryOutputDenial;
 pub use retained::WorthQueryHistoryWithOutputs;
 use worth_query_declaration::facade::application_history::ApplicationHistoryNavigationBinding;
