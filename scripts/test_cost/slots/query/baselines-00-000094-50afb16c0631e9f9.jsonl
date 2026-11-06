@@ -1,0 +1,7 @@
+{"count": 6, "kind": "leaf"}
+{"binary": "worth-query-testkit-installed-operation-fixture", "slots": 1, "test": "setup_observation::tests::canonical_named_fields_ignore_declaration_order_but_preserve_values_and_types"}
+{"binary": "worth-query-testkit-installed-operation-fixture", "slots": 1, "test": "setup_observation::tests::complete_observations_keep_binary_builder_and_every_construction"}
+{"binary": "worth-query-testkit-installed-operation-fixture", "slots": 1, "test": "setup_observation::tests::disabled_observation_does_not_construct_inputs"}
+{"binary": "worth-query-testkit-installed-operation-fixture", "slots": 1, "test": "setup_observation::tests::duplicate_names_refuse_without_writing_a_construction"}
+{"binary": "worth-query-testkit-installed-operation-fixture", "slots": 1, "test": "setup_observation::tests::length_prefixes_disambiguate_field_boundaries"}
+{"binary": "worth-query-testkit-installed-operation-fixture", "slots": 1, "test": "setup_observation::tests::output_failure_is_an_io_result_and_missing_identity_does_not_write"}

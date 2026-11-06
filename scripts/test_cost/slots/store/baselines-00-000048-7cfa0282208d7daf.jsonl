@@ -1,0 +1,7 @@
+{"count": 6, "kind": "leaf"}
+{"binary": "worth-store-wal", "slots": 1, "test": "wal_topology::tests::topology_denies_invalid_identity_generation_and_range_construction"}
+{"binary": "worth-store-wal", "slots": 1, "test": "wal_topology::tests::topology_denies_noncontiguous_segment_identities"}
+{"binary": "worth-store-wal", "slots": 1, "test": "wal_topology::tests::topology_denies_overlapping_lsn_ranges"}
+{"binary": "worth-store-wal", "slots": 1, "test": "wal_topology::tests::topology_denies_stale_and_wrong_generation_segments"}
+{"binary": "worth-store::bin/physical_store_c8_writer", "slots": 1, "test": "durability_profile::tests::cleanup_rotation_has_distinct_smaller_segments"}
+{"binary": "worth-store::bin/physical_store_c8_writer", "slots": 1, "test": "durability_profile::tests::profiles_are_explicit_and_stable"}
