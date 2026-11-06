@@ -1,4 +1,5 @@
-use super::{digest_index::DigestIndex, hash_value, PartitionContentDigestError};
+use super::{hash_value, PartitionContentDigestError};
+use crate::storage::substrate::DigestIndex;
 use crate::storage::partition::SparseAdjacencyTable;
 use crate::storage::substrate::{SharedMap, StorageAllocationVisitor};
 

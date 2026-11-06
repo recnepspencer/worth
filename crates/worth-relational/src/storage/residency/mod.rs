@@ -5,6 +5,8 @@ pub(crate) use content_capture::RegionContentFailure;
 mod kind_admission;
 mod kind_authority;
 mod kind_commitment;
+mod kind_index;
+mod kind_incremental;
 mod kind_projection;
 pub(crate) use kind_commitment::RelationalRegionKindCommitment;
 pub(crate) use kind_projection::rebuild_region_history_kind_buckets;

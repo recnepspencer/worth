@@ -3,7 +3,7 @@
 use super::*;
 use crate::storage::substrate::{HistoryAppendFrontier, HistoryFrontierSibling};
 impl DigestIndex {
-    pub(in crate::storage::overlay::partition_content) fn append_frontier(
+    pub(crate) fn append_frontier(
         &self,
         last_value: Option<[u8; 32]>,
     ) -> Option<HistoryAppendFrontier> {
@@ -42,7 +42,7 @@ impl DigestIndex {
             last: None,
         })
     }
-    pub(in crate::storage::overlay::partition_content) fn from_append_frontier(
+    pub(crate) fn from_append_frontier(
         frontier: &HistoryAppendFrontier,
     ) -> Option<Self> {
         let Some((key, value)) = frontier.last else {
@@ -82,7 +82,7 @@ impl DigestIndex {
             history_last_value: Some(Arc::new(HistoryLastValue { key, value })),
         })
     }
-    pub(in crate::storage::overlay::partition_content) fn next_history_index(
+    pub(crate) fn next_history_index(
         &self,
     ) -> Option<u128> {
         let mut current = self.root.as_deref();
@@ -111,7 +111,7 @@ mod tests {
         for value in [Some([99; 32]), None] {
             assert_eq!(
                 partial.set(0, value),
-                Err(PartitionContentDigestError::InvalidHistoryCoverage)
+                Err(DigestIndexError::OpaqueBranch)
             );
             assert_eq!(partial.digest(), before);
         }
