@@ -164,7 +164,7 @@ pub(in crate::domain_computation) use application_attempt::WorthQueryPreparedApp
 pub(in crate::domain_computation) use application_attempt::WorthQueryProviderAttemptRegistrationContext;
 pub(in crate::domain_computation) use application_attempt::WorthQueryProviderProgressionOutcome;
 pub(in crate::domain_computation) use application_attempt::WorthQueryRegisteredProviderAttempt;
-pub(in crate::domain_computation::primary_graph) use application_attempt::WorthQueryApplicationOutputCorrespondence;
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
 pub(crate) use provider::WorthQueryPrimaryGraphProvider;
 pub(in crate::domain_computation) use provider::ApplicationFactTable;

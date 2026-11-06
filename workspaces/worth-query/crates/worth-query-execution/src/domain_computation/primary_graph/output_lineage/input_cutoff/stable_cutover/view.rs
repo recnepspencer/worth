@@ -33,7 +33,7 @@ impl PublishedStableLineage {
     }
     pub(in crate::domain_computation::primary_graph) fn output_correspondence(
         &self,
-    ) -> &Arc<crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence>
+    ) -> &Arc<crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence>
     {
         &self.recorded().correspondence
     }

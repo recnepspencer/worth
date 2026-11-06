@@ -208,7 +208,7 @@ pub fn rebase_output(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     prepared: PreparedSourceFactRebase,
-    correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+    correspondence: &crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
     changed_records: &[worth_relational::facade::transactions::RecordRef],
     producer_output: bool,
 

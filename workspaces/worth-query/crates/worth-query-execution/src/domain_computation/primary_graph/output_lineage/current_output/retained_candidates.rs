@@ -12,7 +12,7 @@ pub struct WorthQueryRetainedOutputCandidate {
     pub(in crate::domain_computation::primary_graph) producing_implementation: Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(in crate::domain_computation::primary_graph) binding: TypeId,
     pub(in crate::domain_computation::primary_graph) correspondence:
-        Arc<crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence>,
+        Arc<crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence>,
     pub(in crate::domain_computation::primary_graph) source_identity:
         Option<RecordedSourceIdentity>,
     pub(in crate::domain_computation::primary_graph) observed_source_facts: Option<super::super::ComparableSourceFacts>,

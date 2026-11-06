@@ -47,7 +47,7 @@ fn bootstrap_metadata_keeps_its_charge_and_refuses_an_unfunded_row() {
             "decoded metadata retains its reservation beyond decode scope"
         );
         let recovered = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::recovered_outputs::WorthQueryRecoveredOutputs::from_checkpoint_for_test(
-            decoded, &execution, |accepted| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
+            decoded, &execution, |accepted| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
                 worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>(),
                 worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>(), std::iter::empty(), &(*accepted.roles_for_test()), |_| Some(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>()), &execution)
                 .map(std::sync::Arc::new)).unwrap();

@@ -1,7 +1,5 @@
 //! A correspondence cached only after its computation passed certification.
-use crate::domain_computation::primary_graph::{
-    output_lineage::CurrentComputation, WorthQueryApplicationOutputCorrespondence,
-};
+use {crate::domain_computation::primary_graph::output_lineage::CurrentComputation, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence};
 use std::sync::Arc;
 
 #[derive(Clone)]

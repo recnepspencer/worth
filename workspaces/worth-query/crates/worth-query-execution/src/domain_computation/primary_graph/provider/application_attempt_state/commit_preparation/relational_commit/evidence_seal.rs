@@ -30,7 +30,7 @@ pub struct WorthQueryPrimaryGraphCommitEvidence {
     committed_dispatch_outbox: WorthQueryCommittedDispatchOutboxResolution,
     committed_changes: crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges,
     output_correspondence: std::sync::Arc<
-        crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
     >,
     operation_scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
     observed_source_facts: postcommit_currentness::RebasedSourceFacts,
@@ -222,14 +222,14 @@ impl WorthQueryPrimaryGraphCommitEvidence {
 
     pub(in crate::domain_computation::primary_graph) fn output_correspondence(
         &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence {
         self.output_correspondence.as_ref()
     }
 
     pub(in crate::domain_computation::primary_graph) fn retain_output_correspondence(
         &self,
     ) -> std::sync::Arc<
-        crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
     > {
         std::sync::Arc::clone(&self.output_correspondence)
     }

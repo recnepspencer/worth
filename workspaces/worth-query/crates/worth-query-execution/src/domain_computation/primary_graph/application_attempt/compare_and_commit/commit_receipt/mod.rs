@@ -22,14 +22,7 @@ use {
     crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
 };
 
-use {
-    super::super::WorthQueryApplicationCommitAuthorityBinding,
-    super::super::WorthQueryApplicationCommitTerminalEvidence,
-    super::super::WorthQueryApplicationOutputCorrespondence,
-    super::super::WorthQueryApplicationTypedOutputCorrespondence,
-    super::super::WorthQueryMutationPreconditionComparisonEvidence,
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial,
-};
+use {super::super::WorthQueryApplicationCommitAuthorityBinding, super::super::WorthQueryApplicationCommitTerminalEvidence, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationTypedOutputCorrespondence, super::super::WorthQueryMutationPreconditionComparisonEvidence, crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial};
 
 pub(in crate::domain_computation::primary_graph) use pending::WorthQueryPendingApplicationCommitReceipt;
 pub(in crate::domain_computation::primary_graph) use projection::WorthQueryCommittedReceiptProjection;

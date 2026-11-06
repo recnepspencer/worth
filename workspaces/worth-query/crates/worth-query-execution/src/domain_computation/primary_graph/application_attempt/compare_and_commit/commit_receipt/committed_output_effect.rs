@@ -1,6 +1,6 @@
 //! Conservative invalidation of one carried output publication by canonical effects.
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::*;
-use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 
 impl WorthQueryApplicationCommittedChanges {
     /// This detects mutation of a declared full-GEN output, not field creation.

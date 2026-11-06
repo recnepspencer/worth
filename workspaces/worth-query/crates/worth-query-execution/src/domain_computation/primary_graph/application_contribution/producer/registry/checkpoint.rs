@@ -52,7 +52,7 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         std::sync::Arc<
-            crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
         >,
         crate::domain_computation::primary_graph::application_checkpoint::CheckpointDecodeDenial,
     > {
@@ -61,7 +61,7 @@ where
         )?;
         let installed = installed_checkpoint_producer(&self.entries, &checkpoint.producer)?;
         validate_checkpoint_output_meaning(&installed.declaration, checkpoint)?;
-        crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
             installed.declaration.operation_binding_type,
             installed.declaration.output_contract_type,
             installed

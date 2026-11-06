@@ -23,7 +23,7 @@ fn reconstructed_roles_retain_their_payer_until_the_last_clone_and_refuse_withou
         };
         let roles = [WorthQueryCheckpointOutputRole {
             role: "subject".into(),
-            posture: crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputPosture::Preserve,
+            posture: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture::Preserve,
             entity_name: "entity".into(),
             entity: EntityId::new(PartitionId::main(), 1, 1),
         }];

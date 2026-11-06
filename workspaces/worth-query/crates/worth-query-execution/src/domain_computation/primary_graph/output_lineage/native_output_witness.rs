@@ -11,7 +11,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture;
 use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;

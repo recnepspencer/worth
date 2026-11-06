@@ -12,7 +12,7 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 pub use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryCurrentOutputFamilyResolution;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryPriorOutputBindingResolution;

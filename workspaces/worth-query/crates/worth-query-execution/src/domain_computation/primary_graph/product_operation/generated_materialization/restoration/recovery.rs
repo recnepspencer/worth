@@ -17,7 +17,7 @@ use super::settlement::PublishedRestorationSettlement;
 use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryProductBranchOwnerCleanup, WorthQueryProductPublicationBinding,
 };
-use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 use crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 
 /// The step at which continuing a restoration recovery stopped. The recovery is

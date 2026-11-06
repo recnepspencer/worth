@@ -32,7 +32,7 @@ impl WorthQueryRetainedOutputCandidate {
     #[doc(hidden)]
     pub fn correspondence_for_test(
         &self,
-    ) -> &Arc<crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence>
+    ) -> &Arc<crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence>
     {
         &self.correspondence
     }

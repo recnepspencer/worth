@@ -347,7 +347,7 @@ pub struct WorthQueryOutputDemandInterest {
 pub struct WorthQueryReadmittedAcceptedOutput {
     pub checkpoint: WorthQueryAcceptedOutputCheckpointIdentity,
     pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<
-        crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
     >,
 }
 

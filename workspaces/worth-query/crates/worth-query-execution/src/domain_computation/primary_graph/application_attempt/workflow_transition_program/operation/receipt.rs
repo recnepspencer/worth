@@ -14,7 +14,7 @@ pub(in crate::domain_computation::primary_graph) struct ValidatedWorkflowOperati
 impl ValidatedWorkflowOperationReceipt<'_> {
     pub(super) fn outputs(
         &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence {
         self.receipt.output_correspondence()
     }
     pub(in crate::domain_computation::primary_graph) fn principal(

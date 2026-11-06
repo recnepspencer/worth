@@ -8,7 +8,7 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use worth_relational::facade::runtime::RelationalRuntime;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness::SealedNativeOutputWitness;
 pub use worth_relational::facade::snapshots::SnapshotHandle;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
 pub use crate::domain_computation::primary_graph::output_lineage::native_output_witness::checkpoint::tests;

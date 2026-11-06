@@ -289,7 +289,7 @@ impl WorthQueryRegisteredProviderEffects {
     pub(super) fn seal_output_correspondence(
         &self,
         commit: &worth_relational::facade::transactions::CommitResult,
-    ) -> super::super::effect_program::WorthQueryApplicationOutputCorrespondence {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence {
         self.output_correspondence.clone().seal(commit)
     }
 }

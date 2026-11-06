@@ -29,7 +29,7 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryApplication
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationOutputProjectionDenial;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationIdentities;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture;

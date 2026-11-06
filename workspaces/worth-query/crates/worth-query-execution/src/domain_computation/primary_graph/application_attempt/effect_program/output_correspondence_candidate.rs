@@ -14,7 +14,7 @@ use worth_relational::facade::transactions::{CommitResult, EntityReference};
 use contract::{ExpectedOutputBinding, ExpectedOutputFamily};
 
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
-use {crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::CommittedOutputBinding, crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence, crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputPosture, crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputRoleNameDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::CommittedOutputBinding, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputRoleNameDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse};
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
@@ -253,7 +253,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         WorthQueryApplicationOutputCorrespondence {
             binding_type: self.binding_type,
             contract_type: self.contract_type,
-            storage: std::sync::Arc::new(crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::CorrespondenceStorage::from_committed(
+            storage: std::sync::Arc::new(crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::CorrespondenceStorage::from_committed(
                 optional_roles,
                 roles,
             )),

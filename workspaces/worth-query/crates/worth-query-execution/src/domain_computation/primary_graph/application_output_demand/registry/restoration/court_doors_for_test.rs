@@ -57,7 +57,7 @@ impl WorthQueryRestoredAcceptedOutput {
     pub fn new_for_test(
         checkpoint: super::super::WorthQueryAcceptedOutputCheckpointIdentity,
         correspondence: std::sync::Arc<
-            crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
         >,
         observation: worth_runtime_world::facade::ProductBranchObservation,
         source_scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,

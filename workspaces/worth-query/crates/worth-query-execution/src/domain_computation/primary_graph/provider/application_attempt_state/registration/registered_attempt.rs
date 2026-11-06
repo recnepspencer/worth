@@ -153,7 +153,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     pub(in crate::domain_computation::primary_graph) fn seal_output_correspondence(
         &self,
         commit: &worth_relational::facade::transactions::CommitResult,
-    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence {
         self.effects.seal_output_correspondence(commit)
     }
 

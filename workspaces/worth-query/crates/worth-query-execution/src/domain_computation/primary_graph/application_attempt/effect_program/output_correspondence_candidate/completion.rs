@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 
 use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
-use crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputPosture;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture;
 use super::{denial, family_matches, WorthQueryApplicationOutputCorrespondenceCandidate};
 use crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryApplicationRealizedEffect;
 use {

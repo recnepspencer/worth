@@ -105,21 +105,8 @@ pub(super) use elevation_request_program::validate_elevation_request_program;
 pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub use {compare_and_commit::WorthQueryApplicationCleanupRequired, compare_and_commit::WorthQueryApplicationCommitDeferred, compare_and_commit::WorthQueryApplicationCommitDeferredKind, compare_and_commit::WorthQueryApplicationCommitDenial, compare_and_commit::WorthQueryApplicationCommitOutcome, compare_and_commit::WorthQueryApplicationCommitPublicationSource, compare_and_commit::WorthQueryApplicationCommitReceipt, compare_and_commit::WorthQueryApplicationCommitRecoveryKind, compare_and_commit::WorthQueryApplicationManagedCleanup, compare_and_commit::WorthQueryApplicationManagedCleanupFailure, compare_and_commit::WorthQueryApplicationNoEffect, compare_and_commit::WorthQueryApplicationNoEffectCause, compare_and_commit::WorthQueryApplicationUncommitted, compare_and_commit::WorthQueryApplicationUnresolvedCommitEvidence};
-pub(in crate::domain_computation::primary_graph) use {
-    effect_program::WorthQueryAdmittedApplicationEmissionBatch,
-    effect_program::WorthQueryApplicationCreationPartition,
-    effect_program::WorthQueryApplicationEmission,
-    effect_program::WorthQueryApplicationOutputCorrespondence,
-    effect_program::WorthQueryApplicationRealizedEffect,
-};
-pub use {
-    effect_program::WorthQueryApplicationEffectProgram,
-    effect_program::WorthQueryApplicationEffectProgramBuilder,
-    effect_program::WorthQueryApplicationOutputEntity,
-    effect_program::WorthQueryApplicationOutputFamilyEntry,
-    effect_program::WorthQueryApplicationOutputPosture,
-    effect_program::WorthQueryApplicationTypedOutputCorrespondence,
-};
+pub(in crate::domain_computation::primary_graph) use {effect_program::WorthQueryAdmittedApplicationEmissionBatch, effect_program::WorthQueryApplicationCreationPartition, effect_program::WorthQueryApplicationEmission, effect_program::WorthQueryApplicationRealizedEffect};
+pub use {effect_program::WorthQueryApplicationEffectProgram, effect_program::WorthQueryApplicationEffectProgramBuilder, effect_program::WorthQueryApplicationOutputPosture};
 pub use {
     elevation_close_outcome::WorthQueryElevationCloseOutcome,
     elevation_close_outcome::WorthQueryMandatoryReview,
