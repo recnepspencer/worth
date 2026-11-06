@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_relational::facade::runtime::InvariantCatalog;
 
 use crate::domain_capabilities::authoring::{
@@ -189,17 +190,19 @@ pub struct WorthQueryIntentInvariantRegistrationContribution {
 impl WorthQueryIntentInvariantRegistrationContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<WorthQueryInvariantCatalogRegistrationArtifact>
-    {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<WorthQueryInvariantCatalogRegistrationArtifact>,
+        IdentityDerivationDenial,
+    > {
         let target = self.target.clone();
         let requested = WorthQueryInvariantCapabilityContributionAuthoring::invariant_registration(
             self.invariant_catalog,
             qualify_semantic_code(self.target.authority(), &self.semantic_code),
             self.detail,
-        )
+        )?
         .bind_to_installed_target(self.target);
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "invariant-capability",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             WorthQueryInvariantCapabilityContributionPosture::InvariantRegistration.as_str(),
@@ -212,7 +215,7 @@ impl WorthQueryIntentInvariantRegistrationContribution {
                 )
             },
             materialize_query_invariant_catalog_registration_artifact,
-        )
+        ))
     }
 
     pub fn materialize(

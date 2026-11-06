@@ -15,6 +15,7 @@ use crate::domain_capabilities::eligibility::{
 };
 use crate::domain_capabilities::payloads::WorthQueryAftermathContributionPosture;
 use crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::{
     AdmittedProjectionConsumption, MaterializedProjectionContract, ProjectMaterializedFacts,
     ProjectionConsumptionBindingContext, ProjectionConsumptionEligibility,
@@ -131,9 +132,11 @@ pub struct WorthQueryAdmittedPlanAftermathContribution {
 impl WorthQueryAdmittedPlanAftermathContribution {
     pub fn try_review(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<WorthQueryAftermathProjectionConsumptionReview>
-    {
-        self.materialize_checked(materialize_projection_consumption_review)
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<WorthQueryAftermathProjectionConsumptionReview>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.materialize_checked(materialize_projection_consumption_review)?)
     }
 
     pub fn review(
@@ -147,8 +150,11 @@ impl WorthQueryAdmittedPlanAftermathContribution {
 
     pub fn try_materialize_support_report(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<ProjectionConsumptionSupportReport> {
-        self.materialize_checked(materialize_projection_consumption_support_report)
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<ProjectionConsumptionSupportReport>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.materialize_checked(materialize_projection_consumption_support_report)?)
     }
 
     pub fn materialize_support_report(
@@ -160,8 +166,11 @@ impl WorthQueryAdmittedPlanAftermathContribution {
 
     pub fn try_materialize_eligibility(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<ProjectionConsumptionEligibility> {
-        self.materialize_checked(materialize_projection_consumption_eligibility)
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<ProjectionConsumptionEligibility>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.materialize_checked(materialize_projection_consumption_eligibility)?)
     }
 
     pub fn materialize_eligibility(
@@ -173,8 +182,11 @@ impl WorthQueryAdmittedPlanAftermathContribution {
 
     pub fn try_materialize_admitted(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<AdmittedProjectionConsumption> {
-        self.materialize_checked(materialize_admitted_projection_consumption)
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<AdmittedProjectionConsumption>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.materialize_checked(materialize_admitted_projection_consumption)?)
     }
 
     pub fn materialize_admitted(
@@ -185,8 +197,11 @@ impl WorthQueryAdmittedPlanAftermathContribution {
 
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<MaterializedProjectionContract> {
-        self.materialize_checked(materialize_projection_consumption_contract)
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<MaterializedProjectionContract>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.materialize_checked(materialize_projection_consumption_contract)?)
     }
 
     pub fn materialize(
@@ -198,8 +213,11 @@ impl WorthQueryAdmittedPlanAftermathContribution {
 
     fn into_requested(
         self,
-    ) -> crate::domain_capabilities::WorthQueryRequestedAftermathContribution<
-        crate::domain_capabilities::WorthQueryInstalledAdmittedPlanContributionTarget,
+    ) -> Result<
+        crate::domain_capabilities::WorthQueryRequestedAftermathContribution<
+            crate::domain_capabilities::WorthQueryInstalledAdmittedPlanContributionTarget,
+        >,
+        IdentityDerivationDenial,
     > {
         let semantic_code = qualify_semantic_code(self.target.authority(), &self.semantic_code);
         match self.posture {
@@ -210,7 +228,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                     self.source,
                     self.binding,
                     self.requested_facts,
-                )
+                )?
                 .bind_to_installed_target(self.target)
             }
             WorthQueryAftermathContributionPosture::ConsumesFact => {
@@ -220,7 +238,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                     self.source,
                     self.binding,
                     self.requested_facts,
-                )
+                )?
                 .bind_to_installed_target(self.target)
             }
             WorthQueryAftermathContributionPosture::DeclaresResidue => {
@@ -230,10 +248,12 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                     self.source,
                     self.binding,
                     self.requested_facts,
-                )
+                )?
                 .bind_to_installed_target(self.target)
             }
         }
+
+        Ok(())
     }
 
     fn materialize_checked<Success>(
@@ -243,12 +263,12 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                 crate::domain_capabilities::WorthQueryInstalledAdmittedPlanContributionTarget,
             >,
         ) -> crate::domain_capabilities::WorthQueryDomainCapabilityTransitionOutcome<Success>,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<Success> {
+    ) -> Result<WorthQueryCheckedDomainCapabilityOutcome<Success>, IdentityDerivationDenial> {
         let posture = self.posture;
         let target = self.target.clone();
-        let requested = self.into_requested();
+        let requested = self.into_requested()?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "consequence-aftermath",
             WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
             posture.as_str(),
@@ -261,6 +281,6 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                 )
             },
             materialize,
-        )
+        ))
     }
 }

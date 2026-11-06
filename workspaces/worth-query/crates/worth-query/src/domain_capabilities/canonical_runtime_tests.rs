@@ -22,16 +22,18 @@ use super::{
     materialize_canonical_support_traceability_artifact, materialize_canonical_workflow_artifact,
     WorthQueryDomainCapabilityPayload, WorthQueryDomainCapabilityTargetBinding,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[test]
-fn equivalent_admission_meaning_canonicalizes_to_same_digest() {
+fn equivalent_admission_meaning_canonicalizes_to_same_digest(
+) -> Result<(), IdentityDerivationDenial> {
     let left = materialize_canonical_admission_artifact(declaration_ready_contribution(
         "intent-a",
         WorthQueryAdmissionContributionPayload::new(
             WorthQueryAdmissionContributionPosture::Advisory,
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
-        ),
+        )?,
     ));
     let right = materialize_canonical_admission_artifact(declaration_ready_contribution(
         "intent-a",
@@ -39,7 +41,7 @@ fn equivalent_admission_meaning_canonicalizes_to_same_digest() {
             WorthQueryAdmissionContributionPosture::Advisory,
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
-        ),
+        )?,
     ));
 
     assert_eq!(
@@ -60,17 +62,20 @@ fn equivalent_admission_meaning_canonicalizes_to_same_digest() {
         .expect("declaration semantics should be preserved");
     assert_eq!(semantics.0, "domain-capability.intent-a");
     assert_eq!(semantics.1, "worth.domain_capability.intent-a");
+
+    Ok(())
 }
 
 #[test]
-fn different_target_or_semantic_posture_changes_canonical_digest() {
+fn different_target_or_semantic_posture_changes_canonical_digest(
+) -> Result<(), IdentityDerivationDenial> {
     let advisory = materialize_canonical_admission_artifact(declaration_ready_contribution(
         "intent-a",
         WorthQueryAdmissionContributionPayload::new(
             WorthQueryAdmissionContributionPosture::Advisory,
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
-        ),
+        )?,
     ));
     let violation = materialize_canonical_admission_artifact(declaration_ready_contribution(
         "intent-a",
@@ -78,7 +83,7 @@ fn different_target_or_semantic_posture_changes_canonical_digest() {
             WorthQueryAdmissionContributionPosture::Violation,
             "spatial.arbitration.invalid_target",
             "requested target violates domain law",
-        ),
+        )?,
     ));
     let other_target = materialize_canonical_admission_artifact(declaration_ready_contribution(
         "intent-b",
@@ -86,7 +91,7 @@ fn different_target_or_semantic_posture_changes_canonical_digest() {
             WorthQueryAdmissionContributionPosture::Advisory,
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
-        ),
+        )?,
     ));
 
     assert_ne!(
@@ -97,10 +102,13 @@ fn different_target_or_semantic_posture_changes_canonical_digest() {
         advisory.materialization_digest(),
         other_target.materialization_digest()
     );
+
+    Ok(())
 }
 
 #[test]
-fn all_categories_materialize_profile_independent_canonical_artifacts() {
+fn all_categories_materialize_profile_independent_canonical_artifacts(
+) -> Result<(), IdentityDerivationDenial> {
     let support =
         materialize_canonical_support_traceability_artifact(lower_runtime_ready_contribution(
             "boundary-a",
@@ -117,7 +125,7 @@ fn all_categories_materialize_profile_independent_canonical_artifacts() {
                 WorthQueryInvariantCapabilityContributionPosture::CapabilityGap,
                 "graph.face_inner_loop_insertion",
                 "topology substrate is unavailable",
-            ),
+            )?,
         ));
     let workflow = materialize_canonical_workflow_artifact(admitted_plan_ready_contribution(
         "plan-a",
@@ -125,7 +133,7 @@ fn all_categories_materialize_profile_independent_canonical_artifacts() {
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             "preview.confirmation.required",
             "destructive promotion requires confirmation",
-        ),
+        )?,
     ));
     let continuity = materialize_canonical_continuity_artifact(admitted_plan_ready_contribution(
         "plan-b",
@@ -133,7 +141,7 @@ fn all_categories_materialize_profile_independent_canonical_artifacts() {
             WorthQueryContinuityContributionPosture::Split,
             "continuity.identity.split",
             "edge split produces two descendant identities",
-        ),
+        )?,
     ));
     let aftermath = materialize_canonical_aftermath_artifact(lower_runtime_ready_contribution(
         "boundary-b",
@@ -141,7 +149,7 @@ fn all_categories_materialize_profile_independent_canonical_artifacts() {
             WorthQueryAftermathContributionPosture::EstablishesFact,
             "aftermath.projection.fact_established",
             "projection establishes relation aftermath",
-        ),
+        )?,
     ));
     let explanation = materialize_canonical_explanation_artifact(declaration_ready_contribution(
         "intent-d",
@@ -149,7 +157,7 @@ fn all_categories_materialize_profile_independent_canonical_artifacts() {
             WorthQueryExplanationContributionPosture::ExplainsFallback,
             "spatial.reorient.fallback",
             "used canonical perpendicular fallback",
-        ),
+        )?,
     ));
 
     assert_eq!(support.canonical_family(), "declaration-support");
@@ -181,6 +189,8 @@ fn all_categories_materialize_profile_independent_canonical_artifacts() {
         support_boundary.0,
         crate::lower_runtime_routing::WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting
     );
+
+    Ok(())
 }
 
 fn declaration_ready_contribution<P>(

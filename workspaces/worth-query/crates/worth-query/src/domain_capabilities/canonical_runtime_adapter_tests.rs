@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::targets::{
@@ -17,20 +18,20 @@ use crate::runtime::WorthQueryMutationEvidenceDigest;
 use crate::target_binding::WorthQueryBindingTargetWitness;
 
 #[test]
-fn admission_runtime_materializer_builds_query_decisions() {
+fn admission_runtime_materializer_builds_query_decisions() -> Result<(), IdentityDerivationDenial> {
     let advisory = success(materialize_runtime_admission_decision(ready_admission(
         WorthQueryAdmissionContributionAuthoring::advisory_at_stage(
             "spatial_arbitration",
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
-        ),
+        )?,
     )));
     let violation = success(materialize_runtime_admission_decision(ready_admission(
         WorthQueryAdmissionContributionAuthoring::violation_at_stage(
             "spatial_arbitration",
             "spatial.arbitration.invalid_target",
             "requested target violates spatial law",
-        ),
+        )?,
     )));
 
     match advisory {
@@ -56,21 +57,24 @@ fn admission_runtime_materializer_builds_query_decisions() {
         }
         other => panic!("expected violation decision, got {other:?}"),
     }
+
+    Ok(())
 }
 
 #[test]
-fn admission_support_only_runtime_materializer_builds_support_traceability() {
+fn admission_support_only_runtime_materializer_builds_support_traceability(
+) -> Result<(), IdentityDerivationDenial> {
     let row = success(materialize_runtime_admission_support_traceability_row(
         ready_admission(WorthQueryAdmissionContributionAuthoring::support_only(
             "spatial.arbitration.support_only",
             "declaration remains support-scoped only",
-        )),
+        )?),
     ));
     let report = success(materialize_runtime_admission_support_traceability_report(
         ready_admission(WorthQueryAdmissionContributionAuthoring::support_only(
             "spatial.arbitration.support_only",
             "declaration remains support-scoped only",
-        )),
+        )?),
     ));
 
     assert_eq!(row.family(), "authoritative-user-intent");
@@ -82,21 +86,24 @@ fn admission_support_only_runtime_materializer_builds_support_traceability() {
     );
     assert_eq!(report.rows().len(), 1);
     assert_eq!(report.rows()[0], row);
+
+    Ok(())
 }
 
 #[test]
-fn admission_support_traceability_materializer_denies_non_support_postures() {
+fn admission_support_traceability_materializer_denies_non_support_postures(
+) -> Result<(), IdentityDerivationDenial> {
     let advisory = materialize_runtime_admission_support_traceability_row(ready_admission(
         WorthQueryAdmissionContributionAuthoring::advisory(
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
-        ),
+        )?,
     ));
     let violation = materialize_runtime_admission_support_traceability_report(ready_admission(
         WorthQueryAdmissionContributionAuthoring::violation(
             "spatial.arbitration.invalid_target",
             "requested target violates spatial law",
-        ),
+        )?,
     ));
 
     assert!(matches!(
@@ -111,15 +118,18 @@ fn admission_support_traceability_materializer_denies_non_support_postures() {
             if denial.kind()
                 == super::WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture
     ));
+
+    Ok(())
 }
 
 #[test]
-fn admission_local_support_and_support_traceability_rows_stay_distinct() {
+fn admission_local_support_and_support_traceability_rows_stay_distinct(
+) -> Result<(), IdentityDerivationDenial> {
     let admission_row = success(materialize_runtime_admission_support_traceability_row(
         ready_admission(WorthQueryAdmissionContributionAuthoring::support_only(
             "spatial.shared.support",
             "same support detail through shared runtime family",
-        )),
+        )?),
     ));
     let support_row = success(materialize_intent_admission_support_traceability_row(
         ready_support(WorthQuerySupportContributionAuthoring::declaration_support(
@@ -133,17 +143,20 @@ fn admission_local_support_and_support_traceability_rows_stay_distinct() {
     assert_eq!(admission_row.entrypoint(), support_row.entrypoint());
     assert_ne!(admission_row.lane(), support_row.lane());
     assert_ne!(admission_row.row_digest(), support_row.row_digest());
+
+    Ok(())
 }
 
 #[test]
-fn continuity_runtime_materializer_builds_continuity_evidence() {
+fn continuity_runtime_materializer_builds_continuity_evidence(
+) -> Result<(), IdentityDerivationDenial> {
     let preserved = success(materialize_runtime_continuity_evidence(ready_continuity(
         WorthQueryContinuityContributionAuthoring::preserved_rebind(
             "edge:12",
             "edge:14",
             "continuity.identity.preserved",
             "edge retarget keeps a single successor identity",
-        ),
+        )?,
     )));
     let split = success(materialize_runtime_continuity_evidence(ready_continuity(
         WorthQueryContinuityContributionAuthoring::split_successors(
@@ -151,7 +164,7 @@ fn continuity_runtime_materializer_builds_continuity_evidence() {
             ["edge:14", "edge:15"],
             "continuity.identity.split",
             "edge split produces two descendant identities",
-        ),
+        )?,
     )));
 
     assert_eq!(
@@ -200,15 +213,18 @@ fn continuity_runtime_materializer_builds_continuity_evidence() {
             .collect::<Vec<_>>(),
         vec!["edge:14", "edge:15"]
     );
+
+    Ok(())
 }
 
 #[test]
-fn continuity_runtime_materializer_denies_correspondence_only() {
+fn continuity_runtime_materializer_denies_correspondence_only(
+) -> Result<(), IdentityDerivationDenial> {
     let outcome = materialize_runtime_continuity_evidence(ready_continuity(
         WorthQueryContinuityContributionAuthoring::correspondence_only(
             "continuity.correspondence_only",
             "semantic correspondence exists without authoritative continuity",
-        ),
+        )?,
     ));
 
     assert!(matches!(
@@ -217,10 +233,13 @@ fn continuity_runtime_materializer_denies_correspondence_only() {
             if denial.kind()
                 == super::WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics
     ));
+
+    Ok(())
 }
 
 #[test]
-fn continuity_runtime_materializer_denies_inconsistent_runtime_semantics() {
+fn continuity_runtime_materializer_denies_inconsistent_runtime_semantics(
+) -> Result<(), IdentityDerivationDenial> {
     let outcome = materialize_runtime_continuity_evidence(ready_continuity_payload(
         super::WorthQueryContinuityContributionPayload::with_runtime_semantics(
             super::WorthQueryContinuityContributionPosture::Preserved,
@@ -232,7 +251,7 @@ fn continuity_runtime_materializer_denies_inconsistent_runtime_semantics() {
                 "edge:12",
                 ["edge:14", "edge:15"],
             )),
-        ),
+        )?,
     ));
 
     assert!(matches!(
@@ -241,6 +260,8 @@ fn continuity_runtime_materializer_denies_inconsistent_runtime_semantics() {
             if denial.kind()
                 == super::WorthQueryDomainCapabilityProgressionDenialKind::InconsistentCanonicalMaterializationSemantics
     ));
+
+    Ok(())
 }
 
 fn ready_admission(

@@ -13,6 +13,7 @@ use crate::domain_capabilities::eligibility::{
 use crate::domain_capabilities::{
     WorthQueryDomainCapabilityTargetKind, WorthQueryInstalledDeclarationContributionTarget,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::preview::PreviewWorkflowFoundationArtifact;
 use crate::workflow::QueryWorkflowDeclaration;
 use worth_runtime_bridge::facade::BridgePreviewSessionIdentity;
@@ -78,16 +79,19 @@ pub struct WorthQueryIntentPreviewInspectionContribution {
 impl WorthQueryIntentPreviewInspectionContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<PreviewWorkflowFoundationArtifact> {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<PreviewWorkflowFoundationArtifact>,
+        IdentityDerivationDenial,
+    > {
         let target = self.target.clone();
         let requested = WorthQueryWorkflowContributionAuthoring::preview_only_query_inspection(
             qualify_semantic_code(self.target.authority(), &self.semantic_code),
             self.detail,
             self.preview_session_identity,
-        )
+        )?
         .bind_to_installed_target(self.target);
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "workflow-preview",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             crate::domain_capabilities::payloads::WorthQueryWorkflowContributionPosture::PreviewOnly
@@ -101,7 +105,7 @@ impl WorthQueryIntentPreviewInspectionContribution {
                 )
             },
             materialize_query_preview_workflow_artifact,
-        )
+        ))
     }
 
     pub fn materialize(
@@ -156,17 +160,20 @@ impl WorthQueryIntentPreviewMutationPlan {
 impl WorthQueryIntentPreviewMutationContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<WorthQueryIntentPreviewMutationPlan> {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<WorthQueryIntentPreviewMutationPlan>,
+        IdentityDerivationDenial,
+    > {
         let target = self.target.clone();
         let requested =
             WorthQueryWorkflowContributionAuthoring::promotion_eligible_mutation_lowering(
                 qualify_semantic_code(self.target.authority(), &self.semantic_code),
                 self.detail,
                 self.preview_session_identity,
-            )
+            )?
             .bind_to_installed_target(self.target);
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "workflow-preview",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             crate::domain_capabilities::payloads::WorthQueryWorkflowContributionPosture::PromotionEligible
@@ -184,7 +191,7 @@ impl WorthQueryIntentPreviewMutationContribution {
                     |declaration| WorthQueryIntentPreviewMutationPlan { inner: declaration },
                 )
             },
-        )
+        ))
     }
 
     pub fn materialize(

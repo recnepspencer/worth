@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::test_support::{
@@ -17,7 +18,8 @@ use worth_relational::facade::identity::{EntityId, PartitionId};
 use worth_runtime_bridge::facade::BridgeRequestKind;
 
 #[test]
-fn mutation_lowering_materializer_builds_runtime_lowered_declaration() {
+fn mutation_lowering_materializer_builds_runtime_lowered_declaration(
+) -> Result<(), IdentityDerivationDenial> {
     let authority_binding_identity = crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::WorkflowMutationLowering,
     )
@@ -41,7 +43,7 @@ fn mutation_lowering_materializer_builds_runtime_lowered_declaration() {
                 "name", "name", "after",
             )
             .expect("name patch should build"),
-        )
+        )?
         .bind_to_declaration_target(declaration_target("intent-workflow-mutation")),
     )));
 
@@ -64,10 +66,13 @@ fn mutation_lowering_materializer_builds_runtime_lowered_declaration() {
         )
     );
     assert_eq!(lowered.counters().workflow_mutation_lowering_count(), 1);
+
+    Ok(())
 }
 
 #[test]
-fn merge_lowering_materializer_builds_preview_bound_lowering() {
+fn merge_lowering_materializer_builds_preview_bound_lowering(
+) -> Result<(), IdentityDerivationDenial> {
     let lowered = success(materialize_lowered_merge_workflow_declaration(ready(
         WorthQueryWorkflowContributionAuthoring::promotion_eligible_merge_reconciliation(
             "spatial.workflow.merge",
@@ -77,13 +82,13 @@ fn merge_lowering_materializer_builds_preview_bound_lowering() {
             ),
             BranchId("main".to_string()),
             BranchId("candidate".to_string()),
-        )
+        )?
         .bind_to_admitted_plan_target(admitted_plan_target_parts(
             "plan-workflow-merge",
             "request-merge",
             "eligibility-merge",
             "decision-merge",
-        )),
+        )?),
     )));
 
     assert_eq!(
@@ -102,10 +107,13 @@ fn merge_lowering_materializer_builds_preview_bound_lowering() {
         lowered.staleness_class().as_str(),
         "authority_validation_required"
     );
+
+    Ok(())
 }
 
 #[test]
-fn writeback_lowering_materializer_builds_bridge_writeback_declaration() {
+fn writeback_lowering_materializer_builds_bridge_writeback_declaration(
+) -> Result<(), IdentityDerivationDenial> {
     let lowered = success(materialize_query_writeback_lowering(ready(
         WorthQueryWorkflowContributionAuthoring::confirmation_required_writeback_projected_state_diff(
             "spatial.workflow.writeback",
@@ -113,7 +121,7 @@ fn writeback_lowering_materializer_builds_bridge_writeback_declaration() {
             crate::memory_workspace::admit_external_snapshot_label(
                 "runtime-snapshot:58",
             ),
-        )
+        )?
         .bind_to_declaration_target(declaration_target("intent-workflow-writeback")),
     )));
 
@@ -126,10 +134,13 @@ fn writeback_lowering_materializer_builds_bridge_writeback_declaration() {
         BridgeRequestKind::Authoritative
     );
     assert_eq!(lowered.counters().workflow_writeback_declaration_count(), 1);
+
+    Ok(())
 }
 
 #[test]
-fn workflow_lowering_materializer_denies_missing_lowering_semantics() {
+fn workflow_lowering_materializer_denies_missing_lowering_semantics(
+) -> Result<(), IdentityDerivationDenial> {
     let denied = materialize_lowered_mutation_intent_declaration(ready(
         super::proof_integration::create_requested_domain_capability_contribution(
             declaration_target("intent-workflow-missing-lowering"),
@@ -149,7 +160,7 @@ fn workflow_lowering_materializer_denies_missing_lowering_semantics() {
                     crate::workflow::WorkflowBudgetClass::AuthorityTargetBounded,
                     crate::workflow::WorkflowFreshnessPolicy::ExactBasis,
                 )),
-            ),
+            )?,
         ),
     ));
 
@@ -159,10 +170,13 @@ fn workflow_lowering_materializer_denies_missing_lowering_semantics() {
             if denial.kind()
                 == WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics
     ));
+
+    Ok(())
 }
 
 #[test]
-fn workflow_lowering_materializer_preserves_runtime_stale_posture() {
+fn workflow_lowering_materializer_preserves_runtime_stale_posture(
+) -> Result<(), IdentityDerivationDenial> {
     let target = declaration_target("intent-workflow-writeback-stale");
     let stale = materialize_query_writeback_lowering(ready_payload(
         target.clone(),
@@ -186,7 +200,7 @@ fn workflow_lowering_materializer_preserves_runtime_stale_posture() {
             Some(WorthQueryWorkflowLoweringSemantics::writeback(
                 crate::workflow::WritebackLoweringInput::projected_state_diff(),
             )),
-        ),
+        )?,
     ));
 
     match stale {
@@ -199,10 +213,13 @@ fn workflow_lowering_materializer_preserves_runtime_stale_posture() {
         }
         other => panic!("expected stale outcome, got {other:?}"),
     }
+
+    Ok(())
 }
 
 #[test]
-fn discard_required_writeback_lowering_preserves_preview_stale_posture() {
+fn discard_required_writeback_lowering_preserves_preview_stale_posture(
+) -> Result<(), IdentityDerivationDenial> {
     let target = declaration_target("intent-workflow-writeback-discard");
     let stale = materialize_query_writeback_lowering(ready(
         WorthQueryWorkflowContributionAuthoring::discard_required_writeback_projected_state_diff(
@@ -211,7 +228,7 @@ fn discard_required_writeback_lowering_preserves_preview_stale_posture() {
             crate::facade::runtime::BridgePreviewSessionIdentity::from_stable_name(
                 "preview-session:91",
             ),
-        )
+        )?
         .bind_to_declaration_target(target.clone()),
     ));
 
@@ -225,10 +242,13 @@ fn discard_required_writeback_lowering_preserves_preview_stale_posture() {
         }
         other => panic!("expected stale outcome, got {other:?}"),
     }
+
+    Ok(())
 }
 
 #[test]
-fn workflow_lowering_materializer_preserves_runtime_rebind_posture() {
+fn workflow_lowering_materializer_preserves_runtime_rebind_posture(
+) -> Result<(), IdentityDerivationDenial> {
     let target = declaration_target("intent-workflow-writeback-rebind");
     let rebind = materialize_query_writeback_lowering(ready_payload(
         target.clone(),
@@ -252,7 +272,7 @@ fn workflow_lowering_materializer_preserves_runtime_rebind_posture() {
             Some(WorthQueryWorkflowLoweringSemantics::writeback(
                 crate::workflow::WritebackLoweringInput::projected_state_diff(),
             )),
-        ),
+        )?,
     ));
 
     match rebind {
@@ -265,4 +285,6 @@ fn workflow_lowering_materializer_preserves_runtime_rebind_posture() {
         }
         other => panic!("expected rebind-required outcome, got {other:?}"),
     }
+
+    Ok(())
 }

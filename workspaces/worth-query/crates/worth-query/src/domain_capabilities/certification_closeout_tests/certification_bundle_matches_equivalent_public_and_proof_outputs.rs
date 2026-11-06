@@ -1,8 +1,10 @@
 //! certification bundle matches equivalent public and proof outputs.
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[test]
-fn certification_bundle_matches_equivalent_public_and_proof_outputs() {
+fn certification_bundle_matches_equivalent_public_and_proof_outputs(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -11,7 +13,7 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs() {
     let (reference_set, target) = replay_gap_inputs();
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
-    let bundle = certify_domain_capabilities_in(domain);
+    let bundle = certify_domain_capabilities_in(domain)?;
     let declaration_target = domain
         .intent_target(&declaration)
         .expect("installed contribution authority must remain current");
@@ -60,7 +62,7 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs() {
             crate::facade::runtime::BridgePreviewSessionIdentity::from_stable_name(
                 "preview-session:certification",
             ),
-        )
+        )?
         .bind_to_installed_target(declaration_target.clone()),
     )));
     assert_eq!(workflow.workflow_declaration(), &workflow_proof);
@@ -100,7 +102,7 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs() {
                 vec![CausalEvidenceFamily::QueryInspection],
                 CausalInspectionRedactionPolicy::PreserveDetail,
                 CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
-            )
+            )?
             .bind_to_installed_target(lower_runtime_target),
         ),
     ));
@@ -123,9 +125,11 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs() {
                 InvariantCatalog::default(),
                 "worth.spatial.invariant.edge_split",
                 "geometry kernel must reject invalid edge splits",
-            )
+            )?
             .bind_to_installed_target(declaration_target),
         ),
     ));
     assert_eq!(invariant, invariant_proof);
+
+    Ok(())
 }

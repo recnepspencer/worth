@@ -1,4 +1,5 @@
 use crate::domain_capabilities::identity::domain_capability_scope_encoder;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
 use super::common::{
@@ -51,7 +52,7 @@ fn compose_workflow_payload_identity(
     runtime_semantics: Option<&WorthQueryWorkflowRuntimeSemantics>,
     lowering_semantics: Option<&WorthQueryWorkflowLoweringSemantics>,
     inspection_semantics: Option<&WorthQueryWorkflowInspectionSemantics>,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity = domain_capability_scope_encoder("worth_query_domain_capability_payload_v5")
         .field_shape(
             WorthQueryEvidenceTag::new("category"),
@@ -81,7 +82,7 @@ fn compose_workflow_payload_identity(
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("inspection"), "none"),
     };
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -100,8 +101,15 @@ impl WorthQueryWorkflowContributionPayload {
         posture: WorthQueryWorkflowContributionPosture,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_all_semantics(posture, semantic_code, detail, None, None, None)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_all_semantics(
+            posture,
+            semantic_code,
+            detail,
+            None,
+            None,
+            None,
+        )?)
     }
 
     pub fn with_runtime_semantics(
@@ -109,15 +117,15 @@ impl WorthQueryWorkflowContributionPayload {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         runtime_semantics: Option<WorthQueryWorkflowRuntimeSemantics>,
-    ) -> Self {
-        Self::with_all_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_all_semantics(
             posture,
             semantic_code,
             detail,
             runtime_semantics,
             None,
             None,
-        )
+        )?)
     }
 
     pub fn with_runtime_and_lowering_semantics(
@@ -126,15 +134,15 @@ impl WorthQueryWorkflowContributionPayload {
         detail: impl Into<String>,
         runtime_semantics: Option<WorthQueryWorkflowRuntimeSemantics>,
         lowering_semantics: Option<WorthQueryWorkflowLoweringSemantics>,
-    ) -> Self {
-        Self::with_all_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_all_semantics(
             posture,
             semantic_code,
             detail,
             runtime_semantics,
             lowering_semantics,
             None,
-        )
+        )?)
     }
 
     pub fn with_runtime_and_inspection_semantics(
@@ -143,15 +151,15 @@ impl WorthQueryWorkflowContributionPayload {
         detail: impl Into<String>,
         runtime_semantics: Option<WorthQueryWorkflowRuntimeSemantics>,
         inspection_semantics: Option<WorthQueryWorkflowInspectionSemantics>,
-    ) -> Self {
-        Self::with_all_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_all_semantics(
             posture,
             semantic_code,
             detail,
             runtime_semantics,
             None,
             inspection_semantics,
-        )
+        )?)
     }
 
     pub fn with_all_semantics(
@@ -161,7 +169,7 @@ impl WorthQueryWorkflowContributionPayload {
         runtime_semantics: Option<WorthQueryWorkflowRuntimeSemantics>,
         lowering_semantics: Option<WorthQueryWorkflowLoweringSemantics>,
         inspection_semantics: Option<WorthQueryWorkflowInspectionSemantics>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let semantic_code = semantic_code.into();
         let detail = detail.into();
         let payload_identity = compose_workflow_payload_identity(
@@ -171,8 +179,8 @@ impl WorthQueryWorkflowContributionPayload {
             runtime_semantics.as_ref(),
             lowering_semantics.as_ref(),
             inspection_semantics.as_ref(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             posture,
             semantic_code,
             detail,
@@ -180,7 +188,7 @@ impl WorthQueryWorkflowContributionPayload {
             lowering_semantics,
             inspection_semantics,
             payload_identity,
-        }
+        })
     }
 
     pub fn category(&self) -> WorthQueryDomainCapabilityCategory {

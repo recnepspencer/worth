@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::test_support::{admitted_plan_target, ready_payload, success};
@@ -11,7 +12,8 @@ use crate::correspondence::{
 };
 
 #[test]
-fn continuity_correspondence_materializer_builds_lineage_continuity() {
+fn continuity_correspondence_materializer_builds_lineage_continuity(
+) -> Result<(), IdentityDerivationDenial> {
     let resolved = success(materialize_correspondence_evidence_resolved(
         ready_continuity(
             WorthQueryContinuityContributionAuthoring::correspondence_lineage_only(
@@ -21,7 +23,7 @@ fn continuity_correspondence_materializer_builds_lineage_continuity() {
                 4,
                 "continuity.correspondence.lineage_only",
                 "lineage evidence supplies the authoritative counterpart",
-            ),
+            )?,
         ),
     ));
 
@@ -32,10 +34,13 @@ fn continuity_correspondence_materializer_builds_lineage_continuity() {
         .expect("lineage continuity outcome");
     assert_eq!(lineage.canonical_subject(), "edge:12");
     assert_eq!(lineage.authoritative_counterpart(), "edge:14");
+
+    Ok(())
 }
 
 #[test]
-fn continuity_correspondence_materializer_builds_structural_ambiguity() {
+fn continuity_correspondence_materializer_builds_structural_ambiguity(
+) -> Result<(), IdentityDerivationDenial> {
     let resolved = success(materialize_correspondence_evidence_resolved(
         ready_continuity(
             WorthQueryContinuityContributionAuthoring::correspondence_structural_only(
@@ -45,7 +50,7 @@ fn continuity_correspondence_materializer_builds_structural_ambiguity() {
                 StructuralCandidateOrderingContract::StableFingerprintThenLineageHintOrder,
                 "continuity.correspondence.structural_only",
                 "structural evidence yields two bounded candidates",
-            ),
+            )?,
         ),
     ));
 
@@ -66,10 +71,13 @@ fn continuity_correspondence_materializer_builds_structural_ambiguity() {
             .candidates(),
         &["edge:14".to_string(), "edge:15".to_string()]
     );
+
+    Ok(())
 }
 
 #[test]
-fn continuity_correspondence_materializer_builds_mixed_disagreement() {
+fn continuity_correspondence_materializer_builds_mixed_disagreement(
+) -> Result<(), IdentityDerivationDenial> {
     let resolved = success(materialize_correspondence_evidence_resolved(
         ready_continuity(
             WorthQueryContinuityContributionAuthoring::correspondence_mixed(
@@ -81,7 +89,7 @@ fn continuity_correspondence_materializer_builds_mixed_disagreement() {
                 StructuralCandidateOrderingContract::StableFingerprintThenLineageHintOrder,
                 "continuity.correspondence.mixed",
                 "structural evidence disagrees with lineage continuity",
-            ),
+            )?,
         ),
     ));
 
@@ -95,16 +103,19 @@ fn continuity_correspondence_materializer_builds_mixed_disagreement() {
         .expect("disagreement outcome");
     assert_eq!(disagreement.lineage_counterpart(), "edge:14");
     assert_eq!(disagreement.structural_counterpart(), "edge:99");
+
+    Ok(())
 }
 
 #[test]
-fn continuity_correspondence_materializer_denies_missing_semantics() {
+fn continuity_correspondence_materializer_denies_missing_semantics(
+) -> Result<(), IdentityDerivationDenial> {
     let outcome = materialize_correspondence_evidence_resolved(ready_continuity_payload(
         WorthQueryContinuityContributionPayload::new(
             WorthQueryContinuityContributionPosture::CorrespondenceOnly,
             "continuity.correspondence.missing",
             "correspondence posture without correspondence evidence",
-        ),
+        )?,
     ));
 
     assert!(matches!(
@@ -113,17 +124,20 @@ fn continuity_correspondence_materializer_denies_missing_semantics() {
             if denial.kind()
                 == super::WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics
     ));
+
+    Ok(())
 }
 
 #[test]
-fn continuity_correspondence_materializer_denies_mutation_posture() {
+fn continuity_correspondence_materializer_denies_mutation_posture(
+) -> Result<(), IdentityDerivationDenial> {
     let outcome = materialize_correspondence_evidence_resolved(ready_continuity(
         WorthQueryContinuityContributionAuthoring::preserved_rebind(
             "edge:12",
             "edge:14",
             "continuity.identity.preserved",
             "authoritative continuity evidence should stay on the mutation lane",
-        ),
+        )?,
     ));
 
     assert!(matches!(
@@ -132,6 +146,8 @@ fn continuity_correspondence_materializer_denies_mutation_posture() {
             if denial.kind()
                 == super::WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture
     ));
+
+    Ok(())
 }
 
 fn ready_continuity(

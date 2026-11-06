@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod outputs;
 
 use self::outputs::{assemble_certification_outputs, certification_bundle_digest};
@@ -101,19 +102,24 @@ impl WorthQueryDomainCapabilityCertificationBundle {
 
 pub fn certify_domain_capabilities(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryDomainCapabilityCertificationBundle {
+) -> Result<WorthQueryDomainCapabilityCertificationBundle, IdentityDerivationDenial> {
     let installation = super::install_domain_capability_certification(execution);
-    certify_domain_capabilities_in(installation.contributions())
+    Ok(certify_domain_capabilities_in(
+        installation.contributions(),
+    )?)
 }
 
 pub(crate) fn certify_domain_capabilities_in(
     domain: &crate::domain_capabilities::WorthQueryInstalledDomainContributionSurface,
-) -> WorthQueryDomainCapabilityCertificationBundle {
-    let representative_report = worth_query_domain_capability_representative_report_in(domain);
+) -> Result<WorthQueryDomainCapabilityCertificationBundle, IdentityDerivationDenial> {
+    let representative_report = worth_query_domain_capability_representative_report_in(domain)?;
     let slope_report =
-        worth_query_domain_capability_slope_report_in(&representative_report, domain);
+        worth_query_domain_capability_slope_report_in(&representative_report, domain)?;
 
-    WorthQueryDomainCapabilityCertificationBundle::new(representative_report, slope_report)
+    Ok(WorthQueryDomainCapabilityCertificationBundle::new(
+        representative_report,
+        slope_report,
+    ))
 }
 
 fn validate_output_manifest(
@@ -144,11 +150,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn certification_bundle_matches_required_manifest() {
+    fn certification_bundle_matches_required_manifest() -> Result<(), IdentityDerivationDenial> {
         let host_request = crate::test_execution_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let bundle = certify_domain_capabilities(request_execution);
+        let bundle = certify_domain_capabilities(request_execution)?;
 
         assert_eq!(
             bundle.output_manifest(),
@@ -161,5 +167,7 @@ mod tests {
             .output_digest("support_materialization_slope_digest")
             .is_some_and(|digest| !digest.is_empty()));
         assert!(!bundle.certification_bundle_digest().is_empty());
+
+        Ok(())
     }
 }

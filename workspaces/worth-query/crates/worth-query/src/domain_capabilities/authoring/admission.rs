@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{WorthQueryAdmittedIntentPlan, WorthQueryIntentDeclaration};
 
 use super::bind_requested;
@@ -15,54 +16,63 @@ pub struct WorthQueryAdmissionContributionAuthoring {
 }
 
 impl WorthQueryAdmissionContributionAuthoring {
-    pub fn advisory(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn advisory(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryAdmissionContributionPosture::Advisory,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn advisory_at_stage(
         decision_stage: &'static str,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_decision_stage(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_decision_stage(
             WorthQueryAdmissionContributionPosture::Advisory,
             semantic_code,
             detail,
             decision_stage,
-        )
+        )?)
     }
 
-    pub fn violation(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn violation(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryAdmissionContributionPosture::Violation,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn violation_at_stage(
         decision_stage: &'static str,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_decision_stage(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_decision_stage(
             WorthQueryAdmissionContributionPosture::Violation,
             semantic_code,
             detail,
             decision_stage,
-        )
+        )?)
     }
 
-    pub fn support_only(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn support_only(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryAdmissionContributionPosture::SupportOnly,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn for_intent_declaration(
@@ -125,10 +135,10 @@ impl WorthQueryAdmissionContributionAuthoring {
         posture: WorthQueryAdmissionContributionPosture,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self {
-            payload: WorthQueryAdmissionContributionPayload::new(posture, semantic_code, detail),
-        }
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
+            payload: WorthQueryAdmissionContributionPayload::new(posture, semantic_code, detail)?,
+        })
     }
 
     fn with_decision_stage(
@@ -136,14 +146,14 @@ impl WorthQueryAdmissionContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         decision_stage: &'static str,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             payload: WorthQueryAdmissionContributionPayload::with_decision_stage(
                 posture,
                 semantic_code,
                 detail,
                 decision_stage,
-            ),
-        }
+            )?,
+        })
     }
 }

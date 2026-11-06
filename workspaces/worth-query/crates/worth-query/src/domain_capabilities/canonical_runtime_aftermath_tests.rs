@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::targets::WorthQueryAdmittedPlanBoundContributionTarget;
@@ -14,7 +15,8 @@ use crate::projection_consumption::{
 };
 
 #[test]
-fn aftermath_runtime_materializer_builds_projection_consumption() {
+fn aftermath_runtime_materializer_builds_projection_consumption(
+) -> Result<(), IdentityDerivationDenial> {
     let admitted = success(materialize_admitted_projection_consumption(
         ready_aftermath(
             WorthQueryAftermathContributionAuthoring::establishes_projection_contract(
@@ -31,7 +33,7 @@ fn aftermath_runtime_materializer_builds_projection_consumption() {
                                 .expect("projection fact field segment should admit"),
                         ]),
                     ),
-            ),
+            )?,
         ),
     ));
 
@@ -51,7 +53,7 @@ fn aftermath_runtime_materializer_builds_projection_consumption() {
                                 .expect("projection fact field segment should admit"),
                         ]),
                     ),
-            ),
+            )?,
         ),
     ));
 
@@ -62,15 +64,18 @@ fn aftermath_runtime_materializer_builds_projection_consumption() {
     );
     assert_eq!(contract.source_identity(), "query-read:domain-capability");
     assert!(!contract.contract_digest().is_empty());
+
+    Ok(())
 }
 
 #[test]
-fn aftermath_runtime_materializer_denies_missing_semantics() {
+fn aftermath_runtime_materializer_denies_missing_semantics() -> Result<(), IdentityDerivationDenial>
+{
     let outcome = materialize_admitted_projection_consumption(ready_aftermath(
         WorthQueryAftermathContributionAuthoring::establishes_fact(
             "aftermath.support.only",
             "support-only aftermath cannot mint projection consumption",
-        ),
+        )?,
     ));
 
     assert!(matches!(
@@ -79,10 +84,13 @@ fn aftermath_runtime_materializer_denies_missing_semantics() {
             if denial.kind()
                 == super::WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics
     ));
+
+    Ok(())
 }
 
 #[test]
-fn aftermath_runtime_materializer_denies_invalid_projection_declaration() {
+fn aftermath_runtime_materializer_denies_invalid_projection_declaration(
+) -> Result<(), IdentityDerivationDenial> {
     let outcome = materialize_projection_consumption_eligibility(ready_aftermath(
         WorthQueryAftermathContributionAuthoring::establishes_projection_contract(
             "aftermath.projection.invalid_declaration",
@@ -97,7 +105,7 @@ fn aftermath_runtime_materializer_denies_invalid_projection_declaration() {
                         .expect("projection fact field segment should admit"),
                 ]),
             ),
-        ),
+        )?,
     ));
 
     assert!(matches!(
@@ -106,10 +114,13 @@ fn aftermath_runtime_materializer_denies_invalid_projection_declaration() {
             if denial.kind()
                 == super::WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture
     ));
+
+    Ok(())
 }
 
 #[test]
-fn aftermath_runtime_materializer_preserves_warning_bearing_eligibility() {
+fn aftermath_runtime_materializer_preserves_warning_bearing_eligibility(
+) -> Result<(), IdentityDerivationDenial> {
     let eligibility = success(materialize_projection_consumption_eligibility(
         ready_aftermath(
             WorthQueryAftermathContributionAuthoring::establishes_projection_contract(
@@ -126,7 +137,7 @@ fn aftermath_runtime_materializer_preserves_warning_bearing_eligibility() {
                                 .expect("projection fact field segment should admit"),
                         ]),
                     ),
-            ),
+            )?,
         ),
     ));
 
@@ -139,10 +150,13 @@ fn aftermath_runtime_materializer_preserves_warning_bearing_eligibility() {
         }
         other => panic!("expected warning-bearing eligibility, got {other:?}"),
     }
+
+    Ok(())
 }
 
 #[test]
-fn aftermath_runtime_materializer_preserves_deferred_eligibility() {
+fn aftermath_runtime_materializer_preserves_deferred_eligibility(
+) -> Result<(), IdentityDerivationDenial> {
     let eligibility = success(materialize_projection_consumption_eligibility(
         ready_aftermath(
             WorthQueryAftermathContributionAuthoring::establishes_projection_contract(
@@ -152,7 +166,7 @@ fn aftermath_runtime_materializer_preserves_deferred_eligibility() {
                 deferred_projection_binding(),
                 crate::projection_consumption::ProjectMaterializedFacts::declare()
                     .target_identity(),
-            ),
+            )?,
         ),
     ));
 
@@ -160,10 +174,13 @@ fn aftermath_runtime_materializer_preserves_deferred_eligibility() {
         eligibility,
         ProjectionConsumptionEligibility::Deferred(_)
     ));
+
+    Ok(())
 }
 
 #[test]
-fn aftermath_runtime_materializer_preserves_source_mismatch_eligibility() {
+fn aftermath_runtime_materializer_preserves_source_mismatch_eligibility(
+) -> Result<(), IdentityDerivationDenial> {
     let eligibility = success(materialize_projection_consumption_eligibility(
         ready_aftermath(
             WorthQueryAftermathContributionAuthoring::establishes_projection_contract(
@@ -172,7 +189,7 @@ fn aftermath_runtime_materializer_preserves_source_mismatch_eligibility() {
                 admitted_projection_source(),
                 admitted_projection_binding(),
                 crate::projection_consumption::ProjectMaterializedFacts::declare().memberships(),
-            ),
+            )?,
         ),
     ));
 
@@ -189,10 +206,13 @@ fn aftermath_runtime_materializer_preserves_source_mismatch_eligibility() {
         }
         other => panic!("expected source mismatch eligibility, got {other:?}"),
     }
+
+    Ok(())
 }
 
 #[test]
-fn aftermath_runtime_review_and_support_hook_preserve_deferred_truth() {
+fn aftermath_runtime_review_and_support_hook_preserve_deferred_truth(
+) -> Result<(), IdentityDerivationDenial> {
     let review_contribution = ready_aftermath(
         WorthQueryAftermathContributionAuthoring::establishes_projection_contract(
             "aftermath.projection.deferred",
@@ -200,7 +220,7 @@ fn aftermath_runtime_review_and_support_hook_preserve_deferred_truth() {
             deferred_projection_source(),
             deferred_projection_binding(),
             crate::projection_consumption::ProjectMaterializedFacts::declare().target_identity(),
-        ),
+        )?,
     );
     let support_contribution = ready_aftermath(
         WorthQueryAftermathContributionAuthoring::establishes_projection_contract(
@@ -209,7 +229,7 @@ fn aftermath_runtime_review_and_support_hook_preserve_deferred_truth() {
             deferred_projection_source(),
             deferred_projection_binding(),
             crate::projection_consumption::ProjectMaterializedFacts::declare().target_identity(),
-        ),
+        )?,
     );
 
     let review = success(materialize_projection_consumption_review(
@@ -239,6 +259,8 @@ fn aftermath_runtime_review_and_support_hook_preserve_deferred_truth() {
                 ProjectionConsumptionSupportPosture::Deferred(_)
             )
     }));
+
+    Ok(())
 }
 
 fn ready_aftermath(

@@ -10,6 +10,7 @@ use crate::domain_capabilities::identity::{
 use crate::domain_capabilities::{
     materialize_intent_admission_support_traceability_report, WorthQueryDomainCapabilityCategory,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::dx::WorthQueryRuntimeIntentAdmissionReviewData;
 use crate::intent_admission::WorthQueryIntentAdmissionCoveredEntrypoint;
 
@@ -60,18 +61,18 @@ impl WorthQueryDomainCapabilityScaledEvidence {
 
 pub(crate) fn worth_query_domain_capability_scaled_evidence_in(
     domain: &crate::domain_capabilities::WorthQueryInstalledDomainContributionSurface,
-) -> [WorthQueryDomainCapabilityScaledEvidence; 3] {
-    [
-        scaled_evidence(1, domain),
-        scaled_evidence(2, domain),
-        scaled_evidence(3, domain),
-    ]
+) -> Result<[WorthQueryDomainCapabilityScaledEvidence; 3], IdentityDerivationDenial> {
+    Ok([
+        scaled_evidence(1, domain)?,
+        scaled_evidence(2, domain)?,
+        scaled_evidence(3, domain)?,
+    ])
 }
 
 fn scaled_evidence(
     scale: usize,
     domain: &crate::domain_capabilities::WorthQueryInstalledDomainContributionSurface,
-) -> WorthQueryDomainCapabilityScaledEvidence {
+) -> Result<WorthQueryDomainCapabilityScaledEvidence, IdentityDerivationDenial> {
     let declaration = intent_declaration(&format!("domain-capability-scale-{scale}"));
     let admitted_plan = admitted_basis_observation_plan();
     let projection_plan = admitted_projection_consumption_plan();
@@ -217,16 +218,16 @@ fn scaled_evidence(
         trace_digests.push(trace.trace_digest().to_string());
     }
 
-    WorthQueryDomainCapabilityScaledEvidence {
+    Ok(WorthQueryDomainCapabilityScaledEvidence {
         contribution_width: contribution_digests.len(),
         trace_width,
         category_width: categories.len(),
         support_width,
-        contribution_digest: compose_scaled_contribution_digest(&contribution_digests),
-        trace_digest: compose_scaled_trace_digest(&trace_digests),
-        category_digest: compose_scaled_category_digest(&categories),
-        support_digest: compose_scaled_support_digest(&support_digests),
-    }
+        contribution_digest: compose_scaled_contribution_digest(&contribution_digests)?,
+        trace_digest: compose_scaled_trace_digest(&trace_digests)?,
+        category_digest: compose_scaled_category_digest(&categories)?,
+        support_digest: compose_scaled_support_digest(&support_digests)?,
+    })
 }
 
 fn category_set_for_scale(scale: usize) -> Vec<WorthQueryDomainCapabilityCategory> {

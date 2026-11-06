@@ -7,6 +7,7 @@ use super::payloads::{
 };
 use super::targets::WorthQueryLowerRuntimeBoundaryBoundContributionTarget;
 use super::test_support::{lower_runtime_target, ready_payload};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::{
     AdmissionReadinessProfile, CertificationPostureProfile, CompatibilityPostureProfile,
     DiagnosticRichnessProfile, ExecutionObjectiveProfile, FoundationalDiagnosticDeliveryClass,
@@ -15,7 +16,8 @@ use worth_foundational::{
 };
 
 #[test]
-fn lower_runtime_descriptive_outputs_do_not_claim_current_fresh_provenance() {
+fn lower_runtime_descriptive_outputs_do_not_claim_current_fresh_provenance(
+) -> Result<(), IdentityDerivationDenial> {
     let support = materialize_support_traceability_support_report(
         lower_runtime_ready_contribution(WorthQuerySupportContributionPayload::new(
             WorthQuerySupportContributionPosture::DeclarationTraceability,
@@ -31,7 +33,7 @@ fn lower_runtime_descriptive_outputs_do_not_claim_current_fresh_provenance() {
             WorthQueryExplanationContributionPosture::ExplainsFallback,
             "runtime.boundary.explanation.hot",
             "lower runtime explanation remains replay-derived even when callers request hot delivery",
-        )),
+        )?),
         forensic_support_profile(),
         FoundationalDiagnosticDeliveryClass::MustBeHot,
     )
@@ -47,6 +49,8 @@ fn lower_runtime_descriptive_outputs_do_not_claim_current_fresh_provenance() {
             worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture::ReconstructedFromReplay
         );
     }
+
+    Ok(())
 }
 
 fn lower_runtime_ready_contribution<P>(

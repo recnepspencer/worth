@@ -1,11 +1,13 @@
 use super::representative::worth_query_domain_capability_representative_report;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[test]
-fn representative_report_emits_all_required_foundation_digests() {
+fn representative_report_emits_all_required_foundation_digests(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let report = worth_query_domain_capability_representative_report(request_execution);
+    let report = worth_query_domain_capability_representative_report(request_execution)?;
 
     for key in [
         "query_digest",
@@ -29,4 +31,6 @@ fn representative_report_emits_all_required_foundation_digests() {
     }
     assert!(report.trace_width() > 0);
     assert!(report.support_width() >= 2);
+
+    Ok(())
 }

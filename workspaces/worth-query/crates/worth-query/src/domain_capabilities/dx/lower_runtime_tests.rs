@@ -10,6 +10,7 @@ use crate::domain_capabilities::{
     WorthQueryExplanationContributionAuthoring, WorthQueryInvariantCapabilityContributionAuthoring,
     WorthQueryLowerRuntimeExplanationRequest, WorthQuerySupportContributionAuthoring,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::lower_runtime_routing::{
     WorthQueryLowerRuntimeAuthorityOwner, WorthQueryLowerRuntimeBoundaryEnvelope,
     WorthQueryLowerRuntimeBoundaryExecutionReceipt, WorthQueryLowerRuntimeCapabilityEligibility,
@@ -68,7 +69,8 @@ fn common_lower_runtime_support_lane_matches_proof_lane_materialization() {
 mod common_lower_runtime_explanation_review_matches_proof_lane_revie;
 
 #[test]
-fn common_lower_runtime_explanation_artifact_matches_proof_lane_materialization() {
+fn common_lower_runtime_explanation_artifact_matches_proof_lane_materialization(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -106,7 +108,7 @@ fn common_lower_runtime_explanation_artifact_matches_proof_lane_materialization(
             vec![CausalEvidenceFamily::QueryInspection],
             CausalInspectionRedactionPolicy::PreserveDetail,
             CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
-        )
+        )?
         .bind_to_installed_target(target);
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
@@ -120,6 +122,8 @@ fn common_lower_runtime_explanation_artifact_matches_proof_lane_materialization(
     ));
 
     assert_eq!(common, success(proof));
+
+    Ok(())
 }
 
 #[test]
@@ -187,12 +191,15 @@ fn lower_runtime_source_support_binding_matches_envelope_binding() {
 }
 
 #[test]
-fn lower_runtime_source_invariant_denial_matches_envelope_binding() {
+fn lower_runtime_source_invariant_denial_matches_envelope_binding(
+) -> Result<(), IdentityDerivationDenial> {
     let source = write_authority_boundary_source("boundary-source-invariant");
-    let source_denial = materialize_invariant_denial_from_source(&source);
-    let envelope_denial = materialize_invariant_denial_from_envelope(source.boundary_envelope());
+    let source_denial = materialize_invariant_denial_from_source(&source)?;
+    let envelope_denial = materialize_invariant_denial_from_envelope(source.boundary_envelope())?;
 
     assert_eq!(source_denial, envelope_denial);
+
+    Ok(())
 }
 
 fn lower_runtime_envelope(target_digest: &str) -> WorthQueryLowerRuntimeBoundaryEnvelope {
@@ -279,34 +286,37 @@ fn write_authority_boundary_source(
 
 fn materialize_invariant_denial_from_source<S>(
     source: &S,
-) -> WorthQueryGraphCompositionDomainInvariantDenial
+) -> Result<WorthQueryGraphCompositionDomainInvariantDenial, IdentityDerivationDenial>
 where
     S: crate::runtime::WorthQueryLowerRuntimeBoundaryEnvelopeSource + ?Sized,
 {
-    let requested = graph_invariant_denial_authoring().for_lower_runtime_boundary_source(source);
-    materialize_invariant_denial(requested)
+    let requested = graph_invariant_denial_authoring()?.for_lower_runtime_boundary_source(source);
+    Ok(materialize_invariant_denial(requested))
 }
 
 fn materialize_invariant_denial_from_envelope(
     envelope: &WorthQueryLowerRuntimeBoundaryEnvelope,
-) -> WorthQueryGraphCompositionDomainInvariantDenial {
+) -> Result<WorthQueryGraphCompositionDomainInvariantDenial, IdentityDerivationDenial> {
     let requested =
-        graph_invariant_denial_authoring().for_lower_runtime_boundary_envelope(envelope);
-    materialize_invariant_denial(requested)
+        graph_invariant_denial_authoring()?.for_lower_runtime_boundary_envelope(envelope);
+    Ok(materialize_invariant_denial(requested))
 }
 
-fn graph_invariant_denial_authoring() -> WorthQueryInvariantCapabilityContributionAuthoring {
-    WorthQueryInvariantCapabilityContributionAuthoring::graph_invariant_denial(
-        "graph.non_manifold_edge_split",
-        ["edges"],
-        ["edge-1"],
-        ["edge_split"],
-        ["publication"],
-        "program-digest",
-        "breadth-digest",
-        "counter-snapshot",
-        "graph.non_manifold_edge_split",
-        "edge split would violate graph composition invariant",
+fn graph_invariant_denial_authoring(
+) -> Result<WorthQueryInvariantCapabilityContributionAuthoring, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryInvariantCapabilityContributionAuthoring::graph_invariant_denial(
+            "graph.non_manifold_edge_split",
+            ["edges"],
+            ["edge-1"],
+            ["edge_split"],
+            ["publication"],
+            "program-digest",
+            "breadth-digest",
+            "counter-snapshot",
+            "graph.non_manifold_edge_split",
+            "edge split would violate graph composition invariant",
+        )?,
     )
 }
 

@@ -4,6 +4,7 @@ use crate::domain_capabilities::payloads::{
     WorthQueryWorkflowContributionPosture, WorthQueryWorkflowLoweringSemantics,
     WorthQueryWorkflowRuntimeBindingSemantics, WorthQueryWorkflowRuntimeSemantics,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::workflow::{
     WorkflowAuthorityTargetFamily, WorkflowBudgetClass, WorkflowCostClass,
@@ -17,8 +18,8 @@ impl WorthQueryWorkflowContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         runtime_snapshot_identity: WorthQuerySnapshotIdentity,
-    ) -> Self {
-        Self::with_runtime_and_lowering_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_and_lowering_semantics(
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             semantic_code,
             detail,
@@ -35,15 +36,15 @@ impl WorthQueryWorkflowContributionAuthoring {
             WorthQueryWorkflowLoweringSemantics::writeback(
                 WritebackLoweringInput::projected_state_diff(),
             ),
-        )
+        )?)
     }
 
     pub fn confirmation_required_writeback_projected_state_diff_from_preflight(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         preflight: ExecutionPreflightBundle,
-    ) -> Self {
-        Self::with_runtime_and_lowering_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_and_lowering_semantics(
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             semantic_code,
             detail,
@@ -58,15 +59,15 @@ impl WorthQueryWorkflowContributionAuthoring {
             WorthQueryWorkflowLoweringSemantics::writeback(
                 WritebackLoweringInput::projected_state_diff(),
             ),
-        )
+        )?)
     }
 
     pub fn discard_required_writeback_projected_state_diff(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         preview_session_identity: BridgePreviewSessionIdentity,
-    ) -> Self {
-        Self::with_runtime_and_lowering_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_and_lowering_semantics(
             WorthQueryWorkflowContributionPosture::DiscardRequired,
             semantic_code,
             detail,
@@ -84,6 +85,6 @@ impl WorthQueryWorkflowContributionAuthoring {
             WorthQueryWorkflowLoweringSemantics::writeback(
                 WritebackLoweringInput::projected_state_diff(),
             ),
-        )
+        )?)
     }
 }

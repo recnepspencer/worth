@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::eligibility::{
@@ -105,7 +106,7 @@ pub(super) fn admitted_plan_target_parts(
     request_digest: &str,
     eligibility_digest: &str,
     decision_digest: &str,
-) -> WorthQueryAdmittedPlanBoundContributionTarget {
+) -> Result<WorthQueryAdmittedPlanBoundContributionTarget, IdentityDerivationDenial> {
     let fixture_label = seal(
         domain_capability_scope_encoder("worth_query_domain_capability_admitted_plan_fixture_v1")
             .field_shape(WorthQueryEvidenceTag::new("plan_label"), plan_label)
@@ -115,10 +116,12 @@ pub(super) fn admitted_plan_target_parts(
                 eligibility_digest,
             )
             .field_shape(WorthQueryEvidenceTag::new("decision"), decision_digest),
-    );
-    WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(&admitted_plan(
-        &fixture_label,
-    ))
+    )?;
+    Ok(
+        WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(&admitted_plan(
+            &fixture_label,
+        )),
+    )
 }
 
 pub(super) fn declaration_target(label: &str) -> WorthQueryDeclarationBoundContributionTarget {

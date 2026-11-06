@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 
 use super::test_support::{declaration_target, ready, success};
@@ -9,7 +10,8 @@ use crate::harness::fixtures::execution_preflights;
 use crate::workflow::{bind_workflow_context, WorkflowBindingSource};
 
 #[test]
-fn workflow_runtime_preflight_materializer_preserves_real_preflight_query_and_basis_identity() {
+fn workflow_runtime_preflight_materializer_preserves_real_preflight_query_and_basis_identity(
+) -> Result<(), IdentityDerivationDenial> {
     let preflight = execution_preflights::direct_runtime_preflight();
     let expected = bind_workflow_context(WorkflowBindingSource::RuntimePreflight(&preflight))
         .expect("runtime preflight should bind");
@@ -19,7 +21,7 @@ fn workflow_runtime_preflight_materializer_preserves_real_preflight_query_and_ba
             "spatial.runtime.preflight.review",
             "domain workflow should reuse the real runtime preflight binding",
             preflight.clone(),
-        )
+        )?
         .bind_to_declaration_target(declaration_target("intent-workflow-runtime-preflight")),
     )));
 
@@ -51,10 +53,13 @@ fn workflow_runtime_preflight_materializer_preserves_real_preflight_query_and_ba
         declaration.binding().basis_for_reporting(),
         expected.basis_for_reporting()
     );
+
+    Ok(())
 }
 
 #[test]
-fn workflow_runtime_preflight_materializer_is_stronger_than_snapshot_only_surrogate() {
+fn workflow_runtime_preflight_materializer_is_stronger_than_snapshot_only_surrogate(
+) -> Result<(), IdentityDerivationDenial> {
     let snapshot_identity = crate::harness::fixtures::resolved_bases::primary_snapshot_identity();
     let snapshot_evidence = snapshot_identity.evidence_identity();
     let preflight =
@@ -65,7 +70,7 @@ fn workflow_runtime_preflight_materializer_is_stronger_than_snapshot_only_surrog
             "spatial.runtime.preflight.real",
             "real runtime preflight should preserve full query and basis identity",
             preflight.clone(),
-        )
+        )?
         .bind_to_declaration_target(declaration_target("intent-workflow-runtime-real")),
     )));
     let surrogate = success(materialize_query_workflow_declaration(ready(
@@ -73,7 +78,7 @@ fn workflow_runtime_preflight_materializer_is_stronger_than_snapshot_only_surrog
             "spatial.runtime.preflight.synthetic",
             "snapshot-token-only workflow semantics remain a weaker surrogate path",
             crate::memory_workspace::WorthQuerySnapshotIdentity::preview(snapshot_evidence),
-        )
+        )?
         .bind_to_declaration_target(declaration_target("intent-workflow-runtime-synthetic")),
     )));
 
@@ -94,10 +99,13 @@ fn workflow_runtime_preflight_materializer_is_stronger_than_snapshot_only_surrog
             .runtime_snapshot_identity()
             .map(|identity| identity.evidence_identity())
     );
+
+    Ok(())
 }
 
 #[test]
-fn workflow_runtime_preflight_lowering_from_bundle_preserves_real_runtime_authority() {
+fn workflow_runtime_preflight_lowering_from_bundle_preserves_real_runtime_authority(
+) -> Result<(), IdentityDerivationDenial> {
     let preflight = execution_preflights::direct_runtime_preflight();
     let authority_binding_identity = crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::WorkflowMutationLowering,
@@ -123,7 +131,7 @@ fn workflow_runtime_preflight_lowering_from_bundle_preserves_real_runtime_author
                 "name", "name", "after",
             )
             .expect("name patch should build"),
-        )
+        )?
         .bind_to_declaration_target(declaration_target("intent-workflow-runtime-lowering")),
     )));
 
@@ -144,10 +152,13 @@ fn workflow_runtime_preflight_lowering_from_bundle_preserves_real_runtime_author
         authority_binding_identity.as_str()
     );
     assert_eq!(lowered.counters().workflow_mutation_lowering_count(), 1);
+
+    Ok(())
 }
 
 #[test]
-fn workflow_runtime_preflight_materializer_keeps_scope_distinct_across_targets() {
+fn workflow_runtime_preflight_materializer_keeps_scope_distinct_across_targets(
+) -> Result<(), IdentityDerivationDenial> {
     let preflight = execution_preflights::direct_runtime_preflight();
 
     let left = success(materialize_query_workflow_declaration(ready(
@@ -155,7 +166,7 @@ fn workflow_runtime_preflight_materializer_keeps_scope_distinct_across_targets()
             "spatial.runtime.preflight.scope",
             "real runtime preflight bindings must stay scoped by contribution target",
             preflight.clone(),
-        )
+        )?
         .bind_to_declaration_target(declaration_target("intent-workflow-runtime-left")),
     )));
     let right = success(materialize_query_workflow_declaration(ready(
@@ -163,7 +174,7 @@ fn workflow_runtime_preflight_materializer_keeps_scope_distinct_across_targets()
             "spatial.runtime.preflight.scope",
             "real runtime preflight bindings must stay scoped by contribution target",
             preflight.clone(),
-        )
+        )?
         .bind_to_declaration_target(declaration_target("intent-workflow-runtime-right")),
     )));
 
@@ -183,4 +194,6 @@ fn workflow_runtime_preflight_materializer_keeps_scope_distinct_across_targets()
         left.report().declaration_digest(),
         right.report().declaration_digest()
     );
+
+    Ok(())
 }

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{
     WorthQueryIntentDeclaration, WorthQueryLowerRuntimeBoundaryEnvelope,
     WorthQueryLowerRuntimeBoundaryEnvelopeSource,
@@ -23,12 +24,15 @@ pub struct WorthQueryInvariantCapabilityContributionAuthoring {
 }
 
 impl WorthQueryInvariantCapabilityContributionAuthoring {
-    pub fn capability_gap(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn capability_gap(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryInvariantCapabilityContributionPosture::CapabilityGap,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn graph_capability_gap(
@@ -36,21 +40,24 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         capability_class: crate::runtime::WorthQueryGraphCompositionCapabilityClass,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_graph_capability(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_graph_capability(
             WorthQueryInvariantCapabilityContributionPosture::CapabilityGap,
             semantic_code,
             detail,
             WorthQueryGraphCapabilityRuntimeSemantics::new(capability_family, capability_class),
-        )
+        )?)
     }
 
-    pub fn invariant_denial(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn invariant_denial(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryInvariantCapabilityContributionPosture::InvariantDenial,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn graph_invariant_denial(
@@ -64,8 +71,8 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         counter_snapshot: impl Into<String>,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_graph_invariant_denial(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_graph_invariant_denial(
             WorthQueryInvariantCapabilityContributionPosture::InvariantDenial,
             semantic_code,
             detail,
@@ -78,16 +85,19 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
                 program_digest,
                 breadth_digest,
                 counter_snapshot,
-            ),
-        )
+            )?,
+        )?)
     }
 
-    pub fn support_summary(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn support_summary(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryInvariantCapabilityContributionPosture::SupportSummary,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn graph_support_summary(
@@ -95,39 +105,39 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         capability_class: crate::runtime::WorthQueryGraphCompositionCapabilityClass,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_graph_capability(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_graph_capability(
             WorthQueryInvariantCapabilityContributionPosture::SupportSummary,
             semantic_code,
             detail,
             WorthQueryGraphCapabilityRuntimeSemantics::new(capability_family, capability_class),
-        )
+        )?)
     }
 
     pub fn invariant_registration(
         invariant_catalog: InvariantCatalog,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_invariant_registration(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_invariant_registration(
             WorthQueryInvariantCapabilityContributionPosture::InvariantRegistration,
             semantic_code,
             detail,
-            WorthQueryInvariantRegistrationRuntimeSemantics::new(invariant_catalog),
-        )
+            WorthQueryInvariantRegistrationRuntimeSemantics::new(invariant_catalog)?,
+        )?)
     }
 
     pub fn invariant_rule_registration(
         registration: InvariantRegistration,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_invariant_registration(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_invariant_registration(
             WorthQueryInvariantCapabilityContributionPosture::InvariantRegistration,
             semantic_code,
             detail,
-            WorthQueryInvariantRegistrationRuntimeSemantics::from_registration(registration),
-        )
+            WorthQueryInvariantRegistrationRuntimeSemantics::from_registration(registration)?,
+        )?)
     }
 
     pub fn for_intent_declaration(
@@ -208,14 +218,14 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         posture: WorthQueryInvariantCapabilityContributionPosture,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             payload: WorthQueryInvariantCapabilityContributionPayload::new(
                 posture,
                 semantic_code,
                 detail,
-            ),
-        }
+            )?,
+        })
     }
 
     fn with_graph_capability(
@@ -223,15 +233,15 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         graph_capability: WorthQueryGraphCapabilityRuntimeSemantics,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             payload: WorthQueryInvariantCapabilityContributionPayload::with_graph_capability(
                 posture,
                 semantic_code,
                 detail,
                 Some(graph_capability),
-            ),
-        }
+            )?,
+        })
     }
 
     fn with_graph_invariant_denial(
@@ -239,15 +249,15 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         graph_invariant_denial: WorthQueryGraphInvariantDenialRuntimeSemantics,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             payload: WorthQueryInvariantCapabilityContributionPayload::with_graph_invariant_denial(
                 posture,
                 semantic_code,
                 detail,
                 Some(graph_invariant_denial),
-            ),
-        }
+            )?,
+        })
     }
 
     fn with_invariant_registration(
@@ -255,14 +265,14 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         invariant_registration: WorthQueryInvariantRegistrationRuntimeSemantics,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             payload: WorthQueryInvariantCapabilityContributionPayload::with_invariant_registration(
                 posture,
                 semantic_code,
                 detail,
                 Some(invariant_registration),
-            ),
-        }
+            )?,
+        })
     }
 }

@@ -13,6 +13,7 @@ use crate::domain_capabilities::{
     WorthQueryDomainCapabilityTargetKind, WorthQueryInstalledLowerRuntimeContributionTarget,
     WorthQueryRequestedInvariantCapabilityContribution,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryGraphCompositionDomainInvariantDenial;
 
 use super::lower_runtime::WorthQueryLowerRuntimeDomainContributionSurface;
@@ -32,7 +33,8 @@ impl WorthQueryLowerRuntimeDomainContributionSurface {
         counter_snapshot: impl Into<String>,
         semantic_code: impl AsRef<str>,
         detail: impl Into<String>,
-    ) -> WorthQueryLowerRuntimeGraphInvariantDenialContribution {
+    ) -> Result<WorthQueryLowerRuntimeGraphInvariantDenialContribution, IdentityDerivationDenial>
+    {
         let target = self.target;
         let requested = WorthQueryInvariantCapabilityContributionAuthoring::graph_invariant_denial(
             invariant_family,
@@ -45,9 +47,9 @@ impl WorthQueryLowerRuntimeDomainContributionSurface {
             counter_snapshot,
             qualify_semantic_code(target.authority(), semantic_code.as_ref()),
             detail,
-        )
+        )?
         .bind_to_installed_target(target.clone());
-        WorthQueryLowerRuntimeGraphInvariantDenialContribution { requested, target }
+        Ok(WorthQueryLowerRuntimeGraphInvariantDenialContribution { requested, target })
     }
 }
 

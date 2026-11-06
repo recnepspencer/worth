@@ -18,6 +18,7 @@ use crate::domain_capabilities::payloads::{
 use crate::domain_capabilities::{
     WorthQueryDomainCapabilityTargetKind, WorthQueryInstalledAdmittedPlanContributionTarget,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::WorthQueryIntentAdmissionDecision;
 use crate::runtime::WorthQueryContinuityMutationEvidence;
 
@@ -104,27 +105,30 @@ pub struct WorthQueryAdmittedPlanAdmissionContribution {
 impl WorthQueryAdmittedPlanAdmissionContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<WorthQueryIntentAdmissionDecision> {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<WorthQueryIntentAdmissionDecision>,
+        IdentityDerivationDenial,
+    > {
         let target = self.target.clone();
         let requested = match self.posture {
             WorthQueryAdmissionContributionPosture::Advisory => {
                 WorthQueryAdmissionContributionAuthoring::advisory(
                     qualify_semantic_code(self.target.authority(), &self.semantic_code),
                     self.detail,
-                )
+                )?
                 .bind_to_installed_target(self.target)
             }
             WorthQueryAdmissionContributionPosture::Violation => {
                 WorthQueryAdmissionContributionAuthoring::violation(
                     qualify_semantic_code(self.target.authority(), &self.semantic_code),
                     self.detail,
-                )
+                )?
                 .bind_to_installed_target(self.target)
             }
             WorthQueryAdmissionContributionPosture::SupportOnly => unreachable!(),
         };
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "admission",
             WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
             self.posture.as_str(),
@@ -137,7 +141,7 @@ impl WorthQueryAdmittedPlanAdmissionContribution {
                 )
             },
             materialize_runtime_admission_decision,
-        )
+        ))
     }
 
     pub fn materialize(
@@ -183,17 +187,20 @@ pub struct WorthQueryAdmittedPlanContinuityContribution {
 impl WorthQueryAdmittedPlanContinuityContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<WorthQueryContinuityMutationEvidence> {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<WorthQueryContinuityMutationEvidence>,
+        IdentityDerivationDenial,
+    > {
         let target = self.target.clone();
         let requested = WorthQueryContinuityContributionAuthoring::preserved_rebind(
             self.prior_authoritative_identity,
             self.successor_authoritative_identity,
             qualify_semantic_code(self.target.authority(), &self.semantic_code),
             self.detail,
-        )
+        )?
         .bind_to_installed_target(self.target);
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "continuity-lineage",
             WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
             WorthQueryContinuityContributionPosture::Preserved.as_str(),
@@ -206,7 +213,7 @@ impl WorthQueryAdmittedPlanContinuityContribution {
                 )
             },
             materialize_runtime_continuity_evidence,
-        )
+        ))
     }
 
     pub fn materialize(

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 use worth_relational::facade::history::BranchId;
 
@@ -26,7 +27,8 @@ use super::{
 };
 
 #[test]
-fn workflow_conflict_inspection_materializer_builds_query_conflict_artifact() {
+fn workflow_conflict_inspection_materializer_builds_query_conflict_artifact(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -37,30 +39,33 @@ fn workflow_conflict_inspection_materializer_builds_query_conflict_artifact() {
             "runtime merge inspection should materialize a query conflict artifact",
             lowered_merge,
             source_addition_inspection_artifact(request_execution),
-        )
+        )?
         .bind_to_declaration_target(declaration_target("intent-workflow-conflict-inspection")),
     )));
 
     assert_eq!(artifact.family().as_str(), "merge_workflow_narrow");
     assert!(!artifact.rows().is_empty());
     assert_eq!(artifact.counters().workflow_conflict_inspection_count(), 1);
+
+    Ok(())
 }
 
 #[test]
-fn workflow_post_merge_inspection_materializer_builds_query_post_merge_artifact() {
+fn workflow_post_merge_inspection_materializer_builds_query_post_merge_artifact(
+) -> Result<(), IdentityDerivationDenial> {
     let lowered_merge = runtime_lowered_merge();
     let artifact = success(materialize_query_post_merge_inspection_artifact(ready(
         WorthQueryWorkflowContributionAuthoring::confirmation_required_post_merge_merge_outcome_inspection(
             "spatial.workflow.post_merge_inspection",
             "runtime merge outcome should materialize a post-merge inspection artifact",
             lowered_merge,
-        )
+        )?
         .bind_to_admitted_plan_target(admitted_plan_target_parts(
             "plan-workflow-post-merge-inspection",
             "request-post-merge",
             "eligibility-post-merge",
             "decision-post-merge",
-        )),
+        )?),
     )));
 
     assert_eq!(artifact.family().as_str(), "authoritative_outcome_narrow");
@@ -69,10 +74,13 @@ fn workflow_post_merge_inspection_materializer_builds_query_post_merge_artifact(
         artifact.counters().workflow_post_merge_inspection_count(),
         1
     );
+
+    Ok(())
 }
 
 #[test]
-fn workflow_conflict_inspection_materializer_builds_preview_promotion_artifact() {
+fn workflow_conflict_inspection_materializer_builds_preview_promotion_artifact(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -83,7 +91,7 @@ fn workflow_conflict_inspection_materializer_builds_preview_promotion_artifact()
             "preview promotion merge inspection should materialize a query conflict artifact",
             lowered_merge,
             source_addition_inspection_artifact(request_execution),
-        )
+        )?
         .bind_to_declaration_target(declaration_target(
             "intent-workflow-preview-conflict-inspection",
         )),
@@ -91,17 +99,20 @@ fn workflow_conflict_inspection_materializer_builds_preview_promotion_artifact()
 
     assert_eq!(artifact.family().as_str(), "merge_workflow_narrow");
     assert_eq!(artifact.counters().workflow_conflict_inspection_count(), 1);
+
+    Ok(())
 }
 
 #[test]
-fn workflow_post_merge_inspection_materializer_builds_writeback_artifact() {
+fn workflow_post_merge_inspection_materializer_builds_writeback_artifact(
+) -> Result<(), IdentityDerivationDenial> {
     let lowered_writeback = runtime_lowered_writeback();
     let artifact = success(materialize_query_post_merge_inspection_artifact(ready(
         WorthQueryWorkflowContributionAuthoring::confirmation_required_post_merge_writeback_outcome_inspection(
             "spatial.workflow.post_merge_writeback_inspection",
             "runtime writeback outcome should materialize a post-merge inspection artifact",
             lowered_writeback,
-        )
+        )?
         .bind_to_declaration_target(declaration_target(
             "intent-workflow-post-merge-writeback-inspection",
         )),
@@ -113,10 +124,13 @@ fn workflow_post_merge_inspection_materializer_builds_writeback_artifact() {
         artifact.counters().workflow_post_merge_inspection_count(),
         1
     );
+
+    Ok(())
 }
 
 #[test]
-fn workflow_inspection_materializer_denies_missing_inspection_semantics() {
+fn workflow_inspection_materializer_denies_missing_inspection_semantics(
+) -> Result<(), IdentityDerivationDenial> {
     let denied = materialize_query_conflict_inspection_artifact(ready(
         super::proof_integration::create_requested_domain_capability_contribution(
             declaration_target("intent-workflow-missing-inspection"),
@@ -136,7 +150,7 @@ fn workflow_inspection_materializer_denies_missing_inspection_semantics() {
                     WorkflowBudgetClass::InspectionBounded,
                     WorkflowFreshnessPolicy::ExactBasis,
                 )),
-            ),
+            )?,
         ),
     ));
 
@@ -146,10 +160,13 @@ fn workflow_inspection_materializer_denies_missing_inspection_semantics() {
             if denial.kind()
                 == WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics
     ));
+
+    Ok(())
 }
 
 #[test]
-fn workflow_post_merge_inspection_denies_preview_bound_outcomes() {
+fn workflow_post_merge_inspection_denies_preview_bound_outcomes(
+) -> Result<(), IdentityDerivationDenial> {
     let lowered_merge = preview_lowered_merge();
     let denied = materialize_query_post_merge_inspection_artifact(ready(
         super::proof_integration::create_requested_domain_capability_contribution(
@@ -172,7 +189,7 @@ fn workflow_post_merge_inspection_denies_preview_bound_outcomes() {
                     WorkflowFreshnessPolicy::ExactBasis,
                 )),
                 Some(WorthQueryWorkflowInspectionSemantics::post_merge_from_merge(lowered_merge)),
-            ),
+            )?,
         ),
     ));
 
@@ -184,6 +201,8 @@ fn workflow_post_merge_inspection_denies_preview_bound_outcomes() {
         denied.kind(),
         WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture
     );
+
+    Ok(())
 }
 
 fn runtime_lowered_merge() -> crate::workflow::LoweredMergeWorkflowDeclaration {

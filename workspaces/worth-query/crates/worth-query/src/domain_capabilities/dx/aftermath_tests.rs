@@ -7,6 +7,7 @@ use crate::domain_capabilities::{
     prepare_admitted_domain_capability_contribution_for_materialization,
     WorthQueryAftermathContributionAuthoring, WorthQueryProjectionContractRequest,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::{
     ProjectMaterializedFacts, ProjectionConsumptionBindingContext,
     ProjectionConsumptionEligibility, ProjectionConsumptionSource,
@@ -15,7 +16,8 @@ use crate::projection_consumption::{
 use crate::runtime::WorthQueryAdmittedIntentPlan;
 
 #[test]
-fn common_aftermath_contract_lane_matches_proof_lane_materialization() {
+fn common_aftermath_contract_lane_matches_proof_lane_materialization(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -48,13 +50,16 @@ fn common_aftermath_contract_lane_matches_proof_lane_materialization() {
         .materialize()
         .expect("aftermath common lane should materialize");
 
-    let proof = proof_contract(target);
+    let proof = proof_contract(target)?;
 
     assert_eq!(common, proof);
+
+    Ok(())
 }
 
 #[test]
-fn common_aftermath_review_lane_matches_proof_lane_materialization() {
+fn common_aftermath_review_lane_matches_proof_lane_materialization(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -80,9 +85,11 @@ fn common_aftermath_review_lane_matches_proof_lane_materialization() {
         .review()
         .expect("aftermath review lane should materialize");
 
-    let proof = proof_review(target);
+    let proof = proof_review(target)?;
 
     assert_eq!(common, proof);
+
+    Ok(())
 }
 
 #[test]
@@ -199,7 +206,8 @@ fn checked_aftermath_lane_preserves_denied_metadata() {
 
 fn proof_contract(
     target: crate::domain_capabilities::WorthQueryInstalledAdmittedPlanContributionTarget,
-) -> crate::projection_consumption::MaterializedProjectionContract {
+) -> Result<crate::projection_consumption::MaterializedProjectionContract, IdentityDerivationDenial>
+{
     let proof_requested = WorthQueryAftermathContributionAuthoring::consumes_projection_contract(
         "worth.spatial.projection.contract",
         "admitted plan aftermath should bind a stable projection contract",
@@ -213,24 +221,29 @@ fn proof_contract(
                     .expect("projection fact field segment should admit"),
             ]),
         ),
-    )
+    )?
     .bind_to_installed_target(target);
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
     let proof_target = proof_admitted.payload().target().clone();
 
-    success(materialize_projection_consumption_contract(success(
-        prepare_admitted_domain_capability_contribution_for_materialization(
-            proof_admitted,
-            proof_target,
+    Ok(success(materialize_projection_consumption_contract(
+        success(
+            prepare_admitted_domain_capability_contribution_for_materialization(
+                proof_admitted,
+                proof_target,
+            ),
         ),
     )))
 }
 
 fn proof_review(
     target: crate::domain_capabilities::WorthQueryInstalledAdmittedPlanContributionTarget,
-) -> crate::domain_capabilities::WorthQueryAftermathProjectionConsumptionReview {
+) -> Result<
+    crate::domain_capabilities::WorthQueryAftermathProjectionConsumptionReview,
+    IdentityDerivationDenial,
+> {
     let proof_requested =
         WorthQueryAftermathContributionAuthoring::establishes_projection_contract(
             "worth.spatial.projection.review",
@@ -238,19 +251,19 @@ fn proof_review(
             deferred_projection_source(),
             deferred_projection_binding(),
             ProjectMaterializedFacts::declare().target_identity(),
-        )
+        )?
         .bind_to_installed_target(target);
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
     let proof_target = proof_admitted.payload().target().clone();
 
-    success(materialize_projection_consumption_review(success(
+    Ok(success(materialize_projection_consumption_review(success(
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
         ),
-    )))
+    ))))
 }
 
 fn success<T>(

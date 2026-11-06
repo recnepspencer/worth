@@ -21,6 +21,7 @@ use crate::domain_capabilities::payloads::{
 use crate::domain_capabilities::{
     WorthQueryDomainCapabilityTargetKind, WorthQueryInstalledLowerRuntimeContributionTarget,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::QueryCausalInspectionArtifact;
 
 use super::lower_runtime_explanation_request::{
@@ -175,12 +176,15 @@ pub struct WorthQueryLowerRuntimeExplanationContribution {
 impl WorthQueryLowerRuntimeExplanationContribution {
     pub fn try_review(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<WorthQueryExplanationInspectionReview> {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<WorthQueryExplanationInspectionReview>,
+        IdentityDerivationDenial,
+    > {
         let posture = self.posture();
         let target = self.target.clone();
-        let requested = self.into_requested();
+        let requested = self.into_requested()?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "explanation-inspection",
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
             posture.as_str(),
@@ -193,7 +197,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 )
             },
             materialize_query_causal_inspection_review,
-        )
+        ))
     }
 
     pub fn review(
@@ -205,12 +209,15 @@ impl WorthQueryLowerRuntimeExplanationContribution {
 
     pub fn try_materialize_artifact(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<QueryCausalInspectionArtifact> {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<QueryCausalInspectionArtifact>,
+        IdentityDerivationDenial,
+    > {
         let posture = self.posture();
         let target = self.target.clone();
-        let requested = self.into_requested();
+        let requested = self.into_requested()?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "explanation-inspection",
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
             posture.as_str(),
@@ -223,7 +230,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 )
             },
             materialize_query_causal_inspection_artifact,
-        )
+        ))
     }
 
     pub fn materialize_artifact(
@@ -248,8 +255,11 @@ impl WorthQueryLowerRuntimeExplanationContribution {
 
     fn into_requested(
         self,
-    ) -> crate::domain_capabilities::WorthQueryRequestedExplanationContribution<
-        WorthQueryInstalledLowerRuntimeContributionTarget,
+    ) -> Result<
+        crate::domain_capabilities::WorthQueryRequestedExplanationContribution<
+            WorthQueryInstalledLowerRuntimeContributionTarget,
+        >,
+        IdentityDerivationDenial,
     > {
         let semantic_code = qualify_semantic_code(self.target.authority(), &self.semantic_code);
         match self.kind {
@@ -269,7 +279,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 bridge_envelope,
                 redaction_policy,
                 materialization_policy,
-            )
+            )?
             .bind_to_installed_target(self.target),
             WorthQueryLowerRuntimeExplanationRequestKind::CrossRuntimeFallback {
                 reference_set,
@@ -287,7 +297,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 bridge_envelope,
                 redaction_policy,
                 materialization_policy,
-            )
+            )?
             .bind_to_installed_target(self.target),
             WorthQueryLowerRuntimeExplanationRequestKind::StoreBackedReplayGap {
                 reference_set,
@@ -303,8 +313,10 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 requested_evidence_families,
                 redaction_policy,
                 materialization_policy,
-            )
+            )?
             .bind_to_installed_target(self.target),
         }
+
+        Ok(())
     }
 }

@@ -1,8 +1,10 @@
 //! common lower runtime explanation review matches proof lane review.
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[test]
-fn common_lower_runtime_explanation_review_matches_proof_lane_review() {
+fn common_lower_runtime_explanation_review_matches_proof_lane_review(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -40,7 +42,7 @@ fn common_lower_runtime_explanation_review_matches_proof_lane_review() {
             vec![CausalEvidenceFamily::QueryInspection],
             CausalInspectionRedactionPolicy::PreserveDetail,
             CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
-        )
+        )?
         .bind_to_installed_target(target);
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
@@ -54,4 +56,6 @@ fn common_lower_runtime_explanation_review_matches_proof_lane_review() {
     ));
 
     assert_eq!(common, success(proof));
+
+    Ok(())
 }

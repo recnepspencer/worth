@@ -9,6 +9,7 @@ use super::super::{
     WorthQuerySupportContributionAuthoring, WorthQuerySupportContributionPayload,
     WorthQuerySupportContributionPosture,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[test]
 fn support_traceability_materializer_builds_domain_scoped_report() {
@@ -69,7 +70,8 @@ fn equivalent_support_meaning_materializes_same_traceability_digest() {
 }
 
 #[test]
-fn support_traceability_digest_changes_when_admitted_plan_scope_changes() {
+fn support_traceability_digest_changes_when_admitted_plan_scope_changes(
+) -> Result<(), IdentityDerivationDenial> {
     let left = success(materialize_intent_admission_support_traceability_report(
         ready(
             super::super::proof_integration::create_requested_domain_capability_contribution(
@@ -78,7 +80,7 @@ fn support_traceability_digest_changes_when_admitted_plan_scope_changes() {
                     "request-left",
                     "eligibility-left",
                     "decision-left",
-                ),
+                )?,
                 WorthQuerySupportContributionPayload::new(
                     WorthQuerySupportContributionPosture::DeclarationSupport,
                     "spatial.traceability",
@@ -95,7 +97,7 @@ fn support_traceability_digest_changes_when_admitted_plan_scope_changes() {
                     "request-right",
                     "eligibility-right",
                     "decision-right",
-                ),
+                )?,
                 WorthQuerySupportContributionPayload::new(
                     WorthQuerySupportContributionPosture::DeclarationSupport,
                     "spatial.traceability",
@@ -109,6 +111,8 @@ fn support_traceability_digest_changes_when_admitted_plan_scope_changes() {
         left.decision_support_traceability_digest(),
         right.decision_support_traceability_digest()
     );
+
+    Ok(())
 }
 
 fn ready_support(

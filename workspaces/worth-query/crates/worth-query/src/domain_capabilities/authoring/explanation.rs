@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_runtime_bridge::facade::BridgeCausalExplanationEnvelope;
 
 use crate::runtime::{
@@ -25,28 +26,37 @@ pub struct WorthQueryExplanationContributionAuthoring {
 }
 
 impl WorthQueryExplanationContributionAuthoring {
-    pub fn requires_context(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn requires_context(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryExplanationContributionPosture::RequiresContext,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
-    pub fn explains_fallback(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn explains_fallback(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryExplanationContributionPosture::ExplainsFallback,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
-    pub fn explains_ambiguity(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn explains_ambiguity(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryExplanationContributionPosture::ExplainsAmbiguity,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn cross_runtime_causal_context(
@@ -58,8 +68,8 @@ impl WorthQueryExplanationContributionAuthoring {
         bridge_envelope: BridgeCausalExplanationEnvelope,
         redaction_policy: CausalInspectionRedactionPolicy,
         materialization_policy: CausalInspectionMaterializationPolicy,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryExplanationContributionPosture::RequiresContext,
             semantic_code,
             detail,
@@ -72,8 +82,8 @@ impl WorthQueryExplanationContributionAuthoring {
                 Some(bridge_envelope),
                 redaction_policy,
                 materialization_policy,
-            ),
-        )
+            )?,
+        )?)
     }
 
     pub fn cross_runtime_fallback_explanation(
@@ -85,8 +95,8 @@ impl WorthQueryExplanationContributionAuthoring {
         bridge_envelope: BridgeCausalExplanationEnvelope,
         redaction_policy: CausalInspectionRedactionPolicy,
         materialization_policy: CausalInspectionMaterializationPolicy,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryExplanationContributionPosture::ExplainsFallback,
             semantic_code,
             detail,
@@ -99,8 +109,8 @@ impl WorthQueryExplanationContributionAuthoring {
                 Some(bridge_envelope),
                 redaction_policy,
                 materialization_policy,
-            ),
-        )
+            )?,
+        )?)
     }
 
     pub fn store_backed_replay_gap_explanation(
@@ -111,8 +121,8 @@ impl WorthQueryExplanationContributionAuthoring {
         requested_evidence_families: Vec<CausalEvidenceFamily>,
         redaction_policy: CausalInspectionRedactionPolicy,
         materialization_policy: CausalInspectionMaterializationPolicy,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryExplanationContributionPosture::ExplainsAmbiguity,
             semantic_code,
             detail,
@@ -125,8 +135,8 @@ impl WorthQueryExplanationContributionAuthoring {
                 None,
                 redaction_policy,
                 materialization_policy,
-            ),
-        )
+            )?,
+        )?)
     }
 
     pub fn for_intent_declaration(
@@ -223,10 +233,10 @@ impl WorthQueryExplanationContributionAuthoring {
         posture: WorthQueryExplanationContributionPosture,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self {
-            payload: WorthQueryExplanationContributionPayload::new(posture, semantic_code, detail),
-        }
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
+            payload: WorthQueryExplanationContributionPayload::new(posture, semantic_code, detail)?,
+        })
     }
 
     fn with_runtime_semantics(
@@ -234,14 +244,14 @@ impl WorthQueryExplanationContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         runtime_semantics: WorthQueryExplanationRuntimeSemantics,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             payload: WorthQueryExplanationContributionPayload::with_runtime_semantics(
                 posture,
                 semantic_code,
                 detail,
                 Some(runtime_semantics),
-            ),
-        }
+            )?,
+        })
     }
 }

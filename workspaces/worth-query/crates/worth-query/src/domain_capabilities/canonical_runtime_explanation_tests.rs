@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::targets::WorthQueryLowerRuntimeBoundaryBoundContributionTarget;
@@ -13,7 +14,8 @@ use crate::runtime::{
 };
 
 #[test]
-fn explanation_runtime_materializer_builds_denied_causal_artifact() {
+fn explanation_runtime_materializer_builds_denied_causal_artifact(
+) -> Result<(), IdentityDerivationDenial> {
     let read_receipt = WorthQueryReadReceipt::test_only(
         "read-graph:domain-capability",
         "query:domain-capability",
@@ -54,7 +56,7 @@ fn explanation_runtime_materializer_builds_denied_causal_artifact() {
                 vec![CausalEvidenceFamily::QueryInspection],
                 crate::runtime::CausalInspectionRedactionPolicy::PreserveDetail,
                 crate::runtime::CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
-            ),
+            )?,
         ),
     ));
 
@@ -65,15 +67,18 @@ fn explanation_runtime_materializer_builds_denied_causal_artifact() {
     assert!(artifact.is_denied());
     assert!(artifact.bridge_envelope_for_reporting().is_none());
     assert!(!artifact.artifact_for_reporting().is_empty());
+
+    Ok(())
 }
 
 #[test]
-fn explanation_runtime_materializer_denies_missing_semantics() {
+fn explanation_runtime_materializer_denies_missing_semantics(
+) -> Result<(), IdentityDerivationDenial> {
     let outcome = materialize_query_causal_inspection_artifact(ready_explanation(
         WorthQueryExplanationContributionAuthoring::requires_context(
             "explanation.support.only",
             "support-only explanation cannot mint a causal inspection artifact",
-        ),
+        )?,
     ));
 
     assert!(matches!(
@@ -82,10 +87,13 @@ fn explanation_runtime_materializer_denies_missing_semantics() {
             if denial.kind()
                 == super::WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics
     ));
+
+    Ok(())
 }
 
 #[test]
-fn explanation_runtime_review_preserves_denied_plan_identity() {
+fn explanation_runtime_review_preserves_denied_plan_identity(
+) -> Result<(), IdentityDerivationDenial> {
     let read_receipt = WorthQueryReadReceipt::test_only(
         "read-graph:domain-capability",
         "query:domain-capability",
@@ -124,7 +132,7 @@ fn explanation_runtime_review_preserves_denied_plan_identity() {
             vec![CausalEvidenceFamily::QueryInspection],
             crate::runtime::CausalInspectionRedactionPolicy::PreserveDetail,
             crate::runtime::CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
-        ),
+        )?,
     );
     let artifact_contribution = ready_explanation(
         WorthQueryExplanationContributionAuthoring::store_backed_replay_gap_explanation(
@@ -135,7 +143,7 @@ fn explanation_runtime_review_preserves_denied_plan_identity() {
             vec![CausalEvidenceFamily::QueryInspection],
             crate::runtime::CausalInspectionRedactionPolicy::PreserveDetail,
             crate::runtime::CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
-        ),
+        )?,
     );
 
     let review = success(materialize_query_causal_inspection_review(
@@ -159,6 +167,8 @@ fn explanation_runtime_review_preserves_denied_plan_identity() {
         }
         other => panic!("expected denied causal inspection artifact, got {other:?}"),
     }
+
+    Ok(())
 }
 
 fn ready_explanation(

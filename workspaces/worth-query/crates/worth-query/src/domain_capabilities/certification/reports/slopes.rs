@@ -1,6 +1,7 @@
 use crate::domain_capabilities::identity::{
     compose_counter_snapshot_digest, compose_slope_digest, compose_slope_scale_entry_digest,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::representative::WorthQueryDomainCapabilityRepresentativeReport;
 use super::scaled::worth_query_domain_capability_scaled_evidence_in;
@@ -70,19 +71,22 @@ impl WorthQueryDomainCapabilitySlopeReport {
 pub fn worth_query_domain_capability_slope_report(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     representative: &WorthQueryDomainCapabilityRepresentativeReport,
-) -> WorthQueryDomainCapabilitySlopeReport {
+) -> Result<WorthQueryDomainCapabilitySlopeReport, IdentityDerivationDenial> {
     let installation =
         crate::domain_capabilities::certification::install_domain_capability_certification(
             execution,
         );
-    worth_query_domain_capability_slope_report_in(representative, installation.contributions())
+    Ok(worth_query_domain_capability_slope_report_in(
+        representative,
+        installation.contributions(),
+    )?)
 }
 
 pub(crate) fn worth_query_domain_capability_slope_report_in(
     _representative: &WorthQueryDomainCapabilityRepresentativeReport,
     domain: &crate::domain_capabilities::WorthQueryInstalledDomainContributionSurface,
-) -> WorthQueryDomainCapabilitySlopeReport {
-    let scaled = worth_query_domain_capability_scaled_evidence_in(domain);
+) -> Result<WorthQueryDomainCapabilitySlopeReport, IdentityDerivationDenial> {
+    let scaled = worth_query_domain_capability_scaled_evidence_in(domain)?;
     let full_scale = &scaled[2];
     let counter_snapshot = WorthQueryDomainCapabilityCertificationCounterSnapshot {
         contribution_width: full_scale.contribution_width(),
@@ -94,10 +98,10 @@ pub(crate) fn worth_query_domain_capability_slope_report_in(
             full_scale.trace_width(),
             full_scale.category_width(),
             full_scale.support_width(),
-        ),
+        )?,
     };
 
-    WorthQueryDomainCapabilitySlopeReport {
+    Ok(WorthQueryDomainCapabilitySlopeReport {
         contribution_materialization_slope_digest: slope_digest(
             "contribution-materialization",
             &scaled,
@@ -117,7 +121,7 @@ pub(crate) fn worth_query_domain_capability_slope_report_in(
             |e| (e.support_width(), e.support_digest()),
         ),
         counter_snapshot,
-    }
+    })
 }
 
 fn slope_digest(
@@ -137,12 +141,14 @@ mod tests {
     use crate::domain_capabilities::certification::reports::worth_query_domain_capability_representative_report;
 
     #[test]
-    fn slope_report_reuses_representative_widths() {
+    fn slope_report_reuses_representative_widths() -> Result<(), IdentityDerivationDenial> {
         let host_request = crate::test_execution_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let representative = worth_query_domain_capability_representative_report(request_execution);
-        let slopes = worth_query_domain_capability_slope_report(request_execution, &representative);
+        let representative =
+            worth_query_domain_capability_representative_report(request_execution)?;
+        let slopes =
+            worth_query_domain_capability_slope_report(request_execution, &representative)?;
 
         assert_eq!(slopes.counter_snapshot().contribution_width(), 7);
         assert!(slopes.counter_snapshot().trace_width() >= representative.trace_width());
@@ -153,5 +159,7 @@ mod tests {
         assert!(!slopes.trace_materialization_slope_digest().is_empty());
         assert!(!slopes.category_materialization_slope_digest().is_empty());
         assert!(!slopes.support_materialization_slope_digest().is_empty());
+
+        Ok(())
     }
 }

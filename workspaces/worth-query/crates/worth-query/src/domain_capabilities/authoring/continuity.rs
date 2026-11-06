@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{WorthQueryAdmittedIntentPlan, WorthQueryIntentDeclaration};
 
 use super::bind_requested;
@@ -16,12 +17,15 @@ pub struct WorthQueryContinuityContributionAuthoring {
 }
 
 impl WorthQueryContinuityContributionAuthoring {
-    pub fn preserved(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn preserved(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryContinuityContributionPosture::Preserved,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn preserved_rebind(
@@ -29,8 +33,8 @@ impl WorthQueryContinuityContributionAuthoring {
         successor_authoritative_identity: impl Into<String>,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryContinuityContributionPosture::Preserved,
             semantic_code,
             detail,
@@ -40,15 +44,18 @@ impl WorthQueryContinuityContributionAuthoring {
                 prior_authoritative_identity,
                 [successor_authoritative_identity],
             ),
-        )
+        )?)
     }
 
-    pub fn split(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn split(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryContinuityContributionPosture::Split,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn split_successors<I, S>(
@@ -56,12 +63,12 @@ impl WorthQueryContinuityContributionAuthoring {
         successor_authoritative_identities: I,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self
+    ) -> Result<Self, IdentityDerivationDenial>
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        Self::with_runtime_semantics(
+        Ok(Self::with_runtime_semantics(
             WorthQueryContinuityContributionPosture::Split,
             semantic_code,
             detail,
@@ -71,15 +78,18 @@ impl WorthQueryContinuityContributionAuthoring {
                 prior_authoritative_identity,
                 successor_authoritative_identities,
             ),
-        )
+        )?)
     }
 
-    pub fn replaced(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn replaced(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryContinuityContributionPosture::Replaced,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn replaced_merge_successor(
@@ -87,8 +97,8 @@ impl WorthQueryContinuityContributionAuthoring {
         successor_authoritative_identity: impl Into<String>,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryContinuityContributionPosture::Replaced,
             semantic_code,
             detail,
@@ -98,18 +108,18 @@ impl WorthQueryContinuityContributionAuthoring {
                 prior_authoritative_identity,
                 [successor_authoritative_identity],
             ),
-        )
+        )?)
     }
 
     pub fn correspondence_only(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryContinuityContributionPosture::CorrespondenceOnly,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn for_admitted_intent_plan(
@@ -172,10 +182,10 @@ impl WorthQueryContinuityContributionAuthoring {
         posture: WorthQueryContinuityContributionPosture,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self {
-            payload: WorthQueryContinuityContributionPayload::new(posture, semantic_code, detail),
-        }
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
+            payload: WorthQueryContinuityContributionPayload::new(posture, semantic_code, detail)?,
+        })
     }
 
     fn with_runtime_semantics(
@@ -183,14 +193,14 @@ impl WorthQueryContinuityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         runtime_semantics: WorthQueryContinuityRuntimeSemantics,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             payload: WorthQueryContinuityContributionPayload::with_runtime_semantics(
                 posture,
                 semantic_code,
                 detail,
                 Some(runtime_semantics),
-            ),
-        }
+            )?,
+        })
     }
 }

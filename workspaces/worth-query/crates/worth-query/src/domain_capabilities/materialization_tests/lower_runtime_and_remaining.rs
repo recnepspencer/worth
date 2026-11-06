@@ -15,6 +15,7 @@ use super::{
     admitted_plan_ready_contribution, forensic_support_profile, lower_runtime_ready_contribution,
     standard_profile,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::{FoundationalDiagnosticDeliveryClass, FoundationalDiagnosticOutcomeKind};
 
 #[test]
@@ -83,14 +84,15 @@ fn lower_runtime_support_report_preserves_requested_richness_and_current_provena
 }
 
 #[test]
-fn remaining_categories_materialize_real_descriptive_outputs() {
+fn remaining_categories_materialize_real_descriptive_outputs(
+) -> Result<(), IdentityDerivationDenial> {
     let invariant_ready = super::declaration_ready_contribution(
         "intent-c",
         WorthQueryInvariantCapabilityContributionPayload::new(
             WorthQueryInvariantCapabilityContributionPosture::CapabilityGap,
             "graph.face_inner_loop_insertion",
             "topology substrate is not available",
-        ),
+        )?,
     );
     let workflow_ready = admitted_plan_ready_contribution(
         "plan-a",
@@ -98,7 +100,7 @@ fn remaining_categories_materialize_real_descriptive_outputs() {
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             "preview.confirmation.required",
             "destructive promotion requires confirmation",
-        ),
+        )?,
     );
     let continuity_bundle_ready = admitted_plan_ready_contribution(
         "plan-b",
@@ -106,7 +108,7 @@ fn remaining_categories_materialize_real_descriptive_outputs() {
             WorthQueryContinuityContributionPosture::Split,
             "continuity.identity.split",
             "edge split produces two descendant identities",
-        ),
+        )?,
     );
 
     let invariant_report = materialize_invariant_capability_support_report(
@@ -133,7 +135,7 @@ fn remaining_categories_materialize_real_descriptive_outputs() {
             WorthQueryContinuityContributionPosture::Split,
             "continuity.identity.split",
             "edge split produces two descendant identities",
-        ),
+        )?,
     );
     let continuity_summary =
         materialize_continuity_summary(continuity_summary_ready, standard_profile())
@@ -157,4 +159,6 @@ fn remaining_categories_materialize_real_descriptive_outputs() {
         continuity_summary.outcome_kind(),
         FoundationalDiagnosticOutcomeKind::Advisory
     );
+
+    Ok(())
 }

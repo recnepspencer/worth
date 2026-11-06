@@ -1,4 +1,5 @@
 use crate::domain_capabilities::identity::domain_capability_scope_encoder;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 use worth_runtime_bridge::facade::BridgePreviewSessionIdentity;
 
@@ -79,7 +80,9 @@ impl WorthQueryWorkflowRuntimeBindingSemantics {
         }
     }
 
-    pub(crate) fn semantics_identity(&self) -> WorthQueryEvidenceIdentity {
+    pub(crate) fn semantics_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
         match self {
             Self::RuntimePreflight {
                 runtime_snapshot_identity,
@@ -89,7 +92,7 @@ impl WorthQueryWorkflowRuntimeBindingSemantics {
                     WorthQueryEvidenceTag::new("runtime_snapshot"),
                     &runtime_snapshot_identity.evidence_identity(),
                 )
-                .seal(),
+                .seal()?,
             Self::RuntimePreflightBundle { preflight } => {
                 domain_capability_scope_encoder("worth_query_workflow_runtime_binding_v1")
                     .field_shape(
@@ -110,7 +113,7 @@ impl WorthQueryWorkflowRuntimeBindingSemantics {
                         WorthQueryEvidenceTag::new("basis_proof"),
                         &preflight.basis().proof().digest().evidence_identity(),
                     )
-                    .seal()
+                    .seal()?
             }
             Self::PreviewFoundation {
                 preview_session_identity,
@@ -125,7 +128,9 @@ impl WorthQueryWorkflowRuntimeBindingSemantics {
                     WorthQueryEvidenceTag::new("evaluation_class"),
                     evaluation_class.as_str(),
                 )
-                .seal(),
+                .seal()?,
         }
+
+        Ok(())
     }
 }

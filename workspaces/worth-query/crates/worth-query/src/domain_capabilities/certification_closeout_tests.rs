@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 use worth_relational::facade::runtime::InvariantCatalog;
 
@@ -31,7 +32,8 @@ use crate::runtime::{
 mod certification_bundle_matches_equivalent_public_and_proof_outputs;
 
 #[test]
-fn certification_bundle_preserves_support_scope_and_posture_distinction() {
+fn certification_bundle_preserves_support_scope_and_posture_distinction(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -39,7 +41,7 @@ fn certification_bundle_preserves_support_scope_and_posture_distinction() {
     let admitted_plan = admitted_basis_observation_plan();
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
-    let bundle = certify_domain_capabilities_in(domain);
+    let bundle = certify_domain_capabilities_in(domain)?;
     let declaration_target = domain
         .intent_target(&declaration)
         .expect("installed contribution authority must remain current");
@@ -90,10 +92,13 @@ fn certification_bundle_preserves_support_scope_and_posture_distinction() {
             .output_digest("support_traceability_digest")
             .expect("bundle should emit support traceability digest")
     );
+
+    Ok(())
 }
 
 #[test]
-fn certification_bundle_matches_admission_continuity_and_aftermath_outputs() {
+fn certification_bundle_matches_admission_continuity_and_aftermath_outputs(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -101,7 +106,7 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs() {
     let projection_plan = admitted_projection_consumption_plan();
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
-    let bundle = certify_domain_capabilities_in(domain);
+    let bundle = certify_domain_capabilities_in(domain)?;
     let admitted_plan_target = domain
         .admitted_plan_target(&admitted_plan)
         .expect("installed contribution authority must remain current");
@@ -120,7 +125,7 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs() {
         crate::domain_capabilities::WorthQueryAdmissionContributionAuthoring::advisory(
             "worth.spatial.admission.routing_gap",
             "runtime routing still needs clarification",
-        )
+        )?
         .bind_to_installed_target(admitted_plan_target.clone()),
     )));
     assert_eq!(admission, admission_proof);
@@ -142,7 +147,7 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs() {
             "edge:after",
             "worth.spatial.continuity.edge_split",
             "edge split preserves one authoritative successor",
-        )
+        )?
         .bind_to_installed_target(admitted_plan_target),
     )));
     assert_eq!(continuity, continuity_proof);
@@ -181,7 +186,7 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs() {
             projection_binding(),
             crate::projection_consumption::ProjectMaterializedFacts::declare()
                 .display_field_path(crate::projection_consumption::projection_fact_field_path_from_segments([worth_foundational::facade::FieldKey::new("field").expect("projection fact field segment should admit"), worth_foundational::facade::FieldKey::new("visible").expect("projection fact field segment should admit")])),
-        )
+        )?
         .bind_to_installed_target(projection_plan_target),
     )));
     assert_eq!(aftermath, aftermath_proof);
@@ -189,17 +194,20 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs() {
         bundle.output_digest("aftermath_artifact_digest"),
         Some(aftermath.contract_digest())
     );
+
+    Ok(())
 }
 
 #[test]
-fn certification_bundle_boundary_and_failure_outputs_track_live_surfaces() {
+fn certification_bundle_boundary_and_failure_outputs_track_live_surfaces(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let declaration = intent_declaration();
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
-    let bundle = certify_domain_capabilities_in(domain);
+    let bundle = certify_domain_capabilities_in(domain)?;
     let target = domain
         .intent_target(&declaration)
         .expect("installed contribution authority must remain current");
@@ -226,15 +234,18 @@ fn certification_bundle_boundary_and_failure_outputs_track_live_surfaces() {
         bundle.output_digest("failure_digest"),
         Some(denial.failure_for_reporting())
     );
+
+    Ok(())
 }
 
 #[test]
-fn certification_bundle_populates_stable_width_and_slope_outputs() {
+fn certification_bundle_populates_stable_width_and_slope_outputs(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let installation = install_domain_capability_certification(request_execution);
-    let bundle = certify_domain_capabilities_in(installation.contributions());
+    let bundle = certify_domain_capabilities_in(installation.contributions())?;
     let slopes = bundle.slope_report();
     let contribution_width = slopes.counter_snapshot().contribution_width().to_string();
     let trace_width = slopes.counter_snapshot().trace_width().to_string();
@@ -281,4 +292,6 @@ fn certification_bundle_populates_stable_width_and_slope_outputs() {
     assert!(slopes.counter_snapshot().trace_width() > 0);
     assert!(slopes.counter_snapshot().category_width() >= 7);
     assert!(slopes.counter_snapshot().support_width() >= 2);
+
+    Ok(())
 }

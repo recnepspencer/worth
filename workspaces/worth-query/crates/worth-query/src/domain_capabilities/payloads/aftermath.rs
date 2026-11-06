@@ -1,6 +1,7 @@
 use crate::domain_capabilities::identity::{
     compose_fact_request_entry_digest, domain_capability_scope_encoder,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 use crate::projection_consumption::{
     ProjectMaterializedFacts, ProjectionConsumptionBindingContext, ProjectionConsumptionSource,
@@ -40,7 +41,9 @@ impl WorthQueryAftermathContributionPosture {
     }
 }
 
-fn aftermath_source_identity(source: &ProjectionConsumptionSource) -> WorthQueryEvidenceIdentity {
+fn aftermath_source_identity(
+    source: &ProjectionConsumptionSource,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity = domain_capability_scope_encoder("worth_query_aftermath_source_v1")
         .field_shape(
             WorthQueryEvidenceTag::new("source_family"),
@@ -55,63 +58,67 @@ fn aftermath_source_identity(source: &ProjectionConsumptionSource) -> WorthQuery
             source.source_identity(),
         ),
     };
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 fn aftermath_binding_identity(
     binding: &ProjectionConsumptionBindingContext,
-) -> WorthQueryEvidenceIdentity {
-    domain_capability_scope_encoder("worth_query_aftermath_binding_v1")
-        .field_shape(
-            WorthQueryEvidenceTag::new("result_shape"),
-            binding.result_shape_digest(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("authorized_projection_query"),
-            binding.authorized_projection_query_digest(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("authorized_projection_result_shape"),
-            binding.authorized_projection_result_shape_digest(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("authorized_projection"),
-            binding.authorized_projection_identity(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("narrowed_result_shape"),
-            binding.narrowed_result_shape_digest(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("policy"),
-            binding.policy_digest(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("tenant_schema_basis"),
-            binding.tenant_schema_basis_digest(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        domain_capability_scope_encoder("worth_query_aftermath_binding_v1")
+            .field_shape(
+                WorthQueryEvidenceTag::new("result_shape"),
+                binding.result_shape_digest(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("authorized_projection_query"),
+                binding.authorized_projection_query_digest(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("authorized_projection_result_shape"),
+                binding.authorized_projection_result_shape_digest(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("authorized_projection"),
+                binding.authorized_projection_identity(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("narrowed_result_shape"),
+                binding.narrowed_result_shape_digest(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("policy"),
+                binding.policy_digest(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("tenant_schema_basis"),
+                binding.tenant_schema_basis_digest(),
+            )
+            .seal()?,
+    )
 }
 
 fn compose_aftermath_runtime_semantics_identity(
     runtime_semantics: &WorthQueryAftermathRuntimeSemantics,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let requested = runtime_semantics
         .requested_facts()
         .requested()
         .map(compose_fact_request_entry_digest)
         .collect::<Vec<_>>();
-    domain_capability_scope_encoder("worth_query_domain_capability_aftermath_runtime_semantics_v2")
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("source"),
-            &aftermath_source_identity(runtime_semantics.source()),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("binding"),
-            &aftermath_binding_identity(runtime_semantics.binding()),
-        )
-        .field_value_sequence(WorthQueryEvidenceTag::new("requested"), &requested)
-        .seal()
+    Ok(domain_capability_scope_encoder(
+        "worth_query_domain_capability_aftermath_runtime_semantics_v2",
+    )
+    .field_evidence_identity(
+        WorthQueryEvidenceTag::new("source"),
+        &aftermath_source_identity(runtime_semantics.source())?,
+    )
+    .field_evidence_identity(
+        WorthQueryEvidenceTag::new("binding"),
+        &aftermath_binding_identity(runtime_semantics.binding())?,
+    )
+    .field_value_sequence(WorthQueryEvidenceTag::new("requested"), &requested)
+    .seal()?)
 }
 
 fn compose_aftermath_payload_identity(
@@ -119,7 +126,7 @@ fn compose_aftermath_payload_identity(
     semantic_code: &str,
     detail: &str,
     runtime_semantics: Option<&WorthQueryAftermathRuntimeSemantics>,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity = domain_capability_scope_encoder("worth_query_domain_capability_payload_v3")
         .field_shape(
             WorthQueryEvidenceTag::new("category"),
@@ -136,7 +143,7 @@ fn compose_aftermath_payload_identity(
         }
         None => identity.field_shape(WorthQueryEvidenceTag::new("runtime"), "none"),
     };
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -171,8 +178,10 @@ impl WorthQueryAftermathRuntimeSemantics {
         &self.requested_facts
     }
 
-    pub(in crate::domain_capabilities) fn semantics_identity(&self) -> WorthQueryEvidenceIdentity {
-        compose_aftermath_runtime_semantics_identity(self)
+    pub(in crate::domain_capabilities) fn semantics_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(compose_aftermath_runtime_semantics_identity(self)?)
     }
 }
 
@@ -190,8 +199,13 @@ impl WorthQueryAftermathContributionPayload {
         posture: WorthQueryAftermathContributionPosture,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_runtime_semantics(posture, semantic_code, detail, None)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
+            posture,
+            semantic_code,
+            detail,
+            None,
+        )?)
     }
 
     pub fn with_runtime_semantics(
@@ -199,7 +213,7 @@ impl WorthQueryAftermathContributionPayload {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         runtime_semantics: Option<WorthQueryAftermathRuntimeSemantics>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let semantic_code = semantic_code.into();
         let detail = detail.into();
         let payload_identity = compose_aftermath_payload_identity(
@@ -207,14 +221,14 @@ impl WorthQueryAftermathContributionPayload {
             &semantic_code,
             &detail,
             runtime_semantics.as_ref(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             posture,
             semantic_code,
             detail,
             runtime_semantics,
             payload_identity,
-        }
+        })
     }
 
     pub fn category(&self) -> WorthQueryDomainCapabilityCategory {

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::{
     ProjectMaterializedFacts, ProjectionConsumptionBindingContext, ProjectionConsumptionSource,
 };
@@ -23,28 +24,37 @@ pub struct WorthQueryAftermathContributionAuthoring {
 }
 
 impl WorthQueryAftermathContributionAuthoring {
-    pub fn establishes_fact(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn establishes_fact(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryAftermathContributionPosture::EstablishesFact,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
-    pub fn consumes_fact(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn consumes_fact(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryAftermathContributionPosture::ConsumesFact,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
-    pub fn declares_residue(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn declares_residue(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryAftermathContributionPosture::DeclaresResidue,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn establishes_projection_contract(
@@ -53,13 +63,13 @@ impl WorthQueryAftermathContributionAuthoring {
         source: ProjectionConsumptionSource,
         binding: ProjectionConsumptionBindingContext,
         requested_facts: ProjectMaterializedFacts,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryAftermathContributionPosture::EstablishesFact,
             semantic_code,
             detail,
             WorthQueryAftermathRuntimeSemantics::new(source, binding, requested_facts),
-        )
+        )?)
     }
 
     pub fn consumes_projection_contract(
@@ -68,13 +78,13 @@ impl WorthQueryAftermathContributionAuthoring {
         source: ProjectionConsumptionSource,
         binding: ProjectionConsumptionBindingContext,
         requested_facts: ProjectMaterializedFacts,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryAftermathContributionPosture::ConsumesFact,
             semantic_code,
             detail,
             WorthQueryAftermathRuntimeSemantics::new(source, binding, requested_facts),
-        )
+        )?)
     }
 
     pub fn declares_projection_residue(
@@ -83,13 +93,13 @@ impl WorthQueryAftermathContributionAuthoring {
         source: ProjectionConsumptionSource,
         binding: ProjectionConsumptionBindingContext,
         requested_facts: ProjectMaterializedFacts,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryAftermathContributionPosture::DeclaresResidue,
             semantic_code,
             detail,
             WorthQueryAftermathRuntimeSemantics::new(source, binding, requested_facts),
-        )
+        )?)
     }
 
     pub fn for_admitted_intent_plan(
@@ -168,10 +178,10 @@ impl WorthQueryAftermathContributionAuthoring {
         posture: WorthQueryAftermathContributionPosture,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self {
-            payload: WorthQueryAftermathContributionPayload::new(posture, semantic_code, detail),
-        }
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
+            payload: WorthQueryAftermathContributionPayload::new(posture, semantic_code, detail)?,
+        })
     }
 
     fn with_runtime_semantics(
@@ -179,14 +189,14 @@ impl WorthQueryAftermathContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         runtime_semantics: WorthQueryAftermathRuntimeSemantics,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             payload: WorthQueryAftermathContributionPayload::with_runtime_semantics(
                 posture,
                 semantic_code,
                 detail,
                 Some(runtime_semantics),
-            ),
-        }
+            )?,
+        })
     }
 }
