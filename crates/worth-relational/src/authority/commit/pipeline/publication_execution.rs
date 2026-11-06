@@ -12,7 +12,7 @@ use preparation::{
 };
 
 pub(crate) struct PublishedCommitExecution {
-    admitted: super::execution_admission::AdmittedCommitState,
+    admitted: CommitPhaseBacking<super::execution_admission::AdmittedCommitState>,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,
     invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
     version_id: crate::identity::data::VersionId,
@@ -32,7 +32,7 @@ impl PublishedCommitExecution {
     pub(super) fn into_parts(
         self,
     ) -> (
-        super::execution_admission::AdmittedCommitState,
+        CommitPhaseBacking<super::execution_admission::AdmittedCommitState>,
         crate::transactions::data::CommitStructuralSummary,
         Vec<crate::validation::engine::InvariantExecutionResult>,
         crate::identity::data::VersionId,
@@ -138,7 +138,7 @@ pub(super) fn prepare_commit_publication_execution(
         };
         PreparedCommitPublicationExecution {
             source_interpretation,
-            admitted,
+            admitted: CommitPhaseBacking::new(execution, admitted)?,
             public_structural_summary,
             invariant_executions,
             version_id,
@@ -179,7 +179,7 @@ pub(crate) fn publish_commit_execution(
         prepared_indexes,
     } = prepared;
     let finalized = {
-        let (_, _, _, _, commit_log, phase_timing) = admitted.phase_view().into_parts();
+        let (_, _, _, _, commit_log, phase_timing) = admitted.value_mut().phase_view().into_parts();
         finalize_publication_phase(
             runtime,
             commit_log,
@@ -205,7 +205,7 @@ pub(crate) fn publish_commit_execution(
             .collect();
     runtime.publish_invariant_preparation_diagnostics(&invariant_executions);
     publish_prepared_trace_diagnostics(runtime, &aspect_evaluation_traces, &aspect_emission_traces);
-    if let Some(accounting) = admitted.take_merge_accounting() {
+    if let Some(accounting) = admitted.value_mut().take_merge_accounting() {
         runtime.performance_access().count_merge_execution_request(
             accounting.admitted_records,
             accounting.emitted_mutation_intents,
@@ -247,7 +247,7 @@ fn publish_prepared_trace_diagnostics(
 pub(crate) struct PreparedCommitPublicationExecution {
     source_interpretation:
         std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
-    admitted: super::execution_admission::AdmittedCommitState,
+    admitted: CommitPhaseBacking<super::execution_admission::AdmittedCommitState>,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,
     invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
     version_id: crate::identity::data::VersionId,
@@ -265,7 +265,7 @@ pub(crate) struct PreparedCommitPublicationExecution {
 pub(crate) struct PreparedCommitPublicationCompletion {
     pub(crate) source_interpretation:
         std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
-    admitted: super::execution_admission::AdmittedCommitState,
+    admitted: CommitPhaseBacking<super::execution_admission::AdmittedCommitState>,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,
     invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
     version_id: crate::identity::data::VersionId,
@@ -286,6 +286,6 @@ impl PublishedCommitExecution {
         &mut self,
         diagnostics: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
     ) {
-        self.admitted.append_diagnostics(diagnostics);
+        self.admitted.value_mut().append_diagnostics(diagnostics);
     }
 }

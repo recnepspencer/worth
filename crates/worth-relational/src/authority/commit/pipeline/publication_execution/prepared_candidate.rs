@@ -38,6 +38,7 @@ impl PreparedCommitPublicationExecution {
         &self,
     ) -> Option<&std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>> {
         self.admitted
+            .value()
             .validation_input()
             .recovered_codec_publication_custody()
     }
@@ -45,7 +46,7 @@ impl PreparedCommitPublicationExecution {
     pub(crate) fn home_step(
         &self,
     ) -> Option<&std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>> {
-        self.admitted.validation_input().home_step()
+        self.admitted.value().validation_input().home_step()
     }
 
     pub(crate) fn has_prepared_indexes(&self) -> bool {
@@ -61,18 +62,18 @@ impl PreparedCommitPublicationExecution {
     }
 
     pub(crate) fn is_retained_entity_selection(&self) -> bool {
-        self.admitted.semantic_plan().selection().is_some()
+        self.admitted.value().semantic_plan().selection().is_some()
     }
 
     pub(crate) fn release_transaction_retention(&mut self) {
-        self.admitted.release_transaction_retention();
+        self.admitted.value_mut().release_transaction_retention();
     }
 
     pub(crate) fn append_diagnostics(
         &mut self,
         diagnostics: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
     ) {
-        self.admitted.append_diagnostics(diagnostics);
+        self.admitted.value_mut().append_diagnostics(diagnostics);
     }
 
     pub(crate) fn split(
