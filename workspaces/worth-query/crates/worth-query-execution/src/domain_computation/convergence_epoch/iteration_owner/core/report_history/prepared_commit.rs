@@ -1,7 +1,8 @@
 use super::WorthQueryConvergenceReportHistory;
-use crate::domain_computation::{
-    WorthQueryBoundConvergenceReport, WorthQueryConvergenceIncumbentUpdate,
-    WorthQueryRetainedConvergenceCandidateEvidence,
+use {
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceIncumbentUpdate,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryRetainedConvergenceCandidateEvidence,
+    crate::domain_computation::WorthQueryBoundConvergenceReport,
 };
 
 pub(in crate::domain_computation::convergence_epoch::iteration_owner::core) struct WorthQueryPreparedConvergenceReportCommit

@@ -109,7 +109,7 @@ impl DirectIterationAssociation<WorthQueryPendingDirectGraphChunk> {
 fn admit_step_outcome(
     core: super::super::super::core::WorthQueryConvergenceEpochCore,
     graph: worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-    provider: std::sync::Arc<dyn super::super::super::super::WorthQueryConvergenceDomainProvider>,
+    provider: std::sync::Arc<dyn crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainProvider>,
     outcome: WorthQueryDirectGraphStepOutcome,
 ) -> DirectAssociatedStepOutcome {
     match outcome {
@@ -169,7 +169,7 @@ fn admit_step_outcome(
 fn admit_terminal_outcome(
     core: super::super::super::core::WorthQueryConvergenceEpochCore,
     graph: worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-    provider: std::sync::Arc<dyn super::super::super::super::WorthQueryConvergenceDomainProvider>,
+    provider: std::sync::Arc<dyn crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainProvider>,
     outcome: WorthQueryDirectGraphStepOutcome,
 ) -> super::super::WorthQueryDirectConvergenceIterationOutcome {
     match admit_step_outcome(core, graph, provider, outcome) {

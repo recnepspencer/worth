@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
-use crate::domain_computation::{
-    WorthQueryConvergenceDomainDecision, WorthQueryConvergenceDomainWorkEvidence,
-    WorthQueryProviderWorkReport,
+use {
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainDecision,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainWorkEvidence,
+    crate::domain_computation::WorthQueryProviderWorkReport,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -1,7 +1,10 @@
-use super::{
-    WorthQueryConvergenceAssessment, WorthQueryConvergenceComparison,
-    WorthQueryConvergenceDomainFailure, WorthQueryConvergenceProgress,
-    WorthQueryConvergenceProviderFamilies, WorthQueryConvergenceRepeatedState,
+use {
+    super::comparison::WorthQueryConvergenceComparison,
+    super::domain_assessment::WorthQueryConvergenceAssessment,
+    super::domain_decision::WorthQueryConvergenceProgress,
+    super::domain_decision::WorthQueryConvergenceRepeatedState,
+    super::domain_work::WorthQueryConvergenceDomainFailure,
+    super::provider_families::WorthQueryConvergenceProviderFamilies,
 };
 
 pub trait WorthQueryConvergenceDomainProvider: Send + Sync + 'static {

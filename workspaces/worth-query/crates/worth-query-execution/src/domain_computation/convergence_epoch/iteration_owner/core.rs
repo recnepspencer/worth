@@ -9,8 +9,9 @@ use worth_query_admission::facade::domain_computation::WorthQueryAdmittedConverg
 
 use crate::execution_digest::hash_parts;
 
-use super::super::{
-    WorthQueryBoundConvergenceReport, WorthQueryRetainedConvergenceCandidateEvidence,
+use {
+    super::super::WorthQueryBoundConvergenceReport,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryRetainedConvergenceCandidateEvidence,
 };
 
 pub use lifecycle::WorthQueryConvergenceEpochCounters;

@@ -6,7 +6,10 @@ use {
     crate::domain_computation::WorthQueryManagedRunDenial,
 };
 
-use super::{WorthQueryConvergenceDomainWorkEvidence, WorthQueryConvergenceEpochDenial};
+use {
+    super::WorthQueryConvergenceEpochDenial,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainWorkEvidence,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryConvergenceDomainPhase {

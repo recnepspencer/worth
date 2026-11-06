@@ -7,7 +7,7 @@ pub struct WorthQueryRetainedConvergenceCandidateEvidence {
 }
 
 impl WorthQueryRetainedConvergenceCandidateEvidence {
-    pub(super) fn new(
+    pub(in crate::domain_computation) fn new(
         occurrence_identity: impl Into<Arc<str>>,
         state_identity: impl Into<Arc<str>>,
         report_evidence_identity: impl Into<Arc<str>>,

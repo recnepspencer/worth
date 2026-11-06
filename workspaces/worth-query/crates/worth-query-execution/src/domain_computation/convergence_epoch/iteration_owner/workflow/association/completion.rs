@@ -1,16 +1,18 @@
 //! Workflow managed completion transitions over one sealed association.
 
-use super::super::super::super::{
-    domain_assessment_transition::assess_domain_report,
-    domain_work::WorthQueryConvergenceDomainAssessmentOutcome,
-    terminal_outcome::{semantic_terminal_kind, workflow_terminal_outcome},
-    WorthQueryConvergenceDisposition, WorthQueryConvergenceIndeterminateCause,
-    WorthQueryConvergenceTerminalKind,
-};
 use super::super::super::core::{
     admit_assessed_domain_report, WorthQueryConvergenceReportAdmissionFailure,
 };
 use super::WorkflowIterationAssociation;
+use {
+    super::super::super::super::domain_assessment_transition::assess_domain_report,
+    super::super::super::super::terminal_outcome::semantic_terminal_kind,
+    super::super::super::super::terminal_outcome::workflow_terminal_outcome,
+    super::super::super::super::WorthQueryConvergenceIndeterminateCause,
+    super::super::super::super::WorthQueryConvergenceTerminalKind,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDisposition,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainAssessmentOutcome,
+};
 use {
     crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind,
     crate::domain_computation::WorthQueryCompletedWorkflowGraphExecution,
@@ -106,7 +108,7 @@ impl WorkflowIterationAssociation<WorthQueryCompletedWorkflowGraphExecution> {
 fn continue_or_exhaust(
     core: super::super::super::core::WorthQueryConvergenceEpochCore,
     graph: worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-    provider: std::sync::Arc<dyn super::super::super::super::WorthQueryConvergenceDomainProvider>,
+    provider: std::sync::Arc<dyn crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainProvider>,
     running: crate::domain_computation::WorthQueryRunningWorkflowRun,
 ) -> super::super::WorthQueryWorkflowConvergenceIterationOutcome {
     if core.counters().iteration_count() >= core.contract().iteration_bound() {

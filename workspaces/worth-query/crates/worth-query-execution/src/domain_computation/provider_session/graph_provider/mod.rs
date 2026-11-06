@@ -3,6 +3,7 @@ mod call;
 mod call_identity;
 mod call_kind;
 mod commit_call;
+pub(crate) mod convergence_port;
 mod failure;
 mod materialization;
 mod provider_contract;
@@ -16,6 +17,7 @@ mod work_report;
 
 pub(crate) use call::WorthQueryGraphProviderCallReadmissionPlan;
 pub use call::{WorthQueryGraphProviderCall, WorthQueryGraphProviderCallRequest};
+pub use convergence_port::*;
 
 pub use commit_call::{WorthQueryGraphCommitCall, WorthQueryGraphCommitCallRequest};
 pub use materialization::WorthQueryGraphReadRows;

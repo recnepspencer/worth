@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use super::identity_validation::portable_identity;
-use super::{
-    WorthQueryConvergenceDisposition, WorthQueryConvergenceFeasibility,
-    WorthQueryConvergenceIncumbentUpdate,
+use {
+    super::domain_decision::WorthQueryConvergenceDisposition,
+    super::domain_decision::WorthQueryConvergenceFeasibility,
+    super::domain_decision::WorthQueryConvergenceIncumbentUpdate,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -58,7 +59,7 @@ impl WorthQueryConvergenceComparison {
         &self.incumbent_update
     }
 
-    pub(super) fn into_parts(
+    pub(in crate::domain_computation) fn into_parts(
         self,
     ) -> (
         Arc<str>,

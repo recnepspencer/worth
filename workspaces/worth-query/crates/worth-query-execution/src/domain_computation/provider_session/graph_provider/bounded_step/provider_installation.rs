@@ -51,14 +51,14 @@ impl WorthQueryGraphProviderAnchor {
     pub fn install_convergent<
         G: 'static,
         P: WorthQueryGraphParticipationProvider<G>
-            + crate::domain_computation::WorthQueryConvergenceDomainProvider,
+            + crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainProvider,
     >(
         provider: P,
-    ) -> Self {
+    ) -> Self{
         let provider = Arc::new(provider);
         let resource_support = provider.execution_resource_support();
         let convergence_provider: Arc<
-            dyn crate::domain_computation::WorthQueryConvergenceDomainProvider,
+            dyn crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainProvider,
         > = provider.clone();
         Self {
             provider: typed_provider::<G, P>(provider),
@@ -214,10 +214,10 @@ impl WorthQueryGraphProviderAnchor {
             + WorthQueryDecisionFactProvider
             + WorthQueryProvisionalGraphProvider
             + WorthQueryInvariantExecutionProvider
-            + crate::domain_computation::WorthQueryConvergenceDomainProvider,
+            + crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainProvider,
     >(
         provider: P,
-    ) -> Self {
+    ) -> Self{
         let provider = Arc::new(provider);
         let resource_support = provider.execution_resource_support();
         let session_lifecycle: Arc<dyn WorthQueryErasedProviderSessionLifecycle> = provider.clone();
@@ -228,7 +228,7 @@ impl WorthQueryGraphProviderAnchor {
         let invariant_provider: Arc<dyn WorthQueryErasedInvariantExecutionProvider> =
             provider.clone();
         let convergence_provider: Arc<
-            dyn crate::domain_computation::WorthQueryConvergenceDomainProvider,
+            dyn crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainProvider,
         > = provider.clone();
         Self {
             provider: typed_provider::<G, P>(provider),

@@ -158,7 +158,7 @@ pub struct WorthQueryGraphProviderAnchor {
     pub(super) provisional_provider: Option<Arc<dyn WorthQueryErasedProvisionalGraphProvider>>,
     pub(super) invariant_provider: Option<Arc<dyn WorthQueryErasedInvariantExecutionProvider>>,
     pub(super) convergence_provider:
-        Option<Arc<dyn crate::domain_computation::WorthQueryConvergenceDomainProvider>>,
+        Option<Arc<dyn crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainProvider>>,
     pub(super) provider_identity: &'static str,
     pub(super) provider_generation: u64,
     pub(super) resource_support: WorthQueryExecutionResourceSupport,
@@ -194,7 +194,7 @@ impl WorthQueryGraphProviderAnchor {
 
     pub(crate) fn convergence_provider(
         &self,
-    ) -> Option<Arc<dyn crate::domain_computation::WorthQueryConvergenceDomainProvider>> {
+    ) -> Option<Arc<dyn crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainProvider>>{
         self.convergence_provider.as_ref().map(Arc::clone)
     }
 

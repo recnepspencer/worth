@@ -171,6 +171,7 @@ pub mod primary_graph;
 /// states, plus terminal reports.
 pub mod convergence_epoch {
     pub use crate::domain_computation::convergence_epoch::*;
+    pub use crate::domain_computation::provider_session::graph_provider::convergence_port::*;
 }
 
 /// The installed-runtime surface in one place: `runtime`, `domain_computation`,

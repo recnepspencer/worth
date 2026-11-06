@@ -1,4 +1,4 @@
-use crate::domain_computation::convergence_epoch::WorthQueryConvergenceDomainWorkEvidence;
+use crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainWorkEvidence;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryConvergenceEpochCounters {

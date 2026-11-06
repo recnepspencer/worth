@@ -4,18 +4,22 @@ use worth_query_installation::facade::WorthQueryConvergenceOscillationPosture;
 
 use super::super::super::WorthQueryConvergenceEpochCore;
 use super::incumbent_transition::prepare_incumbent_transition;
-use crate::domain_computation::convergence_epoch::domain_work::WorthQueryConvergenceDomainAssessmentOutcome;
 use crate::domain_computation::convergence_epoch::{
     WorthQueryBoundConvergenceReport, WorthQueryConvergenceEpochDenial,
     WorthQueryConvergenceEpochDenialKind,
 };
-use crate::domain_computation::{
-    WorthQueryBoundGraphExecutionReceipt, WorthQueryConvergenceDisposition,
-    WorthQueryConvergenceDomainDecision, WorthQueryConvergenceDomainEvidenceBinding,
-    WorthQueryConvergenceFeasibility, WorthQueryConvergenceIncumbentUpdate,
-    WorthQueryConvergenceProgress, WorthQueryConvergenceRepeatedState,
-};
+use crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainAssessmentOutcome;
 use crate::execution_digest::hash_parts;
+use {
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDisposition,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainDecision,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceFeasibility,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceIncumbentUpdate,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceProgress,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceRepeatedState,
+    crate::domain_computation::WorthQueryBoundGraphExecutionReceipt,
+    crate::domain_computation::WorthQueryConvergenceDomainEvidenceBinding,
+};
 
 pub(in crate::domain_computation::convergence_epoch::iteration_owner) enum WorthQueryConvergenceReportAdmissionFailure
 {
@@ -162,7 +166,7 @@ fn bound_report_identity(
     receipt: &WorthQueryBoundGraphExecutionReceipt,
     decision: &WorthQueryConvergenceDomainDecision,
     candidate_occurrence_identity: &str,
-    domain_work: crate::domain_computation::WorthQueryConvergenceDomainWorkEvidence,
+    domain_work: crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainWorkEvidence,
 ) -> String {
     hash_parts(&[
         "worth_query_bound_convergence_report_v1".into(),
