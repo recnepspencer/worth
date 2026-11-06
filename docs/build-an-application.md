@@ -2073,8 +2073,11 @@ ordinary current scope refusal, without additional historical identity details.
 The same admission applies below a verified parent and a genuinely regenerated
 historical parent. The installed discovery query computes the child set,
 including empty sets; a restored stale child can regenerate while its healthy
-model root stays unopened. Healthy-child verification without producer-source
-reads and sources newly created by fallback remain under qualification alongside
+model root stays unopened. Give a changed discovery implementation a new build
+identity: the selected parent then takes its actual fallback and the installed
+query computes the new child set. Corrupt parent/publication lineage refuses
+before producer work. Healthy-child verification without producer-source reads
+and sources newly created by fallback remain under qualification alongside
 all-tree navigation.
 
 To bound selectable history across all futures, declare separate

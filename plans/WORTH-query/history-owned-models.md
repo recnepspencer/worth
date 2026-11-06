@@ -1507,3 +1507,55 @@ contacts, then rejects the later StaleAuthorization fence in place of the
 required early C scope refusal. Each edited source restores to the same SHA-256.
 Boundary/context, formatting, dirty caps and the primary composition review pass.
 No independent review or complete-workspace equivalence is claimed.
+
+### D1214 remaining parent courts: cold lineage and changed meaning
+
+Boundary review: a selected program revision resolves through the existing
+branch program owner, while implementation reuse is checked by the currentness
+owner against ApplicationBuildIdentity. Dependent connection declarations carry
+portable feature/port/connection meaning; their compiled discovery and demand
+functions belong to the implementation build. The old and new implementations
+must never share a build identity. Native roster rows cannot substitute for
+running the current installed discovery.
+
+Use the existing generic fixture/checkpoint recorder and parameterize its cold
+restore constructor by the actual program type. Keep the same schema and pure
+program declaration for an old versus new discovery implementation, with distinct
+build identities; assert the portable revisions match. The old tree discovers
+Second(a) from First(a). The new connection runs the actual nested ModelMember
+query and discovers Downstream(m). Refresh only Second to the current build
+before attaching history. Selecting the earlier model value must run the stale
+root's actual Preserve producer and the newly discovered child Initial producer,
+retain the old Second output and produce Downstream500. An old roster pretending
+to be discovery cannot supply that child. Include worker placement and original
+identity/value assertions. This is an existing changed-build fallback court,
+not a second saved discovery artifact or a new recording format.
+
+For corruption, capture the same non-leaf world through the real recorder, alter
+only the first parent's Query role generation with the existing closed checkpoint
+body door, and preserve Native's actual publication. Cold restore may retain the
+descriptive row, but selection must refuse its wrong parent lineage with typed
+publication correspondence, the true parent source/family, no contacts and no
+selection/data effect. The existing binding between Query lineage and Native
+publication remains the sole verifier. Register new door callers through the
+script, run both parent scenarios and the complete history family, then continue
+healthy-child source avoidance. If the actual cold program/build premise fails,
+investigate its owning contract before implementing another authority path.
+
+The four cold-parent serial/worker courts pass. The new implementation preserves
+the portable program revision, refreshes only Second, then navigation invokes
+First Preserve plus the current discovery's new Downstream Initial. The new
+child500 is absent from the old roster; First's original identity/value and
+Second's refreshed2003 survive. Corrupt first-parent Query lineage refuses typed
+with source/family and no selection change or producer contact.
+
+The single installed-producer build predicate mutant survived honestly: the
+canonical lineage reader independently screens noncurrent implementations first.
+Removing both build checks compiled and failed both changed-meaning courts
+(one producer contact instead of two). Removing Native/Query publication
+correspondence compiled and failed both corruption courts by contacting a
+producer before refusal. All edits restored to equal SHA-256; the final pristine
+history family passes175 courts. Boundary/context, formatting, whitespace and
+seven dirty Rust caps pass. Primary composition review accepts the two long
+court journeys as explicit setup/action/independent observation; no independent
+review was assigned. Healthy-child source avoidance remains the next boundary.

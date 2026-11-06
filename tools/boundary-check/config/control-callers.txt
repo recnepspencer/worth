@@ -1745,3 +1745,5 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/hierarchy/member_children/courts.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/restoration_header/mod.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/restoration_header/scope.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/hierarchy/cold_parent/corruption.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/hierarchy/cold_parent/meaning.rs

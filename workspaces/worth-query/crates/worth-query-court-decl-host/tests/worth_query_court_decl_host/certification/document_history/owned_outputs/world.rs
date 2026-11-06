@@ -199,18 +199,22 @@ pub fn outputs(host: &Host, branch: WorthQueryProductBranch) -> (query::Row, que
 }
 
 pub fn restore_changed_build(checkpoint: WorthQueryApplicationCheckpoint, worker: bool) -> Host {
-    restore_checkpoint(checkpoint, worker, true)
+    restore_program_checkpoint::<program::Program>(checkpoint, worker, true)
 }
 pub fn restore_same_build(checkpoint: WorthQueryApplicationCheckpoint, worker: bool) -> Host {
-    restore_checkpoint(checkpoint, worker, false)
+    restore_program_checkpoint::<program::Program>(checkpoint, worker, false)
 }
-fn restore_checkpoint(
+pub(super) fn restore_program_checkpoint<P>(
     checkpoint: WorthQueryApplicationCheckpoint,
     worker: bool,
     changed: bool,
-) -> Host {
+) -> WorthQueryProgramApplicationRuntime<Schema, P>
+where
+    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
+    P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
+{
     let schema = Schema::declaration().unwrap();
-    let program = ApplicationProgramAuthoring::<Schema, program::Program>::begin()
+    let program = ApplicationProgramAuthoring::<Schema, P>::begin()
         .with_schema(&schema)
         .validated_program()
         .unwrap();
