@@ -55,6 +55,7 @@ impl WorthQueryApplicationProjection<Schema, Query> for Row {
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Read(pub String);
+impl From<String> for Read { fn from(key: String) -> Self { Self(key) } }
 worth_query_structured_value_binding!(pub ReadInput for Read { identity: $input });
 pub struct Binding;
 type Scope = ApplicationQueryFieldScope<Schema, Entity, Facts, Key, String, ReadOnly, NoApplicationUnit>;
@@ -102,19 +103,7 @@ scalar_read!(
     "Model",
     public
 );
-scalar_read!(
-    producer_model,
-    Model,
-    ModelFacts,
-    ModelKey,
-    ModelValue,
-    "Model",
-    "owned-outputs.producer-model-read.v1",
-    "owned-outputs.producer-model-binding.v1",
-    "owned-outputs.producer-model-input.v1",
-    "ProducerModel",
-    public
-);
+pub mod producer_model;
 scalar_read!(
     member,
     Member,

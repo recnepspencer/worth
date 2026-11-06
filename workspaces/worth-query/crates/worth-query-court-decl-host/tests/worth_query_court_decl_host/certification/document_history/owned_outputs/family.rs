@@ -62,7 +62,7 @@ macro_rules! family {
             impl WorthQueryApplicationOutputDemand<Schema> for Demand {
                 type OutputFamily = Family;
                 fn source_intent(&self) -> query::$source_query::Read {
-                    query::$source_query::Read(self.0.clone())
+                    query::$source_query::Read::from(self.0.clone())
                 }
             }
             phase!(

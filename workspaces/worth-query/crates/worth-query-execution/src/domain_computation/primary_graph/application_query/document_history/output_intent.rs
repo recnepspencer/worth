@@ -85,6 +85,10 @@ impl WorthQueryHistoryOutputIntent {
         self.backing.scope.subject()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn source_partition(&self) -> [u8; 32] {
+        *self.backing.parameters.identity().bytes()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn matches_output_source<Q>(
         &self,
         source: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Q>,

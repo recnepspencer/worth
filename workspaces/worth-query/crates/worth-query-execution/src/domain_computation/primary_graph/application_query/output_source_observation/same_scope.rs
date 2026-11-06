@@ -94,6 +94,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             ApplicationQueryParameterSet::new(),
             &principal,
             &scope,
+            super::permission::SourceScopePosture::Current,
             native,
             consume,
         )

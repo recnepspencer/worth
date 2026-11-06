@@ -31,6 +31,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         configuration: Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        setup.handler::<authored_member::retire::Binding, _>(authored_member::retire::Handler)?;
+        setup.handler::<authored_member::restore::Binding, _>(authored_member::restore::Handler)?;
         setup.handler::<edit::Binding, _>(edit::Handler)?;
         setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
         setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;

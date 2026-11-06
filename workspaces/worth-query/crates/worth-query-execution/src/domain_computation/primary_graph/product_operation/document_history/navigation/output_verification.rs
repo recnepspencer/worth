@@ -118,8 +118,9 @@ fn matches_profile(
 ) -> Result<bool, Denial> {
     super::output_coverage::charge(
         execution,
-        (route.family.len() + profile.family.len()) as u64 + 8,
+        (route.family.len() + profile.family.len()) as u64 + 40,
     )?;
     Ok(route.family == profile.family
-        && route.source_scope == profile.source_intent().source_subject())
+        && route.source_scope == profile.source_intent().source_subject()
+        && route.source_partition == profile.source_intent().source_partition())
 }

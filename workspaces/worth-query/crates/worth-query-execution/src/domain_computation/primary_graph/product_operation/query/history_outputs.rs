@@ -164,3 +164,19 @@ impl<S: ApplicationSchema>
         })
     }
 }
+
+impl From<crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop>
+    for WorthQueryHistoryOutputReadDenial
+{
+    fn from(
+        cause: crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop,
+    ) -> Self {
+        use crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop as Stop;
+        match cause {
+            Stop::Admission(cause) | Stop::Preparation { cause, .. } => Self::Admission(cause),
+            Stop::Principal(cause) => Self::Principal(cause),
+            Stop::Scope(cause) => Self::Scope(cause),
+            cause => Self::Demand(crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial::source_query_stop(cause).demand_stop()),
+        }
+    }
+}

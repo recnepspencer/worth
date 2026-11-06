@@ -36,7 +36,7 @@ worth_query_relation!(pub FirstOf in Schema, FirstOutput => Model; integrity = s
 worth_query_relation!(pub SecondOf in Schema, SecondOutput => Model; integrity = same_context_unbounded_retain_dangling);
 worth_query_principal_binding!(pub Actor in Schema, mapping Mapping { identity: ExternalId, status: Status, target: MappingTarget => Principal, principal_identity: PrincipalId });
 worth_query_application_contribution! { pub contribution Contribution in Schema {
-    identity: "owned-outputs.contribution.v1", members: |schema| { declare(schema) }
+    identity: "owned-outputs.contribution.v1", corrections: [authored_member::correction::UndoRetire], members: |schema| { declare(schema) }
 } }
 
 fn declare(
@@ -101,6 +101,7 @@ fn declare(
             SecondOutput::reference(),
             Model::reference(),
         );
+    let schema = authored_member::declare(schema);
     let schema = query::declare(member_delete::declare(member_edit::declare(edit::declare(
         navigation::declare(schema),
     ))));
@@ -117,6 +118,7 @@ fn declare(
         .owns(ChildOf::reference())
         .operation::<edit::Binding>("Edit model")
         .owned_operation::<member_edit::Binding>("Edit member")
-        .operation::<member_delete::Binding>("Delete member"),
+        .operation::<member_delete::Binding>("Delete member")
+        .operation::<authored_member::retire::Binding>("Retire authored member"),
     )
 }

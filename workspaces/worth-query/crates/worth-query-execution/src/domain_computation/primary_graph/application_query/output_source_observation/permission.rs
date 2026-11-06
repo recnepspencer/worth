@@ -8,6 +8,11 @@ use worth_query_declaration::facade::application_query::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
+pub(super) enum SourceScopePosture {
+    Current,
+    Historical(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
+}
+
 impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
     #[allow(clippy::too_many_arguments)]
     pub(super) fn with_resolved_plan<
@@ -32,6 +37,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             Schema,
             <B::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope,
         >,
+        posture: SourceScopePosture,
         native: &mut ApplicationQueryNativeAccess<'_>,
         consume: impl for<'plan> FnOnce(
             SourceReadPlan<'plan, Schema, B>,
@@ -87,27 +93,58 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     cause,
                 })
             })?;
-        let permission = application
-            .prepare_application_query_permission_with_parameters(
-                execution,
-                query,
-                access,
-                query.identity(),
-                parameters,
-                controls,
-                selected,
-                self.history.as_ref().map(|_| self.shared.selected()),
-                self.request,
-                principal,
-                scope,
-                native,
-            )
-            .map_err(|cause| {
-                self.record_history_refusal(Stop::Preparation {
-                    phase: SourceQueryPreparationPhase::Permission,
-                    cause,
-                })
-            })?;
+        let permission = match &posture {
+            SourceScopePosture::Current => application
+                .prepare_application_query_permission_with_parameters(
+                    execution,
+                    query,
+                    access,
+                    query.identity(),
+                    parameters,
+                    controls,
+                    selected,
+                    self.history.as_ref().map(|_| self.shared.selected()),
+                    self.request,
+                    principal,
+                    scope,
+                    native,
+                ),
+            SourceScopePosture::Historical(_) => {
+                let history = self.history.as_ref().ok_or(Stop::ForeignClosure)?;
+                if !std::ptr::eq(scope.selected(), self.shared.selected()) {
+                    return Err(Stop::ForeignClosure.into());
+                }
+                application.prepare_historical_source_query_permission_with_parameters(
+                    execution,
+                    query,
+                    access,
+                    query.identity(),
+                    parameters,
+                    controls,
+                    selected,
+                    Some(self.shared.selected()),
+                    self.request,
+                    principal,
+                    history.invocation,
+                    native,
+                )
+            }
+        }
+        .map_err(|cause| {
+            // A denied C audience cannot distinguish historical scope presence.
+            if let SourceScopePosture::Historical(absent) = &posture {
+                if matches!(
+                    cause.kind(),
+                    WorthQueryApplicationQueryAdmissionDenialKind::Authorization(_)
+                ) {
+                    return self.record_history_refusal(Stop::Scope(absent.clone()));
+                }
+            }
+            self.record_history_refusal(Stop::Preparation {
+                phase: SourceQueryPreparationPhase::Permission,
+                cause,
+            })
+        })?;
         if let Some(history) = &self.history {
             permission
                 .require_history_principal(history.invocation)

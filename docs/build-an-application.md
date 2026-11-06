@@ -2241,9 +2241,12 @@ source, plus the original publication coordinate. The refusal holds diagnostic
 data without retaining Native publication or historical-basis custody. For non-leaf trees, a healthy parent can discover children from its restored
 output without running its root producer. Discovery runs the installed query
 with current C permission, including for empty results; the publication roster
-never supplies the child list. Corrupt evidence, changed discovery meaning,
-dependent scopes absent at C and multi-tree edit recording remain under
-qualification. See the
+never supplies the child list. A parent matches its family, full-generation scope
+and admitted parameter partition. Discovery can read an output scope restored
+only at the exact private candidate D: current C still supplies every principal,
+permission and request fact. A denied audience receives no additional historical
+existence information. Corrupt evidence, changed discovery meaning, later child
+source scopes and multi-tree edit recording remain under qualification. See the
 [owned-model plan](../plans/WORTH-query/history-owned-models.md).
 
 To record an isolated edit, consume the attached document with

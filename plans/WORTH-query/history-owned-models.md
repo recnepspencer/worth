@@ -1385,3 +1385,71 @@ owner with exact private-candidate identity, without another ownership reader or
 per-step discovery material. Nested later sources, multi-tree edit recording,
 codec-retired selection, remaining issue courts and #56 remain in sequence.
 No full-workspace equivalence or READY is claimed by this checkpoint.
+
+
+### D1214 follow-up: source partition is part of parent identity
+
+Boundary review verified that Native's RequiredOutputPublicationMeaning carries
+source_partition and WorthQueryObservedSource.partition_identity is exactly the
+admitted parameter-binding identity. The current profile matcher checks only
+family and full-generation scope. Equal scopes with different parameter sets
+must not stand in for the selected root requested by its captured intent.
+
+Add a getter of the existing admitted parameter identity on the intent; compare
+it in the existing profile matcher, with bounded charged work. Do not recompute
+or invent a digest. A real parameterized source query/producer fixture will
+record an output under one parameter set and configure a different set whose
+actual source is absent. Navigation must refuse without adopting, instead of
+certifying the other partition as its parent. Mutating away that comparison must
+make the court fail. Run the public history suite and scoped static checks, then
+continue the historical-only discovery and remaining D1214 proofs. This repairs
+an observed identity boundary within the current slice; it creates no new storage
+format, permission posture or alternate producer path.
+
+### D1214 historical-only discovery admission
+
+The current SDK admits a discovery intent at C before the parent owner sees it;
+that cannot read a restored output which is absent at C. Cut verified discovery
+over to the existing SourceQueryReaderAccess owner: it already binds C-issued
+principal/control, D query execution and C reauthorization. Extend its private
+scope posture to permit an exact D-issued scope only during the same sealed
+history invocation. Current scopes retain their existing admission. A historical
+scope never supplies a principal or grants. Existing selected-access admission
+must authorize at C before its canonical D liveness/domain check. If D lookup
+cannot establish a scope, preserve the original nondisclosing C scope refusal;
+current permission denial must likewise reveal no extra historical existence.
+
+Keep this posture distinct from a settled output. The program owner validates
+the verified parent and installed connection, executes the real discovery intent
+through that reader, retains its actual observation/dependencies, and checks the
+computed set at completion. SDK passes intent and current principal/request;
+it no longer requires an ordinary C-scope plan for verified discovery. Ordinary
+and settled-history traversal remain unchanged. A public generic downstream
+parent deleted at C/restored at D will expose the old entrance refusal and prove
+zero parent contacts and the actual dependent set, including worker placement.
+Existing C-denied/D-granted and fresh-source fallback courts continue to guard
+authority. Mutate grants to D only after the pristine courts pass, restore exact
+SHA-256, then run the whole history family and static enforcement.
+
+The deleted-parent fixture exposed the existing authored-retirement contract:
+a plain deletion is correctly refused OwnedPublicationRequiresCascade. The
+member_delete fixture deliberately has no authored anchor and served only
+independent publications. Add a separate, genuinely declared authored member
+retirement/restoration pair in the generic fixture, with exact Retire/Create
+roles and recorded pre-image correction meaning. Register it through the
+contribution and normal program/action/history declarations. Keep the plain
+delete unchanged. This is fixture admission through the landed cascade owner,
+not permission to weaken custody or infer an authored anchor from reachability.
+
+D1214 follow-up runtime checkpoint: all11 hierarchy courts pass, including two
+real historical-only discovery cases (serial/worker) with zero producer contacts,
+two parameter-partition refusals, the actual authored-retirement premise, and the
+six earlier discovery/current-permission courts. The authored fixture uses exact
+Retire roles for the source and its generated member, observes its demanded
+fields and actual relation facts, and explicitly retires the corresponding
+edges. Native proves the complete publication roster; reachability alone supplies
+no ownership. No seeded creation provenance or synthetic retirement is claimed.
+Native merge qualification passes56 ownership-history and3 restoration-header
+courts. Source-partition and D-grant mutants are running, with exact restoration;
+whole history and static checks follow. Corrupt/changed-meaning and D1119
+healthy-child/source discipline remain unfinished; no issue completion is claimed.

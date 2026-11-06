@@ -21,6 +21,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 mod admitted;
 mod current_control;
 mod permission;
+use permission::SourceScopePosture;
 mod read_closure;
 mod same_scope;
 mod single;
@@ -169,17 +170,29 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             )
             .map_err(|stop| self.record_history_refusal(Stop::Principal(stop)))?;
         let (field, value) = selector.into_field_parts(principal.principal().principal_identity());
-        let scope = selected
-            .resolve_query_scope_issued_with_native_access(
-                execution,
-                field,
-                value,
-                self.request,
-                native,
-            )
-            .map_err(|stop| self.record_history_refusal(Stop::Scope(stop)))?;
+        let scope = selected.resolve_query_scope_selector_issued_with_native_access(
+            execution,
+            field,
+            &value,
+            self.request,
+            native,
+        );
+        let (scope, posture) = match scope {
+            Ok(scope) => (scope, SourceScopePosture::Current),
+            Err(absent) if self.history.is_some() && matches!(absent.kind(),
+                crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
+                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity)) => {
+                // Resolution is private. Until C authorizes, neither a D lookup
+                // failure nor a C denial reveals more than the old C refusal.
+                let scope = self.shared.selected().resolve_query_scope_selector_issued_with_native_access(
+                    execution, field, &value, self.request, native,
+                ).map_err(|_| self.record_history_refusal(Stop::Scope(absent.clone())))?;
+                (scope, SourceScopePosture::Historical(absent))
+            }
+            Err(stop) => return Err(self.record_history_refusal(Stop::Scope(stop)).into()),
+        };
         self.with_resolved_plan::<Binding, _, _>(
-            execution, &installed, parameters, &principal, &scope, native, consume,
+            execution, &installed, parameters, &principal, &scope, posture, native, consume,
         )
     }
 }

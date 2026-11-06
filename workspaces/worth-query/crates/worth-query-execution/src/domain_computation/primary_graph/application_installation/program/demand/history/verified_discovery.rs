@@ -2,12 +2,12 @@
 use super::dependent::{DiscoveryBinding, QueryRows};
 use super::*;
 use crate::domain_computation::primary_graph::{
-    application_query::HistoryOutputControlPlan,
+    application_query::{ApplicationQueryNativeAccess, SourceQueryReaderAccess},
     product_operation::document_history::navigation::HistoryDependentParent,
     WorthQueryHistoryOutputDiscovery, WorthQueryHistoryOutputReadDenial as Denial,
     WorthQueryVerifiedHistoryParent,
 };
-use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
+use worth_query_declaration::facade::application_query::ApplicationQueryScopeResolution;
 
 type Query<S, C> = <DiscoveryBinding<S, C> as ApplicationQueryBinding<S>>::Query;
 type Rows<S, C> = QueryRows<S, DiscoveryBinding<S, C>>;
@@ -15,45 +15,75 @@ type Rows<S, C> = QueryRows<S, DiscoveryBinding<S, C>>;
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
     WorthQueryProgramApplicationRuntime<S, P>
 {
-    pub fn execute_verified_history_discovery<'control, D, C>(
-        &'control self,
+    pub fn execute_verified_history_discovery<D, C>(
+        &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         parent: &WorthQueryVerifiedHistoryParent<S, P, D>,
         authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
-        binding: &'control WorthQueryInstalledApplicationQueryBinding<S, DiscoveryBinding<S, C>>,
         external: &WorthQueryAuthenticatedExternalPrincipal<S>,
-        control: HistoryOutputControlPlan<'control, S, DiscoveryBinding<S, C>>,
+        request: &WorthQueryRequestScope,
+        intent: <ConnectionBinding<S, C> as WorthQueryApplicationDependentOutputConnection<S>>::Discovery,
     ) -> Result<WorthQueryHistoryOutputDiscovery<Query<S, C>, Rows<S, C>>, Denial>
     where
         D: WorthQueryApplicationOutputDemand<S>,
         C: ApplicationConnectionShape<S>,
         ConnectionBinding<S, C>: WorthQueryApplicationDependentOutputConnection<S, RootDemand = D>,
+        <DiscoveryBinding<S, C> as ApplicationQueryBinding<S>>::ScopeBinding:
+            ApplicationQueryScopeResolution<
+                S,
+                <DiscoveryBinding<S, C> as ApplicationQueryBinding<S>>::PrincipalIdentity,
+            >,
         Rows<S, C>: WorthQueryApplicationProjection<S, Query<S, C>>,
     {
         let runtime = self.runtime();
-        // Do not inspect the historical parent's identity before current READ.
-        runtime.validate_history_output_control(phase, authority, binding, &control)?;
-        self.validate_verified_history_parent::<D, C>(parent, authority)
-            .map_err(Denial::Demand)?;
-        let installed = runtime
+        authority
+            .validate(phase, runtime, request)
+            .map_err(Denial::Authority)?;
+        let binding = runtime
             .installed_schema()
             .installed_query_binding::<DiscoveryBinding<S, C>>()
             .map_err(|cause| Denial::Demand(installation(cause.kind())))?;
-        if binding.query().identity() != installed.query().identity() {
-            return Err(foreign());
-        }
+        let execution = phase.checked_execution_request_for(runtime.product_runtime())
+            .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         let basis = parent.custody().original();
         let selected = runtime.select_application_read_observation(phase, basis)
-            .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ProductAdmission(cause)))?;
-        let result = runtime.execute_history_output_query_on_selected(
-            phase, authority, binding, external, control, selected,
+            .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ProductAdmission(cause)))?
+            .prepare_shared_query_basis().map_err(|(_, cause)| Denial::Resource(cause))?;
+        let current = runtime.on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
+            authority.current().observation().lifecycle_incarnation(),
+        )).select_with_request(&execution)
+            .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ProductAdmission(cause)))?
+            .prepare_shared_query_basis().map_err(|(_, cause)| Denial::Resource(cause))?;
+        let reader = SourceQueryReaderAccess::new(
+            runtime,
+            &selected,
+            Some(&current),
+            Some(authority.producer_invocation()),
+            external,
+            request,
+        )
+        .map_err(Denial::Demand)?;
+        let context = std::cell::Cell::default();
+        let result = reader.with_plan::<DiscoveryBinding<S, C>, _, Denial>(
+            &execution,
+            intent,
+            &context,
+            &mut ApplicationQueryNativeAccess::acquire(),
+            |plan, native| {
+                // Actual C READ authorization precedes the parent diagnostic.
+                self.validate_verified_history_parent::<D, C>(parent, authority)
+                    .map_err(Denial::Demand)?;
+                reader
+                    .read_admitted_result::<DiscoveryBinding<S, C>>(&execution, plan, native)
+                    .map_err(Denial::from)
+            },
         )?;
         authority
             .confirm_read(
                 phase,
                 runtime,
-                authority.request(),
+                request,
                 WorthQueryHistoryOutputDiscovery {
                     source: result.into_admitted_disclosed().into_output_demand_source(),
                     profile: authority.profile().clone(),

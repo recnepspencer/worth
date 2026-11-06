@@ -154,6 +154,10 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .finish_action()
                 .action::<member_edit::Binding, Completion>()
                 .finish_action()
+                .action::<authored_member::retire::Binding, Completion>()
+                .finish_action()
+                .action::<authored_member::restore::Binding, Completion>()
+                .finish_action()
                 .action::<member_delete::Binding, Completion>()
                 .finish_action()
                 .finish(),
@@ -199,5 +203,13 @@ pub type DeleteMemberAction = ApplicationActionReference<
     ApplicationRootComposition,
     Entry,
     member_delete::Binding,
+    Completion,
+>;
+
+pub type AuthoredRetireAction = ApplicationActionReference<
+    Schema,
+    ApplicationRootComposition,
+    Entry,
+    authored_member::retire::Binding,
     Completion,
 >;
