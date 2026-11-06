@@ -162,13 +162,9 @@ impl HistoricalVisibilityBasis {
     }
 
     pub(crate) fn schema_commitment(&self) -> Option<[u8; 32]> {
-        self.root.as_ref().map(|retained| {
-            retained
-                .root()
-                .schema_authority()
-                .registry()
-                .authority_digest_bytes()
-        })
+        self.root
+            .as_ref()
+            .map(|retained| retained.root().schema_authority().authority_digest())
     }
 
     pub(crate) fn source_version(&self) -> VersionId {

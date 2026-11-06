@@ -5,6 +5,9 @@ use std::sync::Arc;
 #[cfg(test)]
 #[path = "root_schema_content_tests.rs"]
 mod content_tests;
+#[cfg(test)]
+#[path = "root_schema_version_tests.rs"]
+mod version_tests;
 
 use worth_foundational::facade::{
     AspectContract, AspectContractRevision, AspectIdentity, AspectKey, PortableAspectContractLookup,
@@ -142,11 +145,9 @@ impl RelationalBranchRootSchemaAuthority {
         )
     }
 
+    /// O(kinds): validate the schema basis without projecting any registrations.
     pub(crate) fn schema_version(&self) -> crate::schema::data::SchemaVersionId {
-        self.registry
-            .authority_snapshot()
-            .primary_schema_version_id
-            .unwrap_or(crate::schema::data::SchemaVersionId(0))
+        self.registry.primary_schema_version_id()
     }
 
     pub(crate) const fn descriptor_semantics_version(
