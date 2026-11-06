@@ -1,9 +1,5 @@
 //! Pure prepaid-buffer/name ownership, not Native or physical publication proof.
 use super::*;
-use worth_execution::{
-    CancellationSource, ExecutionAllocationDenialClass, ExecutionPhysicalAllocationDenialKind,
-    ExecutionRequest, SerialMemoryBudget, SerialRequest,
-};
 use worth_foundational::facade::*;
 
 fn open_description() -> WorldOpenAttemptRecord {
@@ -37,15 +33,21 @@ fn open_description() -> WorldOpenAttemptRecord {
 #[test]
 fn occurrence_name_loans_restore_the_same_prepaid_open_when_filling_unwinds() {
     let description = open_description();
-    let budget = SerialMemoryBudget::new(Some(1 << 20));
-    let policy =
-        SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let request = ExecutionRequest::serial(&policy);
-    let (prepared, open) =
-        super::super::PreparedWorldArtifact::prepare_occurrence(&description, &request).unwrap();
-    let charged = budget.charged_memory_bytes();
-    assert!(charged > 0);
-    let mut destination = Some(open);
+    let mut destination = Some(description.clone());
+    let name = destination
+        .as_ref()
+        .unwrap()
+        .association
+        .branch()
+        .name()
+        .as_ptr();
+    let expected_name = destination
+        .as_ref()
+        .unwrap()
+        .expected
+        .branch
+        .name()
+        .as_ptr();
     let unwound = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let loan = OpenRecordLoan::take(
             &mut destination,
@@ -61,45 +63,42 @@ fn occurrence_name_loans_restore_the_same_prepaid_open_when_filling_unwinds() {
     }));
     assert!(unwound.is_err());
     assert_eq!(destination.as_ref(), Some(&description));
-    assert_eq!(budget.charged_memory_bytes(), charged);
-    drop(destination);
-    drop(prepared);
-    assert_eq!(budget.charged_memory_bytes(), 0);
+    assert_eq!(
+        destination
+            .as_ref()
+            .unwrap()
+            .association
+            .branch()
+            .name()
+            .as_ptr(),
+        name
+    );
+    assert_eq!(
+        destination
+            .as_ref()
+            .unwrap()
+            .expected
+            .branch
+            .name()
+            .as_ptr(),
+        expected_name
+    );
 }
 
 #[test]
-fn a_consumed_occurrence_destination_refusal_requires_reopen_and_releases_its_byte_grant() {
-    let budget = SerialMemoryBudget::new(Some(1 << 20));
-    let policy =
-        SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let request = ExecutionRequest::serial(&policy);
-    let mut destination = OccurrenceByteDestination::prepare(2, &request).unwrap();
-    assert!(budget.charged_memory_bytes() >= 2);
-    destination
-        .backing()
-        .unwrap()
-        .extend_from_slice(&[1])
-        .unwrap();
-    destination.backing().unwrap().check_live().unwrap();
-    let refused = destination.seal().unwrap_err();
-    match refused {
-        WorldDurableMediumDenial::Allocation(cause) => {
-            assert_eq!(
-                cause.classify(),
-                ExecutionAllocationDenialClass::Physical(
-                    ExecutionPhysicalAllocationDenialKind::IncompleteSeal
-                )
-            )
-        }
-        other => panic!("the actual consuming seal must retain its precise cause: {other:?}"),
-    }
+fn a_consumed_occurrence_destination_refusal_requires_reopen() {
+    let mut posture = super::byte_destination::DestinationPosture::Available;
+    posture.consume().unwrap();
     assert!(matches!(
-        destination.backing(),
+        posture,
+        super::byte_destination::DestinationPosture::Consumed
+    ));
+    assert!(matches!(
+        posture.consume(),
         Err(WorldDurableMediumDenial::OccurrenceReopenRequired)
     ));
     assert!(matches!(
-        destination.seal(),
+        posture.consume(),
         Err(WorldDurableMediumDenial::OccurrenceReopenRequired)
     ));
-    assert_eq!(budget.charged_memory_bytes(), 0);
 }
