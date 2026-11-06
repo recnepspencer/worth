@@ -1,5 +1,56 @@
 //! Assemble conditional service only after its original authorization returns.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryRuntimeClock;
+use crate::domain_computation::primary_graph::{
+    application_contribution::{
+        WorthQueryInstalledOutputProducerRoutes, WorthQueryInstalledOutputReadinessRoutes,
+    },
+    application_query::managed_index::ManagedIndexProviderCatalog,
+    application_resource::installation::{InstalledResourceRegistry, PendingResourceRegistry},
+    bootstrap::{BootstrapPublicationReservation, BootstrapPublicationStorage},
+    conditional_operation::{
+        publication_denial, WorthQueryConditionalOperationRegistry,
+        WorthQueryConditionalRuntimeInstallationDenial,
+    },
+    handler::InstalledMutationHandlerRegistry,
+    managed_bridge::{
+        WorthQueryApplicationBridgeInstallation, WorthQueryInstalledApplicationBridge,
+    },
+    WorthQueryApplicationInvariantProjectionAuthority,
+};
+mod graph_publication;
+mod reconciliation;
+mod route_installation;
+mod runtime_assembly;
+struct PublishedConditionalGraph<S: ApplicationSchema> {
+    graph: PublishedApplicationGraph<WorthQueryApplicationBridgeInstallation>,
+    installed_schema: WorthQueryInstalledApplicationSchema<S>,
+    authorization: WorthQueryInstalledAuthorizationRegistry,
+    authorization_clock: WorthQueryRuntimeClock,
+    mutation_handlers: InstalledMutationHandlerRegistry<S>,
+    mutation_projection: WorthQueryApplicationInvariantProjectionAuthority<S>,
+    managed_indexes: ManagedIndexProviderCatalog<S>,
+    resources: PendingResourceRegistry<S>,
+}
+struct PreparedConditionalAssembly<S: ApplicationSchema> {
+    graph: PublishedApplicationGraph<WorthQueryInstalledApplicationBridge>,
+    installed_schema: WorthQueryInstalledApplicationSchema<S>,
+    authorization: WorthQueryInstalledAuthorizationRegistry,
+    authorization_clock: WorthQueryRuntimeClock,
+    mutation_handlers: InstalledMutationHandlerRegistry<S>,
+    mutation_projection: WorthQueryApplicationInvariantProjectionAuthority<S>,
+    managed_indexes: ManagedIndexProviderCatalog<S>,
+    resources: InstalledResourceRegistry<S>,
+    output_producer_routes: WorthQueryInstalledOutputProducerRoutes,
+    output_readiness_routes: WorthQueryInstalledOutputReadinessRoutes,
+    conditional_operations: WorthQueryConditionalOperationRegistry<S>,
+}
+struct UnreconciledConditionalRuntime<S: ApplicationSchema> {
+    application: WorthQueryPrimaryGraphApplicationRuntime<S>,
+    conditional_operations: WorthQueryConditionalOperationRegistry<S>,
+}
+
+#[inline(never)]
 pub(super) fn publish<Schema>(
     phase: &super::super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     authorized: crate::domain_computation::primary_graph::bootstrap::BootstrapPublicationStorage<
@@ -23,105 +74,9 @@ pub(super) fn publish<Schema>(
 where
     Schema: ApplicationSchema + 'static,
 {
-    let publication_preparation::AuthorizedPublication {
-        prepared,
-        authorization,
-    } = authorized.consume();
-    let publication_preparation::PreparedPublication {
-        input,
-        mutation_handlers,
-        managed_indexes,
-        resources,
-        mutation_projection,
-    } = prepared;
-    let ApplicationRuntimePublication {
-        bootstrap,
-        runtime,
-        authority,
-        installed_schema,
-        authorization_clock,
-        fault_port,
-        conditional_evaluation_budget,
-    } = input;
-    let mut graph = publish_application_graph(
-        phase,
-        bootstrap,
-        runtime,
-        authority,
-        &installed_schema,
-        fault_port,
-        conditional_evaluation_budget,
-    )
-    .map_err(super::super::super::conditional_operation::publication_denial)?;
-    let authoritative_commit_cursor = graph
-        .primary_provider
-        .graph
-        .source_owner
-        .invalidation_owner
-        .latest_position();
-    let mut conditional_operations =
-        super::super::super::conditional_operation::install_pending_bindings(
-            bindings,
-            graph.bridge.conditional_builder(),
-            &graph.primary_graph_authority,
-            authoritative_commit_cursor,
-            graph.runtime.authority_identity().as_u64(),
-            graph.runtime.installed_packages().runtime_ordinal(),
-            graph.runtime.installed_packages().generation().ordinal(),
-            graph.primary_graph_authority.provider_identity(),
-            super::super::super::application_branch::PRIMARY_APPLICATION_BRANCH,
-        )?;
-    let output_producer_routes = producers
-        .install_signal_routes(graph.bridge.conditional_builder())
-        .map_err(super::super::super::conditional_operation::publication_denial)?;
-    let output_readiness_routes =
-        super::super::super::application_contribution::install_output_readiness_routes(
-            output_readiness,
-            graph.bridge.conditional_builder(),
-            &graph.primary_graph_authority,
-        )?;
-    producers
-        .validate_readiness_routes(&output_readiness_routes)
-        .map_err(super::super::super::conditional_operation::publication_denial)?;
-    {
-        let mut lineage = graph
-            .primary_provider
-            .graph
-            .output_lineage
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        lineage.install_output_families(producers.output_family_bindings());
-    }
-    let resources = resources
-        .install(
-            &phase.execution_request(),
-            Some(graph.bridge.conditional_builder()),
-            graph.primary_provider.application_resource_support_ref(),
-        )
-        .map_err(super::super::super::conditional_operation::publication_denial)?;
-    let graph = seal_application_graph(graph)
-        .map_err(super::super::super::conditional_operation::publication_denial)?;
-    let mut application = assemble_application_runtime(
-        phase,
-        graph,
-        installed_schema,
-        authorization,
-        authorization_clock,
-        Default::default(),
-        mutation_handlers,
-        mutation_projection,
-        output_producer_routes,
-        output_readiness_routes,
-    )
-    .map_err(super::super::super::conditional_operation::publication_denial)?;
-    owned_contributions::transfer(&mut application, resources, managed_indexes);
-    conditional_operations.reconstruct_all(&application)?;
-    conditional_operations
-        .reconcile_all(&mut application.runtime.bridge.conditional_lifecycle())?;
-    *application
-        .conditional_cleanup
-        .operations
-        .get_mut()
-        .unwrap_or_else(std::sync::PoisonError::into_inner) = conditional_operations;
-    Ok(application)
+    let graph = graph_publication::publish(phase, authorized)?;
+    let assembly =
+        route_installation::install(phase, graph, bindings, output_readiness, producers)?;
+    let runtime = runtime_assembly::assemble(phase, assembly)?;
+    reconciliation::complete(runtime)
 }
