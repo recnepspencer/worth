@@ -157,7 +157,7 @@ impl InstalledOutputComparison {
                     let signal = bridge
                         .admit_exact_conditional_signal_basis(&self.lowering, truth.signal_basis())
                         .map_err(|cause| {
-                            super::demand::bridge_denial::bridge_denial(&self.producer, cause)
+                            crate::domain_computation::primary_graph::application_output_demand::denial::bridge_conditional::bridge_denial(&self.producer, cause)
                         })?;
                     let comparison = bridge
                         .compare_exact_output(

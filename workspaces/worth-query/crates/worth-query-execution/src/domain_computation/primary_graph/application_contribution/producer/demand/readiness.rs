@@ -4,8 +4,8 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-use super::bridge_denial::bridge_denial;
-use super::bridge_denial::bridge_denial_kind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::bridge_conditional::bridge_denial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::bridge_conditional::bridge_denial_kind;
 use super::progression::denial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;

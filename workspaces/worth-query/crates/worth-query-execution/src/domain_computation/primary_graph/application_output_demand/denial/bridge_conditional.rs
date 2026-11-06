@@ -5,7 +5,7 @@ use {
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
 };
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn bridge_denial(
+pub(in crate::domain_computation::primary_graph) fn bridge_denial(
     producer_identity: &str,
     failure: BridgeConditionalDenial,
 ) -> WorthQueryOutputDemandDenial {
@@ -23,7 +23,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 pub fn bridge_denial_kind(kind: BridgeConditionalDenialKind) -> WorthQueryOutputDemandDenialKind {
     use BridgeConditionalDenialKind as Kind;
     match kind {
-        Kind::ExecutionDenied(cause) => match super::bridge_execution_denial::query_cause(cause) {
+        Kind::ExecutionDenied(cause) => match super::bridge_execution::query_cause(cause) {
             Ok(cause) => WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
             Err(interruption) => {
                 WorthQueryOutputDemandDenialKind::of_execution_interruption(interruption)

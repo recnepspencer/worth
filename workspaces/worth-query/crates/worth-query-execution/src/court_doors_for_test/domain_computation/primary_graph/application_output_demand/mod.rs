@@ -1,4 +1,6 @@
 //! Doors under `domain_computation::primary_graph::application_output_demand`.
+#[path = "denial/mod.rs"]
+pub mod denial;
 #[path = "recovered_outputs/mod.rs"]
 pub mod recovered_outputs;
 #[path = "registry/mod.rs"]

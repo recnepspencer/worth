@@ -381,3 +381,5 @@ pub(in crate::domain_computation::primary_graph) mod diagnostic;
 pub(in crate::domain_computation::primary_graph) mod posture;
 pub(crate) mod read_cleanup;
 pub(crate) mod recovery_release;
+pub(crate) mod bridge_conditional;
+pub(crate) mod bridge_execution;
