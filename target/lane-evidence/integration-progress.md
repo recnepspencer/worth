@@ -1375,3 +1375,20 @@ Final phase tools are deliberately held at a source-ready sentinel until the rem
 - Round 2 risk: eliminate simultaneous serving/retiring/retired storage and retire
   route configuration before sealing. main-entry-round2-design.md lists every
   remaining oversized frame and preserves each lifecycle field drop order.
+
+## Round 2 source a7e917ecd4: budget exhausted, stack P1 remains owned
+- Green: Query owner strict, actual consumer-root 1/0/0, unchanged Bank parents
+  2/0/1 (one unexecuted ignored metadata event), actual same-directory Home
+  close/reopen 1/0/0. Round2 runtime batch is red only for all three examples.
+- Full final paths: main-entry-round2-{invariant_reads,required_feature,
+  shared_execution}-frames.json. They now reach mutation preparation and
+  output-demand/Signal execution rather than initialization/sealing. Do not
+  start a third main-stack repair/build under this turn's two-round grant.
+- Source review found a new P2: taking Retiring custody before advance loses
+  the task if the compiled consult observer unwinds. The old borrowed task
+  remained in self. Fix only that borrow-before-take boundary; preserve the
+  exact task on typed refusal and unwind, taking it only after Complete.
+- Post-review verification round settles that P2 with one Query owner strict
+  check and the named Home control only. No new main-stack build or Bank rerun:
+  this private Home-retirement correction changes neither serving layout nor
+  the measured Memory entry/Bank call paths. Then phase gates and fresh review.

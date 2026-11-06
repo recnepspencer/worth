@@ -41,6 +41,19 @@ impl WorthQueryInstalledApplicationBridge {
         if !Arc::ptr_eq(conditional, owner) {
             return Err(Denial::Bridge(BridgeDenial::ForeignOwner));
         }
+        // Advancing can unwind through the request's owned observer. Keep the
+        // actual task in its owner until it reports completion, as on refusal.
+        match self.custody.as_mut().expect("same original Bridge phase") {
+            InstalledBridgeCustody::Retiring { ordinary, .. } => {
+                match ordinary.advance(request, native).map_err(Denial::Bridge)? {
+                    BridgeProgress::Advanced => return Ok(Progress::Advanced),
+                    BridgeProgress::Complete => {}
+                }
+            }
+            InstalledBridgeCustody::Serving { .. }
+            | InstalledBridgeCustody::Retired { .. }
+            | InstalledBridgeCustody::Released { .. } => {}
+        }
         let original = self.custody.take().expect("same original Bridge phase");
         let (successor, outcome) = match original {
             InstalledBridgeCustody::Serving {
@@ -64,35 +77,19 @@ impl WorthQueryInstalledApplicationBridge {
             },
             InstalledBridgeCustody::Retiring {
                 conditional,
-                mut ordinary,
-            } => match ordinary.advance(request, native) {
-                Ok(BridgeProgress::Advanced) => (
-                    InstalledBridgeCustody::Retiring {
+                ordinary,
+            } => {
+                let ordinary = ordinary
+                    .into_retired()
+                    .unwrap_or_else(|_| unreachable!("owner reported Complete"));
+                (
+                    InstalledBridgeCustody::Retired {
                         conditional,
                         ordinary,
                     },
                     Ok(Progress::Advanced),
-                ),
-                Err(cause) => (
-                    InstalledBridgeCustody::Retiring {
-                        conditional,
-                        ordinary,
-                    },
-                    Err(Denial::Bridge(cause)),
-                ),
-                Ok(BridgeProgress::Complete) => {
-                    let ordinary = ordinary
-                        .into_retired()
-                        .unwrap_or_else(|_| unreachable!("owner reported Complete"));
-                    (
-                        InstalledBridgeCustody::Retired {
-                            conditional,
-                            ordinary,
-                        },
-                        Ok(Progress::Advanced),
-                    )
-                }
-            },
+                )
+            }
             InstalledBridgeCustody::Retired {
                 conditional,
                 ordinary,
