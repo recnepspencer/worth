@@ -3,7 +3,7 @@ use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 use crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator;
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use {
     crate::domain_computation::primary_graph::application_attempt::observe_adjacency,
     crate::domain_computation::primary_graph::application_attempt::observe_field_value,

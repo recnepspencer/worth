@@ -10,11 +10,7 @@ use {
     crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact,
     crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection,
 };
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::proposal::identity::WorkflowProposalCoverageScope,
-    crate::domain_computation::primary_graph::application_attempt::workflow::proposal::WorkflowProposalCoverageMeaning,
-    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::proposal::identity::WorkflowProposalCoverageScope, crate::domain_computation::primary_graph::application_attempt::workflow::proposal::WorkflowProposalCoverageMeaning, crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout};
 
 pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal_coverages(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

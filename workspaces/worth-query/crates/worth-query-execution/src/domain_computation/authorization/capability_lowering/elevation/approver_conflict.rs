@@ -19,7 +19,7 @@ use crate::domain_computation::authorization::lowering::lower_authorization_path
 use crate::domain_computation::authorization::{
     authorization_denial, WorthQueryOperationAuthorizationDenial,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 pub(super) fn compile(
     contract: &ErasedApplicationCapabilityContract,

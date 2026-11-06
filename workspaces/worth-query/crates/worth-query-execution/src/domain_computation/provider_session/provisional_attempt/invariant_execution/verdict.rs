@@ -4,13 +4,7 @@ use worth_query_installation::facade::{
     WorthQueryInstalledInvariantExecutionRequirement, WorthQueryInvariantEnforcement,
 };
 
-use super::{
-    WorthQueryAdvisoryInvariantReceipt, WorthQueryExhaustedInvariantReceipt,
-    WorthQueryIndeterminateInvariantReceipt, WorthQueryInvariantExecutionDenialKind,
-    WorthQueryInvariantExecutionFailure, WorthQueryInvariantReceipt,
-    WorthQueryInvariantReceiptMaterial, WorthQueryInvariantStructuralCounters,
-    WorthQueryPassedInvariantReceipt, WorthQueryViolatedInvariantReceipt,
-};
+use {super::WorthQueryAdvisoryInvariantReceipt, super::WorthQueryExhaustedInvariantReceipt, super::WorthQueryIndeterminateInvariantReceipt, crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind, crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure, super::WorthQueryInvariantReceipt, super::WorthQueryInvariantReceiptMaterial, super::WorthQueryInvariantStructuralCounters, super::WorthQueryPassedInvariantReceipt, super::WorthQueryViolatedInvariantReceipt};
 
 pub struct WorthQueryInvariantVerdictAdmission {
     pub(super) requirement: WorthQueryInstalledInvariantExecutionRequirement,

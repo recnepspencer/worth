@@ -6,7 +6,7 @@ use worth_relational::facade::runtime::{
 
 use super::{allocate_result_vector, projection_denial, ResultTreeWork};
 use {crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance, crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedAdjacencyRevision, crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedFieldRevision, crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint, crate::domain_computation::primary_graph::application_query::projection::WorthQueryApplicationProjectionNode, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial};
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 mod material_ordering;
 pub(crate) mod material_storage;
 mod traversal;

@@ -6,7 +6,6 @@ pub use description::{
     WorthQueryApplicationCallablePosture, WorthQueryApplicationFieldDescription,
     WorthQueryApplicationMutationDescription, WorthQueryApplicationQueryDescription,
 };
-pub(in crate::domain_computation::primary_graph) use workflow::indexes::WorkflowReadIndexes;
 pub(in crate::domain_computation::primary_graph) use workflow::{
     current_definition, WorkflowDefinitionCurrentness,
 };

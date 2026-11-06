@@ -17,9 +17,7 @@ use worth_relational::facade::{
 };
 
 use super::WorthQuerySuspendedGeneratedOutput;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationProducerBinding, WorthQueryPrimaryGraphLayout,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding, crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout};
 
 mod denial;
 mod output_entities;

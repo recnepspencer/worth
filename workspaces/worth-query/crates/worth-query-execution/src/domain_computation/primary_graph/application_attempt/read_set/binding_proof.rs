@@ -16,7 +16,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
     pub(in crate::domain_computation::primary_graph::application_attempt) settlement_basis:
         crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowOperationSettlementBasis,
     pub(in crate::domain_computation::primary_graph::application_attempt) workflow_layout:
-        crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct MutationHandlerBindingProof

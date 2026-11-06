@@ -12,10 +12,7 @@ use super::{
     WorthQueryApplicationInvariantGraphMember as Member,
     WorthQueryApplicationInvariantReadView as View,
 };
-use crate::domain_computation::primary_graph::{
-    aggregate_identity::WorthQueryAggregateIdentity as Identity,
-    schema_layout::MemberDomainBinding as Domain,
-};
+use {crate::domain_computation::primary_graph::aggregate_identity::WorthQueryAggregateIdentity as Identity, crate::domain_computation::graph_layout::MemberDomainBinding as Domain};
 use worth_relational::facade::{
     runtime::{
         AggregateRead, DerivedRelationReadShape as Shape, PreparedDerivedRelationRead as Prepared,

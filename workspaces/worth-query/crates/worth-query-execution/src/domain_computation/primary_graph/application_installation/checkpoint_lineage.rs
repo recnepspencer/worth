@@ -1,11 +1,6 @@
 //! Restore tracked output lineage at the checkpoint boundary, before any demand.
 use worth_query_installation::facade::ApplicationSchema;
-use {
-    super::super::application_checkpoint::decode_checkpoint_computation,
-    super::super::output_lineage::RecordedSourceIdentity,
-    super::super::WorthQueryPrimaryGraphInstallationDenial,
-    crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity,
-};
+use {super::super::application_checkpoint::decode_checkpoint_computation, super::super::output_lineage::RecordedSourceIdentity, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity};
 
 pub(super) fn restore<Schema: ApplicationSchema>(
     application: &dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>,

@@ -9,7 +9,7 @@ use super::super::fact::{
     observe_adjacency, WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact,
 };
 use super::denial;
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,

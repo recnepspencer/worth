@@ -1,6 +1,6 @@
 use super::WorthQueryOutputDemandDenial;
 use crate::domain_computation::vocabulary::primary_graph::invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial;
-use crate::domain_computation::WorthQueryCustomInvariantDenial;
+use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial;
 
 impl WorthQueryOutputDemandDenial {
     /// The original installed invariant evidence from the producer's publication.

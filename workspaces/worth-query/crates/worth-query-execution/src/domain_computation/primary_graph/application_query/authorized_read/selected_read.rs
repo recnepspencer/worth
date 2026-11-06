@@ -97,7 +97,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn execute_s
     native: &mut super::super::ApplicationQueryNativeAccess<'_>,
     read: impl FnOnce(
         &worth_relational::facade::runtime::RelationalRuntime,
-        &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+        &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
         &WorthQueryAdmittedApplicationQueryPlan<
             '_,
             Schema,

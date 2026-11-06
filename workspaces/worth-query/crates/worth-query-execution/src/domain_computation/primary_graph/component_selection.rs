@@ -1,8 +1,5 @@
 //! A scoped answer retains original Native bodies and the physical visibility facts.
-use super::{
-    aggregate_observation::AggregateObservation, schema_layout::ComponentSetLayout,
-    source_facts::SourceFacts,
-};
+use {super::aggregate_observation::AggregateObservation, crate::domain_computation::graph_layout::ComponentSetLayout, super::source_facts::SourceFacts};
 use std::sync::Arc;
 use worth_foundational::facade::AggregateDefinitionIdentity;
 use worth_query_installation::facade::WorthQueryOperationComponentReadScope;

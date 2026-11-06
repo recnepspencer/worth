@@ -4,7 +4,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowSpe
 use super::super::fact::{observe_adjacency, observe_indexed_entity_selection};
 use super::WorkflowDefinitionExpectedPredecessor;
 use crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowLineagePublicationTarget;
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use {
     super::super::WorthQueryApplicationAttemptDenial,
     super::super::WorthQueryApplicationObservedFact,

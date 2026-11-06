@@ -93,7 +93,7 @@ where
         &self,
         relation: &ApplicationRelationRef<Schema, Relation, From, To>,
     ) -> Result<
-        super::super::schema_layout::WorthQueryPrimaryRelationLayout,
+        crate::domain_computation::graph_layout::WorthQueryPrimaryRelationLayout,
         WorthQueryInvariantProjectionTraversalDenial,
     > {
         self.layout

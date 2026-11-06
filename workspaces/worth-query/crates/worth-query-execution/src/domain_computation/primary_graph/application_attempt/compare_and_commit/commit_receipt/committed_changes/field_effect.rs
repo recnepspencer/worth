@@ -1,6 +1,6 @@
 //! Interpret one canonical occurrence through its actual installed Native coordinate.
 use super::*;
-use crate::domain_computation::primary_graph::schema_layout::InstalledFieldCoordinate;
+use crate::domain_computation::graph_layout::InstalledFieldCoordinate;
 use worth_relational::facade::publication::PublishedAuthoritativeFieldEffect as Effect;
 
 impl WorthQueryApplicationCommittedChanges {

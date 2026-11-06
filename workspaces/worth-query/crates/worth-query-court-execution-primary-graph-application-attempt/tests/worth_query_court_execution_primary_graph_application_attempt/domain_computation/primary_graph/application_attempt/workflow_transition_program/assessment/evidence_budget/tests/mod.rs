@@ -1,6 +1,6 @@
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout;
+use worth_query_execution::court_doors_for_test::domain_computation::graph_layout::workflow::layout::WorthQueryWorkflowLayout;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_transition_program::assessment::evidence_budget::admit;
 use std::collections::BTreeMap;
 use worth_foundational::facade::AspectValue;

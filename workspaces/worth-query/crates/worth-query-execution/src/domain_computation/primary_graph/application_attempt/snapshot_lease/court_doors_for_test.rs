@@ -20,7 +20,7 @@ impl WorthQueryApplicationSnapshotLease {
     #[doc(hidden)]
     pub fn layout_for_test(
         &self,
-    ) -> &std::sync::Arc<super::super::super::schema_layout::WorthQueryPrimaryGraphLayout> {
+    ) -> &std::sync::Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout> {
         &self.layout
     }
 }
@@ -30,7 +30,7 @@ impl WorthQueryApplicationSnapshotLease {
     pub fn acquire_for_test(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: WorthQueryPrimaryGraphIntegrationHandle,
-        layout: std::sync::Arc<super::super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
+        layout: std::sync::Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout>,
         product: crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryApplicationSnapshotLeaseDenial> {
         Self::acquire(execution, handle, layout, product)

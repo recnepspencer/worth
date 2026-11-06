@@ -14,7 +14,7 @@ use super::reuse::{
     WorkflowDefinitionCompilationReuseDenial, WorkflowDefinitionPublicationReuseKey,
     WorkflowDefinitionSemanticReuseKey,
 };
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use {
     crate::domain_computation::primary_graph::application_attempt::observe_adjacency,
     crate::domain_computation::primary_graph::application_attempt::observe_field_value,

@@ -1,6 +1,6 @@
 //! Original-request backing for selected native revalidation IDs.
 use super::super::denial;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial as Denial;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial;
 use worth_execution::{
     ExecutionMemoryReservation, ExecutionRequest, LeaseDenial, WorkCeilingDenial,
 };

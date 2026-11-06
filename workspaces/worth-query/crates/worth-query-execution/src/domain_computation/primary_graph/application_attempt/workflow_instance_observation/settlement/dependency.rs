@@ -9,7 +9,7 @@ use worth_relational::facade::identity::{EntityId, KindId, PartitionId, VersionI
 use super::{denial, observed_text, observed_u64};
 pub(crate) mod aspect_presence;
 mod traversal;
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::application_attempt::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact};
 use crate::domain_computation::primary_graph::application_attempt::observation::observe_field;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation;

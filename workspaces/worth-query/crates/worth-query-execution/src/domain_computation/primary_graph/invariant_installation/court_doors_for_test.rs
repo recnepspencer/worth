@@ -10,7 +10,7 @@ where
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding_identity: ApplicationSchemaBindingIdentity,
-        layout: &super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+        layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     ) -> Result<
         (
             Vec<CustomInvariantRegistration>,

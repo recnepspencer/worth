@@ -18,7 +18,7 @@ where
     pub(super) fn materialize_assessment_requirement(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
         compiled: &crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
         instance: crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
@@ -212,7 +212,7 @@ where
     fn materialize_reused_assessment_transition(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
         program_revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
         instance: crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,

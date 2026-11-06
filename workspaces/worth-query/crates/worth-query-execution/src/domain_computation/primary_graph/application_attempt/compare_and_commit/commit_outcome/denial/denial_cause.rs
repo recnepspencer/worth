@@ -9,7 +9,7 @@ pub(super) enum DenialCause {
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     ),
     SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial),
-    InvariantExecution(crate::domain_computation::WorthQueryInvariantExecutionFailure),
+    InvariantExecution(crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure),
     ProviderSession(crate::domain_computation::WorthQueryProviderSessionFailure),
     DecisionReadSet(crate::domain_computation::WorthQueryDecisionReadSetFailure),
     /// The request's own authorization stopped the commit: its security

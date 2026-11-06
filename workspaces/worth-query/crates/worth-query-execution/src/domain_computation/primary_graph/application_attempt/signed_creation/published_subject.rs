@@ -1,5 +1,5 @@
 //! Decode only the installed provenance profile and validate its certified correspondence.
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout as Layout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout as Layout;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldBindingLocus as Locus, ApplicationFieldPresence as Presence,

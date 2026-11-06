@@ -1,7 +1,5 @@
 //! Bind complete body meaning and codecs once at native installation.
-use super::super::{
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 use super::OperationBodyHandler;
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;

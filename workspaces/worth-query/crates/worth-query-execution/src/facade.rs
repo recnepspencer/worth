@@ -45,6 +45,11 @@ pub mod domain_computation {
     pub use crate::domain_computation::managed_run::*;
     pub use crate::domain_computation::operation_binding::*;
     pub use crate::domain_computation::provider_session::*;
+    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial;
+    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind;
+    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure;
+    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailurePosture;
+    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryRelationLawDenial;
     pub use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
     pub use crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters;
     pub use crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderSessionDisposition;
@@ -153,6 +158,11 @@ pub mod product;
 
 pub mod provider_session {
     pub use crate::domain_computation::provider_session::*;
+    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial;
+    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind;
+    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure;
+    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailurePosture;
+    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryRelationLawDenial;
     pub use crate::domain_computation::vocabulary::provider_session::call_kind::WorthQueryGraphProviderCallKind;
     pub use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind;
     pub use crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial;
@@ -208,11 +218,7 @@ pub mod integration {
     use crate::domain_computation::execution_runtime::{
         WorthQueryExecutionInstallationAuthority, WorthQueryExecutionRuntime,
     };
-    use {
-        crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication,
-        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap,
-        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
-    };
+    use {crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 
     pub use crate::domain_computation::artifact_owner::{
         WorthQueryArtifactAccessAuthority, WorthQueryArtifactProductionAuthority,

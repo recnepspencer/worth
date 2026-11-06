@@ -17,7 +17,7 @@ pub(super) fn capture(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
-    layout: &super::super::schema::WorthQueryWorkflowLayout,
+    layout: &crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
     fact: &Fact,
 ) -> Result<Fact, Denial> {
     let invalid = || {

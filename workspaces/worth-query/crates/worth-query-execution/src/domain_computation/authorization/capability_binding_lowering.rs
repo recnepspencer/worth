@@ -20,7 +20,7 @@ use super::capability_registry::{
     field_binding, WorthQueryCapabilityContextAnchor, WorthQueryCapabilityRequestBindings,
 };
 use super::{authorization_denial, WorthQueryOperationAuthorizationDenial};
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 pub(super) fn capability_principal(
     contract: &ErasedApplicationCapabilityContract,

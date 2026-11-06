@@ -3,7 +3,7 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::runtime::RelationalRuntime;
 
 use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 use std::sync::Arc;
 
 use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;

@@ -1,6 +1,6 @@
 //! Validate installed meaning before retaining original complete Native bodies.
 use super::*;
-use {crate::domain_computation::primary_graph::application_query::observed_source::WorthQuerySourceExpectationDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind as Kind, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout};
+use {crate::domain_computation::primary_graph::application_query::observed_source::WorthQuerySourceExpectationDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind as Kind, crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout};
 
 impl WorthQueryObservedRootSelection {
     pub(in crate::domain_computation::primary_graph::application_query) fn validate_walks(

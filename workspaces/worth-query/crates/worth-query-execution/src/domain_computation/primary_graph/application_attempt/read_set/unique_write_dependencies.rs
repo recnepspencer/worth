@@ -14,7 +14,7 @@ use worth_relational::facade::indexes::DerivedIndexId;
 use super::super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::super::effect_validation::denial;
 use super::super::fact::{observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal};
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFieldIndex;
+use crate::domain_computation::graph_layout::WorthQueryUniqueFieldIndex;
 use {
     super::super::WorthQueryApplicationAttemptDenial,
     super::super::WorthQueryApplicationObservedFact,
@@ -81,7 +81,7 @@ impl<Schema, Operation, Input, Scope>
 
 pub fn observe_unique_values(
     facts: &(impl FactSequence + ?Sized),
-    unique: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<'_>,
+    unique: crate::domain_computation::graph_layout::WorthQueryUniqueFields<'_>,
     effects: &[WorthQueryApplicationRealizedEffect],
     kind_of: impl Fn(&str) -> Option<KindId>,
     mut observe: impl FnMut(

@@ -2,6 +2,7 @@
 use std::any::TypeId;
 use worth_query_declaration::facade::application_schema as schema;
 use worth_query_installation::facade as domain;
+use crate::domain_computation::vocabulary::primary_graph::native_field_contract::NativeFieldContractDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NativeFieldBindingExpectation {
@@ -50,19 +51,6 @@ impl NativeFieldBindingExpectation {
     }
 }
 
-#[derive(Debug)]
-pub struct NativeFieldContractDenial {
-    pub(super) locus: schema::ApplicationFieldBindingLocus,
-    pub(super) detail: String,
-}
-impl NativeFieldContractDenial {
-    pub(super) fn detail(&self) -> &str {
-        &self.detail
-    }
-    pub(super) fn field_locus(&self) -> Option<&schema::ApplicationFieldBindingLocus> {
-        Some(&self.locus)
-    }
-}
 fn field_denial(
     locus: schema::ApplicationFieldBindingLocus,
     detail: &str,

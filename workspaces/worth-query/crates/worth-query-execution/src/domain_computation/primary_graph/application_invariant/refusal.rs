@@ -86,7 +86,7 @@ pub(crate) fn decode<Binding: ApplicationReadableScalarValueBinding>(
     Binding::decode(&AspectValue::String(text.to_owned().into())).map_err(Denial::Value)
 }
 
-impl crate::domain_computation::WorthQueryCustomInvariantDenial {
+impl crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial {
     pub fn decode_refusal<Binding: ApplicationReadableScalarValueBinding>(
         &self,
     ) -> Result<Binding::Value, WorthQueryInvariantRefusalDecodeDenial> {

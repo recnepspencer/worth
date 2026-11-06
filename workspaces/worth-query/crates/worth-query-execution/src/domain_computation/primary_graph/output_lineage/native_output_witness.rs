@@ -14,7 +14,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputCorrespondence;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphApplicationAttempt;
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
 

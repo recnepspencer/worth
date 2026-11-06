@@ -1,10 +1,6 @@
 //! Native cursor navigation cannot abandon performed pending business custody.
 use super::*;
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
-    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
-    crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<

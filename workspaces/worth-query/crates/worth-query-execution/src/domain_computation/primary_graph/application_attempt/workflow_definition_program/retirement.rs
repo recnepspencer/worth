@@ -17,7 +17,7 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 
 use super::lineage::{lineage_denial, lineage_identity_facts, text, CURRENT_DEFINITION_WORK_LIMIT};
 use crate::basis::WorthQueryProductBranchReadIdentity;
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use {
     super::super::observe_adjacency, super::super::observe_field_value,
     super::super::WorthQueryApplicationAttemptDenial,

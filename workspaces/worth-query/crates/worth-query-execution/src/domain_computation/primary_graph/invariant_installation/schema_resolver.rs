@@ -7,7 +7,7 @@ mod managed_index;
 /// Borrowed, application-only view used while lowering one invariant factory.
 pub struct WorthQueryApplicationInvariantSchemaResolver<'layout, Schema> {
     pub(super) _schema: PhantomData<fn() -> Schema>,
-    pub(super) layout: &'layout super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    pub(super) layout: &'layout crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     pub(super) descriptor: &'layout worth_query_installation::facade::WorthQueryInstalledApplicationInvariantDescriptor,
     pub(super) binding_identity: ApplicationSchemaBindingIdentity,
 }
@@ -56,8 +56,8 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
         let layout = self.layout.component_set(set.name())?;
         let member_domain = self.layout.member_binding(set.member_selector())?;
         let member_kind = match &member_domain {
-            super::super::schema_layout::MemberDomainBinding::Entity(kind) => *kind,
-            super::super::schema_layout::MemberDomainBinding::Projected(domain) => {
+            crate::domain_computation::graph_layout::MemberDomainBinding::Entity(kind) => *kind,
+            crate::domain_computation::graph_layout::MemberDomainBinding::Projected(domain) => {
                 domain.parts().carrier
             }
         };

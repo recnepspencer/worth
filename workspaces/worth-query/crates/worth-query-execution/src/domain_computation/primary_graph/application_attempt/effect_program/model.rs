@@ -130,7 +130,7 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
         Scope,
         WorthQueryProjectedApplicationMutation,
     >,
-    pub(super) layout: Arc<super::super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
+    pub(super) layout: Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout>,
     pub(super) program: Arc<()>,
     pub(super) effects: Vec<WorthQueryApplicationRealizedEffect>,
     pub(super) field_write_positions: super::FieldWriteIndex,

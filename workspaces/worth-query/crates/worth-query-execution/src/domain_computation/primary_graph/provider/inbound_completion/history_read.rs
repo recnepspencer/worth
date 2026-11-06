@@ -12,7 +12,7 @@ use worth_relational::facade::publication::{PublishedAuthoritativePatch, RecordS
 use super::read::{decode_completion_values, field, WorthQueryCanonicalCompletionRow};
 use super::WorthQueryInboundCompletionReadDenial as Denial;
 use super::WorthQueryPrimaryGraphProvider;
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryInboundCompletionLayout;
+use crate::domain_computation::graph_layout::WorthQueryInboundCompletionLayout;
 
 impl WorthQueryPrimaryGraphProvider {
     /// Inspect only the changed records in one independently World-paired

@@ -1,9 +1,7 @@
 //! Installed projection authority reads the same exact Native logical sources.
 mod component;
 mod source;
-use crate::domain_computation::primary_graph::{
-    component_selection::storage, schema_layout::MemberDomainBinding as Domain,
-};
+use {crate::domain_computation::primary_graph::component_selection::storage, crate::domain_computation::graph_layout::MemberDomainBinding as Domain};
 use worth_query_declaration::facade::application_schema::ApplicationDerivedRelationRef;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::DerivedRelationReadShape as Shape;

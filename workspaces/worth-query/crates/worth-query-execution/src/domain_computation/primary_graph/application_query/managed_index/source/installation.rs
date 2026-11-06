@@ -1,10 +1,6 @@
 //! Readiness carries the actual configured catalog and compiled Native associations.
 use super::super::{configuration::ManagedIndexProviderCatalog, source::service::SourceService};
-use crate::domain_computation::primary_graph::{
-    schema_layout::WorthQueryPrimaryGraphLayout,
-    WorthQueryPrimaryGraphInstallationDenial as Denial,
-    WorthQueryPrimaryGraphInstallationDenialKind as Kind,
-};
+use {crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind};
 use std::{collections::BTreeMap, sync::Arc};
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::runtime::ManagedIndexSourceProgram;

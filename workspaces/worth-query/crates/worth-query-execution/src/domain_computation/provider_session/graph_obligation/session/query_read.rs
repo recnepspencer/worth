@@ -155,7 +155,7 @@ impl WorthQueryManagedGraphWorkSession {
         basis: &WorthQueryApplicationBasisIdentity,
         read: impl FnOnce(
             &mut worth_relational::facade::runtime::RelationalRuntime,
-            &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+            &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
         ) -> T,
     ) -> Result<(T, WorthQuerySessionGraphReadProof), WorthQueryManagedGraphReadDenial> {
         let super::ProductReadBasis { identity, port, .. } = self.query_read_basis()?;
@@ -230,7 +230,7 @@ impl WorthQueryManagedGraphWorkSession {
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
         read: impl FnOnce(
             &mut worth_relational::facade::runtime::RelationalRuntime,
-            &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+            &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
         ) -> T,
     ) -> Result<(T, WorthQuerySessionGraphReadProof), WorthQueryManagedGraphReadDenial> {
         let super::ProductReadBasis { identity, port, .. } = self.query_read_basis()?;

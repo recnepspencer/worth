@@ -3,7 +3,7 @@ use super::WorthQueryApplicationCommitDenial;
 use crate::domain_computation::primary_graph::application_invariant::{
     refusal, WorthQueryInvariantRefusalDecodeDenial,
 };
-use crate::domain_computation::WorthQueryCustomInvariantDenial;
+use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial;
 use worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding;
 use worth_relational::facade::runtime::CustomInvariantRefusal;
 

@@ -3,7 +3,7 @@ use super::super::{
     storage::{NativeResourceSlot, ResourceStorage},
 };
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial as Denial;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial;
 use worth_execution::{ExecutionRequest, ExecutionRequestArrayBuilder};
 use worth_query_installation::facade::WorthQueryInstalledApplicationResource;
 use worth_runtime_bridge::facade::{

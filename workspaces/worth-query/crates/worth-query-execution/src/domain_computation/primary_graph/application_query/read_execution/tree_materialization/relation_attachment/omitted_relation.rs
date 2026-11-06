@@ -9,7 +9,7 @@ use {crate::domain_computation::primary_graph::application_query::read_execution
 pub(in crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization) fn advance_omitted_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    graph: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     relation: &WorthQueryInstalledGraphRelation,
     parents: &[WorthQueryApplicationProjectionNode],
     work: &mut ResultTreeWork,

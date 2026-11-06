@@ -11,7 +11,7 @@ use worth_query_declaration::facade::application_query::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 use super::influence_validation::{validate_influence, GovernedInternalFieldRules};
 pub(super) mod admission;

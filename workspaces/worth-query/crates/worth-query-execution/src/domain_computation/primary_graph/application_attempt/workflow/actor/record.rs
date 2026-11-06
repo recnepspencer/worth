@@ -2,6 +2,7 @@ use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOpera
 use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::{EntityId, PartitionId};
+use crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields;
 
 /// Historical identity, not a grant or an execution right.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -45,14 +46,32 @@ impl WorkflowAdmittedActor {
         );
     }
 }
-#[derive(Clone, Debug)]
-pub struct WorkflowActorFields {
-    pub(in crate::domain_computation) partition: AspectFieldLocator,
-    pub(in crate::domain_computation) slot: AspectFieldLocator,
-    pub(in crate::domain_computation) generation: AspectFieldLocator,
+/// The attempt's reading of a recorded actor through the layout's actor field locators: the
+/// layout owns where the fields live, the attempt owns how a record is observed.
+pub(in crate::domain_computation::primary_graph) trait WorkflowActorFieldsObservation {
+    fn read_adoption(
+        &self,
+        record: &super::super::adoption::WorkflowAdoptionEntity<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: EntityId,
+    ) -> Result<Option<EntityId>, super::super::adoption::WorkflowAdoptionReadDenial>;
+    fn observe(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        entity: EntityId,
+        kind: worth_relational::facade::identity::KindId,
+        facts: &mut Vec<
+            crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact,
+        >,
+    ) -> Result<
+        Option<EntityId>,
+        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    >;
 }
-impl WorkflowActorFields {
-    pub(in crate::domain_computation::primary_graph) fn read_adoption(
+impl WorkflowActorFieldsObservation for WorkflowActorFields {
+    fn read_adoption(
         &self,
         record: &super::super::adoption::WorkflowAdoptionEntity<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -67,7 +86,7 @@ impl WorkflowActorFields {
         ])
         .map_err(|_| invalid())
     }
-    pub(in crate::domain_computation) fn observe(
+    fn observe(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -113,20 +132,6 @@ impl WorkflowActorFields {
             }
         }
         decode_actor_components(components).map_err(|_| malformed())
-    }
-    pub(in crate::domain_computation::primary_graph) fn planned(
-        aspect: &str,
-        role: &str,
-    ) -> Result<
-        Self,
-        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
-    > {
-        use crate::domain_computation::primary_graph::schema_layout::planned_field_locator;
-        Ok(Self {
-            partition: planned_field_locator(aspect, &format!("{role}-partition"))?,
-            slot: planned_field_locator(aspect, &format!("{role}-slot"))?,
-            generation: planned_field_locator(aspect, &format!("{role}-generation"))?,
-        })
     }
 }
 

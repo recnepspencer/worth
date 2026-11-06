@@ -4,7 +4,7 @@ use worth_relational::facade::identity::EntityId;
 
 use super::{exact_adjacent, observed_optional_text, observed_optional_u64, observed_u64};
 use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact};
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::codec::WorkflowConnectionTag, crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowConnection, crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowConnectionKind, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::codec::WorkflowConnectionTag, crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowConnection, crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowConnectionKind, crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout};
 
 pub(super) fn compile_connection(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

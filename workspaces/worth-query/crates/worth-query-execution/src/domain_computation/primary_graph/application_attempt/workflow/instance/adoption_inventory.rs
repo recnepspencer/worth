@@ -10,14 +10,13 @@
 //! caller's `maximum_selection_work` with a typed denial instead of running
 //! unbounded.
 
+use crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFieldsObservation;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::{EntityId, RelationId};
 
 use super::super::adoption::{WorkflowAdoptionReadDenial, WorkflowAdoptionTruth};
-use super::super::schema::version::{
-    WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION, WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
-};
-use super::super::schema::WorthQueryWorkflowLayout;
+use {crate::domain_computation::graph_layout::workflow::version::WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION, crate::domain_computation::graph_layout::workflow::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION};
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use super::WorkflowInstanceState;
 
 pub(in crate::domain_computation::primary_graph) struct WorkflowLiveInstance {

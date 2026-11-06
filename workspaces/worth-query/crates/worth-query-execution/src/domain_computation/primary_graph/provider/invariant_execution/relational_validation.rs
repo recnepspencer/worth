@@ -175,10 +175,7 @@ mod tests {
             crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
             crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
         };
-        use {
-            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as ExecutionKind,
-            crate::domain_computation::WorthQueryInvariantExecutionDenialKind as Kind,
-        };
+        use {crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as ExecutionKind, crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind as Kind};
         let source = worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new();
         let request =
             worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(

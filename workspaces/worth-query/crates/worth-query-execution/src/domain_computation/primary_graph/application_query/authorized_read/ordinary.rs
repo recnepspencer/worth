@@ -27,7 +27,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn execute_a
     >,
     read: impl FnOnce(
         &worth_relational::facade::runtime::RelationalRuntime,
-        &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+        &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
         &WorthQueryAdmittedApplicationQueryPlan<
             '_,
             Schema,
@@ -85,7 +85,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn execute_a
     >,
     read: impl FnOnce(
         &worth_relational::facade::runtime::RelationalRuntime,
-        &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+        &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
         &worth_relational::facade::snapshots::SnapshotHandle,
         &WorthQueryAdmittedApplicationQueryPlan<
             '_,

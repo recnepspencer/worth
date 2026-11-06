@@ -15,7 +15,7 @@ use crate::domain_computation::authorization::capability_registry::{
     WorthQueryCapabilityPathTemplate, WorthQueryCapabilityRequestGuard,
 };
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 pub(super) struct ActiveElevationPathIndices {
     pub(super) active: usize,

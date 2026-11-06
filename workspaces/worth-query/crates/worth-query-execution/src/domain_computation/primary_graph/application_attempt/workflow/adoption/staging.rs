@@ -21,7 +21,7 @@ use worth_relational::facade::transactions::{
 };
 
 use super::super::instance::WorkflowInstanceState;
-use super::super::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use super::{
     AdmittedWorkflowDispositions, WorthQueryWorkflowAdoptionInventory,
     WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowInstanceDisposition,

@@ -1,7 +1,5 @@
 //! Read-only selectors share one exact projection snapshot and installed domain.
-use crate::domain_computation::primary_graph::{
-    schema_layout::MemberDomainBinding as Domain, source_facts::SourceFactsAllocation,
-};
+use {crate::domain_computation::graph_layout::MemberDomainBinding as Domain, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation};
 use std::{marker::PhantomData, sync::Arc};
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{

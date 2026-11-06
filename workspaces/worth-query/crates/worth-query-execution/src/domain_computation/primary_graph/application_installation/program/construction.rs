@@ -14,10 +14,7 @@ use super::{
     WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
     WorthQueryProgramApplicationRuntime,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationContributionTuple, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationContributionTuple, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 
 /// Validates and installs program meaning before exposing its application runtime.
 pub fn in_memory_program<Schema, Program>(

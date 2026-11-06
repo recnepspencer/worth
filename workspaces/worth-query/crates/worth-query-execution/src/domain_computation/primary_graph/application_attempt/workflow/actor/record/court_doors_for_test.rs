@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields;
 
 impl WorkflowAdmittedActor {
     #[doc(hidden)]

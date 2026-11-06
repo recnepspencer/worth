@@ -77,7 +77,7 @@ impl WorthQueryApplicationCommitDenial {
 
     pub(super) fn custom_invariant(
         &self,
-    ) -> Option<&crate::domain_computation::WorthQueryCustomInvariantDenial> {
+    ) -> Option<&crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial> {
         match self.cause.as_deref() {
             Some(DenialCause::InvariantExecution(failure)) => failure.custom_invariant_denial(),
             _ => None,

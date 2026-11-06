@@ -1,12 +1,9 @@
 //! Lower the installed rule contract into native invariant metadata.
-use super::{
-    denial, CustomInvariantRegistration, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {super::denial, super::CustomInvariantRegistration, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 use worth_query_declaration::facade::application_schema::ApplicationInvariantExecutionPoint;
 fn lower_access_contract(
     installed: &worth_query_installation::facade::WorthQueryInstalledApplicationInvariantDescriptor,
-    layout: &super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     reads_program_activation: bool,
 ) -> Result<
     worth_relational::facade::runtime::CustomInvariantAccessContract,
@@ -50,7 +47,7 @@ fn lower_access_contract(
 
 pub(super) fn lower_descriptor(
     installed: &worth_query_installation::facade::WorthQueryInstalledApplicationInvariantDescriptor,
-    layout: &super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     reads_program_activation: bool,
 ) -> Result<
     worth_relational::facade::runtime::CustomInvariantDescriptor,

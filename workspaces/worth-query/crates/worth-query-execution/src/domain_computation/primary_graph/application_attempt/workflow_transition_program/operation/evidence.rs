@@ -40,7 +40,7 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         compiled: &CompiledWorkflowDefinition,
-        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
         instance: &crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         selected: &SelectedWorkflowTransition,
         progress: &WorkflowInstanceProgress,

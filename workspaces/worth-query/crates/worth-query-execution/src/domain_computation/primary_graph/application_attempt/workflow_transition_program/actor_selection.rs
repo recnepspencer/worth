@@ -1,4 +1,5 @@
 //! Exact native role selection shared by admission and later read owners.
+use crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFieldsObservation;
 use super::*;
 mod approval;
 mod portable;
@@ -12,16 +13,7 @@ use worth_query_declaration::facade::application_capability::{
     ApplicationWorkflowRecordedActorSource as Source, ApplicationWorkflowRecordedRole as Role,
 };
 use worth_relational::facade::{identity::EntityId, snapshots::SnapshotHandle};
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFields,
-    crate::domain_computation::primary_graph::application_attempt::workflow::actor::WorkflowActorDependencies,
-    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
-    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator,
-    crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-};
+use {crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields, crate::domain_computation::primary_graph::application_attempt::workflow::actor::WorkflowActorDependencies, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle, crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout};
 
 #[derive(Clone, Debug)]
 pub struct WorkflowRecordedActorObservation {

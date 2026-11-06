@@ -1,9 +1,5 @@
 //! Construction values fill required slots; missing configuration never changes meaning.
-use super::super::super::{
-    application_entry::mutation::OperationHandler, WorthQueryApplicationProjection,
-    WorthQueryPrimaryGraphInstallationDenial as Denial,
-    WorthQueryPrimaryGraphInstallationDenialKind as Kind,
-};
+use {super::super::super::application_entry::mutation::OperationHandler, super::super::super::WorthQueryApplicationProjection, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind};
 use super::super::producer::{ProducerSourceQuery, ProducerSourceValue};
 use super::super::{
     WorthQueryApplicationConditionalBinding as Conditional, WorthQueryApplicationContributionSetup,

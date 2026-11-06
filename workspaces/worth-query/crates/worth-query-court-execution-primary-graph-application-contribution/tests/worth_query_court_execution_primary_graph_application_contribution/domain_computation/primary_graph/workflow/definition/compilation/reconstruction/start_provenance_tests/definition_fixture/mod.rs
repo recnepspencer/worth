@@ -5,7 +5,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction::start_provenance_tests::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::facts::visit_definition_facts;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::facts::WorkflowLineagePublicationTarget;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout;
+use worth_query_execution::court_doors_for_test::domain_computation::graph_layout::workflow::layout::WorthQueryWorkflowLayout;
 use worth_query_declaration::facade::application_program::*;
 use worth_relational::facade::identity::PartitionId;
 

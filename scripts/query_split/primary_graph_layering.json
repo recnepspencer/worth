@@ -52,10 +52,8 @@
   "managed_bridge",
   "root",
   "source_facts",
-  "schema_layout",
   "authenticated_principal",
   "fact_verification_observation",
-  "denial",
   "application_program",
   "derived_source",
   "structural_walk",
@@ -359,10 +357,6 @@
    "product_operation"
   ],
   [
-   "denial",
-   "application_contribution"
-  ],
-  [
    "derived_source",
    "application_attempt"
   ],
@@ -588,10 +582,6 @@
   ],
   [
    "root",
-   "application_discovery"
-  ],
-  [
-   "root",
    "application_query"
   ],
   [
@@ -600,14 +590,6 @@
   ],
   [
    "root",
-   "workflow"
-  ],
-  [
-   "schema_layout",
-   "application_discovery"
-  ],
-  [
-   "schema_layout",
    "workflow"
   ],
   [

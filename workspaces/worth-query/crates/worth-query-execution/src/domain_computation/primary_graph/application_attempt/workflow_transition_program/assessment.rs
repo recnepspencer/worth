@@ -312,7 +312,7 @@ where
 }
 
 fn projection(
-    layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+    layout: &crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
     meaning: WorkflowAssessmentEvidenceMeaning,
 ) -> PreparedWorkflowAssessmentProjection {
     projection_with_locator(&layout.assessment_evidence.identity, meaning)

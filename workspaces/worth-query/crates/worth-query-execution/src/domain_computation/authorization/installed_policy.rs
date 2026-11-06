@@ -20,7 +20,7 @@ use super::capability_registry::{
 };
 use super::lowering::lower_authorization_path;
 use super::{authorization_denial, WorthQueryOperationAuthorizationDenial};
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct PolicyKey {

@@ -50,7 +50,7 @@ impl Denial {
         >,
     >{
         use super::denial_cause::DenialCause as Cause;
-        use crate::domain_computation::WorthQueryInvariantExecutionDenialKind as Invariant;
+        use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind as Invariant;
         match self.cause.as_deref() {
             Some(Cause::Execution(cause)) => Some(*cause),
             Some(Cause::InvariantExecution(failure)) => match failure.kind() {

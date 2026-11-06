@@ -7,10 +7,7 @@ use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
 use super::super::codec::WorkflowConnectionTag;
-use super::{
-    WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,
-    WorthQueryWorkflowLayout,
-};
+use {super::WorthQueryApplicationCreationPartition, super::WorthQueryApplicationRealizedEffect, crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout};
 
 pub(super) fn hex(bytes: [u8; 32]) -> String {
     use std::fmt::Write;

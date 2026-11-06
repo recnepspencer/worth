@@ -25,7 +25,7 @@ use worth_relational::facade::transactions::{
 };
 
 use super::application_attempt::{observe_indexed_candidates, WorthQueryIndexedSelectionRefusal};
-use super::schema_layout::{WorthQueryUniqueFieldIndex, WorthQueryUniqueFields};
+use {crate::domain_computation::graph_layout::WorthQueryUniqueFieldIndex, crate::domain_computation::graph_layout::WorthQueryUniqueFields};
 use super::WorthQueryPrimaryGraphIntegrationHandle;
 
 /// Two candidates tell a free value from a taken one, and a held value from

@@ -1,10 +1,6 @@
 use {super::read_execution_denial, super::RootSelectionWork, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial};
 use {crate::domain_computation::primary_graph::application_query::observed_source::DeclaredManagedIndexSelection, crate::domain_computation::primary_graph::application_query::observed_source::DeclaredOrbitSelection, crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedFieldRevision, crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection, crate::domain_computation::primary_graph::application_query::read_execution::relational_read_denial, crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind};
-use crate::domain_computation::primary_graph::{
-    source_facts::{SourceFactReadDenial, SourceFactsBuilder},
-    structural_walk::StructuralWalkDependencies,
-    WorthQueryPrimaryGraphLayout,
-};
+use {crate::domain_computation::primary_graph::source_facts::SourceFactReadDenial, crate::domain_computation::primary_graph::source_facts::SourceFactsBuilder, crate::domain_computation::primary_graph::structural_walk::StructuralWalkDependencies, crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout};
 use std::sync::Arc;
 use worth_foundational::facade::{AspectKey, FieldKey};
 use worth_relational::facade::{identity::EntityId, runtime::VisibilityProjectionView};

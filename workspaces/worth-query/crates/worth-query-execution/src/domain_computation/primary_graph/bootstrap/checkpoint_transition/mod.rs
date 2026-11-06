@@ -7,9 +7,7 @@ mod preserved_outputs;
 mod publication;
 mod repair;
 mod selection;
-use super::{
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 pub use authoring::WorthQueryCheckpointMigrationWriter;
 pub(in crate::domain_computation::primary_graph) use publication::{
     transition_checkpoint, InstalledCheckpointTarget,

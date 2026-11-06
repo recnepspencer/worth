@@ -1,7 +1,5 @@
 use super::*;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationObservedFact as Fact, WorthQueryPrimaryGraphLayout,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact, crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout};
 
 pub(crate) mod control;
 mod field_preparation;

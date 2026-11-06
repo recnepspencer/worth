@@ -22,7 +22,7 @@ impl WorthQueryApplicationCommittedChanges {
             Executor => ("workflow-transition", "executor"),
             Approver => ("workflow-approval", "approver"),
         };
-        let fields = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFields::planned(aspect, role).map_err(|_| invalid())?;
+        let fields = crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields::planned(aspect, role).map_err(|_| invalid())?;
         let values = [&fields.partition, &fields.slot, &fields.generation]
             .map(|locator| self.committed_field_value(entity, locator));
         let mut components = [None; 3];
@@ -63,7 +63,7 @@ impl WorthQueryApplicationCommittedChanges {
         };
         let invalid = |subject: &str| Denial::new(Kind::InvalidAuthoritativeValue, subject);
         let locator =
-            crate::domain_computation::primary_graph::schema_layout::planned_field_locator(
+            crate::domain_computation::graph_layout::planned_field_locator(
                 "workflow-approval",
                 "authorization-request",
             )
@@ -181,7 +181,7 @@ impl WorthQueryApplicationCommittedChanges {
         let required = match role {
             ApplicationWorkflowRecordedRole::Executor => {
                 let locator =
-                    crate::domain_computation::primary_graph::schema_layout::planned_field_locator(
+                    crate::domain_computation::graph_layout::planned_field_locator(
                         "workflow-transition",
                         "operation-receipt-identity",
                     )

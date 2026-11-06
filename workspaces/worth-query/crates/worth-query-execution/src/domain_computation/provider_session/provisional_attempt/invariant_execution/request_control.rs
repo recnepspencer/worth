@@ -1,6 +1,4 @@
-use super::{
-    WorthQueryInvariantExecutionDenialKind as Kind, WorthQueryInvariantExecutionFailure as Failure,
-};
+use {crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind as Kind, crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure as Failure};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryRequestInterruption, WorthQueryRequestScope,
 };

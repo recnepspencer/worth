@@ -7,7 +7,7 @@ use worth_relational::facade::authorization::{
 };
 
 use super::{authorization_denial, WorthQueryOperationAuthorizationDenial};
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 pub(super) fn lower_authorization_path(
     layout: &WorthQueryPrimaryGraphLayout,

@@ -1,12 +1,6 @@
 //! Exact restored-output locators; reconstructed storage keeps its bootstrap payer.
 use super::WorthQueryReadmittedAcceptedOutput;
-use {
-    crate::domain_computation::primary_graph::application_checkpoint::CheckpointDecodeDenial,
-    crate::domain_computation::primary_graph::application_checkpoint::CheckpointMetadataFunding,
-    crate::domain_computation::primary_graph::application_checkpoint::DecodedApplicationCheckpoint,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial as Denial,
-    crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
-};
+use {crate::domain_computation::primary_graph::application_checkpoint::CheckpointDecodeDenial, crate::domain_computation::primary_graph::application_checkpoint::CheckpointMetadataFunding, crate::domain_computation::primary_graph::application_checkpoint::DecodedApplicationCheckpoint, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial, crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding};
 
 #[derive(Default)]
 pub struct WorthQueryRecoveredOutputs {

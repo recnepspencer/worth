@@ -39,7 +39,7 @@ pub enum WorthQueryConditionalExecutionTerminal {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalExecutionCause {
     /// The original domain evidence or evaluation failure, retained unchanged.
-    CustomInvariant(crate::domain_computation::WorthQueryCustomInvariantDenial),
+    CustomInvariant(crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial),
     ManagedCleanupRequired(crate::domain_computation::WorthQueryMutationCleanupFailureKind),
     /// A reentry retry or unresolved outcome retains the original typed cause.
     Reentry(super::super::WorthQueryConditionalReentryFailure),

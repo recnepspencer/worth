@@ -6,6 +6,7 @@ use worth_query_installation::facade as domain;
 pub(super) mod typed;
 use super::super::native_field_contract::FieldExpectation;
 pub use typed::{WorthQueryOutputReadinessContract, WorthQueryReadinessFieldUse};
+use crate::domain_computation::vocabulary::primary_graph::output_readiness_contract::WorthQueryOutputReadinessContractDenial;
 
 /// Domain facts needed to declare Query's standard derived-output readiness operation.
 pub struct WorthQueryOutputReadinessContractBuilder {
@@ -26,43 +27,10 @@ pub struct WorthQueryOutputReadinessContractBuilder {
     >,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryOutputReadinessContractDenial {
-    detail: String,
-    locus:
-        Option<worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus>,
-}
 
-impl From<super::super::native_field_contract::NativeFieldContractDenial>
-    for WorthQueryOutputReadinessContractDenial
-{
-    fn from(denial: super::super::native_field_contract::NativeFieldContractDenial) -> Self {
-        Self {
-            locus: Some(denial.locus),
-            detail: denial.detail,
-        }
-    }
-}
 
-impl WorthQueryOutputReadinessContractDenial {
-    pub fn field_locus(
-        &self,
-    ) -> Option<&worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus>
-    {
-        self.locus.as_ref()
-    }
-    pub fn detail(&self) -> &str {
-        &self.detail
-    }
-}
 
-impl std::fmt::Display for WorthQueryOutputReadinessContractDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str(&self.detail)
-    }
-}
 
-impl std::error::Error for WorthQueryOutputReadinessContractDenial {}
 
 impl WorthQueryOutputReadinessContractBuilder {
     #[allow(clippy::too_many_arguments)]

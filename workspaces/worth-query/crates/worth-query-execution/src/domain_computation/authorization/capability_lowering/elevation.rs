@@ -19,7 +19,7 @@ use crate::domain_computation::authorization::capability_registry::{
 use crate::domain_computation::authorization::{
     authorization_denial, WorthQueryOperationAuthorizationDenial,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 mod active_use;
 mod approver_conflict;

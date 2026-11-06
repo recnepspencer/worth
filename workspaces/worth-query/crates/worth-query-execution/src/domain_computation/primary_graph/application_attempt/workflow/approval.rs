@@ -10,12 +10,7 @@ use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
-use super::{
-    instance::{
-        visit_workflow_transition_facts, AdmittedWorkflowTransition, WorkflowInstanceState,
-    },
-    schema::WorthQueryWorkflowLayout,
-};
+use {super::instance::visit_workflow_transition_facts, super::instance::AdmittedWorkflowTransition, super::instance::WorkflowInstanceState, crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout};
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,
 };

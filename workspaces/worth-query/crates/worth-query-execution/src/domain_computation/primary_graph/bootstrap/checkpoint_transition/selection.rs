@@ -2,9 +2,7 @@
 use super::denial;
 #[path = "selection_storage.rs"]
 mod storage;
-use crate::domain_computation::primary_graph::{
-    schema_layout::WorthQueryPrimaryGraphLayout, WorthQueryPrimaryGraphInstallationDenial,
-};
+use {crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use worth_relational::facade::{
     identity::{EntityId, RelationId},
     runtime::VisibilityProjectionView,

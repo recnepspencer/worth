@@ -7,7 +7,7 @@ use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::runtime::{RelationalRuntime, VisibilityProjectionView};
 
 use super::WorthQueryBranchAdoptionPreparationDenial;
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 pub(super) struct WorthQueryAdoptionSelection {
     pub(super) entities: Vec<EntityId>,

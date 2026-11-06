@@ -11,6 +11,8 @@ pub mod domain_evidence_binding;
 pub mod execution_observation;
 #[path = "execution_runtime/mod.rs"]
 pub mod execution_runtime;
+#[path = "graph_layout/mod.rs"]
+pub mod graph_layout;
 #[path = "managed_run/mod.rs"]
 pub mod managed_run;
 #[path = "operation_binding/mod.rs"]

@@ -13,9 +13,7 @@ use worth_runtime_bridge::facade::{
     TruthSnapshotReader,
 };
 
-use super::{
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 use crate::domain_computation::primary_graph::vocabulary::managed_bridge::WorthQueryInstalledApplicationBridge;
 
 #[derive(Clone)]
@@ -55,7 +53,7 @@ impl WorthQueryApplicationBridgeInstallation {
 
 pub(super) fn install_application_bridge<Schema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
-    layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
+    layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     source: RuntimeBridgeRelationalSource,
     conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
 ) -> Result<WorthQueryApplicationBridgeInstallation, WorthQueryPrimaryGraphInstallationDenial>
@@ -76,7 +74,7 @@ where
 
 pub(super) fn build_application_runtime_bridge<Schema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
-    layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
+    layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     source: RuntimeBridgeRelationalSource,
 ) -> Result<RuntimeBridge, WorthQueryPrimaryGraphInstallationDenial>
 where
@@ -130,7 +128,7 @@ where
 
 fn application_mappings<Schema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
-    layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
+    layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
 ) -> Result<
     impl Iterator<Item = WorthQueryApplicationFieldMappings> + use<Schema>,
     WorthQueryPrimaryGraphInstallationDenial,

@@ -42,7 +42,6 @@ pub(crate) mod conditional_operation;
 pub(crate) mod publication_request_denial;
 pub(crate) use conditional_operation::classify_bridge_signal;
 pub use conditional_operation::conditional_intent_read_is_active_for_test;
-mod denial;
 pub(crate) mod entity_key;
 pub(crate) mod entity_resolution;
 mod entity_resolution_denial;
@@ -141,7 +140,6 @@ pub(crate) mod resolution_denial;
 pub(crate) mod root;
 mod root_path_selection;
 pub(crate) mod runtime_host;
-pub(crate) mod schema_layout;
 mod typed_bootstrap;
 pub(crate) mod value_decode;
 pub use {
@@ -185,8 +183,6 @@ pub(in crate::domain_computation) use freshness::WorthQueryDurablePrincipalCurre
 pub(in crate::domain_computation) use freshness::WorthQueryPrincipalFreshnessEvidence;
 
 pub(in crate::domain_computation) use provider::WorthQueryApplicationBranchCommitCoordination;
-
-pub(in crate::domain_computation) use schema_layout::WorthQueryPrimaryGraphLayout;
 
 pub(in crate::domain_computation) use application_contribution::SealedComputationRun;
 

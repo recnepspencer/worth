@@ -1,4 +1,5 @@
 //! Canonical instance role applicability at the selected native basis.
+use crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFieldsObservation;
 use super::*;
 /// Already validated recorded identities; data only, never authority.
 pub(in crate::domain_computation::primary_graph::application_attempt) struct WorkflowInstanceRoles {

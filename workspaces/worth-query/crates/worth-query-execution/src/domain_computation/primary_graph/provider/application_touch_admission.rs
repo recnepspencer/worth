@@ -14,7 +14,7 @@ use worth_relational::facade::mvcc::{
 
 mod struct_aspect;
 
-use super::super::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryInstalledTouchAdmissionEvidence {
@@ -331,11 +331,11 @@ impl From<()> for TouchAdmissionFailure {
 impl TouchAdmissionFailure {
     pub(super) fn into_invariant_failure(
         self,
-    ) -> crate::domain_computation::WorthQueryInvariantExecutionFailure {
+    ) -> crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure {
         use worth_relational::facade::mvcc::ValidatedMutationTouchProjectionError as Error;
         match self {
             Self::Projection(Error::AuthoredRestoration(error)) =>
-                crate::domain_computation::WorthQueryInvariantExecutionFailure::authored_retirement(error),
+                crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure::authored_retirement(error),
             Self::Projection(Error::Execution(denial)) =>
                 super::invariant_execution_failure::map_execution_failure(denial),
             Self::Projection(Error::Allocation(cause)) => {
@@ -349,7 +349,7 @@ impl TouchAdmissionFailure {
                                 })
                     }
                     worth_execution::ExecutionAllocationDenialClass::Physical(_) =>
-                        crate::domain_computation::WorthQueryInvariantExecutionFailure::physical_allocation(
+                        crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure::physical_allocation(
                             cause, "native mutation-touch backing refused"),
                 }
             }

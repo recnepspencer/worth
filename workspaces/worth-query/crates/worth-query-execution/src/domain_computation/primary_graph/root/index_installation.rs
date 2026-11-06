@@ -6,7 +6,7 @@ use worth_relational::facade::indexes::{
 };
 use worth_relational::facade::runtime::RelationalRuntime;
 
-use super::super::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 #[derive(Clone, Copy)]
 pub enum IndexInstallationPosture {
@@ -145,10 +145,10 @@ pub fn register_primary_graph_indexes(
             })?
             .index_id;
     }
-    crate::domain_computation::primary_graph::application_attempt::workflow::schema::register_indexes(layout.workflow_mut(), |definition| {
+    crate::domain_computation::graph_layout::workflow::register_indexes(layout.workflow_mut(), |definition| {
         installation.install(definition)
     })?;
-    let read_indexes = super::super::application_discovery::WorkflowReadIndexes::install(
+    let read_indexes = crate::domain_computation::graph_layout::WorkflowReadIndexes::install(
         layout.workflow(),
         |definition| installation.install(definition),
     )?;

@@ -10,7 +10,7 @@ use crate::domain_computation::vocabulary::authorization::operation_admission::W
 
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind;
 use crate::domain_computation::vocabulary::primary_graph::observed_source::WorthQuerySourceExpectationKind;
 

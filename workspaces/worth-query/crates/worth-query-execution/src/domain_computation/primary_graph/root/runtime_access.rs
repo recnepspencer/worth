@@ -35,7 +35,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     pub(in crate::domain_computation) fn with_query_runtime_mut<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        read: impl FnOnce(&mut RelationalRuntime, &super::WorthQueryPrimaryGraphLayout) -> T,
+        read: impl FnOnce(&mut RelationalRuntime, &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout) -> T,
     ) -> T {
         self.source_owner
             .with_runtime_mut(execution, |runtime| read(runtime, &self.layout))

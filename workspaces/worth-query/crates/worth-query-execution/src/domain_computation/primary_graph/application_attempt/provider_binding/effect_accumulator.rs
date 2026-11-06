@@ -14,7 +14,7 @@ use super::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission;
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields;
+use crate::domain_computation::graph_layout::WorthQueryUniqueFields;
 use crate::domain_computation::WorthQueryProvisionalEffectStep;
 
 mod commit_projections;

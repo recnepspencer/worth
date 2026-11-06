@@ -1,8 +1,5 @@
 //! Native output references incur endpoint invariant duties without application write authority.
-use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationRealizedEffect as Effect,
-    schema_layout::WorthQueryPrimaryGraphLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationRealizedEffect as Effect, crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout};
 use std::collections::{BTreeMap, BTreeSet};
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_schema::ApplicationInvariantScopeTarget;

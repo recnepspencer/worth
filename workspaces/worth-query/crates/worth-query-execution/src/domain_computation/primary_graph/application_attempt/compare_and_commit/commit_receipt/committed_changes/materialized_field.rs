@@ -4,10 +4,7 @@ use worth_execution::{MapKernelContext, MapKernelStop};
 use worth_relational::facade::publication::{
     PublishedAuthoritativeFieldEffect as Effect, PublishedAuthoritativeFieldValueLocation,
 };
-use {
-    crate::domain_computation::primary_graph::schema_layout::InstalledFieldCoordinate,
-    crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint,
-};
+use {crate::domain_computation::graph_layout::InstalledFieldCoordinate, crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint};
 
 pub(in crate::domain_computation::primary_graph) struct MaterializedCommittedField {
     original: WorthQueryApplicationCommittedChanges,

@@ -6,7 +6,7 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use worth_relational::facade::identity::EntityId;
 pub use worth_foundational::facade::InternedString;
 pub use worth_relational::facade::identity::KindId;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout;
+pub use worth_query_execution::court_doors_for_test::domain_computation::graph_layout::workflow::layout::WorthQueryWorkflowLayout;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::publication_binding::separate_compiled_definition;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect as Effect;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_operation;

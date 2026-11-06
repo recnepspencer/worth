@@ -99,7 +99,7 @@ pub struct WorthQueryApplicationReadAttempt<
     value_decode: super::super::value_decode::ValueDecodeState,
     admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: WorthQueryApplicationSnapshotLease,
-    layout: Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
+    layout: Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout>,
     entity_resolution: WorthQueryInstalledEntityResolutionContext,
     read_scope: WorthQueryApplicationReadScope,
     expected_facts: Option<crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys>,

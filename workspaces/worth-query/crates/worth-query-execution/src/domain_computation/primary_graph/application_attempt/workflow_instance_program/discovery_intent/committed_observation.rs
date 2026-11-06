@@ -1,8 +1,8 @@
 //! Closed passive comparison with the actual performed native start artifact.
 use super::WorthQueryWorkflowInstanceDiscoveryIntent;
 use crate::domain_computation::primary_graph::application_attempt::workflow_instance_program::PerformedWorkflowInstanceStart;
-use crate::domain_computation::primary_graph::schema_layout::planned_field_locator;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
+use crate::domain_computation::graph_layout::planned_field_locator;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::publication::RecordStructuralChange;
 

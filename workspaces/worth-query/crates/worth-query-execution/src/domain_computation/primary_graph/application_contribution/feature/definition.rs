@@ -2,7 +2,7 @@
 use super::super::{
     WorthQueryApplicationContributionContracts, WorthQueryApplicationContributionSetup,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
 use worth_query_declaration::facade::{
     application_program::ApplicationFeatureDefinition, application_schema::ApplicationSchema,
 };

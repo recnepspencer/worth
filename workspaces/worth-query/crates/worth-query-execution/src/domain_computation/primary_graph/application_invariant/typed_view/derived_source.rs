@@ -7,7 +7,7 @@ use super::{
     WorthQueryApplicationInvariantGraphMember as Member,
     WorthQueryApplicationInvariantReadView as View,
 };
-use crate::domain_computation::primary_graph::schema_layout::MemberDomainBinding as Domain;
+use crate::domain_computation::graph_layout::MemberDomainBinding as Domain;
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_schema::RelationDirection;
 use worth_relational::facade::{

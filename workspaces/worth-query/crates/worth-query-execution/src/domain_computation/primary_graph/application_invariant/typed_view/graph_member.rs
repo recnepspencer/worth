@@ -7,7 +7,7 @@ use super::{
     denial, WorthQueryApplicationInvariantEntity as Entity,
     WorthQueryApplicationInvariantReadView as View,
 };
-use crate::domain_computation::primary_graph::schema_layout::MemberDomainBinding as Domain;
+use crate::domain_computation::graph_layout::MemberDomainBinding as Domain;
 use worth_relational::facade::{
     identity::EntityId,
     schema::{NativeMemberKey, ObservedProjectedMember},

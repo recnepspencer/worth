@@ -14,10 +14,7 @@ use super::super::conditional_operation::{
     WorthQueryConditionalApplicationRuntimeInstallation,
     WorthQueryConditionalRuntimeInstallationDenial,
 };
-use super::super::{
-    WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
-};
+use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind};
 use super::producer::WorthQueryInstalledApplicationProducerRegistry;
 
 mod producer_access;
@@ -26,10 +23,8 @@ mod dependency;
 mod target_coverage;
 pub(super) use dependency::validate_required_producer;
 pub(crate) mod output_readiness_contract;
-pub use output_readiness_contract::{
-    WorthQueryOutputReadinessContract, WorthQueryOutputReadinessContractBuilder,
-    WorthQueryOutputReadinessContractDenial, WorthQueryReadinessFieldUse,
-};
+pub use {output_readiness_contract::WorthQueryOutputReadinessContract, output_readiness_contract::WorthQueryOutputReadinessContractBuilder, output_readiness_contract::WorthQueryReadinessFieldUse};
+use crate::domain_computation::vocabulary::primary_graph::output_readiness_contract::WorthQueryOutputReadinessContractDenial;
 
 mod package_contract;
 pub use package_contract::WorthQueryApplicationConditionalPackageContract;

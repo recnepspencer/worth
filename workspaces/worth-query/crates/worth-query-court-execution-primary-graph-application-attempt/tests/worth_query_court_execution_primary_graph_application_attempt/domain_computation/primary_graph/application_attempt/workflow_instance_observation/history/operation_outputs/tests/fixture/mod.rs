@@ -11,7 +11,7 @@ pub use worth_query_declaration::facade::application_operation::ApplicationMutat
 pub use worth_relational::facade::runtime::RelationalRuntime;
 pub use worth_relational::facade::snapshots::SnapshotHandle;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenial;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout;
+pub use worth_query_execution::court_doors_for_test::domain_computation::graph_layout::workflow::layout::WorthQueryWorkflowLayout;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency;
 pub use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::history::operation_outputs::tests;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::history::operation_outputs::text;

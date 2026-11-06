@@ -89,7 +89,7 @@ pub struct WorthQueryResolvedEntity {
 impl WorthQueryResolvedEntity {
     pub(super) fn from_lookup(
         installed: &super::WorthQueryInstalledEntityResolutionContext,
-        layout: &super::super::schema_layout::WorthQueryPrimaryFieldLayout,
+        layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryFieldLayout,
         subject: WorthQueryEntityResolutionSubject<'_>,
         lookup: &worth_relational::facade::indexes::BoundedEntityFieldLookupOutcome,
     ) -> Self {

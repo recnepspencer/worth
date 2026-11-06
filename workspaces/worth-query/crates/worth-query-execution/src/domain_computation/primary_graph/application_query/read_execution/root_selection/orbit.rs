@@ -2,12 +2,7 @@
 use super::super::interruption::NativeReadInterruption;
 use super::path_union::traversal_denial;
 use super::*;
-use crate::domain_computation::primary_graph::{
-    aggregate_observation::AggregateQuery,
-    application_query::observed_source::DeclaredOrbitSelection,
-    structural_walk::{StructuralWalkDependencies, StructuralWalkObservation, StructuralWalkQuery},
-    WorthQueryPrimaryGraphLayout,
-};
+use {crate::domain_computation::primary_graph::aggregate_observation::AggregateQuery, crate::domain_computation::primary_graph::application_query::observed_source::DeclaredOrbitSelection, crate::domain_computation::primary_graph::structural_walk::StructuralWalkDependencies, crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation, crate::domain_computation::primary_graph::structural_walk::StructuralWalkQuery, crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout};
 use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::application_query::RelationDirection;

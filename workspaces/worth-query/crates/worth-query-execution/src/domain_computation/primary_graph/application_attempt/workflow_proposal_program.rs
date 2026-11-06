@@ -271,7 +271,7 @@ where
     fn recover_proposal_replay(
         &self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,
-        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
         compiled: &crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
         observed: &super::workflow_instance_observation::ObservedWorkflowInstance,
         operation: &str,

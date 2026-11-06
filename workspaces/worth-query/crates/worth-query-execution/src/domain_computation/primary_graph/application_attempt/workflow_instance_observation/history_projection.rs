@@ -1,4 +1,5 @@
 //! Read-only row projections. Audit is admitted by the caller before any role read.
+use crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFieldsObservation;
 use super::read_fields::ReadFields;
 use super::*;
 use crate::domain_computation::primary_graph::application_discovery::{
@@ -73,7 +74,7 @@ pub(in crate::domain_computation::primary_graph) fn observe(
                 )
             })
             .transpose()?;
-        let approver=approval_entity.map(|id|role(fields,&crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFields {partition:layout.approval.approver_partition.clone(),slot:layout.approval.approver_slot.clone(),generation:layout.approval.approver_generation.clone()},id,layout.approval.entity_kind,&mut facts)).transpose()?;
+        let approver=approval_entity.map(|id|role(fields,&crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields {partition:layout.approval.approver_partition.clone(),slot:layout.approval.approver_slot.clone(),generation:layout.approval.approver_generation.clone()},id,layout.approval.entity_kind,&mut facts)).transpose()?;
         Audit::Visible {
             advancer: Actor::observed(roles.advancer),
             executor: roles.executor.map(Actor::observed),
@@ -188,7 +189,7 @@ fn observe_approval(
 }
 fn role(
     fields: &ReadFields<'_, '_, '_>,
-    locators:&crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFields,
+    locators:&crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields,
     entity: EntityId,
     kind: worth_relational::facade::identity::KindId,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,

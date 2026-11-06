@@ -21,10 +21,7 @@ use worth_query_installation::facade::{
 use super::super::application_entry::mutation::OperationHandler;
 use super::super::application_invariant::WorthQueryApplicationInvariantRule;
 use super::super::handler::PendingMutationHandlerRegistry;
-use super::super::{
-    WorthQueryApplicationInvariantFactories, WorthQueryApplicationInvariantSchemaResolver,
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {super::super::WorthQueryApplicationInvariantFactories, super::super::WorthQueryApplicationInvariantSchemaResolver, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 use super::conditional::PendingConditionalRegistry;
 use super::producer::{
     PendingProducerRegistry, ProducerSourceBinding, ProducerSourceQuery, ProducerSourceValue,

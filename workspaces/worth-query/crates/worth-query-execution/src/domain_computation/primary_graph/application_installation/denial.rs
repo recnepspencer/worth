@@ -1,4 +1,4 @@
-use super::super::WorthQueryPrimaryGraphInstallationDenial;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
 use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionDenial, WorthQueryInstalledApplicationSchemaDenial,
     WorthQueryInstalledPackageIndexDenial, WorthQueryPortablePackageValidationDenial,

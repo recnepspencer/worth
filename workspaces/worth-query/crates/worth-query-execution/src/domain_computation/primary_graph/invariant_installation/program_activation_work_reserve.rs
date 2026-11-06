@@ -12,9 +12,7 @@
 
 use std::num::NonZeroU64;
 
-use crate::domain_computation::primary_graph::{
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 
 /// Work units the platform's branch program activation read spends: one
 /// structural entity-aspect state read, charged once per candidate evaluation.
@@ -52,7 +50,7 @@ pub(super) fn lowered_work_budget(
 #[cfg(test)]
 mod tests {
     use super::{lowered_work_budget, PROGRAM_ACTIVATION_READ_RESERVE};
-    use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind;
+    use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind;
     use std::num::NonZeroU64;
 
     fn declared(units: u64) -> Option<NonZeroU64> {

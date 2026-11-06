@@ -27,7 +27,7 @@ use {crate::domain_computation::primary_graph::vocabulary::application_attempt::
 use crate::domain_computation::primary_graph::provider::dispatch_outbox::{
     derive_dispatch_outbox_record, WorthQueryDispatchOutboxBasis,
 };
-use crate::domain_computation::primary_graph::schema_layout::planned_field_locator;
+use crate::domain_computation::graph_layout::planned_field_locator;
 
 use super::model::{WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission};
 

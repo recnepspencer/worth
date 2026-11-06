@@ -21,12 +21,9 @@ use {
 
 use super::bootstrap_publication::{build_identity_indexes, commit_bootstrap_rows};
 use super::initial_schema_denial::map_initial_schema_installation_denial;
-use super::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 use super::WorthQueryApplicationInvariantFactories;
-use super::{
-    WorthQueryApplicationPrincipalKey, WorthQueryPrimaryGraph,
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {super::WorthQueryApplicationPrincipalKey, super::WorthQueryPrimaryGraph, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 
 mod advancement_publication;
 mod binding_denial;

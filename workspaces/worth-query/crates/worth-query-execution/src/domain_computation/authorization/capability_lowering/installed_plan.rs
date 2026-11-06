@@ -24,7 +24,7 @@ use crate::domain_computation::authorization::capability_registry::{
     WorthQueryCapabilityRuleBinding, WorthQueryCapabilityUpperBoundBindings,
 };
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 pub struct WorthQueryInstalledCapabilityPlan {
     correspondence: worth_runtime_bridge::facade::BridgeAuthorizationCorrespondenceIdentity,

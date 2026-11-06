@@ -43,7 +43,7 @@ use work::RootSelectionWork;
 pub(super) fn select_bounded_roots(
     runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    graph: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
 
     capture_result_set: bool,
@@ -134,7 +134,7 @@ pub(super) fn select_bounded_roots(
 fn select_scoped_root(
     runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    graph: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
     predicate: &worth_query_installation::facade::WorthQueryInstalledGraphPredicate,
 

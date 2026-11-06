@@ -113,7 +113,7 @@ impl<Schema, Operation, Input, Scope>
 }
 
 fn promote_ordinary_writes(
-    layout: &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     effect: &mut WorthQueryApplicationRealizedEffect,
     entity: &str,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {

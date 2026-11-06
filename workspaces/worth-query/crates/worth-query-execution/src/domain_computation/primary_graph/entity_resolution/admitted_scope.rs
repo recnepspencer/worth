@@ -30,7 +30,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         encoded: AspectValue,
         request: &WorthQueryRequestScope,
         index: DerivedIndexId,
-        layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryFieldLayout,
+        layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryFieldLayout,
     ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     {
         self.resolve_encoded_entity_admitted_with_native_access(execution, entity, field, encoded, request, index, layout, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
@@ -44,7 +44,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         encoded: AspectValue,
         request: &WorthQueryRequestScope,
         index: DerivedIndexId,
-        layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryFieldLayout,
+        layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryFieldLayout,
 
         native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
     ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>

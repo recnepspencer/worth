@@ -110,7 +110,7 @@ fn absent_work_ceiling_preserves_receipt_authority_without_refusing_large_work()
 #[test]
 fn platform_custody_receipt_uses_no_intrinsic_work_ceiling() {
     let (id, major, minor, maximum_work) =
-        crate::domain_computation::primary_graph::vocabulary::application_attempt::fact_custody::fact_custody_receipt_contract();
+        crate::domain_computation::graph_layout::workflow::fact_custody_receipt_contract();
     assert_eq!(maximum_work, None);
     let key = (id, major, minor, InvariantExecutionPoint::CommitBoundary);
     let passed = ReceiptFact {

@@ -10,7 +10,7 @@ use super::{
 };
 use crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::publication_binding::WorkflowDefinitionPublicationRevisions;
 use {crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact};
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 
 pub(super) struct ObservedWorkflowPublicationHeader {
     pub(super) definition: EntityId,

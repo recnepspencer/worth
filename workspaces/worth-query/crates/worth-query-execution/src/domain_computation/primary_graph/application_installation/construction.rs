@@ -2,10 +2,7 @@
 use super::super::application_contribution::{
     WorthQueryApplicationContributionTuple, WorthQueryConfiguredApplicationContributions,
 };
-use super::super::{
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial,
-};
+use {super::super::WorthQueryPrimaryGraphApplicationRuntime, super::super::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use super::{
     WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
     WorthQueryProgramAdmissionStep,
@@ -165,7 +162,7 @@ where
     {
         return Err(Denial::Graph(
             WorthQueryPrimaryGraphInstallationDenial::new(
-                super::super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
                 "checkpoint transition requires accepted-output migration support",
             ),
         ));

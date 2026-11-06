@@ -6,7 +6,7 @@ pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
     Content(worth_relational::facade::content::RelationalContentDenial),
     /// Boxed: every other kind would otherwise reserve its bytes inline.
     Readiness(
-        Box<super::super::super::application_contribution::WorthQueryOutputReadinessContractDenial>,
+        Box<crate::domain_computation::vocabulary::primary_graph::output_readiness_contract::WorthQueryOutputReadinessContractDenial>,
     ),
     ReadExecution(
         Result<
@@ -61,11 +61,11 @@ pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
     RebindRequired,
 }
 
-impl From<super::super::super::application_contribution::WorthQueryOutputReadinessContractDenial>
+impl From<crate::domain_computation::vocabulary::primary_graph::output_readiness_contract::WorthQueryOutputReadinessContractDenial>
     for WorthQueryConditionalRuntimeInstallationDenial
 {
     fn from(
-        cause: super::super::super::application_contribution::WorthQueryOutputReadinessContractDenial,
+        cause: crate::domain_computation::vocabulary::primary_graph::output_readiness_contract::WorthQueryOutputReadinessContractDenial,
     ) -> Self {
         let subject = cause.to_string();
         Self::new(

@@ -45,10 +45,7 @@ pub use {
 };
 
 use super::application_contribution::WorthQueryApplicationContributionTuple;
-use super::{
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial,
-};
+use {super::WorthQueryPrimaryGraphApplicationRuntime, super::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaComposition, ApplicationSchemaDeclaration,
 };
