@@ -9,8 +9,8 @@ use worth_query_installation::facade::{
 };
 
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
+use crate::domain_computation::authorization::{
+    WorthQueryAdmissionPrincipal, WorthQueryAdmissionScope,
 };
 
 use super::WorthQueryCapabilityOperationProgression;
@@ -47,8 +47,8 @@ pub(in crate::domain_computation::authorization::operation_progression) struct V
 > {
     runtime: &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: &'a crate::basis::WorthQueryProductBranchLease,
-    principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    principal: &'a dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
+    scope: &'a dyn WorthQueryAdmissionScope<Schema, Scope>,
     operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     request: &'a WorthQueryRequestScope,
 }
@@ -64,8 +64,8 @@ pub(super) fn validate_conventional_operation<
 >(
     runtime: &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: &'a crate::basis::WorthQueryProductBranchLease,
-    principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    principal: &'a dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
+    scope: &'a dyn WorthQueryAdmissionScope<Schema, Scope>,
     operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     request: &'a WorthQueryRequestScope,
 ) -> Result<

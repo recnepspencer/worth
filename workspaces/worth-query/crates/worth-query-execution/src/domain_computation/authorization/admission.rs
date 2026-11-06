@@ -2,8 +2,7 @@
 
 use super::WorthQueryAuthorizationDecisionFact;
 use super::WorthQueryPrincipalCurrentnessDependency;
-use crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity;
-use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
+use super::{WorthQueryAdmissionPrincipal, WorthQueryAdmissionScope};
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_query_installation::facade::WorthQueryInstalledAbilityRequirement;
 
@@ -39,8 +38,8 @@ struct WorthQueryConventionalAuthorizationObservation<
         crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
     relational: &'a worth_relational::facade::runtime::RelationalRuntime,
     snapshot: worth_relational::facade::snapshots::SnapshotHandle,
-    principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    scope_identity: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    principal: &'a dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
+    scope_identity: &'a dyn WorthQueryAdmissionScope<Schema, Scope>,
     binding_identity: &'a ApplicationSchemaBindingIdentity,
     requirements: &'a [WorthQueryInstalledAbilityRequirement],
 }

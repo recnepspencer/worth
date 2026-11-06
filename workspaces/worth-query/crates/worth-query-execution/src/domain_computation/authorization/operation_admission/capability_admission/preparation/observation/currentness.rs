@@ -20,7 +20,6 @@ use {
     crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
 };
 use {
-    crate::domain_computation::primary_graph::validate_freshness_at_snapshot,
     crate::domain_computation::primary_graph::WorthQueryApprovedElevation,
     crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout,
     crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode,
@@ -131,11 +130,9 @@ where
         .principal_binding(prepared.principal().binding())
         .cloned()
         .ok_or_else(|| denial::stale_principal(prepared.principal().binding()))?;
-    let dependency = WorthQueryPrincipalCurrentnessDependency::capture(
-        prepared.graph_work().identity(),
-        prepared.principal(),
-        &layout,
-    );
+    let dependency = prepared
+        .principal()
+        .capture_currentness(prepared.graph_work().identity(), &layout);
     Ok(CurrentPrincipalObservation { layout, dependency })
 }
 
@@ -280,15 +277,16 @@ where
         prepared.principal().external_identity(),
     )
     .map_err(|_| denial::stale_principal(prepared.principal().binding()))?;
-    validate_freshness_at_snapshot(
-        execution,
-        relational,
-        snapshot,
-        prepared.principal(),
-        &principal.layout,
-        &expected,
-    )
-    .map_err(|_| denial::stale_principal(prepared.principal().binding()))
+    prepared
+        .principal()
+        .validate_freshness_at_snapshot(
+            execution,
+            relational,
+            snapshot,
+            &principal.layout,
+            &expected,
+        )
+        .map_err(|_| denial::stale_principal(prepared.principal().binding()))
 }
 
 fn validate_admission<Schema, Principal, Identity, Capability, Operation, Input>(

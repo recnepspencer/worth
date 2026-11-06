@@ -14,9 +14,8 @@ use worth_query_installation::facade::{
 };
 
 use crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApprovedElevation, WorthQueryAuthenticatedPrincipal,
-};
+use crate::domain_computation::authorization::WorthQueryAdmissionPrincipal;
+use crate::domain_computation::primary_graph::WorthQueryApprovedElevation;
 use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession;
 use {
     crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
@@ -104,7 +103,7 @@ pub(super) struct PreparedCapabilityAdmission<
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     runtime: &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
-    principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    principal: &'a dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &'a WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
     approved: Option<&'a WorthQueryApprovedElevation>,
     input: worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
@@ -147,7 +146,7 @@ where
 
     const fn principal(
         &self,
-    ) -> &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity> {
+    ) -> &'a dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity> {
         self.principal
     }
 
@@ -200,7 +199,7 @@ pub(super) fn prepare_capability_admission<
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
-    principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    principal: &'a dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &'a WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
     input: CapabilityAdmissionInput<
         <Operation as worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>>::InputBinding,

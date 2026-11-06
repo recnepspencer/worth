@@ -1,5 +1,9 @@
 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod admission;
+mod admission_subject;
+pub(in crate::domain_computation) use admission_subject::{
+    WorthQueryAdmissionPrincipal, WorthQueryAdmissionScope,
+};
 pub(in crate::domain_computation) mod admitted_request;
 pub(crate) mod application_commit_authorization;
 pub(crate) mod application_disclosure;

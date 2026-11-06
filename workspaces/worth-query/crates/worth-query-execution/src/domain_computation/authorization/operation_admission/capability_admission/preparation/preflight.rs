@@ -17,9 +17,8 @@ use super::{denial, CapabilityAdmissionInput};
 use crate::domain_computation::authorization::capability_elevation_projection::validate_elevation_projection;
 use crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan;
 use crate::domain_computation::authorization::graph_work_session::start_capability_graph_work;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApprovedElevation, WorthQueryAuthenticatedPrincipal,
-};
+use crate::domain_computation::authorization::WorthQueryAdmissionPrincipal;
+use crate::domain_computation::primary_graph::WorthQueryApprovedElevation;
 use crate::domain_computation::provider_session::{
     WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,
 };
@@ -40,7 +39,7 @@ pub(super) fn validate_static_authority<
     Input,
 >(
     runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
-    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    principal: &dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
 ) -> Result<(), WorthQueryOperationAuthorizationDenial>
 where
@@ -271,7 +270,7 @@ pub(super) fn start_graph_work<Schema, Principal, PrincipalIdentity, Capability,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: crate::basis::WorthQueryProductBranchLease,
-    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    principal: &dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperationGraphAuthority<Schema, Operation, Input>,
 ) -> Result<WorthQueryManagedGraphWorkSession, WorthQueryOperationAuthorizationDenial>

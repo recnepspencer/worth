@@ -95,15 +95,12 @@ pub(in crate::domain_computation) fn progress_conventional_operation<
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
-    principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
+    principal: &dyn crate::domain_computation::authorization::WorthQueryAdmissionPrincipal<
         Schema,
         Principal,
         PrincipalIdentity,
     >,
-    scope: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
-        Schema,
-        Scope,
-    >,
+    scope: &dyn crate::domain_computation::authorization::WorthQueryAdmissionScope<Schema, Scope>,
     operation: &worth_query_installation::facade::WorthQueryInstalledApplicationOperation<
         Schema,
         Operation,
