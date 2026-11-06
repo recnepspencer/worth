@@ -50,6 +50,7 @@ pub(super) fn compile_access_contracts<Schema: ApplicationSchema>(
             .cloned()
             .collect();
         let obligations = bind_resource_obligations(
+            schema.identity_budget,
             &schema.binding_identity(),
             &parts.name,
             purpose,

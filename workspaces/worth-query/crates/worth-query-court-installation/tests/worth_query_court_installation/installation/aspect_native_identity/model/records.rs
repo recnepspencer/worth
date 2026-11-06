@@ -42,93 +42,22 @@ impl<const F: usize> Entity for Record<0, F> {
     type Aspects = (Facts<F>,);
     type Relations = ();
 }
-impl<const F: usize> Entity for Record<1, F> {
-    const NAME: &'static str = RECORD_NAMES[1];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<1, F>,);
+macro_rules! record_entities {
+    ($($i:literal),*) => { $(
+        impl<const F: usize> Entity for Record<$i, F> {
+            const NAME: &'static str = RECORD_NAMES[$i];
+            type Aspects = (Facts<F>,);
+            type Relations = (Owner<$i, F>,);
+        }
+    )* };
 }
-impl<const F: usize> Entity for Record<2, F> {
-    const NAME: &'static str = RECORD_NAMES[2];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<2, F>,);
-}
-impl<const F: usize> Entity for Record<3, F> {
-    const NAME: &'static str = RECORD_NAMES[3];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<3, F>,);
-}
-impl<const F: usize> Entity for Record<4, F> {
-    const NAME: &'static str = RECORD_NAMES[4];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<4, F>,);
-}
-impl<const F: usize> Entity for Record<5, F> {
-    const NAME: &'static str = RECORD_NAMES[5];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<5, F>,);
-}
-impl<const F: usize> Entity for Record<6, F> {
-    const NAME: &'static str = RECORD_NAMES[6];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<6, F>,);
-}
-impl<const F: usize> Entity for Record<7, F> {
-    const NAME: &'static str = RECORD_NAMES[7];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<7, F>,);
-}
-impl<const F: usize> Entity for Record<8, F> {
-    const NAME: &'static str = RECORD_NAMES[8];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<8, F>,);
-}
-impl<const F: usize> Entity for Record<9, F> {
-    const NAME: &'static str = RECORD_NAMES[9];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<9, F>,);
-}
-impl<const F: usize> Entity for Record<10, F> {
-    const NAME: &'static str = RECORD_NAMES[10];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<10, F>,);
-}
-impl<const F: usize> Entity for Record<11, F> {
-    const NAME: &'static str = RECORD_NAMES[11];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<11, F>,);
-}
-impl<const F: usize> Entity for Record<12, F> {
-    const NAME: &'static str = RECORD_NAMES[12];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<12, F>,);
-}
-impl<const F: usize> Entity for Record<13, F> {
-    const NAME: &'static str = RECORD_NAMES[13];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<13, F>,);
-}
-impl<const F: usize> Entity for Record<14, F> {
-    const NAME: &'static str = RECORD_NAMES[14];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<14, F>,);
-}
-impl<const F: usize> Entity for Record<15, F> {
-    const NAME: &'static str = RECORD_NAMES[15];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<15, F>,);
-}
-impl<const F: usize> Entity for Record<16, F> {
-    const NAME: &'static str = RECORD_NAMES[16];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<16, F>,);
-}
-impl<const F: usize> Entity for Record<17, F> {
-    const NAME: &'static str = RECORD_NAMES[17];
-    type Aspects = (Facts<F>,);
-    type Relations = (Owner<17, F>,);
-}
+record_entities!(
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+    27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39
+);
 
 mod count_18;
+mod count_40;
 mod count_8;
 mod count_small;
 pub fn builder<S: ApplicationSchema, const F: usize>(
@@ -144,6 +73,8 @@ pub fn builder<S: ApplicationSchema, const F: usize>(
         (8, true) => ApplicationSchemaDeclarationBuilder::from_fragment(Records::<8, F, true>),
         (18, false) => ApplicationSchemaDeclarationBuilder::from_fragment(Records::<18, F, false>),
         (18, true) => ApplicationSchemaDeclarationBuilder::from_fragment(Records::<18, F, true>),
+        (40, false) => ApplicationSchemaDeclarationBuilder::from_fragment(Records::<40, F, false>),
+        (40, true) => ApplicationSchemaDeclarationBuilder::from_fragment(Records::<40, F, true>),
         _ => unreachable!("fixture range checked by caller"),
     }
 }

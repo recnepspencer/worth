@@ -640,11 +640,12 @@ The host composes contributions with a schema, compiles each operation
 contract, derives graph obligations, admits the package, and installs it into
 an execution runtime with bounded resources.
 
-Each graph-obligation identity admits at most 4,096 canonical entries and 1 MiB
-of digest material. Distinct aspect contracts are encoded once, with one
-reference per projection/touch; masks, field paths, bindings and structural
-scopes also count. An operation installation denial retains requested and
-maximum counts in `canonical_denial()`. See
+Graph-obligation and authorization identity allowances derive from the admitted
+declaration's canonical size, with a proven factor of 16 for entries and bytes.
+Package validation owns the shared 64 MiB declaration ceiling and byte-derived
+entry bound; it reports typed size refusals with requested and maximum counts.
+Distinct contracts count once and complete field masks once per projection;
+references, partial masks, paths and bindings remain exact. See
 [installation limits](build-an-application.md#4-install-the-application-graph).
 
 <!-- illustrative -->

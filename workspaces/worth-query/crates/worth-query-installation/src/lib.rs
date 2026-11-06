@@ -21,6 +21,7 @@ mod authority_cryptography;
 mod canonical_digest_derivation;
 mod canonical_hash_encoding;
 mod canonical_work;
+mod derived_identity_budget;
 mod domain_computation;
 mod domain_operation;
 mod generation;

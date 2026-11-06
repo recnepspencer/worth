@@ -120,11 +120,12 @@ the declaration's finite ceiling for a larger program. Handle a validation
 refusal before installation. See
 [program validation](build-an-application.md#35-validate).
 
-Installed graph-obligation identities separately admit 4,096 canonical entries
-and 1 MiB. Distinct aspect contracts count once; references, projection masks,
-field paths, bindings and structural scopes also count. Application runtime
-resource profiles do not raise this ceiling. Operation installation denials
-retain requested and maximum counts in `canonical_denial()`. See
+Installed graph-obligation and authorization identity budgets derive from the
+admitted declaration: 16 times its canonical entries and bytes. Package validation
+owns the shared 64 MiB declaration ceiling and byte-derived entry bound, with
+typed requested/maximum refusal counts. Distinct contracts count once; complete
+field masks count once per projection. Exact references, partial masks, paths
+and bindings remain committed. See
 [installation limits](build-an-application.md#4-install-the-application-graph).
 
 For mutations, prepare the typed decision through `DecisionReader`, then consume

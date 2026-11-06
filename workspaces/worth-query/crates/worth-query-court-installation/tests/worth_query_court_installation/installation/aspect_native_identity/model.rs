@@ -1,12 +1,13 @@
 //! Generic source/realization records use the same array lowering as applications.
-use worth_query_declaration::facade::application_schema::fragment::{self};
+use worth_query_declaration::facade::application_schema::fragment;
+pub(crate) mod authorization;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_installation::facade::*;
 mod records;
 
 pub struct Model<const RECORDS: usize, const FIELDS: usize, const REVERSE: bool = false>;
 pub struct ApplyPreserve;
-const RECORD_NAMES: [&str; 18] = [
+const RECORD_NAMES: [&str; 40] = [
     "Source",
     "Realization",
     "OutputA",
@@ -25,8 +26,30 @@ const RECORD_NAMES: [&str; 18] = [
     "OutputN",
     "OutputO",
     "OutputP",
+    "Output18",
+    "Output19",
+    "Output20",
+    "Output21",
+    "Output22",
+    "Output23",
+    "Output24",
+    "Output25",
+    "Output26",
+    "Output27",
+    "Output28",
+    "Output29",
+    "Output30",
+    "Output31",
+    "Output32",
+    "Output33",
+    "Output34",
+    "Output35",
+    "Output36",
+    "Output37",
+    "Output38",
+    "Output39",
 ];
-const RELATION_NAMES: [&str; 18] = [
+const RELATION_NAMES: [&str; 40] = [
     "SourceOwner",
     "RealizationOwner",
     "OwnerA",
@@ -45,8 +68,29 @@ const RELATION_NAMES: [&str; 18] = [
     "OwnerN",
     "OwnerO",
     "OwnerP",
+    "Owner18",
+    "Owner19",
+    "Owner20",
+    "Owner21",
+    "Owner22",
+    "Owner23",
+    "Owner24",
+    "Owner25",
+    "Owner26",
+    "Owner27",
+    "Owner28",
+    "Owner29",
+    "Owner30",
+    "Owner31",
+    "Owner32",
+    "Owner33",
+    "Owner34",
+    "Owner35",
+    "Owner36",
+    "Owner37",
+    "Owner38",
+    "Owner39",
 ];
-
 worth_query_declaration::worth_query_structured_value_binding!(pub InputBinding for () { identity: "worth.query.court.aspect-native-input.v1" });
 impl<S> ApplicationOperationMarkerIdentity<S> for ApplyPreserve {
     type InputBinding = InputBinding;
@@ -70,7 +114,7 @@ impl<const R: usize, const F: usize, const REVERSE: bool> ApplicationSchema
 pub fn declaration<const R: usize, const F: usize, const REVERSE: bool>(
 ) -> Result<ApplicationSchemaDeclaration<Model<R, F, REVERSE>>, ApplicationSchemaDeclarationDenial>
 {
-    assert!(matches!(R, 2 | 4 | 8 | 18));
+    assert!(matches!(R, 2 | 4 | 8 | 18 | 40));
     assert!((1..=16).contains(&F));
     let schema = records::builder::<Model<R, F, REVERSE>, F>(R, REVERSE)?;
     schema
@@ -95,17 +139,26 @@ pub fn install<const R: usize, const F: usize>() -> Result<
     schema.installed_operation(operation())
 }
 
-pub fn index<const R: usize, const F: usize, const REVERSE: bool>(
-    declaration: &ApplicationSchemaDeclaration<Model<R, F, REVERSE>>,
+pub fn index<S: ApplicationSchema>(
+    declaration: &ApplicationSchemaDeclaration<S>,
 ) -> WorthQueryInstalledPackageIndex {
-    let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
-        Model::<R, F, REVERSE>::OWNER,
-        1,
-        0,
-    ))
-    .application_schema(declaration.clone())
-    .validate()
-    .expect("valid portable package");
+    index_from(
+        package(declaration)
+            .validate()
+            .expect("valid portable package"),
+    )
+}
+
+pub fn package<S: ApplicationSchema>(
+    declaration: &ApplicationSchemaDeclaration<S>,
+) -> WorthQueryPortableDomainPackage {
+    WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(S::OWNER, 1, 0))
+        .application_schema(declaration.clone())
+}
+
+pub fn index_from(
+    package: WorthQueryValidatedPortableDomainPackage,
+) -> WorthQueryInstalledPackageIndex {
     let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
         .admit(package)
         .expect("admitted package");

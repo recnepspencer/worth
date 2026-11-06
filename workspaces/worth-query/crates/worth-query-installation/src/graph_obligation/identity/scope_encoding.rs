@@ -69,10 +69,7 @@ pub(super) fn encode_read_scope<'a>(
                 &format!("{prefix}.contract"),
                 projection.projection().canonical_contract_basis(),
             )?;
-            basis.embedded_basis(
-                &format!("{prefix}.mask"),
-                projection.projection().canonical_mask_basis(),
-            )?;
+            super::mask_encoding::encode_mask(basis, prefix, projection.projection())?;
         }
         WorthQueryOperationGraphReadScope::Relation(relation) => {
             basis.text(format!("{prefix}.kind"), "relation")?;

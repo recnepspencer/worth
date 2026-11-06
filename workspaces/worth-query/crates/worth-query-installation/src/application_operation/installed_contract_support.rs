@@ -47,12 +47,6 @@ pub(super) fn authority_identity(
     authority_transcript(key, identity, operation, input_type, obligations).finish()
 }
 
-const DEFINITION_IDENTITY_BUDGET: worth_foundational::facade::CanonicalDigestWorkBudget =
-    match worth_foundational::facade::CanonicalDigestWorkBudget::new(8, 64 * 1024) {
-        Some(budget) => budget,
-        None => panic!("fixed operation-definition identity budget is valid"),
-    };
-
 /// The identity of an installed operation's definition: its package, schema,
 /// operation and input type.
 ///
@@ -61,11 +55,12 @@ const DEFINITION_IDENTITY_BUDGET: worth_foundational::facade::CanonicalDigestWor
 /// and after a restore or reopen. Durable records that must match the same
 /// request in a later runtime bind this identity, never the seal.
 pub(super) fn definition_identity(
+    budget: worth_foundational::facade::CanonicalDigestWorkBudget,
     identity: &ApplicationSchemaBindingIdentity,
     operation: &str,
     input_type: &str,
 ) -> Result<[u8; 32], WorthQueryApplicationOperationInstallationDenial> {
-    derive_definition_identity(identity, operation, input_type).map_err(|denial| {
+    derive_definition_identity(budget, identity, operation, input_type).map_err(|denial| {
         graph_obligation_denial(
             operation,
             WorthQueryGraphObligationInstallationDenial::Canonical(denial),
@@ -74,6 +69,7 @@ pub(super) fn definition_identity(
 }
 
 fn derive_definition_identity(
+    budget: worth_foundational::facade::CanonicalDigestWorkBudget,
     identity: &ApplicationSchemaBindingIdentity,
     operation: &str,
     input_type: &str,
@@ -81,7 +77,7 @@ fn derive_definition_identity(
     let mut basis = InstallationCanonicalIdentityBasis::new(
         "worth-query.installed-operation-definition",
         "worth-query-installed-operation-definition-v1",
-        DEFINITION_IDENTITY_BUDGET,
+        budget,
     );
     basis.digest("package", *identity.package_identity())?;
     basis.digest("schema", *identity.schema_identity())?;
