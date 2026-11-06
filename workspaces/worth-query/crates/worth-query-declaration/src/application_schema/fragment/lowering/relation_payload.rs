@@ -34,12 +34,17 @@ fn relation<S, R: Relation>(
     entity: &str,
     state: &mut Lowering,
 ) -> Result<Builder<S>, Denial> {
-    state.names.insert(&format!("{prefix}.{}", R::NAME))?;
     builder
         .member_provenance
         .fragments
         .catalog
         .relation::<R>(prefix, entity)?;
+    let owner = state
+        .extension_identity_paths
+        .get(prefix)
+        .map(String::as_str)
+        .unwrap_or(prefix);
+    state.names.insert(&format!("{owner}.{}", R::NAME))?;
     builder.push_member_in_place(ApplicationSchemaMember::Relation {
         relation: R::NAME.to_owned(),
         from: entity.to_owned(),
@@ -135,7 +140,16 @@ fn emit<S, Set: Record<A::Row>, R: Relation, A: Aspect>(
         .fragments
         .catalog
         .relation_aspect::<Set, R, A>(prefix, &columns, optional)?;
-    let identity = AspectIdentity(state.names.insert(definition.path())?);
+    let owner = state
+        .extension_identity_paths
+        .get(prefix)
+        .map(String::as_str)
+        .unwrap_or(prefix);
+    let identity = AspectIdentity(state.names.insert(&format!(
+        "{owner}.{}.{}",
+        R::NAME,
+        A::NAME
+    ))?);
     let mut revision_fields = Vec::new();
     let mut fields = Vec::new();
     for field in definition.fields() {

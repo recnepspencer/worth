@@ -26,6 +26,9 @@ fn extension_selection_and_required_members_fail_at_the_public_boundary() {
 use worth_query_testkit_decl::fragment_fixture::*;
 use worth_query_testkit_decl::fragment_extension_fixture::*;
 fn foreign() { let _ = aspect(Annotations, Item, Classified); }
+fn foreign_payload() {
+    let _: RelationFieldSelection<_, _, _, _, u64> = select_relation_field(Classifications, Item, Annotates, EdgeWeight, "value");
+}
 struct Required;
 impl Fragment for Required {
     const NAME: &'static str = "required";
@@ -73,6 +76,8 @@ fn positive() { let _: AspectSelection<Annotations, Item, Annotation> = aspect(A
         "Exclusive",
         "Classification",
         "Annotation",
+        "Annotates",
+        "Classifications",
     ] {
         assert!(
             diagnostics.contains(expected),
@@ -81,7 +86,7 @@ fn positive() { let _: AspectSelection<Annotations, Item, Annotation> = aspect(A
     }
     assert_eq!(
         diagnostics.matches("error[E").count(),
-        3,
+        4,
         "unexpected compiler refusal: {diagnostics}"
     );
 }

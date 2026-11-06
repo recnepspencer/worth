@@ -146,7 +146,7 @@ where
     /// returned, so no early return skips the recording. A read that failed
     /// is recorded as failed: whoever swallows the failure has an outcome its
     /// fact does not hold, and the projection seals nothing.
-    fn recorded_adjacency<Relations, Cause>(
+    pub(super) fn recorded_adjacency<Relations, Cause>(
         &mut self,
         target: &ApplicationOperationDecisionReadTarget,
         anchor: EntityId,

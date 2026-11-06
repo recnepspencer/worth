@@ -48,6 +48,43 @@ impl<S: ApplicationSchema, O> ReadPort for Reader<'_, '_, S, O> {
         self.native_fragment().record(target, aspect)
     }
 
+    fn relations_from(
+        &mut self,
+        from: &ErasedObserved,
+        relation: &worth_query_declaration::facade::application_schema::fragment::RelationDefinition,
+    ) -> Result<Vec<ErasedObserved>, FragmentDenial> {
+        use super::super::WorthQueryInvariantProjectionTraversalDenial;
+        use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection;
+        use worth_query_declaration::facade::application_schema::{
+            ApplicationOperationDecisionReadTarget, RelationDirection,
+        };
+        let target = ApplicationOperationDecisionReadTarget::Relation {
+            relation: relation.name.clone(),
+            from: relation.from.clone(),
+            to: relation.to.clone(),
+        };
+        self.admit_decision_target(&target)
+            .map_err(HandlerExecutionDenial::new)?;
+        self.recorded_adjacency(
+            &target,
+            from.identity.entity_id,
+            WorthQueryApplicationAdjacencyDirection::Outgoing,
+            |reader| {
+                let mut targets = Vec::new();
+                reader.native_read().relations(
+                    &relation.name,
+                    &relation.from,
+                    &relation.to,
+                    from.identity.native_identity(),
+                    RelationDirection::Forward,
+                    &mut |_, _, identity| targets.push(ErasedObserved { identity }),
+                )?;
+                Ok::<_, WorthQueryInvariantProjectionTraversalDenial>(targets)
+            },
+        )
+        .map_err(|cause| FragmentDenial::Read(HandlerExecutionDenial::new(cause)))
+    }
+
     fn target(
         &self,
         target: &ErasedObserved,

@@ -93,7 +93,7 @@ pub struct Node;
 impl Entity for Node {
     const NAME: &'static str = "Node";
     type Aspects = (Facts,);
-    type Relations = (Holds, Unrelated);
+    type Relations = (Unrelated,);
 }
 impl Node {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {
@@ -134,7 +134,7 @@ impl Relation for Holds {
 }
 impl Holds {
     pub fn reference() -> ApplicationRelationRef<Schema, Self, Node, Node> {
-        relation(StorageModel, Node, Self)
+        relation(LinksFeature, Node, Self)
     }
 }
 pub struct Unrelated;
@@ -146,4 +146,11 @@ impl Unrelated {
     pub fn reference() -> ApplicationRelationRef<Schema, Self, Node, Node> {
         relation(StorageModel, Node, Self)
     }
+}
+
+pub struct LinksFeature;
+impl Fragment for LinksFeature {
+    const NAME: &'static str = "links_feature";
+    type Bindings = Bindings;
+    type Members = (Extend<Node, (), (Holds,)>,);
 }

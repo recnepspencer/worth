@@ -33,6 +33,11 @@ pub(in crate::domain_computation::primary_graph) trait ReadPort {
         target: &ErasedObserved,
         aspect: &AspectDefinition,
     ) -> Result<Option<BTreeMap<String, AspectValue>>, FragmentDenial>;
+    fn relations_from(
+        &mut self,
+        from: &ErasedObserved,
+        relation: &RelationDefinition,
+    ) -> Result<Vec<ErasedObserved>, FragmentDenial>;
     fn target(
         &self,
         target: &ErasedObserved,

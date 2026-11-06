@@ -84,7 +84,7 @@ fn extension_cannot_repeat_an_owner_or_another_extensions_aspect_name() {
     .unwrap();
     assert_eq!(
         owner,
-        ApplicationSchemaDeclarationDenial::DuplicateExtensionAspect {
+        ApplicationSchemaDeclarationDenial::DuplicateExtensionMember {
             first: "composition.owner.item.metrics".to_owned(),
             path: "composition.extension.item.metrics".to_owned()
         }
@@ -102,7 +102,7 @@ fn extension_cannot_repeat_an_owner_or_another_extensions_aspect_name() {
     .unwrap();
     assert_eq!(
         extension,
-        ApplicationSchemaDeclarationDenial::DuplicateExtensionAspect {
+        ApplicationSchemaDeclarationDenial::DuplicateExtensionMember {
             first: "composition.classifications.item.classified".to_owned(),
             path: "composition.repeated.item.classified".to_owned()
         }
@@ -124,7 +124,7 @@ fn repeated_names_inside_one_extension_keep_the_extension_denial() {
     .unwrap();
     assert_eq!(
         denial,
-        ApplicationSchemaDeclarationDenial::DuplicateExtensionAspect {
+        ApplicationSchemaDeclarationDenial::DuplicateExtensionMember {
             first: "composition.repeated.item.classified".to_owned(),
             path: "composition.repeated.item.classified".to_owned(),
         }

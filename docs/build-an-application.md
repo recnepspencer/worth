@@ -246,7 +246,7 @@ impl Entity for Feature {
 impl Fragment for Naming {
     const NAME: &'static str = "naming";
     type Bindings = FeatureBindings;
-    type Members = (Extend<Feature, (Option<Label>,)>,);
+    type Members = (Extend<Feature, (Option<Label>,), (WithAspects<Related, (Option<Weight>,)>,)>,);
 }
 impl Fragment for Coloring {
     const NAME: &'static str = "coloring";
@@ -256,11 +256,13 @@ impl Fragment for Coloring {
 // The root includes Model (whose Members contains Feature), Naming and Coloring.
 let label = aspect(Naming, Feature, Label);
 let color = aspect(Coloring, Feature, Color);
+let related = relation::<App, _, _, _, _, _>(Naming, Feature, Related);
 ```
 
 `Extend` accepts only `Option<A>` and `Option<Exclusive<G>>` (including nested
 tuples). The entity must be declared by another fragment in the same schema;
-member order does not matter. Duplicate aspect names are refused with both paths.
+member order does not matter. Duplicate member names are refused with both paths.
+The third parameter adds outgoing relations with the usual payloads and policies, with no positive source minimum and positive target/pair minimums only for targets declared by the extending fragment or its nested fragments.
 Only the extending fragment, or its nested tuple path, can select its additions.
 Selections use the ordinary fields and `View` reads/writes; optional additions
 leave creation by the model complete. The executable counterpart is the

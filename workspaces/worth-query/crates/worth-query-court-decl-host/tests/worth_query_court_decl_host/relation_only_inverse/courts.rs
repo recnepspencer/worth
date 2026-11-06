@@ -104,7 +104,7 @@ fn world() -> (Host, WorthQueryRequestScope) {
     (install(), request_scope())
 }
 #[test]
-fn relation_only_inverse_reverses_a_spawn_that_bore_its_optional_part() {
+fn extension_relation_inverse_reverses_a_spawn_that_bore_its_optional_part() {
     let (host, scope) = world();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);

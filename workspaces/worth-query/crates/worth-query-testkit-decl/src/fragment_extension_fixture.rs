@@ -9,12 +9,15 @@ pub struct Classification;
 impl Fragment for Annotations {
     const NAME: &'static str = "annotations";
     type Bindings = Bindings;
-    type Members = ((Extend<Item, (Option<Annotation>,)>,), ExtensionAccess);
+    type Members = (
+        (Extend<Item, (Option<Annotation>,), (WithAspects<Annotates, (Option<EdgeWeight>,)>,)>,),
+        ExtensionAccess,
+    );
 }
 impl Fragment for Classifications {
     const NAME: &'static str = "classifications";
     type Bindings = Bindings;
-    type Members = (Extend<Item, (Option<Exclusive<Classification>>,)>,);
+    type Members = (Extend<Item, (Option<Exclusive<Classification>>,), (ClassifiedBy,)>,);
 }
 impl Aspect for Annotation {
     const NAME: &'static str = "annotation";
@@ -36,9 +39,30 @@ impl Registration<Fixture> for ExtensionAccess {
     {
         let operation = ApplicationOperationRef::<Fixture, ChangeForm, ()>::from_declaration();
         Ok(builder
+            .operation_read_relation(operation, relation(Annotations, Item, Annotates))
+            .operation_link(operation, relation(Annotations, Item, Annotates))
             .operation_read_record(operation, Annotations, Item, Annotation)
             .operation_write_record(operation, Annotations, Item, Annotation)
             .operation_read_record(operation, Classifications, Item, Classification)
             .operation_write_record(operation, Classifications, Item, Classified))
     }
 }
+
+pub struct Annotates;
+impl Relation for Annotates {
+    const NAME: &'static str = "annotates";
+    type To = Item;
+}
+pub struct ClassifiedBy;
+impl Relation for ClassifiedBy {
+    const NAME: &'static str = "classified_by";
+    type To = Item;
+}
+pub struct EdgeWeight;
+impl Aspect for EdgeWeight {
+    const NAME: &'static str = "weight";
+    type Row = u64;
+}
+
+impl OperationReads<ChangeForm> for Annotates {}
+impl OperationLinks<ChangeForm> for Annotates {}

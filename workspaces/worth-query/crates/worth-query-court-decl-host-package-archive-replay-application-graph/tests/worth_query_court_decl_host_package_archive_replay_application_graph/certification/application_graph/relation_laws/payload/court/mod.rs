@@ -3,7 +3,15 @@ pub(crate) use worth_query_testkit_certification_application_graph::facade::cert
 #[test]
 fn typed_relation_initialization_publishes_native_payload_and_refuses_other_programs_and_duplicates(
 ) {
-    let world = install::<Payload>(3, &[]);
+    payload_initialization::<Payload>();
+}
+#[test]
+fn extension_relation_initialization_publishes_native_payload_and_refuses_other_programs_and_duplicates(
+) {
+    payload_initialization::<ExtensionPayload>();
+}
+fn payload_initialization<L: LawPolicy>() {
+    let world = install::<L>(3, &[]);
     committed(world.edit(1, &[(0, 1)]));
     let original = payloads(&world);
     assert_eq!(original.len(), 1);
