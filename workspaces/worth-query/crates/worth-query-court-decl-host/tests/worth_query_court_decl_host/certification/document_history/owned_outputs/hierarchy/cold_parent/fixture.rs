@@ -51,14 +51,18 @@ pub(super) fn checkpoint() -> (
         .unwrap();
     (checkpoint, (first, second), *host.owned_revision())
 }
-pub(super) fn record<'a, P>(
+pub(super) fn record<'a, P, O>(
     host: &'a WorthQueryProgramApplicationRuntime<Schema, P>,
     request: &family::Request<'_, '_, '_>,
-) -> (world::Document<'a>, WorthQueryHistoryNodeId)
+    document: WorthQueryApplicationHistoryDocument<'a, Schema, History, OrdinaryHistoryPayload, O>,
+) -> (
+    WorthQueryApplicationHistoryDocument<'a, Schema, History, OrdinaryHistoryPayload, O>,
+    WorthQueryHistoryNodeId,
+)
 where
     P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
+    O: WorthQueryHistoryOutputsMode<Schema, History>,
 {
-    let document = world::attach(host);
     let before = document.current_step(request).unwrap().id();
     let mut edit = document
         .edit(edit::Intent {

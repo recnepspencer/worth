@@ -43,8 +43,7 @@ fn exercise(worker: bool) {
         .query(query::child_output::Read("downstream:m".into()))
         .execute()
         .is_err());
-    let (document, before) = fixture::record(&host, &request);
-    let current = document.selection(&request).unwrap();
+    let document = world::attach(&host);
     let document = host
         .with_host_advancement(|phase| {
             document
@@ -56,8 +55,44 @@ fn exercise(worker: bool) {
                     WorthQueryOutputDemandControls::default(),
                 )
                 .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
+                .with_output_tree::<program::Program, original::SeedTree>(
+                    &phase,
+                    &request,
+                    &host,
+                    second::Demand("a".into()),
+                    WorthQueryOutputDemandControls::default(),
+                )
+                .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
         })
         .unwrap();
+    let before = document.current_step(&request).unwrap().id();
+    let mut edit = document
+        .edit(member_edit::Intent {
+            key: "m".into(),
+            value: 6,
+        })
+        .idempotency_owned(&request, "changed-discovery-meaning-future".into())
+        .unwrap()
+        .retain_in_program::<program::Program, super::super::super::program::MemberEditAction>(
+            &host,
+        )
+        .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
+    for count in 0..512 {
+        assert!(count < 511, "qualified recording must finish");
+        edit = match edit.advance(&request) {
+            WorthQueryHistoryEditAdvance::Progress(next) => next,
+            WorthQueryHistoryEditAdvance::Ready(done) => {
+                edit = done;
+                break;
+            }
+            WorthQueryHistoryEditAdvance::Refused { denial, .. } => panic!("{denial:?}"),
+        };
+    }
+    let document = edit
+        .finish(&request)
+        .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
+        .document;
+    let current = document.selection(&request).unwrap();
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let selected =
         super::super::super::courts::checkout(&document, &request, before, current, 0xd1214_40)

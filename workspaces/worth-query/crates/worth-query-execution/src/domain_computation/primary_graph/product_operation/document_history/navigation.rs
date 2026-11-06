@@ -1,4 +1,5 @@
 //! Owned process-local navigation attempts; canonical truth stays with Native and World.
+use super::WorthQueryHistoryNodeId;
 mod admission;
 mod control;
 mod custody;
@@ -83,6 +84,12 @@ pub enum WorthQueryHistoryNavigationDenial {
     Document(WorthQueryDocumentHistoryDenial),
     RequiresSemanticCorrection(WorthQueryHistoryNavigationEligibilityDenial),
     DocumentClosed,
+    DiscoveryRecipeUnsupportedScope { step: WorthQueryHistoryNodeId, binding: &'static str },
+    DiscoveryRecipeInvalidScope { step: WorthQueryHistoryNodeId, binding: &'static str },
+    DiscoveryRecipeSealed { step: WorthQueryHistoryNodeId },
+    DiscoveryRecipeMissing { step: WorthQueryHistoryNodeId },
+    DiscoveryRecipeCorrupt { step: WorthQueryHistoryNodeId },
+    DiscoveryRecipeForeignDocument { step: WorthQueryHistoryNodeId },
     ForeignDocument,
     HeadChanged,
     NoParent,

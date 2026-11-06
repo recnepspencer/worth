@@ -154,6 +154,7 @@ impl<S: ApplicationSchema>
             retained.push(Arc::clone(tree));
         }
         Ok(WorthQueryCompletedRecordingOutputs {
+            discovery_recipes: origin.recipes.seal(&execution).map_err(resource)?,
             origin: Arc::clone(origin),
             endpoint,
             _trees: retained,

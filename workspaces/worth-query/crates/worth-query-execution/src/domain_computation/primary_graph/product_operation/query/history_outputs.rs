@@ -19,6 +19,7 @@ type Rows<S, B> =
 #[derive(Debug)]
 pub enum WorthQueryHistoryOutputReadDenial {
     Authority(WorthQueryHistoryNavigationDenial),
+    RecipeCapture(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
     Admission(WorthQueryApplicationQueryAdmissionDenial),
     Read(crate::domain_computation::primary_graph::WorthQueryManagedIndexDenial),
     Control(WorthQueryHistoryOutputControlDenial),

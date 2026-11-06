@@ -53,6 +53,15 @@ where
             Ok(tree) => tree,
             Err(cause) => return Err((self, cause)),
         };
+        if let Err(cause) = R::Dependents::capture_history_root_recipes(
+            &self.owner,
+            phase,
+            application,
+            &tree.profile,
+            &tree.demand,
+        ) {
+            return Err((self, cause));
+        }
         let outputs = match new_collection(&self.owner, phase, tree) {
             Ok(outputs) => outputs,
             Err(cause) => return Err((self, cause)),
@@ -120,6 +129,15 @@ where
             Ok(tree) => tree,
             Err(cause) => return Err((self, cause)),
         };
+        if let Err(cause) = R::Dependents::capture_history_root_recipes(
+            &self.owner,
+            phase,
+            application,
+            &tree.profile,
+            &tree.demand,
+        ) {
+            return Err((self, cause));
+        }
         if let Err(cause) = append(&self.owner, phase, &mut self.outputs, tree) {
             return Err((self, cause));
         }

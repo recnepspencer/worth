@@ -14,3 +14,5 @@ mod cold_parent;
 pub(super) use program::{Child, ChildInput, Input, Output, Parent, Program as HierarchyProgram};
 
 mod recording_parent;
+
+mod source_edits;

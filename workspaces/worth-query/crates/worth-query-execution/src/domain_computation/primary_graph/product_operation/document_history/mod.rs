@@ -13,6 +13,7 @@ pub use context::{WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContex
 pub use context_pause::WorthQueryHistoryContextRefreshPauseForTest;
 mod denial;
 mod description;
+pub(in crate::domain_computation::primary_graph) mod discovery_recipes;
 pub use description::{
     WorthQueryDocumentHistoryIdentity, WorthQueryHistoryCommandContextDenial,
     WorthQueryHistoryDescriptionContext,

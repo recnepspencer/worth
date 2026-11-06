@@ -102,6 +102,14 @@ impl<S, P, D> WorthQueryVerifiedHistoryParent<S, P, D> {
             )
         }
     }
+    pub(in crate::domain_computation::primary_graph) fn source_route(
+        &self,
+    ) -> (
+        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        [u8; 32],
+    ) {
+        (crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.custody.source), self.custody.partition)
+    }
     pub fn source(&self) -> worth_relational::facade::identity::EntityId {
         self.custody.source
     }

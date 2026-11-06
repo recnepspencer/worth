@@ -18,10 +18,16 @@ use worth_query_declaration::facade::application_schema::{
 };
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
+pub(in crate::domain_computation::primary_graph) enum SourceQueryRequest<I> {
+    Live(I),
+    Recorded(Arc<super::request_recipe::CapturedSourceQueryRequest>),
+}
 mod admitted;
 mod current_control;
 mod permission;
+mod request_scope;
 use permission::{CurrentSourceRefusal, SourceScopePosture};
+use request_scope::SourceScopeSelector;
 mod read_closure;
 mod same_scope;
 mod single;
@@ -103,6 +109,35 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         SourceValue<Schema, Binding>: WorthQueryApplicationProjection<Schema, Binding::Query>,
         E: From<SourceQueryObservationStop>,
     {
+        self.with_request_plan::<Binding, R, E>(
+            execution,
+            SourceQueryRequest::Live(intent),
+            context_use,
+            native,
+            consume,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_request_plan<Binding, R, E>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        intent: SourceQueryRequest<Binding::Input>,
+        context_use: &std::cell::Cell<
+            crate::domain_computation::primary_graph::handler::DecisionContextUse,
+        >,
+        native: &mut ApplicationQueryNativeAccess<'_>,
+        consume: impl for<'plan> FnOnce(
+            SourceReadPlan<'plan, Schema, Binding>,
+            &mut ApplicationQueryNativeAccess<'_>,
+        ) -> Result<R, E>,
+    ) -> Result<R, E>
+    where
+        Binding: ApplicationQueryBinding<Schema>,
+        Binding::Input: ApplicationQueryIntent<Schema, Binding = Binding>,
+        Binding::ScopeBinding: ApplicationQueryScopeResolution<Schema, Binding::PrincipalIdentity>,
+        SourceValue<Schema, Binding>: WorthQueryApplicationProjection<Schema, Binding::Query>,
+        E: From<SourceQueryObservationStop>,
+    {
         if let Some(stop) = self.refused.borrow().as_ref() {
             return Err(stop.clone().into());
         }
@@ -122,7 +157,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
     fn with_plan_in_control<Binding, R, E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        intent: Binding::Input,
+        intent: SourceQueryRequest<Binding::Input>,
         context_use: &std::cell::Cell<
             crate::domain_computation::primary_graph::handler::DecisionContextUse,
         >,
@@ -156,8 +191,6 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             .installed_schema()
             .installed_query_binding::<Binding>()
             .map_err(Stop::Installation)?;
-        let parameters = intent.parameters();
-        let selector = intent.into_scope();
         let principal = selected
             .resolve_authenticated_principal_issued_with_native_access(
                 execution,
@@ -169,22 +202,44 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 native,
             )
             .map_err(|stop| self.record_history_refusal(Stop::Principal(stop)))?;
-        let (field, value) = selector.into_field_parts(principal.principal().principal_identity());
-        let scope = selected.resolve_query_scope_selector_issued_with_native_access(
-            execution,
-            field,
-            &value,
-            self.request,
-            native,
-        );
+        use permission::SourceQueryParameters;
+        let (parameters, selector) = match intent {
+            SourceQueryRequest::Live(intent) => {
+                let parameters = SourceQueryParameters::Live(intent.parameters());
+                let (field, value) = intent
+                    .into_scope()
+                    .into_field_parts(principal.principal().principal_identity());
+                (parameters, SourceScopeSelector::Live { field, value })
+            }
+            SourceQueryRequest::Recorded(recipe) => {
+                if !recipe.matches_binding::<Schema, Binding>(&installed) {
+                    return Err(Stop::ForeignClosure.into());
+                }
+                let selector = if recipe.scope().is_some() {
+                    SourceScopeSelector::Recorded {
+                        field: Binding::scope_field(),
+                        recipe: Arc::clone(&recipe),
+                    }
+                } else {
+                    let value = Binding::ScopeBinding::request_principal_value(
+                        principal.principal().principal_identity(),
+                    )
+                    .ok_or(Stop::ForeignClosure)?;
+                    SourceScopeSelector::Live {
+                        field: Binding::scope_field(),
+                        value,
+                    }
+                };
+                (SourceQueryParameters::Recorded(recipe), selector)
+            }
+        };
+        let scope = selector.resolve(selected, execution, self.request, native);
         let (scope, posture) = match scope {
             Ok(scope) if self.history.as_ref().is_some_and(|history| history.invocation.historical_branch().is_some()) => {
                 // Resolve D privately. A C business key can name a different
                 // generation; its grant never authorizes the D entity. Failure
                 // here keeps the old C path, including its authorization order.
-                let truth = self.shared.selected().resolve_query_scope_selector_issued_with_native_access(
-                    execution, field, &value, self.request, native,
-                );
+                let truth = selector.resolve(self.shared.selected(), execution, self.request, native);
                 match truth {
                     Ok(truth) if truth.scope().entity_id() != scope.scope().entity_id() =>
                         (truth, SourceScopePosture::Historical(CurrentSourceRefusal::DifferentGeneration)),
@@ -197,9 +252,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity)) => {
                 // Resolution is private. Until C authorizes, neither a D lookup
                 // failure nor a C denial reveals more than the old C refusal.
-                let scope = self.shared.selected().resolve_query_scope_selector_issued_with_native_access(
-                    execution, field, &value, self.request, native,
-                ).map_err(|_| self.record_history_refusal(Stop::Scope(absent.clone())))?;
+                let scope = selector.resolve(self.shared.selected(), execution, self.request, native).map_err(|_| self.record_history_refusal(Stop::Scope(absent.clone())))?;
                 (scope, SourceScopePosture::Historical(CurrentSourceRefusal::Absent(absent)))
             }
             Err(stop) => return Err(self.record_history_refusal(Stop::Scope(stop)).into()),

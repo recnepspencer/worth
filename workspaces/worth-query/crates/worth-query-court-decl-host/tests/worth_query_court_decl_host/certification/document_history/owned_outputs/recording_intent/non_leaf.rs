@@ -1,8 +1,8 @@
-//! A retained A source intent does not freeze the opaque discovery input.
+//! Discovery runs with each recorded step's immutable canonical request recipe.
 use super::non_leaf_program as installed;
 use super::*;
 type Host = WorthQueryProgramApplicationRuntime<Schema, installed::Program>;
-fn settle(host: &Host, request: &family::Request<'_, '_, '_>, b: bool) {
+pub(super) fn settle(host: &Host, request: &family::Request<'_, '_, '_>, b: bool) {
     let mut tree = request
         .demand(installed::Demand {
             source: if b { "b" } else { "a" }.into(),
@@ -79,6 +79,8 @@ fn exercise(worker: bool) {
         .unwrap()
         .rows()[0]
         .clone();
+    let root_id = root.native_id;
+    let root_contacts = host.producer_contacts_at_root_on_this_thread_for_test(root_id);
     let drift = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let document = host
         .with_host_advancement(|phase| {
@@ -96,94 +98,138 @@ fn exercise(worker: bool) {
                 .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
         })
         .unwrap();
+
+    macro_rules! record_member {
+        ($document:expr, $value:expr, $key:expr) => {{
+            let mut edit = $document
+                .edit(member_edit::Intent {
+                    key: "m".into(),
+                    value: $value,
+                })
+                .idempotency_owned(&request, $key.into())
+                .unwrap()
+                .retain_in_program::<installed::Program, program::MemberEditAction>(&host)
+                .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
+            for count in 0..512 {
+                assert!(count < 511, "recording must finish");
+                edit = match edit.advance(&request) {
+                    WorthQueryHistoryEditAdvance::Progress(next) => next,
+                    WorthQueryHistoryEditAdvance::Ready(done) => {
+                        edit = done;
+                        break;
+                    }
+                    WorthQueryHistoryEditAdvance::Refused { denial, .. } => panic!("{denial:?}"),
+                };
+            }
+            let finish = edit
+                .finish(&request)
+                .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
+            assert!(matches!(
+                finish.outcome,
+                WorthQueryHistoryEditOutcome::Recorded { .. }
+            ));
+            finish.document
+        }};
+    }
+    let before = document.current_step(&request).unwrap().id();
+    let document = record_member!(document, 6, "record-a-recipe");
     drift.store(true, std::sync::atomic::Ordering::Relaxed);
-    let unchanged_source = installed::Demand {
+    let unchanged = installed::Demand {
         source: "a".into(),
         discovery: std::sync::Arc::clone(&drift),
     }
     .source_intent();
-    assert_eq!(unchanged_source.key, "a");
     assert_eq!(
-        unchanged_source.expected, "a",
-        "the complete root source input did not change"
+        (unchanged.key.as_str(), unchanged.expected.as_str()),
+        ("a", "a")
     );
-
     let contacts = host.producer_contacts_on_this_thread_for_test();
-    let mut edit = document
-        .edit(member_edit::Intent {
-            key: "m".into(),
-            value: 6,
-        })
-        .idempotency_owned(&request, "record-a-with-drifted-parent".into())
-        .unwrap()
-        .retain_in_program::<installed::Program, program::MemberEditAction>(&host)
-        .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
-    for count in 0..512 {
-        assert!(count < 511, "drift must refuse");
-        edit = match edit.advance(&request) {
-            WorthQueryHistoryEditAdvance::Progress(next) => next,
-            WorthQueryHistoryEditAdvance::Ready(done) => {
-                let finish = done
-                    .finish(&request)
-                    .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
-                let selected = finish.document.selection(&request).unwrap();
-                let at = host
-                    .request(&principal, &scope)
-                    .on_branch(selected.physical_endpoint().product_branch());
-                let after = at
-                    .query(query::second_output::Read("second:b".into()))
-                    .execute()
-                    .unwrap()
-                    .rows()[0]
-                    .clone();
-                panic!("A recorded a drifted B child: before={b_before:?}, after={after:?}, additional_contacts={}",host.producer_contacts_on_this_thread_for_test()-contacts);
-            }
-            WorthQueryHistoryEditAdvance::Refused {
-                edit: owner,
-                denial,
-            } => {
-                let WorthQueryHistoryEditDenial::Outputs(WorthQueryHistoryOutputDenial::Source(
-                    WorthQueryHistoryOutputReadDenial::Demand(cause),
-                )) = &denial
-                else {
-                    panic!("wrong frozen root refusal: {denial:?}")
-                };
-                assert!(
-                    matches!(
-                        cause.kind(),
-                        WorthQueryOutputDemandDenialKind::ForeignSource
-                    ),
-                    "{cause:?}"
-                );
-                assert!(
-                    cause.subject().contains(&format!("{:?}", root.native_id)),
-                    "{cause:?}"
-                );
-                assert!(cause.subject().contains("first"), "{cause:?}");
-                assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
-                let document = owner
-                    .discard(&request)
-                    .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
-                assert_eq!(document.selection(&request).unwrap(), selection);
-                assert_eq!(
-                    at_c.query(query::second_output::Read("second:b".into()))
-                        .execute()
-                        .unwrap()
-                        .rows(),
-                    &[b_before]
-                );
-                host.with_host_advancement(|phase| document.close(&phase).unwrap())
-                    .unwrap();
-                return;
-            }
-        };
-    }
+    let reads = super::super::source_projection::Observation::begin();
+    let discovered = installed::observation::Observation::begin();
+    let selected = super::super::courts::checkout(
+        &document,
+        &request,
+        before,
+        document.selection(&request).unwrap(),
+        0x1255_01,
+    )
+    .unwrap();
+    assert_eq!(reads.reads(), 0, "the healthy root remains unopened");
+    assert!(discovered.saw("a"));
+    assert!(
+        !discovered.saw("b"),
+        "the live shared field must not redirect the selected step"
+    );
+    assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
+    let at = host
+        .request(&principal, &scope)
+        .on_branch(selected.physical_endpoint().product_branch());
+    assert_eq!(
+        at.query(query::second_output::Read("second:b".into()))
+            .execute()
+            .unwrap()
+            .rows(),
+        &[b_before]
+    );
+    assert_eq!(
+        at.query(query::model::Read("a".into()))
+            .execute()
+            .unwrap()
+            .rows(),
+        &[root]
+    );
+    drop((reads, discovered));
+
+    // A new ordinary recording uses the new live recipe. Forward navigation
+    // later must use that step's B recipe even after the caller switches to A.
+    let discovered = installed::observation::Observation::begin();
+    let document = record_member!(document, 7, "record-new-b-recipe");
+    let forward = document.current_step(&request).unwrap().id();
+    assert!(discovered.saw("b"));
+    assert!(!discovered.saw("a"));
+    assert_eq!(
+        host.producer_contacts_on_this_thread_for_test(),
+        contacts + 1
+    );
+    drop(discovered);
+    drift.store(false, std::sync::atomic::Ordering::Relaxed);
+    let selected = super::super::courts::checkout(
+        &document,
+        &request,
+        before,
+        document.selection(&request).unwrap(),
+        0x1255_02,
+    )
+    .unwrap();
+    let discovered = installed::observation::Observation::begin();
+    let selected =
+        super::super::courts::checkout(&document, &request, forward, selected, 0x1255_03).unwrap();
+    assert!(discovered.saw("b"));
+    assert!(!discovered.saw("a"));
+    let at = host
+        .request(&principal, &scope)
+        .on_branch(selected.physical_endpoint().product_branch());
+    assert_eq!(
+        at.query(query::second_output::Read("second:b".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        1007
+    );
+    assert_eq!(
+        host.producer_contacts_at_root_on_this_thread_for_test(root_id),
+        root_contacts,
+        "the healthy A roots stay unopened, including the new step's foreign B discovery"
+    );
+    host.with_host_advancement(|phase| document.close(&phase).unwrap())
+        .unwrap();
 }
 #[test]
-fn a_mutated_non_leaf_discovery_cannot_record_another_documents_child() {
+fn a_selected_non_leaf_step_uses_its_frozen_discovery_recipe() {
     exercise(false);
 }
 #[test]
-fn worker_only_a_mutated_non_leaf_discovery_cannot_record_another_documents_child() {
+fn worker_only_a_selected_non_leaf_step_uses_its_frozen_discovery_recipe() {
     exercise(true);
 }

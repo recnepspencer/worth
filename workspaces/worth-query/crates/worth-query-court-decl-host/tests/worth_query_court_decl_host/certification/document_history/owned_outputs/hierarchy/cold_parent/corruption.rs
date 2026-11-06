@@ -27,7 +27,7 @@ fn exercise(worker: bool) {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
-    let (document, before) = fixture::record(&host, &request);
+    let (document, before) = fixture::record(&host, &request, world::attach(&host));
     let current = document.selection(&request).unwrap();
     let at_c = host
         .request(&principal, &scope)

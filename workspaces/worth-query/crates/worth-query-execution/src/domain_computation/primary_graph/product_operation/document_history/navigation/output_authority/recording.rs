@@ -67,6 +67,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 Arc::clone(origin.observation()),
                 self.model.entity(),
                 origin.has_original_required_outputs(),
+                Arc::clone(origin.recipe_recorder()),
             ),
             request,
             principal: read.principal(),

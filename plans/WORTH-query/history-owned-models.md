@@ -2086,3 +2086,81 @@ their expected refusal is provisional pending that ruling. If live inputs are
 intended, correct those oracles to the observed authorized maintenance and keep
 production behavior. No unsupported security or data-loss conclusion follows
 from their present reds.
+
+### D1255 boundary review and implementation plan: recorded discovery recipes
+
+D1255 supersedes the D1248 representation stop. The adversary is a Clone-only
+root demand whose source intent stays identical while a shared discovery input
+changes after retention. Navigation must compute the selected step's dependent
+set, even after that change, without opening a healthy original root.
+
+Query's source-intent owner already owns canonical parameters and scope selector
+data without grants. Extend that boundary with canonical discovery request data:
+the installed query identity, normalized parameter basis, and symbolic principal
+or encoded field selector. No opaque demand, projection result, dependent set,
+permission, or request principal is retained as recipe authority. The existing
+source-reader admission remains the only C principal/permission/request owner;
+it consumes either a live request or a recorded normalized request. The existing
+parent owner verifies exact D custody before running real discovery. SDK factories
+transport recipes but cannot mint them or substitute roster membership.
+
+The journal's completed source binding owns each step's immutable recipes. A
+recording gathers actual canonical discovery requests under its reserved node;
+completion seals them with that source endpoint. Initial enrollment captures only
+the original current endpoint, never an older selected step. Navigation borrows
+that selected binding; missing, corrupt or foreign recipes refuse typed naming
+the selected step. Historical source/parent admission and current installed
+meaning retain their existing controls and changed-build fallback. ScopeEntityRecord
+continues its existing path. Native CHK18 does not change for these Query annotations.
+
+Implement in dependency order:
+1. Normalize ordinary query scopes without evaluating a principal, and capture
+   funded immutable canonical discovery requests under the Query source-intent
+   owner. Add the frozen-input posture to the existing source reader, sharing
+   its C/D scope resolution and permission owner with live reads.
+2. Carry a recording/selected recipe posture through history output authority;
+   seal recording recipes into completed journal bindings and previews. Capture
+   initial root-edge requests through existing typed continuation factories.
+3. Cut owned-graph historical discovery over to recorded requests. Actual new
+   recording reads live requests once; navigation never calls the mutable demand
+   mapping to fill a missing recipe. Preserve actual ordinary fixed-action custody.
+4. Replace the provisional negative counterexample with serial/worker navigation
+   round trips asserting the D dependent set, no B adoption and zero root contacts;
+   add missing/corrupt/foreign recipes and current-permission no-effect courts.
+   Kill the live-input, skipped-integrity and D-grant mutants, restore by SHA256.
+5. Run focused history/Native courts, formatting, dirty line caps, boundary and
+   agent-context checks. Continue grouped recording and codec-retired selection,
+   then remaining issue courts and full root/Query comparisons against clean
+   current master before any issue READY.
+
+No new demand binding or serialization obligation is imposed on applications.
+The normalized recipe is input, never a replacement discovery authority.
+
+D1255 qualification refinement: selected recipe data is never reconstructed for a
+bare step that predates output enrollment. The full history run correctly exposes
+22 older fixture legs that recorded their selected steps before configuring the
+non-leaf output mode; their missing recipes are not master debt. Migrate those
+journeys to record source intent and canonical requests before the selected steps,
+while preserving the independently disputed stale-parent, historical-only child
+and current-grant conditions. Do not backfill their old nodes or weaken the new
+missing-recipe fence to recover an old green count. The new focused recipe and
+current-permission courts pass independently before those fixture migrations.
+
+D1255 fixture migration preserves genuine stale-publication navigation by making
+ordinary source-only prerequisite edits before attaching the document. The
+initial retained snapshot can therefore contain legitimately stale producer
+observations, without forging facts or retroactively supplying missing requests.
+Enroll its source intent/recipes before recording the future. The configured
+future completes its outputs; redo of that future is now contact-free. Cold
+changed-build recording must also configure the independently stale second-family
+seed tree, so final Native obligations are satisfied. The old grant denial coupled
+to a producer's source value is replaced by the new independent-grant navigation
+court: the parent's source stays healthy while C denies and D would grant.
+
+Recipe map slots now use HistoryInsertionAllocation, the existing journal-funded
+B-tree growth owner. Immutable request data can be shared, but each copied index
+owns its own insertion grants. Recipes live with RetainedHistorySource, not the
+permanent annotation. Exclusion releases them together; a pending navigation's
+preview carries its original set back through fill_navigation_source. RecordNode
+keeps its original annotation-only shape. These lifecycle/resource corrections
+require pristine and mutation requalification before the checkpoint is certified.

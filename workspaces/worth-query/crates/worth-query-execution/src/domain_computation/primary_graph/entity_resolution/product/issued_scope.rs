@@ -109,6 +109,31 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         })
     }
 
+    /// A normalized request retains value data, never a resolved scope or grant.
+    pub(in crate::domain_computation::primary_graph) fn resolve_query_scope_value_issued_with_native_access<
+        'selected,
+        Field: RecordSelection,
+    >(
+        &'selected self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        field: Field,
+        value: &worth_foundational::facade::AspectValue,
+        request: &WorthQueryRequestScope,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<
+        WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Field::Entity>,
+        WorthQueryEntityResolutionDenial,
+    > {
+        let scope = self.resolve_query_scope_value_with_native_access(
+            execution, field, None, value, request, native,
+        )?;
+        Ok(WorthQueryIssuedSelectedScope {
+            scope,
+            selected: self,
+            request: request.clone(),
+        })
+    }
+
     pub(in crate::domain_computation::primary_graph) fn resolve_retained_query_scope_issued<
         'selected,
         Field: RecordSelection,

@@ -17,6 +17,20 @@ impl<
         D: WorthQueryApplicationOutputDemand<S>,
     > Parent<'_, S, P, D>
 {
+    pub(super) fn source_route(
+        &self,
+    ) -> Result<
+        (
+            crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+            [u8; 32],
+        ),
+        Denial,
+    > {
+        match self {
+            Self::Verified(parent) => Ok(parent.source_route()),
+            Self::Settled(parent) => parent.settled.retained.source_route().ok_or_else(foreign),
+        }
+    }
     pub(super) fn validate<C>(
         &self,
         application: &WorthQueryProgramApplicationRuntime<S, P>,

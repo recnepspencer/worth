@@ -2299,7 +2299,13 @@ source, plus the original publication coordinate. The refusal holds diagnostic
 data without retaining Native publication or historical-basis custody. For non-leaf trees, a healthy parent can discover children from its restored
 output without running its root producer. Discovery runs the installed query
 with current C permission, including for empty results; the publication roster
-never supplies the child list. A parent matches its family, full-generation scope
+never supplies the child list. Each recorded step retains the canonical discovery
+request recipe with its source intent. Navigation runs discovery with that frozen
+input, even if the caller's retained demand has since changed. A new live edit
+records its new input. Principals, permissions and request scope stay current;
+installed discovery meaning is never frozen. Missing, corrupt or foreign-document
+recipes refuse typed with the selected step, without adopting a partial head.
+Pre-recipe steps are never backfilled from a live demand. A parent matches its family, full-generation scope
 and admitted parameter partition. Discovery can read an output scope restored
 only at the exact private candidate D: current C still supplies every principal,
 permission and request fact. A denied audience receives no additional historical

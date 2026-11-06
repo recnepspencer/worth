@@ -1,6 +1,7 @@
 //! Recording's healthy D parent cannot borrow its discovery grant from D.
 use super::*;
 mod program;
+mod selected_recipe;
 type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 
 fn settle(host: &Host, request: &family::Request<'_, '_, '_>) {

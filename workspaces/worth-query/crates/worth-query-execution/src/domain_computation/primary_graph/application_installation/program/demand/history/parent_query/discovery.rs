@@ -14,7 +14,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
         external: &WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &WorthQueryRequestScope,
-        intent: <ConnectionBinding<S, C> as WorthQueryApplicationDependentOutputConnection<S>>::Discovery,
+        intent: Option<<ConnectionBinding<S, C> as WorthQueryApplicationDependentOutputConnection<S>>::Discovery>,
     ) -> Result<WorthQueryHistoryOutputDiscovery<Query<S, C>, Rows<S, C>>, Denial>
     where
         D: WorthQueryApplicationOutputDemand<S>,
@@ -52,7 +52,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         minimum: &WorthQueryApplicationReadObservation,
         external: &WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &WorthQueryRequestScope,
-        intent: <ConnectionBinding<S, C> as WorthQueryApplicationDependentOutputConnection<S>>::Discovery,
+        intent: Option<<ConnectionBinding<S, C> as WorthQueryApplicationDependentOutputConnection<S>>::Discovery>,
     ) -> Result<WorthQueryHistoryOutputDiscovery<Query<S, C>, Rows<S, C>>, Denial>
     where
         D: WorthQueryApplicationOutputDemand<S>,

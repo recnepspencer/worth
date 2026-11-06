@@ -2,6 +2,7 @@
 use super::dependent::{DiscoveryBinding, QueryRows};
 use super::*;
 mod verification;
+use crate::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryRequest;
 use crate::domain_computation::primary_graph::{
     application_query::{ApplicationQueryNativeAccess, SourceQueryReaderAccess},
     product_operation::document_history::{
@@ -59,7 +60,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             minimum,
             external,
             request,
-            intent,
+            Some(intent),
         )
     }
     pub fn execute_verified_history_dependent_output_query<'authority, 'phase, 'scope, D, C, B>(
@@ -95,7 +96,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             minimum,
             external,
             request,
-            intent,
+            Some(intent),
         )
     }
     fn execute_parent_query<'authority, 'phase, 'scope, D, C, B>(
@@ -108,7 +109,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         minimum: &'authority WorthQueryApplicationReadObservation,
         external: &WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &WorthQueryRequestScope,
-        intent: B::Input,
+        intent: Option<B::Input>,
     ) -> Result<
         WorthQueryHistoryDependentOutputRead<'authority, 'phase, 'scope, B::Query, QueryRows<S, B>>,
         Denial,
@@ -122,6 +123,21 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
         QueryRows<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
+        let intent = match purpose {
+            ParentQueryPurpose::ChildSource => {
+                SourceQueryRequest::Live(intent.ok_or_else(foreign)?)
+            }
+            ParentQueryPurpose::Discovery => {
+                let execution = phase.checked_execution_request_for(self.runtime().product_runtime())
+                    .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
+                SourceQueryRequest::Recorded(authority.discovery_request::<S, B, C>(
+                    &execution,
+                    self.runtime(),
+                    parent.source_route()?,
+                    intent,
+                )?)
+            }
+        };
         let (result, meaning, query) = self.with_parent_query_admission::<D, C, B, _>(
             phase,
             &parent,
@@ -171,7 +187,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         minimum: &WorthQueryApplicationReadObservation,
         external: &WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &WorthQueryRequestScope,
-        intent: B::Input,
+        intent: SourceQueryRequest<B::Input>,
         consume: impl for<'plan> FnOnce(
             &SourceQueryReaderAccess<'_, S>, &worth_execution::ExecutionRequest<'_, '_>,
             crate::domain_computation::primary_graph::application_query::output_source_observation::SourceReadPlan<'plan, S, B>,
@@ -225,7 +241,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         )
         .map_err(Denial::Demand)?;
         let context = std::cell::Cell::default();
-        let result = reader.with_plan::<B, _, Denial>(
+        let result = reader.with_request_plan::<B, _, Denial>(
             &execution,
             intent,
             &context,

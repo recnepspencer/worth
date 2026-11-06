@@ -18,6 +18,7 @@ use worth_query_installation::facade::{
     ApplicationSchema, ApplicationSchemaBindingIdentity, WorthQueryInstalledDocumentHistory,
 };
 
+mod discovery_recipe;
 pub(crate) mod producer_invocation;
 mod recording;
 mod restored_basis;

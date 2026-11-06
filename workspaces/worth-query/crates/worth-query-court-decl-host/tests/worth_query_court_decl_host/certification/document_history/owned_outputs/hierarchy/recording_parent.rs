@@ -81,18 +81,6 @@ fn exercise(worker: bool, stale: bool) {
     assert_eq!((original_first.value, original_child.value), (30, 1003));
     let document = world::attach(&host);
     let before = document.current_step(&request).unwrap().id();
-    let document = record!(
-        request,
-        host,
-        document,
-        edit::Intent {
-            key: "a".into(),
-            value: 5
-        },
-        super::super::program::EditAction,
-        "non-leaf-stale-future"
-    );
-    let selection = document.selection(&request).unwrap();
     let document = host
         .with_host_advancement(|phase| {
             document
@@ -106,6 +94,18 @@ fn exercise(worker: bool, stale: bool) {
                 .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
         })
         .unwrap();
+    let document = record!(
+        request,
+        host,
+        document,
+        edit::Intent {
+            key: "a".into(),
+            value: 5
+        },
+        super::super::program::EditAction,
+        "non-leaf-stale-future"
+    );
+    let selection = document.selection(&request).unwrap();
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let undone =
         super::super::courts::checkout(&document, &request, before, selection, 0x57_fa01).unwrap();

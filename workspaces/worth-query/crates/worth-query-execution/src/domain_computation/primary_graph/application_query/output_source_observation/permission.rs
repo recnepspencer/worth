@@ -8,6 +8,10 @@ use worth_query_declaration::facade::application_query::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
+pub(super) enum SourceQueryParameters<Q> {
+    Live(ApplicationQueryParameterSet<Q>),
+    Recorded(Arc<super::super::request_recipe::CapturedSourceQueryRequest>),
+}
 pub(super) enum SourceScopePosture {
     Current,
     Historical(CurrentSourceRefusal),
@@ -27,7 +31,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationQueryBinding<Schema, B>,
-        parameters: ApplicationQueryParameterSet<B::Query>,
+        parameters: SourceQueryParameters<B::Query>,
         principal: &WorthQueryIssuedSelectedPrincipal<
             '_,
             '_,
@@ -89,14 +93,24 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         .with_original_settled_producer(
             self.shared.selected().original_settled_producer().cloned(),
         );
-        let (parameters, controls) = application
-            .prepare_source_query_admission(query, &access, parameters, controls)
-            .map_err(|cause| {
-                self.record_history_refusal(Stop::Preparation {
-                    phase: SourceQueryPreparationPhase::Parameters,
-                    cause,
-                })
-            })?;
+        let prepared = match parameters {
+            SourceQueryParameters::Live(parameters) => {
+                application.prepare_source_query_admission(query, &access, parameters, controls)
+            }
+            SourceQueryParameters::Recorded(recipe) => application
+                .prepare_application_query_source_readmission(
+                    query,
+                    &access,
+                    recipe.parameters(),
+                    controls,
+                ),
+        };
+        let (parameters, controls) = prepared.map_err(|cause| {
+            self.record_history_refusal(Stop::Preparation {
+                phase: SourceQueryPreparationPhase::Parameters,
+                cause,
+            })
+        })?;
         let permission = match &posture {
             SourceScopePosture::Current => application
                 .prepare_application_query_permission_with_parameters(

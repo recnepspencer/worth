@@ -148,7 +148,8 @@ where
                     root,
                     self.demand.clone(),
                     self.controls,
-                ),
+                )
+                .record_history_discovery(Arc::clone(origin), index),
             ));
         }
         if self

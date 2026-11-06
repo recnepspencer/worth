@@ -1,4 +1,5 @@
 //! One exact restored basis and its grant-free Native selection read.
+use super::super::super::WorthQueryHistoryNodeId;
 use super::*;
 use worth_relational::facade::{
     mvcc::RelationalBranchObservation,
@@ -10,6 +11,7 @@ use worth_relational::facade::{
 
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct HistoryRestoredOutputBasis {
+    recipes: HistoryDiscoveryRecipePosture,
     observation: Arc<WorthQueryApplicationReadObservation>,
     owned: Option<Arc<OwnedOutputSelection>>,
     recording_model: Option<worth_relational::facade::identity::EntityId>,
@@ -20,13 +22,26 @@ pub(in crate::domain_computation::primary_graph) struct OwnedOutputSelection {
     native: std::sync::OnceLock<Arc<RelationalHistoricalSelectionRead>>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
+#[derive(Clone)]
+enum HistoryDiscoveryRecipePosture {
+    Recording(Arc<super::super::super::discovery_recipes::HistoryDiscoveryRecipeRecorder>),
+    Selected {
+        step: WorthQueryHistoryNodeId,
+        recipes: Option<Arc<super::super::super::discovery_recipes::HistoryDiscoveryRecipes>>,
+    },
+}
 impl HistoryRestoredOutputBasis {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history::navigation) fn new(
         observation: Arc<WorthQueryApplicationReadObservation>,
         selected: Option<RelationalBranchObservation>,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
+        preview: &super::super::super::WorthQueryHistoryPreview,
     ) -> Self {
         Self {
+            recipes: HistoryDiscoveryRecipePosture::Selected {
+                step: preview.step.id(),
+                recipes: preview.discovery_recipes.clone(),
+            },
             observation,
             recording_model: None,
             original_required_outputs: false,
@@ -43,12 +58,41 @@ impl HistoryRestoredOutputBasis {
         observation: Arc<WorthQueryApplicationReadObservation>,
         model: worth_relational::facade::identity::EntityId,
         original_required_outputs: bool,
+        recorder: Arc<super::super::super::discovery_recipes::HistoryDiscoveryRecipeRecorder>,
     ) -> Self {
         Self {
+            recipes: HistoryDiscoveryRecipePosture::Recording(recorder),
             observation,
             owned: None,
             recording_model: Some(model),
             original_required_outputs,
+        }
+    }
+    pub(super) fn recipe_step(&self) -> WorthQueryHistoryNodeId {
+        match &self.recipes {
+            HistoryDiscoveryRecipePosture::Recording(recorder) => recorder.step,
+            HistoryDiscoveryRecipePosture::Selected { step, .. } => *step,
+        }
+    }
+    pub(super) fn records_recipes(&self) -> bool {
+        matches!(self.recipes, HistoryDiscoveryRecipePosture::Recording(_))
+    }
+    pub(super) fn discovery_request(
+        &self, execution: &worth_execution::ExecutionRequest<'_, '_>, model: &super::super::super::HistoryModelIdentity,
+        key: super::super::super::discovery_recipes::HistoryDiscoveryRecipeKey,
+        capture: impl FnOnce() -> Result<Arc<crate::domain_computation::primary_graph::application_query::request_recipe::CapturedSourceQueryRequest>, crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial>,
+    ) -> Result<Arc<crate::domain_computation::primary_graph::application_query::request_recipe::CapturedSourceQueryRequest>, crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial>{
+        use crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial as ReadDenial;
+        match &self.recipes {
+            HistoryDiscoveryRecipePosture::Recording(recorder) => {
+                recorder.record(execution, key, capture)
+            }
+            HistoryDiscoveryRecipePosture::Selected { step, recipes } => recipes
+                .as_ref()
+                .ok_or(ReadDenial::Authority(
+                    WorthQueryHistoryNavigationDenial::DiscoveryRecipeMissing { step: *step },
+                ))?
+                .get(execution, *step, model, &key),
         }
     }
     pub(super) fn has_original_required_outputs(&self) -> bool {

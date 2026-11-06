@@ -34,6 +34,7 @@ enum RecordingTreeCompletion {
 /// Readonly provenance of the original action completion before extra tree work.
 /// It grants no query, producer, mutation or adoption permission.
 pub struct WorthQueryHistoryRecordingOutputOrigin {
+    recipes: Arc<super::discovery_recipes::HistoryDiscoveryRecipeRecorder>,
     node: WorthQueryHistoryNodeId,
     candidate: crate::basis::WorthQueryProductBranch,
     expected: crate::basis::WorthQueryProductBranchReadIdentity,
@@ -75,6 +76,7 @@ impl From<WorthQueryOriginalReadOutputDenial> for WorthQueryRecordingOutputQuali
 
 /// Every configured tree qualified at the one receipt-derived final endpoint.
 pub struct WorthQueryCompletedRecordingOutputs {
+    pub(super) discovery_recipes: Arc<super::discovery_recipes::HistoryDiscoveryRecipes>,
     origin: Arc<WorthQueryHistoryRecordingOutputOrigin>,
     endpoint: Arc<WorthQueryApplicationReadObservation>,
     _trees: Vec<Arc<WorthQueryRetainedRecordingOutputTree>>,
@@ -82,6 +84,24 @@ pub struct WorthQueryCompletedRecordingOutputs {
 }
 
 impl WorthQueryHistoryRecordingOutputOrigin {
+    pub(in crate::domain_computation::primary_graph) fn recipe_step(
+        &self,
+    ) -> WorthQueryHistoryNodeId {
+        self.node
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn recipe_recorder(
+        &self,
+    ) -> &Arc<super::discovery_recipes::HistoryDiscoveryRecipeRecorder> {
+        &self.recipes
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn discovery_profile(
+        &self,
+        index: usize,
+    ) -> Option<&WorthQueryHistoryOutputProfile> {
+        self.profile.tree_profiles().get(index)
+    }
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn recording_profile(
         &self,
     ) -> &WorthQueryHistoryOutputProfile {
@@ -157,6 +177,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         )
         .map_err(Denial::Recording)?;
         Ok(Arc::new(WorthQueryHistoryRecordingOutputOrigin {
+            recipes: super::discovery_recipes::HistoryDiscoveryRecipeRecorder::new(
+                &execution,
+                reserved.record.node,
+                self.model.clone(),
+            )
+            .map_err(Denial::Recording)?,
             node: reserved.record.node,
             candidate: candidate.branch(),
             expected: reserved.expected.clone(),

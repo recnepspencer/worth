@@ -2,6 +2,7 @@
 use super::super::hierarchy::{Child, ChildInput, HierarchyProgram, Input, Output, Parent};
 use super::super::program::{Entry, EntryOutput};
 use super::*;
+pub(super) mod observation;
 #[derive(Clone)]
 pub struct Demand {
     pub source: String,
@@ -58,6 +59,7 @@ impl WorthQueryApplicationDependentOutputConnection<Schema> for Discover {
     fn demands_from_discovery(
         row: &query::Row,
     ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial> {
+        observation::record(&row.key);
         Ok(vec![second::Demand(
             row.key
                 .strip_prefix("first:")

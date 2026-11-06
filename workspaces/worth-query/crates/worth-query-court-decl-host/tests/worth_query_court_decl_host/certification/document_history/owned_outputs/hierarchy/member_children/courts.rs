@@ -28,6 +28,8 @@ fn $exercise(worker: bool, stale_root: bool, stale_child: bool) {
     let original = request.query(query::child_output::Read(concat!($prefix, ":m").into())).execute().unwrap().rows()[0].clone();
     assert_eq!(original.value, 500);
     let member = request.query(query::member_public::Read("m".into())).execute().unwrap().rows()[0].clone();
+    if stale_child { super::super::source_edits::member(&host, &request, 6, "stale-child-before-history"); }
+    if stale_root { super::super::source_edits::model(&host, &request, 3, "stale-parent-before-history"); }
     let document = world::attach(&host);
     macro_rules! record { ($document:expr, $input:expr, $action:ty, $key:expr) => {{
         let mut edit = $document.edit($input).idempotency_owned(&request, $key.into()).unwrap()
@@ -48,20 +50,13 @@ fn $exercise(worker: bool, stale_root: bool, stale_child: bool) {
         drop(outcome);
         document
     }}; }
-    let document = if stale_child { record!(document, member_edit::Intent { key: "m".into(), value: 6 }, super::super::super::program::MemberEditAction, "member-child-edit") } else { document };
-    let document = if stale_root {
-        record!(document, edit::Intent { key: "a".into(), value: 3 }, super::super::super::program::EditAction, "member-child-root-edit")
-    } else { document };
-    let before_delete = document.current_step(&request).unwrap().id();
-    let document = record!(document, authored_member::retire::Intent, super::super::super::program::AuthoredRetireAction, "member-child-retire");
-    let deleted = document.current_step(&request).unwrap().id();
-    // This court qualifies navigation of deliberately stale recorded outputs.
-    // Retain the fallback tree after the source-only retirement so recording
-    // does not pre-emptively refresh the stale Model publication under test.
     let document = host.with_host_advancement(|phase| document
         .with_output_trees::<program::$program::Program, program::$program::Tree>(
             &phase, &request, &host, first::Demand("a".into()), WorthQueryOutputDemandControls::default())
         .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))).unwrap();
+    let before_delete = document.current_step(&request).unwrap().id();
+    let document = record!(document, authored_member::retire::Intent, super::super::super::program::AuthoredRetireAction, "member-child-retire");
+    let deleted = document.current_step(&request).unwrap().id();
     let current = document.selection(&request).unwrap();
     let at_c = host.request(&principal, &scope).on_branch(current.physical_endpoint().product_branch());
     assert!(at_c.query(query::member_public::Read("m".into())).execute().is_err());
@@ -101,7 +96,7 @@ fn $exercise(worker: bool, stale_root: bool, stale_child: bool) {
         let before_redo = host.producer_contacts_on_this_thread_for_test();
         let redo = super::super::super::courts::checkout(&document, &request, deleted, selected, 0xd1214_31)
             .unwrap_or_else(|cause| panic!("redo with an empty discovered set: {cause:?}"));
-        assert_eq!(host.producer_contacts_on_this_thread_for_test(), before_redo + if stale_root { 1 } else { 0 });
+        assert_eq!(host.producer_contacts_on_this_thread_for_test(), before_redo);
         let at_redo = host.request(&principal, &scope).on_branch(redo.physical_endpoint().product_branch());
         assert!(at_redo.query(query::member_public::Read("m".into())).execute().is_err());
         assert!(at_redo.query(query::child_output::Read(concat!($prefix, ":m").into())).execute().is_err());

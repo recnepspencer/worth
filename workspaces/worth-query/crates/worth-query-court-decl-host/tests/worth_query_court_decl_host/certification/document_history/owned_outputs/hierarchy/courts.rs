@@ -1,7 +1,7 @@
 //! Public navigation discovers a real dependent without admitting a root demand.
 use super::*;
 type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
-fn exercise(worker_only: bool, initial: u64, denied: bool) {
+fn exercise(worker_only: bool, initial: u64, stale: bool) {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let limits = if worker_only {
         world::worker_limits()
@@ -62,37 +62,16 @@ fn exercise(worker_only: bool, initial: u64, denied: bool) {
         1,
         "the selected D really grants discovery"
     );
+    if stale {
+        source_edits::model(
+            &host,
+            &request,
+            initial + 2,
+            "stale-publications-before-history",
+        );
+    }
     let document = world::attach(&host);
     let root = document.current_step(&request).unwrap().id();
-    let mut edit = document
-        .edit(edit::Intent {
-            key: "a".into(),
-            value: if denied { 2 } else { initial + 2 },
-        })
-        .idempotency_owned(&request, "hierarchy-source-edit".into())
-        .unwrap()
-        .retain_in_program::<program::Program, super::super::program::EditAction>(&host)
-        .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
-    loop {
-        edit = match edit.advance(&request) {
-            WorthQueryHistoryEditAdvance::Progress(next) => next,
-            WorthQueryHistoryEditAdvance::Ready(next) => {
-                edit = next;
-                break;
-            }
-            WorthQueryHistoryEditAdvance::Refused { denial, .. } => panic!("{denial:?}"),
-        };
-    }
-    let WorthQueryHistoryEditFinish { document, outcome } = edit
-        .finish(&request)
-        .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
-    assert!(matches!(
-        outcome,
-        WorthQueryHistoryEditOutcome::Recorded { .. }
-    ));
-    drop(outcome);
-    let future = document.current_step(&request).unwrap().id();
-    let expected = document.selection(&request).unwrap();
     let document = host
         .with_host_advancement(|phase| {
             document
@@ -106,105 +85,146 @@ fn exercise(worker_only: bool, initial: u64, denied: bool) {
                 .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
         })
         .unwrap();
+    macro_rules! record {
+        ($input:expr, $action:ty) => {{
+            let mut edit = document
+                .edit($input)
+                .idempotency_owned(&request, "hierarchy-qualified-edit".into())
+                .unwrap()
+                .retain_in_program::<program::Program, $action>(&host)
+                .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
+            for count in 0..512 {
+                assert!(count < 511, "qualified recording must complete");
+                edit = match edit.advance(&request) {
+                    WorthQueryHistoryEditAdvance::Progress(next) => next,
+                    WorthQueryHistoryEditAdvance::Ready(done) => {
+                        edit = done;
+                        break;
+                    }
+                    WorthQueryHistoryEditAdvance::Refused { denial, .. } => panic!("{denial:?}"),
+                };
+            }
+            edit.finish(&request)
+                .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
+                .document
+        }};
+    }
+    let document = if stale {
+        record!(
+            member_edit::Intent {
+                key: "m".into(),
+                value: 6
+            },
+            super::super::program::MemberEditAction
+        )
+    } else {
+        record!(
+            edit::Intent {
+                key: "a".into(),
+                value: initial + 2
+            },
+            super::super::program::EditAction
+        )
+    };
+    let future = document.current_step(&request).unwrap().id();
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let observation = source_projection::Observation::begin();
-    if denied {
-        let denial =
-            super::super::courts::checkout(&document, &request, root, expected.clone(), 0xd1214_03)
-                .expect_err("D must not grant discovery when C denies it");
-        let (
-            "advance",
-            WorthQueryHistoryNavigationAdvanceDenial::Outputs(
-                WorthQueryHistoryOutputDenial::Preparation(
-                    WorthQueryRequiredOutputPreparationDenial::SourceQuery(
-                        WorthQueryApplicationRequestQueryDenial::Admission(cause),
-                    ),
-                ),
-            ),
-        ) = denial
-        else {
-            panic!("{denial:?}");
-        };
-        assert!(
-            matches!(
-                cause.kind(),
-                WorthQueryApplicationQueryAdmissionDenialKind::Authorization(_)
-            ),
-            "{cause:?}"
-        );
-        assert_eq!(document.selection(&request).unwrap(), expected);
-        assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
-        assert_eq!(
-            observation.discovery_reads(),
-            0,
-            "no D disclosure before C authorization"
-        );
-        drop(observation);
-        host.with_host_advancement(|phase| document.close(&phase).unwrap())
-            .unwrap();
-        return;
-    }
-    let selected = super::super::courts::checkout(&document, &request, root, expected, 0xd1214_01)
-        .unwrap_or_else(|cause| panic!("healthy non-leaf: {cause:?}"));
-    assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
+    let selected = super::super::courts::checkout(
+        &document,
+        &request,
+        root,
+        document.selection(&request).unwrap(),
+        0xd1214_01,
+    )
+    .unwrap_or_else(|cause| panic!("non-leaf selection: {cause:?}"));
+    assert_eq!(
+        host.producer_contacts_on_this_thread_for_test(),
+        contacts + if stale { 2 } else { 0 }
+    );
     assert!(
         observation.discovery_reads() > 0,
-        "the installed discovery must run"
+        "installed discovery must run"
     );
+    if stale {
+        assert!(
+            observation.reads() > 0,
+            "the stale parent opens its actual source"
+        );
+    }
     if initial == 1 {
         assert_eq!(
             observation.reads(),
             0,
-            "an empty computed set opens no child source despite the Native second-family route"
+            "empty discovery never borrows the Native roster's child"
         );
     }
-    drop(observation);
-    let branch = selected.physical_endpoint().product_branch();
-    let child = host
+    let restored = if stale { initial + 2 } else { initial };
+    let at = host
         .request(&principal, &scope)
-        .on_branch(branch)
-        .query(query::second_output::Read("second:a".into()))
-        .execute()
-        .unwrap();
-    assert_eq!(child.rows().len(), 1);
-    assert_eq!(child.rows()[0].value, initial + 1000);
-    let selected =
-        super::super::courts::checkout(&document, &request, future, selected, 0xd1214_02)
-            .unwrap_or_else(|cause| panic!("stale non-leaf fallback: {cause:?}"));
-    let parent = host
-        .request(&principal, &scope)
-        .on_branch(selected.physical_endpoint().product_branch())
-        .query(query::first_output::Read("first:a".into()))
-        .execute()
-        .unwrap();
+        .on_branch(selected.physical_endpoint().product_branch());
     assert_eq!(
-        parent.rows()[0].value,
-        (initial + 2) * 10,
-        "the stale parent itself must regenerate"
+        at.query(query::first_output::Read("first:a".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        restored * 10
     );
+    assert_eq!(
+        at.query(query::second_output::Read("second:a".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        restored + 1000
+    );
+    drop(observation);
+    let contacts = host.producer_contacts_on_this_thread_for_test();
+    let selected =
+        super::super::courts::checkout(&document, &request, future, selected, 0xd1214_02).unwrap();
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
-        contacts + 2
+        contacts,
+        "the newly recorded future already has complete outputs"
     );
-    let child = host
+    let at = host
         .request(&principal, &scope)
-        .on_branch(selected.physical_endpoint().product_branch())
-        .query(query::second_output::Read("second:a".into()))
-        .execute()
-        .unwrap();
-    assert_eq!(child.rows()[0].value, initial + 1002);
+        .on_branch(selected.physical_endpoint().product_branch());
+    assert_eq!(
+        at.query(query::first_output::Read("first:a".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        (initial + 2) * 10
+    );
+    assert_eq!(
+        at.query(query::second_output::Read("second:a".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        initial + 1002
+    );
     host.with_host_advancement(|phase| document.close(&phase).unwrap())
         .unwrap();
 }
 #[test]
-fn healthy_non_leaf_discovers_and_stale_parent_falls_back() {
+fn healthy_non_leaf_discovers_across_complete_recorded_steps() {
     exercise(false, 3, false);
 }
 #[test]
-fn worker_only_healthy_non_leaf_discovers_and_stale_parent_falls_back() {
+fn worker_only_healthy_non_leaf_discovers_across_complete_recorded_steps() {
     exercise(true, 3, false);
 }
-
+#[test]
+fn a_preexisting_stale_parent_and_child_take_real_navigation_fallback() {
+    exercise(false, 3, true);
+}
+#[test]
+fn worker_only_a_preexisting_stale_parent_and_child_take_real_navigation_fallback() {
+    exercise(true, 3, true);
+}
 #[test]
 fn empty_discovery_is_not_replaced_by_the_native_roster() {
     exercise(false, 1, false);
@@ -212,12 +232,4 @@ fn empty_discovery_is_not_replaced_by_the_native_roster() {
 #[test]
 fn worker_only_empty_discovery_is_not_replaced_by_the_native_roster() {
     exercise(true, 1, false);
-}
-#[test]
-fn historical_discovery_cannot_borrow_a_d_grant() {
-    exercise(false, 1, true);
-}
-#[test]
-fn worker_only_historical_discovery_cannot_borrow_a_d_grant() {
-    exercise(true, 1, true);
 }

@@ -71,6 +71,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             node.ordinal,
             RetainedHistorySource {
                 source: None,
+                discovery_recipes: None,
                 bookmarked: false,
                 _allocation: source_allocation,
                 released_child: None,
@@ -125,6 +126,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         reserved: ReservedHistoryRecord,
         completed: RecordedNode,
         source: Arc<WorthQueryApplicationReadObservation>,
+        discovery_recipes: Option<Arc<super::super::discovery_recipes::HistoryDiscoveryRecipes>>,
         previous: WorthQueryOwnedProductHead<'runtime, S>,
     ) -> Option<RetainedHistorySource> {
         self.store_previous(reserved.transition, previous);
@@ -138,10 +140,12 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             .get_mut(&reserved.key)
             .expect("reserved attempt")
             .binding = AttemptBinding::Completed(reserved.node);
-        self.retained
+        let retained = self
+            .retained
             .get_mut(&reserved.node.ordinal)
-            .expect("prepaid source destination")
-            .source = Some(source);
+            .expect("prepaid source destination");
+        retained.source = Some(source);
+        retained.discovery_recipes = discovery_recipes;
         self.retained_completed += 1;
         self.access(Access::Selection);
         self.current = reserved.node;

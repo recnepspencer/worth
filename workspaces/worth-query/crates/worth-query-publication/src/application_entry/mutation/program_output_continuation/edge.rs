@@ -31,6 +31,7 @@ where
     Binding<Schema, Connection>: WorthQueryApplicationDependentOutputConnection<Schema>,
     Children: ApplicationOutputEdgesShape<Schema>,
 {
+    recording_recipes: Option<(std::sync::Arc<worth_query_execution::publication_boundary::document_history::WorthQueryHistoryRecordingOutputOrigin>, usize)>,
     parent_demand: ParentDemand,
     parent_authority: ProgramOutputParentAuthority<Schema, Program, ParentDemand>,
     nodes: Option<Vec<EdgeNode<Schema, Program, ChildDemand<Schema, Connection>>>>,
@@ -65,107 +66,7 @@ where
 
 impl<Connection, Children> sealed::Factory for ApplicationOutputEdge<Connection, Children> {}
 
-impl< Schema, Program, ParentDemand, Connection, Children>
-    ProgramOutputContinuationFactory<Schema, Program, ParentDemand>
-    for ApplicationOutputEdge<Connection, Children>
-where
-    Schema: ApplicationSchema + 'static,
-    Program: ApplicationProgramDefinition<Schema>,
-    ParentDemand: WorthQueryApplicationOutputDemand<Schema> + Clone,
-    Connection: ApplicationConnectionShape<Schema>,
-    Binding<Schema, Connection>: WorthQueryApplicationDependentOutputConnection<
-        Schema,
-        RootDemand = ParentDemand,
-    >,
-    ChildDemand<Schema, Connection>: Clone,
-    DiscoveryValue<Schema, Connection>: WorthQueryApplicationProjection<
-            Schema,
-            <DiscoveryBinding<Schema, Connection> as ApplicationQueryBinding<Schema>>::Query,
-        > + Clone,
-    <DiscoveryBinding<Schema, Connection> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-        ApplicationQueryScopeResolution<
-            Schema,
-            <DiscoveryBinding<Schema, Connection> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-        >,
-    SourceValue<Schema, ChildDemand<Schema, Connection>>: WorthQueryApplicationProjection<
-            Schema,
-            SourceQuery<Schema, ChildDemand<Schema, Connection>>,
-        > + Clone,
-    <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::Input:
-        ApplicationQueryIntent<
-            Schema,
-            Binding = Source<Schema, ChildDemand<Schema, Connection>>,
-        >,
-    <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-        ApplicationQueryScopeResolution<
-            Schema,
-            <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-        >,
-    Children: ApplicationOutputEdgesShape<Schema>
-        + ProgramOutputContinuationFactory<Schema,
-            Program,
-            ChildDemand<Schema, Connection>,
-        >,
-{
-    fn validate_history_group_outputs(
-        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-    ) -> Result<(), worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial> {
-        application.validate_history_group_output::<ChildDemand<Schema, Connection>>(
-            &worth_query_execution::publication_boundary::program_publication_access(),
-        )?;
-        Children::validate_history_group_outputs(application)
-    }
-
-    fn start_verified(
-        _: &WorthQueryProgramApplicationRuntime<Schema, Program>, parent_demand: &ParentDemand,
-        parent: &worth_query_execution::publication_boundary::document_history::WorthQueryVerifiedHistoryParent<Schema, Program, ParentDemand>,
-        _: &WorthQueryApplicationRequest<'_, '_, '_, Schema>, controls: WorthQueryOutputDemandControls,
-    ) -> Result<Box<dyn ProgramOutputContinuation<Schema, Program>>, WorthQueryRequiredOutputPreparationDenial> {
-        // The Query-owned parent cannot be cloned into a different posture.
-        // Clone the SDK carrier only after Query shares this exact read custody.
-        Ok(Box::new(EdgeContinuation::<Schema, Program, ParentDemand, Connection, Children> {
-            parent_demand: parent_demand.clone(),
-            parent_authority: ProgramOutputParentAuthority::verified(parent.clone()),
-            nodes: None, discovery_source: None, dependencies: None, next_admission: 0, next_advance: 0,
-            outputs: Vec::new(), work: ProgramOutputTraversalWork::default(), controls,
-            basis: crate::application_entry::WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(parent.observation())),
-            minimum_observation: crate::application_entry::WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(parent.observation())),
-            marker: std::marker::PhantomData,
-        }))
-    }
-
-    fn start(
-        _: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-        parent_demand: &ParentDemand,
-        parent_settlement: &WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, ParentDemand>>,
-        parent_authority: &ProgramOutputParentAuthority<Schema, Program, ParentDemand>,
-        minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
-        _: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-        controls: WorthQueryOutputDemandControls,
-    ) -> Result<Box<dyn ProgramOutputContinuation<Schema, Program>>, WorthQueryRequiredOutputPreparationDenial> {
-        let basis = if parent_settlement.observation().selected_commit().ordinal()
-            >= minimum_observation.selected_commit().ordinal() {
-            parent_settlement.observation()
-        } else { minimum_observation };
-        // Setup is effect-free. Discovery/admission belongs to the retained state,
-        // so a later sibling refusal cannot drop an earlier admitted child.
-        Ok(Box::new(EdgeContinuation::<Schema, Program, ParentDemand, Connection, Children> {
-            parent_demand: parent_demand.clone(),
-            parent_authority: parent_authority.clone(),
-            nodes: None,
-            discovery_source: None,
-            dependencies: None,
-            next_admission: 0,
-            next_advance: 0,
-            outputs: Vec::new(),
-            work: ProgramOutputTraversalWork::default(),
-            controls,
-            basis: basis.retained_clone(),
-            minimum_observation: minimum_observation.retained_clone(),
-            marker: std::marker::PhantomData,
-        }))
-    }
-}
+mod factory;
 
 impl< Schema, Program, ParentDemand, Connection, Children>
     ProgramOutputContinuation<Schema, Program>
@@ -209,6 +110,7 @@ where
             ChildDemand<Schema, Connection>,
         >,
 {
+    fn record_history_discovery(&mut self, origin: std::sync::Arc<worth_query_execution::publication_boundary::document_history::WorthQueryHistoryRecordingOutputOrigin>, index: usize) {self.recording_recipes = Some((origin, index));}
     fn authorize_history(
         &self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
@@ -337,6 +239,10 @@ where
             if let Some((settlement, authority)) = node.settled.as_ref() {
                 node.continuation = Some(Children::start(application, &node.demand,
                     settlement, authority, &self.basis, request, self.controls)?);
+            }
+            if let Some((origin, index)) = &self.recording_recipes
+                && let Some(continuation) = &mut node.continuation {
+                continuation.record_history_discovery(std::sync::Arc::clone(origin), *index);
             }
             if let Some((settlement, _)) = node.settled.take() {
                 self.outputs.push(ProgramOutputRecord::new::<Schema, Connection>(node.demand.clone(), settlement));

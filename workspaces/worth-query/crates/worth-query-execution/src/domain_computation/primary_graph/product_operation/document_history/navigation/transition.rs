@@ -204,9 +204,11 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .expect("original prepaid head destination"),
             previous,
         );
-        let unused_source = selected
-            .journal
-            .fill_navigation_source(self.requested, retained_source);
+        let unused_source = selected.journal.fill_navigation_source(
+            self.requested,
+            retained_source,
+            source.discovery_recipes.clone(),
+        );
         let excluded = selected
             .journal
             .complete_navigation(self.requested, view_after);

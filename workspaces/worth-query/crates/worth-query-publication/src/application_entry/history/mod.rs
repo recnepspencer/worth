@@ -107,6 +107,7 @@ pub use navigation::{
 mod observation;
 mod outputs;
 mod owner_handoff;
+mod recipe_fault;
 pub use outputs::{
     WorthQueryHistoryNoOutputs, WorthQueryHistoryOutputDenial,
     WorthQueryHistoryOutputQualificationDenial, WorthQueryHistoryOutputsMode,

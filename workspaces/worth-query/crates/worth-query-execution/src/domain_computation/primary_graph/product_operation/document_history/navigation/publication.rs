@@ -125,6 +125,9 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 original,
                 selected,
                 self.output_basis_memory.take(),
+                self.source
+                    .as_ref()
+                    .expect("selected preview retained until qualification"),
             ));
         }
         self.phase = if self.output_profile.is_some() || self.ownership.is_some() {

@@ -65,6 +65,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 .journal
                 .prepared_step(&group.reservation.record, endpoint.clone());
             Ok(PreparedBinding {
+                discovery_recipes: None,
                 node: RecordedNode {
                     step: step.clone(),
                     root_posture: last.root_posture,
