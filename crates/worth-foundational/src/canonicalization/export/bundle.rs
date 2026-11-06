@@ -25,6 +25,10 @@ impl CanonicalExportBundle {
         }
     }
 
+    pub(in crate::canonicalization) fn into_basis(self) -> CanonicalExportBasisBundle {
+        self.bundle
+    }
+
     pub fn manifest(&self) -> &CanonicalExportManifest {
         &self.manifest
     }
@@ -54,6 +58,15 @@ impl CanonicalExportBasisBundle {
         sequences: Vec<CanonicalExportBasisSequence>,
     ) -> Self {
         Self { version, sequences }
+    }
+
+    pub(in crate::canonicalization) fn into_parts(
+        self,
+    ) -> (
+        CanonicalizationRuleVersion,
+        Vec<CanonicalExportBasisSequence>,
+    ) {
+        (self.version, self.sequences)
     }
 
     pub fn version(&self) -> &CanonicalizationRuleVersion {
@@ -86,6 +99,17 @@ impl CanonicalExportBasisSequence {
             entries: entries.to_vec(),
             cost,
         }
+    }
+
+    pub(in crate::canonicalization) fn into_parts(
+        self,
+    ) -> (
+        CanonicalizationRuleVersion,
+        CanonicalBasisDomain,
+        Vec<CanonicalBasisEntry>,
+        CanonicalizationCost,
+    ) {
+        (self.version, self.domain, self.entries, self.cost)
     }
 
     pub fn version(&self) -> &CanonicalizationRuleVersion {

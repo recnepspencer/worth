@@ -4,9 +4,7 @@ use super::token_writer::{append_token, append_u32};
 use super::value::append_value_material;
 use super::writer::{CanonicalMaterialResult, CanonicalMaterialWriter};
 use crate::canonicalization::{CanonicalBasisEntry, CanonicalBasisEntryKind, CanonicalBasisLocus};
-use crate::canonicalization::{
-    CanonicalBasisSequence, CanonicalizationCost, CanonicalizationRuleVersion,
-};
+use crate::canonicalization::{CanonicalBasisSequence, CanonicalizationRuleVersion};
 
 pub(super) fn append_bundle_material(
     material: &mut CanonicalMaterialWriter,
@@ -27,7 +25,6 @@ pub(super) fn append_sequence_material(
         material,
         sequence.version(),
         sequence.domain(),
-        sequence.cost(),
         sequence.entries(),
     )
 }
@@ -38,7 +35,6 @@ pub(crate) fn basis_sequence_material(sequence: &CanonicalBasisSequence) -> Stri
         &mut material,
         sequence.version(),
         sequence.domain(),
-        sequence.cost(),
         sequence.entries(),
     )
     .expect("an unbounded canonical material writer accepts a valid sequence");
@@ -50,27 +46,11 @@ fn append_sequence_parts(
     material: &mut CanonicalMaterialWriter,
     version: &CanonicalizationRuleVersion,
     domain: crate::canonicalization::CanonicalBasisDomain,
-    cost: CanonicalizationCost,
     entries: &[CanonicalBasisEntry],
 ) -> CanonicalMaterialResult {
+    append_token(material, "sequence-material-version", super::CANONICAL_MATERIAL_VERSION)?;
     append_token(material, "sequence-version", version.as_str())?;
     append_token(material, "sequence-domain", domain_material_token(domain))?;
-    append_u32(material, "cost.entry-count", cost.entry_count())?;
-    append_u32(
-        material,
-        "cost.ordering-comparisons",
-        cost.ordering_comparisons(),
-    )?;
-    append_u32(
-        material,
-        "cost.nested-sequence-count",
-        cost.nested_sequence_count(),
-    )?;
-    append_u32(
-        material,
-        "cost.compatibility-lowering-count",
-        cost.compatibility_lowering_count(),
-    )?;
     for entry in entries {
         append_entry_material(material, entry)?;
     }

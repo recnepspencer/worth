@@ -40,3 +40,6 @@ pub use material::{
     write_aspect_value_identity_material, write_struct_aspect_value_identity_material,
     CanonicalMaterialByteCount, CanonicalMaterialLengthOverflow, CanonicalMaterialSink,
 };
+
+#[cfg(test)]
+mod tests;

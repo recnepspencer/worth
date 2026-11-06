@@ -3,18 +3,46 @@ use super::super::resource_admission::{
 };
 use super::super::CanonicalDigestDerivationDenial;
 use super::sink::CanonicalMaterialSink;
+use sha2::{Digest, Sha256};
 pub(super) type CanonicalMaterialResult<T = ()> = Result<T, CanonicalDigestPreparationStop>;
 
 pub(super) struct CanonicalMaterialWriter<'a> {
     material: String,
+    hasher: Option<Sha256>,
+    encoded_bytes: usize,
     maximum_encoded_bytes: Option<usize>,
     admission: Option<&'a mut CanonicalResourceAdmission<'a>>,
 }
 
 impl<'a> CanonicalMaterialWriter<'a> {
+    pub(super) fn into_streaming(mut self) -> Self {
+        self.hasher = Some(Sha256::new());
+        self
+    }
+
+    pub(super) fn finish_digest(mut self) -> CanonicalMaterialResult<CanonicalHashedMaterial> {
+        let work = super::super::CanonicalDigestWorkEvidence::new(0, self.encoded_bytes, 0);
+        self.admit_work(
+            work.sha256_compression_block_count()
+                .checked_add(33)
+                .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?,
+        )?;
+        Ok(CanonicalHashedMaterial {
+            digest: self
+                .hasher
+                .take()
+                .expect("streaming writer")
+                .finalize()
+                .into(),
+            encoded_bytes: self.encoded_bytes,
+        })
+    }
+
     pub(super) fn owned() -> Self {
         Self {
             material: String::new(),
+            hasher: None,
+            encoded_bytes: 0,
             maximum_encoded_bytes: None,
             admission: None,
         }
@@ -23,6 +51,8 @@ impl<'a> CanonicalMaterialWriter<'a> {
     pub(super) fn bounded(maximum_encoded_bytes: usize) -> Self {
         Self {
             material: String::new(),
+            hasher: None,
+            encoded_bytes: 0,
             maximum_encoded_bytes: Some(maximum_encoded_bytes),
             admission: None,
         }
@@ -34,6 +64,8 @@ impl<'a> CanonicalMaterialWriter<'a> {
     ) -> Self {
         Self {
             material: String::new(),
+            hasher: None,
+            encoded_bytes: 0,
             maximum_encoded_bytes: Some(maximum_encoded_bytes),
             admission: Some(admission),
         }
@@ -51,6 +83,29 @@ impl<'a> CanonicalMaterialWriter<'a> {
     }
 
     pub(super) fn append(&mut self, value: &str) -> CanonicalMaterialResult {
+        if self.hasher.is_some() {
+            let attempted = self
+                .encoded_bytes
+                .checked_add(value.len())
+                .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?;
+            if let Some(maximum) = self.maximum_encoded_bytes
+                && attempted > maximum
+            {
+                return Err(self.byte_limit(maximum, attempted));
+            }
+            let work = value
+                .len()
+                .checked_mul(2)
+                .and_then(|work| work.checked_add(1))
+                .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?;
+            self.admit_work(work)?;
+            self.hasher
+                .as_mut()
+                .expect("streaming writer")
+                .update(value.as_bytes());
+            self.encoded_bytes = attempted;
+            return Ok(());
+        }
         let attempted = self
             .material
             .len()
@@ -107,6 +162,7 @@ impl<'a> CanonicalMaterialWriter<'a> {
 
     pub(super) fn finish(self) -> CanonicalEncodedMaterial {
         CanonicalEncodedMaterial {
+            #[cfg(test)]
             allocation_bytes: self.material.capacity(),
             material: self.material.into_bytes(),
         }
@@ -130,16 +186,33 @@ impl CanonicalMaterialSink for CanonicalMaterialWriter<'_> {
     }
 }
 
+pub(in crate::canonicalization::digest_slots) struct CanonicalHashedMaterial {
+    digest: [u8; 32],
+    encoded_bytes: usize,
+}
+
+impl CanonicalHashedMaterial {
+    pub(in crate::canonicalization::digest_slots) fn digest(&self) -> [u8; 32] {
+        self.digest
+    }
+    pub(in crate::canonicalization::digest_slots) fn encoded_bytes(&self) -> usize {
+        self.encoded_bytes
+    }
+}
+
 pub(crate) struct CanonicalEncodedMaterial {
     material: Vec<u8>,
+    #[cfg(test)]
     allocation_bytes: usize,
 }
 
 impl CanonicalEncodedMaterial {
+    #[cfg(test)]
     pub(crate) const fn encoded_bytes(&self) -> usize {
         self.material.len()
     }
 
+    #[cfg(test)]
     pub(crate) const fn allocation_bytes(&self) -> usize {
         self.allocation_bytes
     }
