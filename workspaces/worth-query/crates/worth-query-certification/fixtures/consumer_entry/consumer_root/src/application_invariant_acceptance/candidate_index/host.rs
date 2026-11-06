@@ -1,6 +1,7 @@
 //! Schema-bound fixture for candidate_index.
 //! Genuine application contribution, authenticated principal and committed source.
-use super::super::{authentication, resources};
+use super::super::authentication;
+pub(super) use super::super::managed_index::host::Host;
 use super::{boxes, directory, mutation, prefix, schema::*};
 use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::Arc;
@@ -55,11 +56,13 @@ pub struct Configuration {
     pub boxes: Arc<boxes::Calls>,
     pub incompatible: bool,
 }
-pub type Host = WorthQueryProgramApplicationRuntime<Catalog, Program>;
-pub fn install(calls: Arc<prefix_observation::Calls>) -> Host {
+pub fn install(calls: Arc<prefix_observation::Calls>) -> Host<Catalog, Program> {
     install_boxes(calls, Arc::new(boxes::Calls::default()))
 }
-pub fn install_boxes(prefix: Arc<prefix_observation::Calls>, boxes: Arc<boxes::Calls>) -> Host {
+pub fn install_boxes(
+    prefix: Arc<prefix_observation::Calls>,
+    boxes: Arc<boxes::Calls>,
+) -> Host<Catalog, Program> {
     try_install(prefix, boxes, false)
         .expect("the actual public managed sources and both providers install")
 }
@@ -67,7 +70,7 @@ pub fn try_install(
     prefix: Arc<prefix_observation::Calls>,
     boxes: Arc<boxes::Calls>,
     incompatible: bool,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host<Catalog, Program>, WorthQueryInMemoryApplicationDenial> {
     install_configuration(Configuration {
         prefix,
         configure_prefix: |calls, setup| {
@@ -79,78 +82,68 @@ pub fn try_install(
 }
 pub(super) fn install_configuration(
     configuration: Configuration,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host<Catalog, Program>, WorthQueryInMemoryApplicationDenial> {
     let declaration = Catalog::declaration().unwrap();
-    in_memory_program(
-        ApplicationProgramAuthoring::<Catalog, Program>::begin()
-            .with_schema(&declaration)
-            .validated_program()
-            .unwrap(),
-        declaration,
-        (configuration,),
-        ApplicationBuildIdentity::parse("19191919-1919-1919-1919-191919191919").unwrap(),
-        resources::application_limits(),
-        |_, graph, installed| {
-            graph.bind_principal(
-                &installed
-                    .principal_binding(CatalogPrincipal::reference())
-                    .unwrap(),
-                WorthQueryApplicationPrincipalKey::new("catalog-reader").unwrap(),
-                1u64,
-                authentication::external_identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
+    Host::install(declaration, (configuration,), |_, graph, installed| {
+        graph.bind_principal(
+            &installed
+                .principal_binding(CatalogPrincipal::reference())
+                .unwrap(),
+            WorthQueryApplicationPrincipalKey::new("catalog-reader").unwrap(),
+            1u64,
+            authentication::external_identity(),
+            WorthQueryPrincipalMappingStatus::Enabled,
+        )?;
+        for directory in [
+            "catalog",
+            "empty",
+            "boxes",
+            "empty-boxes",
+            "invalid-boxes",
+            "other-boxes",
+        ] {
+            graph.bind_entity(
+                WorthQueryApplicationEntitySeed::new(
+                    Directory::reference(),
+                    directory_key(directory),
+                )
+                .field(DirectoryIdentity::reference(), directory.to_owned()),
             )?;
-            for directory in [
-                "catalog",
-                "empty",
-                "boxes",
-                "empty-boxes",
-                "invalid-boxes",
-                "other-boxes",
-            ] {
-                graph.bind_entity(
-                    WorthQueryApplicationEntitySeed::new(
-                        Directory::reference(),
-                        directory_key(directory),
-                    )
-                    .field(DirectoryIdentity::reference(), directory.to_owned()),
-                )?;
-            }
-            for (identity, name, enabled) in [
-                ("item-a", "beta", true),
-                ("item-b", "alpha", true),
-                ("item-c", "alpha", true),
-                ("item-d", "alpine", false),
-                ("item-e", "", true),
-                ("item-f", "álamo", true),
-                ("item-g", "alphabet", true),
-            ] {
-                let key = WorthQueryApplicationEntityKey::new(identity).unwrap();
-                graph.bind_entity(
-                    WorthQueryApplicationEntitySeed::new(
-                        Item::reference(),
-                        WorthQueryApplicationEntityKey::new(identity).unwrap(),
-                    )
-                    .field(ItemIdentity::reference(), identity.to_owned())
-                    .field(ItemName::reference(), name.to_owned())
-                    .field(ItemEnabled::reference(), enabled)
-                    // Name-only rows still populate every required ItemFacts field.
-                    .field(
-                        boxes::ItemBounds::reference(),
-                        boxes::Coordinates::new(0, 0, 0, 0),
-                    ),
-                )?;
-                graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                    Contains::reference(),
-                    identity,
-                    directory_key("catalog"),
-                    key,
-                ))?;
-            }
-            boxes::seed::populate(graph)?;
-            Ok(())
-        },
-    )
+        }
+        for (identity, name, enabled) in [
+            ("item-a", "beta", true),
+            ("item-b", "alpha", true),
+            ("item-c", "alpha", true),
+            ("item-d", "alpine", false),
+            ("item-e", "", true),
+            ("item-f", "álamo", true),
+            ("item-g", "alphabet", true),
+        ] {
+            let key = WorthQueryApplicationEntityKey::new(identity).unwrap();
+            graph.bind_entity(
+                WorthQueryApplicationEntitySeed::new(
+                    Item::reference(),
+                    WorthQueryApplicationEntityKey::new(identity).unwrap(),
+                )
+                .field(ItemIdentity::reference(), identity.to_owned())
+                .field(ItemName::reference(), name.to_owned())
+                .field(ItemEnabled::reference(), enabled)
+                // Name-only rows still populate every required ItemFacts field.
+                .field(
+                    boxes::ItemBounds::reference(),
+                    boxes::Coordinates::new(0, 0, 0, 0),
+                ),
+            )?;
+            graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+                Contains::reference(),
+                identity,
+                directory_key("catalog"),
+                key,
+            ))?;
+        }
+        boxes::seed::populate(graph)?;
+        Ok(())
+    })
 }
 fn directory_key(identity: &str) -> WorthQueryApplicationEntityKey<Catalog, Directory> {
     WorthQueryApplicationEntityKey::new(identity).unwrap()

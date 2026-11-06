@@ -6,7 +6,7 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 pub(super) fn authenticate(
-    world: &host::Host,
+    world: &host::Host<Catalog, host::Program>,
     scope: &WorthQueryRequestScope,
 ) -> WorthQueryAuthenticatedExternalPrincipal<Catalog> {
     authentication::block_on(

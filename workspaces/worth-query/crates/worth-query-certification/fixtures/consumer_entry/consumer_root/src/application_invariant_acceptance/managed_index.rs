@@ -3,7 +3,7 @@ pub(super) mod boxes;
 mod directory;
 pub(super) mod directory_edit;
 mod expectations;
-mod host;
+pub(in crate::application_invariant_acceptance) mod host;
 mod journey;
 #[cfg(test)]
 pub(super) mod lifecycle;
@@ -15,7 +15,7 @@ pub(super) mod prefix_cost_stages;
 pub(super) mod prefix_observation;
 mod query;
 mod refusing;
-mod schema;
+pub(in crate::application_invariant_acceptance) mod schema;
 pub(super) mod structure_fault;
 #[cfg(test)]
 mod value_edits;
