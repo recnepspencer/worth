@@ -10,7 +10,12 @@ use super::WorthQuerySelectedProductOperation;
 use crate::domain_computation::primary_graph::application_attempt::WorkflowSelectionBasis;
 use worth_query_installation::facade::ApplicationSchema;
 
+mod instance;
 mod transition;
+pub use instance::{
+    WorthQueryWorkflowBirthAdapter, WorthQueryWorkflowInstanceAdapter,
+    WorthQueryWorkflowSuccessionAdapter,
+};
 pub use transition::WorthQueryWorkflowAdvanceAdapter;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {

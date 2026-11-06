@@ -1,5 +1,4 @@
 use crate::domain_computation::primary_graph::application_attempt::ReadSetScopedOps;
-mod adapter;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
@@ -18,8 +17,8 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationIdempotencyBinding, WorthQueryOperationProjectionDenial,
-    WorthQuerySelectedProductOperation,
 };
+use crate::domain_computation::primary_graph::application_attempt::WorkflowSelectionBasis;
 
 /// Why a workflow instance request could not bind to the branch's program: the installed
 /// spec belongs to another schema, the adopted program could not be inspected, the branch
@@ -54,7 +53,7 @@ impl std::fmt::Display for WorkflowInstancePreparationDenial {
 
 impl std::error::Error for WorkflowInstancePreparationDenial {}
 
-impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
+impl<Schema> WorkflowSelectionBasis<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
@@ -239,9 +238,3 @@ where
     }
 }
 
-/// Prepares and commits every instance lifecycle request: start, migration,
-/// fork continuation and cancellation. Each is admitted through the
-/// application's instance binding, the same intent a start uses, so one
-/// capability governs an instance from its start to its end.
-#[doc(hidden)]
-pub struct WorthQueryWorkflowInstanceAdapter;

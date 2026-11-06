@@ -20,6 +20,7 @@ use {
 mod basis;
 mod binding;
 mod preparation;
+pub(in crate::domain_computation::primary_graph) use preparation::prepare_succession;
 mod publication;
 mod target;
 pub(in crate::domain_computation::primary_graph::application_attempt) use binding::{
@@ -123,8 +124,6 @@ impl RequiredWorkflowSuccession {
         &self.identity
     }
 }
-#[doc(hidden)]
-pub struct WorthQueryWorkflowSuccessionAdapter;
 fn mismatch(subject: &str) -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(
         WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAuthorityMismatch,

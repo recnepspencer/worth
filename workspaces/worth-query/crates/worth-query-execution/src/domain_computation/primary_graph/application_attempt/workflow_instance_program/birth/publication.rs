@@ -6,7 +6,6 @@ use crate::domain_computation::primary_graph::vocabulary::application_attempt::w
 use super::{
     mismatch, ApplicationMutationBinding, ApplicationSchema, RequiredWorkflowBirth, TypeId,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationOutputRole,
-    WorthQueryWorkflowBirthAdapter,
 };
 
 impl RequiredWorkflowBirth {
@@ -57,11 +56,3 @@ where
         .ok_or_else(|| mismatch("birth subject is absent from receipt"))
 }
 
-impl WorthQueryWorkflowBirthAdapter {
-    pub const fn bind_idempotency(
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        identity: &[u8; 32],
-    ) -> WorthQueryApplicationIdempotencyBinding {
-        idempotency.bind_workflow_instance(identity)
-    }
-}

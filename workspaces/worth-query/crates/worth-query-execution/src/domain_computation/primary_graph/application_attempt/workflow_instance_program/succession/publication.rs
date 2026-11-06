@@ -5,7 +5,6 @@ use super::super::super::{
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
 use super::{
     mismatch, RequiredWorkflowSuccession, WorthQueryApplicationAttemptDenial,
-    WorthQueryWorkflowSuccessionAdapter,
 };
 impl RequiredWorkflowSuccession {
     pub fn instance_in(
@@ -54,12 +53,4 @@ where
         .bound_entity(&OutputRoleUse::fixed::<Role>())
         .map_err(|_| mismatch("foreign succession output role"))?
         .ok_or_else(|| mismatch("succession subject absent from receipt"))
-}
-impl WorthQueryWorkflowSuccessionAdapter {
-    pub const fn bind_idempotency(
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        identity: &[u8; 32],
-    ) -> WorthQueryApplicationIdempotencyBinding {
-        idempotency.bind_workflow_instance(identity)
-    }
 }

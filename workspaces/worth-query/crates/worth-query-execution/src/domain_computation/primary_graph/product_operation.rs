@@ -114,5 +114,8 @@ pub use {
 pub(crate) mod host;
 pub(crate) mod operation_input_capture;
 pub(crate) mod workflow_preparation;
-pub use workflow_preparation::WorthQueryWorkflowAdvanceAdapter;
+pub use workflow_preparation::{
+    WorthQueryWorkflowAdvanceAdapter, WorthQueryWorkflowBirthAdapter,
+    WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowSuccessionAdapter,
+};
 pub use operation_input_capture::OperationInputCaptureOps;

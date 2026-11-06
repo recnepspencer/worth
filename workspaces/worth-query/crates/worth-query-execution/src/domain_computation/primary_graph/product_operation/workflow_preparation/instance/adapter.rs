@@ -28,7 +28,7 @@ impl WorthQueryWorkflowInstanceAdapter {
         };
         let execution = &phase_request;
 
-        selected.prepare_workflow_instance_start::<Capability, Operation, Input, Scope, Spec>(
+        selected.workflow_selection_basis().prepare_workflow_instance_start::<Capability, Operation, Input, Scope, Spec>(
             execution,
             installed,
             published,
@@ -64,7 +64,7 @@ impl WorthQueryWorkflowInstanceAdapter {
         };
         let execution = &phase_request;
 
-        selected.prepare_workflow_instance_migration::<Capability, Operation, Input, Scope, Spec>(
+        selected.workflow_selection_basis().prepare_workflow_instance_migration::<Capability, Operation, Input, Scope, Spec>(
             execution,
             installed,
             WorkflowSuccession::Migration,
@@ -103,7 +103,7 @@ impl WorthQueryWorkflowInstanceAdapter {
         };
         let execution = &phase_request;
 
-        selected.prepare_workflow_instance_migration::<Capability, Operation, Input, Scope, Spec>(
+        selected.workflow_selection_basis().prepare_workflow_instance_migration::<Capability, Operation, Input, Scope, Spec>(
             execution,
             installed,
             WorkflowSuccession::ForkContinuation,
@@ -140,6 +140,7 @@ impl WorthQueryWorkflowInstanceAdapter {
         let execution = &phase_request;
 
         selected
+            .workflow_selection_basis()
             .prepare_workflow_instance_cancellation::<Capability, Operation, Input, Scope, Spec>(
                 execution,
                 installed,

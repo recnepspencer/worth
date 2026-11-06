@@ -23,10 +23,8 @@ mod cancellation;
 pub(in crate::domain_computation::primary_graph::application_attempt) use birth::{
     guard_birth, WorkflowBirthBindingProof,
 };
-pub use birth::{
-    RequiredWorkflowBirth, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot,
-    WorthQueryWorkflowBirthAdapter,
-};
+pub use birth::{RequiredWorkflowBirth, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot};
+pub(in crate::domain_computation::primary_graph) use birth::prepare_birth;
 mod discovery_intent;
 pub use discovery_intent::WorthQueryWorkflowInstanceDiscoveryIntent;
 mod intent_identity;
@@ -41,18 +39,16 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use succes
 };
 pub use succession::{
     RequiredWorkflowSuccession, WorkflowSuccessionAuthority, WorkflowSuccessionAuthoritySlot,
-    WorkflowSuccessionTarget, WorthQueryWorkflowSuccessionAdapter,
+    WorkflowSuccessionTarget,
 };
+pub(in crate::domain_computation::primary_graph) use succession::prepare_succession;
 mod supersession;
 
 pub use cancellation::{
     PerformedWorkflowInstanceCancellation, PreparedWorkflowInstanceCancellation,
     WorkflowInstanceCancellationOutcome,
 };
-pub use preparation::{
-    WorkflowInstanceBindingDenial, WorkflowInstancePreparationDenial,
-    WorthQueryWorkflowInstanceAdapter,
-};
+pub use preparation::{WorkflowInstanceBindingDenial, WorkflowInstancePreparationDenial};
 pub use supersession::{RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart};
 pub use {
     publication::PerformedWorkflowInstanceStart, publication::PreparedWorkflowInstanceStart,
