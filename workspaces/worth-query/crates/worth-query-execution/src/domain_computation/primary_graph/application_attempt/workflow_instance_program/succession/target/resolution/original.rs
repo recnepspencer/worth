@@ -274,7 +274,9 @@ impl OriginalRead<'_, '_, '_> {
         locator: &AspectFieldLocator,
     ) -> Result<String, WorthQueryApplicationAttemptDenial> {
         match self.field(entity, kind, locator)? {
-            Some(AspectValue::String(InternedString::Stored(value))) if !value.as_str().is_empty() => {
+            Some(AspectValue::String(InternedString::Stored(value)))
+                if !value.as_str().is_empty() =>
+            {
                 let value = value.as_str().to_owned();
                 Ok(value)
             }

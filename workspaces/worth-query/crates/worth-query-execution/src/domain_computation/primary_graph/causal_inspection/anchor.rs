@@ -47,10 +47,7 @@ impl CausalObservationAnchorCounters {
         reference_family_count: usize,
         missing_reference_posture: CausalObservationMissingReferencePosture,
         anchor_digest_width: usize,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let counter_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalObservationAnchorCounters,
         )
@@ -147,10 +144,7 @@ impl CausalObservationAnchorError {
         kind: CausalObservationAnchorErrorKind,
         message: &'static str,
         evidence: &[String],
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let failure_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalObservationAnchorFailure,
         )
@@ -221,10 +215,7 @@ impl CausalObservationAnchor {
 pub fn anchor_causal_observation(
     observation_receipt: impl Into<QueryObservationReceipt>,
     inspection_reason: CausalInspectionReason,
-) -> Result<
-    CausalObservationAnchor,
-    CausalInspectionConstructionStop,
-> {
+) -> Result<CausalObservationAnchor, CausalInspectionConstructionStop> {
     let observation_receipt = observation_receipt.into();
     if !inspection_reason_matches_observation_outcome(&inspection_reason, &observation_receipt) {
         return Err((CausalObservationAnchorError::new(

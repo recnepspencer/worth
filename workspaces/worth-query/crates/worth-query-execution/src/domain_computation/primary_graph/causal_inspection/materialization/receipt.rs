@@ -29,10 +29,7 @@ impl CausalMaterializationReceipt {
         materialization_policy: CausalInspectionMaterializationPolicy,
         performance: &CausalInspectionPerformanceEnvelope,
         detail_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let policy_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalInspectionArtifact)
                 .field_shape(WorthQueryEvidenceTag::new("role"), "materialization-policy")

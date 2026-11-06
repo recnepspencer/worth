@@ -119,10 +119,7 @@ impl CausalObservationEvidenceIdentity {
     pub fn new(
         family: CausalEvidenceFamily,
         reference_digest: impl Into<CausalEvidenceReferenceInput>,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let reference_digest = into_reference_digest(reference_digest.into())?;
         let evidence_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalEvidenceReference)
@@ -154,10 +151,7 @@ impl CausalObservationEvidenceIdentity {
 
 fn into_reference_digest(
     reference_input: CausalEvidenceReferenceInput,
-) -> Result<
-    CausalEvidenceReferenceDigest,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalEvidenceReferenceDigest, WorthQueryEvidenceIdentityDerivationDenial> {
     reference_input.into_digest()
 }
 
@@ -179,10 +173,7 @@ pub struct QueryObservationReceipt {
 impl QueryObservationReceipt {
     pub fn from_parts(
         parts: ObservationReceiptParts,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let receipt_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalQueryObservationReceipt,
         )

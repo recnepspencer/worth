@@ -24,10 +24,7 @@ impl CausalEvidenceReference {
         owner: CausalEvidenceOwner,
         family: CausalEvidenceFamily,
         reference_digest: CausalEvidenceReferenceDigest,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let evidence_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalEvidenceReference)
                 .field_shape(WorthQueryEvidenceTag::new("owner"), owner.as_str())
@@ -77,10 +74,7 @@ impl CausalEvidenceReferenceReceipt {
         reference_set_digest: CausalEvidenceReferenceDigest,
         resolved_reference_count: usize,
         missing_reference_family_count: usize,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let receipt_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalEvidenceReferenceReceipt,
         )
@@ -194,10 +188,7 @@ impl CausalEvidenceReferenceResolutionCounters {
         index_lookup_count: usize,
         resolved_reference_count: usize,
         missing_required_reference_count: usize,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let counter_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalEvidenceReferenceResolutionCounters,
         )
@@ -301,10 +292,7 @@ impl CausalEvidenceReferenceResolutionDenial {
         anchor_digest: CausalObservationAnchorDigest,
         missing_families: Vec<CausalEvidenceFamily>,
         missing_indexed_reference_count: usize,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let failure_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalEvidenceReferenceResolutionDenial,
         )

@@ -1,5 +1,5 @@
-use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use super::*;
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 
 pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_causal_artifact_identity(
     kind: CausalInspectionArtifactKind,
@@ -9,10 +9,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_c
     receipt: &WorthQueryEvidenceIdentity,
     readmission_proof: Option<&WorthQueryEvidenceIdentity>,
     detail_identity: &WorthQueryEvidenceIdentity,
-) -> Result<
-    CausalInspectionArtifactIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionArtifactIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionArtifact)
             .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
@@ -45,10 +42,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_c
     query_observation_identity: &WorthQueryEvidenceIdentity,
     bridge_identity: Option<&WorthQueryEvidenceIdentity>,
     bridge_envelope: Option<&WorthQueryEvidenceIdentity>,
-) -> Result<
-    CausalInspectionArtifactIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionArtifactIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionArtifactIdentity)
             .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())

@@ -91,7 +91,11 @@ fn causal_envelope_maps_source_failure_by_exact_failure_identity() {
             failure.failure_identity().as_str()
         )
         .retained_record_digest_for_reporting(),
-        Some(expected_failure_digest.as_str())
+        Some(
+            expected_failure_digest
+                .expect("bounded digest fixture")
+                .as_str()
+        )
     );
 }
 
@@ -142,6 +146,9 @@ fn causal_envelope_denies_missing_retained_expansion_record_without_unindexed_sc
         .diagnostics()
         .assemble_causal_explanation_envelope(request)
         .expect_err("missing retained record should deny");
+    let crate::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) = denial else {
+        panic!("expected domain denial, got {denial:?}")
+    };
 
     assert_eq!(
         denial.kind(),

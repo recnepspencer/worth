@@ -1,13 +1,10 @@
-use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use super::*;
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 
 pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_causal_inspection_target_identity(
     observation_target: &CausalObservationTargetHandle,
     result_shape_context: &CausalResultShapeContextHandle,
-) -> Result<
-    CausalInspectionTargetIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionTargetIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionTarget)
             .field_evidence_identity(
@@ -31,10 +28,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_c
     requested_richness: CausalInspectionRichness,
     requested_evidence_families: &[CausalEvidenceFamily],
     inspection_basis_digest: &str,
-) -> Result<
-    CausalInspectionRequestIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionRequestIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionRequest)
             .field_evidence_identity(
@@ -76,10 +70,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_c
     kind: &str,
     message: &str,
     evidence: &[WorthQueryEvidenceIdentity],
-) -> Result<
-    CausalInspectionRequestFailureIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionRequestFailureIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionRequestFailure)
             .field_shape(WorthQueryEvidenceTag::new("kind"), kind)
@@ -95,10 +86,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_c
 
 pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_causal_admission_subject_identity(
     subject: &CausalInspectionAdmissionSubject,
-) -> Result<
-    CausalInspectionAdmissionSubjectIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionAdmissionSubjectIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionAdmissionSubject)
             .field_evidence_identity(

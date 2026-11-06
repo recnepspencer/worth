@@ -63,10 +63,7 @@ pub fn materialize_admitted_causal_inspection(
     envelope: &BridgeCausalExplanationEnvelope,
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> Result<
-    QueryCausalInspectionArtifact,
-    CausalInspectionConstructionStop,
-> {
+) -> Result<QueryCausalInspectionArtifact, CausalInspectionConstructionStop> {
     let readmission_proof = validate_bridge_summary(
         inspection.admitted_inspection_identity(),
         inspection.subject().anchor_identity(),
@@ -107,10 +104,7 @@ pub fn materialize_advisory_causal_inspection(
     envelope: &BridgeCausalExplanationEnvelope,
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> Result<
-    QueryCausalInspectionArtifact,
-    CausalInspectionConstructionStop,
-> {
+) -> Result<QueryCausalInspectionArtifact, CausalInspectionConstructionStop> {
     let readmission_proof = validate_bridge_summary(
         inspection.advisory_inspection_identity(),
         inspection.subject().anchor_identity(),
@@ -156,10 +150,7 @@ pub fn validate_bridge_summary(
     anchor_identity: &super::observation_identity::CausalObservationAnchorDigest,
     expected_kind: BridgeCausalInspectionAdmissionSummaryKind,
     envelope: &BridgeCausalExplanationEnvelope,
-) -> Result<
-    CausalBridgeReadmissionProof,
-    CausalInspectionConstructionStop,
-> {
+) -> Result<CausalBridgeReadmissionProof, CausalInspectionConstructionStop> {
     contract::require_legacy_materialization_source(envelope)?;
     if envelope.admission_summary_kind() != expected_kind {
         return Err((CausalInspectionMaterializationError::new(
@@ -238,10 +229,7 @@ fn build_bridge_backed_artifact(
     readmission_proof: &CausalBridgeReadmissionProof,
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> Result<
-    BuiltBridgeBackedArtifact,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<BuiltBridgeBackedArtifact, WorthQueryEvidenceIdentityDerivationDenial> {
     let evidence_references = envelope
         .bindings()
         .iter()
@@ -309,10 +297,7 @@ pub(super) fn causal_materialization_identity(
     query_observation_identity: &WorthQueryEvidenceIdentity,
     bridge_identity: Option<&WorthQueryEvidenceIdentity>,
     bridge_envelope: Option<&WorthQueryEvidenceIdentity>,
-) -> Result<
-    CausalInspectionArtifactIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionArtifactIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(compose_causal_artifact_causal_identity(
         kind,
         query_admission_identity,
@@ -351,10 +336,7 @@ fn artifact_identity(
     receipt: &CausalMaterializationReceipt,
     readmission_proof: Option<&CausalBridgeReadmissionProof>,
     detail_identity: &WorthQueryEvidenceIdentity,
-) -> Result<
-    CausalInspectionArtifactIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionArtifactIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(compose_causal_artifact_identity(
         kind,
         query_admission_identity,

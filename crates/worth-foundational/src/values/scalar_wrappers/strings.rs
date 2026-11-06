@@ -68,7 +68,11 @@ impl std::hash::Hash for InternedString {
 
 impl InternedString {
     pub fn into_raw_text(self) -> Option<String> {
-        match self { Self::Raw(text) => Some(text), Self::Stored(text) => Some(text.as_str().to_owned()), Self::Symbol(_) => None }
+        match self {
+            Self::Raw(text) => Some(text),
+            Self::Stored(text) => Some(text.as_str().to_owned()),
+            Self::Symbol(_) => None,
+        }
     }
 
     pub fn raw_text(&self) -> Option<&str> {

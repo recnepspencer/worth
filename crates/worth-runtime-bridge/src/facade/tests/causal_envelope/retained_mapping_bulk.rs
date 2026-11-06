@@ -117,6 +117,9 @@ fn causal_envelope_denies_missing_bulk_planning_without_unindexed_scan() {
         .diagnostics()
         .assemble_causal_explanation_envelope(request)
         .expect_err("missing bulk planning record should deny");
+    let crate::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) = denial else {
+        panic!("expected domain denial, got {denial:?}")
+    };
 
     assert_eq!(
         denial.kind(),
@@ -222,6 +225,6 @@ fn retain_bulk_record(
 
 fn bulk_planning_digest(record: &BridgeCanonicalBulkPlanRecord) -> String {
     crate::diagnostics::causal_envelope::retained_mapping::retained_artifact_digest::planning_checkpoint::bulk_planning_digest(record)
-        .as_str()
+        .expect("bounded digest fixture").as_str()
         .to_string()
 }

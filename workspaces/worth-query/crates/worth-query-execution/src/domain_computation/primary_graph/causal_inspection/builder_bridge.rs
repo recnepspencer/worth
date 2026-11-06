@@ -1,7 +1,7 @@
 use crate::domain_computation::primary_graph::causal_inspection::CausalInspectionConstructionStop;
 use worth_runtime_bridge::facade::{
-    BridgeCausalEnvelopeAssemblyRequest, BridgeCausalEnvelopeConstructionStop, BridgeCausalEvidenceFamily,
-    BridgeCausalEvidenceOwner, BridgeCausalEvidenceReference,
+    BridgeCausalEnvelopeAssemblyRequest, BridgeCausalEnvelopeConstructionStop,
+    BridgeCausalEvidenceFamily, BridgeCausalEvidenceOwner, BridgeCausalEvidenceReference,
     BridgeCausalEvidenceReferenceIdentity, BridgeCausalInspectionAdmissionSummary,
     BridgeIdentityEvidence, RuntimeBridge,
 };
@@ -26,7 +26,7 @@ impl CausalInspectionPlan {
     pub fn materialize_with_bridge(
         &self,
         bridge: &RuntimeBridge,
-    ) -> Result<QueryCausalInspectionArtifact, CausalInspectionConstructionStop>{
+    ) -> Result<QueryCausalInspectionArtifact, CausalInspectionConstructionStop> {
         match &self.admission {
             CausalInspectionProofFlow::Denied(inspection) => {
                 Ok(materialize_denied_causal_inspection(
@@ -49,7 +49,7 @@ impl CausalInspectionPlan {
         &self,
         inspection: &AdmittedCausalInspection,
         bridge: &RuntimeBridge,
-    ) -> Result<QueryCausalInspectionArtifact, CausalInspectionConstructionStop>{
+    ) -> Result<QueryCausalInspectionArtifact, CausalInspectionConstructionStop> {
         match bridge
             .diagnostics()
             .assemble_causal_explanation_envelope(self.bridge_request_for_admitted(inspection)?)
@@ -60,12 +60,14 @@ impl CausalInspectionPlan {
                 self.redaction_policy,
                 self.materialization_policy,
             ),
-            Err(BridgeCausalEnvelopeConstructionStop::Denied(denial)) => Ok(materialize_bridge_denied_admitted_causal_inspection(
-                inspection,
-                &denial,
-                self.redaction_policy,
-                self.materialization_policy,
-            )?),
+            Err(BridgeCausalEnvelopeConstructionStop::Denied(denial)) => {
+                Ok(materialize_bridge_denied_admitted_causal_inspection(
+                    inspection,
+                    &denial,
+                    self.redaction_policy,
+                    self.materialization_policy,
+                )?)
+            }
             Err(stop) => Err(CausalInspectionConstructionStop::Bridge(stop)),
         }
     }
@@ -74,7 +76,7 @@ impl CausalInspectionPlan {
         &self,
         inspection: &AdvisoryCausalInspection,
         bridge: &RuntimeBridge,
-    ) -> Result<QueryCausalInspectionArtifact, CausalInspectionConstructionStop>{
+    ) -> Result<QueryCausalInspectionArtifact, CausalInspectionConstructionStop> {
         match bridge
             .diagnostics()
             .assemble_causal_explanation_envelope(self.bridge_request_for_advisory(inspection)?)
@@ -85,12 +87,14 @@ impl CausalInspectionPlan {
                 self.redaction_policy,
                 self.materialization_policy,
             ),
-            Err(BridgeCausalEnvelopeConstructionStop::Denied(denial)) => Ok(materialize_bridge_denied_advisory_causal_inspection(
-                inspection,
-                &denial,
-                self.redaction_policy,
-                self.materialization_policy,
-            )?),
+            Err(BridgeCausalEnvelopeConstructionStop::Denied(denial)) => {
+                Ok(materialize_bridge_denied_advisory_causal_inspection(
+                    inspection,
+                    &denial,
+                    self.redaction_policy,
+                    self.materialization_policy,
+                )?)
+            }
             Err(stop) => Err(CausalInspectionConstructionStop::Bridge(stop)),
         }
     }
@@ -98,7 +102,7 @@ impl CausalInspectionPlan {
     fn bridge_request_for_admitted(
         &self,
         inspection: &AdmittedCausalInspection,
-    ) -> Result<BridgeCausalEnvelopeAssemblyRequest, CausalInspectionConstructionStop>{
+    ) -> Result<BridgeCausalEnvelopeAssemblyRequest, CausalInspectionConstructionStop> {
         let summary = BridgeCausalInspectionAdmissionSummary::admitted(
             inspection
                 .admitted_inspection_identity()
@@ -121,7 +125,7 @@ impl CausalInspectionPlan {
     fn bridge_request_for_advisory(
         &self,
         inspection: &AdvisoryCausalInspection,
-    ) -> Result<BridgeCausalEnvelopeAssemblyRequest, CausalInspectionConstructionStop>{
+    ) -> Result<BridgeCausalEnvelopeAssemblyRequest, CausalInspectionConstructionStop> {
         let summary = BridgeCausalInspectionAdmissionSummary::advisory(
             inspection
                 .advisory_inspection_identity()
@@ -146,10 +150,7 @@ fn bridge_request_from_summary(
     summary: BridgeCausalInspectionAdmissionSummary,
     query_observation_identity: &WorthQueryEvidenceIdentity,
     references: &[CausalEvidenceReference],
-) -> Result<
-    BridgeCausalEnvelopeAssemblyRequest,
-    CausalInspectionConstructionStop,
-> {
+) -> Result<BridgeCausalEnvelopeAssemblyRequest, CausalInspectionConstructionStop> {
     let mut bridge_references = vec![BridgeCausalEvidenceReference::new(
         BridgeCausalEvidenceOwner::Query,
         BridgeCausalEvidenceFamily::QueryObservation,
@@ -181,10 +182,7 @@ fn bridge_reference_identity(
     owner: BridgeCausalEvidenceOwner,
     family: BridgeCausalEvidenceFamily,
     reference_digest: &CausalEvidenceReferenceDigest,
-) -> Result<
-    BridgeCausalEvidenceReferenceIdentity,
-    CausalInspectionConstructionStop,
-> {
+) -> Result<BridgeCausalEvidenceReferenceIdentity, CausalInspectionConstructionStop> {
     let identity = match owner {
         BridgeCausalEvidenceOwner::Query => {
             BridgeCausalEvidenceReferenceIdentity::query_observation(

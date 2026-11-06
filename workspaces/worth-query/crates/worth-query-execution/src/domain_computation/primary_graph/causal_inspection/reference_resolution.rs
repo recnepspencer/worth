@@ -21,10 +21,7 @@ use super::reference_index::{
 pub fn resolve_causal_evidence_references(
     anchor: CausalObservationAnchor,
     requested_families: &[CausalEvidenceFamily],
-) -> Result<
-    CausalEvidenceReferenceResolution,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalEvidenceReferenceResolution, WorthQueryEvidenceIdentityDerivationDenial> {
     let index = anchor_derived_reference_index(&anchor)?;
     Ok(resolve_indexed_causal_evidence_references(
         anchor,
@@ -37,10 +34,7 @@ pub fn resolve_indexed_causal_evidence_references(
     anchor: CausalObservationAnchor,
     requested_families: &[CausalEvidenceFamily],
     index: &CausalEvidenceReferenceIndex,
-) -> Result<
-    CausalEvidenceReferenceResolution,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalEvidenceReferenceResolution, WorthQueryEvidenceIdentityDerivationDenial> {
     let requested_families = requested_reference_families(&anchor, requested_families);
     let anchor_reference_width = anchor.observation_receipt().evidence_identities().len();
     let mut resolved_references = Vec::new();
@@ -134,10 +128,7 @@ fn requested_reference_families(
 fn reference_set_digest(
     anchor: &CausalObservationAnchor,
     references: &[CausalEvidenceReference],
-) -> Result<
-    CausalEvidenceReferenceDigest,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalEvidenceReferenceDigest, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalEvidenceReference)
             .field_evidence_identity(
@@ -157,10 +148,7 @@ fn reference_set_digest(
 
 fn anchor_derived_reference_index(
     anchor: &CausalObservationAnchor,
-) -> Result<
-    CausalEvidenceReferenceIndex,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalEvidenceReferenceIndex, WorthQueryEvidenceIdentityDerivationDenial> {
     let records = anchor
         .observation_receipt()
         .evidence_identities()

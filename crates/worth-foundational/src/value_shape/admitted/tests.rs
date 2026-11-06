@@ -151,3 +151,49 @@ fn a_fixed_stored_read_stays_flat_with_bystanders_and_prior_reads() {
         assert!((actual as f64) / (baseline as f64) < 1.5);
     }
 }
+
+#[derive(Debug, PartialEq, Eq, Serialize)]
+struct DifferentText(String);
+impl CanonicalValue for DifferentText {
+    const WIRE_NULLABLE: bool = false;
+    const SHAPE_BODY: ValueShapeBody = Text::SHAPE_BODY;
+    fn validate_bounds(&self, _: ValueDecodeBounds) -> Result<(), D> {
+        if self.0 == "beta" {
+            Ok(())
+        } else {
+            Err(D::NonCanonical)
+        }
+    }
+    fn deserialize_bounded<'de, Decoder: serde::Deserializer<'de>>(
+        decoder: Decoder,
+        bounds: ValueDecodeBounds,
+    ) -> Result<Self, Decoder::Error> {
+        String::deserialize_bounded(decoder, bounds).map(Self)
+    }
+}
+
+#[test]
+fn identical_wire_grammars_do_not_share_codec_or_policy_proof() {
+    let bounds = ValueDecodeBounds::unrestricted();
+    let text = encode_stored_canonical_value(&Text("alpha".to_owned()), bounds).unwrap();
+    assert_eq!(
+        decode_stored_canonical_value::<DifferentText>(&text, bounds, None),
+        Err(D::NonCanonical)
+    );
+    let before = counts();
+    decode_stored_canonical_value::<Text>(&text, bounds.with_string_limit(10), None).unwrap();
+    assert!(
+        counts().0 > before.0 && counts().1 > before.1,
+        "different bounds require their own proof"
+    );
+}
+
+#[test]
+fn a_standalone_shape_proof_does_not_admit_an_unsupported_seed() {
+    let definition = crate::value_shape::ValueShapeDefinition::of::<DifferentText>();
+    definition.inspect().unwrap();
+    assert_eq!(
+        definition.inspect_admitted(&mut |_, _| Ok(())),
+        Err(D::UnsupportedAdmission)
+    );
+}

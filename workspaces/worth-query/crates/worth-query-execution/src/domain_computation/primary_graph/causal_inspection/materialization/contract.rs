@@ -15,10 +15,7 @@ use crate::domain_computation::primary_graph::causal_inspection::inventory::Caus
 
 pub(super) fn require_legacy_materialization_source(
     envelope: &BridgeCausalExplanationEnvelope,
-) -> Result<
-    (),
-    CausalInspectionConstructionStop,
-> {
+) -> Result<(), CausalInspectionConstructionStop> {
     if envelope.bindings().iter().any(|binding| {
         matches!(
             binding.binding_class(),
@@ -45,10 +42,7 @@ pub fn validate_materialization_contract(
     requested_families: &[CausalEvidenceFamily],
     envelope: &BridgeCausalExplanationEnvelope,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> Result<
-    (),
-    CausalInspectionConstructionStop,
-> {
+) -> Result<(), CausalInspectionConstructionStop> {
     require_legacy_materialization_source(envelope)?;
     if envelope.bindings().is_empty() {
         return Err((CausalInspectionMaterializationError::new(
@@ -78,10 +72,7 @@ pub fn validate_materialization_contract(
 fn validate_query_observation_binding(
     query_observation_identity: &WorthQueryEvidenceIdentity,
     envelope: &BridgeCausalExplanationEnvelope,
-) -> Result<
-    (),
-    CausalInspectionConstructionStop,
-> {
+) -> Result<(), CausalInspectionConstructionStop> {
     let mut query_observation_binding_count = 0;
     let mut query_observation_matches_subject = false;
     let expected_query_observation_identity = query_observation_identity.bridge_evidence_identity();
@@ -130,10 +121,7 @@ fn query_observation_binding_error(
     query_observation_identity: &WorthQueryEvidenceIdentity,
     envelope: &BridgeCausalExplanationEnvelope,
     query_observation_binding_count: usize,
-) -> Result<
-    CausalInspectionMaterializationError,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionMaterializationError, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(CausalInspectionMaterializationError::new(
         kind,
         |identity| {
@@ -157,10 +145,7 @@ fn query_observation_binding_error(
 fn validate_requested_replay_posture(
     requested_families: &[CausalEvidenceFamily],
     envelope: &BridgeCausalExplanationEnvelope,
-) -> Result<
-    (),
-    CausalInspectionConstructionStop,
-> {
+) -> Result<(), CausalInspectionConstructionStop> {
     let bridge_replay_requested = requested_families.contains(&CausalEvidenceFamily::BridgeReplay);
     let signal_cursor_requested =
         requested_families.contains(&CausalEvidenceFamily::SignalReplayCursor);

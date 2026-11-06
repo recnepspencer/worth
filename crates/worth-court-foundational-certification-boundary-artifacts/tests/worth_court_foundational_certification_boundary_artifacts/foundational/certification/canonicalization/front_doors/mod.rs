@@ -210,7 +210,10 @@ fn canonicalization_digest_front_door_keeps_basis_authority_upstream_of_digest_o
         _ => panic!("comparison should be ready"),
     };
 
-    assert_eq!(digest.metadata().algorithm().id().as_str(), "sha256");
+    assert_eq!(
+        digest.metadata().algorithm().id().as_str(),
+        "sha256-canonical-v2"
+    );
     assert!(matches!(
         canonicalization().compare().evaluate(&comparison),
         worth_foundational::CanonicalComparisonOutcome::Equivalent(_)

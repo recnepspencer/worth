@@ -3,6 +3,7 @@ use worth_query_execution::facade::causal_inspection::integration::{
     materialization, observation_identity, receipt_types, reference, reference_index,
     reference_resolution, request,
 };
+pub use worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop;
 // Operational inspection has one owner in the split execution engine.
 mod certification;
 mod domain_evidence_copy;
@@ -31,7 +32,7 @@ pub use anchor::{
 };
 pub use builder::{
     CausalInspection, CausalInspectionBasisMismatch, CausalInspectionEstimatedCost,
-    CausalInspectionConstructionStop, CausalInspectionPlan, CausalInspectionPlanError, CausalInspectionPlanErrorKind,
+    CausalInspectionPlan, CausalInspectionPlanError, CausalInspectionPlanErrorKind,
     CausalInspectionPlanExplanation, CausalInspectionSupportPosture,
 };
 pub use builder_support::{

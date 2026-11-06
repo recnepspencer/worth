@@ -286,3 +286,103 @@ fn retain_writeback_chain(
         replay,
     }
 }
+
+#[test]
+fn causal_envelope_writeback_admission_lookup_cost_ignores_unrelated_records() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
+    let mut envelope_identities = Vec::new();
+
+    for unrelated_records in [0, 3, 8] {
+        let runtime = runtime(BridgeRuntimePolicy::default());
+        let lowered_policy = lowered_policy(&runtime);
+        for index in 0..unrelated_records {
+            runtime
+                .admit_writeback_declaration(
+                    writeback_declaration(
+                        BridgeWritebackDeclarationIdentity::admit_bridge_owned(format!(
+                            "writeback:noise-{index}"
+                        )),
+                        BridgeRequestKind::Authoritative,
+                        BridgeWritebackRequestMode::WritebackCapable,
+                        &format!("noise-{index}"),
+                    ),
+                    &lowered_policy,
+                )
+                .expect("noise writeback declaration should admit");
+        }
+        let target = runtime
+            .admit_writeback_declaration(
+                writeback_declaration(
+                    BridgeWritebackDeclarationIdentity::admit_bridge_owned(
+                        "writeback:causal-scale",
+                    ),
+                    BridgeRequestKind::Authoritative,
+                    BridgeWritebackRequestMode::WritebackCapable,
+                    "causal-scale",
+                ),
+                &lowered_policy,
+            )
+            .expect("target writeback declaration should admit");
+        let routed = runtime
+            .route(
+                crate::truth_identity_fixtures::truth_commit_fixture(
+                    "commit-causal-writeback-scale",
+                ),
+                execution,
+            )
+            .expect("route should succeed");
+        let target_record = runtime
+            .diagnostics()
+            .writeback_admission_record_for_contract_digest(target.digest())
+            .expect("target admission record should be retained");
+        let request = BridgeCausalEnvelopeAssemblyRequest::from_query_admission(
+            crate::facade::BridgeCausalInspectionAdmissionSummary::admitted(
+                crate::facade::BridgeIdentityEvidence::from_bridge_owner_external_authority(
+                    "query-admission:writeback-scale",
+                ),
+                crate::facade::BridgeIdentityEvidence::from_bridge_owner_external_authority(
+                    "causal-anchor:writeback-scale",
+                ),
+            )
+            .expect("query admission summary should be valid"),
+            vec![
+                query_observation_reference(
+                    BridgeCausalEvidenceReferenceIdentity::query_observation(
+                        crate::facade::BridgeIdentityEvidence::from_bridge_owner_external_authority(
+                            "query-observation:writeback-scale",
+                        ),
+                    )
+                    .expect("query observation reference identity should be valid"),
+                ),
+                bridge_route_reference(routed.result().result_summary()),
+                bridge_writeback_admission_reference(&target_record),
+            ],
+        )
+        .expect("request should be valid");
+
+        let envelope = runtime
+            .diagnostics()
+            .assemble_causal_explanation_envelope(request)
+            .expect("target writeback admission should bind");
+
+        assert_eq!(
+            runtime.diagnostics().writeback_admission_records().len(),
+            unrelated_records + 1
+        );
+        assert_eq!(envelope.counters().bridge_retained_lookup_count(), 2);
+        assert_eq!(envelope.counters().retained_bridge_binding_count(), 2);
+        assert_eq!(envelope.counters().bridge_record_unindexed_scan_count(), 0);
+        envelope_identities.push(
+            envelope
+                .identity()
+                .envelope_identity_for_reporting()
+                .to_string(),
+        );
+    }
+
+    assert_eq!(envelope_identities[0], envelope_identities[1]);
+    assert_eq!(envelope_identities[1], envelope_identities[2]);
+}

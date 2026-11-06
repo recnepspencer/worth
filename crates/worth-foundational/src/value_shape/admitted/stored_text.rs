@@ -28,7 +28,9 @@ impl StoredValueText {
         }))
     }
 
-    pub fn is_empty(&self) -> bool { self.0.text.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.0.text.is_empty()
+    }
 
     pub fn as_str(&self) -> &str {
         &self.0.text
@@ -37,7 +39,9 @@ impl StoredValueText {
         &self.0.text
     }
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
-        std::mem::size_of::<StoredText>().saturating_add(2 * std::mem::size_of::<usize>()).saturating_add(self.0.text.capacity())
+        std::mem::size_of::<StoredText>()
+            .saturating_add(2 * std::mem::size_of::<usize>())
+            .saturating_add(self.0.text.capacity())
     }
 
     pub(in crate::value_shape) fn matches<Delegate: ValueSeedDelegate>(

@@ -48,7 +48,11 @@ fn append_sequence_parts(
     domain: crate::canonicalization::CanonicalBasisDomain,
     entries: &[CanonicalBasisEntry],
 ) -> CanonicalMaterialResult {
-    append_token(material, "sequence-material-version", super::CANONICAL_MATERIAL_VERSION)?;
+    append_token(
+        material,
+        "sequence-material-version",
+        super::CANONICAL_MATERIAL_VERSION,
+    )?;
     append_token(material, "sequence-version", version.as_str())?;
     append_token(material, "sequence-domain", domain_material_token(domain))?;
     for entry in entries {

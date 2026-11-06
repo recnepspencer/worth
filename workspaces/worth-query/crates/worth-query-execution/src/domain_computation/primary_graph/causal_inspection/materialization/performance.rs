@@ -25,10 +25,7 @@ impl CausalInspectionPerformanceEnvelope {
     pub(super) fn for_bridge_envelope(
         envelope: &BridgeCausalExplanationEnvelope,
         redaction_count: usize,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let counters = envelope.counters();
         Ok(Self::new(
             1,
@@ -45,19 +42,13 @@ impl CausalInspectionPerformanceEnvelope {
         )?)
     }
 
-    pub(super) fn for_denied_query() -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    pub(super) fn for_denied_query() -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         Ok(Self::new(1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0)?)
     }
 
     pub(super) fn for_bridge_denial(
         denial: &BridgeCausalEnvelopeDenial,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let counters = denial.counters();
         Ok(Self::new(
             1,
@@ -86,10 +77,7 @@ impl CausalInspectionPerformanceEnvelope {
         bridge_lookup_count: usize,
         bridge_unindexed_scan_count: usize,
         materialized_detail_count: usize,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let performance_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionPerformanceSnapshot,
         )

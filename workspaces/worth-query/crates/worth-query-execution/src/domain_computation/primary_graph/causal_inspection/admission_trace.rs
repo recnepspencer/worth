@@ -44,10 +44,7 @@ impl CausalDecisionTraceRow {
         decision: CausalInspectionAdmissionDecisionKind,
         authority: &'static str,
         reason: &'static str,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let mut row = Self {
             key: key.to_string(),
             span: span.to_string(),
@@ -106,10 +103,7 @@ pub struct CausalDecisionTraceIndex {
 impl CausalDecisionTraceIndex {
     pub(super) fn new(
         rows: Vec<CausalDecisionTraceRow>,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let lookup = rows
             .iter()
             .enumerate()
@@ -167,10 +161,7 @@ impl CausalInspectionAdmissionCounters {
     pub(super) fn new(
         kind: CausalInspectionAdmissionDecisionKind,
         trace: &CausalDecisionTraceIndex,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let advisory_count = usize::from(kind == CausalInspectionAdmissionDecisionKind::Advisory);
         let denial_count = usize::from(kind == CausalInspectionAdmissionDecisionKind::Violation);
         let trace_lookup_count = trace.rows().len();
@@ -265,10 +256,7 @@ impl CausalInspectionAdmissionReceipt {
         decision: &CausalInspectionAdmissionDecision,
         trace: &CausalDecisionTraceIndex,
         counters: &CausalInspectionAdmissionCounters,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let mut receipt = Self {
             receipt_identity: CausalInspectionAdmissionReceiptIdentity::from(
                 crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentity::compose(

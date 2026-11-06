@@ -136,7 +136,9 @@ pub(super) fn compose<Stop>(
     admit(length, output).map_err(Failure::Resource)?;
     let mut token = String::with_capacity(length);
     token.push_str(SCHEME);
-    token.push_str(":sha256:");
+    token.push(':');
+    token.push_str(digest.metadata().algorithm().id().as_str());
+    token.push(':');
     for byte in digest.value().bytes() {
         write!(&mut token, "{byte:02x}").expect("fixed hex writes to admitted String");
     }

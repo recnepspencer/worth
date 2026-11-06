@@ -1,12 +1,9 @@
-use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use super::*;
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 
 pub fn compose_bridge_causal_envelope_identity(
     identity: &BridgeCausalEnvelopeIdentity,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionArtifact)
             .field_shape(WorthQueryEvidenceTag::new("role"), "bridge-causal-envelope")
@@ -36,10 +33,7 @@ pub fn compose_bridge_causal_envelope_identity(
 
 pub fn compose_bridge_causal_explanation_envelope_identity(
     envelope: &BridgeCausalExplanationEnvelope,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     let envelope_identity = compose_bridge_causal_envelope_identity(envelope.identity())?;
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionArtifact)
@@ -83,10 +77,7 @@ pub fn bridge_causal_admission_summary_kind_label(
 
 pub fn compose_bridge_causal_envelope_receipt_identity(
     receipt: &BridgeCausalEnvelopeReceipt,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionArtifact)
             .field_shape(
@@ -115,10 +106,7 @@ pub fn compose_bridge_causal_envelope_receipt_identity(
 
 pub fn compose_bridge_causal_denial_identity(
     denial: &BridgeCausalEnvelopeDenial,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(
             WorthQueryEvidenceScope::CausalInspectionDeniedArtifactDetail,

@@ -36,7 +36,10 @@ pub enum AspectValue {
 
 impl AspectValue {
     pub fn into_raw_text(self) -> Option<String> {
-        match self { Self::String(text) => text.into_raw_text(), _ => None }
+        match self {
+            Self::String(text) => text.into_raw_text(),
+            _ => None,
+        }
     }
 
     /// Borrow resolved text independently of its immutable storage backing.

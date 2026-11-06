@@ -328,10 +328,12 @@ fn optional_text(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<String>, WorthQueryApplicationAttemptDenial> {
     match optional_value(execution, runtime, snapshot, entity, kind, locator, facts)? {
-        Some(value) => value.raw_text().map(|text| Some(text.to_owned())).ok_or_else(|| denial("workflow evidence dependency field has the wrong type")),
+        Some(value) => value
+            .raw_text()
+            .map(|text| Some(text.to_owned()))
+            .ok_or_else(|| denial("workflow evidence dependency field has the wrong type")),
         None => Ok(None),
     }
-
 }
 
 fn optional_u64(

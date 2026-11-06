@@ -168,7 +168,8 @@ fn entry_and_byte_limits_return_typed_denials_without_digest_output() {
             version(),
         )
     };
-    let order = (0..4097).collect::<Vec<_>>();
+    let budget = CanonicalDigestWorkBudget::standard();
+    let order = (0..=budget.maximum_entry_count() as usize).collect::<Vec<_>>();
     assert!(matches!(
         admit_canonical_sequence_digest_derivation_with_budget(
             sequence(&order),
@@ -176,9 +177,9 @@ fn entry_and_byte_limits_return_typed_denials_without_digest_output() {
             CanonicalDigestWorkBudget::standard()
         ),
         TransitionOutcome::Denied(CanonicalDigestDerivationDenial::EntryLimitExceeded {
-            maximum: 4096,
-            actual: 4097
-        })
+            maximum,
+            actual
+        }) if maximum == budget.maximum_entry_count() && actual > maximum
     ));
     assert!(matches!(
         admit_canonical_sequence_digest_derivation_with_budget(
@@ -191,4 +192,33 @@ fn entry_and_byte_limits_return_typed_denials_without_digest_output() {
             ..
         })
     ));
+}
+
+#[test]
+fn streaming_storage_admission_stays_flat_as_material_grows() {
+    fn storage(entries: usize) -> usize {
+        let ready = sequence(&(0..entries).collect::<Vec<_>>());
+        let mut storage = 0;
+        let mut admit = |_: usize, bytes: usize| -> Result<(), ()> {
+            storage += bytes;
+            Ok(())
+        };
+        let digest_ready = CanonicalDigestFrontDoor
+            .for_sequence_with_admission(
+                ready,
+                CanonicalDigestAlgorithmId::sha256(),
+                CanonicalDigestWorkBudget::standard(),
+                &mut admit,
+            )
+            .unwrap();
+        derive_canonical_digest_with_admission(digest_ready, &mut admit).unwrap();
+        storage
+    }
+    let baseline = storage(128);
+    for actual in [storage(256), storage(512)] {
+        assert!(
+            (actual as f64) / (baseline as f64) < 1.5,
+            "material buffer grew: {baseline} -> {actual}"
+        );
+    }
 }

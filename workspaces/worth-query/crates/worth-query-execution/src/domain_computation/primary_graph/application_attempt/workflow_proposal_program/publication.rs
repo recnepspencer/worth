@@ -326,13 +326,21 @@ fn unique_created_text_pair(
     first: &AspectFieldLocator,
     second: &AspectFieldLocator,
 ) -> Option<(EntityId, String, String)> {
-    let candidates = receipt.committed_changes().entity_changes()
-        .filter(|(_, change)| *change == worth_relational::facade::publication::RecordStructuralChange::Created)
-        .filter_map(|(entity, _)| receipt.committed_changes().committed_field_values(entity, &[first, second])
-            .and_then(|values| match values.as_slice() {
-                [a, b] => Some((entity, a.raw_text()?.to_owned(), b.raw_text()?.to_owned())),
-                _ => None,
-            }))
+    let candidates = receipt
+        .committed_changes()
+        .entity_changes()
+        .filter(|(_, change)| {
+            *change == worth_relational::facade::publication::RecordStructuralChange::Created
+        })
+        .filter_map(|(entity, _)| {
+            receipt
+                .committed_changes()
+                .committed_field_values(entity, &[first, second])
+                .and_then(|values| match values.as_slice() {
+                    [a, b] => Some((entity, a.raw_text()?.to_owned(), b.raw_text()?.to_owned())),
+                    _ => None,
+                })
+        })
         .collect::<Vec<_>>();
     let [candidate] = candidates.as_slice() else {
         return None;

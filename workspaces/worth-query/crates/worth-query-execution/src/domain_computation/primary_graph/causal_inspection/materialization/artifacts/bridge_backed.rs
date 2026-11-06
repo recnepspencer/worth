@@ -44,10 +44,7 @@ impl QueryCausalEvidenceReferenceArtifact {
     pub(in crate::domain_computation::primary_graph::causal_inspection::materialization) fn from_bridge_binding(
         binding: &BridgeCausalEvidenceBinding,
         redaction_policy: CausalInspectionRedactionPolicy,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let detail_redacted = redaction_policy == CausalInspectionRedactionPolicy::DigestOnly;
         let retained_record_identity = if detail_redacted {
             None
@@ -265,10 +262,7 @@ impl AdmittedQueryCausalInspectionArtifact {
         envelope: &BridgeCausalExplanationEnvelope,
         temporal_async_explanation: QueryCausalTemporalAsyncExplanation,
         built: BuiltBridgeBackedArtifact,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let bridge_identity = compose_bridge_causal_envelope_identity(envelope.identity())?;
         let bridge_envelope_identity =
             compose_bridge_causal_explanation_envelope_identity(envelope)?;
@@ -324,10 +318,7 @@ impl AdvisoryQueryCausalInspectionArtifact {
         envelope: &BridgeCausalExplanationEnvelope,
         temporal_async_explanation: QueryCausalTemporalAsyncExplanation,
         built: BuiltBridgeBackedArtifact,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let bridge_identity = compose_bridge_causal_envelope_identity(envelope.identity())?;
         let bridge_envelope_identity =
             compose_bridge_causal_explanation_envelope_identity(envelope)?;

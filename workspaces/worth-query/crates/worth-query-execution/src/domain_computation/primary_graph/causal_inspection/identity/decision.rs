@@ -1,12 +1,9 @@
-use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use super::*;
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 
 pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_causal_admission_decision_identity(
     decision: &CausalInspectionAdmissionDecision,
-) -> Result<
-    CausalInspectionAdmissionDecisionIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionAdmissionDecisionIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionAdmissionDecision)
             .field_shape(WorthQueryEvidenceTag::new("kind"), decision.kind().as_str())
@@ -36,10 +33,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_c
 
 pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_causal_decision_trace_row_identity(
     row: &CausalDecisionTraceRow,
-) -> Result<
-    CausalInspectionDecisionTraceRowIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionDecisionTraceRowIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionDecisionTraceRow)
             .field_shape(WorthQueryEvidenceTag::new("key"), row.key())
@@ -57,10 +51,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_c
 
 pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_causal_decision_trace_identity(
     rows: &[CausalDecisionTraceRow],
-) -> Result<
-    CausalInspectionDecisionTraceIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionDecisionTraceIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionDecisionTraceIndex)
             .field_evidence_identity_sequence(
@@ -74,10 +65,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_c
 
 pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_causal_admission_counters_identity(
     counters: &CausalInspectionAdmissionCounters,
-) -> Result<
-    CausalInspectionAdmissionCountersIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionAdmissionCountersIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionAdmissionCounters)
             .field_usize(
@@ -127,10 +115,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_c
 
 pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_causal_admission_receipt_identity(
     receipt: &CausalInspectionAdmissionReceipt,
-) -> Result<
-    CausalInspectionAdmissionReceiptIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionAdmissionReceiptIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionAdmissionReceipt)
             .field_evidence_identity(

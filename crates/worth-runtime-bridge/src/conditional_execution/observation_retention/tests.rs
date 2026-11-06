@@ -116,6 +116,54 @@ fn observation_retention_charges_its_copy_without_the_sources_spare_capacity() {
     assert_eq!(retained.as_str(), source.as_str());
 }
 
+#[test]
+fn immutable_stored_text_retention_funds_the_shared_backing_it_keeps_alive() {
+    use worth_foundational::facade::{AspectMask, InternedString, StoredValueText};
+    let mut donor = String::with_capacity(4096);
+    donor.push_str("retained");
+    let capacity = donor.capacity();
+    let pointer = donor.as_ptr();
+    let artifact = scalar(AspectValue::String(InternedString::Stored(
+        StoredValueText::new(donor),
+    )));
+    let plan = BridgeConditionalSemanticObservationPlan::managed_test_plan_for(
+        artifact.payload().contract().clone(),
+        AspectMask::whole_aspect(),
+    );
+    let insufficient = BridgeRetentionLedger::new(BridgeConditionalRetentionBudget {
+        maximum_retained_bytes: Some((capacity - 1) as u64),
+        ..BridgeConditionalRetentionBudget::development()
+    })
+    .unwrap();
+    assert!(prepare_observations(
+        &plan,
+        &Default::default(),
+        [Some(&artifact)].into_iter(),
+        &insufficient
+    )
+    .is_err());
+    assert_eq!(insufficient.usage(), (0, 0, 0));
+    let ledger =
+        BridgeRetentionLedger::new(BridgeConditionalRetentionBudget::development()).unwrap();
+    let retained = prepare_observations(
+        &plan,
+        &Default::default(),
+        [Some(&artifact)].into_iter(),
+        &ledger,
+    )
+    .unwrap();
+    assert!(ledger.usage().2 > capacity as u64);
+    drop(artifact);
+    let worth_foundational::facade::ContractValidatedAspectValueView::Scalar(value) =
+        retained.current(0).unwrap().payload().view()
+    else {
+        panic!("scalar fixture")
+    };
+    assert_eq!(value.raw_text().unwrap().as_ptr(), pointer);
+    drop(retained);
+    assert_eq!(ledger.usage(), (0, 0, 0));
+}
+
 fn assert_exact_boundary(
     plan: &BridgeConditionalSemanticObservationPlan,
     current: &ContractValidatedAspectArtifact,

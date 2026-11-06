@@ -58,7 +58,10 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn origina
         locator: layout.transition.identity.to_owned(),
         value: text(identity.to_owned()),
     });
-    Ok((WorkflowTransitionLocator::new(entity, settlement), identity.to_owned()))
+    Ok((
+        WorkflowTransitionLocator::new(entity, settlement),
+        identity.to_owned(),
+    ))
 }
 fn incoming(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

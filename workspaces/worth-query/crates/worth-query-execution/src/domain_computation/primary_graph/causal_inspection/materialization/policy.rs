@@ -115,10 +115,7 @@ impl CausalInspectionMaterializationError {
     pub(super) fn new(
         kind: CausalInspectionMaterializationErrorKind,
         detail: impl FnOnce(WorthQueryEvidenceIdentityEncoder) -> WorthQueryEvidenceIdentityEncoder,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         Ok(Self {
             kind,
             failure_identity: detail(
@@ -134,10 +131,7 @@ impl CausalInspectionMaterializationError {
     fn from_typed_bridge_denial(
         kind: CausalInspectionMaterializationErrorKind,
         denial: &BridgeCausalEnvelopeDenial,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let bridge_denial_identity = compose_bridge_causal_denial_identity(denial)?;
         Ok(Self {
             kind,
@@ -171,10 +165,7 @@ impl CausalInspectionMaterializationError {
 
     pub(crate) fn from_bridge_assembly_denial(
         denial: &BridgeCausalEnvelopeDenial,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         Ok(Self::from_typed_bridge_denial(
             CausalInspectionMaterializationErrorKind::MaterializationPolicyOverclaim,
             denial,

@@ -98,13 +98,7 @@ impl ApplicationScalarValueBinding for CapabilityReviewKindBinding {
 impl ApplicationReadableScalarValueBinding for CapabilityReviewKindBinding {
     fn decode(value: &AspectValue) -> Result<Self::Value, ApplicationValueDecodeDenial> {
         match value {
-            AspectValue::String(InternedString::Stored(value)) if value == "elevation" => {
-                let value = value.as_string();
-                {
-                    Ok(CapabilityReviewKind::Elevation)
-                }
-            }
-            AspectValue::String(InternedString::Raw(value)) if value == "elevation" => {
+            AspectValue::String(text) if text.raw_text() == Some("elevation") => {
                 Ok(CapabilityReviewKind::Elevation)
             }
             AspectValue::String(_) => Err(ApplicationValueDecodeDenial::CodecRejected {

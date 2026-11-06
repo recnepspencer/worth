@@ -53,10 +53,7 @@ impl QueryCausalTemporalAsyncExplanation {
         observation_outcome: CausalObservationOutcome,
         evidence_families: &[CausalEvidenceFamily],
         bridge_denial_family: Option<BridgeCausalEvidenceFamily>,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let mut evidence_families = evidence_families.to_vec();
         evidence_families.sort();
         evidence_families.dedup();
@@ -125,10 +122,7 @@ impl QueryCausalTemporalAsyncExplanation {
 
 pub(in crate::domain_computation::primary_graph) fn project_admitted_temporal_async_explanation(
     inspection: &AdmittedCausalInspection,
-) -> Result<
-    QueryCausalTemporalAsyncExplanation,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<QueryCausalTemporalAsyncExplanation, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(QueryCausalTemporalAsyncExplanation::project(
         inspection.subject().inspection_reason(),
         inspection.subject().observation_outcome(),
@@ -139,10 +133,7 @@ pub(in crate::domain_computation::primary_graph) fn project_admitted_temporal_as
 
 pub(in crate::domain_computation::primary_graph) fn project_advisory_temporal_async_explanation(
     inspection: &AdvisoryCausalInspection,
-) -> Result<
-    QueryCausalTemporalAsyncExplanation,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<QueryCausalTemporalAsyncExplanation, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(QueryCausalTemporalAsyncExplanation::project(
         inspection.subject().inspection_reason(),
         inspection.subject().observation_outcome(),
@@ -154,10 +145,7 @@ pub(in crate::domain_computation::primary_graph) fn project_advisory_temporal_as
 pub(in crate::domain_computation::primary_graph) fn project_denied_temporal_async_explanation(
     inspection: &DeniedCausalInspection,
     bridge_denial_family: Option<BridgeCausalEvidenceFamily>,
-) -> Result<
-    QueryCausalTemporalAsyncExplanation,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<QueryCausalTemporalAsyncExplanation, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(QueryCausalTemporalAsyncExplanation::project(
         inspection.subject().inspection_reason(),
         inspection.subject().observation_outcome(),

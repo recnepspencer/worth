@@ -93,7 +93,9 @@ impl InstallationCanonicalIdentityBasis {
         basis: &CanonicalBasisReadyArtifact,
     ) -> Result<(), CanonicalDigestDerivationDenial> {
         for entry in basis.payload().entries() {
-            let CanonicalBasisLocus::Named(name) = entry.locus() else { unreachable!("declaration loci are named") };
+            let CanonicalBasisLocus::Named(name) = entry.locus() else {
+                unreachable!("declaration loci are named")
+            };
             let name = name.raw_text().expect("declaration loci use raw text");
             self.push(format!("{locus_prefix}.{name}"), entry.value().clone())?;
         }

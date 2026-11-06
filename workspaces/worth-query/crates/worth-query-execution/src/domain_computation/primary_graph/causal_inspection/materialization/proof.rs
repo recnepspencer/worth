@@ -24,10 +24,7 @@ impl CausalBridgeReadmissionProof {
         query_admission_identity: &CausalInspectionOutcomeIdentity,
         anchor_identity: &CausalObservationAnchorDigest,
         envelope: &BridgeCausalExplanationEnvelope,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let bridge_admission_summary_identity =
             envelope.admission_summary_evidence_identity().clone();
         let bridge_envelope_identity =

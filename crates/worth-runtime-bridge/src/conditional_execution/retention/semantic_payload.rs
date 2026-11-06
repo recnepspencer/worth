@@ -89,8 +89,8 @@ pub(in crate::conditional_execution) fn artifact(
     Ok(size)
 }
 
-// Clone materializes length-sized String buffers. The source's spare capacity
-// is neither copied nor owned by the retained observation/trigger.
+// Raw strings clone length-sized buffers. Immutable stored text instead
+// shares its allocation, so retention accounts the backing it keeps alive.
 fn scalar(value: &AspectValue) -> Result<u64, D> {
     match value {
         AspectValue::Decimal(value) => bytes(value.0.len()),
@@ -100,8 +100,7 @@ fn scalar(value: &AspectValue) -> Result<u64, D> {
             bytes(value.denominator.0.len())?,
         ]),
         AspectValue::String(InternedString::Stored(value)) => {
-            let value = value.as_string();
-            bytes(value.len())
+            bytes(value.owned_allocation_capacity_bytes())
         }
         AspectValue::String(InternedString::Raw(value)) => bytes(value.len()),
         _ => Ok(0),

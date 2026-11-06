@@ -1,4 +1,3 @@
-use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use super::admission_decision::{
     CausalInspectionAdmissionDecision, CausalInspectionAdmissionDecisionKind,
     CausalInspectionAdmissionSubject, CausalInspectionAdvisoryKind, CausalInspectionViolationKind,
@@ -11,6 +10,7 @@ use super::identity::{compose_causal_outcome_identity, CausalInspectionOutcomeId
 use super::request::{
     CausalInspectionExplanationFamily, CausalInspectionRequest, CausalInspectionRichness,
 };
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AdmittedCausalInspection {
@@ -137,10 +137,7 @@ impl CausalInspectionProofFlow {
 
 pub fn admit_causal_inspection(
     request: CausalInspectionRequest,
-) -> Result<
-    CausalInspectionProofFlow,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionProofFlow, WorthQueryEvidenceIdentityDerivationDenial> {
     let subject = CausalInspectionAdmissionSubject::from_request(&request)?;
     let decision = admission_decision(&request)?;
     let trace = decision_trace(&request, &decision)?;
@@ -200,10 +197,7 @@ pub fn admit_causal_inspection(
 
 fn admission_decision(
     request: &CausalInspectionRequest,
-) -> Result<
-    CausalInspectionAdmissionDecision,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionAdmissionDecision, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(match request.explanation_family() {
         CausalInspectionExplanationFamily::CrossRuntimeCausalExplanation => {
             if request.requested_richness() == CausalInspectionRichness::MaterializedDetail {
@@ -228,10 +222,7 @@ fn admission_decision(
 fn decision_trace(
     request: &CausalInspectionRequest,
     decision: &CausalInspectionAdmissionDecision,
-) -> Result<
-    CausalDecisionTraceIndex,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalDecisionTraceIndex, WorthQueryEvidenceIdentityDerivationDenial> {
     let explanation_decision = if decision.violation_kind().is_some() {
         CausalInspectionAdmissionDecisionKind::Violation
     } else {
@@ -284,10 +275,7 @@ fn inspection_digest(
     decision: &CausalInspectionAdmissionDecision,
     trace: &CausalDecisionTraceIndex,
     receipt: &CausalInspectionAdmissionReceipt,
-) -> Result<
-    CausalInspectionOutcomeIdentity,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<CausalInspectionOutcomeIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(compose_causal_outcome_identity(
         kind,
         subject.subject_identity(),

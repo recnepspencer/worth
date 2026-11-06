@@ -185,10 +185,7 @@ impl From<BridgeIdentityEvidence> for CausalEvidenceReferenceInput {
 impl CausalEvidenceReferenceInput {
     pub(super) fn into_digest(
         self,
-    ) -> Result<
-        CausalEvidenceReferenceDigest,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<CausalEvidenceReferenceDigest, WorthQueryEvidenceIdentityDerivationDenial> {
         let Self::Bridge(value) = self else {
             let Self::Typed(value) = self else {
                 unreachable!()
@@ -218,10 +215,7 @@ pub struct CausalObservationTargetHandle {
 impl CausalObservationTargetHandle {
     pub fn from_evidence_identity(
         identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalObservationTarget)
                 .field_evidence_identity(WorthQueryEvidenceTag::new("source_identity"), identity)
@@ -247,10 +241,7 @@ pub struct CausalResultShapeContextHandle {
 impl CausalResultShapeContextHandle {
     pub fn from_evidence_identity(
         identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalResultShapeContext)
                 .field_evidence_identity(WorthQueryEvidenceTag::new("source_identity"), identity)

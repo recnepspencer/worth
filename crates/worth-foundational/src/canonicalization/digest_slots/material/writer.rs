@@ -84,28 +84,37 @@ impl<'a> CanonicalMaterialWriter<'a> {
 
     pub(super) fn append(&mut self, value: &str) -> CanonicalMaterialResult {
         if self.hasher.is_some() {
-            let attempted = self
-                .encoded_bytes
-                .checked_add(value.len())
-                .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?;
-            if let Some(maximum) = self.maximum_encoded_bytes
-                && attempted > maximum
-            {
-                return Err(self.byte_limit(maximum, attempted));
-            }
-            let work = value
-                .len()
-                .checked_mul(2)
-                .and_then(|work| work.checked_add(1))
-                .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?;
-            self.admit_work(work)?;
-            self.hasher
-                .as_mut()
-                .expect("streaming writer")
-                .update(value.as_bytes());
-            self.encoded_bytes = attempted;
-            return Ok(());
+            self.append_streamed(value)
+        } else {
+            self.append_buffered(value)
         }
+    }
+
+    fn append_streamed(&mut self, value: &str) -> CanonicalMaterialResult {
+        let attempted = self
+            .encoded_bytes
+            .checked_add(value.len())
+            .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?;
+        if let Some(maximum) = self.maximum_encoded_bytes
+            && attempted > maximum
+        {
+            return Err(self.byte_limit(maximum, attempted));
+        }
+        let work = value
+            .len()
+            .checked_mul(2)
+            .and_then(|work| work.checked_add(1))
+            .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?;
+        self.admit_work(work)?;
+        self.hasher
+            .as_mut()
+            .expect("streaming writer")
+            .update(value.as_bytes());
+        self.encoded_bytes = attempted;
+        Ok(())
+    }
+
+    fn append_buffered(&mut self, value: &str) -> CanonicalMaterialResult {
         let attempted = self
             .material
             .len()

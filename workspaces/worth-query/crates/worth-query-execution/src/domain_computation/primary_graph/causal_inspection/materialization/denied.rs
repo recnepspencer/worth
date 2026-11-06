@@ -1,15 +1,12 @@
-use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use super::*;
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 
 pub fn materialize_denied_causal_inspection(
     inspection: &DeniedCausalInspection,
     bridge_denial: Option<&BridgeCausalEnvelopeDenial>,
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> Result<
-    QueryCausalInspectionArtifact,
-    WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<QueryCausalInspectionArtifact, WorthQueryEvidenceIdentityDerivationDenial> {
     let denial_reason = inspection
         .decision()
         .violation_kind()

@@ -90,7 +90,10 @@ pub(super) fn observe(
             &layout.node.path,
         )
         .map_err(Denial::Relational)?;
-        let candidate = value.as_ref().and_then(|value| value.raw_text()).ok_or(Denial::Corrupt)?;
+        let candidate = value
+            .as_ref()
+            .and_then(|value| value.raw_text())
+            .ok_or(Denial::Corrupt)?;
         matches += usize::from(candidate == path.as_str());
     }
     if matches != 1 {

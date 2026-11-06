@@ -1,4 +1,3 @@
-use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use super::super::super::identity::{
     CausalInspectionArtifactIdentity, CausalInspectionOutcomeIdentity,
 };
@@ -11,6 +10,7 @@ use super::super::{
     CausalMaterializationReceipt, QueryCausalTemporalAsyncExplanation,
 };
 use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use worth_runtime_bridge::facade::{BridgeCausalEnvelopeDenialKind, BridgeCausalEvidenceFamily};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -44,10 +44,7 @@ impl DeniedQueryCausalInspectionArtifact {
         performance: CausalInspectionPerformanceEnvelope,
         receipt: CausalMaterializationReceipt,
         artifact_identity: CausalInspectionArtifactIdentity,
-    ) -> Result<
-        Self,
-        WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let causal_identity = causal_materialization_identity(
             CausalInspectionArtifactKind::Denied,
             query_denial_identity,

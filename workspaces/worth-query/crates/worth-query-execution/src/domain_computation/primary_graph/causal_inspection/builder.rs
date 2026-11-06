@@ -332,12 +332,8 @@ impl From<super::CausalInspectionConstructionStop> for CausalInspectionPlanError
         }
     }
 }
-impl From<WorthQueryEvidenceIdentityDerivationDenial>
-    for CausalInspectionPlanError
-{
-    fn from(
-        cause: WorthQueryEvidenceIdentityDerivationDenial,
-    ) -> Self {
+impl From<WorthQueryEvidenceIdentityDerivationDenial> for CausalInspectionPlanError {
+    fn from(cause: WorthQueryEvidenceIdentityDerivationDenial) -> Self {
         Self::Construction(cause.into())
     }
 }
