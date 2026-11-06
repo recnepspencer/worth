@@ -36,8 +36,8 @@ pub(in crate::domain_computation::primary_graph) struct
 }
 
 impl WorthQueryAdmittedApplicationConditionalDefinition {
-    pub(super) fn new<Schema: worth_query_installation::facade::ApplicationSchema>(
-        application: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
+    pub(in crate::domain_computation::primary_graph) fn new<Schema: worth_query_installation::facade::ApplicationSchema>(
+        application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         product: &crate::basis::WorthQueryProductBranchLease,
         identity: [u8; 32],
         predecessor: Arc<BridgeInstalledConditionalLowering>,

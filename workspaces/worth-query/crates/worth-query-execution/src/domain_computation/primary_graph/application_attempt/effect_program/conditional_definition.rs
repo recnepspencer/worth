@@ -1,5 +1,6 @@
+pub(crate) mod application_change;
 use super::WorthQueryApplicationEffectProgramBuilder;
-use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition;
+use crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition;
 use {
     super::super::WorthQueryApplicationAttemptDenial,
     crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,

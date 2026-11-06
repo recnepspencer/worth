@@ -1,5 +1,6 @@
 //! One definition successor issuer for selected entries and admitted handlers.
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition;
 use crate::basis::WorthQueryProductBranchLease;
 use crate::domain_computation::primary_graph::vocabulary::conditional_operation::predicate_observation::QueryTemporalPredicateProvider;
 use crate::domain_computation::primary_graph::vocabulary::product_operation::conditional_definition::WorthQueryApplicationConditionalDefinitionAdmissionDenial;
@@ -28,7 +29,7 @@ pub(in crate::domain_computation::primary_graph) trait AdmissionScopedOps<Schema
                 _ => unreachable!("definition preparation does not publish"),
             })?;
         Ok(WorthQueryAdmittedApplicationConditionalDefinition::new(
-            self.product_operation_host(),
+            self.application_attempt_host(),
             product,
             *handle.binding_identity_digest(),
             anchor,

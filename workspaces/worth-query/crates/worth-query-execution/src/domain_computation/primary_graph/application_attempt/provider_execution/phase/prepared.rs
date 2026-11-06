@@ -144,7 +144,7 @@ struct WorthQueryProviderAttemptPreparation {
     application_effect_count: usize,
     preimage_demand: Option<worth_query_installation::facade::InstalledPreImageDemand>,
     conditional_definition:
-        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+        Option<crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition>,
     effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture,
     output_correspondence: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
@@ -255,7 +255,7 @@ fn take_commit_authorization<Schema, Operation, Input, Scope>(
 fn bind_commit_idempotency<Schema, Operation, Input, Scope>(
     admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     conditional_definition: Option<
-        &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition,
+        &crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition,
     >,
     idempotency: WorthQueryApplicationIdempotencyBinding,
 ) -> WorthQueryApplicationIdempotencyBinding {
@@ -263,7 +263,7 @@ fn bind_commit_idempotency<Schema, Operation, Input, Scope>(
         .bind_admission(admission)
         .bind_conditional_definition(
             conditional_definition.map(
-                crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition::identity,
+                crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition::identity,
             ),
         )
 }

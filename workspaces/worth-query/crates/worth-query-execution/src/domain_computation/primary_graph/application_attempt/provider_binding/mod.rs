@@ -36,7 +36,7 @@ pub struct WorthQueryPreparedApplicationProviderAttempt {
     effects: effect_accumulator::WorthQueryRegisteredProviderEffects,
     preimage_demand: Option<InstalledPreImageDemand>,
     conditional_definition:
-        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+        Option<crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition>,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
@@ -152,7 +152,7 @@ pub fn prepare_provider_attempt<'layout>(
     effects: Vec<WorthQueryApplicationRealizedEffect>,
     preimage_demand: Option<InstalledPreImageDemand>,
     conditional_definition: Option<
-        crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition,
+        crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition,
     >,
     output_correspondence: super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
