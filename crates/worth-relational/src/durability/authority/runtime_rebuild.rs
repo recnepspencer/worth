@@ -10,6 +10,7 @@ mod journal_residency;
 mod merge_plan;
 mod original_inputs;
 mod original_schemas;
+pub(crate) use original_schemas::OriginalSchemaGraph;
 mod recovered_counter_capacity;
 mod recovered_lineage_artifacts;
 mod recovered_schema_basis;
@@ -65,8 +66,11 @@ pub(super) fn rebuild_runtime_from_plan(
     RelationalRecoveryStop,
 > {
     crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-    let mut plan = admitted.into_plan();
-    let original_schemas = original_schemas::OriginalSchemaGraph::admit(&mut plan, execution)?;
+    let (mut plan, prepared_schemas) = admitted.into_parts();
+    let original_schemas = match prepared_schemas {
+        Some(graph) => Some(graph),
+        None => OriginalSchemaGraph::admit(&mut plan, execution)?,
+    };
     let tail_envelopes = plan.tail_envelopes_in_stream_order();
     validate_tail_lineage_allocator_capacity(tail_envelopes.iter().copied())?;
     validate_recovered_lineage_artifacts(plan.checkpoint.as_ref(), tail_envelopes.iter().copied())?;

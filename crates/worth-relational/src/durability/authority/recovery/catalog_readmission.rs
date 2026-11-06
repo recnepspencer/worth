@@ -114,7 +114,13 @@ impl RecoveredRelationalRuntimeAuthority {
         {
             return Err(Denial::AssignmentCount);
         }
-        if target.catalog_digest() != original.plan().target_meaning().catalog() {
+        if target.catalog_digest() != original.plan().target_meaning().catalog()
+            || target.schema_digest() != original.plan().target_meaning().schema()
+            || target
+                .target_meaning(request, original.plan().target_meaning().step())
+                .map_err(Denial::TargetMeaning)?
+                != original.plan().target_meaning()
+        {
             return Err(Denial::TargetCatalogMismatch);
         }
         let position = match original.predecessor().target() {

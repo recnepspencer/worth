@@ -410,6 +410,7 @@ pub use crate::durability::{
     HomeProgramTransitionCallerDenial, HomeProgramTransitionCatalogDigest,
     HomeProgramTransitionDescriptionDenial, HomeProgramTransitionIdentity,
     HomeProgramTransitionPlanDescription, HomeProgramTransitionPlanDigest,
+    HomeProgramTransitionSchemaCarrierDigest, HomeProgramTransitionSchemaDigest,
     HomeProgramTransitionStepAssociation, HomeProgramTransitionStepRole,
     HomeProgramTransitionTargetMeaning, MemoryProductBranchReference,
     NativeCheckpointBranchObservation, NativeCheckpointBranchReference,

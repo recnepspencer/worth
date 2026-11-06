@@ -6,13 +6,14 @@ use crate::durability::source_initial_inputs::schema_catalog::ReadmittedSourceSc
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
-pub(super) struct OriginalSchemaGraph {
-    pub(super) original:
+#[derive(Debug)]
+pub(crate) struct OriginalSchemaGraph {
+    pub(crate) original:
         Arc<crate::durability::source_initial_inputs::source_admission::SourceOriginalInputs>,
-    pub(super) schemas: Arc<ReadmittedSourceSchemaCatalog>,
+    pub(crate) schemas: Arc<ReadmittedSourceSchemaCatalog>,
 }
 impl OriginalSchemaGraph {
-    pub(super) fn admit(
+    pub(crate) fn admit(
         plan: &mut RecoveryPlan,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Option<Self>, RelationalRecoveryStop> {
@@ -88,7 +89,7 @@ impl OriginalSchemaGraph {
         Ok(Some(graph))
     }
 
-    pub(super) fn get(
+    pub(crate) fn get(
         &self,
         digest: [u8; 32],
     ) -> Result<Arc<RelationalBranchRootSchemaAuthority>, RelationalRecoveryStop> {

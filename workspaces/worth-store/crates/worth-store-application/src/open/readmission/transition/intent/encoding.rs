@@ -20,7 +20,7 @@ pub(in crate::open::readmission::transition) fn encode(
         .map_err(Denial::Native)?;
     let predecessor_size = binding::size(predecessor).ok_or(Denial::SizeLimit)?;
     let successor_size = binding::size(successor).ok_or(Denial::SizeLimit)?;
-    let size = 192usize
+    let size = 256usize
         .checked_add(source.branch().name().len())
         .and_then(|size| size.checked_add(native.len()))
         .and_then(|size| size.checked_add(predecessor_size))
@@ -53,6 +53,8 @@ pub(in crate::open::readmission::transition) fn encode(
         out.extend_from_slice(&plan.steps().to_le_bytes());
         out.extend_from_slice(&plan.target_meaning().step().to_le_bytes());
         out.extend_from_slice(&plan.target_meaning().catalog().bytes());
+        out.extend_from_slice(&plan.target_meaning().schema().bytes());
+        out.extend_from_slice(&plan.target_meaning().carrier().bytes());
         out.extend_from_slice(
             &plan
                 .target_meaning()

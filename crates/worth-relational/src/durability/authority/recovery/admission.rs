@@ -23,6 +23,7 @@ pub(super) struct RecoveryAdmission {
 pub(in crate::durability::authority) struct AdmittedRecoveryPlan {
     plan: RecoveryPlan,
     admission: RecoveryAdmission,
+    prepared_home_schemas: Option<super::super::runtime_rebuild::OriginalSchemaGraph>,
 }
 
 impl AdmittedRecoveryPlan {
@@ -30,8 +31,21 @@ impl AdmittedRecoveryPlan {
         &self.admission
     }
 
-    pub(in crate::durability::authority) fn into_plan(self) -> RecoveryPlan {
-        self.plan
+    pub(in crate::durability::authority) fn into_parts(
+        self,
+    ) -> (
+        RecoveryPlan,
+        Option<super::super::runtime_rebuild::OriginalSchemaGraph>,
+    ) {
+        (self.plan, self.prepared_home_schemas)
+    }
+
+    pub(super) fn with_prepared_home_schemas(
+        mut self,
+        schemas: super::super::runtime_rebuild::OriginalSchemaGraph,
+    ) -> Self {
+        self.prepared_home_schemas = Some(schemas);
+        self
     }
 }
 
@@ -99,7 +113,11 @@ pub(super) fn admit_recovery(
     let result = validate_recovery_authority_continuity(runtime, &plan)
         .and_then(|()| validate_reported_parity(runtime, &plan));
     match result {
-        Ok(()) => Ok(AdmittedRecoveryPlan { plan, admission }),
+        Ok(()) => Ok(AdmittedRecoveryPlan {
+            plan,
+            admission,
+            prepared_home_schemas: None,
+        }),
         Err(error) => Err(RecoveryRejection {
             admission,
             error,

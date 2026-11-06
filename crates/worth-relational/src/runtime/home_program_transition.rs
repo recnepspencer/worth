@@ -35,6 +35,7 @@ pub enum RelationalHomeProgramContractDenial {
     Source(crate::derived_relation::DerivedRelationDenial),
     DuplicateInvariant(crate::validation::DuplicateCustomInvariantRegistration),
     SchemaCapture,
+    SchemaImage(crate::durability::data::RelationalRecoveryStop),
     Execution(crate::execution::RelationalExecutionDenialCause),
     SchemaAuthorityExhausted,
     GenerationExhausted,
@@ -60,6 +61,37 @@ pub struct PreparedRelationalHomeProgramContracts {
 impl PreparedRelationalHomeProgramContracts {
     pub fn catalog_digest(&self) -> HomeProgramTransitionCatalogDigest {
         self.meaning.digest
+    }
+    pub fn schema_digest(&self) -> worth_foundational::facade::HomeProgramTransitionSchemaDigest {
+        worth_foundational::facade::HomeProgramTransitionSchemaDigest::from_recorded(
+            self.meaning.schema.authority_digest(),
+        )
+    }
+
+    /// Describe the actual prepared schema and its full recorded carrier.
+    /// Neither this value nor its digests grants an executable Home step.
+    pub fn target_meaning(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        step: u32,
+    ) -> Result<
+        worth_foundational::facade::HomeProgramTransitionTargetMeaning,
+        RelationalHomeProgramContractDenial,
+    > {
+        use worth_foundational::facade::{
+            HomeProgramTransitionSchemaCarrierDigest, HomeProgramTransitionTargetMeaning,
+        };
+        let image = self
+            .meaning
+            .schema
+            .recorded_image(request)
+            .map_err(RelationalHomeProgramContractDenial::SchemaImage)?;
+        Ok(HomeProgramTransitionTargetMeaning::from_recorded(
+            step,
+            self.catalog_digest(),
+            self.schema_digest(),
+            HomeProgramTransitionSchemaCarrierDigest::from_recorded(image.carrier_digest()),
+        ))
     }
 }
 

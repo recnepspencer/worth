@@ -25,7 +25,9 @@ impl DurabilityRecoveryAuthority<'_> {
         crate::execution::check_request(execution).map_err(Stop::Request)?;
         let admitted =
             super::recovery::admit_recovery_or_emit(self.runtime, plan).map_err(Stop::from)?;
-        let plan = admitted.into_plan();
+        // This owner admitted the plain plan above; an opaque prepared Home
+        // recovery cannot enter fresh-source admission.
+        let (plan, _prepared_home_schemas) = admitted.into_parts();
         if plan.checkpoint.is_some()
             || !plan.tail_log.is_empty()
             || !plan.branch_transitions.transitions().is_empty()

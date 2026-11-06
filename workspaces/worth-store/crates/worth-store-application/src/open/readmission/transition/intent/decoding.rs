@@ -63,6 +63,10 @@ pub(in crate::open::readmission::transition) fn decode(
     let target = HomeProgramTransitionTargetMeaning::from_recorded(
         read.u32()?,
         HomeProgramTransitionCatalogDigest::from_recorded(read.fixed()?),
+        worth_foundational::facade::HomeProgramTransitionSchemaDigest::from_recorded(read.fixed()?),
+        worth_foundational::facade::HomeProgramTransitionSchemaCarrierDigest::from_recorded(
+            read.fixed()?,
+        ),
     );
     if read.u32()? != target.whole_candidate_validation_version() {
         return Err(Denial::Malformed);

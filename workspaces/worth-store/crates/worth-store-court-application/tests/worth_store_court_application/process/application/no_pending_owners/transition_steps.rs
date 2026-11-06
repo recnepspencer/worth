@@ -4,9 +4,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use worth_foundational::facade::{
-    HomeProgramTransitionPlanDigest, HomeProgramTransitionTargetMeaning,
-};
+use worth_foundational::facade::HomeProgramTransitionPlanDigest;
 use worth_relational::facade::mvcc::{RelationalCallerAssociation, RelationalTransactionIntent};
 use worth_runtime_world::facade::{RuntimeWorldCancellationSource, WorldOpenAttemptOutcome};
 use worth_store_application::{
@@ -96,7 +94,7 @@ pub(super) fn steps(execute: bool, check_successor_refusal: bool, refuse_compila
             first.clone(),
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             2,
-            HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest()),
+            contracts.target_meaning(&execution, 0).unwrap(),
             &crate::batches::transition_body_roster(&execution, 2),
             &execution,
         )

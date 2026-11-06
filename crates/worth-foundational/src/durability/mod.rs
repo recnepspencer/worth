@@ -25,7 +25,8 @@ pub use home_transition_plan::{
     HomeProgramTransitionDescriptionDenial, HomeProgramTransitionPlanDescription,
 };
 pub use home_transition_target::{
-    HomeProgramTransitionCatalogDigest, HomeProgramTransitionTargetMeaning,
+    HomeProgramTransitionCatalogDigest, HomeProgramTransitionSchemaCarrierDigest,
+    HomeProgramTransitionSchemaDigest, HomeProgramTransitionTargetMeaning,
 };
 mod world_identity;
 mod world_journal;
