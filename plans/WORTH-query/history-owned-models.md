@@ -1453,3 +1453,57 @@ Native merge qualification passes56 ownership-history and3 restoration-header
 courts. Source-partition and D-grant mutants are running, with exact restoration;
 whole history and static checks follow. Corrupt/changed-meaning and D1119
 healthy-child/source discipline remain unfinished; no issue completion is claimed.
+
+### D1214 child-source admission through the same parent-query owner
+
+Boundary review: discovery now enters through the canonical source reader, but
+verified child-source admission and settled-history parent queries still enter
+SDK with_admitted_query at C. A live child only in D cannot reach its actual
+fallback. Both parent postures already carry genuine, distinct custody. Keep
+that distinction in a private borrowed parent sum at the existing history owner;
+never convert verified custody into a settlement. Share current-C principal /
+permission and exact-D query execution in history/parent_query, reusing
+SourceQueryReaderAccess. Validate the actual parent, connection, program,
+artifact and basis after C READ and before data projection. Preserve the old
+ScopeEntityRecord control-plan path; the owned-graph path alone takes actual
+intents. Derive family diagnostics from the installed parent/child demand type,
+without changing the invocation's current authority or admitting D grants.
+
+Add a public ModelMember discovery rooted at the still-live model. A root First
+publication remains healthy while its discovered Downstream member is edited
+5->6 (without settling), then truly retired with its publication. Selecting the
+pre-delete step must read member6 at D although absent C, use the actual child
+fallback and publish600, with one child contact and no root contact. Include
+worker placement, current-permission refusal via the restricted-owned family,
+and a stale-root leg to exercise the genuine settled-parent path. The computed
+member set and actual output IDs/values are independent observations. Then
+qualify all history courts and scope guards/mutations. Corrupt/changed-meaning
+and healthy-child verification remain separately unfinished.
+
+The child-source cutover now uses a private borrowed parent sum in parent_query:
+settled custody and verified custody remain distinct, with no conversion. Both
+owned-graph entrances execute the actual intent through SourceQueryReaderAccess;
+parent/basis validation follows fresh C admission and precedes D projection.
+The SDK retains the original control-plan path for ScopeEntityRecord. Invocation
+family diagnostics derive from the installed typed child demand, while all
+current request, principal and selection guards remain unchanged.
+
+The new generic child court initially passed six serial/worker cases, then the
+complete history family passed171 courts. Its discovery fixture is being
+strengthened to the existing ExactlyOne DTO with a nested Many member collection:
+this matches the installed connection contract and computes empty as well as
+populated sets. Redo to the deleted snapshot must discover the empty set without
+opening a healthy model root. Permission-denied twins also observe zero protected
+source projections, baseline C scope refusal, no contacts and no adoption.
+Mutation qualification and final pristine rerun remain outstanding for this slice.
+
+Child-source checkpoint qualification is complete: all171 public history courts
+pass after exact mutation restoration; the nested member fixture's six serial /
+worker cases include populated fallback, empty redo, genuine parent fallback and
+C-denied disclosure. Forcing C-only source scope resolution fails four courts;
+actually taking D grants fails both permission courts. The repeated D-grants
+case first establishes unchanged selection, zero source projections and zero
+contacts, then rejects the later StaleAuthorization fence in place of the
+required early C scope refusal. Each edited source restores to the same SHA-256.
+Boundary/context, formatting, dirty caps and the primary composition review pass.
+No independent review or complete-workspace equivalence is claimed.

@@ -1,6 +1,7 @@
 //! A scoped readonly recorder distinguishes healthy verification from root reads.
 use std::cell::Cell;
 thread_local! {
+    static MEMBER_READS: Cell<u64> = const { Cell::new(0) };
     static DISCOVERY_READS: Cell<u64> = const { Cell::new(0) };
     static READS: Cell<Option<u64>> = const { Cell::new(None) };
 }
@@ -9,7 +10,11 @@ impl Observation {
     pub(super) fn begin() -> Self {
         READS.with(|reads| assert!(reads.replace(Some(0)).is_none()));
         DISCOVERY_READS.with(|reads| reads.set(0));
+        MEMBER_READS.with(|reads| reads.set(0));
         Self
+    }
+    pub(super) fn protected_member_reads(&self) -> u64 {
+        MEMBER_READS.with(Cell::get)
     }
     pub(super) fn discovery_reads(&self) -> u64 {
         DISCOVERY_READS.with(Cell::get)
@@ -24,6 +29,9 @@ impl Drop for Observation {
     }
 }
 pub(super) fn record(query: &str) {
+    if query == "owned-outputs.member-read.v1" {
+        MEMBER_READS.with(|reads| reads.set(reads.get() + 1));
+    }
     if query == "owned-outputs.first-discovery-query.v1" {
         DISCOVERY_READS.with(|reads| reads.set(reads.get() + 1));
     }

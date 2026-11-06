@@ -40,7 +40,19 @@ where
             .map_err(WorthQueryRequiredOutputPreparationDenial::Demand),
         (ParentAuthorityKind::History(parent), Some(history)) => {
             let owned_demand = demand.clone();
-            let admitted = request.query(demand.source_intent()).with_admitted_query(phase,
+            let access = worth_query_execution::publication_boundary::program_publication_access();
+            let admitted = if history.authority.uses_owned_model_graph() {
+                let read = application.execute_owned_history_dependent_output_query::<ParentDemand, Connection, Source<Schema, ChildDemand<Schema, Connection>>>(
+                    phase, &access, parent, history.authority, &basis.retained, &minimum.retained,
+                    request.principal, request.scope, demand.source_intent(),
+                ).map_err(history_query_denial)?;
+                application.admit_history_program_dependent_output::<ParentDemand, Connection>(
+                    phase, &access, parent, read, controls.resolve(application.runtime().output_demand_resource_profile()),
+                ).map_err(|cause| WorthQueryRequiredOutputPreparationDenial::Demand(
+                    crate::application_entry::WorthQueryApplicationOutputDemandDenial::History(cause),
+                ))?
+            } else {
+                let admitted = request.query(demand.source_intent()).with_admitted_query(phase,
                 |_, binding, external, control| {
                     let access = worth_query_execution::publication_boundary::program_publication_access();
                     let read = application.execute_history_dependent_output_query::<ParentDemand, Connection, Source<Schema, ChildDemand<Schema, Connection>>>(
@@ -56,6 +68,8 @@ where
                 .map_err(|cause| WorthQueryRequiredOutputPreparationDenial::Demand(
                     crate::application_entry::WorthQueryApplicationOutputDemandDenial::History(cause),
                 ))?;
+                admitted
+            };
             Ok(WorthQueryApplicationProgramDemandHandle::new_history(
                 admitted,
                 owned_demand,
@@ -64,22 +78,25 @@ where
         }
         (ParentAuthorityKind::Verified(parent), Some(history)) => {
             let owned_demand = demand.clone();
-            let admitted = request.query(demand.source_intent()).with_admitted_query(phase,
-                |_, binding, external, control| {
-                    let access = worth_query_execution::publication_boundary::program_publication_access();
-                    let read = application.execute_verified_history_dependent_output_query::<ParentDemand, Connection, Source<Schema, ChildDemand<Schema, Connection>>>(
-                        phase, &access, parent, history.authority, &basis.retained, &minimum.retained,
-                        binding, external, control,
-                    ).map_err(crate::application_entry::WorthQueryApplicationRequestQueryDenial::HistoryOutput)?;
-                    Ok(application.admit_verified_history_program_dependent_output::<ParentDemand, Connection>(
-                        phase, &access, parent, read,
+            let access = worth_query_execution::publication_boundary::program_publication_access();
+            let read = application.execute_verified_history_dependent_output_query::<ParentDemand, Connection, Source<Schema, ChildDemand<Schema, Connection>>>(
+                phase, &access, parent, history.authority, &basis.retained, &minimum.retained,
+                request.principal, request.scope, demand.source_intent(),
+            ).map_err(history_query_denial)?;
+            let admitted =
+                application
+                    .admit_verified_history_program_dependent_output::<ParentDemand, Connection>(
+                        phase,
+                        &access,
+                        parent,
+                        read,
                         controls.resolve(application.runtime().output_demand_resource_profile()),
-                    ))
-                },
-            ).map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?
-                .map_err(|cause| WorthQueryRequiredOutputPreparationDenial::Demand(
-                    crate::application_entry::WorthQueryApplicationOutputDemandDenial::History(cause),
-                ))?;
+                    )
+                    .map_err(|cause| {
+                        WorthQueryRequiredOutputPreparationDenial::Demand(
+                crate::application_entry::WorthQueryApplicationOutputDemandDenial::History(cause),
+            )
+                    })?;
             Ok(WorthQueryApplicationProgramDemandHandle::new_history(
                 admitted,
                 owned_demand,

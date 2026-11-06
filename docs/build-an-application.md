@@ -2067,8 +2067,15 @@ In that case navigation uses its retained original description to check current
 principal, permission, capability and request facts at the current head first.
 It then validates the source's full generation, liveness and owned-domain
 membership at that exact candidate. Restored grants never authorize the call;
-a refusal preserves the source and family subject and leaves selection unchanged.
-This source-admission path is under qualification alongside all-tree navigation.
+a refusal leaves selection unchanged. When a new discovery or child-source
+intent resolves only at the candidate, a denied current audience receives the
+ordinary current scope refusal, without additional historical identity details.
+The same admission applies below a verified parent and a genuinely regenerated
+historical parent. The installed discovery query computes the child set,
+including empty sets; a restored stale child can regenerate while its healthy
+model root stays unopened. Healthy-child verification without producer-source
+reads and sources newly created by fallback remain under qualification alongside
+all-tree navigation.
 
 To bound selectable history across all futures, declare separate
 `ApplicationHistoryWindowBinding` and `ApplicationHistoryBookmarkBinding`

@@ -2,7 +2,6 @@
 use super::dependent::{DiscoveryBinding, QueryRows};
 use super::*;
 use crate::domain_computation::primary_graph::{
-    application_query::{ApplicationQueryNativeAccess, SourceQueryReaderAccess},
     product_operation::document_history::navigation::HistoryDependentParent,
     WorthQueryHistoryOutputDiscovery, WorthQueryHistoryOutputReadDenial as Denial,
     WorthQueryVerifiedHistoryParent,
@@ -18,7 +17,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
     pub fn execute_verified_history_discovery<D, C>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         parent: &WorthQueryVerifiedHistoryParent<S, P, D>,
         authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
         external: &WorthQueryAuthenticatedExternalPrincipal<S>,
@@ -36,70 +35,11 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             >,
         Rows<S, C>: WorthQueryApplicationProjection<S, Query<S, C>>,
     {
-        let runtime = self.runtime();
-        authority
-            .validate(phase, runtime, request)
-            .map_err(Denial::Authority)?;
-        let binding = runtime
-            .installed_schema()
-            .installed_query_binding::<DiscoveryBinding<S, C>>()
-            .map_err(|cause| Denial::Demand(installation(cause.kind())))?;
-        let execution = phase.checked_execution_request_for(runtime.product_runtime())
-            .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         let basis = parent.custody().original();
-        let selected = runtime.select_application_read_observation(phase, basis)
-            .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ProductAdmission(cause)))?
-            .prepare_shared_query_basis().map_err(|(_, cause)| Denial::Resource(cause))?;
-        let current = runtime.on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
-            authority.current().observation().lifecycle_incarnation(),
-        )).select_with_request(&execution)
-            .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ProductAdmission(cause)))?
-            .prepare_shared_query_basis().map_err(|(_, cause)| Denial::Resource(cause))?;
-        let reader = SourceQueryReaderAccess::new(
-            runtime,
-            &selected,
-            Some(&current),
-            Some(authority.producer_invocation()),
-            external,
-            request,
-        )
-        .map_err(Denial::Demand)?;
-        let context = std::cell::Cell::default();
-        let result = reader.with_plan::<DiscoveryBinding<S, C>, _, Denial>(
-            &execution,
-            intent,
-            &context,
-            &mut ApplicationQueryNativeAccess::acquire(),
-            |plan, native| {
-                // Actual C READ authorization precedes the parent diagnostic.
-                self.validate_verified_history_parent::<D, C>(parent, authority)
-                    .map_err(Denial::Demand)?;
-                reader
-                    .read_admitted_result::<DiscoveryBinding<S, C>>(&execution, plan, native)
-                    .map_err(Denial::from)
-            },
-        )?;
-        authority
-            .confirm_read(
-                phase,
-                runtime,
-                request,
-                WorthQueryHistoryOutputDiscovery {
-                    source: result.into_admitted_disclosed().into_output_demand_source(),
-                    profile: authority.profile().clone(),
-                    original: std::sync::Arc::clone(authority.original()),
-                    parent: HistoryDependentParent::Verified(std::sync::Arc::clone(
-                        parent.custody(),
-                    )),
-                    connection: crate::equality_type_id::EqualityTypeId::of::<C>().into_external(),
-                    binding: crate::equality_type_id::EqualityTypeId::of::<DiscoveryBinding<S, C>>(
-                    )
-                    .into_external(),
-                    query: binding.query().identity().clone(),
-                    basis: std::sync::Arc::clone(basis),
-                },
-            )
-            .map_err(Denial::Authority)
+        self.execute_verified_history_dependent_output_query::<D, C, DiscoveryBinding<S, C>>(
+            phase, access, parent, authority, basis, basis, external, request, intent,
+        )?
+        .into_discovery()
     }
 
     pub fn authorize_verified_history_discovery<D, C>(

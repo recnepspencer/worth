@@ -2,6 +2,7 @@
 use super::*;
 mod dependent;
 mod discovery;
+mod parent_query;
 mod permission;
 mod verified_dependent;
 mod verified_discovery;
@@ -49,7 +50,13 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             principal,
             request,
             branch,
-            authority.producer_invocation(),
+            if authority.uses_owned_model_graph() {
+                authority
+                    .producer_invocation()
+                    .for_family(<Family<S, D> as WorthQueryProducerOutputFamily<S>>::IDENTITY)
+            } else {
+                authority.producer_invocation()
+            },
         );
         // The actual demand retains partial work and cleanup while delivery is
         // withheld. Do not move that cleanup into a diagnostic before this seal.

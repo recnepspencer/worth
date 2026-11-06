@@ -354,3 +354,16 @@ where
         })
     }
 }
+
+fn history_query_denial(
+    cause: worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputReadDenial,
+) -> WorthQueryRequiredOutputPreparationDenial {
+    use crate::application_entry::WorthQueryApplicationRequestQueryDenial as Query;
+    use worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputReadDenial as Read;
+    WorthQueryRequiredOutputPreparationDenial::SourceQuery(match cause {
+        Read::Admission(cause) => Query::Admission(cause),
+        Read::Principal(cause) => Query::PrincipalResolution(cause),
+        Read::Scope(cause) => Query::ScopeResolution(cause),
+        cause => Query::HistoryOutput(cause),
+    })
+}

@@ -42,6 +42,11 @@ pub struct WorthQueryHistoryOutputAuthority<'phase, 'scope> {
 }
 
 impl WorthQueryHistoryOutputAuthority<'_, '_> {
+    /// Installed domain meaning only; this grants no query or producer authority.
+    pub fn uses_owned_model_graph(&self) -> bool {
+        self.profile.uses_owned_model_graph()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn producer_invocation(
         &self,
     ) -> HistoryProducerInvocation<'_> {

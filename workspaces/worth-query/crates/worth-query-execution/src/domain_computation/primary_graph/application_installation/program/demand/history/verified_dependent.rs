@@ -1,105 +1,13 @@
 //! Child admission from a verified historical parent preserves ordinary custody.
-use super::dependent::{DiscoveryBinding, QueryRows};
 use super::*;
 use crate::domain_computation::primary_graph::{
-    application_query::HistoryOutputControlPlan,
-    product_operation::document_history::{
-        navigation::HistoryDependentParent, HistoryDependentSource,
-    },
-    WorthQueryApplicationReadObservation, WorthQueryHistoryDependentOutputRead,
-    WorthQueryHistoryOutputReadDenial as Denial, WorthQueryVerifiedHistoryParent,
+    product_operation::document_history::navigation::HistoryDependentParent,
+    WorthQueryHistoryDependentOutputRead, WorthQueryVerifiedHistoryParent,
 };
-use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
     WorthQueryProgramApplicationRuntime<S, P>
 {
-    pub fn execute_verified_history_dependent_output_query<
-        'control,
-        'authority,
-        'phase,
-        'scope,
-        D,
-        C,
-        B,
-    >(
-        &'control self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        parent: &WorthQueryVerifiedHistoryParent<S, P, D>,
-        authority: &'authority WorthQueryHistoryOutputAuthority<'phase, 'scope>,
-        basis: &'authority std::sync::Arc<WorthQueryApplicationReadObservation>,
-        minimum: &'authority WorthQueryApplicationReadObservation,
-        binding: &'control WorthQueryInstalledApplicationQueryBinding<S, B>,
-        external: &WorthQueryAuthenticatedExternalPrincipal<S>,
-        control: HistoryOutputControlPlan<'control, S, B>,
-    ) -> Result<
-        WorthQueryHistoryDependentOutputRead<'authority, 'phase, 'scope, B::Query, QueryRows<S, B>>,
-        Denial,
-    >
-    where
-        D: WorthQueryApplicationOutputDemand<S>,
-        C: ApplicationConnectionShape<S>,
-        ConnectionBinding<S, C>: WorthQueryApplicationDependentOutputConnection<S, RootDemand = D>,
-        B: ApplicationQueryBinding<S>,
-        QueryRows<S, B>: WorthQueryApplicationProjection<S, B::Query>,
-    {
-        let runtime = self.runtime();
-        runtime.validate_history_output_control(phase, authority, binding, &control)?;
-        self.validate_verified_history_parent::<D, C>(parent, authority)
-            .map_err(Denial::Demand)?;
-        let original = parent.custody().original();
-        if basis.branch_incarnation() != original.branch_incarnation()
-            || minimum.branch_incarnation() != original.branch_incarnation()
-            || basis.branch_identity() != original.branch_identity()
-            || minimum.branch_identity() != original.branch_identity()
-            || basis.selected_commit().ordinal() < original.selected_commit().ordinal()
-            || basis.selected_commit().ordinal() < minimum.selected_commit().ordinal()
-        {
-            return Err(foreign());
-        }
-        let output = runtime
-            .installed_schema()
-            .installed_query_binding::<Source<S, ConnectionDemand<S, C>>>()
-            .map_err(|cause| Denial::Demand(installation(cause.kind())))?;
-        let discovery = runtime
-            .installed_schema()
-            .installed_query_binding::<DiscoveryBinding<S, C>>()
-            .map_err(|cause| Denial::Demand(installation(cause.kind())))?;
-        let executed_binding = crate::equality_type_id::EqualityTypeId::of::<B>().into_external();
-        let output_binding =
-            crate::equality_type_id::EqualityTypeId::of::<Source<S, ConnectionDemand<S, C>>>()
-                .into_external();
-        let discovery_binding =
-            crate::equality_type_id::EqualityTypeId::of::<DiscoveryBinding<S, C>>().into_external();
-        if !((executed_binding == output_binding
-            && binding.query().identity() == output.query().identity())
-            || (executed_binding == discovery_binding
-                && binding.query().identity() == discovery.query().identity()))
-        {
-            return Err(foreign());
-        }
-        let selected = runtime.select_application_read_observation(phase, basis)
-            .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ProductAdmission(cause)))?;
-        let result = runtime.execute_history_output_query_on_selected(
-            phase, authority, binding, external, control, selected,
-        )?;
-        Ok(WorthQueryHistoryDependentOutputRead {
-            source: HistoryDependentSource {
-                authority,
-                parent: HistoryDependentParent::Verified(std::sync::Arc::clone(parent.custody())),
-                connection: crate::equality_type_id::EqualityTypeId::of::<C>().into_external(),
-                source: basis,
-                minimum,
-                output_binding,
-                discovery_binding,
-                executed_binding,
-                query: binding.query().identity().clone(),
-            },
-            result,
-        })
-    }
-
     pub fn admit_verified_history_program_dependent_output<D, C>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -202,12 +110,4 @@ fn foreign_demand() -> WorthQueryOutputDemandDenial {
         crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSource,
         "verified history parent connection",
     )
-}
-fn foreign() -> Denial {
-    Denial::Demand(foreign_demand())
-}
-fn installation(
-    kind: worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenialKind,
-) -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SourceQueryInstallation(kind), "verified history dependent query")
 }

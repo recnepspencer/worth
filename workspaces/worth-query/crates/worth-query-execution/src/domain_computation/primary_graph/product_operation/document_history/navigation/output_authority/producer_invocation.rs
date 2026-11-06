@@ -46,6 +46,14 @@ impl HistoryProducerCutover<'_> {
 }
 
 impl<'invocation> HistoryProducerInvocation<'invocation> {
+    /// Diagnostic subject from an installed typed demand; authority is unchanged.
+    pub(in crate::domain_computation::primary_graph) fn for_family(
+        self,
+        family: &'static str,
+    ) -> Self {
+        Self { family, ..self }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn bind_producer_request<'call>(
         self,
         producer_request: &'call AdmittedRequestCurrentness,
