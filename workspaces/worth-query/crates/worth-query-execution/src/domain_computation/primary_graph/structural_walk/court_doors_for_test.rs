@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::structural_walk::key::StructuralWalkKey;
 
 impl StructuralWalkObservation {
     #[doc(hidden)]

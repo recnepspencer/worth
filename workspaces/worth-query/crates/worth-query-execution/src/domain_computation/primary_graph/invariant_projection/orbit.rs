@@ -41,7 +41,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             }
             let aggregate = self.read_aggregate_identity(
                 layout.from,
-                crate::domain_computation::primary_graph::aggregate_observation::AggregateSelection::OrbitRelation(layout.kind),
+                crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection::OrbitRelation(layout.kind),
                 member.entity_id,
                 relation.name(),
                 None,

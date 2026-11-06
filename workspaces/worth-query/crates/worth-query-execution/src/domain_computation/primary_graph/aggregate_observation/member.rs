@@ -1,5 +1,7 @@
 //! Tagged members share the same actual Native aggregate observation owner.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::key::AggregateKey;
+use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection;
 use worth_foundational::facade::AggregateDefinitionIdentity;
 use worth_relational::facade::{runtime::PinnedAggregateReadScope, schema::NativeMemberKey as Key};
 impl AggregateObservation<Key> {
@@ -29,8 +31,8 @@ impl AggregateObservation<Key> {
         mut poll: impl FnMut() -> Result<(), E>,
     ) -> Result<bool, E> {
         poll()?;
-        super::member_work::checkpoint_names(self.key.member(), &mut poll)?;
-        super::member_work::checkpoint_names(other.key.member(), &mut poll)?;
+        crate::domain_computation::primary_graph::vocabulary::aggregate_observation::member_work::checkpoint_names(self.key.member(), &mut poll)?;
+        crate::domain_computation::primary_graph::vocabulary::aggregate_observation::member_work::checkpoint_names(other.key.member(), &mut poll)?;
         if self.key != other.key
             || self.native.definition() != other.native.definition()
             || self.native.identity() != other.native.identity()
@@ -40,8 +42,8 @@ impl AggregateObservation<Key> {
         }
         for (a, b) in self.native.members().zip(other.native.members()) {
             poll()?;
-            super::member_work::checkpoint_names(a, &mut poll)?;
-            super::member_work::checkpoint_names(b, &mut poll)?;
+            crate::domain_computation::primary_graph::vocabulary::aggregate_observation::member_work::checkpoint_names(a, &mut poll)?;
+            crate::domain_computation::primary_graph::vocabulary::aggregate_observation::member_work::checkpoint_names(b, &mut poll)?;
             if a != b {
                 return Ok(false);
             }
@@ -114,8 +116,8 @@ impl AggregateObservation<Key> {
         }
         for (a, b) in self.native.members().zip(current.members()) {
             poll()?;
-            super::member_work::checkpoint_names(a, &mut poll)?;
-            super::member_work::checkpoint_names(b, &mut poll)?;
+            crate::domain_computation::primary_graph::vocabulary::aggregate_observation::member_work::checkpoint_names(a, &mut poll)?;
+            crate::domain_computation::primary_graph::vocabulary::aggregate_observation::member_work::checkpoint_names(b, &mut poll)?;
             if a != b {
                 return Ok(false);
             }

@@ -36,7 +36,7 @@ impl ExpectedFactKeys {
     }
     pub(in crate::domain_computation::primary_graph) fn component(
         &self,
-        key: &crate::domain_computation::primary_graph::component_selection::ComponentSelectionKey,
+        key: &crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionKey,
         admission: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
@@ -78,7 +78,7 @@ impl ExpectedFactKeys {
     }
     pub(in crate::domain_computation::primary_graph) fn aggregate(
         &self,
-        key: &crate::domain_computation::primary_graph::aggregate_observation::AggregateKey,
+        key: &crate::domain_computation::primary_graph::vocabulary::aggregate_observation::key::AggregateKey,
         admission: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
@@ -91,7 +91,7 @@ impl ExpectedFactKeys {
     }
     pub(in crate::domain_computation::primary_graph) fn structural_walk(
         &self,
-        key: &crate::domain_computation::primary_graph::structural_walk::StructuralWalkKey,
+        key: &crate::domain_computation::primary_graph::vocabulary::structural_walk::key::StructuralWalkKey,
         admission: crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,

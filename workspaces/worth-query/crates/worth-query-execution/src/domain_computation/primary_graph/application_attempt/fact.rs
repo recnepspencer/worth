@@ -50,9 +50,9 @@ pub struct WorthQueryApplicationObservedRelation {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum WorthQueryApplicationFactKey {
-    StructuralWalk(super::super::structural_walk::StructuralWalkKey),
-    Aggregate(super::super::aggregate_observation::AggregateKey),
-    ComponentSelection(super::super::component_selection::ComponentSelectionKey),
+    StructuralWalk(crate::domain_computation::primary_graph::vocabulary::structural_walk::key::StructuralWalkKey),
+    Aggregate(crate::domain_computation::primary_graph::vocabulary::aggregate_observation::key::AggregateKey),
+    ComponentSelection(crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionKey),
     SourcePublication(SourcePublicationRead),
     ManagedIndexSource(ManagedSourceReadKey),
     SourceReadAuthorization(SourceReadAuthorizationKey),

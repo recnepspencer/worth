@@ -14,12 +14,11 @@ mod derived;
 pub(in crate::domain_computation::primary_graph) mod storage;
 pub(in crate::domain_computation::primary_graph) use aggregates::ComponentAggregateBodies;
 mod currentness;
-mod key;
 mod origin;
-pub(in crate::domain_computation::primary_graph) use key::{
-    ComponentSelectionKey, ComponentSelectionSubject,
-};
+
 use origin::ComponentSelectionOrigin;
+use crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionKey;
+use crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionSubject;
 
 #[derive(Debug)]
 pub struct ComponentSelection {

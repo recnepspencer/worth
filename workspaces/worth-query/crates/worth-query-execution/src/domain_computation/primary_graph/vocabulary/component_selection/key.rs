@@ -1,5 +1,7 @@
 //! Visibility participates in reuse identity; only Native names components.
-use super::*;
+use worth_foundational::facade::AggregateDefinitionIdentity;
+use worth_query_installation::facade::WorthQueryOperationComponentReadScope;
+use worth_relational::facade::identity::EntityId;
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) enum ComponentSelectionSubject {
     Of(EntityId),
@@ -16,7 +18,7 @@ pub(in crate::domain_computation::primary_graph) struct ComponentSelectionKey {
     subject: ComponentSelectionSubject,
 }
 impl ComponentSelectionKey {
-    pub(super) fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         scope: [u8; 32],
         definition: AggregateDefinitionIdentity,
         root: EntityId,
@@ -31,7 +33,7 @@ impl ComponentSelectionKey {
             subject,
         }
     }
-    pub(super) fn for_derived(
+    pub(in crate::domain_computation::primary_graph) fn for_derived(
         scope: &worth_query_installation::facade::WorthQueryOperationDerivedSourceReadScope,
         definition: AggregateDefinitionIdentity,
         root: EntityId,
@@ -52,7 +54,7 @@ impl ComponentSelectionKey {
     ) -> bool {
         !self.query && self.derived && self.scope == scope.association_identity()
     }
-    pub(super) fn for_query(
+    pub(in crate::domain_computation::primary_graph) fn for_query(
         graph: &worth_query_installation::facade::WorthQueryInstalledGraphReadContract,
         definition: AggregateDefinitionIdentity,
         root: EntityId,
@@ -77,12 +79,12 @@ impl ComponentSelectionKey {
     ) -> ComponentSelectionSubject {
         self.subject.clone()
     }
-    pub(super) fn checkpoint_subject<E>(
+    pub(in crate::domain_computation::primary_graph) fn checkpoint_subject<E>(
         &self,
         poll: &mut impl FnMut() -> Result<(), E>,
     ) -> Result<(), E> {
         if let ComponentSelectionSubject::DerivedOf(member) = &self.subject {
-            crate::domain_computation::primary_graph::aggregate_observation::member_work::checkpoint_names(member,poll)?;
+            crate::domain_computation::primary_graph::vocabulary::aggregate_observation::member_work::checkpoint_names(member,poll)?;
         }
         Ok(())
     }
@@ -138,7 +140,7 @@ fn write_entity(output: &mut dyn std::fmt::Write, entity: EntityId) -> std::fmt:
     )
 }
 
-pub(super) fn write_member(
+pub(in crate::domain_computation::primary_graph) fn write_member(
     output: &mut dyn std::fmt::Write,
     key: &worth_relational::facade::schema::NativeMemberKey,
 ) -> std::fmt::Result {

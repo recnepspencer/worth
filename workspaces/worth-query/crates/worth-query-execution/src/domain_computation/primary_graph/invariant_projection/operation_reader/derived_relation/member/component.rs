@@ -134,8 +134,8 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
                 for (actual,expected) in aggregate.native().members().zip(native.data().endpoints()) {
                     let mut poll=||AggregateObservation::checkpoint(context).map_err(|cause|self.reader.walk_stop(cause,set.name()));
                     poll()?;
-                    crate::domain_computation::primary_graph::aggregate_observation::member_work::checkpoint_names(actual,&mut poll)?;
-                    crate::domain_computation::primary_graph::aggregate_observation::member_work::checkpoint_names(expected,&mut poll)?;
+                    crate::domain_computation::primary_graph::vocabulary::aggregate_observation::member_work::checkpoint_names(actual,&mut poll)?;
+                    crate::domain_computation::primary_graph::vocabulary::aggregate_observation::member_work::checkpoint_names(expected,&mut poll)?;
                     if actual!=expected {return Err(Denial::new(Kind::InvalidComponent,set.name()));}
                 }
                 let projection=pin.project_snapshot(pin.snapshot()).ok_or_else(denied)?;

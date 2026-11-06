@@ -5,12 +5,7 @@ use super::super::{
 };
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
-use crate::domain_computation::primary_graph::{
-    aggregate_observation::{AggregateObservation, AggregateSelection},
-    component_selection::{ComponentSelection, ComponentSelectionSubject},
-    schema_layout::ComponentSetLayout,
-    source_facts::SourceFacts,
-};
+use {crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation, crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection, crate::domain_computation::primary_graph::component_selection::ComponentSelection, crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionSubject, crate::domain_computation::primary_graph::schema_layout::ComponentSetLayout, crate::domain_computation::primary_graph::source_facts::SourceFacts};
 use std::collections::BTreeSet;
 use worth_query_declaration::facade::application_schema::{
     ApplicationComponentSetRef, ApplicationOperationMarkerIdentity,

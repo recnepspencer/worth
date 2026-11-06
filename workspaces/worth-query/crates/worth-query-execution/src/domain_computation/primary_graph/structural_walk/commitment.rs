@@ -1,5 +1,6 @@
 //! Canonical source descriptor only; original bodies still establish equality.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::structural_walk::key::StructuralWalkKey;
 use sha2::{Digest, Sha256};
 use worth_relational::facade::identity::EntityId;
 

@@ -54,7 +54,7 @@ pub(super) fn select(
                 allocation: None,
                 subject,
                 entity_kind: relation.from,
-                selection: crate::domain_computation::primary_graph::aggregate_observation::AggregateSelection::OrbitRelation(relation.kind),
+                selection: crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection::OrbitRelation(relation.kind),
                 member: plan.root,
                 maximum_work: None,
                 control: None,

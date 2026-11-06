@@ -4,9 +4,7 @@ use super::{
     WorthQueryInvariantProjectionTraversalDenial as Denial,
     WorthQueryInvariantProjectionTraversalDenialKind as Kind,
 };
-use crate::domain_computation::primary_graph::aggregate_observation::{
-    AggregateObservation, AggregateQuery, AggregateSelection,
-};
+use {crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation, crate::domain_computation::primary_graph::aggregate_observation::AggregateQuery, crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection};
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::{
     PinnedAggregateReadDenial, PinnedAggregateReadDenialKind, RelationalPinnedReadAdmissionDenial,

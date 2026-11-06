@@ -1,5 +1,6 @@
 //! The actual installed origin describes an observation; admission remains at each caller.
 use super::*;
+use {crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionKey, crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionSubject};
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledGraphReadContract,
 };

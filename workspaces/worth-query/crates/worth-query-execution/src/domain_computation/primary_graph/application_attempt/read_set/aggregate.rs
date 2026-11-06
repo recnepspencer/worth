@@ -6,10 +6,7 @@ use super::super::{
 };
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition;
-use crate::domain_computation::primary_graph::{
-    aggregate_observation::{AggregateKey, AggregateObservation},
-    invariant_projection::ExpectedFactKeys,
-};
+use {crate::domain_computation::primary_graph::vocabulary::aggregate_observation::key::AggregateKey, crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation, crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys};
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 pub fn observe<Schema, Operation, Input, Scope>(

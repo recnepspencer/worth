@@ -1,5 +1,6 @@
 //! Canonical selected answer and dependency content, without source custody.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionKey;
 use sha2::{Digest, Sha256};
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 pub(super) fn derive(
@@ -54,11 +55,11 @@ pub(super) fn derive_members(
         digest.update((body.native().len() as u64).to_be_bytes());
         for member in body.native().members() {
             poll()?;
-            crate::domain_computation::primary_graph::aggregate_observation::member_work::checkpoint_names(member,&mut poll)?;
+            crate::domain_computation::primary_graph::vocabulary::aggregate_observation::member_work::checkpoint_names(member,&mut poll)?;
             let mut length = TextLength(0);
-            key::write_member(&mut length, member).map_err(|_| Cause::ChargedBytesOverflow)?;
+            crate::domain_computation::primary_graph::vocabulary::component_selection::key::write_member(&mut length, member).map_err(|_| Cause::ChargedBytesOverflow)?;
             digest.update(length.0.to_be_bytes());
-            key::write_member(&mut DigestText(&mut digest), member)
+            crate::domain_computation::primary_graph::vocabulary::component_selection::key::write_member(&mut DigestText(&mut digest), member)
                 .map_err(|_| Cause::ChargedBytesOverflow)?;
         }
     }

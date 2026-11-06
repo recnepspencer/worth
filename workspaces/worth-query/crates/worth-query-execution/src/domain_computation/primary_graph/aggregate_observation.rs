@@ -8,12 +8,11 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause as Cause,
 };
 mod currentness;
-pub(crate) mod key;
 mod member;
-pub(in crate::domain_computation::primary_graph) mod member_work;
-pub(crate) mod selection;
-pub(in crate::domain_computation::primary_graph) use key::AggregateKey;
-pub(in crate::domain_computation::primary_graph) use selection::AggregateSelection;
+
+
+use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection;
+use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::key::AggregateKey;
 
 /// Only Native acquisition can construct this body. Source custody is separate
 /// from semantic truth: stored incident lineage is not part of an orbit answer.
