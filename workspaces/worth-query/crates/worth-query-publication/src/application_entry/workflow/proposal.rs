@@ -170,8 +170,8 @@ where
         let captured = capture(&fresh, &phase, &selected)
             .map_err(WorthQueryWorkflowProposalPreparationDenial::Inputs)?;
         let access = worth_query_execution::publication_boundary::program_publication_access();
-        let captured = worth_query_execution::publication_boundary::workflow_proposal::WorkflowCapturedInputs::prepare::<Schema, IntentBinding<Schema, Intent>, _>(
-            &access, &selected, &mut mutation.admission, captured,
+        let captured = selected.prepare_workflow_captured_inputs::<IntentBinding<Schema, Intent>, _>(
+            &access, &mut mutation.admission, captured,
         ).map_err(|cause| WorthQueryWorkflowProposalPreparationDenial::Inputs(
             crate::application_entry::WorthQueryWorkflowInputDenial::Capture(cause)))?;
         mutation.idempotency = captured.bind_idempotency(&access, mutation.idempotency);
