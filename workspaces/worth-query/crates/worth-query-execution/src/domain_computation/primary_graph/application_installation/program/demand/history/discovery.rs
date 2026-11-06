@@ -67,7 +67,13 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         runtime
             .authorize_retained_history_query::<DiscoveryBinding<S, C>>(
                 &execution,
-                authority.producer_invocation(),
+                if authority.uses_owned_model_graph() {
+                    authority
+                        .producer_invocation()
+                        .for_family(<Family<S, D> as WorthQueryProducerOutputFamily<S>>::IDENTITY)
+                } else {
+                    authority.producer_invocation()
+                },
                 source,
                 principal,
                 request,

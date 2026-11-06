@@ -13,9 +13,12 @@ impl HistoryProducerInvocation<'_> {
     pub(in crate::domain_computation::primary_graph) fn historical_branch(
         &self,
     ) -> Option<crate::basis::WorthQueryProductBranch> {
-        self.selected_graph.map(|_| {
+        self.restored_basis.selected().map(|_| {
             crate::basis::WorthQueryProductBranch::from_occurrence(
-                self.restored.lifecycle_incarnation(),
+                self.restored_basis
+                    .observation()
+                    .product_observation()
+                    .lifecycle_incarnation(),
             )
         })
     }
@@ -27,9 +30,13 @@ impl HistoryProducerInvocation<'_> {
             S,
         >,
     ) -> bool {
-        self.selected_graph.is_some()
+        self.restored_basis.selected().is_some()
             && selected.product().observation().lifecycle_incarnation()
-                == self.restored.lifecycle_incarnation()
+                == self
+                    .restored_basis
+                    .observation()
+                    .product_observation()
+                    .lifecycle_incarnation()
     }
 
     /// The permission owner calls this only after C has authorized this exact
@@ -45,16 +52,9 @@ impl HistoryProducerInvocation<'_> {
             RelationalHistoricalSelectionReadDenial as Stop,
             RelationalHistoricalSourcePresence as Presence,
         };
-        let selected = self
-            .selected_graph
-            .ok_or_else(|| Denial::new(Kind::StaleBasis, subject))?;
-        let answer = native
-            .read_truth()
-            .read_historical_selection(
-                execution,
-                selected,
-                &self.restored.basis().relational_basis().observation(),
-            )
+        let answer = self
+            .restored_basis
+            .native(execution, native)
             .and_then(|evidence| {
                 evidence.source_presence(execution, scope.entity_id(), scope.entity_kind())
             });

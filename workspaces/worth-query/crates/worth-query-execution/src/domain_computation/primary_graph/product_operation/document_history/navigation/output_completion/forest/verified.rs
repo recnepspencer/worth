@@ -181,18 +181,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .primary_provider
             .graph
             .with_runtime(execution, |native| {
-                let evidence = native
-                    .read_truth()
-                    .read_historical_selection(
-                        execution,
-                        authority.selected_graph().ok_or_else(foreign)?,
-                        &authority
-                            .original()
-                            .product_observation()
-                            .basis()
-                            .relational_basis()
-                            .observation(),
-                    )
+                let evidence = authority
+                    .selected_output_read(&execution, native)
                     .map_err(ReadDenial::SelectionRead)?;
                 if !super::super::super::output_verification::selected_profile_root_is_current(
                     execution, native, &evidence, selected, profile,

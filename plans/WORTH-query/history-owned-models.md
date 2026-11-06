@@ -1559,3 +1559,63 @@ history family passes175 courts. Boundary/context, formatting, whitespace and
 seven dirty Rust caps pass. Primary composition review accepts the two long
 court journeys as explicit setup/action/independent observation; no independent
 review was assigned. Healthy-child source avoidance remains the next boundary.
+
+### D1214 healthy dependent verification
+
+Boundary review: the SDK edge currently projects each discovered child's source
+and admits a real demand before it can reuse an output. Producer-contact counts
+therefore miss a D1119 violation: a healthy child's original source is opened.
+The existing SourceQueryReaderAccess can freshly admit the actual installed
+source query at C without projecting its result. Its admitted full-generation
+scope and admitted parameter partition identify the candidate route; neither an
+SDK demand nor a Native roster is read or settlement authority. Native's
+selected-route currentness owner must still check lineage, build, facts and
+witness at the candidate and again at the final endpoint. Discovery remains the
+installed query's computed set. A verified child is distinct from a settlement.
+
+Adversarial constraint: an arbitrarily long discovered set must not re-scan all
+selected publications per child, borrow a grant from D, or let a later sibling
+producer invalidate a previously verified child unnoticed. Keep one retained
+Native selection read per navigation, with a derived route index owned by that
+read capsule. The cache contains no grants and changes no checkpoint format.
+
+Implementation: first add serial/worker courts distinguishing a healthy
+historical-only member child from its stale fallback, observing source
+projection before public assertion queries. Establish the red baseline. Then
+share the exact Native selection read through navigation custody and add a
+bounded, polled route lookup at Native. Generalize the existing verified-parent
+custody to retain its own family, full-generation source, parameter partition
+and exact verified candidate separately from the navigation root profile.
+Only the existing parent/connection owner may issue a verified child, after
+fresh C permission and parent validation, without executing the source query.
+A stale route returns to the original read/demand fallback. Retain each typed Query verification custody in its SDK edge, separately from
+genuine ProgramOutputRecords; it can start verified discovery but never become
+a settlement. Reauthorize closed children at C. The existing complete Native
+route-coverage owner already verifies every restored route not covered by a real
+settlement at the one final endpoint. Reuse that owner instead of inventing a
+second erased completion inventory or redundant child verifier. Preserve ScopeEntityRecord's old path.
+
+Qualification includes the complete public history family, serial/worker
+healthy and stale children, C-denied children, nested verified discovery, and
+mutation of child verification and final currentness. Run boundary/context,
+formatting, dirty line caps and primary structural review. Keep the ongoing
+immutable root/Query comparison running. Progressed producer-created source
+scopes and codec-retired restoration remain subsequent #57 evidence; this
+slice does not claim those cases or overall issue completion.
+
+This slice is qualified: final pristine179 public history and56 Native ownership
+courts pass after exact mutation restoration. Ten member-child serial/worker
+courts cover healthy children below verified and genuinely regenerated parents,
+stale child fallback, C-denied historical-only sources, empty redo and original
+identities/values. The source recorder has positive stale-child/root controls.
+The Native index courts distinguish family, full-generation source and parameter
+partition and refuse cancellation even after the derived index is populated.
+
+Six compiled mutations fail their courts: ignore route source, partition or
+family; omit index request polling; reopen a healthy child's source; skip child
+currentness. Restoring each edited source yields the identical SHA-256. The final
+pristine history and Native runs rebuild the restored sources. Boundary/context,
+formatting,36 dirty Rust line caps and whitespace pass. The primary structural
+pass accepts explicit authority inputs and real court journeys; no independent
+review is claimed. This completes healthy-child source avoidance, not #57 as a
+whole. Progressed producer-created source scopes and recording remain next.

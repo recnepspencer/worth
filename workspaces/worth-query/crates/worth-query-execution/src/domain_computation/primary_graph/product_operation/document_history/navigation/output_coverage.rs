@@ -14,13 +14,12 @@ pub(super) fn require<'s, S: ApplicationSchema>(
     authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
     settlements: impl Iterator<Item = &'s WorthQueryOutputDemandSettlement> + Clone,
 ) -> Result<(), Denial> {
-    let Some(selected) = authority.selected_graph() else {
+    if authority.selected_graph().is_none() {
         return Ok(());
-    };
+    }
     let graph = &selected_output.application().runtime.primary_provider.graph;
     graph.with_runtime(execution, |native| {
-        let evidence = native.read_truth().read_historical_selection(execution, selected,
-            &authority.original().product_observation().basis().relational_basis().observation())
+        let evidence = authority.selected_output_read(&execution, native)
             .map_err(Denial::SelectionRead)?;
         for route in evidence.selected_output_routes(execution).map_err(Denial::SelectionRead)? {
             let route = route.map_err(Denial::SelectionRead)?;

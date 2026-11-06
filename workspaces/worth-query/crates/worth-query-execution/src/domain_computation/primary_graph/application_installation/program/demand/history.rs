@@ -3,6 +3,7 @@ use super::*;
 mod dependent;
 mod discovery;
 mod parent_query;
+pub(in crate::domain_computation::primary_graph) use parent_query::HistoryAdmittedChildSource;
 mod permission;
 mod verified_dependent;
 mod verified_discovery;

@@ -67,8 +67,8 @@ pub(super) struct NavigationProgress<'runtime, S> {
     pub(super) application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<S>,
     pub(super) meaning: WorthQueryApplicationIdempotencyBinding,
     pub(super) output_profile: Option<WorthQueryHistoryOutputProfile>,
-    pub(super) output_source:
-        Option<Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>>,
+    pub(super) output_source: Option<super::output_authority::HistoryRestoredOutputBasis>,
+    pub(super) output_basis_memory: Option<ExecutionMemoryReservation>,
     pub(super) output_source_memory: Option<ExecutionMemoryReservation>,
     pub(super) expected: WorthQueryHistorySelection,
     pub(super) model: super::super::HistoryModelIdentity,

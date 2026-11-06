@@ -1,7 +1,7 @@
 //! Discovery returns a deleted-at-C child; only its stale output contacts a producer.
 use super::*;
 macro_rules! member_child_court { ($exercise:ident, $program:ident, $prefix:literal, $denied:literal) => {
-fn $exercise(worker: bool, stale_root: bool) {
+fn $exercise(worker: bool, stale_root: bool, stale_child: bool) {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let limits = if worker { world::worker_limits() } else {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
@@ -48,7 +48,7 @@ fn $exercise(worker: bool, stale_root: bool) {
         drop(outcome);
         document
     }}; }
-    let document = record!(document, member_edit::Intent { key: "m".into(), value: 6 }, super::super::super::program::MemberEditAction, "member-child-edit");
+    let document = if stale_child { record!(document, member_edit::Intent { key: "m".into(), value: 6 }, super::super::super::program::MemberEditAction, "member-child-edit") } else { document };
     let document = if stale_root {
         record!(document, edit::Intent { key: "a".into(), value: 3 }, super::super::super::program::EditAction, "member-child-root-edit")
     } else { document };
@@ -79,17 +79,20 @@ fn $exercise(worker: bool, stale_root: bool) {
         assert!(matches!(cause.kind(), WorthQueryEntityResolutionDenialKind::Refused(WorthQueryEntityResolutionRefusalKind::UnknownEntity)), "{cause:?}");
     } else {
         let selected = selected.unwrap_or_else(|cause| panic!("historical-only child fallback: {cause:?}"));
-        assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts + if stale_root { 2 } else { 1 });
-        if !stale_root { assert_eq!(reads.reads(), 0, "healthy model source remains unopened"); }
+        assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts + u64::from(stale_root) + u64::from(stale_child));
+        if stale_root { assert!(reads.reads() > 0, "stale root opens its genuine source"); }
+        else { assert_eq!(reads.reads(), 0, "healthy model source remains unopened"); }
+        if stale_child { assert!(reads.public_member_reads() > 0, "stale child opens its genuine source"); }
+        else { assert_eq!(reads.public_member_reads(), 0, "healthy child source remains unopened"); }
         let at_d = host.request(&principal, &scope).on_branch(selected.physical_endpoint().product_branch());
         let restored = at_d.query(query::member_public::Read("m".into())).execute().unwrap();
         assert_eq!(restored.rows()[0].native_id, member.native_id);
-        assert_eq!(restored.rows()[0].value, 6);
+        assert_eq!(restored.rows()[0].value, if stale_child { 6 } else { 5 });
         let discovered = at_d.query(query::members::Read("a".into())).execute().unwrap();
         assert_eq!(discovered.rows()[0].members, restored.rows());
         let output = at_d.query(query::child_output::Read(concat!($prefix, ":m").into())).execute().unwrap();
         assert_eq!(output.rows()[0].native_id, original.native_id);
-        assert_eq!(output.rows()[0].value, 600);
+        assert_eq!(output.rows()[0].value, if stale_child { 600 } else { 500 });
         let root = at_d.query(query::first_output::Read("first:a".into())).execute().unwrap();
         assert_eq!(root.rows()[0].value, if stale_root { 30 } else { 10 });
         let before_redo = host.producer_contacts_on_this_thread_for_test();
@@ -108,25 +111,42 @@ member_child_court!(public_child, public, "downstream", false);
 member_child_court!(protected_child, protected, "restricted-owned", true);
 #[test]
 fn restored_member_child_regenerates_without_opening_healthy_model_root() {
-    public_child(false, false);
+    public_child(false, false, true);
 }
 #[test]
 fn worker_only_restored_member_child_regenerates_without_opening_healthy_model_root() {
-    public_child(true, false);
+    public_child(true, false, true);
 }
 #[test]
 fn restored_member_child_uses_a_genuinely_regenerated_parent() {
-    public_child(false, true);
+    public_child(false, true, true);
 }
 #[test]
 fn worker_only_restored_member_child_uses_a_genuinely_regenerated_parent() {
-    public_child(true, true);
+    public_child(true, true, true);
 }
 #[test]
 fn historical_only_child_cannot_borrow_a_d_permission() {
-    protected_child(false, false);
+    protected_child(false, false, true);
 }
 #[test]
 fn worker_only_historical_only_child_cannot_borrow_a_d_permission() {
-    protected_child(true, false);
+    protected_child(true, false, true);
+}
+
+#[test]
+fn healthy_restored_member_child_never_opens_its_source() {
+    public_child(false, false, false);
+}
+#[test]
+fn worker_only_healthy_restored_member_child_never_opens_its_source() {
+    public_child(true, false, false);
+}
+#[test]
+fn healthy_restored_child_verifies_beside_a_genuine_parent_fallback() {
+    public_child(false, true, false);
+}
+#[test]
+fn worker_only_healthy_restored_child_verifies_beside_a_genuine_parent_fallback() {
+    public_child(true, true, false);
 }

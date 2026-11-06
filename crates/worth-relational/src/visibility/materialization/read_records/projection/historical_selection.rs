@@ -30,6 +30,7 @@ pub enum RelationalHistoricalSelectionReadDenial {
 /// There is no constructor from a descriptor, stamp, or caller member list.
 pub struct RelationalHistoricalSelectionRead {
     stages: Vec<HistoricalSelectionStage>,
+    routes: std::sync::OnceLock<output_routes::SelectedOutputRouteIndex>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 
@@ -118,6 +119,7 @@ impl VisibilityReadContext<'_> {
             )
         };
         Ok(RelationalHistoricalSelectionRead {
+            routes: std::sync::OnceLock::new(),
             stages: vec![HistoricalSelectionStage {
                 selected: project(selected),
                 restored: project(restored),

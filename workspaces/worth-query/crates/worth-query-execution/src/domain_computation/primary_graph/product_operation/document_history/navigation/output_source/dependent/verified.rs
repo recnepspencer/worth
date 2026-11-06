@@ -35,21 +35,82 @@ pub struct WorthQueryVerifiedHistoryParent<S, P, D> {
 pub(in crate::domain_computation::primary_graph) struct VerifiedHistoryParentCustody {
     profile: WorthQueryHistoryOutputProfile,
     original: Arc<WorthQueryApplicationReadObservation>,
+    basis: Arc<WorthQueryApplicationReadObservation>,
+    source: worth_relational::facade::identity::EntityId,
+    partition: [u8; 32],
+    family: &'static str,
     target_feature: std::any::TypeId,
     artifact: Option<Artifact>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl<S, P, D> WorthQueryVerifiedHistoryParent<S, P, D> {
+    pub(in crate::domain_computation::primary_graph) fn from_admitted_child(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        child: crate::domain_computation::primary_graph::application_installation::HistoryAdmittedChildSource<S, P, D>,
+    ) -> Result<Self, crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial>
+    {
+        let memory = crate::domain_computation::primary_graph::structural_walk::memory::reserve(
+            execution, execution.has_accounting(),
+            (std::mem::size_of::<VerifiedHistoryParentCustody>() + 2 * std::mem::size_of::<usize>()) as u64,
+        ).map_err(crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial::Preparation)?;
+        let (profile, original, basis, target_feature, artifact, source, partition, family) =
+            child.into_parts();
+        Ok(Self {
+            custody: Arc::new(VerifiedHistoryParentCustody {
+                profile,
+                original,
+                basis,
+                source,
+                partition,
+                family,
+                target_feature,
+                artifact,
+                _memory: memory,
+            }),
+            marker: std::marker::PhantomData,
+        })
+    }
+    /// Compare a fresh owner-issued verification with this retained read custody.
+    /// Equality itself grants no permission and cannot create a settlement.
+    pub fn require_matching_output_custody(
+        &self,
+        fresh: Option<&Self>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial>
+    {
+        if fresh.is_some_and(|other| {
+            self.custody.profile.same_custody(&other.custody.profile)
+                && Arc::ptr_eq(&self.custody.original, &other.custody.original)
+                && Arc::ptr_eq(&self.custody.basis, &other.custody.basis)
+                && self.custody.source == other.custody.source
+                && self.custody.partition == other.custody.partition
+                && self.custody.family == other.custody.family
+        }) {
+            Ok(())
+        } else {
+            Err(
+                crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial::Demand(
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::Superseded,
+                        format!(
+                            "verified history child {} source {:?}",
+                            self.family(),
+                            self.source()
+                        ),
+                    ),
+                ),
+            )
+        }
+    }
     pub fn source(&self) -> worth_relational::facade::identity::EntityId {
-        self.custody.profile.source_intent().source_subject()
+        self.custody.source
     }
     pub fn family(&self) -> &'static str {
-        self.custody.profile.family
+        self.custody.family
     }
     /// The exact candidate this owner verified; it conveys no current grant.
     pub fn observation(&self) -> &Arc<WorthQueryApplicationReadObservation> {
-        &self.custody.original
+        &self.custody.basis
     }
 
     pub(in crate::domain_computation::primary_graph) fn custody(
@@ -139,20 +200,8 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                 .primary_provider
                 .graph
                 .with_runtime(&execution, |native| {
-                    let evidence = native
-                        .read_truth()
-                        .read_historical_selection(
-                            &execution,
-                            authority.selected_graph().ok_or(Denial::Incomplete {
-                                model: profile.model.entity(),
-                            })?,
-                            &authority
-                                .original()
-                                .product_observation()
-                                .basis()
-                                .relational_basis()
-                                .observation(),
-                        )
+                    let evidence = authority
+                        .selected_output_read(&execution, native)
                         .map_err(Denial::SelectionRead)?;
                     super::super::super::output_verification::selected_profile_root_is_current(
                         &execution, native, &evidence, &selected, profile,
@@ -179,6 +228,10 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             custody: Arc::new(VerifiedHistoryParentCustody {
                 profile: profile.clone(),
                 original: Arc::clone(authority.original()),
+                basis: Arc::clone(authority.original()),
+                source: profile.source_intent().source_subject(),
+                partition: profile.source_intent().source_partition(),
+                family: profile.family,
                 target_feature: crate::equality_type_id::EqualityTypeId::of::<
                     <R::RootConnection as ApplicationConnectionShape<S>>::TargetFeature,
                 >()

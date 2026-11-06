@@ -19,9 +19,13 @@ use worth_query_installation::facade::{
 };
 
 pub(crate) mod producer_invocation;
+mod restored_basis;
 mod tree;
 pub(in crate::domain_computation::primary_graph) use producer_invocation::{
     HistoryBorrowedReadStop, HistoryProducerCutover,
+};
+pub(in crate::domain_computation::primary_graph) use restored_basis::{
+    HistoryRestoredOutputBasis, OwnedOutputSelection,
 };
 
 /// This is a dependency on current C, not authority from historical D. It is
@@ -33,8 +37,7 @@ pub struct WorthQueryHistoryOutputAuthority<'phase, 'scope> {
     binding: ApplicationSchemaBindingIdentity,
     profile: WorthQueryHistoryOutputProfile,
     current: WorthQueryProductObservationLease,
-    original: Arc<WorthQueryApplicationReadObservation>,
-    selected_graph: Option<worth_relational::facade::mvcc::RelationalBranchObservation>,
+    restored: HistoryRestoredOutputBasis,
     request: AdmittedRequestCurrentness,
     principal: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     selection: HistoryAuthorityLifetime,
@@ -56,8 +59,7 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
             &self.principal,
             &self.selection,
             &self.callback,
-            self.selected_graph.as_ref(),
-            self.original.product_observation(),
+            &self.restored,
             self.profile.family,
         )
     }
@@ -99,7 +101,7 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
     pub(in crate::domain_computation::primary_graph) fn original(
         &self,
     ) -> &Arc<WorthQueryApplicationReadObservation> {
-        &self.original
+        self.restored.observation()
     }
 
     pub(in crate::domain_computation::primary_graph) fn request(&self) -> &WorthQueryRequestScope {
@@ -109,7 +111,18 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
     pub(in crate::domain_computation::primary_graph) fn selected_graph(
         &self,
     ) -> Option<&worth_relational::facade::mvcc::RelationalBranchObservation> {
-        self.selected_graph.as_ref()
+        self.restored.selected()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn selected_output_read(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> Result<
+        &worth_relational::facade::runtime::RelationalHistoricalSelectionRead,
+        worth_relational::facade::runtime::RelationalHistoricalSelectionReadDenial,
+    > {
+        self.restored.native(execution, native)
     }
 
     pub(in crate::domain_computation::primary_graph) fn profile(
@@ -182,12 +195,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             ApplicationHistoryModel<S, H>,
         >,
         profile: &WorthQueryHistoryOutputProfile,
-        original: &Arc<WorthQueryApplicationReadObservation>,
-        selected_graph: Option<worth_relational::facade::mvcc::RelationalBranchObservation>,
+        restored: &HistoryRestoredOutputBasis,
         callback: impl FnOnce(&WorthQueryHistoryOutputAuthority<'_, 'scope>) -> Output,
     ) -> Result<Output, WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
         self.validate_navigation::<N>(phase, read, installed, admission)?;
+        let original = restored.observation();
         if profile.model != self.model
             || !original
                 .belongs_to_selected_occurrence(self.application(), original.product_observation())
@@ -222,8 +235,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             binding: self.binding.clone(),
             profile: profile.clone(),
             current: read.current_product().retained_clone(),
-            original: Arc::clone(original),
-            selected_graph,
+            restored: restored.clone(),
             request: admission.retain_admitted_request(),
             principal: read.principal(),
             selection,

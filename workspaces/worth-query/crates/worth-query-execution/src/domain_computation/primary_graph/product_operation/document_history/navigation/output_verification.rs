@@ -5,10 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
 };
 use worth_query_installation::facade::ApplicationSchema;
-use worth_relational::facade::{
-    mvcc::RequiredOutputPublicationMeaning,
-    runtime::{RelationalHistoricalSelectionRead, RelationalRuntime},
-};
+use worth_relational::facade::runtime::{RelationalHistoricalSelectionRead, RelationalRuntime};
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     /// This answers a borrowed currentness question only. Final qualification
@@ -30,9 +27,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             {
                 return Ok(false);
             }
-            let Some(historical) = authority.selected_graph() else {
+            if authority.selected_graph().is_none() {
                 return Ok(false);
-            };
+            }
             let execution = phase
                 .checked_execution_request_for(&self.runtime.product_runtime)
                 .map_err(|cause| control(WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
@@ -43,18 +40,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 .primary_provider
                 .graph
                 .with_runtime(&execution, |native| {
-                    let evidence = native
-                        .read_truth()
-                        .read_historical_selection(
-                            &execution,
-                            historical,
-                            &authority
-                                .original()
-                                .product_observation()
-                                .basis()
-                                .relational_basis()
-                                .observation(),
-                        )
+                    let evidence = authority
+                        .selected_output_read(&execution, native)
                         .map_err(Denial::SelectionRead)?;
                     profile_is_current(
                         &execution,
@@ -95,32 +82,17 @@ pub(in crate::domain_computation::primary_graph) fn selected_profile_root_is_cur
     selected: &WorthQuerySelectedProductOperation<'_, S>,
     profile: &WorthQueryHistoryOutputProfile,
 ) -> Result<bool, Denial> {
-    let mut count = 0;
-    let mut current = true;
-    for route in evidence
-        .selected_output_routes(execution)
-        .map_err(Denial::SelectionRead)?
-    {
-        let route = route.map_err(Denial::SelectionRead)?;
-        if matches_profile(execution, route, profile)? {
-            count += 1;
-            current &= selected.selected_route_is_current(execution, native, route)
-                .map_err(|cause| Denial::Original(crate::domain_computation::primary_graph::WorthQueryOriginalReadOutputDenial::Output(cause)))?;
-        }
-    }
-    Ok(count == 1 && current)
-}
-
-fn matches_profile(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    route: &RequiredOutputPublicationMeaning,
-    profile: &WorthQueryHistoryOutputProfile,
-) -> Result<bool, Denial> {
-    super::output_coverage::charge(
-        execution,
-        (route.family.len() + profile.family.len()) as u64 + 40,
-    )?;
-    Ok(route.family == profile.family
-        && route.source_scope == profile.source_intent().source_subject()
-        && route.source_partition == profile.source_intent().source_partition())
+    let route = evidence
+        .selected_output_route(
+            execution,
+            profile.family,
+            profile.source_intent().source_subject(),
+            profile.source_intent().source_partition(),
+        )
+        .map_err(Denial::SelectionRead)?;
+    let Some(route) = route else {
+        return Ok(false);
+    };
+    selected.selected_route_is_current(execution, native, route)
+        .map_err(|cause| Denial::Original(crate::domain_computation::primary_graph::WorthQueryOriginalReadOutputDenial::Output(cause)))
 }

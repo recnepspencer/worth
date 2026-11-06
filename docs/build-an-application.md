@@ -2076,9 +2076,12 @@ including empty sets; a restored stale child can regenerate while its healthy
 model root stays unopened. Give a changed discovery implementation a new build
 identity: the selected parent then takes its actual fallback and the installed
 query computes the new child set. Corrupt parent/publication lineage refuses
-before producer work. Healthy-child verification without producer-source reads
-and sources newly created by fallback remain under qualification alongside
-all-tree navigation.
+before producer work. A healthy discovered child also verifies without projecting its producer
+source, whether its parent was verified or genuinely regenerated. It keeps
+read-only parent custody for further discovery, with no synthetic settlement;
+closed traversal reauthorizes each source at C. The final currentness pass
+checks all restored routes at the one endpoint. Sources newly created by
+fallback and all-tree recording remain under qualification.
 
 To bound selectable history across all futures, declare separate
 `ApplicationHistoryWindowBinding` and `ApplicationHistoryBookmarkBinding`

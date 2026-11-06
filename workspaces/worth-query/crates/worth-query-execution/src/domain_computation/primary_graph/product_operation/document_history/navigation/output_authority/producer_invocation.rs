@@ -18,8 +18,7 @@ pub struct HistoryProducerInvocation<'invocation> {
     principal: &'invocation crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     selection: &'invocation HistoryAuthorityLifetime,
     callback: &'invocation HistoryAuthorityLifetime,
-    selected_graph: Option<&'invocation worth_relational::facade::mvcc::RelationalBranchObservation>,
-    restored: &'invocation ProductBranchObservation,
+    restored_basis: &'invocation HistoryRestoredOutputBasis,
     family: &'static str,
 }
 
@@ -73,10 +72,7 @@ impl<'invocation> HistoryProducerInvocation<'invocation> {
         principal: &'invocation crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
         selection: &'invocation HistoryAuthorityLifetime,
         callback: &'invocation HistoryAuthorityLifetime,
-        selected_graph: Option<
-            &'invocation worth_relational::facade::mvcc::RelationalBranchObservation,
-        >,
-        restored: &'invocation ProductBranchObservation,
+        restored_basis: &'invocation HistoryRestoredOutputBasis,
         family: &'static str,
     ) -> Self {
         Self {
@@ -85,8 +81,7 @@ impl<'invocation> HistoryProducerInvocation<'invocation> {
             principal,
             selection,
             callback,
-            selected_graph,
-            restored,
+            restored_basis,
             family,
         }
     }

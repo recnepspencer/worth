@@ -35,7 +35,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             >,
         Rows<S, C>: WorthQueryApplicationProjection<S, Query<S, C>>,
     {
-        let basis = parent.custody().original();
+        let basis = parent.observation();
         self.execute_verified_history_dependent_output_query::<D, C, DiscoveryBinding<S, C>>(
             phase, access, parent, authority, basis, basis, external, request, intent,
         )?
@@ -72,7 +72,13 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         runtime
             .authorize_retained_history_query::<DiscoveryBinding<S, C>>(
                 &execution,
-                authority.producer_invocation(),
+                if authority.uses_owned_model_graph() {
+                    authority
+                        .producer_invocation()
+                        .for_family(<Family<S, D> as WorthQueryProducerOutputFamily<S>>::IDENTITY)
+                } else {
+                    authority.producer_invocation()
+                },
                 source,
                 principal,
                 request,
@@ -91,7 +97,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             )))
             || !discovery.profile.same_custody(authority.profile())
             || !std::sync::Arc::ptr_eq(&discovery.original, authority.original())
-            || !std::sync::Arc::ptr_eq(&discovery.basis, parent.custody().original())
+            || !std::sync::Arc::ptr_eq(&discovery.basis, parent.observation())
             || discovery.connection
                 != crate::equality_type_id::EqualityTypeId::of::<C>().into_external()
             || discovery.binding

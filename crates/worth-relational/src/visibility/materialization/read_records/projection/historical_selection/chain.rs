@@ -44,6 +44,7 @@ impl VisibilityReadContext<'_> {
         }
         Ok(RelationalHistoricalSelectionRead {
             stages,
+            routes: std::sync::OnceLock::new(),
             _memory: memory,
         })
     }

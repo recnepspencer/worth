@@ -100,6 +100,48 @@ fn source_transfer_restores_its_two_output_families_and_owned_edge_without_selec
             routes, expected,
             "B's unrelated current publication is not a selected route"
         );
+        for meaning in expected {
+            assert_eq!(
+                evidence
+                    .selected_output_route(
+                        execution,
+                        &meaning.family,
+                        meaning.source_scope,
+                        meaning.source_partition
+                    )
+                    .unwrap(),
+                Some(meaning)
+            );
+            assert!(evidence
+                .selected_output_route(
+                    execution,
+                    &meaning.family,
+                    other_source,
+                    meaning.source_partition
+                )
+                .unwrap()
+                .is_none());
+            let mut foreign_partition = meaning.source_partition;
+            foreign_partition[0] ^= 1;
+            assert!(evidence
+                .selected_output_route(
+                    execution,
+                    &meaning.family,
+                    meaning.source_scope,
+                    foreign_partition
+                )
+                .unwrap()
+                .is_none());
+        }
+        assert!(evidence
+            .selected_output_route(
+                execution,
+                &other_meaning.family,
+                other_source,
+                other_meaning.source_partition
+            )
+            .unwrap()
+            .is_none());
         let policy = worth_foundational::ExecutionRequestPolicy::new(
             worth_foundational::ExecutionPosture::Automatic,
             worth_foundational::DeterminismContract::CanonicalBitwise,

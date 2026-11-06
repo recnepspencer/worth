@@ -41,11 +41,10 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 key,
                 phase: state,
                 branch,
-                source,
+                restored,
                 profile,
-                selected_graph,
             } => {
-                let original = std::sync::Arc::clone(&source);
+                let source = std::sync::Arc::clone(restored.observation());
                 document
                     .with_output_authority::<N, _>(
                         phase,
@@ -53,8 +52,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                         installed,
                         admission,
                         &profile,
-                        &original,
-                        selected_graph,
+                        &restored,
                         |authority| {
                             callback(
                                 key,

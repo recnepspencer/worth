@@ -107,6 +107,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         drop(self.source.take());
         drop(self.output_source.take());
         drop(self.output_source_memory.take());
+        drop(self.output_basis_memory.take());
         self.phase = NavigationPhase::Discarding(cleanup);
     }
 

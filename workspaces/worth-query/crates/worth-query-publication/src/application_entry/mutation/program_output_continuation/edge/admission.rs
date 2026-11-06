@@ -106,3 +106,57 @@ where
         _ => Err(history_mismatch()),
     }
 }
+
+pub(super) fn verify_child<Schema, Program, ParentDemand, Connection>(
+    phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+    application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+    request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    parent: &ProgramOutputParentAuthority<Schema, Program, ParentDemand>,
+    basis: &crate::application_entry::WorthQueryApplicationReadObservation,
+    minimum: &crate::application_entry::WorthQueryApplicationReadObservation,
+    demand: &ChildDemand<Schema, Connection>,
+    history: Option<ProgramOutputHistoryFrame<'_, '_, '_>>,
+) -> Result<Option<worth_query_execution::publication_boundary::document_history::WorthQueryVerifiedHistoryParent<Schema, Program, ChildDemand<Schema, Connection>>>, WorthQueryRequiredOutputPreparationDenial>
+where
+    Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<Schema>,
+    ParentDemand: WorthQueryApplicationOutputDemand<Schema>, Connection: ApplicationConnectionShape<Schema>,
+    Binding<Schema, Connection>: WorthQueryApplicationDependentOutputConnection<Schema, RootDemand = ParentDemand>,
+    <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::Input:
+        ApplicationQueryIntent<Schema, Binding = Source<Schema, ChildDemand<Schema, Connection>>>,
+    <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::ScopeBinding:
+        ApplicationQueryScopeResolution<Schema, <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
+    SourceValue<Schema, ChildDemand<Schema, Connection>>: WorthQueryApplicationProjection<Schema, SourceQuery<Schema, ChildDemand<Schema, Connection>>>,
+{
+    let Some(history) = history.filter(|frame| frame.authority.uses_owned_model_graph()) else {
+        return Ok(None);
+    };
+    let access = worth_query_execution::publication_boundary::program_publication_access();
+    match parent.kind() {
+        ParentAuthorityKind::History(parent) => application
+            .verify_owned_history_dependent_output::<ParentDemand, Connection>(
+                phase,
+                &access,
+                parent,
+                history.authority,
+                &basis.retained,
+                &minimum.retained,
+                request.principal,
+                request.scope,
+                demand,
+            ),
+        ParentAuthorityKind::Verified(parent) => application
+            .verify_verified_history_dependent_output::<ParentDemand, Connection>(
+                phase,
+                &access,
+                parent,
+                history.authority,
+                &basis.retained,
+                &minimum.retained,
+                request.principal,
+                request.scope,
+                demand,
+            ),
+        _ => return Err(history_mismatch()),
+    }
+    .map_err(history_query_denial)
+}

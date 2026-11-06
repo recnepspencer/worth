@@ -21,9 +21,8 @@ pub(in crate::domain_computation::primary_graph) enum HistoryOutputLookup {
         key: [u8; 32],
         phase: HistoryOutputLookupPhase,
         branch: crate::basis::WorthQueryProductBranch,
-        source: Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>,
+        restored: super::output_authority::HistoryRestoredOutputBasis,
         profile: WorthQueryHistoryOutputProfile,
-        selected_graph: Option<worth_relational::facade::mvcc::RelationalBranchObservation>,
     },
     Selected {
         key: [u8; 32],
@@ -77,25 +76,19 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             }
             _ => return Ok(HistoryOutputLookup::Pending { key }),
         };
-        let source = Arc::clone(progress.output_source.as_ref().ok_or(Denial::IntentDrift)?);
+        let restored = progress
+            .output_source
+            .as_ref()
+            .ok_or(Denial::IntentDrift)?
+            .clone();
+        let source = restored.observation();
         Ok(HistoryOutputLookup::Source {
             key,
             phase: source_phase,
             branch: crate::basis::WorthQueryProductBranch::from_occurrence(
                 source.product_observation().lifecycle_incarnation(),
             ),
-            source,
-            selected_graph: progress.ownership.map(|_| {
-                progress
-                    .source
-                    .as_ref()
-                    .expect("an output attempt retains its selected preview")
-                    .source
-                    .product_observation()
-                    .basis()
-                    .relational_basis()
-                    .observation()
-            }),
+            restored,
             profile: progress
                 .output_profile
                 .as_ref()

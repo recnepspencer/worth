@@ -218,6 +218,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         drop(unused_source);
         drop(self.output_source.take());
         drop(self.output_source_memory.take());
+        drop(self.output_basis_memory.take());
         drop(previous_source);
         drop(source);
         drop(_publication);

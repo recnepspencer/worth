@@ -94,6 +94,36 @@ fn worker_only_selection_restores_two_publication_families_at_their_original_ids
         .collect::<std::collections::BTreeSet<_>>();
     assert_eq!(restored, [world.output, other].into_iter().collect());
     let after = transfer_fixture::basis(&world.runtime);
+    let evidence = world
+        .runtime
+        .read_truth()
+        .read_historical_selection(execution, &selected.observation(), &after.observation())
+        .unwrap();
+    for meaning in [&world.meaning, &second] {
+        assert_eq!(
+            evidence
+                .selected_output_route(
+                    execution,
+                    &meaning.family,
+                    meaning.source_scope,
+                    meaning.source_partition
+                )
+                .unwrap(),
+            Some(meaning)
+        );
+    }
+    let cancelled = worth_execution::CancellationSource::new();
+    cancelled.cancel();
+    let stopped = host.clone().with_cancellation(cancelled.token());
+    assert!(matches!(
+        evidence.selected_output_route(
+            &ExecutionRequest::serial(&stopped),
+            &second.family,
+            second.source_scope,
+            second.source_partition
+        ),
+        Err(worth_relational::facade::runtime::RelationalHistoricalSelectionReadDenial::Request(_))
+    ));
     for publication in &publications {
         assert!(publication
             .matches_current_ownership_at(execution, &world.installed, &after)

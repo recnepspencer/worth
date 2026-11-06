@@ -1,6 +1,7 @@
 //! Actual parent queries share C admission while retaining distinct parent custody.
 use super::dependent::{DiscoveryBinding, QueryRows};
 use super::*;
+mod verification;
 use crate::domain_computation::primary_graph::{
     application_query::{ApplicationQueryNativeAccess, SourceQueryReaderAccess},
     product_operation::document_history::{
@@ -9,6 +10,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationReadObservation, WorthQueryHistoryDependentOutputRead,
     WorthQueryHistoryOutputReadDenial as Denial, WorthQueryVerifiedHistoryParent,
 };
+pub(in crate::domain_computation::primary_graph) use verification::HistoryAdmittedChildSource;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryIntent, ApplicationQueryScopeResolution,
 };
@@ -119,6 +121,76 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
         QueryRows<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
+        let (result, meaning, query) = self.with_parent_query_admission::<D, C, B, _>(
+            phase,
+            &parent,
+            authority,
+            basis,
+            minimum,
+            external,
+            request,
+            intent,
+            |reader, execution, plan, native, _| {
+                reader
+                    .read_admitted_result::<B>(execution, plan, native)
+                    .map_err(Denial::from)
+            },
+        )?;
+        let parent = match parent {
+            Parent::Settled(parent) => {
+                HistoryDependentParent::Settled(std::sync::Arc::clone(&parent.settled.retained))
+            }
+            Parent::Verified(parent) => {
+                HistoryDependentParent::Verified(std::sync::Arc::clone(parent.custody()))
+            }
+        };
+        Ok(WorthQueryHistoryDependentOutputRead {
+            source: HistoryDependentSource {
+                authority,
+                parent,
+                connection: crate::equality_type_id::EqualityTypeId::of::<C>().into_external(),
+                source: basis,
+                minimum,
+                output_binding: meaning.output_binding,
+                discovery_binding: meaning.discovery_binding,
+                executed_binding: meaning.executed_binding,
+                query,
+            },
+            result,
+        })
+    }
+    fn with_parent_query_admission<D, C, B, T>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        parent: &Parent<'_, S, P, D>,
+        authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
+        basis: &std::sync::Arc<WorthQueryApplicationReadObservation>,
+        minimum: &WorthQueryApplicationReadObservation,
+        external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+        request: &WorthQueryRequestScope,
+        intent: B::Input,
+        consume: impl for<'plan> FnOnce(
+            &SourceQueryReaderAccess<'_, S>, &worth_execution::ExecutionRequest<'_, '_>,
+            crate::domain_computation::primary_graph::application_query::output_source_observation::SourceReadPlan<'plan, S, B>,
+            &mut ApplicationQueryNativeAccess<'_>, Option<Artifact>,
+        ) -> Result<T, Denial>,
+    ) -> Result<
+        (
+            T,
+            ParentQueryMeaning,
+            worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity,
+        ),
+        Denial,
+    >
+    where
+        D: WorthQueryApplicationOutputDemand<S>,
+        C: ApplicationConnectionShape<S>,
+        ConnectionBinding<S, C>: WorthQueryApplicationDependentOutputConnection<S, RootDemand = D>,
+        B: ApplicationQueryBinding<S>,
+        B::Input: ApplicationQueryIntent<S, Binding = B>,
+        B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
+        QueryRows<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+    {
         let runtime = self.runtime();
         authority
             .validate(phase, runtime, request)
@@ -157,34 +229,11 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             &mut ApplicationQueryNativeAccess::acquire(),
             |plan, native| {
                 // C READ is admitted before parent/basis diagnostics or D projection.
-                parent.validate::<C>(self, &execution, authority, basis, minimum)?;
-                reader
-                    .read_admitted_result::<B>(&execution, plan, native)
-                    .map_err(Denial::from)
+                let artifact = parent.validate::<C>(self, &execution, authority, basis, minimum)?;
+                consume(&reader, &execution, plan, native, artifact)
             },
         )?;
-        let parent = match parent {
-            Parent::Settled(parent) => {
-                HistoryDependentParent::Settled(std::sync::Arc::clone(&parent.settled.retained))
-            }
-            Parent::Verified(parent) => {
-                HistoryDependentParent::Verified(std::sync::Arc::clone(parent.custody()))
-            }
-        };
-        Ok(WorthQueryHistoryDependentOutputRead {
-            source: HistoryDependentSource {
-                authority,
-                parent,
-                connection: crate::equality_type_id::EqualityTypeId::of::<C>().into_external(),
-                source: basis,
-                minimum,
-                output_binding: meaning.output_binding,
-                discovery_binding: meaning.discovery_binding,
-                executed_binding: meaning.executed_binding,
-                query: binding.query().identity().clone(),
-            },
-            result,
-        })
+        Ok((result, meaning, binding.query().identity().clone()))
     }
     fn parent_query_meaning<D, C, B>(
         &self,
@@ -245,7 +294,7 @@ impl<
         authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
         basis: &WorthQueryApplicationReadObservation,
         minimum: &WorthQueryApplicationReadObservation,
-    ) -> Result<(), Denial>
+    ) -> Result<Option<Artifact>, Denial>
     where
         C: ApplicationConnectionShape<S>,
         ConnectionBinding<S, C>: WorthQueryApplicationDependentOutputConnection<S, RootDemand = D>,
@@ -258,15 +307,16 @@ impl<
                 {
                     return Err(foreign());
                 }
-                application
+                let artifact = application
                     .validate_dependent_output_parent::<D, C>(&parent.settled)
                     .map_err(Denial::Demand)?;
                 application
                     .select_dependent_output_basis(execution, &parent.settled, basis, minimum)
                     .map_err(Denial::Demand)?;
+                Ok(artifact)
             }
             Parent::Verified(parent) => {
-                application
+                let artifact = application
                     .validate_verified_history_parent::<D, C>(parent, authority)
                     .map_err(Denial::Demand)?;
                 let original = parent.custody().original();
@@ -274,14 +324,15 @@ impl<
                     || minimum.branch_incarnation() != original.branch_incarnation()
                     || basis.branch_identity() != original.branch_identity()
                     || minimum.branch_identity() != original.branch_identity()
-                    || basis.selected_commit().ordinal() < original.selected_commit().ordinal()
+                    || basis.selected_commit().ordinal()
+                        < parent.observation().selected_commit().ordinal()
                     || basis.selected_commit().ordinal() < minimum.selected_commit().ordinal()
                 {
                     return Err(foreign());
                 }
+                Ok(artifact)
             }
         }
-        Ok(())
     }
 }
 

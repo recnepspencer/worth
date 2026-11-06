@@ -13,6 +13,7 @@ where
     handle: Option<WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>>,
     _retained_handle: Option<WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>>,
     continuation_complete: bool,
+    verified_parent: Option<worth_query_execution::publication_boundary::document_history::WorthQueryVerifiedHistoryParent<Schema, Program, Demand>>,
     settled: Option<(
         WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, Demand>>,
         ProgramOutputParentAuthority<Schema, Program, Demand>,
@@ -230,6 +231,13 @@ where
         }
         if let Some(nodes) = &self.nodes {
             for node in nodes {
+                if let Some(expected) = &node.verified_parent {
+                    let fresh = admission::verify_child::<Schema, Program, ParentDemand, Connection>(
+                        phase, application, request, &self.parent_authority, &self.basis,
+                        &self.minimum_observation, &node.demand, Some(history),
+                    )?;
+                    expected.require_matching_output_custody(fresh.as_ref()).map_err(history_query_denial)?;
+                }
                 for handle in node.handle.iter().chain(node._retained_handle.iter()) {
                     handle.authorize_in_history(phase, application, request, history)
                         .map_err(WorthQueryRequiredOutputPreparationDenial::Demand)?;
@@ -272,7 +280,7 @@ where
                 .map_err(WorthQueryRequiredOutputPreparationDenial::Connection)?;
             self.work = ProgramOutputTraversalWork::discovered(result.rows().len(), demands.len());
             self.nodes = Some(demands.into_iter().map(|demand| EdgeNode {
-                demand, handle: None, _retained_handle: None, continuation_complete: false,
+                demand, handle: None, _retained_handle: None, continuation_complete: false, verified_parent: None,
                 settled: None, continuation: None, dependencies: None,
             }).collect());
         }
@@ -283,6 +291,13 @@ where
         }
         let nodes = self.nodes.as_mut().expect("discovery retains its exact child list");
         while let Some(node) = nodes.get_mut(self.next_admission) {
+            if let Some(verified) = admission::verify_child::<Schema, Program, ParentDemand, Connection>(
+                phase, application, request, &self.parent_authority, &self.basis, &self.minimum_observation, &node.demand, history,
+            )? {
+                node.verified_parent = Some(verified);
+                self.next_admission += 1;
+                continue;
+            }
             let handle = admission::admit_child::<Schema, Program, ParentDemand, Connection>(
                 phase, application, request, &self.parent_authority, &self.basis,
                 &self.minimum_observation, &node.demand, self.controls, history,
@@ -314,6 +329,10 @@ where
                         return Ok(ProgramOutputContinuationProgress::Progressed);
                     }
                 }
+            }
+            if node.continuation.is_none() && !node.continuation_complete
+                && let Some(parent) = &node.verified_parent {
+                node.continuation = Some(Children::start_verified(application, &node.demand, parent, request, self.controls)?);
             }
             if let Some((settlement, authority)) = node.settled.as_ref() {
                 node.continuation = Some(Children::start(application, &node.demand,
@@ -350,7 +369,8 @@ where
         for node in nodes { node.dependencies = None; }
         Ok(ProgramOutputContinuationProgress::Settled {
             dependencies: Some(dependencies),
-            outputs: std::mem::take(&mut self.outputs), work: self.work,
+            outputs: std::mem::take(&mut self.outputs),
+            work: self.work,
         })
     }
 }

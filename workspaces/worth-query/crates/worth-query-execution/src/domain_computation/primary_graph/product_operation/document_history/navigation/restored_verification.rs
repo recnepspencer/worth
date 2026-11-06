@@ -65,7 +65,8 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<bool, WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
-        let original = self.output_source.as_ref().ok_or(Denial::IntentDrift)?;
+        let restored = self.output_source.as_ref().ok_or(Denial::IntentDrift)?;
+        let original = restored.observation();
         let selected = self
             .application
             .on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
@@ -88,44 +89,54 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
             .checked_execution_request_for(&self.application.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let historical = self.source.as_ref().ok_or(Denial::IntentDrift)?;
-        let current = self.application.runtime.primary_provider.graph.with_runtime(&execution, |native| {
-            let evidence = native.read_truth().read_historical_selection(
-                &execution,
-                &historical.source.product_observation().basis().relational_basis().observation(),
-                &original.product_observation().basis().relational_basis().observation(),
-            ).map_err(Denial::RestoredOutputRead)?;
-            // An independent/non-restored root must keep its ordinary admission.
-            // Profiles describe fallback correspondence; they establish no ownership.
-            if let Some(profile) = &self.output_profile {
-                for tree in profile.tree_profiles() {
-                    // Native route membership is not a complete discovery fact.
-                    // A declared non-leaf retains its whole-set owner.
-                    if !tree.leaf { return Ok(false); }
-                    let mut covered = false;
-                    for route in evidence.selected_output_routes(&execution).map_err(Denial::RestoredOutputRead)? {
-                        let route = route.map_err(Denial::RestoredOutputRead)?;
-                        execution.run_native_with_checkpoint(|context| {
-                            crate::domain_computation::primary_graph::admitted_capture::checkpoint(
-                                context, (route.family.len() + tree.family.len()) as u64 + 8,
+        let current = self
+            .application
+            .runtime
+            .primary_provider
+            .graph
+            .with_runtime(&execution, |native| {
+                let evidence = restored
+                    .native(&execution, native)
+                    .map_err(Denial::RestoredOutputRead)?;
+                // An independent/non-restored root must keep its ordinary admission.
+                // Profiles describe fallback correspondence; they establish no ownership.
+                if let Some(profile) = &self.output_profile {
+                    for tree in profile.tree_profiles() {
+                        // Native route membership is not a complete discovery fact.
+                        // A declared non-leaf retains its whole-set owner.
+                        if !tree.leaf {
+                            return Ok(false);
+                        }
+                        if evidence
+                            .selected_output_route(
+                                &execution,
+                                tree.family,
+                                tree.source_intent().source_subject(),
+                                tree.source_intent().source_partition(),
                             )
-                        }).map_err(|cause| Denial::RestoredOutputRead(worth_relational::facade::runtime::RelationalHistoricalSelectionReadDenial::Request(cause)))?
-                            .0.map_err(|cause| Denial::RestoredOutputRead(worth_relational::facade::runtime::RelationalHistoricalSelectionReadDenial::Request(worth_execution::WorkCeilingDenial::Stopped(cause))))?;
-                        if route.family == tree.family && route.source_scope == tree.source_intent().source_subject() {
-                            covered = true;
+                            .map_err(Denial::RestoredOutputRead)?
+                            .is_none()
+                        {
+                            return Ok(false);
                         }
                     }
-                    if !covered { return Ok(false); }
                 }
-            }
-            let mut count = 0;
-            for route in evidence.selected_output_routes(&execution).map_err(Denial::RestoredOutputRead)? {
-                let route = route.map_err(Denial::RestoredOutputRead)?;
-                count += 1;
-                if !selected.selected_route_is_current(&execution, native, route)
-                    .map_err(Denial::RestoredOutputCurrentness)? { return Ok(false); }
-            }
-            Ok(count != 0 || historical.root_posture.is_none())
-        })?;
+                let mut count = 0;
+                for route in evidence
+                    .selected_output_routes(&execution)
+                    .map_err(Denial::RestoredOutputRead)?
+                {
+                    let route = route.map_err(Denial::RestoredOutputRead)?;
+                    count += 1;
+                    if !selected
+                        .selected_route_is_current(&execution, native, route)
+                        .map_err(Denial::RestoredOutputCurrentness)?
+                    {
+                        return Ok(false);
+                    }
+                }
+                Ok(count != 0 || historical.root_posture.is_none())
+            })?;
         drop(selected);
         Ok(current)
     }
