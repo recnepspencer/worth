@@ -50,6 +50,7 @@ impl PublicationPreparationRuntime for RelationalRuntime {
                 content,
                 schema_registry,
                 &self.services.symbols,
+                None,
             )
             .map_err(PublicationPreparationDenial::from)
     }
@@ -96,6 +97,7 @@ impl PublicationPreparationRuntime for crate::runtime::RelationalPreparationRunt
                 content,
                 schema_registry,
                 &self.services.symbols,
+                self.execution_contracts.clone(),
             )
             .map_err(PublicationPreparationDenial::from)
     }

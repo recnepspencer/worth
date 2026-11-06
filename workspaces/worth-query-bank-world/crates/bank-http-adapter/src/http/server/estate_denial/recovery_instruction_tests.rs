@@ -125,6 +125,7 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
         Kind::AdmissionAuthorization(_)
         | Kind::CompletionExecutionRequest(_)
         | Kind::RecoveryNotAdmitted
+        | Kind::StaleIncarnation
         | Kind::RecoveryAlreadyMinted
         | Kind::SchemaMismatch
         | Kind::BranchMismatch
@@ -178,6 +179,7 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
         (Kind::ReconciliationNotAdmitted, refused),
         (Kind::ForeignPrincipal, refused),
         (Kind::RecoveryAlreadyMinted, moved_on),
+        (Kind::StaleIncarnation, moved_on),
         (Kind::AlreadyTerminal, moved_on),
         (Kind::Expired, unrecoverable),
         (Kind::SchemaMismatch, unrecoverable),

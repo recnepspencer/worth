@@ -183,6 +183,7 @@ impl RelationalBranchRoot {
                     self.output_publication_positions.clone()
                 }
             },
+            execution_contracts: self.execution_contracts.clone(),
             schema_authority: Arc::clone(&self.schema_authority),
             committed: Some(committed),
             _memory: None,

@@ -21,12 +21,21 @@ pub(crate) use continuation::PreparedRecoveredPublication;
 pub use continuation::{WorldRecoveredContinuationDenial, WorldRecoveredContinuationOutcome};
 pub use release::WorldRecoveredReleaseOutcome;
 pub(crate) use release_preparation::RecoveredReleaseDestination;
+mod continuation_loan;
+mod home_transition;
+pub(crate) use continuation_loan::RecoveredNativeContinuationLoan;
+pub(crate) use home_transition::{
+    ContinuationCommon, OriginalContinuationAdvance, OriginalHomeTransitionContinuation,
+    PreparedOriginalContinuation,
+};
 
 #[derive(Debug)]
 pub(crate) enum RecoveredNativeCustody {
     OpenOnly,
     Relational(Arc<RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>>),
     Prepared(Arc<crate::history::PreparedReadmittedPublicationRecord>),
+    Continuing(Box<OriginalHomeTransitionContinuation>),
+    Working,
     Released,
 }
 
@@ -55,6 +64,7 @@ pub(crate) struct RecoveredWorldPublicationRecord {
     pub(crate) expected: ProductBranchObservation,
     pub(crate) binding: Arc<WorldDurableMediumBinding>,
     pub(crate) native: Mutex<RecoveredNativeCustody>,
+    pub(crate) control: Mutex<Option<Arc<crate::publication::HomeTransitionEffectControlState>>>,
     pub(crate) claimed: Mutex<bool>,
     pub(crate) release: Mutex<Option<WorldDurableArtifact>>,
     pub(crate) committed_release: Mutex<Option<WorldCommittedPublication>>,
@@ -73,6 +83,22 @@ pub struct WorldRecoveredUnpublishedEffects {
 }
 
 impl WorldRecoveredUnpublishedEffects {
+    /// Encode only this admitted original's association. This is descriptive
+    /// meaning, not permission to create or repeat an owner effect.
+    pub fn caller_association_commitment(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        plan: &worth_foundational::facade::HomeProgramTransitionPlanDescription,
+        step: worth_foundational::facade::HomeProgramTransitionStepAssociation,
+    ) -> Result<[u8; 32], crate::durability::WorldDurableMediumDenial> {
+        crate::publication::home_transition_caller_association_commitment(
+            execution,
+            plan,
+            step,
+            &self.record.open.association,
+        )
+    }
+
     pub fn identity(&self) -> &ProductUnpublishedOwnerEffectsIdentity {
         &self.record.identity
     }
@@ -138,11 +164,50 @@ impl WorldRecoveredUnpublishedEffects {
     pub fn claim_incarnation(&self) -> worth_foundational::facade::HomeIncarnation {
         self.record.binding.binding().incarnation()
     }
+    /// Actual retained progress, not a physical fate or permission to advance.
+    pub fn home_transition_effect_progress(
+        &self,
+    ) -> Result<
+        Option<crate::publication::WorldHomeTransitionEffectProgress>,
+        crate::recovery::RuntimeWorldRecoveryDenial,
+    > {
+        match &*self
+            .record
+            .native
+            .lock()
+            .unwrap_or_else(|cause| cause.into_inner())
+        {
+            RecoveredNativeCustody::OpenOnly
+            | RecoveredNativeCustody::Relational(_)
+            | RecoveredNativeCustody::Prepared(_) => Ok(None),
+            RecoveredNativeCustody::Continuing(work) => Ok(Some(work.progress())),
+            RecoveredNativeCustody::Working => {
+                Err(crate::recovery::RuntimeWorldRecoveryDenial::Busy)
+            }
+            RecoveredNativeCustody::Released => {
+                Err(crate::recovery::RuntimeWorldRecoveryDenial::MissingRecord)
+            }
+        }
+    }
     pub fn native_receipt(
         &self,
     ) -> Option<worth_relational::facade::history::RelationalCommitReceipt> {
-        self.native_effect()
-            .map(|effect| effect.subject().receipt().clone())
+        if let Some(effect) = self.native_effect() {
+            return Some(effect.subject().receipt().clone());
+        }
+        match &*self
+            .record
+            .native
+            .lock()
+            .unwrap_or_else(|cause| cause.into_inner())
+        {
+            RecoveredNativeCustody::Continuing(work) => Some(work.native_receipt().clone()),
+            RecoveredNativeCustody::OpenOnly
+            | RecoveredNativeCustody::Relational(_)
+            | RecoveredNativeCustody::Prepared(_)
+            | RecoveredNativeCustody::Working
+            | RecoveredNativeCustody::Released => None,
+        }
     }
     /// Borrow the original source admission; this never manufactures a live result.
     pub fn native_effect(&self) -> Option<&ReadmittedRelationalAssociatedEffect> {
@@ -157,7 +222,9 @@ impl WorldRecoveredUnpublishedEffects {
             RecoveredNativeCustody::Prepared(record) => {
                 Some(RecoveredNativeObservation::Prepared(record.clone()))
             }
-            RecoveredNativeCustody::Released => None,
+            RecoveredNativeCustody::Continuing(_)
+            | RecoveredNativeCustody::Working
+            | RecoveredNativeCustody::Released => None,
         };
     }
     pub fn continuation_already_committed(&self) -> bool {
@@ -216,6 +283,7 @@ impl RecoveredWorldPublicationRecord {
                     }),
             ),
             claimed: Mutex::new(false),
+            control: Mutex::new(None),
             release: Mutex::new(None),
             committed_release: Mutex::new(None),
             prepared_release: Mutex::new(None),

@@ -206,7 +206,7 @@ pub(crate) fn prepare_working_state_scope(
         working_state,
         phase_timing,
         footprint: transaction.footprint.clone(),
-        schema_authority: std::sync::Arc::clone(&transaction.schema_authority),
+        schema_authority: std::sync::Arc::clone(transaction.mutation_schema_authority()),
     })
 }
 
@@ -232,7 +232,7 @@ pub(crate) fn prepare_lowered_working_state_scope(
         working_state,
         phase_timing,
         footprint: transaction.footprint.clone(),
-        schema_authority: std::sync::Arc::clone(&transaction.schema_authority),
+        schema_authority: std::sync::Arc::clone(transaction.mutation_schema_authority()),
     }
 }
 

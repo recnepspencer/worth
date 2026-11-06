@@ -22,6 +22,8 @@ use crate::domain_computation::authorization::{
     WorthQueryRetainedCapabilityAuthorization, WorthQueryRetainedCapabilitySupport,
 };
 mod exact_observation;
+mod issuance;
+pub(in super::super) use issuance::admit_observed_capability;
 mod inspection;
 mod operation_progression;
 
@@ -158,6 +160,7 @@ where
 {
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+    home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     binding_identity: ApplicationSchemaBindingIdentity,
     capability: Arc<str>,
     capability_type: Arc<str>,
@@ -179,66 +182,16 @@ where
     canonical_work: WorthQueryCanonicalWorkEvidence,
     authorization: WorthQueryRetainedCapabilityAuthorization,
     operation_admission_identity: super::super::super::super::WorthQueryOperationAdmissionIdentity,
-    graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    graph_work_session:
+        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+    graph_work_managed_run:
+        crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity,
+    graph_work_branch: worth_relational::facade::history::BranchId,
+    graph_work_capability: Option<[u8; 32]>,
+    graph_work_decision_facts: usize,
+    product: crate::basis::WorthQueryProductBranch,
+    security_basis: worth_relational::facade::branch::RelationalBranchBasisAdmissionIdentity,
     _marker: PhantomData<fn() -> (Capability, Operation)>,
-}
-
-pub(in super::super) fn admit_observed_capability<
-    'a,
-    Schema,
-    Principal,
-    PrincipalIdentity,
-    Capability,
-    Operation,
-    Input,
->(
-    observed: ObservedCapabilityAdmission<
-        'a,
-        Schema,
-        Principal,
-        PrincipalIdentity,
-        Capability,
-        Operation,
-        Input,
-    >,
-) -> WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>
-where
-    Schema: ApplicationSchema,
-    Input: ApplicationCapabilityRequest<Schema, Capability>,
-{
-    let ObservedCapabilityAdmission {
-        prepared,
-        resolved,
-        authorization,
-        ..
-    } = observed;
-    let input = prepared.input;
-    let canonical_work = prepared
-        .capability
-        .lookup_evidence()
-        .canonical_work()
-        .combine(WorthQueryCanonicalWorkEvidence::streamed_identities(
-            prepared.governed_input_work,
-        ));
-    WorthQueryAdmittedApplicationCapabilityAccess {
-        runtime_authority: prepared.runtime.runtime.authority_identity(),
-        binding_identity: prepared.capability.binding_identity().clone(),
-        capability: prepared.capability.contract().name().into(),
-        capability_type: prepared.capability.contract().capability_type().into(),
-        operation: prepared.capability.contract().operation().into(),
-        principal_entity_id: prepared.principal.principal_entity_id(),
-        input,
-        governed_input_identity: Some(prepared.governed_input_identity),
-        projection: prepared.projection,
-        resolved,
-        authentication_valid_until: prepared.principal.valid_until(),
-        request_scope: prepared.request_scope,
-        canonical_work,
-        authorization,
-        operation_admission_identity: prepared.operation_admission_identity,
-        graph_work: prepared.graph_work,
-        _marker: PhantomData,
-    }
 }
 
 impl<Schema, Capability, Operation, Input>
@@ -354,7 +307,10 @@ where
         observe: impl FnOnce(
             &exact_observation::WorthQueryExactCapabilityObservation<'_, Schema>,
         ) -> Output,
-    ) -> Option<Output>
+    ) -> Result<
+        Option<Output>,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    >
     where
         Schema: ApplicationSchema,
     {
@@ -366,7 +322,7 @@ where
         supporting: WorthQueryRetainedCapabilitySupport,
     ) -> Result<(), ()> {
         self.authorization.retain_supporting(supporting)?;
-        self.graph_work.record_decision_facts(1);
+        self.graph_work_decision_facts = self.graph_work_decision_facts.saturating_add(1);
         Ok(())
     }
 

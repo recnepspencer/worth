@@ -24,6 +24,11 @@ pub struct BranchBoundRelationalTransaction {
     pub(crate) recovered_codec_publication_custody:
         Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>>,
     pub(crate) schema_authority_input: Option<crate::schema::SchemaContinuityAuthorityInput>,
+    pub(crate) home_target:
+        Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
+    pub(crate) home_step: Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>>,
+    pub(crate) home_target_coverage:
+        Option<std::sync::Arc<crate::runtime::RelationalHomeTargetCoverage>>,
     pub(crate) schema_authority: std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
     pub(crate) overlay: DetachedRelationalTransactionOverlay,
     pub(crate) maximum_savepoints: usize,
@@ -39,6 +44,14 @@ pub struct BranchBoundRelationalTransaction {
 }
 
 impl BranchBoundRelationalTransaction {
+    pub(crate) fn mutation_schema_authority(
+        &self,
+    ) -> &std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority> {
+        self.home_target
+            .as_ref()
+            .map_or(&self.schema_authority, |target| &target.meaning.schema)
+    }
+
     pub fn transaction_id(&self) -> TransactionId {
         self.transaction_id
     }

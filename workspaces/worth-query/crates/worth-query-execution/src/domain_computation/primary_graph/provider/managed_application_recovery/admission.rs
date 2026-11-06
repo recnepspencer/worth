@@ -24,6 +24,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| Denial::ExecutionDenied(cause.into()))?;
         {
+            admission
+                .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
+                .map_err(Denial::Authorization)?;
             if !admission.belongs_to(
                 self.runtime.authority_identity(),
                 &self.installed_schema.binding_identity(),

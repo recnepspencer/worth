@@ -13,11 +13,39 @@ pub struct RelationalHomeSourcePreparation {
 }
 pub struct PreparedFreshRelationalHomeSource {
     pub(super) source: Arc<crate::cold_source::StoreColdSource>,
+    pub(super) transition: Option<worth_proof::HomeProgramTransitionAuthority>,
+    pub(super) transition_required: Option<worth_proof::HomeProgramTransitionRequired>,
 }
 pub struct PreparedRelationalHomeSource {
+    pub(super) transition: Option<worth_proof::HomeProgramTransitionAuthority>,
+    pub(super) transition_required: Option<worth_proof::HomeProgramTransitionRequired>,
     pub(super) source: Arc<crate::cold_source::StoreColdSource>,
     pub(super) original: Box<RelationalDurableRecoverySource>,
     pub(super) _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+impl PreparedFreshRelationalHomeSource {
+    /// The consuming Home composition attaches its actual verifier before
+    /// construction exposes any Native receiver or initial-installation port.
+    pub fn with_home_transition_authority(
+        mut self,
+        authority: worth_proof::HomeProgramTransitionAuthority,
+        required: Option<worth_proof::HomeProgramTransitionRequired>,
+    ) -> Self {
+        self.transition = Some(authority);
+        self.transition_required = required;
+        self
+    }
+}
+impl PreparedRelationalHomeSource {
+    pub fn with_home_transition_authority(
+        mut self,
+        authority: worth_proof::HomeProgramTransitionAuthority,
+        required: Option<worth_proof::HomeProgramTransitionRequired>,
+    ) -> Self {
+        self.transition = Some(authority);
+        self.transition_required = required;
+        self
+    }
 }
 impl RelationalHomeSourcePreparation {
     pub fn from_absent_home_read(
@@ -26,7 +54,11 @@ impl RelationalHomeSourcePreparation {
     ) -> Result<PreparedFreshRelationalHomeSource, Denial> {
         let source = crate::cold_source::StoreColdSource::new_for_request(serving, request)
             .map_err(Denial::Execution)?;
-        Ok(PreparedFreshRelationalHomeSource { source })
+        Ok(PreparedFreshRelationalHomeSource {
+            source,
+            transition: None,
+            transition_required: None,
+        })
     }
     #[cfg(feature = "certification-test-authority")]
     pub fn from_absent_home_read_with_read_observer_for_test(
@@ -44,7 +76,11 @@ impl RelationalHomeSourcePreparation {
             serving, observer, request,
         )
         .map_err(Denial::Execution)?;
-        Ok(PreparedFreshRelationalHomeSource { source })
+        Ok(PreparedFreshRelationalHomeSource {
+            source,
+            transition: None,
+            transition_required: None,
+        })
     }
     pub fn from_original_home_read(
         serving: Arc<ServingPhysicalRuntime>,
@@ -147,6 +183,8 @@ impl RelationalHomeSourcePreparation {
             .map_err(Denial::Execution)?
             .map_err(Denial::InitialInputs)?;
         Ok(PreparedRelationalHomeSource {
+            transition: None,
+            transition_required: None,
             source: self.source,
             original: Box::new(original),
             _memory: memory,

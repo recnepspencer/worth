@@ -3,13 +3,20 @@ use super::{
     WorldDurableArtifact, WorldDurableMediumDenial, WorldOpenAttemptRecord, WorldRecord,
     WorldRelationalEvidence,
 };
+mod open_record_loan;
+use open_record_loan::OpenRecordLoan;
+mod byte_destination;
+use byte_destination::OccurrenceByteDestination;
+#[cfg(test)]
+mod retention_tests;
 
 #[derive(Debug)]
 pub(crate) struct WorldOccurrenceCustody {
     origin: Option<super::PreparedCheckpointOccurrence>,
-    open: WorldOpenAttemptRecord,
-    backing: Option<worth_execution::ExecutionByteBuffer>,
+    open: Option<WorldOpenAttemptRecord>,
+    destination: OccurrenceByteDestination,
     pub(crate) subject: Option<WorldDurableArtifact>,
+    prepared_artifact: Option<super::PreparedWorldArtifact>,
 }
 
 impl WorldOccurrenceCustody {
@@ -17,22 +24,25 @@ impl WorldOccurrenceCustody {
         original: &WorldDurableArtifact,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, WorldDurableMediumDenial> {
-        let WorldRecord::OpenAttempt(open) = &original.record else {
-            unreachable!("the opened phase owns its original open artifact")
-        };
+        let open = original
+            .open_attempt()
+            .ok_or(WorldDurableMediumDenial::Frame(
+                super::WorldDurableFrameDenial::IdentityMismatch,
+            ))?;
         // Occurrence adds the actual Native receipt/position/digest and current
         // publishing incarnation to the identical open grammar (56 bytes).
         let total = super::codec::occurrence_backing::admitted_length(original.as_bytes().len())
             .map_err(WorldDurableMediumDenial::Frame)?;
-        let backing =
-            worth_execution::ExecutionByteBuffer::allocate(total, execution.allocation_policy())
-                .map_err(WorldDurableMediumDenial::Allocation)?;
+        let (prepared_artifact, open) =
+            super::PreparedWorldArtifact::prepare_occurrence(open, execution)?;
+        let destination = OccurrenceByteDestination::prepare(total, execution)?;
         let origin = super::PreparedCheckpointOccurrence::prepare(execution)?;
         Ok(Self {
             origin: Some(origin),
-            open: open.clone(),
-            backing: Some(backing),
+            open: Some(open),
+            destination,
             subject: None,
+            prepared_artifact: Some(prepared_artifact),
         })
     }
 
@@ -57,6 +67,9 @@ impl WorldOccurrenceCustody {
             .take()
             .expect("the same occurrence transfers its origin exactly once")
     }
+    pub(crate) fn take_unretained_origin(&mut self) -> Option<super::PreparedCheckpointOccurrence> {
+        self.origin.take()
+    }
 
     pub(crate) fn finalize(
         &mut self,
@@ -64,26 +77,20 @@ impl WorldOccurrenceCustody {
         publishing_incarnation: worth_foundational::facade::HomeIncarnation,
     ) -> Result<&WorldDurableArtifact, WorldDurableMediumDenial> {
         if self.subject.is_none() {
-            let record = WorldRecord::Occurrence {
-                open: self.open.clone(),
-                relational,
-                publishing_incarnation,
-            };
-            let backing = self
-                .backing
-                .as_mut()
-                .ok_or(WorldDurableMediumDenial::Unavailable)?;
-            super::codec::occurrence_backing::fill(backing, &record)?;
+            self.destination.backing()?;
+            let record = OpenRecordLoan::take(&mut self.open, relational, publishing_incarnation);
+            let backing = self.destination.backing()?;
+            super::codec::occurrence_backing::fill(backing, record.record())?;
             backing
                 .check_live()
                 .map_err(WorldDurableMediumDenial::Allocation)?;
-            let bytes = self
-                .backing
-                .take()
-                .expect("same filled backing")
-                .seal()
-                .map_err(WorldDurableMediumDenial::Allocation)?;
-            self.subject = Some(WorldDurableArtifact::from_preallocated(record, bytes));
+            let bytes = self.destination.seal()?;
+            self.subject = Some(
+                self.prepared_artifact
+                    .take()
+                    .expect("one pre-effect artifact allocation")
+                    .complete_owned(record.commit(), bytes),
+            );
         }
         Ok(self
             .subject

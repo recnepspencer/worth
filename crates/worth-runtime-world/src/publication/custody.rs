@@ -76,8 +76,31 @@ impl ActiveAttemptCustody {
         deadline: Option<RuntimeWorldInstant>,
         capacities: ReservedAttemptCapacities,
     ) -> Self {
-        let (record, slot) = ActiveAttemptRecord::new(attempt, expected, deadline, capacities);
+        let (record, mut slot) = ActiveAttemptRecord::new(attempt, expected, deadline, capacities);
         slot.register_active(Arc::clone(&record));
+        Self {
+            record,
+            slot: Some(slot),
+        }
+    }
+
+    /// Install genuine readmitted-open custody before exposing the active row.
+    /// Until registration, the original slot's Drop restores its recovered row.
+    pub(crate) fn reactivate_open(
+        attempt: CompositePublicationAttemptIdentity,
+        expected: ProductBranchObservation,
+        deadline: Option<RuntimeWorldInstant>,
+        capacities: ReservedAttemptCapacities,
+        open: Arc<crate::durability::WorldDurableOpenCustody>,
+    ) -> Self {
+        let (record, mut slot) = ActiveAttemptRecord::new(attempt, expected, deadline, capacities);
+        record
+            .state()
+            .resources
+            .as_mut()
+            .expect("private new resources")
+            .durable_open = Some(open);
+        slot.register_active(record.clone());
         Self {
             record,
             slot: Some(slot),
@@ -113,6 +136,14 @@ impl ActiveAttemptCustody {
 
     /// A durable preparing record needs no invented successor or owner effect
     /// to remain recoverable. Convert the original catalog slot directly.
+    pub(crate) fn retain_open_after_refusal(
+        self,
+        cause: super::NoEffectCause,
+    ) -> crate::recovery::ProductUnpublishedOwnerEffects {
+        self.record.state().before_effect_refusal = Some(cause);
+        self.retain_open()
+    }
+
     pub(crate) fn retain_open(mut self) -> crate::recovery::ProductUnpublishedOwnerEffects {
         self.record.state().cause = crate::recovery::ProductUnpublishedCause::OpenAttemptRetained;
         self.slot

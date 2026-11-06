@@ -9,7 +9,7 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
     Schema: ApplicationSchema,
 >(
     phase: &super::super::super::WorthQueryBootstrapAdvancementPhase<'_>,
-    bootstrap: &WorthQueryPrimaryGraphBootstrap<Schema>,
+    bootstrap: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
     runtime: &WorthQueryExecutionRuntime,
     authority: &WorthQueryExecutionInstallationAuthority,
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -20,6 +20,7 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
         WorthQueryInstalledGraphParticipationAuthority,
         WorthQueryInstalledAuthorizationRegistry,
         super::super::super::handler::InstalledMutationHandlerRegistry<Schema>,
+        super::super::super::application_resource::installation::InstalledResourceRegistry<Schema>,
         ApplicationMutationPartitions,
     ),
     WorthQueryPrimaryGraphInstallationDenial,
@@ -33,10 +34,7 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
         ));
     }
     validate_application_schema(runtime, installed)?;
-    bootstrap.resources.validate_complete(installed)?;
-    let handlers = bootstrap
-        .mutation_handlers
-        .seal(installed, bootstrap.graph.binding_identity())?;
+    let handlers = super::owned_contributions::preflight(bootstrap, installed)?;
     let authorization = compile_authorization(bootstrap, installed)?;
     let graph = bootstrap.graph.integration_handle();
     let mutation_partitions = graph
@@ -82,11 +80,17 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
         );
     let participation =
         super::super::graph_participation::install(authority, truth_partition_role, anchor)?;
+    let resources = std::mem::take(&mut bootstrap.resources).install(
+        &phase.execution_request(),
+        None,
+        provider.application_resource_support_ref(),
+    )?;
     Ok((
         provider,
         participation,
         authorization,
         handlers,
+        resources,
         mutation_partitions,
     ))
 }
@@ -104,6 +108,10 @@ pub(in crate::domain_computation::primary_graph) fn finish_home_application<
     authorization: WorthQueryInstalledAuthorizationRegistry,
     authorization_clock: WorthQueryRuntimeClock,
     handlers: super::super::super::handler::InstalledMutationHandlerRegistry<Schema>,
+    resources: super::super::super::application_resource::installation::InstalledResourceRegistry<
+        Schema,
+    >,
+    managed_indexes: super::super::super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
     bridge: WorthQueryInstalledApplicationBridge,
     product: WorthQueryProductRuntime,
     mutation_partitions: ApplicationMutationPartitions,
@@ -128,7 +136,7 @@ pub(in crate::domain_computation::primary_graph) fn finish_home_application<
         recovered_relational_authority: None,
         checkpoint_restore_work,
     };
-    assembly::assemble_application_runtime_with_product(
+    let mut application = assembly::assemble_application_runtime_with_product(
         graph,
         installed,
         authorization,
@@ -141,5 +149,7 @@ pub(in crate::domain_computation::primary_graph) fn finish_home_application<
         product,
         None,
         mutation_partitions,
-    )
+    );
+    super::owned_contributions::transfer(&mut application, resources, managed_indexes);
+    application
 }

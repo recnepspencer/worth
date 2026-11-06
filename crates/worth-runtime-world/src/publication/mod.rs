@@ -1,5 +1,24 @@
 mod cancellation;
+mod home_transition;
+pub(crate) use home_transition::HomeTransitionOpenAssignment;
+mod home_transition_effect;
+mod home_transition_open;
+pub use home_transition::{
+    home_transition_caller_association_commitment, ReservedWorldHomeTransitionAssignments,
+    WorldHomeTransitionReservationRefusal, WorldHomeTransitionStepReservation,
+};
+pub(crate) use home_transition_effect::HomeTransitionEffectControlState;
+pub use home_transition_effect::{
+    WorldHomeTransitionEffectControl, WorldHomeTransitionEffectDenial,
+    WorldHomeTransitionEffectInterruption, WorldHomeTransitionEffectOutcome,
+    WorldHomeTransitionEffectProgress,
+};
+pub use home_transition_open::{
+    WorldHomeTransitionOpenResumeDenial, WorldHomeTransitionOpenResumeRefused,
+    WorldHomeTransitionUnopenedDenial,
+};
 mod open_attempt;
+pub(crate) use open_attempt::WorldOpenAttemptOriginal;
 pub use open_attempt::{
     WorldNativePreparationDenial, WorldNativePreparationRefusal, WorldOpenAttemptOutcome,
     WorldOpenAttemptRefusal, WorldOpenedPublicationAttempt, WorldPendingOpenAttempt,

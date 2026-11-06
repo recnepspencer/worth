@@ -147,6 +147,9 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn owner_identity(&self) -> crate::identity::RuntimeWorldOwnerIdentity {
+        self.owner_identity()
+    }
     fn retained_commits(
         &self,
         candidates: &[crate::identity::CompositeCommitIdentity],
@@ -210,6 +213,10 @@ where
     > {
         use crate::lifecycle::ports::RuntimeWorldPreparationService;
         use crate::recovery::RuntimeWorldSettledRelationalAdoptionDenial as Denial;
+        self.state
+            .recovery
+            .admit_handle(&effects.recovery_handle())
+            .map_err(Denial::Recovery)?;
         if self.state.durable.is_some() {
             return Err(Denial::Recovery(
                 crate::recovery::RuntimeWorldRecoveryDenial::ReopenRequired,
@@ -258,6 +265,7 @@ where
         native: Option<worth_relational::facade::durability::ObservedRelationalMemoryCommit>,
     ) -> Result<crate::recovery::WorldReleasedEffects, crate::recovery::RuntimeWorldRecoveryDenial>
     {
+        self.state.recovery.admit_handle(handle)?;
         self.release_memory_original(execution, handle, minimum_age_ticks, native)
     }
     fn released_original_page(
@@ -280,6 +288,9 @@ where
         &self,
         effects: ProductUnpublishedOwnerEffects,
     ) -> Result<RecoveryContinuationContract, crate::recovery::RuntimeWorldRecoveryDenial> {
+        self.state
+            .recovery
+            .admit_handle(&effects.recovery_handle())?;
         if self.state.durable.is_some() {
             return Err(crate::recovery::RuntimeWorldRecoveryDenial::ReopenRequired);
         }

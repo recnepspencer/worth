@@ -45,6 +45,7 @@ impl WorthQueryProductRuntime {
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        self.admit_owner_incarnation(occurrence.owner_identity())?;
         if occurrence.owner_identity() != self.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
@@ -116,6 +117,7 @@ impl WorthQueryProductRuntime {
             worth_runtime_world::facade::ProductBranchObservation,
         ) -> Result<Output, WorthQueryProductBranchAdmissionDenial>,
     ) -> Result<Output, WorthQueryProductBranchAdmissionDenial> {
+        self.admit_owner_incarnation(identity.owner_identity())?;
         if identity.owner_identity() != self.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
@@ -167,6 +169,9 @@ pub(super) fn map_world_denial(
         }
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::ForeignOwner) => {
             WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignOwner)
+        }
+        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::StaleIncarnation) => {
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::StaleIncarnation)
         }
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::RetiredBranch) => {
             WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::RetiredBranch)

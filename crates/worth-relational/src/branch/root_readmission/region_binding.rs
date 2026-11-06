@@ -146,6 +146,7 @@ impl RelationalBranchRoot {
         let mut root = Self {
             // Reconstructed storage has no live companion association.
             content: crate::content::ContentDirectory::default(),
+            execution_contracts: Default::default(),
             managed_source_image: std::sync::OnceLock::new(),
             id: root_id,
             regions,

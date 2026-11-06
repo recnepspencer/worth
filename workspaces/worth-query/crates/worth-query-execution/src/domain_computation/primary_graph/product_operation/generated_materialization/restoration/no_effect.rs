@@ -2,6 +2,7 @@
 /// no product reference moved.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputPublicationNoEffectCause {
+    StaleIncarnation,
     DurableOpenRequired,
     /// The caller request refused admission before owner contact.
     ExecutionRequest(worth_execution::WorkCeilingDenial),
@@ -56,6 +57,9 @@ const fn map_cause(
 ) -> WorthQueryGeneratedOutputPublicationNoEffectCause {
     use worth_runtime_world::facade::NoEffectCause as WorldCause;
     match cause {
+        WorldCause::StaleIncarnation => {
+            WorthQueryGeneratedOutputPublicationNoEffectCause::StaleIncarnation
+        }
         WorldCause::DurableOpenRequired => {
             WorthQueryGeneratedOutputPublicationNoEffectCause::DurableOpenRequired
         }

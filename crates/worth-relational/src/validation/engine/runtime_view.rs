@@ -13,6 +13,9 @@ use crate::runtime::{
 #[derive(Clone)]
 pub(crate) struct InvariantRuntimeView<'a> {
     pub(crate) selected_registry: crate::schema::SchemaRegistryCustody,
+    pub(crate) prior_registry: Option<crate::schema::SchemaRegistryCustody>,
+    pub(crate) home_target:
+        Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
     pub(crate) custom_kernel_posture: worth_foundational::ExecutionPosture,
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) config: std::sync::Arc<crate::runtime::RelationalRuntimeConfig>,
@@ -35,6 +38,8 @@ impl<'a> InvariantRuntimeView<'a> {
             selected_registry: crate::schema::SchemaRegistryCustody::Runtime(
                 std::sync::Arc::clone(&runtime.config),
             ),
+            prior_registry: None,
+            home_target: None,
             custom_kernel_posture: worth_foundational::ExecutionPosture::Serial,
             commit_work_budget: None,
             config: std::sync::Arc::clone(&runtime.config),
@@ -57,8 +62,17 @@ impl<'a> InvariantRuntimeView<'a> {
     ) -> Self {
         Self {
             selected_registry: crate::schema::SchemaRegistryCustody::Selected(
-                state.root().schema_authority().registry_arc(),
+                runtime
+                    .execution_registry
+                    .clone()
+                    .unwrap_or_else(|| state.root().schema_authority().registry_arc()),
             ),
+            prior_registry: runtime.home_target.as_ref().map(|_| {
+                crate::schema::SchemaRegistryCustody::Selected(
+                    state.root().schema_authority().registry_arc(),
+                )
+            }),
+            home_target: runtime.home_target.clone(),
             custom_kernel_posture: worth_foundational::ExecutionPosture::Serial,
             commit_work_budget: runtime.commit_work_budget.clone(),
             config: std::sync::Arc::clone(&runtime.config),
@@ -104,6 +118,8 @@ impl<'a> InvariantRuntimeView<'a> {
     {
         InvariantRuntimeView {
             selected_registry: self.selected_registry.clone(),
+            prior_registry: self.prior_registry.clone(),
+            home_target: self.home_target.clone(),
             custom_kernel_posture: self.custom_kernel_posture,
             commit_work_budget: self.commit_work_budget.clone(),
             config: std::sync::Arc::clone(&self.config),

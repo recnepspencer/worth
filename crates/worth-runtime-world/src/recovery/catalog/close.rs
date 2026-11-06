@@ -117,6 +117,9 @@ impl ProductUnpublishedRecoveryCatalog {
                     )?)
                 }
                 RecoveredNativeCustody::Released => return Err(Denial::CloseProgressInvariant),
+                RecoveredNativeCustody::Continuing(_) | RecoveredNativeCustody::Working => {
+                    return Err(Denial::UnresolvedBusinessCustody)
+                }
             };
             rows.push(RuntimeWorldRecoveredCustodyReport {
                 identity: record.identity.clone(),
@@ -164,6 +167,9 @@ impl ProductUnpublishedRecoveryCatalog {
                     Some(record.effect().subject().receipt())
                 }
                 RecoveredNativeCustody::Released => return Err(Denial::PublicationFrontierChanged),
+                RecoveredNativeCustody::Continuing(_) | RecoveredNativeCustody::Working => {
+                    return Err(Denial::UnresolvedBusinessCustody)
+                }
             };
             let matches = match (&row.native_receipt, receipt) {
                 (Some(row), Some(receipt)) => row.matches_for_request(request, receipt)?,

@@ -1,6 +1,7 @@
 //! Public Host admission reaches the actual filesystem mutation lease.
 mod changed_build;
 mod ownership;
+mod world_incarnation;
 use std::{
     path::Path,
     sync::{
@@ -23,22 +24,20 @@ fn with_open<R>(
     path: &Path,
     build: ApplicationBuildIdentity,
     initialized: Arc<AtomicUsize>,
-    observe: impl FnOnce(&Result<Home, Refused>) -> R,
+    observe: impl FnOnce(&Result<Home, Refused>, &Arc<AtomicUsize>) -> R,
 ) -> R {
-    let input = fixture::request(
-        path.to_owned(),
-        build,
-        initialized,
-        Arc::new(AtomicUsize::new(0)),
-    );
+    let contacts = Arc::new(AtomicUsize::new(0));
+    let input = fixture::request(path.to_owned(), build, initialized, contacts.clone());
     let lease = checkpoint_capture::lease(128 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
-    with_bootstrap_advancement_from_request(execution, |phase| {
-        // Observe the original result in its opening frame, without moving the
-        // large, concrete refusal custody through additional caller frames.
-        observe(&input.open_in_advancement(&phase))
+    let opened = with_bootstrap_advancement_from_request(execution, |phase| {
+        // Transfer the original owning result out of bootstrap before the
+        // observer can issue business requests. Box is caller-owned storage;
+        // it copies neither Home custody nor the opening refusal.
+        Box::new(input.open_in_advancement(&phase))
     })
-    .unwrap()
+    .unwrap();
+    observe(&opened, &contacts)
 }
 
 fn build() -> ApplicationBuildIdentity {

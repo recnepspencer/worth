@@ -187,7 +187,7 @@ impl RelationalRuntime {
     }
 }
 
-fn registry_basis(
+pub(super) fn registry_basis(
     registry: &RelationalSchemaRegistry,
 ) -> Result<(SchemaId, SchemaVersionId), String> {
     registry

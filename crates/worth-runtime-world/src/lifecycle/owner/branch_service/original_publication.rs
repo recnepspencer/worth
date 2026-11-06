@@ -53,8 +53,11 @@ where
         {
             return Err(Denial::NativeMismatch);
         }
-        self.state
-            .history
-            .readmitted_native_publication(self.owner_identity(), occurrence, effect)
+        self.state.history.readmitted_native_publication(
+            execution,
+            self.owner_identity(),
+            occurrence,
+            effect,
+        )
     }
 }

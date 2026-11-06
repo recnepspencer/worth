@@ -220,24 +220,27 @@ pub mod runtime {
     #[cfg(test)]
     pub use crate::runtime::HarnessAuditMode;
     pub use crate::runtime::{
-        custom_invariant_inventory_digest, AdjacencyStructuralRevision,
-        AdjacencyStructuralRevisionDenial, BoundedFrontierReadStop,
+        custom_invariant_inventory_digest, home_program_transition_body_digest,
+        AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, BoundedFrontierReadStop,
         CompiledArtifactAuthorityStatus, CompiledArtifactError, CompiledExecutionArtifact,
         ComplexityContract, ComplexityStatus, EntityProjectionRecord, EntityRecordProjection,
         FreshRelationalInitialSchemaInstallation, InvariantAccess, PinnedStructuralWalk,
         PinnedStructuralWalkDenial, PinnedStructuralWalkDenialKind, PinnedStructuralWalkReads,
         PinnedStructuralWalkScope, PinnedStructuralWalkVisit, PositionedRelationalSnapshot,
-        QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial,
-        RecoveredCheckpointProgramActivationUpdate, RelationProjectionRecord,
-        RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencySupportDenial,
-        RelationalAdjacencyVisit, RelationalAspectPresenceSupportDenial,
-        RelationalBorrowedRecordReadDenial, RelationalCandidateInputCounters,
-        RelationalEntityMetadata, RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
-        RelationalFieldSupportComparisonDenial, RelationalInitialSchemaInstallation,
-        RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
-        RelationalInitialSchemaInstallationReceipt, RelationalPatchPositionReservationCounters,
-        RelationalPhase4ReferenceCostCounters, RelationalPinnedEntityMetadata,
-        RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
+        PreparedRelationalHomeProgramContracts, QueryLeasedReadOutcome, QueryReadExecutionStop,
+        QueryReadPacketDenial, RecoveredCheckpointProgramActivationUpdate,
+        RelationProjectionRecord, RelationRecordProjection, RelationalAdjacencyDirection,
+        RelationalAdjacencySupportDenial, RelationalAdjacencyVisit,
+        RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
+        RelationalCandidateInputCounters, RelationalEntityMetadata,
+        RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
+        RelationalFieldSupportComparisonDenial, RelationalHomeProgramBodyDenial,
+        RelationalHomeProgramCatalogReadmissionSource, RelationalHomeProgramCatalogReceipt,
+        RelationalHomeProgramContractDenial, RelationalHomeProgramStepContracts,
+        RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
+        RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
+        RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
+        RelationalPinnedEntityMetadata, RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
         RelationalProjectedFieldObservation, RelationalRelationMetadata, RelationalReplayRecord,
         RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalRuntime,
         RelationalRuntimeConfig, RelationalRuntimeConstructionDenial, RelationalRuntimeForkDenial,
@@ -365,6 +368,7 @@ pub mod storage {
 }
 
 pub mod symbols {
+    pub use crate::runtime::RelationalSymbolTableForTest;
     pub use crate::symbols::data::RelationalSymbolExhausted;
     pub use crate::symbols::data::{
         ClientKey, ClientKeySymbolPolicy, InternedString, RelationalFieldText,

@@ -1,7 +1,5 @@
-use crate::runtime::{
-    RelationalRuntime, RelationalRuntimeConfigurationSnapshot, RuntimeSubsystem,
-    SchemaContractRuntimeSubsystem,
-};
+mod readmission;
+use crate::runtime::{RelationalRuntime, SchemaContractRuntimeSubsystem};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::{data::CustomInvariantRegistration, FrozenCustomInvariantRegistry};
 use std::sync::Arc;
@@ -16,6 +14,7 @@ pub(crate) use publication::InitialSchemaCutover;
 pub use receipt::RelationalInitialSchemaInstallationReceipt;
 mod recovered_codec_transition;
 pub use inventory_digest::custom_invariant_inventory_digest;
+pub(crate) use inventory_digest::custom_invariant_inventory_digest_for_compilation;
 pub use recovered_codec_transition::RecoveredCheckpointProgramActivationUpdate;
 pub(crate) use recovered_codec_transition::{
     codec_field_changes, codec_field_changes_in_context, CodecFieldComparisonStop, CodecFieldLocus,
@@ -56,14 +55,14 @@ impl RelationalRuntime {
     ) {
         let configuration = self.configuration_binding();
         let mut installed = configuration.initial_installation();
-        let registry = installed.config.schema.registry.clone();
         let rebuilt = rebuilt_schema_contract_runtime(
-            &installed,
-            registry,
+            &installed.config.schema.registry,
             snapshot.custom_invariants,
             snapshot.custom_invariant_generation,
             snapshot.sealed,
-        );
+            crate::schema::SchemaCompilationControl::Configuration,
+        )
+        .expect("request-free recovery configuration has no execution refusal");
         installed.schema_contract_runtime = Arc::new(rebuilt);
         drop(installed);
         self.reconfigure(|_| {});
@@ -97,46 +96,17 @@ impl RelationalRuntime {
         expected: RelationalInitialSchemaInstallationReceipt,
     ) -> Result<RelationalInitialSchemaInstallationReceipt, RelationalInitialSchemaInstallationDenial>
     {
-        let registrations = self
-            .schema_contract_runtime
-            .custom_invariant_registries
-            .iter()
-            .cloned()
-            .collect::<Vec<_>>();
-        let actual_digest = custom_invariant_inventory_digest(&registrations);
         let registry = &self.config().schema.registry;
-        let entity_kind_count = registry.entity_kinds.len();
-        let relation_kind_count = registry.relation_kinds.len();
-        let schema_authority_digest = crate::schema::data::schema_authority_snapshot_digest_bytes(
+        let schema = crate::schema::data::schema_authority_snapshot_digest_bytes(
             &registry.authority_snapshot(),
         );
-        let recovered = self.runtime_instance_id() != expected.runtime_instance_id
-            && self.schema_contract_runtime.custom_invariant_generation
-                == expected.custom_invariant_generation
-            && actual_digest == expected.custom_invariant_inventory_digest
-            && self
-                .schema_contract_runtime
-                .custom_invariant_registries
-                .source_inventory()
-                == expected.source_groups
-            && entity_kind_count == expected.retained_entity_kind_count
-            && relation_kind_count == expected.retained_relation_kind_count
-            && schema_authority_digest == expected.retained_schema_authority_digest;
-        if !recovered {
-            return Err(RelationalInitialSchemaInstallationDenial::new(
-                RelationalInitialSchemaInstallationDenialKind::RecoveredAuthorityMismatch,
-                "recovered schema or invariant authority differs from the initial installation",
-            ));
-        }
-        Ok(RelationalInitialSchemaInstallationReceipt {
-            runtime_instance_id: self.runtime_instance_id(),
-            source_groups: expected.source_groups,
-            custom_invariant_generation: expected.custom_invariant_generation,
-            custom_invariant_inventory_digest: expected.custom_invariant_inventory_digest,
-            retained_entity_kind_count: expected.retained_entity_kind_count,
-            retained_relation_kind_count: expected.retained_relation_kind_count,
-            retained_schema_authority_digest: expected.retained_schema_authority_digest,
-        })
+        expected.readmit_against(
+            self.runtime_instance_id(),
+            registry,
+            &self.schema_contract_runtime,
+            schema,
+            crate::schema::SchemaCompilationControl::Configuration,
+        )
     }
 }
 
@@ -254,32 +224,35 @@ impl RelationalInitialSchemaInstallation<'_> {
             .cloned()
             .collect::<Vec<_>>();
         registrations.extend(custom_invariants);
-        let inventory_digest = custom_invariant_inventory_digest(&registrations);
+        let control = publication.as_ref().map_or(
+            crate::schema::SchemaCompilationControl::Configuration,
+            |(_, request)| crate::schema::SchemaCompilationControl::Request(**request),
+        );
+        let inventory_digest =
+            custom_invariant_inventory_digest_for_compilation(&registrations, control).map_err(
+                |cause| {
+                    RelationalInitialSchemaInstallationDenial::new(
+                        RelationalInitialSchemaInstallationDenialKind::Request(cause),
+                        format!("{cause:?}"),
+                    )
+                },
+            )?;
         let mut sources = installed
             .schema_contract_runtime
             .custom_invariant_registries
             .explicit_source_programs();
         sources.extend(managed_sources);
-        let sources =
-            crate::validation::candidate_source::SourcePreparationGroup::for_public_sources(
-                &merged, sources,
-            )
+        let registry =
+            FrozenCustomInvariantRegistry::compile(&merged, registrations, sources, control)
+                .map_err(denial::inventory_compilation_denial)?;
+        let source_groups = registry.source_inventory();
+        let rebuilt = rebuilt_schema_contract_runtime(&merged, registry, generation, true, control)
             .map_err(|cause| {
                 RelationalInitialSchemaInstallationDenial::new(
-                    RelationalInitialSchemaInstallationDenialKind::ManagedIndexSourceRejected,
+                    RelationalInitialSchemaInstallationDenialKind::Request(cause),
                     format!("{cause:?}"),
                 )
             })?;
-        let registry = FrozenCustomInvariantRegistry::from_registrations(registrations, sources)
-            .map_err(|duplicate| {
-                RelationalInitialSchemaInstallationDenial::new(
-                    RelationalInitialSchemaInstallationDenialKind::DuplicateCustomInvariant,
-                    duplicate.identity.rule_id.as_str(),
-                )
-            })?;
-        let source_groups = registry.source_inventory();
-        let rebuilt =
-            rebuilt_schema_contract_runtime(&installed, merged.clone(), registry, generation, true);
         // All fallible schema and invariant validation completes before the
         // first owner mutation. This keeps the initial installation atomic.
         self.runtime
@@ -328,19 +301,21 @@ impl RelationalInitialSchemaInstallation<'_> {
 /// Lower the merged registry into a fresh contract runtime, keeping the custom
 /// invariant registries the installed one already carries.
 fn rebuilt_schema_contract_runtime(
-    installed: &RelationalRuntimeConfigurationSnapshot,
-    merged: RelationalSchemaRegistry,
+    merged: &RelationalSchemaRegistry,
     custom_invariants: FrozenCustomInvariantRegistry,
     custom_invariant_generation: u64,
     sealed: bool,
-) -> SchemaContractRuntimeSubsystem {
-    let mut config = installed.config.as_ref().clone();
-    config.schema.registry = merged;
-    let mut rebuilt = <SchemaContractRuntimeSubsystem as RuntimeSubsystem>::new(&config);
-    rebuilt.custom_invariant_registries = custom_invariants;
-    rebuilt.custom_invariant_generation = custom_invariant_generation;
-    rebuilt.initial_custom_invariants_sealed = sealed;
-    rebuilt
+    control: crate::schema::SchemaCompilationControl<'_, '_>,
+) -> Result<SchemaContractRuntimeSubsystem, crate::execution::RelationalExecutionDenialCause> {
+    let plans = crate::branch::RetainedRelationalAspectPlans::compile(merged, control)?;
+    SchemaContractRuntimeSubsystem::for_schema_compilation(
+        merged,
+        plans,
+        custom_invariants,
+        custom_invariant_generation,
+        sealed,
+        control,
+    )
 }
 
 mod recovery_configuration;

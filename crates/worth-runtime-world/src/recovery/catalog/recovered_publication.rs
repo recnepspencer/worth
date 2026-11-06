@@ -31,9 +31,7 @@ impl ProductUnpublishedRecoveryCatalog {
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<WorldRecoveredUnpublishedEffects, crate::recovery::RuntimeWorldRecoveryDenial> {
         use crate::recovery::RuntimeWorldRecoveryDenial as Denial;
-        if handle.catalog_affinity() != self.affinity() {
-            return Err(Denial::ForeignHandle);
-        }
+        self.admit_handle(handle)?;
         let record = {
             let state = self.locked_state();
             match state.slots.get(handle.identity()) {
@@ -60,6 +58,8 @@ impl ProductUnpublishedRecoveryCatalog {
                     record.clone(),
                 ),
             ),
+            crate::recovery::RecoveredNativeCustody::Continuing(_)
+            | crate::recovery::RecoveredNativeCustody::Working => None,
             crate::recovery::RecoveredNativeCustody::Released => {
                 unreachable!("current recovered catalog entry")
             }

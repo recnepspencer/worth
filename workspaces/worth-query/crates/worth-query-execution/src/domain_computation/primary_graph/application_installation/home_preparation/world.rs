@@ -115,18 +115,15 @@ where
         QueryHomeWorldAttachmentRefused<Schema, Program>,
     > {
         let prepared = (|| {
-            let (provider, participation, authorization, handlers, mutation_partitions) =
+            let (provider, participation, authorization, handlers, resources, mutation_partitions) =
                 home_attachment::preflight_home_application(
                     phase,
-                    &self.bootstrap,
+                    &mut self.bootstrap,
                     &self.state.runtime,
                     &self.state.authority,
                     &self.state.installed,
                     root.basis().relational_basis(),
                 )?;
-            self.bootstrap
-                .managed_indexes
-                .validate_complete(&self.state.installed)?;
             self.bootstrap.readmit_home_initial_program(
                 phase,
                 &root,
@@ -163,6 +160,7 @@ where
                 participation,
                 authorization,
                 handlers,
+                resources,
                 product,
                 mutation_partitions,
             ))
@@ -173,6 +171,7 @@ where
             participation,
             authorization,
             handlers,
+            resources,
             product,
             mutation_partitions,
         ) = match prepared {
@@ -204,13 +203,21 @@ where
             provider,
             participation,
             authorization,
-            crate::domain_computation::authorization::WorthQueryRuntimeClock::system(),
+            match state.authorization_time_source {
+                Some(source) => {
+                    crate::domain_computation::authorization::WorthQueryRuntimeClock::from_source(
+                        source,
+                    )
+                }
+                None => crate::domain_computation::authorization::WorthQueryRuntimeClock::system(),
+            },
             handlers,
+            resources,
+            managed_indexes,
             bridge,
             product,
             mutation_partitions,
         );
-        application.managed_indexes = managed_indexes;
         application.program_support = Some(
             super::super::super::program_occurrence::WorthQueryInstalledProgramSupport::installed(
                 state.support.roster,

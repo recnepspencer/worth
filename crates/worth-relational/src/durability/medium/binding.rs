@@ -2,8 +2,12 @@ use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 mod source_retirement;
 pub(crate) use source_retirement::SealedRelationalMediumBinding;
 mod checkpoint_selection;
+mod home_transition_requirement;
 mod initial_inputs;
 pub(crate) use checkpoint_selection::CheckpointPublication;
+pub(crate) use home_transition_requirement::RelationalDurableMediumTransfer;
+use home_transition_requirement::RelationalHomeProgramPhase;
+pub use home_transition_requirement::RelationalHomeProgramWriteDenial;
 pub(crate) use initial_inputs::RelationalCommittedInitialInputs;
 pub use initial_inputs::RelationalInitialInputsPublicationStop;
 use worth_proof::{AuthorityMarker, DurablyCommitted};
@@ -30,6 +34,7 @@ use crate::history::data::PositionedCanonicalCommit;
 /// delete and a later transition never overtakes an unresolved commit.
 #[derive(Debug)]
 pub(crate) struct RelationalDurableMediumBinding {
+    transition: Option<worth_proof::HomeProgramTransitionAuthority>,
     state: Mutex<BindingState>,
     cold_source: Option<Arc<dyn super::RelationalDurableColdSource>>,
     unresolved: Arc<OnceLock<RelationalDurabilityUnresolved>>,
@@ -37,6 +42,7 @@ pub(crate) struct RelationalDurableMediumBinding {
 
 #[derive(Debug)]
 struct BindingState {
+    home_phase: Option<RelationalHomeProgramPhase>,
     /// `None` once the medium moved to a recovered runtime.
     medium: Option<Box<dyn RelationalDurableMedium>>,
     unresolved: Arc<OnceLock<RelationalDurabilityUnresolved>>,
@@ -112,17 +118,27 @@ impl RelationalDurableMediumBinding {
             .ok_or(super::RelationalDurableTransitionReadFailure::MediumMoved)?
             .read_transition(sequence)
     }
-    pub(crate) fn new(medium: Box<dyn RelationalDurableMedium>) -> Self {
+    pub(crate) fn new(transfer: RelationalDurableMediumTransfer) -> Self {
+        let RelationalDurableMediumTransfer { medium, phase } = transfer;
         let unresolved = Arc::new(OnceLock::new());
         let cold_source = medium.cold_source();
+        let transition = medium.home_transition_authority().cloned();
         Self {
+            transition,
             cold_source: Some(cold_source),
             state: Mutex::new(BindingState {
+                home_phase: Some(phase),
                 medium: Some(medium),
                 unresolved: unresolved.clone(),
             }),
             unresolved,
         }
+    }
+
+    pub(crate) fn home_transition_authority(
+        &self,
+    ) -> Option<&worth_proof::HomeProgramTransitionAuthority> {
+        self.transition.as_ref()
     }
 
     /// Encode `commit` as its canonical artifact and make it durable.
@@ -179,6 +195,11 @@ impl RelationalDurableMediumBinding {
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<DurablyCommitted<RelationalDurableTransitionPublication>, RelationalDurableStepStop>
     {
+        self.admit_home_program_write(None, None).map_err(|cause| {
+            refused(RelationalDurablePublicationRefusal::HomeProgramTransition(
+                cause,
+            ))
+        })?;
         let mut state = self.state();
         let medium = state.admitting_medium()?;
         let artifact = RelationalBranchTransitionArtifact::from_positioned(&transition, policy)
@@ -205,8 +226,14 @@ impl RelationalDurableMediumBinding {
     /// Waits for a publication in flight; afterwards this attachment refuses
     /// every publication. An unresolved fate stays behind: the rebuilt
     /// runtime's recovery has decided it. `None` if it already moved.
-    pub(crate) fn detach(&self) -> Option<Box<dyn RelationalDurableMedium>> {
-        self.state().medium.take()
+    pub(crate) fn detach(&self) -> Option<RelationalDurableMediumTransfer> {
+        let mut state = self.state();
+        let medium = state.medium.take()?;
+        let phase = state
+            .home_phase
+            .take()
+            .expect("the live medium owns its phase");
+        Some(RelationalDurableMediumTransfer { medium, phase })
     }
 
     /// The in-crate test medium behind this binding, if it is one.

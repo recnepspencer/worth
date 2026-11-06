@@ -60,6 +60,7 @@ pub(crate) struct ProductUnpublishedOwnerEffectsRecord {
     catalog_affinity: usize,
     live_obligations: ProductUnpublishedLiveObligations,
     cause: ProductUnpublishedCause,
+    before_effect_refusal: Option<crate::publication::NoEffectCause>,
     next_actions: RetainedNextActions,
     deadline: Option<RuntimeWorldInstant>,
     admitted_at: RuntimeWorldInstant,
@@ -82,6 +83,7 @@ impl std::fmt::Debug for ProductUnpublishedOwnerEffects {
             .field("identity", &self.record.identity)
             .field("attempt_identity", &self.record.attempt_identity)
             .field("cause", &self.record.cause)
+            .field("before_effect_refusal", &self.record.before_effect_refusal)
             .field("next_actions", &self.record.next_actions)
             .field("live_obligations", &self.record.live_obligations)
             .field("owner_effect_count", &self.record.owner_effect_count)
@@ -132,7 +134,8 @@ impl ProductUnpublishedOwnerEffects {
                     worth_relational::facade::durability::RelationalRecoveredPublicationCustody,
                 >,
             >()
-            + 4 * std::mem::size_of::<usize>();
+            + 4 * std::mem::size_of::<usize>()
+            + crate::publication::HomeTransitionEffectControlState::allocation_bytes();
         (if live > recovered { live } else { recovered })
             + super::catalog::ProductUnpublishedRecoveryCatalog::slot_metadata_charge_hint()
     }
@@ -195,8 +198,11 @@ impl ProductUnpublishedOwnerEffects {
         self.record.live_obligations.total()
     }
 
-    /// The same count divided by scope, for a report that must never
-    /// contradict the record it describes.
+    /// The actual owner refusal that preceded retaining an already durable open.
+    /// It does not mean that the durable World open itself was rolled back.
+    pub fn before_effect_refusal(&self) -> Option<crate::publication::NoEffectCause> {
+        self.record.before_effect_refusal
+    }
 
     pub fn cause(&self) -> ProductUnpublishedCause {
         self.record.cause

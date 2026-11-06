@@ -70,6 +70,15 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if !binding.matches_guarded_workflow_effect(transition_identity) {
+            return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
+        }
+        admission
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
+        admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         if !admission.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
@@ -246,6 +255,12 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        admission
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
+        admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         if !admission.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),

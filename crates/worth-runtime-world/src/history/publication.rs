@@ -10,6 +10,7 @@ mod readmission;
 pub use memory_observation::WorldObservedMemoryPublication;
 pub(crate) use readmission::{
     PreparedReadmittedPublicationRecord, PublicationEvidence, ReadmittedPublicationRecord,
+    ReadmittedPublicationRecordBacking,
 };
 pub use readmission::{WorldReadmittedPublication, WorldReadmittedPublicationDenial};
 

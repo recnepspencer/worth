@@ -25,12 +25,26 @@ pub fn attach_relational(
         let attached = match native_source {
             crate::home_context::RelationalHomeOpeningInput::Fresh(prepared) => {
                 worth_store_relational::UnrecoveredRelationalSection::attach_fresh_home(
-                    definition, serving, placement, selection, prepared,
+                    definition,
+                    serving,
+                    placement,
+                    selection,
+                    prepared.with_home_transition_authority(
+                        context.transition.authority(),
+                        context.transition.required(),
+                    ),
                 )
             }
             crate::home_context::RelationalHomeOpeningInput::Existing(prepared) => {
                 worth_store_relational::UnrecoveredRelationalSection::attach_prepared_home(
-                    definition, serving, placement, selection, prepared,
+                    definition,
+                    serving,
+                    placement,
+                    selection,
+                    prepared.with_home_transition_authority(
+                        context.transition.authority(),
+                        context.transition.required(),
+                    ),
                 )
             }
         };

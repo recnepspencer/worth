@@ -8,20 +8,42 @@ use super::{
 };
 
 static NEXT_PROTOCOL_SESSION: AtomicU64 = AtomicU64::new(1);
+mod incarnation;
 
+#[derive(Debug)]
 pub struct WorthQueryProviderSessionTokenAdmission {
+    generation: u64,
+    home_owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
     plan_identity: Arc<str>,
     provider_identity: Arc<str>,
     provider_generation: u64,
 }
 
 impl WorthQueryProviderSessionTokenAdmission {
-    pub(super) fn new(plan: &WorthQueryProviderExecutionPlanContract) -> Self {
-        Self {
+    pub(super) fn new(
+        plan: &WorthQueryProviderExecutionPlanContract,
+        home_owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
+    ) -> Result<Self, WorthQueryProviderSessionFailure> {
+        let generation =
+            next_protocol_session_generation(&NEXT_PROTOCOL_SESSION).ok_or_else(|| {
+                WorthQueryProviderSessionFailure::new(
+                    WorthQueryProviderSessionDenialKind::SessionIdentityExhausted,
+                    WorthQueryProviderSessionProtocolStage::PlanReadmission,
+                    "provider session identity space is exhausted",
+                    WorthQueryProviderSessionProtocolCounters::default(),
+                )
+            })?;
+        Ok(Self {
+            generation,
+            home_owner,
             plan_identity: plan.identity().into(),
             provider_identity: plan.provider_identity().into(),
             provider_generation: plan.provider_generation(),
-        }
+        })
+    }
+
+    pub(super) fn reserved_generation(&self) -> u64 {
+        self.generation
     }
 
     pub fn admit(
@@ -39,16 +61,9 @@ impl WorthQueryProviderSessionTokenAdmission {
                 WorthQueryProviderSessionProtocolCounters::default(),
             ));
         }
-        let generation =
-            next_protocol_session_generation(&NEXT_PROTOCOL_SESSION).ok_or_else(|| {
-                WorthQueryProviderSessionFailure::new(
-                    WorthQueryProviderSessionDenialKind::SessionIdentityExhausted,
-                    WorthQueryProviderSessionProtocolStage::PlanReadmission,
-                    "provider session identity space is exhausted",
-                    WorthQueryProviderSessionProtocolCounters::default(),
-                )
-            })?;
+        let generation = self.generation;
         Ok(WorthQueryProviderSessionToken {
+            home_owner: self.home_owner,
             identity: Arc::from(format!("provider-session:{generation}")),
             plan_identity: self.plan_identity,
             provider_identity: self.provider_identity,
@@ -100,6 +115,7 @@ mod tests {
 }
 
 pub struct WorthQueryProviderSessionToken {
+    home_owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
     identity: Arc<str>,
     plan_identity: Arc<str>,
     provider_identity: Arc<str>,

@@ -529,6 +529,23 @@ The supported development workflow is:
   - Opening a tombstoned location refuses with `DiscardPending` until
     `discard_home` completes.
 
+**Cleanup track: moved courts.** The following transition-source recovery
+courts leave the happy-path tree under the M3 track split. Restore and migrate
+them against real Store Home/World authority; do not ignore or gate them.
+
+- `transition_source_recovers_the_exact_durable_prefix_and_original_planning_root`: Recovers the exact durable transition prefix and original planning root, keeps that historical root distinct from the current execution basis, and readmits successor schema version 2.
+  `restore from 34edd18ff6:crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/home_program_transition_source.rs`. Migration needs catalog-grant access before
+  cutover and a replacement for the expected-zero prefix scenario, because
+  zero-step plans are prohibited.
+- `transition_source_reads_its_planning_predecessor_from_the_selected_admission_image`: Reads the original planning predecessor from the selected admission image, preserving one predecessor row and two current rows after the durable migration tail.
+  `restore from 34edd18ff6:crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/home_program_transition_source.rs`. Migration needs catalog-grant access before
+  cutover and a replacement for the expected-zero prefix scenario, because
+  zero-step plans are prohibited.
+- `transition_source_refuses_a_missing_or_foreign_prefix_before_runtime_cutover`: Refuses a missing or foreign prefix with a typed refusal before runtime cutover; the receiver remains empty.
+  `restore from 34edd18ff6:crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/home_program_transition_source.rs`. Migration needs catalog-grant access before
+  cutover and a replacement for the expected-zero prefix scenario, because
+  zero-step plans are prohibited.
+
 **D17. Type-enforced invariants, placed by the vocabulary rule.**
 
 The decisions above are invariants. Each one is enforced by the compiler
@@ -1702,6 +1719,11 @@ changed build identity is an oracle dimension rather than a single case.
 
 **Required tests**
 
+- **Producer directory build identity.** Restore
+  `directory_changed_build_reuses_original_output_until_new_implementation_is_demanded`
+  (restore from `5358b31d3083dc88eea961af716e948f759eac96:workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/producer_predicate_checkpoint/changed_build.rs`): produce under A, reuse the
+  original accepted output under A, reopen under B without producer execution,
+  then regenerate only on demand.
 - **Retirement survives restart.** Retire support, kill, reopen: the status is
   still Retired, and interpretation refuses where the retirement requires it.
 - **Adoption resumes.** Adoption interrupted at each stage across a kill

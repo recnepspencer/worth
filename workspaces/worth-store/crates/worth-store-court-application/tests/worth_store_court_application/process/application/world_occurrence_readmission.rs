@@ -335,12 +335,13 @@ fn late_history_refusal_retains_actual_partial_root_caps_and_home_lease_until_cl
         other => panic!("late refusal must own actual earlier admissions: {other:?}"),
     }
     match open_refusal(directory.path(), &execution) {
-        world_home::WorldHomeFixtureRefusal::Home(ApplicationHomeOpenRefusal::Physical(
-            refused,
-        )) => assert_eq!(
-            refused.kind(),
-            ApplicationHomePhysicalRefusalKind::MutationOwnerContended
-        ),
+        world_home::WorldHomeFixtureRefusal::Home(cause) => match *cause {
+            ApplicationHomeOpenRefusal::Physical(refused) => assert_eq!(
+                refused.kind(),
+                ApplicationHomePhysicalRefusalKind::MutationOwnerContended
+            ),
+            other => panic!("same owning refusal must retain the Home lease: {other:?}"),
+        },
         other => panic!("same owning refusal must retain the Home lease: {other:?}"),
     }
     // Explicit cleanup releases the actual staged catalog/caps. It returns

@@ -9,6 +9,7 @@ use crate::identity::CompositeCommitIdentity;
 impl CompositeHistoryCatalog {
     pub(crate) fn readmitted_native_publication(
         &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
         owner: crate::identity::RuntimeWorldOwnerIdentity,
         occurrence: &crate::durability::AdmittedWorldOccurrence,
         effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
@@ -16,16 +17,34 @@ impl CompositeHistoryCatalog {
         let open = occurrence.open();
         let identity = crate::identity::readmission::readmit_commit(owner, open.commit)
             .ok_or(Denial::ForeignHome)?;
-        let state = lock_state(&self.state);
-        validate_owner(&state, owner).map_err(Denial::History)?;
-        let publication = state
-            .entries
-            .get(&identity)
-            .and_then(|slot| slot.get())
-            .and_then(|entry| entry.publication.as_ref())
-            .ok_or(Denial::NotReadmitted)?;
+        let (publication, protection) = {
+            let state = lock_state(&self.state);
+            validate_owner(&state, owner).map_err(Denial::History)?;
+            let publication = state
+                .entries
+                .get(&identity)
+                .and_then(|slot| slot.get())
+                .and_then(|entry| entry.publication.as_ref())
+                .ok_or(Denial::NotReadmitted)?;
+            let publication = match publication {
+                PublicationEvidence::Readmitted(record) => {
+                    PublicationEvidence::Readmitted(record.clone())
+                }
+                PublicationEvidence::Live(live) => PublicationEvidence::Live(live.clone()),
+            };
+            lock_index(&state.reachability)
+                .increment_direct_protection(&identity)
+                .map_err(Denial::History)?;
+            let protection = CompositeHistoryProtectionObligation::new(
+                state.reachability.clone(),
+                identity.clone(),
+                HistoryProtectionClass::ExplicitObligation,
+            );
+            (publication, protection)
+        };
+        // No history lock crosses original-request admission or record allocation.
         let record = match publication {
-            PublicationEvidence::Readmitted(record) => record.clone(),
+            PublicationEvidence::Readmitted(record) => record,
             PublicationEvidence::Live(live) => {
                 let facts = live.facts().ok_or(Denial::NotReadmitted)?;
                 let before = facts.movement.before();
@@ -46,6 +65,13 @@ impl CompositeHistoryCatalog {
                     return Err(Denial::NativeMismatch);
                 }
                 crate::history::ReadmittedPublicationRecord::from_source(
+                    crate::history::ReadmittedPublicationRecordBacking::prepare(request).map_err(
+                        |cause| {
+                            Denial::Source(Box::new(
+                                crate::durability::WorldReadmissionDenial::Medium(cause),
+                            ))
+                        },
+                    )?,
                     before.clone(),
                     after.clone(),
                     attempt,
@@ -54,16 +80,9 @@ impl CompositeHistoryCatalog {
                 )
             }
         };
-        lock_index(&state.reachability)
-            .increment_direct_protection(&identity)
-            .map_err(Denial::History)?;
         Ok(WorldReadmittedPublication {
             record,
-            _history: CompositeHistoryProtectionObligation::new(
-                state.reachability.clone(),
-                identity,
-                HistoryProtectionClass::ExplicitObligation,
-            ),
+            _history: protection,
             _catalog: self.clone(),
         })
     }

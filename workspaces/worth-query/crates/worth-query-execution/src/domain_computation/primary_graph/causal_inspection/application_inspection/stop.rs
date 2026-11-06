@@ -55,6 +55,7 @@ pub enum InspectionCause {
 /// A coarse projection that exposes no protected original observation metadata.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationInspectionStopKind {
+    StaleIncarnation,
     Unavailable,
     Request,
     Admission,
@@ -196,6 +197,14 @@ impl WorthQueryApplicationInspectionDenial {
             return Kind::Request;
         }
         match &self.cause {
+            InspectionCause::Admission(InspectionAdmissionDenial::Capability(denial))
+                if denial.kind() == crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation) => Kind::StaleIncarnation,
+            InspectionCause::Admission(InspectionAdmissionDenial::CurrentAuthorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation)))
+            | InspectionCause::Admission(InspectionAdmissionDenial::Security(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(crate::basis::WorthQueryProductBranchAdmissionRefusalKind::StaleIncarnation))) => Kind::StaleIncarnation,
+            InspectionCause::Admission(InspectionAdmissionDenial::Authorization(denial))
+                if denial.kind() == crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation)) => Kind::StaleIncarnation,
+            InspectionCause::Query(denial) if denial.kind() == crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation)) => Kind::StaleIncarnation,
+            InspectionCause::Selection(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(crate::basis::WorthQueryProductBranchAdmissionRefusalKind::StaleIncarnation)) => Kind::StaleIncarnation,
             InspectionCause::Unavailable => Kind::Unavailable,
             InspectionCause::Advancement(_) | InspectionCause::Binding(CaptureStop::Request(_)) => {
                 Kind::Request
@@ -298,3 +307,35 @@ impl std::fmt::Debug for WorthQueryApplicationInspectionDenial {
 mod projection_tests;
 
 mod court_doors_for_test;
+#[cfg(test)]
+mod incarnation_projection_tests {
+    use super::*;
+    use crate::domain_computation::authorization::{
+        WorthQueryOperationAuthorizationDenial as Denial,
+        WorthQueryOperationAuthorizationDenialKind as Kind,
+        WorthQueryOperationAuthorizationRefusalKind as Refusal,
+    };
+    #[test]
+    fn stale_disclosure_is_distinct_from_foreign_runtime_in_public_inspection_stop_kind() {
+        // Error metadata only: no capability, runtime or Home is fabricated.
+        for (cause, expected) in [
+            (
+                Refusal::StaleIncarnation,
+                WorthQueryApplicationInspectionStopKind::StaleIncarnation,
+            ),
+            (
+                Refusal::ForeignRuntime,
+                WorthQueryApplicationInspectionStopKind::Admission,
+            ),
+        ] {
+            let denied = WorthQueryApplicationInspectionDenial::new(
+                InspectionCause::Admission(InspectionAdmissionDenial::Capability(Denial::new(
+                    Kind::Refused(cause),
+                    "disclosure",
+                ))),
+                None,
+            );
+            assert_eq!(denied.kind(), expected);
+        }
+    }
+}

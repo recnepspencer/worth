@@ -15,6 +15,7 @@ pub enum ApplicationHomeOpenRefusal {
     Physical(physical_admission::ApplicationHomePhysicalRefusal),
     Descriptor(crate::descriptor::ApplicationHomeDescriptorDenial),
     Checkpoint(crate::checkpoint::ApplicationHomeCheckpointDenial),
+    Transition(readmission::transition::ApplicationHomeTransitionIntentDenial),
     RuntimeConstruction(worth_relational::facade::runtime::RelationalRuntimeConstructionDenial),
     Relational(worth_store_relational::RelationalSectionReadmissionDenial),
     World(worth_runtime_world::facade::WorldReadmissionDenial),
@@ -75,24 +76,26 @@ pub fn admit_home(
             binding,
             build,
             opening_observation,
+            predecessor,
             #[cfg(feature = "certification-test-authority")]
             mut controls,
         } = recovered.request;
         let binding = binding.consume(|admitted| admitted.into_description());
+        let selected_source =
+            crate::checkpoint::SelectedHomeSource::capture(&recovered.serving, execution)
+                .map_err(ApplicationHomeOpenRefusal::Checkpoint)?;
         use crate::{ApplicationHomeOpeningEdge as Edge, ApplicationHomeOpeningStage as Stage};
         opening_observation.arrive_for_test(Stage::DescriptorIncarnation, Edge::Before);
         let prepared_descriptor = crate::descriptor::prepare_admission(
             &recovered.serving,
             recovered.origin,
-            &relational,
+            relational,
             binding,
+            predecessor,
             build,
+            &selected_source,
             execution,
-        )
-        .map_err(ApplicationHomeOpenRefusal::Descriptor)?;
-        let selected_source =
-            crate::checkpoint::SelectedHomeSource::capture(&recovered.serving, execution)
-                .map_err(ApplicationHomeOpenRefusal::Checkpoint)?;
+        )?;
         let selected = selected_source
             .selected(&recovered.serving, execution)
             .map_err(ApplicationHomeOpenRefusal::Checkpoint)?;
@@ -106,14 +109,26 @@ pub fn admit_home(
             #[cfg(feature = "certification-test-authority")]
             &mut controls.relational,
         )?;
-        let descriptor =
-            crate::descriptor::publish(&recovered.serving, prepared_descriptor, execution)
-                .map_err(ApplicationHomeOpenRefusal::Descriptor)?;
+        let crate::descriptor::PublishedHomeDescriptor {
+            descriptor,
+            definition: relational,
+            transition: transition_admission,
+        } = crate::descriptor::publish(&recovered.serving, prepared_descriptor, execution)
+            .map_err(ApplicationHomeOpenRefusal::Descriptor)?;
         opening_observation.arrive_for_test(Stage::DescriptorIncarnation, Edge::After);
         let checkpoint = Arc::new(Default::default());
+        let transition = readmission::transition::HomeTransitionOwner::new(
+            descriptor.identity,
+            descriptor.incarnation.fence(),
+            transition_admission,
+            execution,
+        )
+        .map_err(ApplicationHomeOpenRefusal::Execution)?;
         let world_slot = crate::world_section::UnclaimedWorldSlot::from_admitted_home(
             Arc::clone(&recovered.serving),
             &descriptor,
+            transition.authority(),
+            transition.reserved_attempt_frontier(),
             &checkpoint,
             execution,
         )
@@ -122,6 +137,7 @@ pub fn admit_home(
             native_source,
             context: HomeContext {
                 opening_observation,
+                transition,
                 selected_home_source: Some(selected_source),
                 initialization: crate::relational_preparation::HomeInitializationOrigin::Available(
                     recovered.origin,
@@ -152,4 +168,10 @@ pub fn readmit_relational(
         .readmit_source_for_home(execution)
         .map(|proof| proof.consume(|home| home.share()))
         .map_err(crate::RelationalHomeOpenRefused::Readmission)
+}
+
+impl From<crate::descriptor::ApplicationHomeDescriptorDenial> for ApplicationHomeOpenRefusal {
+    fn from(cause: crate::descriptor::ApplicationHomeDescriptorDenial) -> Self {
+        Self::Descriptor(cause)
+    }
 }

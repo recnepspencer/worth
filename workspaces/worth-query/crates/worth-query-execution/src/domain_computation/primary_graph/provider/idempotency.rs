@@ -295,7 +295,8 @@ fn pending_publication_denial(
         Kind::SnapshotIdentityExhausted => {
             WorthQueryProviderIdempotencyResolutionDenial::SnapshotIdentityExhausted
         }
-        kind @ (Kind::ProjectionContract { .. }
+        kind @ (Kind::StaleIncarnation
+        | Kind::ProjectionContract { .. }
         | Kind::HistoricalVisibility { .. }
         | Kind::ContentInconsistency
         | Kind::Content(_)

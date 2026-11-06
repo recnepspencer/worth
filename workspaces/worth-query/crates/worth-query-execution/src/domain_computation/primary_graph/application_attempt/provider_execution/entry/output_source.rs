@@ -15,6 +15,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.require_program_incarnation(&program) {
+            return outcome;
+        }
         let entry = match self.validate_commit_program_in_advancement(phase, program) {
             Ok(entry) => entry,
             Err(outcome) => return outcome,
@@ -45,6 +48,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.require_program_incarnation(&program) {
+            return outcome;
+        }
         let entry = match self.validate_commit_program_in_advancement(phase, program) {
             Ok(entry) => entry,
             Err(outcome) => return outcome,
@@ -72,6 +78,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.require_program_incarnation(&program) {
+            return outcome;
+        }
         let entry = match self.validate_commit_program_in_advancement(phase, program) {
             Ok(entry) => entry,
             Err(outcome) => return outcome,

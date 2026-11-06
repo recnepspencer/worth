@@ -1,4 +1,5 @@
 mod admission;
+mod discard;
 mod failed_close;
 mod host_oracle;
 mod interrupted_close;

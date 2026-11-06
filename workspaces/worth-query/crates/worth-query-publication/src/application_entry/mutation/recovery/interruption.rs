@@ -149,6 +149,7 @@ fn execution_stop(cause: Result<Execution, Control>) -> Option<Denial> {
         | Ok(Execution::ForeignOperationAttempt)
         | Ok(Execution::ForeignExecutionBasis)
         | Ok(Execution::ForeignGraphAuthority)
+        | Ok(Execution::StaleIncarnation)
         | Ok(Execution::UndeclaredOperationScope)
         | Ok(Execution::ResourceEnvelopeMismatch)
         | Ok(Execution::ExecutionIdentitiesNotCanonical { .. })

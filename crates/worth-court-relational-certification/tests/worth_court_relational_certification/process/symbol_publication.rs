@@ -1,6 +1,8 @@
 //! Canonical publication must retain genuine text custody across dictionary updates.
-use super::*;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
+use worth_relational::facade::symbols::{
+    RelationalSymbolTableForTest as RuntimeSymbolTable, Symbol, SymbolTableSnapshot,
+};
 
 #[test]
 fn repeated_canonical_import_keeps_the_original_managed_text_grant() {
@@ -8,7 +10,7 @@ fn repeated_canonical_import_keeps_the_original_managed_text_grant() {
     let cancellation = CancellationSource::new();
     let host = SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
     let request = ExecutionRequest::serial(&host);
-    let text = StoredSymbolText::copy_from_str(&request, "original actor").unwrap();
+    let text = RuntimeSymbolTable::copy_text(&request, "original actor").unwrap();
     let snapshot = SymbolTableSnapshot {
         entries: vec![(Symbol(1), text)],
     };
@@ -35,8 +37,7 @@ fn canonical_import_replaces_the_ticket_when_another_request_funds_the_same_text
     let original = SymbolTableSnapshot {
         entries: vec![(
             Symbol(1),
-            StoredSymbolText::copy_from_str(&ExecutionRequest::serial(&first), "same actor")
-                .unwrap(),
+            RuntimeSymbolTable::copy_text(&ExecutionRequest::serial(&first), "same actor").unwrap(),
         )],
     };
     table.import_canonical_snapshot(&original).unwrap();
@@ -45,8 +46,7 @@ fn canonical_import_replaces_the_ticket_when_another_request_funds_the_same_text
     let replacement = SymbolTableSnapshot {
         entries: vec![(
             Symbol(1),
-            StoredSymbolText::copy_from_str(&ExecutionRequest::serial(&next), "same actor")
-                .unwrap(),
+            RuntimeSymbolTable::copy_text(&ExecutionRequest::serial(&next), "same actor").unwrap(),
         )],
     };
     table.import_canonical_snapshot(&replacement).unwrap();
@@ -72,17 +72,12 @@ fn canonical_import_upgrades_a_system_configuration_key_to_the_admitted_text() {
     let admitted = SymbolTableSnapshot {
         entries: vec![(
             Symbol(1),
-            StoredSymbolText::copy_from_str(&ExecutionRequest::serial(&host), "actor").unwrap(),
+            RuntimeSymbolTable::copy_text(&ExecutionRequest::serial(&host), "actor").unwrap(),
         )],
     };
     table.import_canonical_snapshot(&admitted).unwrap();
     drop(admitted);
-    assert!(table.read_state(|state| state
-        .configuration
-        .get_key_value("actor")
-        .unwrap()
-        .0
-        .is_managed()));
+    assert!(table.configuration_key_is_managed("actor"));
     assert!(budget.charged_memory_bytes() > 0);
     drop(table);
     assert_eq!(budget.charged_memory_bytes(), 0);

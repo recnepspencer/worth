@@ -165,23 +165,16 @@ where
         insert(&mut observations, &head.commit, &expected, execution)?;
         for (index, occurrence) in recovered.occurrences.values().enumerate() {
             let open = occurrence.open();
-            let relational = occurrence.relational();
             let before = observations
                 .get(&open.expected.commit)
                 .ok_or(Denial::MissingPredecessor)?;
-            let identity = native
-                .history()
-                .immutable_commit_identity(worth_relational::facade::history::CommitId(
-                    relational.commit,
-                ))
-                .ok_or(Denial::OccurrenceEvidenceMismatch)?;
             let mut origin = crate::durability::PreparedCheckpointOccurrence::prepare(execution)
                 .map_err(Denial::Medium)?;
             let admitted = custody.publications[index]
                 .take()
                 .expect("same acquired occurrence cap");
             let record =
-                match root.prepare_readmitted_occurrence(before, occurrence, admitted, identity) {
+                match root.prepare_readmitted_occurrence(execution, before, occurrence, admitted) {
                     Ok(record) => record,
                     Err((admitted, cause)) => {
                         custody.publications[index] = Some(admitted);

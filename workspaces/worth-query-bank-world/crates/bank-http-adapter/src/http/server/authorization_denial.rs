@@ -24,7 +24,8 @@ pub(super) fn authorization_denial(kind: BankAuthorizationDenialKind) -> BankHtt
         Authorization::ExpiredAuthentication => (Kind::Unauthenticated, Next::Authenticate),
         // Installed meaning, principal, scope or grants moved since the view
         // the request was built from.
-        Authorization::StaleInstalledSchema
+        Authorization::StaleIncarnation
+        | Authorization::StaleInstalledSchema
         | Authorization::StaleInstalledOperation
         | Authorization::StalePrincipal
         | Authorization::StaleScope
@@ -146,6 +147,7 @@ fn execution_request_denial(
         | Session::SnapshotIdentityExhausted
         | Session::CandidateIdentityExhausted
         | Session::IndexGenerationIdentityExhausted
+        | Session::StaleIncarnation
         | Session::ForeignOperationAttempt
         | Session::ForeignExecutionBasis
         | Session::ForeignGraphAuthority

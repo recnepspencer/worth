@@ -11,6 +11,7 @@ mod memory_component;
 pub use memory_component::ObservedRelationalMemoryComponent;
 mod export;
 mod json;
+mod json_emission;
 mod readmission;
 
 /// Recorded Native meaning, never an admitted basis or recovery capability.
@@ -116,4 +117,5 @@ pub enum RelationalRecordedComponentRefusal {
     MissingPerformedCommit { commit_id: CommitId },
     CanonicalMismatch { commit_id: CommitId },
     PayloadEncoding { detail: String },
+    PayloadBacking(worth_execution::ExecutionRequestArrayDenial),
 }

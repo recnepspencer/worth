@@ -31,10 +31,12 @@ fn same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old
         contacts.clone(),
     );
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
-        open.open_in_advancement(&phase)
+        Box::new(
+            open.open_in_advancement(&phase)
+                .unwrap_or_else(|refused| panic!("fresh Home: {refused:?}")),
+        )
     })
-    .unwrap()
-    .unwrap_or_else(|refused| panic!("fresh Home: {refused:?}"));
+    .unwrap();
     let (_, live) = scope();
     let original_commit = match set(home.runtime(), &live, 0x771, 8).unwrap() {
         WorthQueryApplicationMutationOutcome::Committed { receipt, result: 8 } => {
@@ -43,16 +45,19 @@ fn same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old
         other => panic!("writer must commit balance eight: {other:?}"),
     };
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
-    home.close(&execution)
+    (*home)
+        .close(&execution)
         .unwrap_or_else(|refused| panic!("writer close: {refused:?}"));
     let open = fixture::request_with_initializer(location, build, contacts.clone(), |_, _, _| {
         panic!("existing Home initializer must never run")
     });
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
-        open.open_in_advancement(&phase)
+        Box::new(
+            open.open_in_advancement(&phase)
+                .unwrap_or_else(|refused| opening_failed("same Home readmission", &refused)),
+        )
     })
-    .unwrap()
-    .unwrap_or_else(|refused| opening_failed("same Home readmission", &refused));
+    .unwrap();
     assert_eq!(balance(home.runtime(), &live), 8);
     match set(home.runtime(), &live, 0x771, 8).unwrap() {
         WorthQueryApplicationMutationOutcome::RecoveredCommitted(observed) => {
@@ -69,7 +74,8 @@ fn same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old
     assert_eq!(balance(home.runtime(), &live), 9);
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
     assert_eq!(contacts.load(Ordering::SeqCst), 2);
-    home.close(&execution)
+    (*home)
+        .close(&execution)
         .unwrap_or_else(|refused| panic!("reader close: {refused:?}"));
 }
 

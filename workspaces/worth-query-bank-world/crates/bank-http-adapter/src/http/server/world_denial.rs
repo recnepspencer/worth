@@ -12,6 +12,10 @@ use worth_query_host::facade::primary_graph::{
 pub(super) fn recovery(cause: RuntimeWorldRecoveryDenial) -> BankHttpDenial {
     use RuntimeWorldRecoveryDenial as D;
     match cause {
+        D::StaleIncarnation => stale(),
+        D::HomeProgramTransitionRequired => {
+            BankHttpDenial::new(Kind::Unavailable, Next::ContactOperator)
+        }
         D::Busy | D::TooYoung | D::OutputCapacityExhausted | D::CallerCapabilityLive => {
             unavailable()
         }
@@ -53,7 +57,7 @@ pub(super) fn publication(cause: NoEffectCause) -> BankHttpDenial {
         NoEffectCause::ExecutionRequest(cause) => super::advancement_denial::request(cause),
         NoEffectCause::CancelledBeforeEffect => cancelled(),
         NoEffectCause::DeadlineBeforeEffect => deadline(),
-        NoEffectCause::StaleExpectedProductHead => stale(),
+        NoEffectCause::StaleExpectedProductHead | NoEffectCause::StaleIncarnation => stale(),
         NoEffectCause::CapacityExhausted => unavailable(),
         NoEffectCause::CurrentReadDependency(cause) => current_read(cause),
         NoEffectCause::RelationalDeferred(cause) => match cause {
@@ -114,7 +118,8 @@ fn branch(cause: RuntimeWorldBranchAdmissionDenial) -> BankHttpDenial {
         D::CancelledBeforeEffect => cancelled(),
         D::DeadlineBeforeEffect => deadline(),
         D::OwnerUnavailable | D::CapacityExhausted | D::CustodyCapacityExhausted => unavailable(),
-        D::StaleSourceHead
+        D::StaleIncarnation
+        | D::StaleSourceHead
         | D::ForkSourceChanged
         | D::RetiredBranch
         | D::HistoryEntryUnavailable => stale(),
@@ -142,4 +147,29 @@ fn deadline() -> BankHttpDenial {
 }
 fn stale() -> BankHttpDenial {
     BankHttpDenial::new(Kind::Stale, Next::Refresh)
+}
+
+#[cfg(test)]
+mod incarnation_tests {
+    use super::*;
+    #[test]
+    fn stale_world_capabilities_require_refresh_without_requesting_effect_replay() {
+        let expected = BankHttpDenial::new(Kind::Stale, Next::Refresh);
+        assert_eq!(
+            recovery(RuntimeWorldRecoveryDenial::StaleIncarnation),
+            expected
+        );
+        assert_eq!(publication(NoEffectCause::StaleIncarnation), expected);
+        assert_eq!(
+            branch(RuntimeWorldBranchAdmissionDenial::StaleIncarnation),
+            expected
+        );
+    }
+    #[test]
+    fn pending_home_program_transition_requires_operator_action() {
+        assert_eq!(
+            recovery(RuntimeWorldRecoveryDenial::HomeProgramTransitionRequired),
+            BankHttpDenial::new(Kind::Unavailable, Next::ContactOperator)
+        );
+    }
 }

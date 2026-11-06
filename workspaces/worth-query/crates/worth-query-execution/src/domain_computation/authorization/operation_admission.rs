@@ -59,6 +59,8 @@ mod graph_work_inspection;
 mod idempotency_binding;
 #[path = "operation_admission/identity_admitted.rs"]
 mod identity_admitted;
+#[path = "operation_admission/incarnation.rs"]
+mod incarnation;
 #[path = "operation_admission/installed_reentry.rs"]
 mod installed_reentry;
 #[path = "operation_admission/mandatory_review.rs"]

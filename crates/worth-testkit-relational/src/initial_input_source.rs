@@ -124,8 +124,30 @@ fn home_checkpoint_input(
     checkpoint: RelationalDurableCheckpointSource,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<RelationalDurableRecoverySource, RelationalInitialInputsRefusal> {
-    let covered = checkpoint.covered();
-    let through = checkpoint.covered_transitions();
+    home_source_input(medium, Some(checkpoint), request)
+}
+
+/// The same original-source read boundary before any checkpoint was selected.
+pub fn journal_home_input(
+    medium: &Arc<TestDurableMedium>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<RelationalDurableRecoverySource, RelationalInitialInputsRefusal> {
+    home_source_input(medium, None, request)
+}
+
+fn home_source_input(
+    medium: &Arc<TestDurableMedium>,
+    checkpoint: Option<RelationalDurableCheckpointSource>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<RelationalDurableRecoverySource, RelationalInitialInputsRefusal> {
+    let covered = checkpoint.as_ref().map_or(
+        worth_relational::facade::publication::PatchStreamPosition(0),
+        |checkpoint| checkpoint.covered(),
+    );
+    let through = checkpoint.as_ref().map_or(
+        worth_relational::facade::branch::RelationalBranchTransitionSequence(0),
+        |checkpoint| checkpoint.covered_transitions(),
+    );
     let source: Arc<dyn RelationalDurableColdSource> = medium.clone();
     let cut = RelationalDurableReadProtection::capture(&source, request).unwrap();
     let bounds = cut.bounds();
@@ -167,7 +189,7 @@ fn home_checkpoint_input(
         .read_initial_inputs_owned(&source, request, 1 << 30)
         .unwrap();
     RelationalDurableRecoverySource::from_home_original_bytes(
-        Some(checkpoint),
+        checkpoint,
         initial,
         canonical.seal().unwrap(),
         transitions.seal().unwrap(),

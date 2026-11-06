@@ -7,8 +7,25 @@ pub use native_checkpoint_reference::{
     NativeCheckpointBranchTarget,
 };
 mod home_binding;
+mod home_program_transition;
+mod home_transition_caller;
+mod home_transition_plan;
+mod home_transition_target;
 pub use checkpoint_admission::{
     CheckpointAdmissionCut, CheckpointAdmissionScope, CheckpointProductBindingIdentity,
+};
+pub use home_program_transition::{
+    HomeProgramTransitionBodyDigest, HomeProgramTransitionIdentity,
+    HomeProgramTransitionPlanDigest, HomeProgramTransitionStepAssociation,
+};
+pub use home_transition_caller::{
+    HomeProgramTransitionCaller, HomeProgramTransitionCallerDenial, HomeProgramTransitionStepRole,
+};
+pub use home_transition_plan::{
+    HomeProgramTransitionDescriptionDenial, HomeProgramTransitionPlanDescription,
+};
+pub use home_transition_target::{
+    HomeProgramTransitionCatalogDigest, HomeProgramTransitionTargetMeaning,
 };
 mod world_identity;
 mod world_journal;

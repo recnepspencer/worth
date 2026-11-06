@@ -3,6 +3,7 @@ mod durable;
 mod occurrence_readmission;
 mod preparation;
 mod readmission;
+mod readmitted_successor;
 pub(crate) use durable::WorldDurableBootstrapCustody;
 
 use crate::basis::{admit_current, CompositeBasisAdmissionDenial};

@@ -31,3 +31,24 @@ fn one_shot_preserves_the_original_source_observation_allocation_payload() {
         );
     }
 }
+
+#[test]
+fn product_selection_preserves_stale_incarnation_as_distinct_from_changed_incarnation() {
+    use super::{
+        product_selection, BankProductSelectionDenialKind as Bank, QueryProductSelection,
+        QueryRefusal,
+    };
+    assert_eq!(
+        product_selection(QueryProductSelection::Refused(
+            QueryRefusal::StaleIncarnation
+        )),
+        Bank::StaleIncarnation
+    );
+    assert_eq!(
+        product_selection(QueryProductSelection::Refused(
+            QueryRefusal::IncarnationChanged
+        )),
+        Bank::IncarnationChanged
+    );
+    assert_ne!(Bank::StaleIncarnation, Bank::IncarnationChanged);
+}

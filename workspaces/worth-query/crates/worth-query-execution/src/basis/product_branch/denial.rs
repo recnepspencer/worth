@@ -27,6 +27,7 @@ pub enum WorthQueryProductBranchAdmissionRefusalKind {
     OwnerUnavailable,
     /// The branch token or observation belongs to a different runtime.
     ForeignOwner,
+    StaleIncarnation,
     /// The product branch has been retired.
     RetiredBranch,
     /// The branch changed lifecycle incarnation between selection and admission.

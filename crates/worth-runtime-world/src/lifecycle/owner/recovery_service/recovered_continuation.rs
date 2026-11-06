@@ -47,6 +47,20 @@ where
                 custody: effects,
             };
         }
+        if effects
+            .native_effect()
+            .and_then(|effect| effect.subject().association())
+            .is_some_and(|value| {
+                worth_foundational::facade::HomeProgramTransitionCaller::recognizes(
+                    value.as_bytes(),
+                )
+            })
+        {
+            return Outcome::Refused {
+                cause: Denial::Admission(RuntimeWorldRecoveryDenial::HomeProgramTransitionRequired),
+                custody: effects,
+            };
+        }
         let prepared = effects
             .record
             .continuation
@@ -132,35 +146,37 @@ where
         let history_pins = pins
             .fork_history(after.commit().basis())
             .map_err(|_| Denial::Durable(WorldDurableMediumDenial::CheckpointOriginRetention))?;
-        let mut origin =
-            PreparedCheckpointOccurrence::prepare(execution).map_err(Denial::Durable)?;
         let origin_pins = pins
             .fork_history(after.commit().basis())
             .map_err(|_| Denial::Durable(WorldDurableMediumDenial::CheckpointOriginRetention))?;
-        origin.bind(after.commit().basis(), origin_pins);
         let transfer = pins
             .try_transfer_product_head(after.commit().basis())
             .map_err(|_| Denial::Durable(WorldDurableMediumDenial::CheckpointOriginRetention))?;
         let subject = native.custody().effect().subject();
-        let occurrence = WorldDurableArtifact::from_record(
-            WorldRecord::Occurrence {
-                open: effects.record.open.open().clone(),
-                relational: WorldRelationalEvidence {
+        let original_open =
+            WorldDurableArtifact::from_readmitted_open(&effects.record.open, execution)
+                .map_err(Denial::Durable)?;
+        let mut original_occurrence =
+            WorldOccurrenceCustody::prepare(&original_open, execution).map_err(Denial::Durable)?;
+        original_occurrence.bind_origin(after.commit().basis(), origin_pins);
+        let occurrence = original_occurrence
+            .finalize(
+                WorldRelationalEvidence {
                     commit: subject.receipt().commit_id.0,
                     position: subject.position().0,
                     digest: *subject.artifact_digest(),
                 },
-                publishing_incarnation: effects.claim_incarnation(),
-            },
-            execution,
-        )
-        .map_err(Denial::Durable)?;
+                effects.claim_incarnation(),
+            )
+            .map_err(Denial::Durable)?
+            .clone();
+        let origin = original_occurrence.take_origin();
         let disposition = match &effects.record.continued {
             Some(source) => OriginalContinuationDisposition::Readmitted(source.clone()),
             None => OriginalContinuationDisposition::Undisposed(
-                WorldDurableArtifact::from_record(
-                    WorldRecord::Continued {
-                        association: effects.record.open.association.clone(),
+                WorldDurableArtifact::from_input(
+                    WorldArtifactInput::Continued {
+                        association: &effects.record.open.association,
                         custody: effects.record.open.custody,
                     },
                     execution,

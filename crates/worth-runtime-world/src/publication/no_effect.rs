@@ -11,6 +11,7 @@ pub enum NoEffectCause {
     DeadlineBeforeEffect,
     OwnerDeniedBeforeEffect,
     CurrentReadDependency(super::CurrentProductReadDependencyDenial),
+    StaleIncarnation,
     CorrespondenceRebindRequired,
     ReferenceGenerationExhausted,
     CapacityExhausted,

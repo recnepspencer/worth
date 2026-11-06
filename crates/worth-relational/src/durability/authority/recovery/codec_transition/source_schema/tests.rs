@@ -1,7 +1,6 @@
 //! Root-free admission over the actual installed program roster.
 use super::*;
 use crate::identity::data::KindId;
-use crate::validation::candidate_source::SourcePreparationGroup;
 use worth_foundational::facade::{AspectBinding, AspectKey, FieldKey};
 
 #[test]
@@ -27,8 +26,13 @@ fn source_only_codec_consequences_refuse_affected_support_and_allow_an_unrelated
             aspect_contract_declarations: Default::default(),
         })
         .unwrap();
-    let groups = SourcePreparationGroup::for_public_sources(&registry, vec![program]).unwrap();
-    let installed = FrozenCustomInvariantRegistry::from_registrations(vec![], groups).unwrap();
+    let installed = FrozenCustomInvariantRegistry::compile(
+        &registry,
+        vec![],
+        vec![program],
+        crate::schema::SchemaCompilationControl::Configuration,
+    )
+    .unwrap();
     assert_eq!(installed.len(), 0, "no invariant supplies this consequence");
     let change = |kind_id| CodecFieldLocus {
         kind_id,

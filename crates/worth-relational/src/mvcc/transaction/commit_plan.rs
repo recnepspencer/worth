@@ -47,7 +47,7 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
         for intent in &intents.plan().merged_intents {
             validate_intent(
                 current_state,
-                self.schema_authority.as_ref(),
+                self.mutation_schema_authority().as_ref(),
                 runtime.runtime_config().storage.cross_context_policy,
                 runtime.runtime_instrumentation(),
                 &created_entities,

@@ -82,9 +82,22 @@ fn public_source_registration_rejects_a_foreign_route_even_with_its_actual_membe
             .unwrap()],
         )
         .unwrap();
-    assert_eq!(program.require_registry(&source), Ok(()));
     assert_eq!(
-        program.require_registry(&receiving),
+        program
+            .require_registry(
+                &source,
+                crate::schema::SchemaCompilationControl::Configuration
+            )
+            .map_err(crate::validation::CustomInvariantCompilationDenial::configuration_source),
+        Ok(())
+    );
+    assert_eq!(
+        program
+            .require_registry(
+                &receiving,
+                crate::schema::SchemaCompilationControl::Configuration
+            )
+            .map_err(crate::validation::CustomInvariantCompilationDenial::configuration_source),
         Err(Denial::ForeignDefinition)
     );
 }

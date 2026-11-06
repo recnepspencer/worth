@@ -94,6 +94,8 @@ pub(super) fn prepared(
         (Arc::new(AtomicUsize::new(0)),),
         build(),
         limits(),
+        None,
+        |_, _| panic!("the Relational-only fixture has no authored component seed"),
     )
     .unwrap();
     let expected = query
@@ -257,6 +259,8 @@ pub(super) fn meaning() -> PreparedHomeApplication<HomeIdentitySchema, HomeProgr
         (Arc::new(AtomicUsize::new(0)),),
         build(),
         limits(),
+        None,
+        |_, _| panic!("the Relational-only fixture has no authored component seed"),
     )
     .unwrap()
 }

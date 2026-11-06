@@ -245,9 +245,8 @@ pub fn real_terminal_session<'run>(
             (*world.application.runtime_for_test()).primary_graph_authority_for_test(),
         )
         .unwrap()
-        .readmit(execution)
-        .unwrap()
-        .prepare()
+        .admit_session(execution)
+        .and_then(|(grant, receiver)| grant.prepare(receiver, execution))
         .unwrap()
         .bind_reads_and_effects()
 }

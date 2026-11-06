@@ -683,7 +683,7 @@ let runtime = in_memory_program(
 
 - `*_from_checkpoint` variants restore from a `WorthQueryApplicationCheckpoint`.
 - Worked installs with real limits and a roster:
-  [Build an Application §4](build-an-application.md#4-install-the-application-graph).
+  [Build an Application §4](build-an-application.md#4-install-or-reopen).
 
 Contribution setup registers handlers (`setup.handler::<Binding, _>(..)`),
 invariants, producers, and conditional nodes.

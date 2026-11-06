@@ -1,6 +1,6 @@
 //! Candidate phase backing must use and release the original caller's grant.
-use super::CommitPhaseBacking;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
+use worth_relational::facade::transactions::RelationalCommitPhaseBackingForTest as CommitPhaseBacking;
 
 #[test]
 fn candidate_phase_backing_releases_the_original_grant_when_consumed() {

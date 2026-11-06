@@ -12,8 +12,10 @@ mod active;
 mod slots;
 use slots::{RecoveryEntry, RecoveryRecordSlots};
 mod close;
+mod incarnation;
 mod initialization;
 mod page;
+mod reactivation;
 mod recovered_publication;
 mod released;
 pub(crate) use released::PreparedReleasedOriginal;
@@ -74,6 +76,7 @@ pub(crate) struct ReservedProductUnpublishedSlot {
     catalog: ProductUnpublishedRecoveryCatalog,
     reserved_metadata_bytes: usize,
     armed: bool,
+    recovered: Option<Arc<crate::recovery::RecoveredWorldPublicationRecord>>,
 }
 
 impl ReservedProductUnpublishedSlot {
@@ -100,6 +103,9 @@ impl std::fmt::Debug for ReservedProductUnpublishedSlot {
 impl Drop for ReservedProductUnpublishedSlot {
     fn drop(&mut self) {
         if !self.armed {
+            return;
+        }
+        if self.restore_recovered() {
             return;
         }
         let mut state = self.catalog.locked_state();
@@ -182,6 +188,7 @@ impl ProductUnpublishedRecoveryCatalog {
             catalog: self.clone(),
             reserved_metadata_bytes: metadata_charge,
             armed: true,
+            recovered: None,
         })
     }
 
@@ -197,9 +204,7 @@ impl ProductUnpublishedRecoveryCatalog {
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<Arc<ProductUnpublishedOwnerEffectsRecord>, super::RuntimeWorldRecoveryDenial> {
         use super::RuntimeWorldRecoveryDenial;
-        if handle.catalog_affinity() != self.affinity() {
-            return Err(RuntimeWorldRecoveryDenial::ForeignHandle);
-        }
+        self.admit_handle(handle)?;
         self.materialize_abandoned(handle.identity());
         let state = self.locked_state();
         if matches!(
@@ -221,9 +226,7 @@ impl ProductUnpublishedRecoveryCatalog {
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<ReservedProductUnpublishedRecordUpdate, super::RuntimeWorldRecoveryDenial> {
-        if handle.catalog_affinity() != self.affinity() {
-            return Err(super::RuntimeWorldRecoveryDenial::ForeignHandle);
-        }
+        self.admit_handle(handle)?;
         self.materialize_abandoned(handle.identity());
         let mut state = self.locked_state();
         if matches!(

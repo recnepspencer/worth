@@ -85,4 +85,5 @@ pub use record_identity::{
     RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
 };
 
+pub use services::RelationalSymbolTableForTest;
 pub(crate) use storage::TryPartitionMutationDenied;

@@ -4,17 +4,31 @@ use super::{DerivedRelationDefinitionParts as Parts, DerivedRelationIdentity as 
 use sha2::{Digest, Sha256};
 
 pub(crate) fn update_digest(hasher: &mut Sha256, definitions: &[Parts]) {
+    update_digest_for_compilation(
+        hasher,
+        definitions,
+        crate::schema::SchemaCompilationControl::Configuration,
+    )
+    .expect("configuration recipe digest has no request refusal")
+}
+pub(crate) fn update_digest_for_compilation(
+    hasher: &mut Sha256,
+    definitions: &[Parts],
+    control: crate::schema::SchemaCompilationControl<'_, '_>,
+) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
     if definitions.is_empty() {
-        return;
+        return Ok(());
     }
     hasher.update(b"\0WORTH_DERIVED_RELATION_DEFINITIONS_V1\0");
     count(hasher, definitions.len());
     for definition in definitions {
+        control.checkpoint()?;
         identity(hasher, &definition.identity);
         endpoint(hasher, &definition.from);
         endpoint(hasher, &definition.to);
         count(hasher, definition.nodes.len());
         for node in &definition.nodes {
+            control.checkpoint()?;
             match node {
                 Node::Stored { relation, from, to } => {
                     hasher.update([1]);
@@ -67,9 +81,10 @@ pub(crate) fn update_digest(hasher: &mut Sha256, definitions: &[Parts]) {
             }
         }
         if let Some(laws) = &definition.laws {
-            super::laws::canonical::update_digest(hasher, laws);
+            super::laws::canonical::update_digest_for_compilation(hasher, laws, control)?;
         }
     }
+    Ok(())
 }
 
 pub(super) fn endpoint(hasher: &mut Sha256, domain: &crate::graph_member::NativeMemberDomain) {
@@ -101,11 +116,22 @@ fn identity(hasher: &mut Sha256, identity: &Identity) {
 }
 
 pub(crate) fn write_identity(identity: &Identity, mut write: impl FnMut(&[u8])) {
+    try_write_identity(identity, &mut |part| {
+        write(part);
+        Ok(())
+    })
+    .expect("plain identity emission has no refusal")
+}
+
+pub(crate) fn try_write_identity(
+    identity: &Identity,
+    write: &mut dyn FnMut(&[u8]) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
     for text in [&identity.schema.0, &identity.name] {
-        write(&(text.len() as u64).to_le_bytes());
-        write(text.as_bytes());
+        write(&(text.len() as u64).to_le_bytes())?;
+        write(text.as_bytes())?;
     }
-    write(&identity.version.0.to_le_bytes());
+    write(&identity.version.0.to_le_bytes())
 }
 
 fn count(hasher: &mut Sha256, value: usize) {

@@ -36,7 +36,7 @@ pub(in crate::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
     adjacency_deltas: Vec<crate::authority::mutation::AdjacencyDelta>,
     lineage_nodes: Vec<crate::lineage::data::LineageNode>,
     deferred_diagnostic_artifacts: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
-    target_schema_registry: Option<std::sync::Arc<crate::schema::data::RelationalSchemaRegistry>>,
+    target_schema_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
 }
 
 pub(super) struct PublicationPreparationInput<'a> {
@@ -191,7 +191,7 @@ struct PublicationCompletionInput<'a> {
     traces: PublicationTraceCapture,
     authority: PreparedPublicationAuthority,
     deferred_diagnostic_artifacts: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
-    target_schema_registry: Option<std::sync::Arc<crate::schema::data::RelationalSchemaRegistry>>,
+    target_schema_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
 }
 
 fn finish_publication_preparation(input: PublicationCompletionInput<'_>) -> PublicationPreparation {
@@ -282,7 +282,7 @@ impl PublicationFinalizeArtifacts {
         Vec<crate::authority::mutation::AdjacencyDelta>,
         Vec<crate::lineage::data::LineageNode>,
         Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
-        Option<std::sync::Arc<crate::schema::data::RelationalSchemaRegistry>>,
+        Option<crate::branch::RetainedRelationalSchemaRegistry>,
     ) {
         (
             self.artifacts,

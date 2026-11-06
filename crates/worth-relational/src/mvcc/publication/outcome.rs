@@ -193,6 +193,9 @@ impl StaleRelationalBranchObservation {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalPublicationDenial {
+    HomeProgramTransition(crate::durability::medium::RelationalHomeProgramWriteDenial),
+    /// The selected Home root has no matching admitted execution inventory.
+    HomeProgramContractsRequired,
     CanonicalArtifactEncoding(
         crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
     ),

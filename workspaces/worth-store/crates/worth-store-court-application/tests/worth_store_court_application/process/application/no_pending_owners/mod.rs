@@ -1,6 +1,24 @@
 //! Actual Home custody reaches the persisted no-pending admission boundary.
+mod transition_body_fence;
+mod transition_catalog_readmission;
 use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as OpenRefusal;
+mod admission_retirement;
 mod journal_absence;
+mod transition_attestation;
+mod transition_executor;
+mod transition_history;
+mod transition_intent;
+mod transition_interruption;
+mod transition_native_effect;
+mod transition_open_original;
+mod transition_open_refusal;
+mod transition_open_resume;
+mod transition_opening;
+mod transition_planning;
+mod transition_request;
+mod transition_step_affinity;
+mod transition_steps;
+mod transition_unopened_resume;
 mod unresolved;
 
 use worth_execution::ExecutionRequest;
@@ -58,10 +76,12 @@ fn close(
     let sealed = home
         .seal_world(execution)
         .unwrap_or_else(|refused| panic!("quiescent original World seals: {:?}", refused.reason()));
-    assert!(matches!(
-        sealed.finish_close(execution),
-        ApplicationHomeCloseOutcome::Closed { .. }
-    ));
+    match sealed.finish_close(execution) {
+        ApplicationHomeCloseOutcome::Closed { .. } => {}
+        ApplicationHomeCloseOutcome::CloseRefused { reason, .. } => {
+            panic!("the original Home close must complete: {reason:?}")
+        }
+    }
 }
 
 fn assert_contended(location: &std::path::Path, execution: &ExecutionRequest<'_, '_>) {
@@ -78,3 +98,6 @@ fn assert_contended(location: &std::path::Path, execution: &ExecutionRequest<'_,
         Ok(_) => panic!("admission custody must retain its actual mutation lease"),
     }
 }
+
+mod transition_catalog_identity;
+mod transition_compilation;

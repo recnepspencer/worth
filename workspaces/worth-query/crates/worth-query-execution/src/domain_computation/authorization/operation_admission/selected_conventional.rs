@@ -217,6 +217,7 @@ where
     );
     let core = WorthQueryAdmittedOperation {
         runtime_authority: runtime.runtime.authority_identity(),
+        home_owner: runtime.runtime.product_runtime.owner.owner_identity(),
         binding_identity: operation.binding_identity().clone(),
         operation: operation.operation().to_owned(),
         operation_authority_identity: Arc::from(operation.authority_identity()),

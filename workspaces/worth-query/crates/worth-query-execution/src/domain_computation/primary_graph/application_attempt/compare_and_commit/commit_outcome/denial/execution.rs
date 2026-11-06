@@ -94,7 +94,7 @@ impl Denial {
                     Err(stop) => return Some(Err(stop)),
                 };
                 match kind {
-                    kind @ (Session::ProjectionContract { .. } | Session::HistoricalVisibility { .. }
+                    kind @ (Session::StaleIncarnation | Session::ProjectionContract { .. } | Session::HistoricalVisibility { .. }
                     | Session::ContentInconsistency
                     | Session::Content(_)
                     | Session::StorageUnavailable(_)
@@ -224,6 +224,7 @@ pub(super) fn execution_kind(
         | Ok(Session::ForeignOperationAttempt)
         | Ok(Session::ForeignExecutionBasis)
         | Ok(Session::ForeignGraphAuthority)
+        | Ok(Session::StaleIncarnation)
         | Ok(Session::UndeclaredOperationScope)
         | Ok(Session::ResourceEnvelopeMismatch)
         | Ok(Session::ActiveSnapshotCapacityExhausted { .. })

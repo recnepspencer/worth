@@ -133,7 +133,7 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
         | Kind::ForeignPrincipal => (Denial::PermissionDenied, Next::None),
         // The recovery already moved on: it was opened, or it ended. Reading
         // the commit again reports its current recovery status.
-        Kind::RecoveryAlreadyMinted | Kind::AlreadyTerminal => (Denial::Stale, Next::Refresh),
+        Kind::StaleIncarnation | Kind::RecoveryAlreadyMinted | Kind::AlreadyTerminal => (Denial::Stale, Next::Refresh),
         // The live recovery can never be admitted again: its window closed, or
         // installed truth moved past the commit it was bound to. The effect
         // stays unsettled, so an operator settles it.

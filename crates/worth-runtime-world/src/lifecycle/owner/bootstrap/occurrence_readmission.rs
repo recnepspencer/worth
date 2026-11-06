@@ -13,10 +13,10 @@ where
 {
     pub(crate) fn prepare_readmitted_occurrence(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         before: &ProductBranchObservation,
         occurrence: &AdmittedWorldOccurrence,
         native: RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
-        identity: worth_relational::facade::history::RelationalCommitIdentity,
     ) -> Result<
         std::sync::Arc<ReadmittedPublicationRecord>,
         (
@@ -24,48 +24,71 @@ where
             Denial,
         ),
     > {
-        if Some(occurrence.location().owner()) != self.owner_identity().durable()
-            || occurrence.location().attempt() != occurrence.open().association.attempt()
-            || occurrence.location().commit() != occurrence.open().commit
+        let location = occurrence.location();
+        let open = occurrence.open();
+        if Some(location.owner()) != self.owner_identity().durable()
+            || location.attempt() != open.association.attempt()
+            || location.commit() != open.commit
         {
             return Err((native, Denial::OccurrenceEvidenceMismatch));
         }
-        let record = self.prepare_original_recovered_publication(
-            before,
-            occurrence.admitted_open(),
-            occurrence.publishing_incarnation(),
-            native,
-            identity,
-        )?;
-        Ok(record.seal(occurrence))
-    }
-
-    pub(crate) fn prepare_original_recovered_publication(
-        &self,
-        before: &ProductBranchObservation,
-        admitted_open: &crate::durability::AdmittedWorldOpenAttempt,
-        incarnation: worth_foundational::facade::HomeIncarnation,
-        native: RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
-        identity: worth_relational::facade::history::RelationalCommitIdentity,
-    ) -> Result<
-        std::sync::Arc<crate::history::PreparedReadmittedPublicationRecord>,
-        (
-            RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
-            Denial,
-        ),
-    > {
-        let prepared =
-            self.prepare_original_recovered_image(before, admitted_open, &native, identity);
-        match prepared {
+        match self.prepare_readmitted_successor(execution, before, open, native.custody()) {
             Err(cause) => Err((native, cause)),
-            Ok((after, attempt)) => Ok(ReadmittedPublicationRecord::prepare_original(
+            Ok(prepared) => Ok(ReadmittedPublicationRecord::new(
+                prepared.record,
                 before.snapshot().clone(),
-                after,
-                attempt,
-                incarnation,
+                prepared.after,
+                prepared.attempt,
+                location.clone(),
+                occurrence.publishing_incarnation(),
                 native,
             )),
         }
+    }
+
+    pub(crate) fn install_readmitted_occurrence(
+        &self,
+        record: &std::sync::Arc<ReadmittedPublicationRecord>,
+        capacities: &mut Vec<crate::history::ReservedCompositeCommitCapacity>,
+    ) -> Result<ProductBranchObservation, Denial> {
+        let commit = record.after.shared_commit();
+        let basis = commit.basis();
+        let capacity = self
+            .state
+            .history
+            .reserve_readmitted_capacity(commit.identity().clone(), commit.parent().clone())
+            .map_err(Denial::HistoryAdmission)?;
+        capacities.push(capacity);
+        let head = self
+            .state
+            .retention
+            .issue_product_head(basis)
+            .map_err(|cause| Denial::HistoryRetention(map_retention_denial(cause)))?;
+        let pins = head
+            .fork_history(basis)
+            .map_err(|_| Denial::RecoveryCapacity)?;
+        capacities
+            .last_mut()
+            .expect("same retained capacity")
+            .install_readmitted(commit.clone(), pins, record.clone())
+            .map_err(Denial::HistoryAdmission)?;
+        let history = self
+            .state
+            .history
+            .protect_product_head(&commit)
+            .map_err(Denial::HistoryAdmission)?;
+        let protection =
+            ProductBranchHeadProtection::bootstrap_issued(record.after.clone(), head, history)
+                .map_err(|_| Denial::BranchLineage)?;
+        let cell = self
+            .state
+            .branches
+            .branch_cell(record.after.branch_identity())
+            .ok_or(Denial::BranchLineage)?;
+        cell.restore_readmitted(record, protection)
+            .map_err(|_| Denial::BranchLineage)?;
+        cell.observe(&self.state.history, &self.state.retention)
+            .map_err(|_| Denial::RecoveryCapacity)
     }
 
     pub(crate) fn prepare_original_recovered_image(
@@ -133,50 +156,5 @@ where
             .map_err(|_| Denial::BranchLineage)?;
             Ok((after, attempt))
         })()
-    }
-
-    pub(crate) fn install_readmitted_occurrence(
-        &self,
-        record: &std::sync::Arc<ReadmittedPublicationRecord>,
-        capacities: &mut Vec<crate::history::ReservedCompositeCommitCapacity>,
-    ) -> Result<ProductBranchObservation, Denial> {
-        let commit = record.after.shared_commit();
-        let basis = commit.basis();
-        let capacity = self
-            .state
-            .history
-            .reserve_commit_capacity(commit.identity().clone(), commit.parent().clone())
-            .map_err(Denial::HistoryAdmission)?;
-        capacities.push(capacity);
-        let head = self
-            .state
-            .retention
-            .issue_product_head(basis)
-            .map_err(|cause| Denial::HistoryRetention(map_retention_denial(cause)))?;
-        let pins = head
-            .fork_history(basis)
-            .map_err(|_| Denial::RecoveryCapacity)?;
-        capacities
-            .last_mut()
-            .expect("same retained capacity")
-            .install_readmitted(commit.clone(), pins, record.clone())
-            .map_err(Denial::HistoryAdmission)?;
-        let history = self
-            .state
-            .history
-            .protect_product_head(&commit)
-            .map_err(Denial::HistoryAdmission)?;
-        let protection =
-            ProductBranchHeadProtection::bootstrap_issued(record.after.clone(), head, history)
-                .map_err(|_| Denial::BranchLineage)?;
-        let cell = self
-            .state
-            .branches
-            .branch_cell(record.after.branch_identity())
-            .ok_or(Denial::BranchLineage)?;
-        cell.restore_readmitted(record, protection)
-            .map_err(|_| Denial::BranchLineage)?;
-        cell.observe(&self.state.history, &self.state.retention)
-            .map_err(|_| Denial::RecoveryCapacity)
     }
 }

@@ -3,6 +3,68 @@
 Specification: [Milestone 3](milestone-3.md), Phase 3, D1–D17; the Phase 4
 handoff and shared roadmap requirements also bind the work.
 
+## Closed-Home disposal slice (P-C)
+
+Boundary review at `6750f1376f`: ordinary filesystem admission classifies the
+namespace before acquiring `MutationOwnershipLease`, so it cannot dispose of
+damaged identity bytes. `QualifiedRecoveryFilesystemMedia` additionally admits
+recovery and is not a disposal authority. The filesystem backend must acquire
+the SAME existing lease through its existing acquisition implementation,
+without initializing or recovering Store. Retain the root, namespace directory
+and `mutation.lock` inode through completion; unlinking a live lock could let a
+competitor acquire a different inode for the same Home.
+
+Implement in order: (1) confined lease-only destructive filesystem operation,
+(2) Application intent and typed refusal plus tombstone opening fence, (3) Host
+`discard_home` facade, (4) real filesystem lifecycle and process-kill courts.
+The filesystem owner keeps directory-handle-relative removal and barriers in
+`filesystem_media/home_discard{,/removal}.rs`; Application owns the versioned
+intent in `src/discard.rs`; Host owns only location routing in
+`application_home/discard.rs`. No Host close or opening recipe changes belong
+in this slice. The filesystem extension is causally required to avoid another
+lease issuer or a damaged-data recovery requirement.
+
+| Requirement | Distinguishing court |
+|---|---|
+| D7/D16 live lease refusal; real Closed then removal; new identity/incarnation; idempotence | `discard_refuses_the_live_lease_and_closed_disposal_reinitializes_with_a_new_identity` |
+| D16 damaged data/identity requires no recovery | `discard_completes_damaged_store_and_namespace_identity_without_store_recovery` |
+| D16 torn intent fences both Store and public Host opening; initializer remains uncalled | `torn_discard_intent_refuses_open_and_explicit_retry_finishes_it` |
+| D16 child killed after intent barriers and during removal; same lease excludes competitors; retry initializes | `killed_discard_retains_the_tombstone_during_removal_and_retry_initializes` |
+
+Courts live under Store Application's existing `process/application/discard/`.
+Use the owned prebuild/nextest runner with the exact package/target and module
+filter, and run the new public Host controls directly with `RUST_MIN_STACK`
+absent. The Store Application lifecycle court supplies actual successful close;
+the opaque Host fixture's successful close is still P-B's gate. Its final Drop
+is explicitly abandonment, never evidence of Closed. No ignored tests or
+exhaustive oracle run in this slice. Phase-completion formatting, dirty caps,
+boundary/context checks and independent review remain required.
+
+D16 transition execution is a separate unresolved seam. At this baseline,
+`descriptor/codec.rs::admit_record` returns `BindingMismatch` before owner
+readmission for changed bindings. Query's only migration author is the
+checkpoint-transport `bootstrap/checkpoint_transition` path, before World
+construction; existing Home finalization requires the recovered initial schema
+and refuses pending codec transitions. Native already offers opaque caller
+associations on canonical commits, including schema transitions; these can
+carry positioned Home step associations without assuming a format change.
+World's associated-effect discovery explicitly ignores non-World associations.
+The ordinary Native schema-transition port preserves complete executable kind
+contracts and otherwise refuses `TargetContractMismatch`. Its recovered codec
+transition is a distinct admitted path currently joined only by Query's
+checkpoint migration. The exact searches were `rg --files` in Native durability
+and `rg -n 'Transition|Migration'` in Query's Home integration facade, followed
+by `runtime/schema_transition_admission.rs`,
+`durability/authority/checkpoint_transition.rs`,
+`mvcc/publication/caller_association.rs`, World's
+`home_readmission/associated_effects.rs` and Query Home finalization reads.
+Adding a marker after a migration effect would allow a kill between effect and
+marker to repeat that effect; opaque callbacks or the absence carrier cannot
+honestly implement D16. A changed-schema Home route through Query's installation
+split and actual Native/Section readmission requires P-A's coordination.
+Transition success/resume/plan drift/pending/unrostered and each
+step's kill proof remain unqualified; this disposal slice does not claim them.
+
 ## Required companion registration retirement prerequisite
 
 An authentic PublicationCompanionRegistrationPort may consume its exact issued

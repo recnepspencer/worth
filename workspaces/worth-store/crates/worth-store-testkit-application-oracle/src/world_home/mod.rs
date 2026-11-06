@@ -10,17 +10,17 @@ use worth_store_application::{
 
 pub struct WorldHomeFixture {
     pub home: WorldReadmittedApplicationHome<(), (), (), (), ()>,
-    _signal: SignalRuntime<(), (), (), (), ()>,
+    _signal: Box<SignalRuntime<(), (), (), (), ()>>,
 }
 
 pub enum WorldHomeFixtureRefusal {
-    Home(ApplicationHomeOpenRefusal),
-    Readmission(worth_store_application::RelationalHomeOpenRefused),
+    Home(Box<ApplicationHomeOpenRefusal>),
+    Readmission(Box<worth_store_application::RelationalHomeOpenRefused>),
     Admitted {
-        fixture: WorldHomeFixture,
+        fixture: Box<WorldHomeFixture>,
         cause: WorkCeilingDenial,
     },
-    World(worth_store_application::WorldHomeReadmissionRefused),
+    World(Box<worth_store_application::WorldHomeReadmissionRefused>),
 }
 impl std::fmt::Debug for WorldHomeFixtureRefusal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -106,39 +106,64 @@ pub fn open_with_retained_history_limit(
     open_definition(request, execution, definition, signal)
 }
 
+struct HomeCompositionInputs {
+    request: ApplicationHomeRequest,
+    definition: worth_store_application::ApplicationWorldDefinition<(), (), (), (), ()>,
+    signal: Box<SignalRuntime<(), (), (), (), ()>>,
+}
+
 fn open_definition(
     request: ApplicationHomeRequest,
     execution: &ExecutionRequest<'_, '_>,
     definition: worth_store_application::ApplicationWorldDefinition<(), (), (), (), ()>,
     signal: SignalRuntime<(), (), (), (), ()>,
 ) -> Result<WorldHomeFixture, WorldHomeFixtureRefusal> {
+    // Scope callbacks carry pointers to the original owning inputs, rather
+    // than copying a large source owner through every execution wrapper.
+    let inputs = Box::new(HomeCompositionInputs {
+        request,
+        definition,
+        signal: Box::new(signal),
+    });
     let mut opened = None;
     let scope = execution.in_scope(|_| {
-        opened = Some((|| {
-            let recovered =
-                recover_home(request, execution).map_err(WorldHomeFixtureRefusal::Home)?;
-            let admitted =
-                admit_home(recovered, execution).map_err(WorldHomeFixtureRefusal::Home)?;
-            let native = readmit_relational(admitted, execution)
-                .map_err(WorldHomeFixtureRefusal::Readmission)?;
-            let world = readmit_world(native, definition, execution)
-                .map_err(WorldHomeFixtureRefusal::World)?
-                .consume(|home| home);
-            Ok(WorldHomeFixture {
-                home: world,
-                _signal: signal,
-            })
-        })());
+        opened = Some(compose(inputs, execution));
     });
     match (scope, opened) {
         (Ok(()), Some(result)) => result,
         (Err(_), Some(Err(refused))) => Err(refused),
-        (Err(cause), Some(Ok(fixture))) => {
-            Err(WorldHomeFixtureRefusal::Admitted { fixture, cause })
-        }
-        (Err(cause), None) => Err(WorldHomeFixtureRefusal::Home(
+        (Err(cause), Some(Ok(fixture))) => Err(WorldHomeFixtureRefusal::Admitted {
+            fixture: Box::new(fixture),
+            cause,
+        }),
+        (Err(cause), None) => Err(WorldHomeFixtureRefusal::Home(Box::new(
             ApplicationHomeOpenRefusal::Execution(cause),
-        )),
+        ))),
         (Ok(()), None) => unreachable!("completed actual Home composition"),
     }
+}
+
+#[inline(never)]
+fn compose(
+    inputs: Box<HomeCompositionInputs>,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<WorldHomeFixture, WorldHomeFixtureRefusal> {
+    let HomeCompositionInputs {
+        request,
+        definition,
+        signal,
+    } = *inputs;
+    let recovered = recover_home(request, execution)
+        .map_err(|cause| WorldHomeFixtureRefusal::Home(Box::new(cause)))?;
+    let admitted = admit_home(recovered, execution)
+        .map_err(|cause| WorldHomeFixtureRefusal::Home(Box::new(cause)))?;
+    let native = readmit_relational(admitted, execution)
+        .map_err(|cause| WorldHomeFixtureRefusal::Readmission(Box::new(cause)))?;
+    let world = readmit_world(native, definition, execution)
+        .map_err(|cause| WorldHomeFixtureRefusal::World(Box::new(cause)))?
+        .consume(|home| home);
+    Ok(WorldHomeFixture {
+        home: world,
+        _signal: signal,
+    })
 }

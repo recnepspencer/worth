@@ -158,7 +158,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                     .unwrap()
                     .bind_application_product_for_test(product)
                     .unwrap();
-                let refusal = match plan.readmit(&phase) {
+                let refusal = match plan.admit_session(&phase) {
                     Err(refusal) => refusal,
                     Ok(_) => panic!("foreign phase cannot call B's provider"),
                 };

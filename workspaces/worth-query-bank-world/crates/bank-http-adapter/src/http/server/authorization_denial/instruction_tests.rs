@@ -166,3 +166,18 @@ fn recorded_actor_refusals_distinguish_permission_source_and_capacity() {
         assert_eq!((denial.kind, denial.next_action), (kind, next));
     }
 }
+
+#[test]
+fn stale_incarnation_requires_fresh_authorization_and_provider_capabilities() {
+    use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Session;
+    for cause in [
+        Authorization::StaleIncarnation,
+        Authorization::ExecutionRequest(Session::StaleIncarnation),
+    ] {
+        let denial = authorization_denial(cause);
+        assert_eq!(
+            (denial.kind, denial.next_action),
+            (Kind::Stale, Next::Refresh)
+        );
+    }
+}

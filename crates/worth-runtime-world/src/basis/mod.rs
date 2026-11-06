@@ -6,6 +6,7 @@ mod equivalence;
 pub(crate) use admission::validate_current;
 pub use admission::AdmittedCompositeRuntimeWorldBasis;
 pub(crate) use admission::{admit_current, admit_validated, CompositeBasisAdmissionDenial};
+pub(crate) use admission::{admit_validated_for_request, CompositeBasisBackingDenial};
 pub(crate) use equivalence::compare_exact;
 
 pub(crate) use admission::CompositeBasisRetirement;

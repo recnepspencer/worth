@@ -31,3 +31,11 @@ fn query_admission_request_stops_keep_the_existing_request_instruction() {
         );
     }
 }
+
+#[test]
+fn stale_product_incarnation_requests_a_fresh_product_selection() {
+    assert_eq!(
+        product_selection(BankProductSelectionDenialKind::StaleIncarnation),
+        BankHttpDenial::new(Kind::Stale, Next::Refresh)
+    );
+}

@@ -11,7 +11,19 @@ mod construction_denial;
 pub use construction_denial::RelationalRuntimeConstructionDenial;
 mod field_text;
 mod guided;
+mod home_program_transition;
 mod initial_schema_installation;
+pub use home_program_transition::{
+    home_program_transition_body_digest, PreparedRelationalHomeProgramContracts,
+    RelationalHomeProgramBodyDenial, RelationalHomeProgramCatalogReadmissionSource,
+    RelationalHomeProgramCatalogReceipt, RelationalHomeProgramContractDenial,
+    RelationalHomeProgramStepContracts,
+};
+pub(crate) use home_program_transition::{
+    AdmittedRelationalHomeProgramStep, AdmittedRelationalHomeProgramTarget,
+    RelationalHomeProgramPredecessorCatalog, RelationalHomeTargetCoverage,
+    RelationalRootExecutionContracts,
+};
 mod interruption_counters;
 mod operation_control;
 mod schema_transition_admission;
@@ -55,6 +67,7 @@ pub use crate::visibility::retention::{
     RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalStoppedRetentionPass,
     VisibilityRetentionAuthority,
 };
+pub(crate) use initial_schema_installation::custom_invariant_inventory_digest_for_compilation;
 pub use initial_schema_installation::RecoveredCheckpointProgramActivationUpdate;
 pub(crate) use initial_schema_installation::{
     codec_field_changes, codec_field_changes_in_context, CodecFieldComparisonStop, CodecFieldLocus,
@@ -130,4 +143,5 @@ pub use state::{
     RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
 };
 
+pub use state::RelationalSymbolTableForTest;
 pub(crate) use state::TryPartitionMutationDenied;

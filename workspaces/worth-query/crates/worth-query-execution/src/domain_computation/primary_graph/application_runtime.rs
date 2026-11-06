@@ -25,6 +25,7 @@ mod certification_cost;
 mod conditional_cleanup;
 mod home_retirement;
 mod oracle_observation;
+mod provider_session_preparation;
 pub(in crate::domain_computation::primary_graph) use home_retirement::RetiringPrimaryGraphRuntime;
 pub use home_retirement::{WorthQueryHomeRetirementDenial, WorthQueryHomeRetirementOwner};
 pub use oracle_observation::{

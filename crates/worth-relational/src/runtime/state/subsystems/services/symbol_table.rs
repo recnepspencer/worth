@@ -223,6 +223,6 @@ impl RuntimeSymbolTable {
 #[path = "symbol_table/tests.rs"]
 mod tests;
 
-#[cfg(test)]
-#[path = "symbol_table/publication_tests.rs"]
-mod publication_tests;
+#[path = "symbol_table/publication_control.rs"]
+mod publication_control;
+pub use publication_control::RelationalSymbolTableForTest;

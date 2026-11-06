@@ -43,6 +43,8 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
             )
             .unwrap(),
             limits,
+            None,
+            |_, _| panic!("the Relational-only fixture has no authored component seed"),
         )
         .unwrap_or_else(|cause| panic!("real installed meaning: {cause:?}"));
         let mut bootstrap = state

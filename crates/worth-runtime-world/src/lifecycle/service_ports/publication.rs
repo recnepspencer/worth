@@ -16,7 +16,14 @@ mod bootstrap;
 mod conditional_recovery;
 mod durable;
 mod execution;
+mod incarnation;
 mod memory_cutover;
+use incarnation::publication_owner_denial;
+mod home_transition;
+mod home_transition_effect;
+mod home_transition_resume;
+mod home_transition_step;
+mod home_transition_unopened;
 mod open_attempt;
 mod owned_async;
 use crate::lifecycle::owner::RelationalCutoverHandoff;
@@ -120,8 +127,10 @@ where
             Ok(owner) => owner,
             Err(_) => return unavailable(prepared.expected_head().clone()),
         };
-        if prepared.expected_head().owner_identity() != owner.owner_identity() {
-            return foreign(prepared.expected_head().clone());
+        if let Some(denial) =
+            publication_owner_denial(owner.owner_identity(), prepared.expected_head())
+        {
+            return RuntimeWorldPublicationOutcome::NoEffect(denial);
         }
         let outcome =
             owner.execute_without_signal_with_cutover(execution, prepared, cancellation, cutover);
@@ -158,8 +167,10 @@ where
             Ok(owner) => owner,
             Err(_) => return unavailable(prepared.expected_head().clone()),
         };
-        if prepared.expected_head().owner_identity() != owner.owner_identity() {
-            return foreign(prepared.expected_head().clone());
+        if let Some(denial) =
+            publication_owner_denial(owner.owner_identity(), prepared.expected_head())
+        {
+            return RuntimeWorldPublicationOutcome::NoEffect(denial);
         }
         let outcome = owner.execute_with_signal_with_cutover(
             execution,
@@ -203,8 +214,10 @@ where
             Ok(owner) => owner,
             Err(_) => return (unavailable(prepared.expected_head().clone()), custody),
         };
-        if prepared.expected_head().owner_identity() != owner.owner_identity() {
-            return (foreign(prepared.expected_head().clone()), custody);
+        if let Some(denial) =
+            publication_owner_denial(owner.owner_identity(), prepared.expected_head())
+        {
+            return (RuntimeWorldPublicationOutcome::NoEffect(denial), custody);
         }
         let outcome = owner.execute_conditional_definition_with_signal_and_cutover(
             execution,
@@ -300,12 +313,6 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
 fn unavailable(expected: ProductBranchObservation) -> RuntimeWorldPublicationOutcome {
     RuntimeWorldPublicationOutcome::NoEffect(NoEffectCompositePublication::new(
         NoEffectCause::OwnerUnavailable,
-        Some(expected),
-    ))
-}
-fn foreign(expected: ProductBranchObservation) -> RuntimeWorldPublicationOutcome {
-    RuntimeWorldPublicationOutcome::NoEffect(NoEffectCompositePublication::new(
-        NoEffectCause::OwnerDeniedBeforeEffect,
         Some(expected),
     ))
 }

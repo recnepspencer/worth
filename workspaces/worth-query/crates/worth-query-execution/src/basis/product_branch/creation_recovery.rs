@@ -23,6 +23,8 @@ pub enum WorthQueryProductBranchRecoveryDenial {
     ForeignPhase,
     OriginalSourceUnavailable,
     OriginalSourceMismatch,
+    HomeProgramTransitionRequired,
+    StaleIncarnation,
     ReopenRequired,
     RecoveredCustodyRequired,
     Execution(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
@@ -238,12 +240,16 @@ pub(crate) fn map_recovery_denial(
         Denial::ContinuationAlreadyCommitted
         | Denial::ContinuationAlreadyStarted
         | Denial::ReleaseAlreadyStarted => WorthQueryProductBranchRecoveryDenial::NotBranchCreation,
+        Denial::HomeProgramTransitionRequired => {
+            WorthQueryProductBranchRecoveryDenial::HomeProgramTransitionRequired
+        }
         Denial::RecoveredCustodyRequired => {
             WorthQueryProductBranchRecoveryDenial::RecoveredCustodyRequired
         }
         Denial::ReopenRequired => WorthQueryProductBranchRecoveryDenial::ReopenRequired,
         Denial::OwnerUnavailable(_) => WorthQueryProductBranchRecoveryDenial::OwnerUnavailable,
         Denial::ForeignHandle => WorthQueryProductBranchRecoveryDenial::ForeignRecovery,
+        Denial::StaleIncarnation => WorthQueryProductBranchRecoveryDenial::StaleIncarnation,
         Denial::MissingRecord => WorthQueryProductBranchRecoveryDenial::Missing,
         Denial::Busy => WorthQueryProductBranchRecoveryDenial::Busy,
         Denial::TooYoung => WorthQueryProductBranchRecoveryDenial::TooYoung,

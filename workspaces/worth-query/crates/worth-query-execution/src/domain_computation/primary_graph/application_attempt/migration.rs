@@ -21,6 +21,13 @@ pub fn prepare_program_migration_effects<Schema, Operation, Input, Scope>(
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
 {
+    program
+        .refuse_stale_home_authority(application.runtime.product_runtime.owner.owner_identity())
+        .map_err(|cause| {
+            WorthQueryProgramMigrationPreparationDenial::Candidate(
+                super::WorthQueryApplicationAttemptDenial::request_authority_lost(cause),
+            )
+        })?;
     if !program.belongs_to_application(
         application.runtime.authority_identity(),
         &application.installed_schema.binding_identity(),

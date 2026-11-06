@@ -21,6 +21,8 @@ struct HomeSchema;
 struct Record;
 struct NativeFeature;
 struct Program;
+struct Successor;
+struct OtherSuccessor;
 
 impl ApplicationEntityMarkerIdentity<HomeSchema> for Record {
     const IDENTIFIER: &'static str = "Record";
@@ -52,7 +54,49 @@ impl ApplicationProgramDefinition<HomeSchema> for Program {
     }
 }
 
+impl ApplicationProgramDefinition<HomeSchema> for Successor {
+    type Contributions = ();
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("worth.store.home.program.v2");
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        Program::feature_specs()
+    }
+}
+
+impl ApplicationProgramDefinition<HomeSchema> for OtherSuccessor {
+    type Contributions = ();
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("worth.store.home.program.v3");
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        Program::feature_specs()
+    }
+}
+
 pub fn admitted_home_binding() -> worth_proof::AdmittedApplicationHomeBinding<
+    worth_query_installation::facade::WorthQueryHomeBindingAdmission,
+> {
+    admitted_binding::<Program>()
+}
+
+/// A second real compiled program, under the same installed schema owner.
+pub fn admitted_transition_successor_binding() -> worth_proof::AdmittedApplicationHomeBinding<
+    worth_query_installation::facade::WorthQueryHomeBindingAdmission,
+> {
+    admitted_binding::<Successor>()
+}
+
+pub fn admitted_other_successor_binding() -> worth_proof::AdmittedApplicationHomeBinding<
+    worth_query_installation::facade::WorthQueryHomeBindingAdmission,
+> {
+    admitted_binding::<OtherSuccessor>()
+}
+
+fn admitted_binding<Selected: ApplicationProgramDefinition<HomeSchema>>(
+) -> worth_proof::AdmittedApplicationHomeBinding<
     worth_query_installation::facade::WorthQueryHomeBindingAdmission,
 > {
     let declaration = HomeSchema::declaration().unwrap();
@@ -75,7 +119,7 @@ pub fn admitted_home_binding() -> worth_proof::AdmittedApplicationHomeBinding<
     .unwrap()
     .bind_application_schema(declaration)
     .unwrap();
-    let program = ApplicationProgramAuthoring::<HomeSchema, Program>::begin()
+    let program = ApplicationProgramAuthoring::<HomeSchema, Selected>::begin()
         .validated_program()
         .unwrap();
     let roster = WorthQueryProgramSupportAdmission::for_installed_schema(&installed)

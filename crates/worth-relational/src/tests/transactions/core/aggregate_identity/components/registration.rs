@@ -76,12 +76,22 @@ fn orbit_scalar_wire_and_canonical_bytes_are_preserved_and_components_are_distin
     for aspect in [3001_u64, 3002] {
         bytes.extend_from_slice(&aspect.to_be_bytes());
     }
-    assert_eq!(contract.canonical_bytes(), bytes);
+    let canonical_bytes = |contract: &AggregateIdentityContractDeclaration| {
+        let mut emitted = Vec::new();
+        contract
+            .try_write_canonical(&mut |part| {
+                emitted.extend_from_slice(part);
+                Ok(())
+            })
+            .unwrap();
+        emitted
+    };
+    assert_eq!(canonical_bytes(&contract), bytes);
     let mut components = contract.clone();
     components.source = AggregateIdentitySource::Components {
         relations: vec![KindId(2)],
     };
-    assert_ne!(components.canonical_bytes(), bytes);
+    assert_ne!(canonical_bytes(&components), bytes);
     assert_eq!(
         serde_json::from_slice::<AggregateIdentityContractDeclaration>(
             &serde_json::to_vec(&components).unwrap()

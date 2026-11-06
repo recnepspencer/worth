@@ -11,6 +11,7 @@ pub use crate::transactions::data::{
 
 pub use crate::execution::RelationalExecutionDenialCause;
 
+pub use crate::authority::commit::pipeline::RelationalCommitPhaseBackingForTest;
 pub use crate::transactions::data::{
     planned_aspect_field_locator, planned_single_field_locator, ApplyEntityAspectPatchIntent,
     ApplyRelationAspectPatchIntent, AspectEmissionTrace, AspectEvaluationTrace,

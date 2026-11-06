@@ -1,54 +1,51 @@
-use super::{WorthQueryProviderSessionAffinity, WorthQueryProviderSessionProtocolCounters};
+//! Portable session grant issuance and the separate live preparation receiver.
+use super::{
+    WorthQueryAdmittedProviderExecutionPlan, WorthQueryProviderExecutionPlanContract,
+    WorthQueryProviderSessionProtocolCounters, WorthQueryProviderSessionTokenAdmission,
+};
 
 mod prepared;
-
 pub use prepared::{
     WorthQueryPreparedProviderSession, WorthQuerySessionBoundReadsAndEffects,
     WorthQuerySessionEffectAuthority, WorthQuerySessionPrepareOutcome,
     WorthQuerySessionReadAuthority,
 };
 
-/// Readmitted live provider session. Only this owner can mint the phase; its
-/// child transition owner may consume it, but protocol siblings cannot relabel
-/// another affinity/counter pair as a readmitted session.
-pub struct WorthQueryProviderPlanReadmission<'run> {
-    affinity: WorthQueryProviderSessionAffinity<'run>,
+/// Identity and authority only. No run, request, provider or product lease.
+/// Physical readmission begins when this grant reaches its live receiver.
+#[derive(Debug)]
+pub struct WorthQueryProviderSessionGrant {
+    contract: WorthQueryProviderExecutionPlanContract,
+    admission: WorthQueryProviderSessionTokenAdmission,
     counters: WorthQueryProviderSessionProtocolCounters,
 }
 
-impl std::fmt::Debug for WorthQueryProviderPlanReadmission<'_> {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter
-            .debug_struct("WorthQueryProviderPlanReadmission")
-            .field("plan_identity", &self.affinity.plan().identity())
-            .field(
-                "token_identity",
-                &self.affinity.session().token().identity(),
-            )
-            .finish_non_exhaustive()
-    }
+/// Scoped custody of the actual run, product and provider used for preparation.
+/// No physical session exists until the grant is checked against this receiver.
+#[derive(Debug)]
+pub struct WorthQueryProviderSessionReceiver<'run> {
+    plan: WorthQueryAdmittedProviderExecutionPlan<'run>,
 }
 
-impl WorthQueryProviderPlanReadmission<'_> {
-    pub(super) fn from_admitted(
-        affinity: WorthQueryProviderSessionAffinity<'_>,
-        counters: WorthQueryProviderSessionProtocolCounters,
-        _seal: super::execution_plan::WorthQueryProviderPlanReadmissionSeal,
-    ) -> WorthQueryProviderPlanReadmission<'_> {
-        WorthQueryProviderPlanReadmission { affinity, counters }
-    }
+pub(super) fn issue(
+    plan: WorthQueryAdmittedProviderExecutionPlan<'_>,
+    admission: WorthQueryProviderSessionTokenAdmission,
+) -> (
+    WorthQueryProviderSessionGrant,
+    WorthQueryProviderSessionReceiver<'_>,
+) {
+    let grant = WorthQueryProviderSessionGrant {
+        contract: plan.contract.clone(),
+        admission,
+        counters: plan.counters,
+    };
+    (grant, WorthQueryProviderSessionReceiver { plan })
+}
+
+impl WorthQueryProviderSessionGrant {
     pub fn plan_identity(&self) -> &str {
-        self.affinity.plan().identity()
+        self.contract.identity()
     }
-
-    pub fn token_identity(&self) -> &str {
-        self.affinity.session().token().identity()
-    }
-
-    pub fn token_generation(&self) -> u64 {
-        self.affinity.session().token().generation()
-    }
-
     pub fn counters(&self) -> WorthQueryProviderSessionProtocolCounters {
         self.counters
     }

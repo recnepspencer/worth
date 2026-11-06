@@ -267,6 +267,12 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
         preparation.operation.input_type_id(),
     );
     let core = WorthQueryAdmittedOperation {
+        home_owner: preparation
+            .runtime
+            .runtime
+            .product_runtime
+            .owner
+            .owner_identity(),
         runtime_authority,
         binding_identity: preparation.operation.binding_identity().clone(),
         operation: preparation.operation.operation().to_string(),

@@ -69,6 +69,7 @@ impl RelationalBranchRoot {
             content_accumulator,
             output_publication_positions: positions,
             schema_authority: schema,
+            execution_contracts: Default::default(),
             committed: Some(RelationalCommittedBranchRoot {
                 descriptor,
                 evidence: super::super::RelationalRootCommitEvidence::Checkpoint(commit),

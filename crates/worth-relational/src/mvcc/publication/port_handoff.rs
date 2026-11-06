@@ -163,6 +163,15 @@ impl RelationalPublicationPort {
                 RelationalPublicationDenial::RecoveredCodecTransitionRequired,
             ));
         }
+        if let Some(medium) = &self.medium {
+            medium
+                .admit_home_program_write(candidate.home_step().as_deref(), custody.as_deref())
+                .map_err(|cause| {
+                    RelationalPublicationOutcome::denied(
+                        RelationalPublicationDenial::HomeProgramTransition(cause),
+                    )
+                })?;
+        }
         let Some(_owner_operation) = self.owner_binding.admit() else {
             return Err(RelationalPublicationOutcome::denied(
                 RelationalPublicationDenial::OwnerUnavailable {
@@ -172,11 +181,11 @@ impl RelationalPublicationPort {
         };
         let epoch = self.configuration.operation();
         let expected_generation = epoch.schema_contract_runtime.custom_invariant_generation;
-        if candidate.custom_invariant_generation() != expected_generation {
+        if candidate.configuration_invariant_generation() != expected_generation {
             return Err(RelationalPublicationOutcome::denied(
                 RelationalPublicationDenial::StaleInvariantGeneration {
                     expected_generation,
-                    actual_generation: candidate.custom_invariant_generation(),
+                    actual_generation: candidate.configuration_invariant_generation(),
                 },
             ));
         }

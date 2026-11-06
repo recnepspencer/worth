@@ -63,9 +63,6 @@ impl AdmittedWorldOccurrence {
             location,
         }
     }
-    pub(crate) fn admitted_open(&self) -> &AdmittedWorldOpenAttempt {
-        &self.open
-    }
     pub(crate) fn from_committed(
         open: &AdmittedWorldOpenAttempt,
         committed: &crate::durability::WorldCommittedPublication,
@@ -74,7 +71,7 @@ impl AdmittedWorldOccurrence {
             open: actual,
             relational,
             publishing_incarnation,
-        } = &committed.subject().record
+        } = committed.subject().record()
         else {
             return Err(super::WorldReadmissionDenial::OccurrenceEvidenceMismatch);
         };

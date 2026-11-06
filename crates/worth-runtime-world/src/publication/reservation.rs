@@ -97,6 +97,12 @@ impl ReservedCompositePublicationAttempt {
         self.custody.has_durable_open()
     }
 
+    pub(crate) fn retain_open_after_refusal(
+        self,
+        cause: super::NoEffectCause,
+    ) -> crate::recovery::ProductUnpublishedOwnerEffects {
+        self.custody.retain_open_after_refusal(cause)
+    }
     pub(crate) fn retain_open(self) -> crate::recovery::ProductUnpublishedOwnerEffects {
         self.custody.retain_open()
     }

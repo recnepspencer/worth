@@ -272,6 +272,9 @@ where
         WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Output>,
         WorthQueryOperationProjectionDenial,
     > {
+        if let Some(owner) = phase.world_owner() {
+            admission.refuse_stale_home_authority(owner)?;
+        }
         admission.validate_projection_authority(
             self.runtime_authority,
             &self.binding_identity,

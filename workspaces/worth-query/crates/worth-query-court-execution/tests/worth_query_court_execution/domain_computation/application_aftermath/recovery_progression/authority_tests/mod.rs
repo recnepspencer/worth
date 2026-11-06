@@ -61,6 +61,7 @@ fn effect_authority_minted_before_expiry_denies_after_the_deadline() {
     let authority = WorthQueryRecoveryEffectAuthority::mint_for_test(
         handle.runtime_authority_for_test(),
         handle.authority_identity_for_test(),
+        &handle,
     );
     let registry = handle.registry_arc_for_test();
 
@@ -85,6 +86,7 @@ fn inspect_authority_minted_before_expiry_denies_after_the_deadline() {
     let authority = WorthQueryRecoveryInspectAuthority::mint_for_test(
         handle.runtime_authority_for_test(),
         handle.authority_identity_for_test(),
+        &handle,
     );
     let registry = handle.registry_arc_for_test();
 
@@ -102,6 +104,7 @@ fn effect_authority_denies_a_different_runtime_with_the_same_registry_slot() {
     let authority_a = WorthQueryRecoveryEffectAuthority::mint_for_test(
         handle_a.runtime_authority_for_test(),
         handle_a.authority_identity_for_test(),
+        &handle_a,
     );
     let registry_a = handle_a.registry_arc_for_test();
     let registry_b = handle_b.registry_arc_for_test();
@@ -126,6 +129,7 @@ fn inspect_authority_denies_a_different_runtime_with_the_same_registry_slot() {
     let authority_a = WorthQueryRecoveryInspectAuthority::mint_for_test(
         handle_a.runtime_authority_for_test(),
         handle_a.authority_identity_for_test(),
+        &handle_a,
     );
     let registry_a = handle_a.registry_arc_for_test();
     let registry_b = handle_b.registry_arc_for_test();
@@ -150,6 +154,7 @@ fn effect_authority_denies_a_different_handle_in_the_same_runtime() {
     let authority_a = WorthQueryRecoveryEffectAuthority::mint_for_test(
         handle_a.runtime_authority_for_test(),
         handle_a.authority_identity_for_test(),
+        &handle_a,
     );
     let registry = handle_a.registry_arc_for_test();
 
@@ -172,6 +177,7 @@ fn inspect_authority_denies_a_different_handle_in_the_same_runtime() {
     let authority_a = WorthQueryRecoveryInspectAuthority::mint_for_test(
         handle_a.runtime_authority_for_test(),
         handle_a.authority_identity_for_test(),
+        &handle_a,
     );
     let registry = handle_a.registry_arc_for_test();
 
@@ -215,6 +221,7 @@ fn admission_time_foreignness_and_proof_use_foreignness_are_different_causes() {
     let authority_a = WorthQueryRecoveryEffectAuthority::mint_for_test(
         owner,
         handle_a.authority_identity_for_test(),
+        &handle_a,
     );
     let use_denial = require_fresh_effect_authority(&handle_b, &authority_a)
         .expect_err("our authority does not carry to another handle");

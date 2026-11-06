@@ -46,6 +46,5 @@ fn allocation_failure() -> TransactionCommitError {
     })
 }
 
-#[cfg(test)]
-#[path = "phase_backing_tests.rs"]
-mod tests;
+mod control;
+pub use control::RelationalCommitPhaseBackingForTest;

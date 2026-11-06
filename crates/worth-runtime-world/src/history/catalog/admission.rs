@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use super::reservation::ReservedHistoryPublication;
 use crate::branch::ProductBranchReferenceSnapshot;
 use crate::history::CanonicalPublicationEnvelope;
 use crate::identity::{CompositeCommitIdentity, CompositePublicationAttemptIdentity};
@@ -31,7 +32,15 @@ impl CompositeHistoryCatalog {
         identity: CompositeCommitIdentity,
         parent: CompositeCommitParent,
     ) -> Result<ReservedCompositeCommitCapacity, CompositeHistoryCatalogDenial> {
-        self.reserve_capacity(identity, parent, None)
+        self.reserve_capacity(identity, parent, ReservedHistoryPublication::NoPublication)
+    }
+
+    pub(crate) fn reserve_readmitted_capacity(
+        &self,
+        identity: CompositeCommitIdentity,
+        parent: CompositeCommitParent,
+    ) -> Result<ReservedCompositeCommitCapacity, CompositeHistoryCatalogDenial> {
+        self.reserve_capacity(identity, parent, ReservedHistoryPublication::Readmitted)
     }
 
     pub(crate) fn reserve_publication_capacity(
@@ -54,14 +63,18 @@ impl CompositeHistoryCatalog {
         let revision = Arc::clone(&lock_state(&self.state).publication_revision);
         let publication =
             CanonicalPublicationEnvelope::reserve(identity.clone(), attempt, expected, revision);
-        self.reserve_capacity(identity, parent, Some(publication))
+        self.reserve_capacity(
+            identity,
+            parent,
+            ReservedHistoryPublication::Live(publication),
+        )
     }
 
     fn reserve_capacity(
         &self,
         identity: CompositeCommitIdentity,
         parent: CompositeCommitParent,
-        publication: Option<Arc<CanonicalPublicationEnvelope>>,
+        publication: ReservedHistoryPublication,
     ) -> Result<ReservedCompositeCommitCapacity, CompositeHistoryCatalogDenial> {
         let mut state = lock_state(&self.state);
         validate_owner(&state, identity.owner_identity())?;
@@ -84,7 +97,7 @@ impl CompositeHistoryCatalog {
         }
 
         let commit_charge = metadata::HistoryMetadataCharge::for_parent(&parent)
-            .and_then(|charge| charge.with_publication(publication.as_deref()))
+            .and_then(|charge| publication.charge(charge))
             .map_err(|_| CompositeHistoryCatalogDenial::ArithmeticOverflow)?;
         let reservation_charge = metadata::HistoryReservationCharge::for_parent(&parent)
             .map_err(|_| CompositeHistoryCatalogDenial::ArithmeticOverflow)?;

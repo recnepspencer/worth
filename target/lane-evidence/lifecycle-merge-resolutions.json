@@ -1,0 +1,512 @@
+[
+  {
+    "index": 0,
+    "path": "crates/worth-relational/src/aspect_wire/aspect_value_canonical_codec/writing.rs",
+    "textual_blocks": 2,
+    "resolution": "Stream current ContentRef32 and InlineBytes through Lifecycle canonical output; retired Bytes arm remains removed."
+  },
+  {
+    "index": 1,
+    "path": "crates/worth-relational/src/authority/commit/pipeline/candidate_preparation.rs",
+    "textual_blocks": 1,
+    "resolution": "Both durable retained-selection refusal and transition/body association admission before preparation."
+  },
+  {
+    "index": 2,
+    "path": "crates/worth-relational/src/authority/commit/pipeline/publication_execution/preparation.rs",
+    "textual_blocks": 1,
+    "resolution": "Retained executable schema carrier with master root-admission cost and scope owner, no obsolete stage match."
+  },
+  {
+    "index": 3,
+    "path": "crates/worth-relational/src/branch/root.rs",
+    "textual_blocks": 2,
+    "resolution": "Keep completeness and split empty root; add current content custody to extracted constructors separately."
+  },
+  {
+    "index": 4,
+    "path": "crates/worth-relational/src/branch/root_readmission.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep funded current readmission modules; do not resurrect retired unfunded monolith. Propagate execution contracts in current binding."
+  },
+  {
+    "index": 5,
+    "path": "crates/worth-relational/src/branch/root_schema.rs",
+    "textual_blocks": 2,
+    "resolution": "Retain current Content-sensitive registry rebinding; use Lifecycle shared schema compilation/funding and extracted allocation owner. Content allocation included once in retained and temporary quotes."
+  },
+  {
+    "index": 6,
+    "path": "crates/worth-relational/src/mvcc/publication/port.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep master prepaid scoped cutover; transition admission moves into its preflight receiver."
+  },
+  {
+    "index": 7,
+    "path": "crates/worth-relational/src/mvcc/validation/proposal_validation.rs",
+    "textual_blocks": 1,
+    "resolution": "Current RelationalProposalSource/retained-selection validation remains; select admitted Home contracts before body/write admission and complete target coverage before proposal preparation."
+  },
+  {
+    "index": 8,
+    "path": "crates/worth-relational/src/schema/data/authority_snapshot.rs",
+    "textual_blocks": 1,
+    "resolution": "Both controlled schema recipe digest and current Content schema authority commitment."
+  },
+  {
+    "index": 9,
+    "path": "crates/worth-relational/src/schema/data/mod.rs",
+    "textual_blocks": 1,
+    "resolution": "Lifecycle authority capture is extracted to snapshot_compilation; current Content snapshot copied there."
+  },
+  {
+    "index": 10,
+    "path": "crates/worth-relational/src/validation/engine/request/construction.rs",
+    "textual_blocks": 1,
+    "resolution": "Current semantic-plan input plus complete Home target judgment."
+  },
+  {
+    "index": 11,
+    "path": "crates/worth-relational/src/validation/engine/request/relation_integrity_scopes.rs",
+    "textual_blocks": 1,
+    "resolution": "Current retained-plan semantics plus Home target scope flag."
+  },
+  {
+    "index": 12,
+    "path": "crates/worth-relational/src/validation/preparation_invariant_authority.rs",
+    "textual_blocks": 1,
+    "resolution": "Current semantic invariant contract, omitted only for explicit whole-target Home judgment."
+  },
+  {
+    "index": 13,
+    "path": "crates/worth-runtime-world/src/history/catalog/reservation.rs",
+    "textual_blocks": 1,
+    "resolution": "One ordinary installer uses current ReservedHistoryPublication ordinary evidence. Keep distinct readmitted installer and original pins; remove obsolete duplicate method."
+  },
+  {
+    "index": 14,
+    "path": "crates/worth-runtime-world/src/history/publication.rs",
+    "textual_blocks": 1,
+    "resolution": "Equivalent reexport syntax."
+  },
+  {
+    "index": 15,
+    "path": "crates/worth-runtime-world/src/history/publication/readmission.rs",
+    "textual_blocks": 3,
+    "resolution": "Keep actual unsealed original record and sealed source record distinct from prepaid backing. Add Lifecycle funded constructor with actual occurrence location; no fake live delivery."
+  },
+  {
+    "index": 16,
+    "path": "crates/worth-runtime-world/src/lifecycle/owner/bootstrap/occurrence_readmission.rs",
+    "textual_blocks": 1,
+    "resolution": "Funded recovered successor/occurrence follows Lifecycle readmission; keep ordinary original-image preparation. One identical occurrence installer remains; obsolete unused wrapper removed."
+  },
+  {
+    "index": 17,
+    "path": "crates/worth-runtime-world/src/lifecycle/owner/branch_service.rs",
+    "textual_blocks": 1,
+    "resolution": "Retain consuming fork-request decomposition required by current master retained source."
+  },
+  {
+    "index": 18,
+    "path": "crates/worth-runtime-world/src/lifecycle/owner/execution_service/relational.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep current read-dependency typed causes and exhaustive transition refusal arms; enumerate remaining master variants separately."
+  },
+  {
+    "index": 19,
+    "path": "crates/worth-runtime-world/src/lifecycle/owner/operation/reservation_steps.rs",
+    "textual_blocks": 1,
+    "resolution": "Assigned transition attempts retain current recovered-custody gate."
+  },
+  {
+    "index": 20,
+    "path": "crates/worth-runtime-world/src/lifecycle/owner/recovery_service.rs",
+    "textual_blocks": 1,
+    "resolution": "Incarnation admission applies to the actual handle release receiver before Memory release. Released-history page remains readable and has no nonexistent handle parameter."
+  },
+  {
+    "index": 21,
+    "path": "crates/worth-runtime-world/src/lifecycle/service_ports/publication.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep master memory scoped cutover and Lifecycle transition/incarnation modules."
+  },
+  {
+    "index": 22,
+    "path": "crates/worth-runtime-world/src/publication/no_effect.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep distinct current-read dependency and stale-incarnation causes."
+  },
+  {
+    "index": 23,
+    "path": "crates/worth-runtime-world/src/publication/open_attempt.rs",
+    "textual_blocks": 1,
+    "resolution": "P-C consuming WorldOpenAttemptOriginal retains current into_witness acknowledgement on the actual original custody, with no duplicate open or effect."
+  },
+  {
+    "index": 24,
+    "path": "crates/worth-runtime-world/src/recovery/mod.rs",
+    "textual_blocks": 1,
+    "resolution": "Separate ordinary recovered continuation and transition-specific phase types exported through current recovery owner; no retired variant alias."
+  },
+  {
+    "index": 25,
+    "path": "crates/worth-runtime-world/src/recovery/product_unpublished.rs",
+    "textual_blocks": 1,
+    "resolution": "Current recovered original capability backing plus transition control footprint, actual maximum."
+  },
+  {
+    "index": 26,
+    "path": "crates/worth-runtime-world/src/recovery/recovered_publication.rs",
+    "textual_blocks": 3,
+    "resolution": "Keep ordinary Arc original/prepared source observations and add distinct transition Continuing/Working states. Explicit matches, original receipt inspection and reversible typed Busy loan preserve custody."
+  },
+  {
+    "index": 27,
+    "path": "crates/worth-runtime-world/src/recovery/recovered_publication/continuation.rs",
+    "textual_blocks": 1,
+    "resolution": "Ordinary continuation.rs remains; Lifecycle state machine and children live under home_transition/. Both consume actual original Native custody. Current movement receiver requires the actual recovered record and committed witness."
+  },
+  {
+    "index": 28,
+    "path": "crates/worth-runtime-world/src/recovery/recovered_publication/release.rs",
+    "textual_blocks": 3,
+    "resolution": "Both Continued/started exclusion and transition-association refusal precede original release; released meaning and current typed WorldReleasedEffects remain retained."
+  },
+  {
+    "index": 29,
+    "path": "docs/build-an-application.md",
+    "textual_blocks": 2,
+    "resolution": "Preserve current master/integration documented features; incoming pending transition headings outside conflicts remain."
+  },
+  {
+    "index": 30,
+    "path": "docs/capability-index.md",
+    "textual_blocks": 4,
+    "resolution": "Retain current installed capabilities/source denial and detailed Home custody docs; add Lifecycle keyed-retry wording."
+  },
+  {
+    "index": 31,
+    "path": "tools/boundary-check/config/control-callers.txt",
+    "textual_blocks": 1,
+    "resolution": "Complete-file exact union of HEAD6aac and471fac57ff:1710unique rows,0duplicates,0missing,0extra. Sorted without new permission. Initial duplicate common-prefix insertion repaired before boundary validation."
+  },
+  {
+    "index": 32,
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-managed-run-provider-contract-violation/tests/worth_query_court_execution_managed_run_provider_contract_violation/domain_computation/managed_run/tests/provider_session_abandonment/mod.rs",
+    "textual_blocks": 1,
+    "resolution": "P-C portable-grant zero-call semantics and accurate behavior name retained at master moved court/current advancement entry. Adjacent prepared-session exact once abort assertion unchanged."
+  },
+  {
+    "index": 33,
+    "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/external_dispatch/safe_retry_affinity_tests/mod.rs",
+    "textual_blocks": 1,
+    "resolution": "Current sealed court authority doors receive real Home owner for incarnation fencing."
+  },
+  {
+    "index": 34,
+    "path": "workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/application_aftermath/recovery_progression/authority_tests/mod.rs",
+    "textual_blocks": 7,
+    "resolution": "Current sealed court authority doors receive real Home owner for incarnation fencing."
+  },
+  {
+    "index": 35,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/basis/product_branch/creation_recovery.rs",
+    "textual_blocks": 2,
+    "resolution": "Both original-source retirement refusals and Lifecycle transition/incarnation causes."
+  },
+  {
+    "index": 36,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/recovery_progression/mechanism_tests.rs",
+    "textual_blocks": 0,
+    "resolution": "Master moved court retained; its actual handle mint uses existing sealed test door with the genuine Home owner carried through the handle. Unmounted old source copy removed."
+  },
+  {
+    "index": 37,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/recovery_progression/resolve_tests.rs",
+    "textual_blocks": 0,
+    "resolution": "Master moved court retained; actual handle/Home owner is passed through existing sealed authority mint. Unmounted old source copy removed."
+  },
+  {
+    "index": 38,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/delegation_progression/mod.rs",
+    "textual_blocks": 1,
+    "resolution": "Lifecycle stale-incarnation refusal on current master application runtime shape."
+  },
+  {
+    "index": 39,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/delegation_progression/replay.rs",
+    "textual_blocks": 2,
+    "resolution": "Lifecycle stale-incarnation refusal on current master application runtime shape."
+  },
+  {
+    "index": 40,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/elevation_progression/approval.rs",
+    "textual_blocks": 1,
+    "resolution": "Lifecycle stale-incarnation refusal on current master application runtime shape."
+  },
+  {
+    "index": 41,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/elevation_progression/approval/replay.rs",
+    "textual_blocks": 1,
+    "resolution": "Lifecycle stale-incarnation refusal on current master application runtime shape."
+  },
+  {
+    "index": 42,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/elevation_progression/elevation_close.rs",
+    "textual_blocks": 1,
+    "resolution": "Lifecycle stale-incarnation refusal on current master application runtime shape."
+  },
+  {
+    "index": 43,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/elevation_progression/mandatory_review.rs",
+    "textual_blocks": 1,
+    "resolution": "Lifecycle stale-incarnation refusal on current master application runtime shape."
+  },
+  {
+    "index": 44,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/elevation_progression/request.rs",
+    "textual_blocks": 1,
+    "resolution": "Lifecycle stale-incarnation refusal on current master application runtime shape."
+  },
+  {
+    "index": 45,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/mod.rs",
+    "textual_blocks": 1,
+    "resolution": "Current public internal authorization facets plus Lifecycle incarnation guard."
+  },
+  {
+    "index": 46,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission.rs",
+    "textual_blocks": 2,
+    "resolution": "Keep master erased admitted-operation core and installed reentry plus Lifecycle incarnation module; owner coordinate belongs in core."
+  },
+  {
+    "index": 47,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission/capability_admission/preparation/observation/admitted_access/inspection.rs",
+    "textual_blocks": 1,
+    "resolution": "Current graph-work authority accessor; Lifecycle guard added at actual admission caller."
+  },
+  {
+    "index": 48,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission/conventional.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep current brand and erased-core construction; add Home owner to core construction separately."
+  },
+  {
+    "index": 49,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/compare_and_commit/commit_outcome/denial/execution.rs",
+    "textual_blocks": 1,
+    "resolution": "Preserve Content and historical typed causes plus stale incarnation."
+  },
+  {
+    "index": 50,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/idempotency_resolution.rs",
+    "textual_blocks": 2,
+    "resolution": "Fresh Home owner admission before current keyed idempotency resolution."
+  },
+  {
+    "index": 51,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/mod.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep current readmitted commit facade; Lifecycle test storage control is placed at current court doors."
+  },
+  {
+    "index": 52,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_compare_denial.rs",
+    "textual_blocks": 1,
+    "resolution": "Add typed provider admission denial mapping, preserve current execution denial visibility."
+  },
+  {
+    "index": 53,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/entry.rs",
+    "textual_blocks": 2,
+    "resolution": "Master validated entry and concrete commit progression; Lifecycle checks before consuming program, no retired commit_progression duplicate."
+  },
+  {
+    "index": 54,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/entry/application_commit.rs",
+    "textual_blocks": 2,
+    "resolution": "Both incarnation fence and master validated commit entry."
+  },
+  {
+    "index": 55,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/entry/output_source.rs",
+    "textual_blocks": 3,
+    "resolution": "Both incarnation fence and current output source ownership/validated commit paths."
+  },
+  {
+    "index": 56,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/external_dispatch.rs",
+    "textual_blocks": 1,
+    "resolution": "Both installed operation validation and Home owner fencing before redispatch."
+  },
+  {
+    "index": 57,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/mod.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep current ReadmittedCommitProgram facade and export Lifecycle compiled phase-storage control through the same public chain."
+  },
+  {
+    "index": 58,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep current independent court doors and expose Lifecycle phase-storage control."
+  },
+  {
+    "index": 59,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/entry_custody/managed_start.rs",
+    "textual_blocks": 1,
+    "resolution": "Current entry custody owns application; fence its program before managed start."
+  },
+  {
+    "index": 60,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep current independent running court doors and expose Lifecycle phase-storage control."
+  },
+  {
+    "index": 61,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests.rs",
+    "textual_blocks": 0,
+    "resolution": "Master moved affinity court keeps all original assertions/current into_parts_for_test. P-C grant preparation uses actual installed runtime receiver; old source copy removed."
+  },
+  {
+    "index": 62,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests/selected_product.rs",
+    "textual_blocks": 0,
+    "resolution": "Master moved selected-product court keeps current tuple door and P-C portable admission refusal. Old source copy removed."
+  },
+  {
+    "index": 63,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/completion_storage.rs",
+    "textual_blocks": 1,
+    "resolution": "Lifecycle moves three phase-storage cases to registered Host court through its owned control. Remove duplicate source cases; preserve master independent complete_for_test handoff."
+  },
+  {
+    "index": 64,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/independent_axis_tests.rs",
+    "textual_blocks": 0,
+    "resolution": "Master moved independent-axis court retains all original assertions/current completion custody; P-C admission+prepare replaces retired readmit chain. Old source copy removed."
+  },
+  {
+    "index": 65,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/commit_resolution/world_no_effect.rs",
+    "textual_blocks": 1,
+    "resolution": "Both typed current-read and stale-incarnation World causes."
+  },
+  {
+    "index": 66,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/read_set.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep master read-attempt admission and ValueDecode custody; port stale guard to current functions."
+  },
+  {
+    "index": 67,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/home_preparation/world.rs",
+    "textual_blocks": 2,
+    "resolution": "Home preflight/assembly carries both installed resource custody and current recovered mutation partition issuance; original providers stay under owning preparation/refusal."
+  },
+  {
+    "index": 68,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep both independently named responsibilities."
+  },
+  {
+    "index": 69,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/installation.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep both independently named responsibilities."
+  },
+  {
+    "index": 70,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/installation/home_attachment.rs",
+    "textual_blocks": 3,
+    "resolution": "Both resources/managed-index contribution transfer and current mutation-partition frontier travel through Home assembly."
+  },
+  {
+    "index": 71,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/stop.rs",
+    "textual_blocks": 2,
+    "resolution": "Current diagnostic projection plus explicit stale-incarnation cases; both test families retained."
+  },
+  {
+    "index": 72,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/operation_reader.rs",
+    "textual_blocks": 1,
+    "resolution": "Home incarnation fence then full installed projection authority validation."
+  },
+  {
+    "index": 73,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution.rs",
+    "textual_blocks": 1,
+    "resolution": "Both typed refusal families."
+  },
+  {
+    "index": 74,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/managed_application_recovery.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep master concrete decomposed recovery admission; add actual Home incarnation guard before installed operation and fresh authority validation."
+  },
+  {
+    "index": 75,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/publication_request_denial.rs",
+    "textual_blocks": 1,
+    "resolution": "Both typed refusal families."
+  },
+  {
+    "index": 76,
+    "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/provider_session/protocol/mod.rs",
+    "textual_blocks": 1,
+    "resolution": "Both master session affinity visibility and Lifecycle grant custody control."
+  },
+  {
+    "index": 77,
+    "path": "workspaces/worth-query/crates/worth-query-host/AGENT_CONTEXT.md",
+    "textual_blocks": 1,
+    "resolution": "Keep committed generated context temporarily; final regeneration/check must use agent-context own command, never hand editing."
+  },
+  {
+    "index": 78,
+    "path": "workspaces/worth-query/crates/worth-query-host/README.md",
+    "textual_blocks": 2,
+    "resolution": "Preserve current master/integration documented features; incoming pending transition headings outside conflicts remain."
+  },
+  {
+    "index": 79,
+    "path": "workspaces/worth-query/crates/worth-query-host/src/application_home/request.rs",
+    "textual_blocks": 3,
+    "resolution": "Both sealed opening control and trusted authorization clock in real Host request."
+  },
+  {
+    "index": 80,
+    "path": "workspaces/worth-query/crates/worth-query-host/src/facade.rs",
+    "textual_blocks": 1,
+    "resolution": "Union of current close and Lifecycle discard/transition public types."
+  },
+  {
+    "index": 81,
+    "path": "workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/managed_run/tests/provider_session_protocol/mod.rs",
+    "textual_blocks": 1,
+    "resolution": "Keep master moved external session courts; no duplicate testkit tests."
+  },
+  {
+    "index": 82,
+    "path": "workspaces/worth-store/crates/worth-store-application/src/home_context.rs",
+    "textual_blocks": 1,
+    "resolution": "Both opening observation and transition owner."
+  },
+  {
+    "index": 83,
+    "path": "workspaces/worth-store/crates/worth-store-application/src/home_request.rs",
+    "textual_blocks": 2,
+    "resolution": "Both opening observation and predecessor transition input/default."
+  },
+  {
+    "index": 84,
+    "path": "workspaces/worth-store/crates/worth-store-application/src/open/mod.rs",
+    "textual_blocks": 4,
+    "resolution": "Keep both opening observations and Lifecycle predecessor/transition owner. Descriptor incarnation Before/After arrivals surround actual descriptor admission/publication; World receives transition authority/frontier."
+  }
+]

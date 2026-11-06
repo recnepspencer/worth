@@ -12,6 +12,7 @@ pub fn publication(
         | NoEffectCause::StaleExpectedProductHead
         | NoEffectCause::OwnerDeniedBeforeEffect
         | NoEffectCause::CurrentReadDependency(_)
+        | NoEffectCause::StaleIncarnation
         | NoEffectCause::CorrespondenceRebindRequired
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::CapacityExhausted

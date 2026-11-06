@@ -10,8 +10,9 @@ mod released_effects;
 pub use released_effects::WorldReleasedEffects;
 pub(crate) mod recovered_publication;
 pub(crate) use recovered_publication::{
-    PreparedRecoveredPublication, RecoveredNativeCustody, RecoveredWorldPublicationInputs,
-    RecoveredWorldPublicationRecord,
+    ContinuationCommon, OriginalContinuationAdvance, OriginalHomeTransitionContinuation,
+    PreparedOriginalContinuation, PreparedRecoveredPublication, RecoveredNativeContinuationLoan,
+    RecoveredNativeCustody, RecoveredWorldPublicationInputs, RecoveredWorldPublicationRecord,
 };
 pub use recovered_publication::{
     WorldRecoveredContinuationDenial, WorldRecoveredContinuationOutcome,

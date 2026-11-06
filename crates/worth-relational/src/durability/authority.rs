@@ -36,6 +36,11 @@ pub use fresh_source::{FreshRelationalSourceAdmission, RelationalFreshSourceAdmi
 pub use recorded_component_readmission::{
     RefusedRelationalRecordedComponent, RelationalRecordedComponentAdmissionCause,
 };
+pub use recovery::{
+    ReadmittedRelationalHomeProgramCatalogs, RefusedRelationalHomeProgramCatalogReadmission,
+    RelationalHomeProgramCatalogReadmissionDenial, RelationalHomeProgramTransitionSource,
+    RelationalHomeProgramTransitionSourceRefusal,
+};
 mod runtime_rebuild;
 pub(crate) use runtime_rebuild::replay_commit_stop;
 pub(crate) use runtime_rebuild::RecoveredIndexCatalog;
@@ -78,6 +83,8 @@ pub struct DurabilityRecoveryAuthority<'runtime> {
 /// presence or later branch movement cannot impersonate successful recovery.
 #[derive(Debug)]
 pub struct RecoveredRelationalRuntimeAuthority {
+    home_catalog_readmission: std::sync::Mutex<()>,
+    home_program_predecessor: Option<crate::runtime::RelationalHomeProgramPredecessorCatalog>,
     runtime_instance_id: u64,
     recovered_roots: std::sync::Arc<runtime_rebuild::RecoveredRootInventory>,
     recovered_branch_images: std::collections::BTreeMap<

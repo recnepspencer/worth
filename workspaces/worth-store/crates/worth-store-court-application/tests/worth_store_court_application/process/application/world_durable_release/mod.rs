@@ -72,6 +72,7 @@ fn killed_native_effect_reopens_original_world_custody_releases_and_reopens_agai
     let receipt = claim
         .native_receipt()
         .expect("the killed actual Native effect is retained");
+    let old_handle = row.handle().clone();
     // Teardown must permit the very reopen needed to inspect terminal journal
     // uncertainty. The actual owner drops its pins; durable custody stays open.
     drop((claim, page));
@@ -108,6 +109,10 @@ fn killed_native_effect_reopens_original_world_custody_releases_and_reopens_agai
     let page = inspection.recovery_page(None, maximum()).unwrap();
     assert_eq!(page.rows().len(), 1);
     let recovery = fixture.home.world().recovery_port();
+    assert!(matches!(
+        recovery.inspect_recovered_effects(&old_handle),
+        Err(RuntimeWorldRecoveryDenial::StaleIncarnation)
+    ));
     let claim = recovery
         .inspect_recovered_effects(page.rows()[0].handle())
         .unwrap();

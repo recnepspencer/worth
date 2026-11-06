@@ -63,6 +63,8 @@ struct HomeApplicationState<Schema: ApplicationSchemaComposition, Program> {
     activation: WorthQueryProgramActivationCell,
     limits: WorthQueryInMemoryApplicationLimits,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
+    authorization_time_source:
+        Option<Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>>,
 }
 
 /// Installs actual schema/program meaning before Store construction starts.
@@ -74,6 +76,10 @@ pub fn prepare_home_program<Schema, Program>(
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
+    authorization_time_source: Option<
+        Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
+    >,
+    directory_support: fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>,
 ) -> Result<PreparedHomeApplication<Schema, Program>, WorthQueryInMemoryApplicationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -99,6 +105,7 @@ where
             admitted = Some((installed, supported));
             Ok(support)
         })),
+        Some(directory_support),
     )?;
     let (invariants, pending, activation) = contribution_preparation::prepare(
         configured,
@@ -122,6 +129,7 @@ where
             activation,
             limits,
             build_identity,
+            authorization_time_source,
         },
         invariants,
     })

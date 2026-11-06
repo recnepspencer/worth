@@ -3,6 +3,8 @@ mod admission;
 pub(in crate::domain_computation) mod admitted_request;
 pub(crate) mod application_commit_authorization;
 pub(crate) mod application_disclosure;
+mod home_incarnation;
+pub(in crate::domain_computation) use home_incarnation::refuse_stale_home_authority;
 mod authorization_revalidation;
 mod bridge_binding;
 mod bridge_observation;

@@ -1,6 +1,6 @@
 //! Capability-access progression into installed operation authority.
 
-use crate::domain_computation::authorization::graph_work_session::transition_capability_to_operation_graph_work;
+use crate::domain_computation::authorization::graph_work_session::start_capability_operation_graph_work;
 use crate::domain_computation::authorization::operation_progression::WorthQueryCapabilityOperationProgression;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
@@ -205,22 +205,34 @@ where
     let request_scope = access.request_scope.clone();
     let original_scope =
         retain_original_scope(execution, access.resolved.resource(), operation.contracts())?;
+    let product = access.read_product(runtime).ok_or_else(|| {
+        denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::GraphWorkAdmissionUnavailable,
+            ),
+            operation.operation(),
+        )
+    })?;
+    let principal = access.principal_entity_id;
+    let installed_capability = access.authorization.installed_capability_identity();
     let super::WorthQueryAdmittedApplicationCapabilityAccess {
         input,
+        home_owner,
         governed_input_identity,
         canonical_work,
         authorization,
         operation_admission_identity,
-        graph_work,
         ..
     } = access;
-    let graph_work = transition_capability_to_operation_graph_work(
+    let graph_work = start_capability_operation_graph_work(
         execution,
         runtime,
         operation,
         &resource_binding_identity,
         resource_entity_id,
-        graph_work,
+        principal,
+        installed_capability,
+        product,
     )?;
     validate_operation_graph_work_authority(&graph_work, operation)?;
     let revalidated = revalidate_operation_authorization(
@@ -247,6 +259,7 @@ where
     );
     let core = WorthQueryAdmittedOperation {
         runtime_authority: runtime.runtime.authority_identity(),
+        home_owner,
         binding_identity: operation.binding_identity().clone(),
         operation: operation.operation().to_string(),
         operation_authority_identity: operation.authority_identity().into(),

@@ -47,10 +47,11 @@ mod unresolved;
 pub use transition_read::RelationalDurableTransitionReadFailure;
 pub(crate) use transition_read::RelationalTransitionHistoryReader;
 
+pub use binding::RelationalHomeProgramWriteDenial;
 pub use binding::RelationalInitialInputsPublicationStop;
 pub(crate) use binding::{
     CheckpointPublication, RelationalCommittedInitialInputs, RelationalDurableCommitReadmission,
-    RelationalDurableMediumBinding, RelationalDurableStepStop,
+    RelationalDurableMediumBinding, RelationalDurableMediumTransfer, RelationalDurableStepStop,
     RelationalDurableTransitionPublication, SealedRelationalMediumBinding,
 };
 pub(crate) use commit_publication::RelationalCommitPublication;
@@ -78,6 +79,14 @@ use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtif
 /// runtime, and a forked runtime never inherits publication access. Speculative
 /// forks may carry only a read-only historical-transition reader.
 pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
+    /// Only an Application Home composition binds its original transition
+    /// receiver. A medium without that owner admits no Home transition proof.
+    fn home_transition_authority(&self) -> Option<&worth_proof::HomeProgramTransitionAuthority> {
+        None
+    }
+    fn home_transition_required(&self) -> Option<&worth_proof::HomeProgramTransitionRequired> {
+        None
+    }
     fn publish_initial_inputs(
         &self,
         _artifact: &crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact,
@@ -160,6 +169,7 @@ pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum RelationalDurablePublicationRefusal {
+    HomeProgramTransition(RelationalHomeProgramWriteDenial),
     /// The medium proved the publication had no durable effect.
     ProvenNoEffect { detail: String },
     /// The medium moved into the runtime recovery rebuilt, so this runtime no

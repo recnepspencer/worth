@@ -28,6 +28,7 @@ fn foreign_admitted_idempotency_read_denies_distinctly() {
     let authority_b = WorthQueryRecoveryEffectAuthority::mint_for_test(
         handle_b.runtime_authority_for_test(),
         handle_b.authority_identity_for_test(),
+        &handle_b,
     );
     let read_a = WorthQueryAdmittedIdempotencyRead::mint_for_test(
         binding_a,
@@ -51,6 +52,7 @@ fn matching_admitted_idempotency_read_resolves() {
     let authority = WorthQueryRecoveryEffectAuthority::mint_for_test(
         handle.runtime_authority_for_test(),
         handle.authority_identity_for_test(),
+        &handle,
     );
     let read = WorthQueryAdmittedIdempotencyRead::mint_for_test(
         binding,

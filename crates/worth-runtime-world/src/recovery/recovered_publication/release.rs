@@ -1,6 +1,8 @@
 use super::release_preparation::ReleaseDestinationLease;
 use super::*;
-use crate::durability::{WorldDurableMediumDenial, WorldDurablePublicationStop, WorldRecord};
+use crate::durability::{
+    WorldArtifactInput, WorldDurableMediumDenial, WorldDurablePublicationStop,
+};
 use crate::recovery::{ProductUnpublishedCleanup, WorldReleasedEffects};
 
 #[derive(Debug)]
@@ -43,6 +45,42 @@ impl WorldRecoveredUnpublishedEffects {
                 custody: self,
             };
         }
+        let transition_refusal = {
+            let native = self
+                .record
+                .native
+                .lock()
+                .unwrap_or_else(|cause| cause.into_inner());
+            match &*native {
+                RecoveredNativeCustody::Continuing(_) | RecoveredNativeCustody::Working => {
+                    Some(crate::recovery::RuntimeWorldRecoveryDenial::Busy)
+                }
+                RecoveredNativeCustody::Relational(native)
+                    if native
+                        .custody()
+                        .effect()
+                        .subject()
+                        .association()
+                        .is_some_and(|value| {
+                            worth_foundational::facade::HomeProgramTransitionCaller::recognizes(
+                                value.as_bytes(),
+                            )
+                        }) =>
+                {
+                    Some(crate::recovery::RuntimeWorldRecoveryDenial::HomeProgramTransitionRequired)
+                }
+                RecoveredNativeCustody::OpenOnly
+                | RecoveredNativeCustody::Relational(_)
+                | RecoveredNativeCustody::Prepared(_)
+                | RecoveredNativeCustody::Released => None,
+            }
+        };
+        if let Some(cause) = transition_refusal {
+            return WorldRecoveredReleaseOutcome::AdmissionRefused {
+                cause,
+                custody: self,
+            };
+        }
         let subject = {
             let existing = self
                 .record
@@ -74,9 +112,9 @@ impl WorldRecoveredUnpublishedEffects {
                             }
                         }
                     };
-                    let subject = match WorldDurableArtifact::from_record(
-                        WorldRecord::Released {
-                            association: self.record.open.association.clone(),
+                    let subject = match WorldDurableArtifact::from_input(
+                        WorldArtifactInput::Released {
+                            association: &self.record.open.association,
                             custody: self.record.open.custody,
                             relational,
                         },
@@ -169,6 +207,9 @@ impl WorldRecoveredUnpublishedEffects {
                         unreachable!("continuation cannot release")
                     }
                     RecoveredNativeCustody::Released => unreachable!("released exactly once"),
+                    RecoveredNativeCustody::Continuing(_) | RecoveredNativeCustody::Working => {
+                        unreachable!("the exclusive release refused continuing custody")
+                    }
                 };
                 let original = destination.finish(effect);
                 self.catalog.remove_recovered(&self.record);

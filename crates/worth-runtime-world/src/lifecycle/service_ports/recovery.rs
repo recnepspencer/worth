@@ -9,6 +9,11 @@ pub struct RuntimeWorldRecoveryPort {
     owner: Weak<dyn RuntimeWorldRecoveryService + Send + Sync>,
 }
 impl RuntimeWorldRecoveryPort {
+    pub fn owner_identity(
+        &self,
+    ) -> Result<crate::identity::RuntimeWorldOwnerIdentity, RuntimeWorldOwnerUnavailable> {
+        Ok(self.service()?.owner_identity())
+    }
     pub fn retained_commits(
         &self,
         candidates: &[crate::identity::CompositeCommitIdentity],

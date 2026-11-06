@@ -55,9 +55,10 @@ mod root_partition_access;
 mod root_region;
 mod root_regions;
 pub(crate) use root::{
-    RelationalBranchVisibilityCommitment, RelationalRootAllocationVisitor,
-    RelationalRootAuthoritativeAllocationObservation, RelationalRootCommitEvidence,
-    RelationalRootRegionObservation,
+    retained_compilation_tree_bytes, RelationalBranchVisibilityCommitment,
+    RelationalRootAllocationVisitor, RelationalRootAuthoritativeAllocationObservation,
+    RelationalRootCommitEvidence, RelationalRootRegionObservation, RetainedRelationalAspectPlans,
+    RetainedRelationalSchemaRegistry,
 };
 pub(crate) use root_regions::RelationalPartitionVisit;
 mod root_runtime_access;

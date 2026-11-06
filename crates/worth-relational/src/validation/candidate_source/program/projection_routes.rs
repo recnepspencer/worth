@@ -1,6 +1,8 @@
 //! Schema-bound direct endpoint routes preserve relation multiplicity and field meaning.
 use super::*;
 use crate::derived_relation::DerivedRelationNode;
+use crate::schema::SchemaCompilationControl;
+use crate::validation::CustomInvariantCompilationDenial as CompilationDenial;
 
 /// One direct result-relation route from a Source row to a projected endpoint.
 /// Binding checks the actual schema-owned path; its name only joins compiled
@@ -86,7 +88,9 @@ impl ManagedIndexSourceProjectionRoute {
         &self,
         registry: &RelationalSchemaRegistry,
         row: KindId,
-    ) -> Result<(), Denial> {
+        control: SchemaCompilationControl<'_, '_>,
+    ) -> Result<(), CompilationDenial> {
+        control.checkpoint().map_err(CompilationDenial::Execution)?;
         if self.name.is_empty()
             || !registry.admits_derived_relation(&self.path)
             || self.path.parts().from.entity_kind() != Some(row)
@@ -99,15 +103,15 @@ impl ManagedIndexSourceProjectionRoute {
                     ]
             )
         {
-            return Err(Denial::InvalidExpression);
+            return Err(CompilationDenial::Source(Denial::InvalidExpression));
         }
         let endpoint = self
             .path
             .parts()
             .to
             .entity_kind()
-            .ok_or(Denial::InvalidMemberDomain)?;
-        validate_fields(registry, endpoint, &self.fields)
+            .ok_or(CompilationDenial::Source(Denial::InvalidMemberDomain))?;
+        validate_fields_for_compilation(registry, endpoint, &self.fields, control)
     }
 }
 
@@ -116,13 +120,28 @@ pub(super) fn validate_routes(
     row: KindId,
     routes: &[ManagedIndexSourceProjectionRoute],
 ) -> Result<(), Denial> {
+    validate_routes_for_compilation(
+        registry,
+        row,
+        routes,
+        SchemaCompilationControl::Configuration,
+    )
+    .map_err(CompilationDenial::configuration_source)
+}
+pub(super) fn validate_routes_for_compilation(
+    registry: &RelationalSchemaRegistry,
+    row: KindId,
+    routes: &[ManagedIndexSourceProjectionRoute],
+    control: SchemaCompilationControl<'_, '_>,
+) -> Result<(), CompilationDenial> {
     for (index, route) in routes.iter().enumerate() {
+        control.checkpoint().map_err(CompilationDenial::Execution)?;
         let parent = match route.parent {
             None => row,
             Some(parent) if parent < index => routes[parent].endpoint_kind(),
-            Some(_) => return Err(Denial::InvalidExpression),
+            Some(_) => return Err(CompilationDenial::Source(Denial::InvalidExpression)),
         };
-        route.validate(registry, parent)?;
+        route.validate(registry, parent, control)?;
     }
     Ok(())
 }
@@ -146,18 +165,44 @@ pub(super) fn validate_fields(
     kind: KindId,
     fields: &[ManagedIndexSourceField],
 ) -> Result<(), Denial> {
+    validate_fields_for_compilation(
+        registry,
+        kind,
+        fields,
+        SchemaCompilationControl::Configuration,
+    )
+    .map_err(CompilationDenial::configuration_source)
+}
+pub(super) fn validate_fields_for_compilation(
+    registry: &RelationalSchemaRegistry,
+    kind: KindId,
+    fields: &[ManagedIndexSourceField],
+    control: SchemaCompilationControl<'_, '_>,
+) -> Result<(), CompilationDenial> {
     let registration = registry
         .entity_kinds
         .get(&kind)
-        .ok_or(Denial::InvalidPhysicalSource(kind))?;
+        .ok_or(CompilationDenial::Source(Denial::InvalidPhysicalSource(
+            kind,
+        )))?;
     for field in fields {
-        if field.locator.field_path().fields().len() != 1
-            || !registration.aspect_contract_declarations.aspects.iter().any(|aspect| {
-                aspect.foundational_key() == field.locator.aspect().aspect_key()
-                    && matches!(aspect.contract.shape(), worth_foundational::facade::AspectShape::Struct(shape)
-                        if shape.field(&field.locator.field_path().fields()[0]).is_some())
-            }) {
-            return Err(Denial::InvalidExpression);
+        control.checkpoint().map_err(CompilationDenial::Execution)?;
+        if field.locator.field_path().fields().len() != 1 {
+            return Err(CompilationDenial::Source(Denial::InvalidExpression));
+        }
+        let mut found = false;
+        for aspect in &registration.aspect_contract_declarations.aspects {
+            control.checkpoint().map_err(CompilationDenial::Execution)?;
+            if aspect.foundational_key() == field.locator.aspect().aspect_key()
+                && matches!(aspect.contract.shape(), worth_foundational::facade::AspectShape::Struct(shape)
+                    if shape.field(&field.locator.field_path().fields()[0]).is_some())
+            {
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            return Err(CompilationDenial::Source(Denial::InvalidExpression));
         }
     }
     Ok(())

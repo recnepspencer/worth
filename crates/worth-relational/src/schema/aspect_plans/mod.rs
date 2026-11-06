@@ -5,6 +5,8 @@ mod relation_integrity;
 mod relation_integrity_lowering;
 mod revision;
 
+use crate::execution::RelationalExecutionDenialCause as CompilationDenial;
+use crate::schema::SchemaCompilationControl;
 use smallvec::SmallVec;
 
 use crate::schema::data::{
@@ -46,66 +48,71 @@ pub(crate) fn canonicalize_relation_registration(
 }
 
 pub(crate) fn lower_aspect_plans(registry: &RelationalSchemaRegistry) -> AspectContractPlanCatalog {
-    let entity_plans = registry
-        .entity_kinds
-        .iter()
-        .map(|(kind_id, registration)| {
-            (
-                *kind_id,
-                lower_kind_plan(*kind_id, &registration.aspect_contract_declarations),
-            )
-        })
-        .collect();
-    let relation_plans = registry
-        .relation_kinds
-        .iter()
-        .map(|(kind_id, registration)| {
-            (
-                *kind_id,
-                lower_kind_plan(*kind_id, &registration.aspect_contract_declarations),
-            )
-        })
-        .collect();
-    AspectContractPlanCatalog {
+    lower_aspect_plans_for_compilation(registry, SchemaCompilationControl::Configuration)
+        .expect("configuration plan lowering has no request refusal")
+}
+pub(crate) fn lower_aspect_plans_for_compilation(
+    registry: &RelationalSchemaRegistry,
+    control: SchemaCompilationControl<'_, '_>,
+) -> Result<AspectContractPlanCatalog, CompilationDenial> {
+    let mut entity_plans = std::collections::BTreeMap::new();
+    for (kind, registration) in &registry.entity_kinds {
+        control.checkpoint()?;
+        entity_plans.insert(
+            *kind,
+            lower_kind_plan(*kind, &registration.aspect_contract_declarations, control)?,
+        );
+    }
+    let mut relation_plans = std::collections::BTreeMap::new();
+    for (kind, registration) in &registry.relation_kinds {
+        control.checkpoint()?;
+        relation_plans.insert(
+            *kind,
+            lower_kind_plan(*kind, &registration.aspect_contract_declarations, control)?,
+        );
+    }
+    Ok(AspectContractPlanCatalog {
         entity_plans,
         relation_plans,
-    }
+    })
 }
 
-pub(crate) fn lower_relation_integrity_plans(
+pub(crate) fn lower_relation_integrity_plans_for_compilation(
     registry: &RelationalSchemaRegistry,
-) -> RelationIntegrityPlanCatalog {
-    let relation_plans = registry
-        .relation_kinds
-        .iter()
-        .map(|(kind_id, registration)| {
-            (
-                *kind_id,
-                lower_relation_integrity_plan(
-                    *kind_id,
-                    &registration.relation_integrity,
-                    registration.cascade_delete_policy,
-                ),
-            )
-        })
-        .collect();
-    RelationIntegrityPlanCatalog { relation_plans }
+    control: SchemaCompilationControl<'_, '_>,
+) -> Result<RelationIntegrityPlanCatalog, CompilationDenial> {
+    let mut relation_plans = std::collections::BTreeMap::new();
+    for (kind, registration) in &registry.relation_kinds {
+        control.checkpoint()?;
+        relation_plans.insert(
+            *kind,
+            lower_relation_integrity_plan(
+                *kind,
+                &registration.relation_integrity,
+                registration.cascade_delete_policy,
+                control,
+            )?,
+        );
+    }
+    Ok(RelationIntegrityPlanCatalog { relation_plans })
 }
 
 fn lower_kind_plan(
     kind_id: crate::identity::data::KindId,
     declarations: &KindAspectContractDeclarations,
-) -> LoweredAspectContractPlan {
-    let executable_bindings = declarations
-        .aspects
-        .iter()
-        .map(|aspect| lower_binding(kind_id, declarations.plan_revision, aspect))
-        .collect::<SmallVec<[LoweredAspectContractBinding; 8]>>();
-    LoweredAspectContractPlan {
+    control: SchemaCompilationControl<'_, '_>,
+) -> Result<LoweredAspectContractPlan, CompilationDenial> {
+    let mut executable_bindings =
+        SmallVec::<[LoweredAspectContractBinding; 8]>::with_capacity(declarations.aspects.len());
+    for aspect in &declarations.aspects {
+        control.checkpoint()?;
+        executable_bindings.push(lower_binding(kind_id, declarations.plan_revision, aspect));
+    }
+    Ok(LoweredAspectContractPlan {
         kind_id,
         plan_revision: declarations.plan_revision,
         executable_bindings,
-    }
+    })
 }
 
 fn derive_kind_plan_revision(

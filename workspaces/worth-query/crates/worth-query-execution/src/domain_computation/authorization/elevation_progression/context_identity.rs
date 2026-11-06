@@ -36,12 +36,12 @@ pub(super) fn resolve_elevation_identity<Schema, Capability, Operation, Input>(
     capability_identity: [u8; 32],
     installed: &WorthQueryInstalledCapabilityPlan,
     value: &AspectValue,
-) -> Option<EntityId>
+) -> Result<Option<EntityId>, super::super::WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    access
+    Ok(access
         .with_exact_observation(execution, runtime, |observation| {
             observation.resolve_elevation_identity(
                 execution,
@@ -49,8 +49,8 @@ where
                 installed,
                 value.clone(),
             )
-        })
-        .and_then(Result::ok)
+        })?
+        .and_then(Result::ok))
 }
 
 pub(super) fn resolve_review_identity<Schema, Capability, Operation, Input>(
@@ -60,12 +60,12 @@ pub(super) fn resolve_review_identity<Schema, Capability, Operation, Input>(
     capability_identity: [u8; 32],
     installed: &WorthQueryInstalledCapabilityPlan,
     value: &AspectValue,
-) -> Option<EntityId>
+) -> Result<Option<EntityId>, super::super::WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    access
+    Ok(access
         .with_exact_observation(execution, runtime, |observation| {
             observation.resolve_review_identity(
                 execution,
@@ -73,6 +73,6 @@ where
                 installed,
                 value.clone(),
             )
-        })
-        .and_then(Result::ok)
+        })?
+        .and_then(Result::ok))
 }

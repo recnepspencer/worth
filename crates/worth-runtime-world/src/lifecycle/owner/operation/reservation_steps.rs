@@ -6,6 +6,8 @@ use crate::identity::{
 use crate::publication::NoEffectCause;
 use crate::recovery::{RecoveryCatalogDenial, ReservedProductUnpublishedSlot};
 use crate::retention::ReservedComponentPinPairCapacity;
+mod readmitted;
+pub(super) use readmitted::reserve_readmitted_resources;
 
 use super::{
     LoweredOwnerComponentPlan, ProductBranchObservation, ReservedAttemptCapacities,
@@ -45,14 +47,35 @@ where
     if owner.state.recovery.has_recovered() {
         return Err(NoEffectCause::OwnerDeniedBeforeEffect);
     }
+    issue_publication_identities_for_attempt(owner, None)
+}
+
+pub(super) fn issue_publication_identities_for_attempt<D, I, E, Ctx, T>(
+    owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
+    assigned: Option<CompositePublicationAttemptIdentity>,
+) -> Result<IssuedPublicationIdentities, NoEffectCause>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
     let mut identities = owner
         .state
         .identities
         .lock()
         .unwrap_or_else(|error| error.into_inner());
-    let attempt_identity = identities
-        .publication_attempt()
-        .map_err(|_| NoEffectCause::PreEffectFailure)?;
+    let attempt_identity = match assigned {
+        Some(attempt)
+            if attempt.owner_identity() == owner.owner_identity()
+                && attempt.owner_identity().get() == owner.owner_identity().get() =>
+        {
+            attempt
+        }
+        Some(_) => return Err(NoEffectCause::OwnerDeniedBeforeEffect),
+        None => identities
+            .publication_attempt()
+            .map_err(|_| NoEffectCause::PreEffectFailure)?,
+    };
     let commit_identity = identities
         .composite_commit()
         .map_err(|_| NoEffectCause::PreEffectFailure)?;
@@ -72,6 +95,7 @@ pub(super) fn reserve_publication_resources<D, I, E, Ctx, T>(
     commit_identity: &CompositeCommitIdentity,
     publication_attempt: Option<&CompositePublicationAttemptIdentity>,
     successor_observation_requested: bool,
+    recovered_slot: Option<ReservedProductUnpublishedSlot>,
 ) -> Result<ReservedPublicationResources, NoEffectCause>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -81,7 +105,10 @@ where
     let history = owner.state.history.clone();
     let reserved_commit_capacity =
         reserve_history(&history, expected, commit_identity, publication_attempt)?;
-    let reserved_recovery_slot = reserve_recovery(owner)?;
+    let reserved_recovery_slot = match recovered_slot {
+        Some(slot) => slot,
+        None => reserve_recovery(owner)?,
+    };
     let reserved_component_pin_pair = reserve_component_pin_pair(owner)?;
     let reserved_successor_observation = successor_observation_requested
         .then(|| reserve_successor_observation(owner))

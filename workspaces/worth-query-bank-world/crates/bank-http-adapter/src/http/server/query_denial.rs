@@ -63,6 +63,7 @@ fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
         Selection::ForeignOwner
         | Selection::RetiredBranch
         | Selection::IncarnationChanged
+        | Selection::StaleIncarnation
         | Selection::ObservationRejected
         | Selection::ObservationStaleSourceHead => stale(),
         Selection::ObservationStatePoisoned => internal_denied(),

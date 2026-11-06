@@ -13,6 +13,7 @@ use std::sync::Arc;
 pub enum WorldDurablePublicationDenial {
     OwnerUnavailable,
     ForeignOwner,
+    StaleIncarnation,
     Native(worth_relational::facade::branch::RelationalRecordedComponentRefusal),
     OriginalNativeEvidenceRequired,
     Medium(WorldDurableMediumDenial),

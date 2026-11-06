@@ -24,8 +24,14 @@ pub(in crate::domain_computation) fn prepare_pending_disclosure<
     principal: EntityId,
     scope: EntityId,
     capability: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+    validate_original_request: impl FnOnce(
+        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    ) -> Result<(), E>,
     validate_current_request: impl FnOnce() -> Result<(), E>,
     mismatch: impl Fn() -> E,
+    incarnation_refusal: impl FnOnce(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ) -> E,
 ) -> Result<WorthQueryPendingApplicationQueryGovernance, E>
 where
     Schema: ApplicationSchema,
@@ -37,8 +43,10 @@ where
         principal,
         scope,
         capability,
+        validate_original_request,
         validate_current_request,
         mismatch,
+        incarnation_refusal,
         |name, kind, value| Ok((name.to_owned(), kind.to_owned(), value.clone(), ())),
     )
     .map(|(pending, ())| pending)
@@ -50,8 +58,14 @@ fn prepare_with_capture<Schema, Scope, Capability, Operation, Input, E, Capture>
     principal: EntityId,
     scope: EntityId,
     capability: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+    validate_original_request: impl FnOnce(
+        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    ) -> Result<(), E>,
     validate_current_request: impl FnOnce() -> Result<(), E>,
     mismatch: impl Fn() -> E,
+    incarnation_refusal: impl FnOnce(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ) -> E,
     capture: impl FnOnce(
         &str,
         &str,
@@ -72,7 +86,16 @@ where
 {
     // Each caller first validates the capability's original request. Preserve
     // the existing order: affinity, receiving request, then retained projection.
-    if capability.runtime_authority() != runtime.runtime.authority_identity()
+    let issuing_runtime = match capability.runtime_authority_for(runtime.runtime.product_runtime.owner.owner_identity()) {
+        Ok(authority) => Some(authority),
+        Err(worth_proof::HomeIncarnationDenial::ForeignHome) => None,
+        Err(worth_proof::HomeIncarnationDenial::StaleIncarnation) => return Err(incarnation_refusal(
+            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(
+                    crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation), "capability disclosure"))),
+    };
+    validate_original_request(capability.request_scope())?;
+    if issuing_runtime != Some(runtime.runtime.authority_identity())
         || capability.binding_identity() != binding
         || capability.principal_entity_id() != principal
         || capability.resource_entity_id() != scope

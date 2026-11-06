@@ -15,6 +15,20 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         effects: WorldRecoveredUnpublishedEffects,
     ) -> Outcome {
+        if let Err(cause) = self
+            .owner_identity()
+            .admit_incarnation(effects.identity().owner_identity())
+        {
+            return Outcome::AdmissionRefused {
+                cause: match cause {
+                    worth_proof::HomeIncarnationDenial::ForeignHome => Denial::ForeignHandle,
+                    worth_proof::HomeIncarnationDenial::StaleIncarnation => {
+                        Denial::StaleIncarnation
+                    }
+                },
+                custody: effects,
+            };
+        }
         if !self.state.recovery.admits_recovered(&effects) {
             return Outcome::AdmissionRefused {
                 cause: Denial::ForeignHandle,

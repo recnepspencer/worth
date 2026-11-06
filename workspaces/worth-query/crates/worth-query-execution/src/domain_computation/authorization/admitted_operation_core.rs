@@ -21,6 +21,7 @@ use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditio
 /// `Clone`, `Default`, `Deserialize` or `From`, and only the admission
 /// phases that mint a brand construct it.
 pub(in crate::domain_computation) struct WorthQueryAdmittedOperation {
+    pub(super) home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     pub(super) runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     pub(super) binding_identity: ApplicationSchemaBindingIdentity,

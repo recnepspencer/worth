@@ -66,4 +66,5 @@ pub use subsystems::{
     RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
 };
 
+pub use subsystems::RelationalSymbolTableForTest;
 pub(crate) use subsystems::TryPartitionMutationDenied;

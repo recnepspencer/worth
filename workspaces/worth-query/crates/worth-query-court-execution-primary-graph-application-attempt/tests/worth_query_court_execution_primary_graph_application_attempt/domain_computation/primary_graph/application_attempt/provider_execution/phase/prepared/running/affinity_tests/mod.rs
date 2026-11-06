@@ -322,9 +322,8 @@ pub fn real_terminal_session<'run>(
         .expect("real application authorities must admit their provider plan")
         .bind_application_product_for_test(product)
         .expect("the exact selected product must bind its provider plan")
-        .readmit(execution)
-        .expect("the real provider must readmit its exact plan")
-        .prepare()
+        .admit_session(execution)
+        .and_then(|(grant, receiver)| world.application.prepare_provider_session_grant(execution, grant, || Ok(receiver)))
         .expect("the real provider must prepare its exact session")
         .bind_reads_and_effects()
 }

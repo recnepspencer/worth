@@ -34,16 +34,15 @@ pub fn admit_provider_session<'run>(
     let staged = match running
         .admit_provider_execution_plan(graph)
         .and_then(|plan| plan.bind_application_product(product))
-        .and_then(|plan| plan.readmit(phase))
-        .and_then(|session| session.prepare())
+        .and_then(|plan| plan.admit_session(phase))
+        .and_then(|(grant, receiver)| grant.prepare(receiver, phase))
         .map(|prepared| prepared.bind_reads_and_effects())
     {
         Ok(staged) => staged,
         Err(cause) => {
             return Err(WorthQueryProviderSessionAdmissionFailure {
                 outcome: WorthQueryProviderProgressionOutcome::Denied(
-                    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
-                        DenialStage::ProviderPlan,format!("provider session admission: {cause:?}"))),
+                    crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_admission_denied(cause)),
                 mutation_run,
             })
         }

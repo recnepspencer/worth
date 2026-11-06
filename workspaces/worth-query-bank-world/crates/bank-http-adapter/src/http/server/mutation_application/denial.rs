@@ -111,6 +111,7 @@ pub(in crate::http::server) fn pending_execution_denial(
     use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
     match kind {
         Kind::Content(cause) => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::Content(cause)),
+        Kind::StaleIncarnation => BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
         Kind::ContentInconsistency => BankHttpDenial::new(BankHttpDenialKind::InternalDenied, BankHttpNextAction::ContactOperator),
         Kind::ProjectionContract { denial, .. } => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::ProjectionContract(denial)),
         Kind::HistoricalVisibility { denial, .. } => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::HistoricalVisibility(denial)),

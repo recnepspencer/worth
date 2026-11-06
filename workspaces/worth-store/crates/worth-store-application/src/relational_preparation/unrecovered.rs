@@ -127,6 +127,17 @@ impl UnrecoveredApplicationHome {
         } = self;
         use super::initialization::HomeInitializationOrigin;
         use worth_store::physical_runtime::RecoveryStorePresence;
+        let catalog =
+            match crate::open::readmission::transition::admit_pending_catalog(&context, request) {
+                Ok(catalog) => catalog,
+                Err(cause) => {
+                    return Err(Self {
+                        relational,
+                        context,
+                    }
+                    .refused(crate::ApplicationHomeOpenRefusal::Transition(cause)))
+                }
+            };
         let admitted = match &context.initialization {
             HomeInitializationOrigin::Available(RecoveryStorePresence::ProvenAbsent) => {
                 if manifest.is_some() {
@@ -138,12 +149,13 @@ impl UnrecoveredApplicationHome {
                 }
             }
             HomeInitializationOrigin::Available(RecoveryStorePresence::ExistingArtifacts) => {
-                relational.readmit_prepared_home(request)
+                relational.readmit_prepared_home(request, catalog.as_ref())
             }
             HomeInitializationOrigin::ConsumedNewHome => {
                 Err((relational, ReadmissionDenial::MalformedSection))
             }
         };
+        drop(catalog);
         match admitted {
             Ok((relational, selected_coverage)) => {
                 context

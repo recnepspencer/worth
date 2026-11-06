@@ -21,7 +21,7 @@ impl PreparedWorldReleasedDisposition {
             association,
             custody,
             relational,
-        } = &subject.record
+        } = subject.record()
         else {
             return Err(Denial::PublicationUnresolved);
         };

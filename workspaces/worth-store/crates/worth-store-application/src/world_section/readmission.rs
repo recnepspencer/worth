@@ -1,4 +1,5 @@
 //! Concrete Home custody cannot skip Native recovery or duplicate its World slot.
+mod transition_catalog;
 use worth_execution::ExecutionRequest;
 use worth_proof::{AuthorityMarker, RelationalReadmitted, WorldReconciled};
 use worth_runtime_world::facade::RuntimeWorldOwner;

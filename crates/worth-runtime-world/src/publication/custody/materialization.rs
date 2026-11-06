@@ -24,6 +24,7 @@ impl ActiveAttemptRecord {
             .ok()?;
         let facts = RetainedAttemptFacts {
             admitted_at: self.admitted_at,
+            before_effect_refusal: state.before_effect_refusal.take(),
             identity: self.identity().clone(),
             attempt_identity: self.attempt.clone(),
             expected_head: self.expected.clone(),

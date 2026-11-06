@@ -11,6 +11,7 @@ use crate::identity::data::EntityId;
 use crate::validation::data::{StructuralAspectStateView, StructuralRelationView};
 use std::{any::Any, sync::Arc};
 
+mod home_catalog;
 mod projection_rows;
 mod row_read;
 mod rows;

@@ -13,3 +13,4 @@ pub(super) use prepared::running::progression::{
 pub(super) use prepared::running::progression::progressed::finish_application_commit;
 
 pub(in crate::domain_computation::primary_graph) use prepared::ReadmittedCommitProgram;
+pub use prepared::WorthQueryManagedPhaseStorageForTest;

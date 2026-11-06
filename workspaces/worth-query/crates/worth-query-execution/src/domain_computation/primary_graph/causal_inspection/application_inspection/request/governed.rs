@@ -59,17 +59,19 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability,
         Scope = <Binding::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope>,
 {
-    if let Some(cause) = capability.request_scope().interruption() {
-        return Err(InspectionCause::Admission(
-            super::super::admission::InspectionAdmissionDenial::RequestControl(cause),
-        ));
-    }
     prepare_funded_pending_disclosure(
         runtime,
         installed.query().binding_identity(),
         principal,
         scope,
         capability,
+        |original| {
+            original.interruption().map_or(Ok(()), |cause| {
+                Err(InspectionCause::Admission(
+                    super::super::admission::InspectionAdmissionDenial::RequestControl(cause),
+                ))
+            })
+        },
         || {
             super::super::admission::require_request(execution, request)
                 .map_err(InspectionCause::Admission)
@@ -77,6 +79,11 @@ where
         || {
             InspectionCause::Admission(
                 super::super::admission::InspectionAdmissionDenial::ForeignIssuedAccess,
+            )
+        },
+        |denial| {
+            InspectionCause::Admission(
+                super::super::admission::InspectionAdmissionDenial::Capability(denial),
             )
         },
         execution,

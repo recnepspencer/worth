@@ -22,7 +22,7 @@ fn competing_host_processes_admit_exactly_one_writer_until_process_death() {
                 &location,
                 build(),
                 initialized.clone(),
-                |opened| match opened {
+                |opened, _contacts| match opened {
                     Err(Refused::Physical {
                         cause: ApplicationHomeOpenRefusal::Physical(cause),
                         ..
@@ -71,18 +71,24 @@ fn host_writer_child() {
         return;
     };
     let initialized = Arc::new(AtomicUsize::new(0));
-    with_open(Path::new(&path), build(), initialized.clone(), |opened| {
-        let home = opened
-            .as_ref()
-            .unwrap_or_else(|cause| panic!("writer: {cause:?}"));
-        assert_eq!(initialized.load(Ordering::SeqCst), 1);
-        assert!(home.is_directory());
-        let ready = std::path::PathBuf::from(std::env::var_os("WORTH_HOST_LEASE_READY").unwrap());
-        crate::killed_child::announce(&ready, b"serving:initialized-once");
-        // Keep the actual public Host and its continuous Store lease alive.
-        std::hint::black_box(home);
-        crate::killed_child::park();
-    });
+    with_open(
+        Path::new(&path),
+        build(),
+        initialized.clone(),
+        |opened, _contacts| {
+            let home = opened
+                .as_ref()
+                .unwrap_or_else(|cause| panic!("writer: {cause:?}"));
+            assert_eq!(initialized.load(Ordering::SeqCst), 1);
+            assert!(home.is_directory());
+            let ready =
+                std::path::PathBuf::from(std::env::var_os("WORTH_HOST_LEASE_READY").unwrap());
+            crate::killed_child::announce(&ready, b"serving:initialized-once");
+            // Keep the actual public Host and its continuous Store lease alive.
+            std::hint::black_box(home);
+            crate::killed_child::park();
+        },
+    );
 }
 
 #[test]
@@ -95,7 +101,7 @@ fn host_reader_child() {
         Path::new(&path),
         build(),
         initialized.clone(),
-        |opened| match opened {
+        |opened, _contacts| match opened {
             Ok(home) => {
                 assert!(home.is_directory());
                 println!("HOST_AFTER_KILL=Serving");

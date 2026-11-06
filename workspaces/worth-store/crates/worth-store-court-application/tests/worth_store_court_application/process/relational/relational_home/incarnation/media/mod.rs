@@ -66,12 +66,13 @@ fn incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_a
                             OpenRefusal::BeforeReadmission(
                                 worth_store_application::ApplicationHomeOpenRefusal::Physical(_)
                                 | worth_store_application::ApplicationHomeOpenRefusal::Execution(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::Checkpoint(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::Transition(_)
                                 | worth_store_application::ApplicationHomeOpenRefusal::Descriptor(_),
                             ) => Some(2),
                             // Later stages own the actual admitted descriptor advance.
                             OpenRefusal::BeforeReadmission(
-                                worth_store_application::ApplicationHomeOpenRefusal::Checkpoint(_)
-                                | worth_store_application::ApplicationHomeOpenRefusal::RuntimeConstruction(_)
+                                worth_store_application::ApplicationHomeOpenRefusal::RuntimeConstruction(_)
                                 | worth_store_application::ApplicationHomeOpenRefusal::Relational(_)
                                 | worth_store_application::ApplicationHomeOpenRefusal::World(_)
                                 | worth_store_application::ApplicationHomeOpenRefusal::BridgeSource(_)

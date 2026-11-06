@@ -38,6 +38,8 @@ where
         request_inputs.configuration,
         request_inputs.build,
         request_inputs.limits,
+        request_inputs.authorization_time_source,
+        directory_requirement_refusal,
     )
     .map_err(Refused::Preparation)?;
     let binding = match query.admitted_home_binding() {

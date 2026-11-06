@@ -31,6 +31,12 @@ pub(super) fn component(
         }
         Component::Source(RelationalRecoveryStop::Content(cause)) => content(cause),
         Component::Source(RelationalRecoveryStop::Allocation(cause)) => allocation(cause),
+        Component::PayloadBacking(worth_execution::ExecutionRequestArrayDenial::Request(cause)) => {
+            idempotency_read_stop(cause.into())
+        }
+        Component::PayloadBacking(worth_execution::ExecutionRequestArrayDenial::Allocation(
+            cause,
+        )) => allocation(cause),
         Component::Basis(_)
         | Component::Frame(_)
         | Component::Source(RelationalRecoveryStop::Durability(_))
@@ -141,7 +147,9 @@ fn medium(cause: worth_runtime_world::facade::WorldDurableMediumDenial) -> Denia
         Medium::NativeDescription(cause) => component(*cause),
         Medium::SignalDescription(cause) => signal(cause),
         Medium::BridgeDescription(cause) => bridge(cause),
-        Medium::Frame(_)
+        Medium::NameAllocation
+        | Medium::OccurrenceReopenRequired
+        | Medium::Frame(_)
         | Medium::Unavailable
         | Medium::PublicationBusy
         | Medium::PublicationUnresolved
