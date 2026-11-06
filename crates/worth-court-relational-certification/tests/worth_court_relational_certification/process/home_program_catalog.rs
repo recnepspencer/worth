@@ -1,6 +1,8 @@
 //! Catalog identity includes executable routing, even with no managed Sources.
-use super::*;
-use crate::validation::data::*;
+use worth_execution::ExecutionRequest;
+use worth_relational::facade::runtime::*;
+use worth_testkit_relational::initial_input_source;
+use worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request;
 
 #[derive(Clone, Copy)]
 struct Rule {
@@ -45,7 +47,7 @@ impl CustomInvariantRule for Rule {
 
 #[test]
 fn target_catalog_identity_changes_when_relation_endpoint_touch_routing_changes() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = serial_request();
     let execution = ExecutionRequest::serial(&request);
     let without = CustomInvariantRegistration::new(Rule {
         endpoint_touches: false,
@@ -55,7 +57,23 @@ fn target_catalog_identity_changes_when_relation_endpoint_touch_routing_changes(
         endpoint_touches: true,
     })
     .unwrap();
-    let without = digest([1; 32], &[without], &[], &execution).unwrap();
-    let with = digest([1; 32], &[with], &[], &execution).unwrap();
+    let (runtime, _) = initial_input_source::initialized(&execution);
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let compile = |rule| {
+        runtime
+            .prepare_home_program_contracts(
+                &execution,
+                &basis,
+                runtime.config().schema.registry.clone(),
+                vec![rule],
+                vec![],
+            )
+            .unwrap()
+            .catalog_digest()
+    };
+    let without = compile(without);
+    let with = compile(with);
     assert_ne!(without, with);
 }

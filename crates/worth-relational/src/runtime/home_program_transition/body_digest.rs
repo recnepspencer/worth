@@ -27,9 +27,7 @@ pub fn home_program_transition_body_digest(
 ) -> Result<HomeProgramTransitionBodyDigest, RelationalHomeProgramBodyDenial> {
     use RelationalHomeProgramBodyDenial as Denial;
     request.consult().map_err(Denial::Request)?;
-    let (savepoints, transition, policy) = intent
-        .home_authored_policy()
-        .ok_or(Denial::UnsupportedMaterialization)?;
+    let (savepoints, transition, policy) = authored_policy(intent)?;
     let mut out = BodyOutput {
         request,
         hash: Sha256::new(),
@@ -76,15 +74,11 @@ impl BodyOutput<'_, '_, '_> {
         &mut self,
         value: &impl serde::Serialize,
     ) -> Result<(), RelationalHomeProgramBodyDenial> {
-        serde_json::to_writer(&mut *self, value).map_err(|_| {
+        write_scalar(self, value).map_err(|_| {
             self.stopped
                 .take()
                 .unwrap_or(RelationalHomeProgramBodyDenial::Encoding)
-        })?;
-        // JSON escapes NUL, so scalar/schema values remain self-delimiting.
-        // Its string escape scan precedes output; chunk polling bounds the
-        // sink's hashing work, not that serializer-internal scan.
-        self.byte(0)
+        })
     }
 }
 impl CanonicalAspectOutput for BodyOutput<'_, '_, '_> {
@@ -109,9 +103,38 @@ impl CanonicalAspectOutput for BodyOutput<'_, '_, '_> {
         Ok(())
     }
     fn length(&mut self, length: usize) -> Result<(), Self::Error> {
-        let length = u32::try_from(length).map_err(|_| Self::Error::CapacityOverflow)?;
+        let length = framing_length(length)?;
         self.bytes(&length.to_le_bytes())
     }
+}
+
+fn framing_length(length: usize) -> Result<u32, RelationalHomeProgramBodyDenial> {
+    u32::try_from(length).map_err(|_| RelationalHomeProgramBodyDenial::CapacityOverflow)
+}
+
+fn authored_policy(
+    intent: &RelationalTransactionIntent,
+) -> Result<
+    (
+        bool,
+        Option<&crate::schema::data::ProposedSchemaTransition>,
+        Option<&crate::schema::data::SchemaReconciliationPolicy>,
+    ),
+    RelationalHomeProgramBodyDenial,
+> {
+    intent
+        .home_authored_policy()
+        .ok_or(RelationalHomeProgramBodyDenial::UnsupportedMaterialization)
+}
+
+fn write_scalar(
+    output: &mut impl std::io::Write,
+    value: &impl serde::Serialize,
+) -> Result<(), serde_json::Error> {
+    // JSON escapes NUL. Its string scan precedes output; chunk polling bounds
+    // sink work, not the serializer's internal scan.
+    serde_json::to_writer(&mut *output, value)?;
+    output.write_all(&[0]).map_err(serde_json::Error::io)
 }
 impl std::io::Write for BodyOutput<'_, '_, '_> {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
