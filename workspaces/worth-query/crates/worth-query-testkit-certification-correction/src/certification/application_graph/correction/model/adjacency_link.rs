@@ -178,7 +178,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for ReverseLink {
     fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Primary::at("Primary")).unwrap()],
+                [DeclaredPreImageLocus::from_field(Primary::at("Primary"))],
                 InlineCounterBinding::encode(&Counter(u64::MAX))
                     .unwrap()
                     .semantic_byte_width(),
@@ -198,7 +198,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for ReverseLink {
         };
         let primary = InlineCounterBinding::decode(
             preimage
-                .field(&DeclaredPreImageLocus::from_field(Primary::at("Primary")).unwrap())
+                .field(&DeclaredPreImageLocus::from_field(Primary::at("Primary")))
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?

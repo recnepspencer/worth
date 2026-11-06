@@ -27,7 +27,7 @@ pub fn recorded_inverse(
                 DeclaredPreImageDemand::new(
                     [DeclaredPreImageLocus::from_field(
                         crate::domain_computation::primary_graph::tests::fixture::schema_types::AccountStatus::at("AccountStatus"),
-                    ).expect("the inverse field is declared")],
+                    )],
                     256,
                 )
                 .unwrap(),

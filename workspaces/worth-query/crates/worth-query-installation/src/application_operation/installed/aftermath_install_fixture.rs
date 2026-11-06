@@ -194,10 +194,12 @@ fn associated_operation_members(
         .no_external_effect()
         .aftermath(contract)
         .finish();
-    let declaration = ApplicationSchemaDeclarationBuilder::<FixtureSchema>::for_schema()
-        .operation(definition)
-        .build()
-        .expect("the matching operation builder associates the aftermath");
+    let declaration =
+        ApplicationSchemaDeclarationBuilder::<FixtureSchema>::from_fragment(AftermathFields)
+            .expect("the actual inverse fields lower")
+            .operation(definition)
+            .build()
+            .expect("the matching operation builder associates the aftermath");
     declaration
         .erased()
         .members()
@@ -246,7 +248,7 @@ pub(crate) fn recorded_inverse_at<Field: RecordSelection>(
             DeclaredLoweringCorrespondenceRef::new("geometry-inverse").unwrap(),
             DeclaredAftermathPostcondition::ExactPriorTruth,
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(field).unwrap()],
+                [DeclaredPreImageLocus::from_field(field)],
                 maximum_encoded_bytes,
             )
             .unwrap(),

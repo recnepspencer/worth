@@ -47,10 +47,9 @@ impl ApplicationCorrectionBinding<MutationSchema> for Inverse {
     fn mechanism() -> DeclaredCorrectionMechanism<MutationSchema> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [
-                    DeclaredPreImageLocus::from_field(AccountIdField::at("AccountIdField"))
-                        .expect("record column"),
-                ],
+                [DeclaredPreImageLocus::from_field(AccountIdField::at(
+                    "AccountIdField",
+                ))],
                 64,
             )
             .unwrap(),
@@ -160,7 +159,10 @@ fn contribution_correction_clause_registers_exact_binding_capture_and_dispatch()
         .unwrap();
     assert_eq!(
         contract.correction_binding(),
-        Some(&DeclaredCorrectionBinding::of::<MutationSchema, Inverse>())
+        Some(
+            &DeclaredCorrectionBinding::of::<MutationSchema, Inverse>()
+                .expect("lawful correction fields")
+        )
     );
     assert_eq!(
         contract

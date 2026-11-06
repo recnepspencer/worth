@@ -9,7 +9,7 @@ impl ApplicationAuthoredCorrectionFamily<NumericSchema> for Family {
     const IDENTITY: &'static str = "numeric.authored-number.v1";
     type Entity = Number;
     fn logical_key() -> ApplicationAuthoredLogicalKey<NumericSchema, Number> {
-        ApplicationAuthoredLogicalKey::from_field(Key::at("Key")).unwrap()
+        ApplicationAuthoredLogicalKey::from_field(Key::at("Key"))
     }
 }
 pub struct UndoCreate;
@@ -113,12 +113,12 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoRetire {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
                 [
-                    DeclaredPreImageLocus::from_field(Key::at("Key")).unwrap(),
-                    DeclaredPreImageLocus::from_field(Primary::at("Primary")).unwrap(),
-                    DeclaredPreImageLocus::from_field(Secondary::at("Secondary")).unwrap(),
-                    DeclaredPreImageLocus::from_field(ReadEnabled::at("ReadEnabled")).unwrap(),
-                    DeclaredPreImageLocus::from_field(Ceiling::at("Ceiling")).unwrap(),
-                    DeclaredPreImageLocus::from_field(Calculated::at("Calculated")).unwrap(),
+                    DeclaredPreImageLocus::from_field(Key::at("Key")),
+                    DeclaredPreImageLocus::from_field(Primary::at("Primary")),
+                    DeclaredPreImageLocus::from_field(Secondary::at("Secondary")),
+                    DeclaredPreImageLocus::from_field(ReadEnabled::at("ReadEnabled")),
+                    DeclaredPreImageLocus::from_field(Ceiling::at("Ceiling")),
+                    DeclaredPreImageLocus::from_field(Calculated::at("Calculated")),
                 ],
                 usize::MAX,
             )
@@ -139,10 +139,9 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoRetire {
             ($Field:ty, $Codec:ty) => {
                 <$Codec>::decode(
                     preimage
-                        .field(
-                            &DeclaredPreImageLocus::from_field(<$Field>::at(stringify!($Field)))
-                                .unwrap(),
-                        )
+                        .field(&DeclaredPreImageLocus::from_field(<$Field>::at(
+                            stringify!($Field),
+                        )))
                         .ok_or(MissingPreImage)?,
                 )
                 .map_err(|_| InvalidPreImage)?

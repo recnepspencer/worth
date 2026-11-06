@@ -28,7 +28,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
             .semantic_byte_width();
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Primary::at("Primary")).unwrap()],
+                [DeclaredPreImageLocus::from_field(Primary::at("Primary"))],
                 encoded_width,
             )
             .unwrap(),
@@ -46,7 +46,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
             Value::Primary(_) | Value::AdjacentPrimary(_) => Value::Primary(
                 InlineCounterBinding::decode(
                     preimage
-                        .field(&DeclaredPreImageLocus::from_field(Primary::at("Primary")).unwrap())
+                        .field(&DeclaredPreImageLocus::from_field(Primary::at("Primary")))
                         .ok_or(MissingPreImage)?,
                 )
                 .map_err(|_| InvalidPreImage)?

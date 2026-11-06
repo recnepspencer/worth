@@ -54,10 +54,9 @@ impl ApplicationCorrectionBinding<Catalog> for Note {
     fn mechanism() -> DeclaredCorrectionMechanism<Catalog> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [
-                    DeclaredPreImageLocus::from_field(DirectoryNote::at("DirectoryNote"))
-                        .expect("record field contract"),
-                ],
+                [DeclaredPreImageLocus::from_field(DirectoryNote::at(
+                    "DirectoryNote",
+                ))],
                 PREIMAGE_BYTES,
             )
             .unwrap(),
@@ -72,10 +71,9 @@ impl ApplicationCorrectionBinding<Catalog> for Note {
         };
         let prior = StringApplicationValueBinding::decode(
             preimage
-                .field(
-                    &DeclaredPreImageLocus::from_field(DirectoryNote::at("DirectoryNote"))
-                        .expect("record field contract"),
-                )
+                .field(&DeclaredPreImageLocus::from_field(DirectoryNote::at(
+                    "DirectoryNote",
+                )))
                 .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?,
         )
         .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;
@@ -118,8 +116,7 @@ impl ApplicationCorrectionBinding<Catalog> for Mover {
     fn mechanism() -> DeclaredCorrectionMechanism<Catalog> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(ItemName::at("ItemName"))
-                    .expect("record field contract")],
+                [DeclaredPreImageLocus::from_field(ItemName::at("ItemName"))],
                 PREIMAGE_BYTES,
             )
             .unwrap(),
@@ -134,10 +131,7 @@ impl ApplicationCorrectionBinding<Catalog> for Mover {
         };
         let prior = NameBinding::decode(
             preimage
-                .field(
-                    &DeclaredPreImageLocus::from_field(ItemName::at("ItemName"))
-                        .expect("record field contract"),
-                )
+                .field(&DeclaredPreImageLocus::from_field(ItemName::at("ItemName")))
                 .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?,
         )
         .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;
@@ -187,8 +181,7 @@ impl ApplicationCorrectionBinding<Catalog> for Motion {
             DeclaredPreImageDemand::new(
                 [DeclaredPreImageLocus::from_field(
                     super::super::geometry::schema::VertexRegion::at("VertexRegion"),
-                )
-                .expect("record field contract")],
+                )],
                 PREIMAGE_BYTES,
             )
             .unwrap(),
@@ -203,12 +196,9 @@ impl ApplicationCorrectionBinding<Catalog> for Motion {
         };
         let prior = super::super::bounds::CoordinatesBinding::decode(
             preimage
-                .field(
-                    &DeclaredPreImageLocus::from_field(
-                        super::super::geometry::schema::VertexRegion::at("VertexRegion"),
-                    )
-                    .expect("record field contract"),
-                )
+                .field(&DeclaredPreImageLocus::from_field(
+                    super::super::geometry::schema::VertexRegion::at("VertexRegion"),
+                ))
                 .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?,
         )
         .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;

@@ -52,3 +52,5 @@ pub use correction_mechanism::{
 };
 pub use postcondition::DeclaredAftermathPostcondition;
 pub use reconciliation::DeclaredReconciliationProcedure;
+
+pub(crate) use contract::AssociatedAftermathContract;

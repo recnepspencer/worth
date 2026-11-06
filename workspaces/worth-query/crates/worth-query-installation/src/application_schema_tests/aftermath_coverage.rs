@@ -46,12 +46,10 @@ fn aftermath_schema_members<Schema: ApplicationSchema>(
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let preimage_locus = if uncovered {
         DeclaredPreImageLocus::from_field(FixtureMappingStatusField::at("MappingStatusField"))
-            .unwrap()
     } else {
         DeclaredPreImageLocus::from_field(FixturePrincipalIdentityField::at(
             "PrincipalIdentityField",
         ))
-        .unwrap()
     };
     test_schema_members::<Schema>(Some(DeclaredApplicationAftermathContract::runtime_alone(
         DeclaredCorrectionMechanism::RecordedInverse(

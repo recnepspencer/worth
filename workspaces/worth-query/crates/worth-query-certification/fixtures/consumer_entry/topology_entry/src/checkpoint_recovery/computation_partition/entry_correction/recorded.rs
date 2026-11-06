@@ -32,10 +32,9 @@ impl<Schema: TopologySchemaBinding> ApplicationCorrectionBinding<Schema>
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [
-                    DeclaredPreImageLocus::from_field(EntryValueBits::at("EntryValueBits"))
-                        .expect("declared entry-value preimage field"),
-                ],
+                [DeclaredPreImageLocus::from_field(EntryValueBits::at(
+                    "EntryValueBits",
+                ))],
                 U64ApplicationValueBinding::encode(&u64::MAX)
                     .unwrap()
                     .semantic_byte_width(),
@@ -53,10 +52,9 @@ impl<Schema: TopologySchemaBinding> ApplicationCorrectionBinding<Schema>
         };
         let prior = U64ApplicationValueBinding::decode(
             preimage
-                .field(
-                    &DeclaredPreImageLocus::from_field(EntryValueBits::at("EntryValueBits"))
-                        .expect("declared entry-value preimage field"),
-                )
+                .field(&DeclaredPreImageLocus::from_field(EntryValueBits::at(
+                    "EntryValueBits",
+                )))
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;

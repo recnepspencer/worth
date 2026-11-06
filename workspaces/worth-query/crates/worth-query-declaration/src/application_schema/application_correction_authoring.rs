@@ -29,13 +29,6 @@ impl<Schema: ApplicationSchema> ApplicationSchemaDeclarationBuilder<Schema> {
                 .member_provenance
                 .register_field_binding(field.binding_recipe().clone());
         }
-        if let Some(identity) = Correction::authored_identity() {
-            for recipe in identity.binding_recipes() {
-                builder
-                    .member_provenance
-                    .register_field_binding(recipe.clone());
-            }
-        }
         let disclosure = Correction::Disclosure::descriptor();
         let builder = if builder
             .member_provenance

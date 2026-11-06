@@ -161,6 +161,7 @@ pub struct ApplicationSchemaDeclarationBuilder<Schema> {
     members: Vec<ApplicationSchemaMember>,
     contributions: Vec<AuthoredApplicationSchemaContribution>,
     pub(super) member_provenance: ApplicationSchemaMemberProvenance,
+    pub(super) correction_fields: super::correction_fields::CorrectionFieldExpectations,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -209,6 +210,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             members,
             contributions: Vec::new(),
             member_provenance: ApplicationSchemaMemberProvenance::default(),
+            correction_fields: Default::default(),
             _schema: PhantomData,
         }
     }
@@ -263,6 +265,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             members: Vec::new(),
             contributions: Vec::new(),
             member_provenance: ApplicationSchemaMemberProvenance::default(),
+            correction_fields: Default::default(),
             _schema: PhantomData,
         }
     }

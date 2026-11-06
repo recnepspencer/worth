@@ -6,7 +6,6 @@ impl ApplicationAuthoredCorrectionFamily<Schema> for Family {
     type Entity = Node;
     fn logical_key() -> ApplicationAuthoredLogicalKey<Schema, Node> {
         ApplicationAuthoredLogicalKey::from_field(Id::at("Id"))
-            .expect("the authored key is declared")
     }
 }
 pub struct UndoSpawn;

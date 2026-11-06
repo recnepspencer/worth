@@ -97,5 +97,5 @@ fn multiple_exact_fields_on_one_entity_role_are_admissible() {
     assert_eq!(demand.loci().len(), 2);
 }
 fn locus<F: RecordSelection>(field: F) -> DeclaredPreImageLocus<Schema> {
-    DeclaredPreImageLocus::from_field(field).expect("the selected record column exists")
+    DeclaredPreImageLocus::from_field(field)
 }

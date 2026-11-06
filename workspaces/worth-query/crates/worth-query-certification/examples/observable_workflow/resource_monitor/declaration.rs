@@ -94,12 +94,9 @@ fn aftermath() -> DeclaredApplicationAftermathContract<DocumentRetentionSchema> 
                 .unwrap(),
                 DeclaredAftermathPostcondition::ExactPriorTruth,
                 DeclaredPreImageDemand::new(
-                    [
-                        DeclaredPreImageLocus::from_field(DocumentRetentionField::at(
-                            "DocumentRetentionField",
-                        ))
-                        .expect("retention preimage field"),
-                    ],
+                    [DeclaredPreImageLocus::from_field(
+                        DocumentRetentionField::at("DocumentRetentionField"),
+                    )],
                     512,
                 )
                 .unwrap(),

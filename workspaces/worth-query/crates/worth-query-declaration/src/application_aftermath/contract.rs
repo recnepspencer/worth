@@ -16,7 +16,7 @@ pub struct DeclaredApplicationAftermathContract<Schema> {
     authority: DeclaredCorrectionAuthority,
     mechanism: Option<DeclaredCorrectionMechanism<Schema>>,
     reconciliation: Option<DeclaredReconciliationProcedure>,
-    correction_binding: Option<super::DeclaredCorrectionBinding>,
+    correction_binding: Option<super::correction_binding::CorrectionBindingDeclaration>,
 }
 
 impl<Schema> Clone for DeclaredApplicationAftermathContract<Schema> {
@@ -126,7 +126,9 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
             },
             mechanism: Some(Correction::mechanism()),
             reconciliation,
-            correction_binding: Some(super::DeclaredCorrectionBinding::of::<Schema, Correction>()),
+            correction_binding: Some(
+                super::correction_binding::CorrectionBindingDeclaration::of::<Schema, Correction>(),
+            ),
         }
     }
 
@@ -141,14 +143,48 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
     pub(crate) fn associate_with_operation(
         self,
         _authority: AftermathAssociationAuthority<Schema>,
-    ) -> PortableApplicationAftermathContract {
-        PortableApplicationAftermathContract {
-            authority: self.authority,
-            mechanism: self
-                .mechanism
-                .map(DeclaredCorrectionMechanism::into_portable),
-            reconciliation: self.reconciliation,
-            correction_binding: self.correction_binding,
+        operation: &str,
+    ) -> AssociatedAftermathContract {
+        let correction = self
+            .correction_binding
+            .as_ref()
+            .map(|binding| binding.identity)
+            .unwrap_or(operation);
+        let mut fields = Vec::new();
+        if let Some(DeclaredCorrectionMechanism::RecordedInverse(inverse)) = &self.mechanism {
+            fields.extend(
+                inverse
+                    .preimage_demand()
+                    .loci()
+                    .iter()
+                    .map(|locus| locus.recipe.clone()),
+            );
+        }
+        let contract = self
+            .correction_binding
+            .as_ref()
+            .map(|binding| binding.compose())
+            .transpose()
+            .map(|composed| {
+                let binding = composed.map(|composed| {
+                    fields.extend(composed.fields);
+                    composed.binding
+                });
+                PortableApplicationAftermathContract {
+                    authority: self.authority,
+                    mechanism: self
+                        .mechanism
+                        .map(DeclaredCorrectionMechanism::into_portable),
+                    reconciliation: self.reconciliation,
+                    correction_binding: binding,
+                }
+            });
+        AssociatedAftermathContract {
+            contract,
+            fields: fields
+                .into_iter()
+                .map(|field| (correction.to_owned(), field))
+                .collect(),
         }
     }
 }
@@ -202,4 +238,16 @@ impl PortableApplicationAftermathContract {
     pub const fn reconciliation(&self) -> Option<&DeclaredReconciliationProcedure> {
         self.reconciliation.as_ref()
     }
+}
+
+/// Compiler-local association retains refusals and codec expectations until schema composition.
+pub(crate) struct AssociatedAftermathContract {
+    pub(crate) contract: Result<
+        PortableApplicationAftermathContract,
+        crate::application_schema::ApplicationSchemaDeclarationDenial,
+    >,
+    pub(crate) fields: Vec<(
+        String,
+        crate::application_schema::ApplicationFieldBindingRecipe,
+    )>,
 }

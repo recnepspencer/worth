@@ -26,7 +26,6 @@ impl<S: Scenario> ApplicationAuthoredCorrectionFamily<S> for BodyFamily {
     type Entity = Body;
     fn logical_key() -> ApplicationAuthoredLogicalKey<S, Body> {
         ApplicationAuthoredLogicalKey::from_field(BodyKey::at("BodyKey"))
-            .expect("the body key is declared")
     }
 }
 impl OperationCreates<CreateOp> for Body {}
@@ -124,8 +123,7 @@ impl<const DECLARED: bool> Profile for Present<DECLARED> {
         let key = fields
             .field_for_output(
                 &<BodyRetired<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
-                &DeclaredPreImageLocus::from_field(BodyKey::at("BodyKey"))
-                    .expect("the inverse field is declared"),
+                &DeclaredPreImageLocus::from_field(BodyKey::at("BodyKey")),
             )
             .ok_or(MissingPreImage)?;
         U64ApplicationValueBinding::decode(key)

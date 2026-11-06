@@ -23,6 +23,7 @@ mod co_roles;
 mod content;
 mod correction;
 mod correction_courts;
+mod correction_declaration;
 mod coupled;
 mod lifecycle;
 mod lifecycle_handlers;

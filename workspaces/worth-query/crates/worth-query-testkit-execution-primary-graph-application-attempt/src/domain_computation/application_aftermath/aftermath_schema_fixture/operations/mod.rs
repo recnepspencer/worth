@@ -238,8 +238,7 @@ pub fn bind_inverse_ops(
                 .definition()
                 .no_external_effect()
                 .aftermath(inverse(
-                    [DeclaredPreImageLocus::from_field(reads.frozen)
-                        .expect("owned inverse field is valid")],
+                    [DeclaredPreImageLocus::from_field(reads.frozen)],
                     64,
                     "account-freeze-inverse",
                 ))
@@ -255,8 +254,7 @@ pub fn bind_inverse_ops(
                 .definition()
                 .no_external_effect()
                 .aftermath(inverse(
-                    [DeclaredPreImageLocus::from_field(reads.note)
-                        .expect("owned inverse field is valid")],
+                    [DeclaredPreImageLocus::from_field(reads.note)],
                     4,
                     "geometry-inverse",
                 ))
@@ -272,8 +270,7 @@ pub fn bind_inverse_ops(
                 .definition()
                 .no_external_effect()
                 .aftermath(inverse(
-                    [DeclaredPreImageLocus::from_field(reads.balance)
-                        .expect("owned inverse field is valid")],
+                    [DeclaredPreImageLocus::from_field(reads.balance)],
                     256,
                     "inverse-v2",
                 ))
@@ -290,10 +287,8 @@ pub fn bind_inverse_ops(
                 .no_external_effect()
                 .aftermath(inverse(
                     [
-                        DeclaredPreImageLocus::from_field(reads.note)
-                            .expect("owned inverse field is valid"),
-                        DeclaredPreImageLocus::from_field(reads.frozen)
-                            .expect("owned inverse field is valid"),
+                        DeclaredPreImageLocus::from_field(reads.note),
+                        DeclaredPreImageLocus::from_field(reads.frozen),
                     ],
                     256,
                     "account-fields-inverse",
@@ -312,10 +307,8 @@ pub fn bind_inverse_ops(
                 .no_external_effect()
                 .aftermath(inverse(
                     [
-                        DeclaredPreImageLocus::from_field(reads.frozen)
-                            .expect("owned inverse field is valid"),
-                        DeclaredPreImageLocus::from_field(reads.note)
-                            .expect("owned inverse field is valid"),
+                        DeclaredPreImageLocus::from_field(reads.frozen),
+                        DeclaredPreImageLocus::from_field(reads.note),
                     ],
                     256,
                     "account-fields-inverse",

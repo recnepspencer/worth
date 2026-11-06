@@ -271,8 +271,7 @@ fn recorded_inverse_member(operation: &'static str, bound: usize) -> Application
         "unfreeze",
         DeclaredLoweringCorrespondenceRef::new("inverse").unwrap(),
         DeclaredAftermathPostcondition::ExactPriorTruth,
-        DeclaredPreImageDemand::new([DeclaredPreImageLocus::from_field(field).unwrap()], bound)
-            .unwrap(),
+        DeclaredPreImageDemand::new([DeclaredPreImageLocus::from_field(field)], bound).unwrap(),
     )
     .unwrap();
     let contract = DeclaredApplicationAftermathContract::runtime_alone(
@@ -284,7 +283,8 @@ fn recorded_inverse_member(operation: &'static str, bound: usize) -> Application
             .no_external_effect()
             .aftermath(contract)
             .finish();
-    let declaration = ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
+    let declaration = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(AftermathFields)
+        .expect("the actual inverse fields lower")
         .operation(definition)
         .build()
         .expect("the matching operation builder associates the aftermath");

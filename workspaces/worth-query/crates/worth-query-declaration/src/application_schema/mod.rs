@@ -19,6 +19,7 @@ mod canonical_identity;
 mod canonical_operation_identity;
 mod capabilities;
 mod content;
+mod correction_fields;
 pub use content::*;
 mod capability_identifier_validation;
 mod capability_member_closure;

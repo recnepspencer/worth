@@ -384,7 +384,7 @@ fn recorded_inverse_at(
         DeclaredLoweringCorrespondenceRef::new("test-operation-inverse").unwrap(),
         DeclaredAftermathPostcondition::ExactPriorTruth,
         DeclaredPreImageDemand::new(
-            [DeclaredPreImageLocus::from_field(field).unwrap()],
+            [DeclaredPreImageLocus::from_field(field)],
             maximum_encoded_bytes,
         )
         .unwrap(),

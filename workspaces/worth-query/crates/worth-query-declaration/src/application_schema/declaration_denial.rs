@@ -2,6 +2,10 @@ use super::ApplicationOperationDependencyLocus;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationSchemaDeclarationDenial {
+    InvalidCorrectionField {
+        correction: String,
+        field: super::ApplicationFieldBindingLocus,
+    },
     ExtensionRelationMinimum {
         path: String,
     },
