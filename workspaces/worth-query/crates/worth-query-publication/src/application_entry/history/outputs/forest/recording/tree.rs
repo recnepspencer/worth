@@ -1,5 +1,6 @@
 //! One genuine ordinary program-output handle and its refusal-preserving cleanup.
 use super::*;
+mod verified;
 use crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory;
 use crate::application_entry::WorthQueryOutputDemandControls;
 use crate::application_entry::{
@@ -16,7 +17,7 @@ where
 {
     demand: Demand<S, R>,
     controls: WorthQueryOutputDemandControls,
-    tree: Option<WorthQueryApplicationProgramOutputHandle<S, P, R>>,
+    tree: Option<HistoryOutputTraversal<S, P, R>>,
     settlement: Option<WorthQueryApplicationProgramOutputSettlement<RootQuery<S, R>>>,
     retained: Option<Arc<WorthQueryRetainedRecordingOutputTree>>,
     read_cleanup: Option<worth_query_execution::facade::primary_graph::WorthQueryOutputReadCleanup>,
@@ -97,6 +98,7 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         origin: &Arc<WorthQueryHistoryRecordingOutputOrigin>,
         index: usize,
+        authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
     ) -> Result<Option<Arc<WorthQueryRetainedRecordingOutputTree>>, WorthQueryHistoryOutputDenial>
     {
         use WorthQueryHistoryOutputDenial as Denial;
@@ -123,6 +125,9 @@ where
                 self.retained = Some(Arc::clone(&verified));
                 return Ok(Some(verified));
             }
+            if self.try_start_verified(phase, request, authority)? {
+                return self.progress_verified(phase, request, origin, index, authority);
+            }
             self.application.validate_initial_program_source::<R>(phase, &program_publication_access(), origin.observation(), origin.candidate())
                 .map_err(|cause| Denial::Preparation(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::DemandExecution(cause)))?;
             let (root, original) = request
@@ -137,17 +142,28 @@ where
                         ),
                     )
                 })?;
-            self.tree = Some(WorthQueryApplicationProgramOutputHandle::new_initial(
-                crate::application_entry::WorthQueryApplicationReadObservation::new(original),
-                root,
-                self.demand.clone(),
-                self.controls,
+            self.tree = Some(HistoryOutputTraversal::Original(
+                WorthQueryApplicationProgramOutputHandle::new_initial(
+                    crate::application_entry::WorthQueryApplicationReadObservation::new(original),
+                    root,
+                    self.demand.clone(),
+                    self.controls,
+                ),
             ));
+        }
+        if self
+            .tree
+            .as_ref()
+            .and_then(HistoryOutputTraversal::verified)
+            .is_some()
+        {
+            return self.progress_verified(phase, request, origin, index, authority);
         }
         if self.settlement.is_none() {
             match self
                 .tree
                 .as_mut()
+                .and_then(HistoryOutputTraversal::original_mut)
                 .expect("original tree")
                 .advance_in_advancement(phase, &self.application, request)
             {
@@ -171,6 +187,7 @@ where
         }
         self.tree
             .as_mut()
+            .and_then(HistoryOutputTraversal::original_mut)
             .expect("original tree")
             .drain_read_request(phase, &self.application, origin.candidate())
             .map_err(Denial::Close)?;
@@ -213,8 +230,16 @@ where
             return Err(Denial::ManagedCleanup);
         }
         if let Some(tree) = &mut self.tree {
-            tree.close_read_request(phase, &self.application, branch)
-                .map_err(Denial::Close)?;
+            match tree {
+                HistoryOutputTraversal::Original(tree) => {
+                    tree.close_read_request(phase, &self.application, branch)
+                }
+                HistoryOutputTraversal::Verified(tree) => {
+                    tree.continuation
+                        .close_read_request(phase, &self.application, branch)
+                }
+            }
+            .map_err(Denial::Close)?;
         }
         self.tree = None;
         self.retained = None;

@@ -13,7 +13,7 @@ impl HistoryProducerInvocation<'_> {
     pub(in crate::domain_computation::primary_graph) fn historical_branch(
         &self,
     ) -> Option<crate::basis::WorthQueryProductBranch> {
-        self.restored_basis.selected().map(|_| {
+        self.restored_basis.owns_domain().then(|| {
             crate::basis::WorthQueryProductBranch::from_occurrence(
                 self.restored_basis
                     .observation()
@@ -30,7 +30,7 @@ impl HistoryProducerInvocation<'_> {
             S,
         >,
     ) -> bool {
-        self.restored_basis.selected().is_some()
+        self.restored_basis.owns_domain()
             && selected.product().observation().lifecycle_incarnation()
                 == self
                     .restored_basis
@@ -55,39 +55,59 @@ impl HistoryProducerInvocation<'_> {
             RelationalHistoricalSourcePresence as Presence,
             RelationalHistoricalSourceReadDenial as Stop,
         };
-        let answer = self
-            .restored_basis
-            .native(execution, native)
-            .map_err(Stop::Selection)
-            .and_then(|evidence| {
-                if truth.descriptor()
-                    == self
-                        .restored_basis
-                        .observation()
-                        .product_observation()
-                        .basis()
-                        .relational_basis()
-                        .descriptor()
-                {
-                    evidence
-                        .source_presence(execution, scope.entity_id(), scope.entity_kind())
-                        .map_err(Stop::Selection)
-                } else {
-                    evidence.source_presence_at(
-                        execution,
-                        native,
-                        truth,
-                        runtime
-                            .runtime
-                            .primary_provider
-                            .graph
-                            .layout
-                            .installed_history_ownership(),
-                        scope.entity_id(),
-                        scope.entity_kind(),
-                    )
+        let answer = if let Some(model) = self.restored_basis.recording_model() {
+            let original = self
+                .restored_basis
+                .observation()
+                .product_observation()
+                .basis()
+                .relational_basis();
+            if truth.descriptor().branch_id() != original.descriptor().branch_id()
+                || truth.observation().version_id() < original.observation().version_id()
+            {
+                Err(Stop::Selection(Selection::ForeignOwner))
+            } else {
+                match native.observe_model_owner(execution,truth,runtime.runtime.primary_provider.graph.layout.installed_history_ownership(),scope.entity_id()) {
+                    Ok(Some(owner)) if owner==model=>Ok(Presence::LiveInDomain),
+                    Ok(_)=>Ok(Presence::OutsideDomain),
+                    Err(worth_relational::facade::branch::RelationalModelOwnershipDenial::EntityUnavailable(id)) if id==scope.entity_id()=>Ok(Presence::NotLive),
+                    Err(cause)=>Err(Stop::Ownership(Box::new(cause))),
                 }
-            });
+            }
+        } else {
+            self.restored_basis
+                .native(execution, native)
+                .map_err(Stop::Selection)
+                .and_then(|evidence| {
+                    if truth.descriptor()
+                        == self
+                            .restored_basis
+                            .observation()
+                            .product_observation()
+                            .basis()
+                            .relational_basis()
+                            .descriptor()
+                    {
+                        evidence
+                            .source_presence(execution, scope.entity_id(), scope.entity_kind())
+                            .map_err(Stop::Selection)
+                    } else {
+                        evidence.source_presence_at(
+                            execution,
+                            native,
+                            truth,
+                            runtime
+                                .runtime
+                                .primary_provider
+                                .graph
+                                .layout
+                                .installed_history_ownership(),
+                            scope.entity_id(),
+                            scope.entity_kind(),
+                        )
+                    }
+                })
+        };
         match answer {
             Ok(Presence::LiveInDomain) => Ok(()),
             Ok(Presence::NotLive) => Err(Denial::new(

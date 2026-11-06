@@ -109,31 +109,16 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             let selected = self
                 .select_application_read_observation(phase, &endpoint)
                 .map_err(Original::Observation)?;
-            match &tree.kind {
-                HistoryRetainedOutputTree::Original(original) => {
-                    original.require_current_at(selected, phase, access, authority.request())?
-                }
-                HistoryRetainedOutputTree::Verified(verified) => {
-                    if let Some(dependencies) = &verified.dependencies {
-                        selected
-                            .require_current_required_set(
-                                phase,
-                                access,
-                                authority.request(),
-                                verified.dependents.iter().map(Arc::as_ref),
-                                dependencies,
-                            )
-                            .map_err(Original::Currentness)?;
-                    } else {
-                        selected
-                            .require_current_output_settlements(
-                                phase,
-                                verified.dependents.iter().map(Arc::as_ref),
-                            )
-                            .map_err(Original::Output)?;
-                    }
-                    self.require_verified_root_at(&execution, authority, &selected, &tree.profile)?;
-                }
+            tree.require_current_at(selected, phase, access, authority.request())?;
+            if matches!(&tree.kind, HistoryRetainedOutputTree::Verified(_)) {
+                self.require_verified_root_at(
+                    &execution,
+                    authority,
+                    &self
+                        .select_application_read_observation(phase, &endpoint)
+                        .map_err(Original::Observation)?,
+                    &tree.profile,
+                )?;
             }
         }
         let selected = self
@@ -193,5 +178,45 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 }
                 Ok(())
             })
+    }
+}
+
+impl WorthQueryRetainedHistoryOutputTree {
+    pub(in crate::domain_computation::primary_graph) fn require_current_at<S: ApplicationSchema>(
+        &self,
+        selected: crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            S,
+        >,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    ) -> Result<(), ReadDenial> {
+        match &self.kind {
+            HistoryRetainedOutputTree::Original(original) => original
+                .require_current_at(selected, phase, access, request)
+                .map_err(ReadDenial::Original),
+            HistoryRetainedOutputTree::Verified(verified) => {
+                if let Some(dependencies) = &verified.dependencies {
+                    selected
+                        .require_current_required_set(
+                            phase,
+                            access,
+                            request,
+                            verified.dependents.iter().map(Arc::as_ref),
+                            dependencies,
+                        )
+                        .map_err(Original::Currentness)?;
+                } else {
+                    selected
+                        .require_current_output_settlements(
+                            phase,
+                            verified.dependents.iter().map(Arc::as_ref),
+                        )
+                        .map_err(Original::Output)?;
+                }
+                Ok(())
+            }
+        }
     }
 }

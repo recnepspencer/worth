@@ -165,6 +165,12 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         authority
             .validate(phase, runtime, authority.request())
             .map_err(control)?;
+        // A completed ordinary action already owns a genuine root and its
+        // discovery. Recording keeps that original execution posture; this
+        // verified historical-parent lane never substitutes for it.
+        if authority.has_original_required_outputs() {
+            return Ok(None);
+        }
         let installed = runtime.installed_schema().installed_query_binding::<Source<S, R>>()
             .map_err(|cause| Denial::Source(Box::new(crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial::Admission(
                 crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(
@@ -191,8 +197,19 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         let execution = phase
             .checked_execution_request_for(runtime.product_runtime())
             .map_err(|cause| control(WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
+        let data = if authority.recording_model().is_some() {
+            runtime
+                .on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
+                    authority.original().branch_incarnation(),
+                ))
+                .select(phase)
+                .map_err(Original::Observation)?
+                .retain_application_read()
+        } else {
+            Arc::clone(authority.original())
+        };
         let selected = runtime
-            .select_application_read_observation(phase, authority.original())
+            .select_application_read_observation(phase, &data)
             .map_err(Original::Observation)?;
         let current =
             runtime
@@ -200,6 +217,11 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                 .primary_provider
                 .graph
                 .with_runtime(&execution, |native| {
+                    if let Some(model)=authority.recording_model() {
+                        return super::super::super::output_verification::current_recording_route_is_current(
+                            &execution,native,&selected,model,profile.source_intent().source_subject(),profile.family,profile.source_intent().source_partition())
+                            .map_err(|cause|Denial::Source(Box::new(cause)));
+                    }
                     let evidence = authority
                         .selected_output_read(&execution, native)
                         .map_err(Denial::SelectionRead)?;
@@ -228,7 +250,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             custody: Arc::new(VerifiedHistoryParentCustody {
                 profile: profile.clone(),
                 original: Arc::clone(authority.original()),
-                basis: Arc::clone(authority.original()),
+                basis: Arc::clone(&data),
                 source: profile.source_intent().source_subject(),
                 partition: profile.source_intent().source_partition(),
                 family: profile.family,

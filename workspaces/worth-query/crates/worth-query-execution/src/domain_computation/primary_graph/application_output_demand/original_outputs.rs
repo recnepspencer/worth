@@ -15,7 +15,7 @@ use crate::publication_boundary::{
     WorthQueryProgramPublicationAccess,
 };
 pub(in crate::domain_computation::primary_graph) use collection::{
-    qualify_output_collection, qualify_recording_output_collection, OriginalOutputTree,
+    qualify_output_collection, OriginalOutputTree,
 };
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;

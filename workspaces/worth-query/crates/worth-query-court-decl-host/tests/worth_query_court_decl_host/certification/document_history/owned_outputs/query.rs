@@ -185,6 +185,20 @@ scalar_read!(
     requires_ability,
     permission::ReadFirst::reference()
 );
+scalar_read!(
+    first_member_discovery,
+    FirstOutput,
+    FirstFacts,
+    FirstKey,
+    FirstValue,
+    "FirstOutput",
+    "owned-outputs.first-member-discovery-query.v1",
+    "owned-outputs.first-member-discovery-binding.v1",
+    "owned-outputs.first-member-discovery-input.v1",
+    "FirstMemberDiscovery",
+    requires_ability,
+    permission::ReadFirstWithMember::reference()
+);
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
@@ -194,6 +208,7 @@ pub fn declare(
     let schema = member::declare(schema);
     let schema = first_output::declare(schema);
     let schema = first_discovery::declare(schema);
+    let schema = first_member_discovery::declare(schema);
     let schema = second_output::declare(schema);
     let schema = child_output::declare(schema);
     member_public::declare(schema)

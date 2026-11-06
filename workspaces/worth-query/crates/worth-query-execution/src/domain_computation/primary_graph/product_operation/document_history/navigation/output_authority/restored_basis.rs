@@ -12,6 +12,8 @@ use worth_relational::facade::{
 pub(in crate::domain_computation::primary_graph) struct HistoryRestoredOutputBasis {
     observation: Arc<WorthQueryApplicationReadObservation>,
     owned: Option<Arc<OwnedOutputSelection>>,
+    recording_model: Option<worth_relational::facade::identity::EntityId>,
+    original_required_outputs: bool,
 }
 pub(in crate::domain_computation::primary_graph) struct OwnedOutputSelection {
     selected: RelationalBranchObservation,
@@ -26,6 +28,8 @@ impl HistoryRestoredOutputBasis {
     ) -> Self {
         Self {
             observation,
+            recording_model: None,
+            original_required_outputs: false,
             owned: selected.map(|selected| {
                 Arc::new(OwnedOutputSelection {
                     selected,
@@ -34,6 +38,27 @@ impl HistoryRestoredOutputBasis {
                 })
             }),
         }
+    }
+    pub(super) fn recording(
+        observation: Arc<WorthQueryApplicationReadObservation>,
+        model: worth_relational::facade::identity::EntityId,
+        original_required_outputs: bool,
+    ) -> Self {
+        Self {
+            observation,
+            owned: None,
+            recording_model: Some(model),
+            original_required_outputs,
+        }
+    }
+    pub(super) fn has_original_required_outputs(&self) -> bool {
+        self.original_required_outputs
+    }
+    pub(super) fn recording_model(&self) -> Option<worth_relational::facade::identity::EntityId> {
+        self.recording_model
+    }
+    pub(super) fn owns_domain(&self) -> bool {
+        self.owned.is_some() || self.recording_model.is_some()
     }
     pub(in crate::domain_computation::primary_graph) fn observation(
         &self,

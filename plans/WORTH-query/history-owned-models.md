@@ -1993,3 +1993,36 @@ current-permission refusal as needed; mutations skip discovery, parent facts,
 Cpermission and final basis must fail. Keep existing navigation courts unchanged
 and all single-record paths byte-for-byte behavior. No changes to settlement
 address admission or posting ownership are authorized by this plan.
+
+### Recording boundary refinement from the full-suite counterexample
+
+C in the historical-parent posture is the document's selected head. It is not
+an invented replacement for the ordinary program's current basis while that
+program completes an actual authored action. The generated-source courts expose
+the distinction: an opted-in fixed action creates FirstOutput and its protected
+child together on its real ordinary candidate. Re-running that already completed
+action's discovery as a historical C read incorrectly refuses its new scope as
+UnknownEntity. Preserve the actual ordinary completion posture, including its
+source-artifact check, original discovery and disposal; never substitute a
+verified historical parent for that genuine completed action. The origin carries
+whether Native qualified such an original required-output completion. Its owner
+chooses that posture before attempting historical-parent admission. This is not
+D-grant fallback after a failed historical permission.
+
+Verified recording parents with no completed ordinary required-output action
+still use C for every discovery/dependent permission and the exact private
+candidate for data, via the same Query parent and Native ownership/currentness
+owners. Stale recording roots continue the existing genuine ordinary producer
+path. Navigation's historical-source and parent paths remain exclusively C
+controlled, including every actual producer fallback. Do not broaden navigation's
+historical admission into ordinary program execution or silently change the
+already qualified fixed-action behavior.
+
+The recording C-denial court must change an independent grant fact while keeping
+the parent's actual source facts current. Changing ModelValue changes both the
+grant and the producer source, so it tests real ordinary stale fallback instead.
+Use a separate installed discovery permission depending on the owned member's
+value: C denies at7, the candidate grants at5, and Model3/First30 remain healthy.
+Assert zero producer/source contacts, zero discovery disclosure, a typed current
+permission refusal and no adoption. Keep the existing stale-parent public read
+and actual-contact court as the separate ordinary fallback proof.

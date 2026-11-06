@@ -64,8 +64,17 @@ where
                 .with_recording(&phase, |mut recording| {
                     let result = (|| {
                         if let Some(forest) = recording.as_deref_mut() {
-                            if !super::recording::advance_output_recording::<S, H, I, P, A>(
+                            if !super::recording::advance_output_recording::<
+                                S,
+                                H,
+                                I,
+                                P,
+                                A,
+                                Payload,
+                            >(
                                 &self.document.owner,
+                                &self.document.payload,
+                                &self.document.access,
                                 &phase,
                                 &current,
                                 completed,

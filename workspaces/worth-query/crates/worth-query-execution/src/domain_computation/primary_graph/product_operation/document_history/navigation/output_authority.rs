@@ -19,6 +19,7 @@ use worth_query_installation::facade::{
 };
 
 pub(crate) mod producer_invocation;
+mod recording;
 mod restored_basis;
 mod tree;
 pub(in crate::domain_computation::primary_graph) use producer_invocation::{
@@ -30,7 +31,7 @@ pub(in crate::domain_computation::primary_graph) use restored_basis::{
 
 /// This is a dependency on current C, not authority from historical D. It is
 /// neither constructible nor retainable by the SDK; each callback gets a fresh
-/// instance after actual READ, metadata and NAV admission.
+/// instance after actual READ/metadata and NAV or recording-operation admission.
 pub struct WorthQueryHistoryOutputAuthority<'phase, 'scope> {
     phase: &'phase WorthQueryAdvancementPhase<'scope>,
     runtime: u64,
@@ -45,6 +46,16 @@ pub struct WorthQueryHistoryOutputAuthority<'phase, 'scope> {
 }
 
 impl WorthQueryHistoryOutputAuthority<'_, '_> {
+    pub(in crate::domain_computation::primary_graph) fn has_original_required_outputs(
+        &self,
+    ) -> bool {
+        self.restored.has_original_required_outputs()
+    }
+    pub(in crate::domain_computation::primary_graph) fn recording_model(
+        &self,
+    ) -> Option<worth_relational::facade::identity::EntityId> {
+        self.restored.recording_model()
+    }
     /// Installed domain meaning only; this grants no query or producer authority.
     pub fn uses_owned_model_graph(&self) -> bool {
         self.profile.uses_owned_model_graph()

@@ -274,7 +274,9 @@ enum HistoryRetainedOutputTree {
     Verified(verified::VerifiedHistoryOutputTree),
 }
 impl WorthQueryRetainedHistoryOutputTree {
-    fn settlements(&self) -> impl Iterator<Item = &WorthQueryOutputDemandSettlement> + Clone {
+    pub(in crate::domain_computation::primary_graph) fn settlements(
+        &self,
+    ) -> impl Iterator<Item = &WorthQueryOutputDemandSettlement> + Clone {
         let original = match &self.kind {
             HistoryRetainedOutputTree::Original(tree) => Some(tree),
             _ => None,

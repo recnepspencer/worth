@@ -21,12 +21,14 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Ca
 mod completion;
 mod source;
 mod verification;
+mod verified;
 
 enum RecordingTreeCompletion {
     Original(OriginalOutputTree),
     VerifiedLeaf,
     SourceOutsideDomain,
     SourceNotLive,
+    VerifiedParent(Arc<super::navigation::WorthQueryRetainedHistoryOutputTree>),
 }
 
 /// Readonly provenance of the original action completion before extra tree work.
@@ -56,6 +58,7 @@ pub struct WorthQueryRetainedRecordingOutputTree {
 pub enum WorthQueryRecordingOutputQualificationDenial {
     Original(WorthQueryOriginalReadOutputDenial),
     Ownership(Box<worth_relational::facade::branch::RelationalModelOwnershipDenial>),
+    Verified(crate::domain_computation::primary_graph::WorthQueryHistoryOutputQualificationDenial),
     TreeChanged {
         source: worth_relational::facade::identity::EntityId,
         family: &'static str,
@@ -79,6 +82,27 @@ pub struct WorthQueryCompletedRecordingOutputs {
 }
 
 impl WorthQueryHistoryRecordingOutputOrigin {
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn recording_profile(
+        &self,
+    ) -> &WorthQueryHistoryOutputProfile {
+        &self.profile
+    }
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn matches_reservation<
+        S: ApplicationSchema,
+    >(
+        &self,
+        reserved: &WorthQueryDocumentHistoryReservation,
+        candidate: &WorthQueryExpectedProductBranch<'_, S>,
+    ) -> bool {
+        self.node == reserved.record.node
+            && self.expected == reserved.expected
+            && self.candidate == candidate.branch()
+    }
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn has_original_required_outputs(
+        &self,
+    ) -> bool {
+        self.root_posture.is_some()
+    }
     pub fn matches_profile(&self, profile: &WorthQueryHistoryOutputProfile) -> bool {
         self.profile.same_custody(profile)
     }
@@ -212,4 +236,21 @@ fn checkpoint_work(
         .map_err(|cause| resource(cause.into()))?
         .0
         .map_err(|stop| resource(worth_execution::WorkCeilingDenial::Stopped(stop).into()))
+}
+
+impl WorthQueryRetainedRecordingOutputTree {
+    fn settlements(&self) -> impl Iterator<Item = &WorthQueryOutputDemandSettlement> + Clone {
+        let original = match &self.completion {
+            RecordingTreeCompletion::Original(tree) => Some(tree),
+            _ => None,
+        };
+        let verified = match &self.completion {
+            RecordingTreeCompletion::VerifiedParent(tree) => Some(tree),
+            _ => None,
+        };
+        original
+            .into_iter()
+            .flat_map(OriginalOutputTree::settlements)
+            .chain(verified.into_iter().flat_map(|tree| tree.settlements()))
+    }
 }

@@ -15,9 +15,9 @@ pub(super) struct VerifiedTree<
     P: ApplicationProgramDefinition<S>,
     D: WorthQueryApplicationOutputDemand<S>,
 > {
-    parent: WorthQueryVerifiedHistoryParent<S, P, D>,
+    pub(super) parent: WorthQueryVerifiedHistoryParent<S, P, D>,
     pub(super) continuation: Box<dyn ProgramOutputContinuation<S, P>>,
-    closed: Option<(
+    pub(super) closed: Option<(
         Vec<ProgramOutputRecord>,
         Option<WorthQueryRetainedQueryDependencies>,
     )>,

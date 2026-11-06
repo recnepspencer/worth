@@ -50,53 +50,13 @@ impl WorthQueryHistoryRecordingOutputOrigin {
             if !profile.recording_is_leaf() {
                 return Ok(TreeVerification::RequiresOriginal);
             }
-            let Some(publisher) = graph
-                .application_publication
-                .as_ref()
-                .filter(|publisher| publisher.native.owns_source_scopes())
-            else {
-                return Ok(TreeVerification::RequiresOriginal);
-            };
-            let obligations = native
-                .observe_owned_model_publications(
-                    &execution,
-                    &publisher.native,
-                    selected.product().relational_basis(),
-                    graph.layout.installed_history_ownership(),
-                    profile.recording_model().entity(),
-                )
-                .map_err(|cause| {
-                    WorthQueryRecordingOutputQualificationDenial::Ownership(Box::new(cause))
+            let current=selected.current_owned_route_is_current(&execution,native,profile.recording_model().entity(),
+                profile.source_intent().source_subject(),profile.recording_family(),profile.source_intent().source_partition())
+                .map_err(|cause|match cause {
+                    crate::domain_computation::primary_graph::application_output_demand::CurrentOwnedRouteDenial::Ownership(cause)=>WorthQueryRecordingOutputQualificationDenial::Ownership(Box::new(cause)),
+                    crate::domain_computation::primary_graph::application_output_demand::CurrentOwnedRouteDenial::Output(cause)=>WorthQueryOriginalReadOutputDenial::Output(cause).into(),
                 })?;
-            for route in obligations.routes() {
-                checkpoint(&execution)?;
-                let worth_relational::facade::branch::RelationalOwnedModelOutputRoute::Published(
-                    route,
-                ) = route
-                else {
-                    continue;
-                };
-                let meaning = route.meaning();
-                checkpoint_work(
-                    &execution,
-                    (meaning.family.len() + profile.recording_family().len() + 65) as u64,
-                )?;
-                if meaning.family != profile.recording_family()
-                    || meaning.source_scope != profile.source_intent().source_subject()
-                    || meaning.source_partition != profile.source_intent().source_partition()
-                {
-                    continue;
-                }
-                return if selected
-                    .current_route_is_current(&execution, native, &route)
-                    .map_err(WorthQueryOriginalReadOutputDenial::Output)?
-                {
-                    Ok(TreeVerification::CurrentLeaf)
-                } else {
-                    Ok(TreeVerification::RequiresOriginal)
-                };
-            }
-            Ok(TreeVerification::RequiresOriginal)
+            Ok(if current {TreeVerification::CurrentLeaf} else {TreeVerification::RequiresOriginal})
         })
     }
 }

@@ -11,7 +11,7 @@ mod output_coverage;
 mod output_custody;
 mod output_lookup;
 mod output_profile;
-mod output_verification;
+pub(in crate::domain_computation::primary_graph) mod output_verification;
 mod restored_verification;
 pub(in crate::domain_computation::primary_graph) use output_lookup::{
     HistoryOutputLookup, HistoryOutputLookupPhase,

@@ -1,6 +1,8 @@
 mod consumed;
 mod facts;
 mod native_routes;
+mod owned_route;
+pub(in crate::domain_computation::primary_graph) use owned_route::CurrentOwnedRouteDenial;
 mod settlements;
 mod verification_context;
 use facts::require_current_facts;

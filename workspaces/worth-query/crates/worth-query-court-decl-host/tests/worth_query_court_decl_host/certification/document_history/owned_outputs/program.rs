@@ -250,3 +250,11 @@ pub type AuthoredRetireAction = ApplicationActionReference<
     authored_member::retire::Binding,
     Completion,
 >;
+
+pub type AuthoredRestoreAction = ApplicationActionReference<
+    Schema,
+    ApplicationRootComposition,
+    Entry,
+    authored_member::restore::Binding,
+    Completion,
+>;

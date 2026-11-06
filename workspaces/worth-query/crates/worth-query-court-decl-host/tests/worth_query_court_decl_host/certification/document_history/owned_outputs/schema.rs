@@ -119,6 +119,7 @@ fn declare(
         .operation::<edit::Binding>("Edit model")
         .owned_operation::<member_edit::Binding>("Edit member")
         .operation::<member_delete::Binding>("Delete member")
-        .operation::<authored_member::retire::Binding>("Retire authored member"),
+        .operation::<authored_member::retire::Binding>("Retire authored member")
+        .operation::<authored_member::restore::Binding>("Restore authored member"),
     )
 }

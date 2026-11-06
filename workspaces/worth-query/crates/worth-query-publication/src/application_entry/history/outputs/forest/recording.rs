@@ -1,5 +1,6 @@
 //! Move-only edit custody for all configured original program trees.
 use super::*;
+use worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputAuthority;
 use worth_query_execution::publication_boundary::document_history::{
     WorthQueryCompletedRecordingOutputs, WorthQueryHistoryRecordingOutputOrigin,
     WorthQueryRetainedRecordingOutputTree,
@@ -30,6 +31,7 @@ trait RecordingTree<S: ApplicationSchema> {
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         origin: &Arc<WorthQueryHistoryRecordingOutputOrigin>,
         index: usize,
+        authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
     ) -> Result<Option<Arc<WorthQueryRetainedRecordingOutputTree>>, WorthQueryHistoryOutputDenial>;
     fn close(
         &mut self,
@@ -140,6 +142,11 @@ impl<S: ApplicationSchema + 'static> RecordingForest<S> {
     pub(in crate::application_entry::history) fn profile(&self) -> &WorthQueryHistoryOutputProfile {
         &self.profile
     }
+    pub(in crate::application_entry::history) fn origin(
+        &self,
+    ) -> Option<&Arc<WorthQueryHistoryRecordingOutputOrigin>> {
+        self.origin.as_ref()
+    }
     pub(in crate::application_entry::history) fn needs_origin(&self) -> bool {
         !self.disposing && self.origin.is_none()
     }
@@ -162,6 +169,7 @@ impl<S: ApplicationSchema + 'static> RecordingForest<S> {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
     ) -> Result<bool, WorthQueryHistoryOutputDenial> {
         if self.disposing {
             return Err(WorthQueryHistoryOutputDenial::NeedsDisposal);
@@ -177,7 +185,12 @@ impl<S: ApplicationSchema + 'static> RecordingForest<S> {
             let index = self.completed_trees.len();
             let entry = &mut self.trees[index];
             funding::checkpoint(phase, entry.tree.runtime())?;
-            match entry.tree.advance(phase, request, origin, index)? {
+            let advanced = authority
+                .with_tree_authority(phase, &program_publication_access(), index, |authority| {
+                    entry.tree.advance(phase, request, origin, index, authority)
+                })
+                .map_err(WorthQueryHistoryOutputDenial::Navigation)??;
+            match advanced {
                 Some(tree) => self.completed_trees.push(tree),
                 None => return Ok(false),
             }

@@ -40,7 +40,9 @@ pub(super) fn record(query: &str) {
     if query == "owned-outputs.member-read.v1" {
         MEMBER_READS.with(|reads| reads.set(reads.get() + 1));
     }
-    if query == "owned-outputs.first-discovery-query.v1" {
+    if query == "owned-outputs.first-discovery-query.v1"
+        || query == "owned-outputs.first-member-discovery-query.v1"
+    {
         DISCOVERY_READS.with(|reads| reads.set(reads.get() + 1));
     }
     if query == "owned-outputs.producer-model-read.v1" {

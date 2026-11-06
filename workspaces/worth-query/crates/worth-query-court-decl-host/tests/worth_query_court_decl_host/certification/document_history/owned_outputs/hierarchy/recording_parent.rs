@@ -21,7 +21,40 @@ fn settle(host: &Host, request: &family::Request<'_, '_, '_>) {
         };
     }
 }
-fn exercise(worker: bool) {
+macro_rules! record {
+    ($request:ident,$host:ident,$doc:expr,$input:expr,$action:ty,$key:literal) => {{
+        let mut edit = $doc
+            .edit($input)
+            .idempotency_owned(&$request, $key.into())
+            .unwrap()
+            .retain_in_program::<program::Program, $action>(&$host)
+            .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
+        for count in 0..512 {
+            assert!(count < 511, "recording did not progress");
+            edit = match edit.advance(&$request) {
+                WorthQueryHistoryEditAdvance::Progress(next) => next,
+                WorthQueryHistoryEditAdvance::Ready(next) => {
+                    edit = next;
+                    break;
+                }
+                WorthQueryHistoryEditAdvance::Refused { denial, .. } => {
+                    panic!("non-leaf recording: {denial:?}")
+                }
+            };
+        }
+        let finish = edit
+            .finish(&$request)
+            .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
+        assert!(matches!(
+            finish.outcome,
+            WorthQueryHistoryEditOutcome::Recorded { .. }
+        ));
+        let doc = finish.document;
+        drop(finish.outcome);
+        doc
+    }};
+}
+fn exercise(worker: bool, stale: bool) {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let limits = if worker {
         world::worker_limits()
@@ -48,40 +81,9 @@ fn exercise(worker: bool) {
     assert_eq!((original_first.value, original_child.value), (30, 1003));
     let document = world::attach(&host);
     let before = document.current_step(&request).unwrap().id();
-    macro_rules! record {
-        ($doc:expr,$input:expr,$action:ty,$key:literal) => {{
-            let mut edit = $doc
-                .edit($input)
-                .idempotency_owned(&request, $key.into())
-                .unwrap()
-                .retain_in_program::<program::Program, $action>(&host)
-                .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
-            for count in 0..512 {
-                assert!(count < 511, "recording did not progress");
-                edit = match edit.advance(&request) {
-                    WorthQueryHistoryEditAdvance::Progress(next) => next,
-                    WorthQueryHistoryEditAdvance::Ready(next) => {
-                        edit = next;
-                        break;
-                    }
-                    WorthQueryHistoryEditAdvance::Refused { denial, .. } => {
-                        panic!("non-leaf recording: {denial:?}")
-                    }
-                };
-            }
-            let finish = edit
-                .finish(&request)
-                .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
-            assert!(matches!(
-                finish.outcome,
-                WorthQueryHistoryEditOutcome::Recorded { .. }
-            ));
-            let doc = finish.document;
-            drop(finish.outcome);
-            doc
-        }};
-    }
     let document = record!(
+        request,
+        host,
         document,
         edit::Intent {
             key: "a".into(),
@@ -113,25 +115,51 @@ fn exercise(worker: bool) {
     settle(&host, &at_c);
     assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
     let reads = source_projection::Observation::begin();
-    let document = record!(
-        document,
-        member_edit::Intent {
-            key: "m".into(),
-            value: 6
-        },
-        super::super::program::MemberEditAction,
-        "non-leaf-future-after-undo"
-    );
+    let document = if stale {
+        record!(
+            request,
+            host,
+            document,
+            edit::Intent {
+                key: "a".into(),
+                value: 5
+            },
+            super::super::program::EditAction,
+            "stale-parent-recording-future"
+        )
+    } else {
+        record!(
+            request,
+            host,
+            document,
+            member_edit::Intent {
+                key: "m".into(),
+                value: 6
+            },
+            super::super::program::MemberEditAction,
+            "non-leaf-future-after-undo"
+        )
+    };
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
-        contacts,
-        "healthy restored parent and child never contact producers"
+        contacts + if stale { 2 } else { 0 },
+        "only a stale family and its changed child contact real producers"
     );
-    assert_eq!(reads.reads(), 0, "healthy original sources remain unopened");
+    if stale {
+        assert!(reads.reads() > 0, "stale fallback opens its real source");
+    } else {
+        assert_eq!(reads.reads(), 0, "healthy original sources remain unopened");
+    }
     assert!(
         reads.discovery_reads() > 0,
         "actual installed discovery determines the child set"
     );
+    let mut expected_first = original_first;
+    let mut expected_child = original_child;
+    if stale {
+        expected_first.value = 50;
+        expected_child.value = 1005;
+    }
     let selected = document.selection(&request).unwrap();
     let at = host
         .request(&principal, &scope)
@@ -141,31 +169,45 @@ fn exercise(worker: bool) {
             .execute()
             .unwrap()
             .rows(),
-        &[original_first]
+        &[expected_first]
     );
     assert_eq!(
         at.query(query::second_output::Read("second:a".into()))
             .execute()
             .unwrap()
             .rows(),
-        &[original_child]
+        &[expected_child]
     );
-    assert_eq!(
-        at.query(query::member_public::Read("m".into()))
-            .execute()
-            .unwrap()
-            .rows()[0]
-            .value,
-        6
-    );
+    if !stale {
+        assert_eq!(
+            at.query(query::member_public::Read("m".into()))
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .value,
+            6
+        );
+    }
     host.with_host_advancement(|phase| document.close(&phase).unwrap())
         .unwrap();
 }
 #[test]
 fn recording_a_future_uses_the_verified_historical_parent_and_real_discovery() {
-    exercise(false);
+    exercise(false, false);
 }
 #[test]
 fn worker_only_recording_a_future_uses_the_verified_historical_parent_and_real_discovery() {
-    exercise(true);
+    exercise(true, false);
 }
+
+#[test]
+fn recording_a_stale_historical_parent_runs_its_real_producer_and_discovery() {
+    exercise(false, true);
+}
+#[test]
+fn worker_only_recording_a_stale_historical_parent_runs_its_real_producer_and_discovery() {
+    exercise(true, true);
+}
+mod permission;
+
+mod new_member;

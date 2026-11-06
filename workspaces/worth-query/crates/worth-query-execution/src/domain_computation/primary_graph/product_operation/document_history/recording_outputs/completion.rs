@@ -24,19 +24,43 @@ impl<S: ApplicationSchema>
                 return Err(foreign().into());
             }
         }
-        let originals = trees.iter().filter_map(|tree| match &tree.completion {
-            RecordingTreeCompletion::Original(original) => Some(original),
-            _ => None,
-        });
-        let endpoint = crate::domain_computation::primary_graph::application_output_demand::qualify_recording_output_collection(
-            self, phase, access, request, &origin.observation, originals)?;
+        let settlements = trees.iter().flat_map(|tree| tree.settlements());
+        let endpoint=crate::domain_computation::primary_graph::application_output_demand::original_endpoint::derive(
+            &execution,&origin.observation,&mut settlements.clone(),&mut settlements.clone()).map_err(WorthQueryOriginalReadOutputDenial::Output)?;
         let selected = self
             .select_application_read_observation(phase, &endpoint)
             .map_err(WorthQueryOriginalReadOutputDenial::Observation)?;
         for tree in trees {
             checkpoint(&execution)?;
-            match tree.completion {
-                RecordingTreeCompletion::Original(_) => {}
+            match &tree.completion {
+                RecordingTreeCompletion::Original(original) => {
+                    original.require_current_at(
+                        self.select_application_read_observation(phase, &endpoint)
+                            .map_err(WorthQueryOriginalReadOutputDenial::Observation)?,
+                        phase,
+                        access,
+                        request,
+                    )?;
+                }
+                RecordingTreeCompletion::VerifiedParent(verified) => {
+                    verified
+                        .require_current_at(
+                            self.select_application_read_observation(phase, &endpoint)
+                                .map_err(WorthQueryOriginalReadOutputDenial::Observation)?,
+                            phase,
+                            access,
+                            request,
+                        )
+                        .map_err(WorthQueryRecordingOutputQualificationDenial::Verified)?;
+                    let profile = &origin.profile.tree_profiles()[tree.index];
+                    let current = graph_current_parent(self, &selected, &execution, profile)?;
+                    if !current {
+                        return Err(WorthQueryRecordingOutputQualificationDenial::TreeChanged {
+                            source: profile.source_intent().source_subject(),
+                            family: profile.recording_family(),
+                        });
+                    }
+                }
                 RecordingTreeCompletion::VerifiedLeaf => {
                     if origin.verify_tree_at(self, phase, tree.index, &endpoint)?
                         != verification::TreeVerification::CurrentLeaf
@@ -179,4 +203,18 @@ impl WorthQueryCompletedRecordingOutputs {
     ) -> Option<WorthQueryOutputSettlementPosture> {
         self.origin.root_posture
     }
+}
+
+fn graph_current_parent<S: ApplicationSchema>(
+    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
+    selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<'_, S>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    profile: &WorthQueryHistoryOutputProfile,
+) -> Result<bool, WorthQueryRecordingOutputQualificationDenial> {
+    runtime.runtime.primary_provider.graph.with_runtime(execution,|native|
+        selected.current_owned_route_is_current(execution,native,profile.recording_model().entity(),profile.source_intent().source_subject(),profile.recording_family(),profile.source_intent().source_partition())
+            .map_err(|cause|match cause {
+                crate::domain_computation::primary_graph::application_output_demand::CurrentOwnedRouteDenial::Ownership(cause)=>WorthQueryRecordingOutputQualificationDenial::Ownership(Box::new(cause)),
+                crate::domain_computation::primary_graph::application_output_demand::CurrentOwnedRouteDenial::Output(cause)=>WorthQueryOriginalReadOutputDenial::Output(cause).into(),
+            }))
 }
