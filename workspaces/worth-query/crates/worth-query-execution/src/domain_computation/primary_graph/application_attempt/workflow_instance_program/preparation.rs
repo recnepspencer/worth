@@ -1,6 +1,4 @@
 use crate::domain_computation::primary_graph::application_attempt::ReadSetScopedOps;
-mod adapter;
-use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_program::ApplicationWorkflowSpec,
@@ -10,16 +8,15 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
 };
 
-use {super::PreparedWorkflowInstanceCancellation, super::PreparedWorkflowInstanceStart, crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, super::WorkflowInstanceCancellationOutcome, super::WorkflowInstanceStartOutcome};
+use {super::PreparedWorkflowInstanceCancellation, super::PreparedWorkflowInstanceStart, crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef};
 use crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowSuccession;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial;
-use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use crate::domain_computation::primary_graph::application_attempt::WorkflowSelectionBasis;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 
 /// Why a workflow instance request could not bind to the branch's program: the installed
 /// spec belongs to another schema, the adopted program could not be inspected, the branch
@@ -54,7 +51,7 @@ impl std::fmt::Display for WorkflowInstancePreparationDenial {
 
 impl std::error::Error for WorkflowInstancePreparationDenial {}
 
-impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
+impl<Schema> WorkflowSelectionBasis<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
@@ -239,9 +236,3 @@ where
     }
 }
 
-/// Prepares and commits every instance lifecycle request: start, migration,
-/// fork continuation and cancellation. Each is admitted through the
-/// application's instance binding, the same intent a start uses, so one
-/// capability governs an instance from its start to its end.
-#[doc(hidden)]
-pub struct WorthQueryWorkflowInstanceAdapter;

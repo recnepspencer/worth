@@ -99,7 +99,9 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let retained = admission
             .graph_work_mut()
             .mutation_lease_mut()
-            .is_some_and(|lease| lease.retain_selection_origin_from(self));
+            .is_some_and(|lease| {
+                lease.retain_selection_origin_from(self.product(), self.selection_origin())
+            });
         if !retained {
             return Err(WorthQueryOperationAuthorizationDenial::new(
                 crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(

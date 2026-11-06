@@ -11,7 +11,6 @@ use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use crate::domain_computation::primary_graph::SharedSelectedProductOperation;
-use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease;
 use crate::domain_computation::provider_session::WorthQueryGraphWorkAccessContextAffinity;
 use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession;
 
@@ -52,7 +51,8 @@ where
 
     let operation = current.operation();
     check_request(request)?;
-    let lease = WorthQueryApplicationSnapshotLease::from_shared_selected(shared)
+    let lease = shared
+        .share_snapshot_lease()
         .map_err(SelectedOperationGraphWorkStop::Source)?;
     let plan = admit_prepared_application_operation_graph_work(
         operation,

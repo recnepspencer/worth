@@ -14,6 +14,7 @@ pub(crate) mod evidence_dependency;
 pub(crate) mod instance;
 pub(crate) mod operation_output;
 pub(in crate::domain_computation::primary_graph) mod proposal;
+pub(in crate::domain_computation::primary_graph) mod selection_basis;
 
 pub(in crate::domain_computation::primary_graph) use approval::{
     visit_workflow_approval_facts, workflow_approval_fields, workflow_approval_instance_identity,
@@ -29,7 +30,4 @@ pub use adoption::{
     WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
     WorthQueryWorkflowInstanceDisposition,
 };
-pub use definition::{
-    WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial,
-    WorthQueryWorkflowDefinitionPublicationAdapter, WorthQueryWorkflowDefinitionRetirementAdapter,
-};
+pub use definition::{WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial};

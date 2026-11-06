@@ -28,9 +28,9 @@ impl WorkflowCapturedInputs {
             facts: Vec::new(),
         }
     }
-    pub fn prepare<S: ApplicationSchema, B: ApplicationMutationBinding<S>, C>(
+    pub(in crate::domain_computation::primary_graph) fn prepare<S: ApplicationSchema, B: ApplicationMutationBinding<S>, C>(
         access: &WorthQueryProgramPublicationAccess,
-        selected: &WorthQuerySelectedProductOperation<'_, S>,
+        selected: &crate::domain_computation::primary_graph::application_attempt::WorkflowSelectionBasis<'_, S>,
         admission: &mut WorthQueryAdmittedApplicationOperation<S, B::Operation, B::Input, C>,
         inputs: Vec<(
             ApplicationWorkflowNodeIdentity,

@@ -171,7 +171,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
 
     /// Projects exact prior operation settlement; an unseen confirmation key is sufficient
     /// only for installed local effects whose original receipt created that transition.
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn resolve_operation_replay<
+    pub(in crate::domain_computation::primary_graph) fn resolve_operation_replay<
         Binding,
     >(
         &self,

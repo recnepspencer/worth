@@ -15,6 +15,7 @@ use {
 
 mod binding;
 mod preparation;
+pub(in crate::domain_computation::primary_graph) use preparation::prepare_birth;
 mod publication;
 pub(in crate::domain_computation::primary_graph::application_attempt) use binding::{
     guard as guard_birth, WorkflowBirthBindingProof,
@@ -127,9 +128,6 @@ impl RequiredWorkflowBirth {
         &self.identity
     }
 }
-
-#[doc(hidden)]
-pub struct WorthQueryWorkflowBirthAdapter;
 
 fn mismatch(subject: &str) -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(

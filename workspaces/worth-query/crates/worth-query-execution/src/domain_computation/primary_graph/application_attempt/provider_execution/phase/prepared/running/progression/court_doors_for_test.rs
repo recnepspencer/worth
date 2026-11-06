@@ -40,7 +40,7 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
         aftermath_causality: Option<
             crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
         >,
-        history: Option<HistoryProducerInvocation<'a>>,
+        history: Option<&'a dyn HistoryProducerCommit>,
     ) -> Self {
         Self {
             application,

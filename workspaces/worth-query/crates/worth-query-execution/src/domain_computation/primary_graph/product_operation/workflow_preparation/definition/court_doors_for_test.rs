@@ -1,5 +1,9 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::{
+    PreparedWorkflowDefinitionPublication, WorkflowDefinitionPreparationDenial,
+};
+use worth_query_installation::facade::WorthQueryInstalledWorkflowDefinitionContract;
 
 impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
 where
@@ -21,8 +25,8 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        Self::prepare_workflow_publication::<Capability, Operation, Input, Scope, Spec>(
-            self,
+        self.workflow_selection_basis()
+            .prepare_workflow_publication::<Capability, Operation, Input, Scope, Spec>(
             execution,
             contract,
             expected_predecessor,

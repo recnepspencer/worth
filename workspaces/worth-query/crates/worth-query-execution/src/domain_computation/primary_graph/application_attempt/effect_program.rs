@@ -1,6 +1,6 @@
 mod aspect_removal;
 mod body_external_emission;
-mod conditional_definition;
+pub(crate) mod conditional_definition;
 mod content;
 mod effect_growth;
 mod emission;

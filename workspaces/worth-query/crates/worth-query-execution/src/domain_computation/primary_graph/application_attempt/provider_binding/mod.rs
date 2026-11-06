@@ -1,6 +1,7 @@
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 pub(crate) mod effect_accumulator;
 
+pub(crate) mod authored_correction_candidate_denial;
 mod effect_lowering;
 mod registration;
 
@@ -33,7 +34,7 @@ pub struct WorthQueryPreparedApplicationProviderAttempt {
     effects: effect_accumulator::WorthQueryRegisteredProviderEffects,
     preimage_demand: Option<InstalledPreImageDemand>,
     conditional_definition:
-        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+        Option<crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition>,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
@@ -149,7 +150,7 @@ pub fn prepare_provider_attempt<'layout>(
     effects: Vec<WorthQueryApplicationRealizedEffect>,
     preimage_demand: Option<InstalledPreImageDemand>,
     conditional_definition: Option<
-        crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition,
+        crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition,
     >,
     output_correspondence: crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,

@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
 };
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
 
-impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
+impl<S: ApplicationSchema> WorkflowSelectionBasis<'_, S> {
     pub(super) fn prepare_transition_observation<O, I, Scope, Spec>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -81,7 +81,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         }
         Ok(read_set)
     }
-    pub(super) fn prepare_local_workflow_transition<O, I, Scope, Spec>(
+    pub(in crate::domain_computation::primary_graph) fn prepare_local_workflow_transition<O, I, Scope, Spec>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<S, Spec>,

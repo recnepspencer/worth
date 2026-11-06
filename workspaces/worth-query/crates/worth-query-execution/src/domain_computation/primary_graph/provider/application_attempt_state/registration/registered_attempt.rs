@@ -35,7 +35,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
     dispatch_outbox:
         Option<crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryPendingDispatchOutbox>,
     conditional_definition:
-        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+        Option<crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition>,
     live_delivery_reservation: Option<
         crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
     >,
@@ -194,7 +194,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
     pub(in crate::domain_computation::primary_graph) fn take_conditional_definition(
         &mut self,
-    ) -> Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>
+    ) -> Option<crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition>
 {
         self.conditional_definition.take()
     }

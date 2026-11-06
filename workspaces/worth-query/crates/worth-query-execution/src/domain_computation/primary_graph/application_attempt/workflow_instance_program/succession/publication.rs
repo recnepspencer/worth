@@ -1,7 +1,9 @@
 //! Descriptive projection of the exact native successor recorded by this request.
-use {super::super::super::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding};
+use super::super::super::WorthQueryApplicationCommitReceipt;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
-use {super::mismatch, super::RequiredWorkflowSuccession, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryWorkflowSuccessionAdapter};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
+use super::RequiredWorkflowSuccession;
+use super::mismatch;
 impl RequiredWorkflowSuccession {
     pub fn instance_in(
         &self,
@@ -49,12 +51,4 @@ where
         .bound_entity(&OutputRoleUse::fixed::<Role>())
         .map_err(|_| mismatch("foreign succession output role"))?
         .ok_or_else(|| mismatch("succession subject absent from receipt"))
-}
-impl WorthQueryWorkflowSuccessionAdapter {
-    pub const fn bind_idempotency(
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        identity: &[u8; 32],
-    ) -> WorthQueryApplicationIdempotencyBinding {
-        idempotency.bind_workflow_instance(identity)
-    }
 }

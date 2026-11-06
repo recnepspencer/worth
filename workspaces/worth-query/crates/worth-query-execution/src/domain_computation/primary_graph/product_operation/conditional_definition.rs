@@ -3,8 +3,7 @@ use crate::domain_computation::primary_graph::product_activation::PublicationSco
 use std::sync::Arc;
 
 mod admission;
-mod application_change;
-pub use application_change::WorthQueryAdmittedApplicationConditionalDefinition;
+
 
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryHostConditionalPredicateProvider,
@@ -152,3 +151,4 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
 }
 pub(in crate::domain_computation::primary_graph) use admission::AdmissionScopedOps;
 use crate::domain_computation::primary_graph::vocabulary::product_operation::conditional_definition::WorthQueryApplicationConditionalDefinitionAdmissionDenial;
+use crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition;

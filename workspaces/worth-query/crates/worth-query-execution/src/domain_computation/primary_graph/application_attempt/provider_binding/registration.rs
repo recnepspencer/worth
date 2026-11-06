@@ -154,7 +154,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         )
     {
         let _ = staged.abort();
-        use crate::domain_computation::primary_graph::product_operation::correction_source::AuthoredCorrectionCandidateDenial;
+        use crate::domain_computation::primary_graph::application_attempt::provider_binding::authored_correction_candidate_denial::AuthoredCorrectionCandidateDenial;
         use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
         return Err(match denial {
             AuthoredCorrectionCandidateDenial::Identity(detail) => {

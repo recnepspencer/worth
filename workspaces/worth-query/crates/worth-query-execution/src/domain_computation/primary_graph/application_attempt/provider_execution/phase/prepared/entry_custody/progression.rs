@@ -2,7 +2,7 @@ use super::super::super::{
     finish_application_commit, progress_application_commit, start_managed_application_commit,
 };
 use super::*;
-use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
+use crate::domain_computation::primary_graph::application_attempt::HistoryProducerCommit;
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
     CurrentCommitProgram<
         '_,
@@ -19,7 +19,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         idempotency: WorthQueryApplicationIdempotencyBinding,
         elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
         aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
-        history: Option<HistoryProducerInvocation<'_>>,
+        history: Option<&'_ dyn HistoryProducerCommit>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where

@@ -12,27 +12,18 @@ use worth_query_installation::facade::{
 use {super::PreparedWorkflowAdvance, super::RequiredWorkflowApproval, super::RequiredWorkflowOperation, crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision, super::WorkflowProgressOutcome, super::WorkflowTransitionRequestKind};
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial;
-use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use crate::domain_computation::primary_graph::application_attempt::WorkflowSelectionBasis;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::reference::PublishedWorkflowProposalRef;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
 
-#[path = "preparation/actor_denial.rs"]
-mod actor_denial;
-mod adapter_body;
-#[path = "preparation/adapter_commit.rs"]
-mod adapter_commit;
-#[path = "preparation/adapter_owner.rs"]
-mod adapter_owner;
-#[path = "preparation/adapter_preparation.rs"]
-mod adapter_preparation;
-#[path = "preparation/adapter_replay.rs"]
-mod adapter_replay;
 #[path = "preparation/local_actions.rs"]
 mod local_actions;
 mod local_completion;
 mod observation;
+pub(in crate::domain_computation::primary_graph) use local_actions::prepare_local_action;
+pub(in crate::domain_computation::primary_graph) use local_completion::complete_local_operation;
 /// Which authored local action the binding requests; never a destination or authority.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowLocalActionKind {
@@ -78,7 +69,7 @@ impl std::fmt::Display for WorkflowTransitionPreparationDenial {
 
 impl std::error::Error for WorkflowTransitionPreparationDenial {}
 
-impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
+impl<Schema> WorkflowSelectionBasis<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
@@ -215,6 +206,7 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &PublishedWorkflowProposalRef,
@@ -229,7 +221,6 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let installed = workflow.workflow_spec_for(self);
         if installed.schema_binding() != &self.application().installed_schema().binding_identity() {
             return Err(WorkflowTransitionPreparationDenial::Binding(
                 WorkflowTransitionBindingDenial::ForeignSchema,
@@ -298,5 +289,3 @@ where
     }
 }
 
-#[doc(hidden)]
-pub struct WorthQueryWorkflowAdvanceAdapter;

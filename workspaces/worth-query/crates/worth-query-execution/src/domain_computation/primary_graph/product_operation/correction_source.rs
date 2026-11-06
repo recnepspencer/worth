@@ -21,7 +21,7 @@ pub use alternatives::{
     WorthQueryCorrectionAlternativesContinuation, WorthQueryCorrectionAlternativesPage,
     WorthQuerySelectedCorrectionAlternative,
 };
-pub(in crate::domain_computation::primary_graph) use authored_identity::AuthoredCorrectionCandidateDenial;
+
 mod compatibility;
 pub(crate) mod restored_support;
 pub use restored_support::WorthQueryCorrectionRestoredSupportDenial;

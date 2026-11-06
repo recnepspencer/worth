@@ -2,7 +2,6 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::super::WorthQueryPrimaryGraphIntegrationHandle;
 use crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisLease;
-use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisReleaseOutcome;
 use crate::domain_computation::vocabulary::primary_graph::snapshot_lease::WorthQueryApplicationSnapshotLeaseDenial;
 use crate::domain_computation::vocabulary::primary_graph::snapshot_lease::WorthQueryApplicationSnapshotRelease;
@@ -49,10 +48,29 @@ impl SnapshotCustody {
     }
 }
 
+/// How the live selected snapshot entered this operation. This is selection
+/// provenance, not a promise that its head remains latest during execution.
+#[derive(Clone, Copy, Debug, Default)]
+pub(in crate::domain_computation::primary_graph) struct SelectedQueryOrigin {
+    current_at_selection: bool,
+}
+
+impl SelectedQueryOrigin {
+    pub(in crate::domain_computation::primary_graph) fn current_at_selection() -> Self {
+        Self {
+            current_at_selection: true,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn is_current(self) -> bool {
+        self.current_at_selection
+    }
+}
+
 pub struct WorthQueryApplicationSnapshotLease {
     custody: Option<SnapshotCustody>,
     product: crate::basis::WorthQueryProductBranchLease,
-    selection_origin: super::super::product_operation::SelectedQueryOrigin,
+    selection_origin: SelectedQueryOrigin,
     pub(super) layout: std::sync::Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout>,
 }
 
@@ -149,47 +167,51 @@ impl WorthQueryApplicationSnapshotLease {
 
     /// Shares the wave's final Native snapshot owner without registering or
     /// releasing another Native snapshot. The session owns this local share.
+    /// The parts are one selected wave's: its runtime, product occurrence,
+    /// retained application basis and selection provenance.
     pub(in crate::domain_computation) fn from_shared_selected<
         Schema: worth_query_installation::facade::ApplicationSchema,
     >(
-        shared: &SharedSelectedProductOperation<'_, Schema>,
+        application: &dyn super::host::ApplicationAttemptHost<Schema>,
+        product: &crate::basis::WorthQueryProductBranchLease,
+        application_basis: &WorthQueryApplicationBasisLease,
+        selection_origin: SelectedQueryOrigin,
     ) -> Result<Self, CompanionPreflightStop> {
-        let selected = shared.selected();
-        let graph = selected
-            .application()
+        let graph = application
             .primary_graph()
             .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
-        let basis = selected.application_basis().retain_shared()?;
+        let basis = application_basis.retain_shared()?;
         // Publication binding, two World observation Arc pairs, optional
         // guard, Bridge Arc and layout Arc are all shallow fixed copies.
 
         Ok(Self {
             custody: Some(SnapshotCustody::Shared(basis)),
-            product: selected.product().retained_clone(),
-            selection_origin: selected.selection_origin(),
+            product: product.retained_clone(),
+            selection_origin,
             layout: graph.retain_layout(),
         })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retain_selection_origin_from<
-        Schema: worth_query_installation::facade::ApplicationSchema,
-    >(
+    /// Takes a selection's provenance when that selection shares this lease's
+    /// retained mutation source.
+    pub(in crate::domain_computation::primary_graph) fn retain_selection_origin_from(
         &mut self,
-        selected: &super::super::product_operation::WorthQuerySelectedProductOperation<'_, Schema>,
+        selected_product: &crate::basis::WorthQueryProductBranchLease,
+        selection_origin: SelectedQueryOrigin,
     ) -> bool {
         if !self
             .product
-            .shares_retained_mutation_source(selected.product())
+            .shares_retained_mutation_source(selected_product)
         {
             return false;
         }
-        self.selection_origin = selected.selection_origin();
+        self.selection_origin = selection_origin;
         true
     }
 
     pub(in crate::domain_computation::primary_graph) fn selection_origin(
         &self,
-    ) -> super::super::product_operation::SelectedQueryOrigin {
+    ) -> SelectedQueryOrigin {
         self.selection_origin
     }
 

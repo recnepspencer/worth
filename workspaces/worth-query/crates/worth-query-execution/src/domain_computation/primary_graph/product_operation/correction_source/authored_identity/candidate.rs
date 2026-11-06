@@ -1,17 +1,12 @@
 //! Compare the actual inverse output reference before any native commit.
 use super::{Posture, PreparedAuthoredIdentity};
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryRequestInterruption, WorthQueryRequestScope,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_relational::facade::transactions::{
     CreateIntent, EntityMutationIntent, EntityReference, MutationIntent, WorkerIntentBatch,
 };
 
-pub(in crate::domain_computation::primary_graph) enum AuthoredCorrectionCandidateDenial {
-    Identity(&'static str),
-    Interrupted(WorthQueryRequestInterruption),
-}
 use AuthoredCorrectionCandidateDenial::{Identity, Interrupted};
+use crate::domain_computation::primary_graph::application_attempt::provider_binding::authored_correction_candidate_denial::AuthoredCorrectionCandidateDenial;
 
 fn poll(request: &WorthQueryRequestScope) -> Result<(), AuthoredCorrectionCandidateDenial> {
     match request.interruption() {

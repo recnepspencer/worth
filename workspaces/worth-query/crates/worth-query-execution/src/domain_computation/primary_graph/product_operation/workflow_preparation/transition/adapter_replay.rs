@@ -16,7 +16,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        required: &super::super::RequiredWorkflowAssessment,
+        required: &crate::domain_computation::primary_graph::application_attempt::RequiredWorkflowAssessment,
         settlement: &crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement,
         source: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
         posture: crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryWorkflowAssessmentPosture,
@@ -86,7 +86,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        required: &super::super::RequiredWorkflowOperation,
+        required: &crate::domain_computation::primary_graph::application_attempt::RequiredWorkflowOperation,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         recovery: Option<
             &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,

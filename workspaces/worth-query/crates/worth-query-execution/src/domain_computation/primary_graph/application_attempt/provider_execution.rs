@@ -57,5 +57,6 @@ pub(in crate::domain_computation::primary_graph) use entry::ProviderExecutionPro
 pub use entry::ApplicationCommitOps;
 pub(in crate::domain_computation::primary_graph) use entry::ApplicationCommitScopedOps;
 pub use entry::OutputSourceOps;
+pub(in crate::domain_computation::primary_graph) use entry::HistoryProducerCommit;
 pub use external_dispatch::ExternalDispatchOps;
 pub(in crate::domain_computation) use phase::EntryCustodyScopedOps;

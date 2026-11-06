@@ -1,7 +1,7 @@
 use super::*;
 use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
 use crate::domain_computation::primary_graph::application_attempt::EntryScopedOps;
-use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
+use crate::domain_computation::primary_graph::application_attempt::HistoryProducerCommit;
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
     CurrentCommitProgram<
         '_,
@@ -29,7 +29,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_in_advancement_with_history(
         self,
         idempotency: WorthQueryApplicationIdempotencyBinding,
-        history: Option<HistoryProducerInvocation<'_>>,
+        history: Option<&'_ dyn HistoryProducerCommit>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where

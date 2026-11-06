@@ -3,7 +3,7 @@ mod candidate;
 #[cfg(test)]
 mod candidate_tests;
 use super::{WorthQueryCorrectionDerivationDenial as Denial, WorthQuerySelectedCorrectionSource};
-pub(in crate::domain_computation::primary_graph) use candidate::AuthoredCorrectionCandidateDenial;
+
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, AspectValue, CanonicalFieldPath, FieldKey, LocatorAuthority,
 };

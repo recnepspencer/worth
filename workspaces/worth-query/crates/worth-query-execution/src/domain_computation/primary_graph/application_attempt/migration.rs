@@ -4,7 +4,9 @@ use worth_runtime_world::facade::ProductBranchObservation;
 use super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::provider_binding::prepare_program_migration_batch;
 use super::WorthQueryApplicationEffectProgram;
-use crate::domain_computation::primary_graph::WorthQueryProgramMigrationPreparationDenial;
+use crate::domain_computation::primary_graph::application_attempt::migration::preparation_denial::WorthQueryProgramMigrationPreparationDenial;
+
+pub(crate) mod preparation_denial;
 
 pub fn prepare_program_migration_effects<Schema, Operation, Input, Scope>(
     application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,

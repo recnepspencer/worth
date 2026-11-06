@@ -34,7 +34,7 @@ pub enum WorthQueryApplicationQueryFreshness {
 pub struct WorthQueryApplicationQueryControls<'a, Schema> {
     producer: Option<Arc<OriginalSettledProducerObservation>>,
     basis: WorthQueryApplicationQueryBasis,
-    selection_origin: super::super::product_operation::SelectedQueryOrigin,
+    selection_origin: crate::domain_computation::primary_graph::application_attempt::snapshot_lease::SelectedQueryOrigin,
     security_product: crate::basis::WorthQueryProductObservationLease,
     publication_product: Option<crate::basis::WorthQueryProductBranchLease>,
     lane: WorthQueryApplicationQueryLane,
@@ -89,7 +89,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
     pub(in crate::domain_computation::primary_graph) fn with_selection_origin(
         mut self,
-        origin: super::super::product_operation::SelectedQueryOrigin,
+        origin: crate::domain_computation::primary_graph::application_attempt::snapshot_lease::SelectedQueryOrigin,
     ) -> Self {
         self.selection_origin = origin;
         self

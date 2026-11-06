@@ -8,7 +8,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         phase: &WorthQueryAdvancementPhase<'_>,
 
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
-        prepared: super::super::PreparedWorkflowAssessment<Schema, Operation, Input, Scope>,
+        prepared: crate::domain_computation::primary_graph::application_attempt::PreparedWorkflowAssessment<Schema, Operation, Input, Scope>,
         settlement: &crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement,
         source: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
         posture: crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryWorkflowAssessmentPosture,
@@ -53,7 +53,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         phase: &WorthQueryAdvancementPhase<'_>,
 
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
-        prepared: super::super::PreparedWorkflowCondition<Schema, Operation, Input, Scope>,
+        prepared: crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::PreparedWorkflowCondition<Schema, Operation, Input, Scope>,
         sources: crate::domain_computation::primary_graph::WorthQueryWorkflowConditionSources<
             Schema,
         >,
@@ -107,7 +107,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         phase: &WorthQueryAdvancementPhase<'_>,
 
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
-        prepared: super::super::PreparedWorkflowOperation<Schema, Operation, Input, Scope>,
+        prepared: crate::domain_computation::primary_graph::application_attempt::PreparedWorkflowOperation<Schema, Operation, Input, Scope>,
         effect_admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, EffectOperation, EffectInput, EffectScope>,
         effect_idempotency: WorthQueryApplicationIdempotencyBinding,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,

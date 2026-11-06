@@ -1,7 +1,13 @@
 //! Receipt projection describes the one native birth; it cannot authorize it.
-use {super::super::super::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding};
+use super::super::super::WorthQueryApplicationCommitReceipt;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
-use {super::mismatch, super::ApplicationMutationBinding, super::ApplicationSchema, super::RequiredWorkflowBirth, super::TypeId, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationOutputRole, super::WorthQueryWorkflowBirthAdapter};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
+use super::ApplicationMutationBinding;
+use super::ApplicationSchema;
+use super::RequiredWorkflowBirth;
+use super::TypeId;
+use super::WorthQueryApplicationOutputRole;
+use super::mismatch;
 
 impl RequiredWorkflowBirth {
     pub fn instance_in(
@@ -51,11 +57,3 @@ where
         .ok_or_else(|| mismatch("birth subject is absent from receipt"))
 }
 
-impl WorthQueryWorkflowBirthAdapter {
-    pub const fn bind_idempotency(
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        identity: &[u8; 32],
-    ) -> WorthQueryApplicationIdempotencyBinding {
-        idempotency.bind_workflow_instance(identity)
-    }
-}

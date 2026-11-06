@@ -1,6 +1,7 @@
 //! One funded final owner for an exact selected wave's Query snapshot custody.
 use super::WorthQuerySelectedProductOperation;
 use crate::basis::WorthQueryProductObservationLease;
+use crate::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
 use crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisLease;
 use crate::domain_computation::primary_graph::vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
@@ -26,6 +27,23 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
 impl<'runtime, Schema> SharedSelectedProductOperation<'runtime, Schema> {
     pub fn selected(&self) -> &WorthQuerySelectedProductOperation<'runtime, Schema> {
         &self.selected
+    }
+
+    /// A local share of this wave's final Native snapshot owner; it neither
+    /// registers nor releases another Native snapshot.
+    pub(in crate::domain_computation) fn share_snapshot_lease(
+        &self,
+    ) -> Result<WorthQueryApplicationSnapshotLease, CompanionPreflightStop>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
+        let selected = &self.selected;
+        WorthQueryApplicationSnapshotLease::from_shared_selected(
+            selected.application().application_attempt_host(),
+            selected.product(),
+            selected.application_basis(),
+            selected.selection_origin(),
+        )
     }
 }
 

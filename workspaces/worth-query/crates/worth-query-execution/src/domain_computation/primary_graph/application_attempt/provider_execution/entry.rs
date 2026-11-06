@@ -8,7 +8,6 @@ use super::program_occurrence_gate::{
     require_occurrence_acts_through, require_selected_program_matches_occurrence,
     resolve_occurrence_program,
 };
-use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
 
 pub(in crate::domain_computation) trait EntryScopedOps<Schema>:
@@ -133,8 +132,10 @@ impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_
     Schema: ApplicationSchema, {}
 
 mod application_commit;
+mod history_producer_commit;
 
 mod output_source;
 pub use application_commit::ApplicationCommitOps;
 pub(in crate::domain_computation::primary_graph) use application_commit::ApplicationCommitScopedOps;
 pub use output_source::OutputSourceOps;
+pub(in crate::domain_computation::primary_graph) use history_producer_commit::HistoryProducerCommit;

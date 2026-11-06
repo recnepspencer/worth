@@ -2,8 +2,10 @@ use self::session_admission::admit_provider_session;
 use super::WorthQueryRunningApplicationCommit;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::WorthQueryApplicationAttemptBasis;
-use {crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryPreparedApplicationProviderAttempt, crate::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding};
-use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
+use crate::domain_computation::primary_graph::application_attempt::HistoryProducerCommit;
+use crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryPreparedApplicationProviderAttempt;
+use crate::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::provider::{
     WorthQueryApplicationBranchCommitCoordination, WorthQueryPrimaryGraphProvider,
 };
@@ -101,7 +103,7 @@ pub struct WorthQueryApplicationCommitProgressionAuthority<
     idempotency: WorthQueryApplicationIdempotencyBinding,
     coordination: &'a WorthQueryApplicationBranchCommitCoordination<'provider>,
     product: &'a crate::basis::WorthQueryProductBranchLease,
-    history: Option<HistoryProducerInvocation<'a>>,
+    history: Option<&'a dyn HistoryProducerCommit>,
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
@@ -158,7 +160,7 @@ pub fn progress_application_commit<Schema, Operation, Input, Scope>(
 
     application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     running_commit: WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
-    history: Option<HistoryProducerInvocation<'_>>,
+    history: Option<&'_ dyn HistoryProducerCommit>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProgressedApplicationCommit
 where
@@ -211,7 +213,7 @@ fn progress_provider_application<Schema, Operation, Input, Scope>(
     phase: &WorthQueryAdvancementPhase<'_>,
     progression: WorthQueryProviderProgression<'_, Schema, Operation, Input, Scope>,
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
-    history: Option<HistoryProducerInvocation<'_>>,
+    history: Option<&'_ dyn HistoryProducerCommit>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProviderProgressionCompletion
 where

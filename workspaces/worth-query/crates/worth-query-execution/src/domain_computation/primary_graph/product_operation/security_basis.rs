@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_query::{
 };
 use crate::domain_computation::primary_graph::product_activation::InspectionScopedOps;
 use crate::domain_computation::primary_graph::product_operation::ApplicationBasisScopedOps;
-use crate::domain_computation::primary_graph::product_operation::ObservationRoomScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::observation_room::ObservationRoomScopedOps;
 use crate::domain_computation::primary_graph::selected_read_indexes::PreparedSelectedReadIndexes;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchObservation;

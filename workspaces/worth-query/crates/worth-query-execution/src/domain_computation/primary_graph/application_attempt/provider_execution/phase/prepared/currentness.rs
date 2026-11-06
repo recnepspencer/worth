@@ -1,7 +1,7 @@
 //! Current authority and product basis for a prepared application commit.
 
 use super::*;
-use crate::domain_computation::primary_graph::product_operation::ObservationRoomScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::observation_room::ObservationRoomScopedOps;
 
 pub fn select_current_product<Schema: ApplicationSchema>(
     application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,

@@ -42,7 +42,7 @@ pub trait OutputSourceOps<Schema: ApplicationSchema>:
             &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
             &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
         )>,
-        history: Option<HistoryProducerInvocation<'_>>,
+        history: Option<&'_ dyn HistoryProducerCommit>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Operation: 'static,

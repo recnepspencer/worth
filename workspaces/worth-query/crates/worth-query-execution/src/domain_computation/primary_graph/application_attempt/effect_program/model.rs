@@ -78,7 +78,7 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
     pub(in crate::domain_computation::primary_graph::application_attempt) effects:
         Vec<WorthQueryApplicationRealizedEffect>,
     pub(in crate::domain_computation::primary_graph::application_attempt) conditional_definition:
-        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+        Option<crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition>,
     pub(in crate::domain_computation::primary_graph::application_attempt) effect_posture:
         crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture,
     pub(in crate::domain_computation::primary_graph::application_attempt) output_correspondence:
@@ -136,7 +136,7 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) field_write_positions: super::FieldWriteIndex,
     pub(super) keys: BTreeSet<(KindId, String)>,
     pub(super) conditional_definition:
-        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+        Option<crate::domain_computation::primary_graph::application_attempt::effect_program::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition>,
     pub(super) output_correspondence:
         crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate,
     pub(super) creation_partition: Option<WorthQueryApplicationCreationPartition>,

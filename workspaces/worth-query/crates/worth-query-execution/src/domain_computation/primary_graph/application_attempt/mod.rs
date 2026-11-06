@@ -176,10 +176,7 @@ pub use {
     workflow_instance_program::WorkflowSuccessionAuthority,
     workflow_instance_program::WorkflowSuccessionAuthoritySlot,
     workflow_instance_program::WorkflowSuccessionTarget,
-    workflow_instance_program::WorthQueryWorkflowBirthAdapter,
-    workflow_instance_program::WorthQueryWorkflowInstanceAdapter,
     workflow_instance_program::WorthQueryWorkflowInstanceDiscoveryIntent,
-    workflow_instance_program::WorthQueryWorkflowSuccessionAdapter,
 };
 pub use {
     workflow_proposal_program::PerformedWorkflowProposal,
@@ -187,7 +184,6 @@ pub use {
     workflow_proposal_program::WorkflowProposalBindingDenial,
     workflow_proposal_program::WorkflowProposalOutcome,
     workflow_proposal_program::WorkflowProposalPreparationDenial,
-    workflow_proposal_program::WorthQueryWorkflowProposalAdapter,
 };
 pub use {
     workflow_transition_program::PerformedWorkflowApproval,
@@ -211,7 +207,6 @@ pub use {
     workflow_transition_program::WorkflowTransitionBindingDenial,
     workflow_transition_program::WorkflowTransitionPreparationDenial,
     workflow_transition_program::WorthQueryWorkflowActorContext,
-    workflow_transition_program::WorthQueryWorkflowAdvanceAdapter,
 };
 
 pub(in crate::domain_computation) use fact::consult_observation;
@@ -248,6 +243,8 @@ pub(in crate::domain_computation::primary_graph) use provider_execution::Install
 pub use provider_execution::MandatoryReviewOps;
 pub(in crate::domain_computation::primary_graph) use provider_execution::MandatoryReviewScopedOps;
 pub use provider_execution::OutputSourceOps;
+pub(in crate::domain_computation::primary_graph) use provider_execution::HistoryProducerCommit;
+pub(in crate::domain_computation::primary_graph) use workflow::selection_basis::WorkflowSelectionBasis;
 pub(in crate::domain_computation::primary_graph) use provider_execution::ProviderExecutionProviderExecutionEntryScopedOps;
 pub(in crate::domain_computation::primary_graph) use provider_execution::ReadmittedCommitProgram;
 pub use read_set::ReadSetOps;
@@ -265,3 +262,4 @@ pub(crate) mod external_dispatch_attempt;
 pub(crate) mod host;
 mod mutation_partition;
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::MaterializedCommittedField;
+pub(crate) mod observation_room;

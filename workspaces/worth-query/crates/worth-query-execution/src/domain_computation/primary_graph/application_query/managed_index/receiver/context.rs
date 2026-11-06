@@ -1,6 +1,6 @@
 //! Full Parent admission precedes any Source, provider, or retained-root lookup.
 use super::*;
-use crate::domain_computation::primary_graph::product_operation::ObservationRoomScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::observation_room::ObservationRoomScopedOps;
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 use {
     crate::domain_computation::primary_graph::application_query::authorized_read::refresh_governed_authorization,
