@@ -19,71 +19,8 @@ use crate::ConsumerSchema;
 mod supersession_retires_pending_predecessor;
 pub(super) use supersession_retires_pending_predecessor::supersession_retires_pending_predecessor;
 
-pub(super) fn duplicate_retry_does_not_schedule_again(
-    foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
-        ConsumerSchema,
-    >,
-) {
-    let world = installation::install(foreign);
-    let scope = authentication::request_scope();
-    let adapter = authentication::admit(world.application.installed_schema());
-    let principal = authentication::block_on(adapter.authenticate(
-        authentication::LocalCredential::issued_for_model_owner(),
-        &scope,
-    ))
-    .expect("the program application authenticates its principal");
-    let request = world.application.request(&principal, &scope);
-    let source = observed(&request, "anchor-b");
-    let intent = PlanarSourceAdjustment {
-        scope_key: "anchor-b".to_owned(),
-        replacement_y: length(2),
-    };
-    let outcome = request
-        .advanced()
-        .mutate(intent.clone())
-        .expect_source(source.clone())
-        .idempotency(&10_008)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
-            &world.application,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
-        panic!("the first source operation must perform")
-    };
-    let mut performed = performed
-        .start_required_outputs(&world.application, &request, controls())
-        .unwrap_or_else(|failure| panic!("required outputs start: {:?}", failure.denial()));
-    let duplicate = request
-        .advanced()
-        .mutate(intent)
-        .expect_source(source)
-        .idempotency(&10_008)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
-            &world.application,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    assert!(matches!(
-        duplicate,
-        WorthQueryApplicationPerformedMutationOutcome::NotPerformed(
-            worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
-        )
-    ));
-    let settled = settle(&world.application, &mut performed, &request);
-    assert_eq!(
-        request
-            .at(settled.observation())
-            .query(PlanarOutputRead {
-                body_key: "final:anchor-b".to_owned(),
-            })
-            .execute()
-            .unwrap()
-            .rows()[0]
-            .value,
-        length(4)
-    );
-}
+mod duplicate_retry;
+pub(super) use duplicate_retry::duplicate_retry_does_not_schedule_again;
 
 pub(super) fn two_forks_preserve_predecessor_output(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
