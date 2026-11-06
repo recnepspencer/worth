@@ -1,11 +1,12 @@
 //! Closed certification inspection of original immutable committed actor fields.
 //! These values never construct native selection evidence or capability access.
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges;
+//! The doors sit on the commit receipt, which owns the committed changes they read.
+use super::WorthQueryApplicationCommitReceipt;
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::EntityId;
 use worth_query_declaration::facade::application_capability::ApplicationWorkflowRecordedRole;
 
-impl WorthQueryApplicationCommittedChanges {
+impl WorthQueryApplicationCommitReceipt {
     /// Observes the actual committed actor triplet on a known original record.
     #[doc(hidden)]
     pub fn workflow_actor_fields_for_test(
@@ -26,7 +27,7 @@ impl WorthQueryApplicationCommittedChanges {
         };
         let fields = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFields::planned(aspect, role).map_err(|_| invalid())?;
         let values = [&fields.partition, &fields.slot, &fields.generation]
-            .map(|locator| self.committed_field_value(entity, locator));
+            .map(|locator| self.committed_changes.committed_field_value(entity, locator));
         let mut components = [None; 3];
         for (index, value) in values.into_iter().enumerate() {
             components[index] = match value {
@@ -42,7 +43,7 @@ impl WorthQueryApplicationCommittedChanges {
     }
 }
 
-impl WorthQueryApplicationCommittedChanges {
+impl WorthQueryApplicationCommitReceipt {
     /// Rehydrates the actual committed native actor evidence under the caller's lease.
     /// No bytes, decoded proof or permission leaves this closed certification door.
     #[doc(hidden)]
@@ -52,7 +53,6 @@ impl WorthQueryApplicationCommittedChanges {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
-        receipt: &crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt,
         approval: EntityId,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
     {
@@ -70,13 +70,10 @@ impl WorthQueryApplicationCommittedChanges {
                 "authorization-request",
             )
             .map_err(|_| invalid("committed approval request locator is invalid"))?;
-        // The receipt must own this exact artifact; its native runtime identity
+        // The receipt owns this exact artifact; its native runtime identity
         // and canonical commit select the retained poststate, never current head.
-        if !self.shares_original(receipt.committed_changes()) {
-            return Err(invalid("committed approval receipt envelope differs"));
-        }
         let Some(AspectValue::String(worth_foundational::facade::InternedString::Symbol(symbol))) =
-            self.committed_field_value(approval, &locator)
+            self.committed_changes.committed_field_value(approval, &locator)
         else {
             return Err(invalid(
                 "committed approval request field is missing or not a Symbol",
@@ -86,18 +83,18 @@ impl WorthQueryApplicationCommittedChanges {
             .provider_graph()
             .with_runtime(execution, |native| {
                 use worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial as PinStop;
-                if native.runtime_instance_id() != receipt.provider_runtime_instance_id() {
+                if native.runtime_instance_id() != self.provider_runtime_instance_id() {
                     return Err(invalid("committed approval receipt belongs to another runtime"));
                 }
                 // The operational commit snapshot was lawfully released at
                 // publication. Borrow the original performed World poststate;
                 // never open a replacement snapshot or inspect today's head.
-                let basis = receipt
+                let basis = self
                     .committed_product_publication()
                     .retained_relational_basis()
                     .ok_or_else(|| invalid("committed approval has no retained performed poststate"))?;
                 let observation = basis.observation();
-                if observation.commit_receipt() != Some(self.commit_reference()) {
+                if observation.commit_receipt() != Some(self.committed_changes.commit_reference()) {
                     return Err(invalid("committed approval retained poststate differs from its original commit"));
                 }
                 let view = native
@@ -149,7 +146,7 @@ impl WorthQueryApplicationCommittedChanges {
     }
 }
 
-impl WorthQueryApplicationCommittedChanges {
+impl WorthQueryApplicationCommitReceipt {
     /// Passive corruption twin over an original committed triplet. This never
     /// writes a snapshot or returns evidence usable for native admission.
     #[doc(hidden)]
@@ -188,7 +185,7 @@ impl WorthQueryApplicationCommittedChanges {
                         "operation-receipt-identity",
                     )
                     .map_err(|_| invalid())?;
-                self.committed_field_value(entity, &locator).is_some()
+                self.committed_changes.committed_field_value(entity, &locator).is_some()
             }
             _ => true,
         };

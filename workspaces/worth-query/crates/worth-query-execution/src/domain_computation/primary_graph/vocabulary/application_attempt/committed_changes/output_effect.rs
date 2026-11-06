@@ -1,5 +1,5 @@
 //! Conservative invalidation of one carried output publication by canonical effects.
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges;
+use super::WorthQueryApplicationCommittedChanges;
 use worth_relational::facade::publication::RecordStructuralChange;
 use worth_relational::facade::transactions::RecordRef;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence;

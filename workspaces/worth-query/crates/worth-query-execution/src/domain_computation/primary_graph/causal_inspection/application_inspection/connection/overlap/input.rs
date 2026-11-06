@@ -1,4 +1,5 @@
 //! A performed input joins its canonical source without any output-query projection.
+use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::committed_field_effect::CommittedFieldEffect;
 use super::*;
 use crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
 impl ObservationConnection<'_, '_> {

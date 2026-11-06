@@ -1,4 +1,5 @@
 //! Physical field revisions and declared roles, never equal business values.
+use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::committed_field_effect::CommittedFieldEffect;
 use super::*;
 use worth_execution::MapKernelContext;
 use {

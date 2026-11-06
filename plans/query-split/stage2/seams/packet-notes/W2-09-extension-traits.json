@@ -1,0 +1,22 @@
+{
+ "imports": [
+  {"method": "field_effect", "door": false,
+   "trait": "crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::committed_field_effect::CommittedFieldEffect"},
+  {"method": "materialize_field", "door": false,
+   "trait": "crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::materialized_committed_field::CommittedFieldMaterialization"},
+  {"method": "from_checkpoint_roles", "door": false,
+   "trait": "crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_checkpoint::OutputCorrespondenceRestoration"},
+  {"method": "field_effect_for_test", "door": true,
+   "trait": "crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::committed_field_effect::court_doors_for_test::CommittedFieldEffectDoorsOps"},
+  {"method": "from_checkpoint_roles_for_test", "door": true,
+   "trait": "crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_checkpoint::court_doors_for_test::OutputCorrespondenceRestorationDoorsOps"}
+ ],
+ "reshapes": [
+  {"under": "workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval",
+   "pattern": "\\.committed_changes\\(\\)\\s*(\\.workflow_actor_(?:fields|omission)_for_test\\()",
+   "replacement": "\\1"},
+  {"under": "workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval",
+   "pattern": "original(\\s*)\\.retain_workflow_actor_evidence_for_test\\((\\s*)([^,]+),(\\s*)([^,]+),\\s*performed\\.receipt\\(\\),",
+   "replacement": "performed\\1.receipt()\\1.retain_workflow_actor_evidence_for_test(\\2\\3,\\4\\5,"}
+ ]
+}

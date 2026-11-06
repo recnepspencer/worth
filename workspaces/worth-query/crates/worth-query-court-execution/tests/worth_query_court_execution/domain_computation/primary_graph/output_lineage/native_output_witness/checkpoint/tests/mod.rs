@@ -1,4 +1,5 @@
 //! Recovered output expectations survive a change outside the source field.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_checkpoint::court_doors_for_test::OutputCorrespondenceRestorationDoorsOps;
 pub use std::sync::Arc;
 pub use worth_relational::facade::identity::EntityId;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;

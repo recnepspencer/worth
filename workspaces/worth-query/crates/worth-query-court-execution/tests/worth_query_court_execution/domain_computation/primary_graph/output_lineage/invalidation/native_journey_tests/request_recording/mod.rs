@@ -1,4 +1,5 @@
 //! A request that compares a retained output in full pays to record its row.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_checkpoint::court_doors_for_test::OutputCorrespondenceRestorationDoorsOps;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
 

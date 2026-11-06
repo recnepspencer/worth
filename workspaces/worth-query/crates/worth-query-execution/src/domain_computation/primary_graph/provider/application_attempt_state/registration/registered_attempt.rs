@@ -1,6 +1,5 @@
 //! Atomic registration of Query-owned application-attempt records.
 
-use crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryApplicationAttemptRegistration;
 use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptAffinity;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity;
@@ -13,6 +12,10 @@ mod consumed_capacity;
 pub(in crate::domain_computation::primary_graph) use consumed_capacity::ApplicationAttemptRegistrationStop;
 mod output_contract;
 mod published_causality;
+mod registration_request;
+pub(in crate::domain_computation::primary_graph) use registration_request::{
+    WorthQueryApplicationAttemptRegistration, WorthQueryRetainedSuccessorObservations,
+};
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphApplicationAttempt {
     workflow_origin: Option<crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin>,
@@ -292,7 +295,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         registration: WorthQueryApplicationAttemptRegistration<'a>,
     ) -> Result<WorthQueryPreparedApplicationAttempt, ApplicationAttemptRegistrationStop> {
-        let crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryApplicationAttemptRegistration {
+        let WorthQueryApplicationAttemptRegistration {
             workflow_origin,
             required_output_demand,
             effect_owner: _effect_owner,

@@ -62,7 +62,6 @@ fn workflow_actor_contract_multiactor_requires_positive_original_proposer_and_cu
             assert!(replay.replayed());
             replay
                 .receipt()
-                .committed_changes()
                 .workflow_actor_fields_for_test(proposal.entity_id(), Role::Proposer)
                 .unwrap()
                 .expect("original proposal has its admitted proposer")
@@ -71,14 +70,12 @@ fn workflow_actor_contract_multiactor_requires_positive_original_proposer_and_cu
     };
     let recorded_advancer = performed
         .receipt()
-        .committed_changes()
         .workflow_actor_fields_for_test(performed.transition(), Role::Advancer)
         .unwrap()
         .expect("the approval command has an original advancer");
     assert!(
         performed
             .receipt()
-            .committed_changes()
             .workflow_actor_fields_for_test(performed.transition(), Role::Executor)
             .unwrap()
             .is_none(),
@@ -88,7 +85,6 @@ fn workflow_actor_contract_multiactor_requires_positive_original_proposer_and_cu
     for omit_all in [true, false] {
         assert!(performed
             .receipt()
-            .committed_changes()
             .workflow_actor_omission_for_test(performed.transition(), Role::Executor, omit_all)
             .unwrap()
             .is_none());
@@ -113,7 +109,6 @@ fn workflow_actor_contract_multiactor_requires_positive_original_proposer_and_cu
     assert_eq!(
         performed
             .receipt()
-            .committed_changes()
             .workflow_actor_fields_for_test(approval.entity(), Role::Approver)
             .unwrap(),
         Some(approval.approver())
@@ -124,7 +119,6 @@ fn workflow_actor_contract_multiactor_requires_positive_original_proposer_and_cu
     for omit_all in [true, false] {
         let denial = performed
             .receipt()
-            .committed_changes()
             .workflow_actor_omission_for_test(approval.entity(), Role::Approver, omit_all)
             .expect_err("current required approver cannot be missing or partial");
         assert_eq!(
@@ -148,7 +142,6 @@ fn workflow_actor_contract_multiactor_requires_positive_original_proposer_and_cu
     let mut performed_records = 0;
     for (entity, _) in effect.committed_changes().entity_changes() {
         if let Some(executor) = effect
-            .committed_changes()
             .workflow_actor_fields_for_test(entity, Role::Executor)
             .unwrap()
         {
@@ -156,7 +149,6 @@ fn workflow_actor_contract_multiactor_requires_positive_original_proposer_and_cu
             assert_eq!(executor, original_executor);
             assert_eq!(
                 effect
-                    .committed_changes()
                     .workflow_actor_fields_for_test(entity, Role::Advancer)
                     .unwrap(),
                 Some(original_executor)

@@ -12,8 +12,21 @@ use crate::domain_computation::primary_graph::application_checkpoint::{
 };
 use worth_execution::ExecutionRequest;
 
-impl WorthQueryApplicationOutputCorrespondence {
-    pub(in crate::domain_computation::primary_graph) fn from_checkpoint_roles<'a>(
+/// The attempt's restoration of a committed output correspondence from the
+/// roles an application checkpoint recorded, funded before it allocates.
+pub(in crate::domain_computation::primary_graph) trait OutputCorrespondenceRestoration: Sized {
+    fn from_checkpoint_roles<'a>(
+        binding_type: TypeId,
+        contract_type: TypeId,
+        optional_roles: impl Iterator<Item = &'a str> + Clone,
+        roles: &[WorthQueryCheckpointOutputRole],
+        entity_type: impl FnMut(&str) -> Option<TypeId>,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, CheckpointDecodeDenial>;
+}
+
+impl OutputCorrespondenceRestoration for WorthQueryApplicationOutputCorrespondence {
+    fn from_checkpoint_roles<'a>(
         binding_type: TypeId,
         contract_type: TypeId,
         optional_roles: impl Iterator<Item = &'a str> + Clone,
@@ -74,4 +87,4 @@ impl WorthQueryApplicationOutputCorrespondence {
 #[cfg(test)]
 mod tests;
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;

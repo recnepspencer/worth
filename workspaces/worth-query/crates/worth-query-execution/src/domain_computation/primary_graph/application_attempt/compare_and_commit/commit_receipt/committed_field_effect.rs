@@ -6,10 +6,21 @@ use worth_relational::facade::transactions::RecordRef;
 use crate::domain_computation::primary_graph::schema_layout::InstalledFieldCoordinate;
 use worth_relational::facade::publication::PublishedAuthoritativeFieldEffect as Effect;
 
-impl WorthQueryApplicationCommittedChanges {
+/// The attempt's reading of one committed field through its installed Native
+/// coordinate.
+pub(in crate::domain_computation::primary_graph) trait CommittedFieldEffect {
     /// O(record patches + matching patch grammar), diagnostic only and allocation-free.
     /// Full-GEN identity and one original patch are required. Retirement supplies no field.
-    pub(in crate::domain_computation::primary_graph) fn field_effect(
+    fn field_effect(
+        &self,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+        entity: EntityId,
+        coordinate: InstalledFieldCoordinate<'_>,
+    ) -> Result<Effect, worth_execution::MapKernelStop>;
+}
+
+impl CommittedFieldEffect for WorthQueryApplicationCommittedChanges {
+    fn field_effect(
         &self,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
         entity: EntityId,
@@ -49,4 +60,4 @@ impl WorthQueryApplicationCommittedChanges {
     }
 }
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;

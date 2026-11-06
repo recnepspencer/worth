@@ -31,8 +31,19 @@ impl MaterializedCommittedField {
             .field_value_at(self.value?)
     }
 }
-impl WorthQueryApplicationCommittedChanges {
-    pub(in crate::domain_computation::primary_graph) fn materialize_field(
+/// The attempt's sealing of one committed Native value position for diagnostic
+/// comparison.
+pub(in crate::domain_computation::primary_graph) trait CommittedFieldMaterialization {
+    fn materialize_field(
+        &self,
+        context: &mut MapKernelContext<'_, '_>,
+        entity: EntityId,
+        coordinate: InstalledFieldCoordinate<'_>,
+    ) -> Result<MaterializedCommittedField, MapKernelStop>;
+}
+
+impl CommittedFieldMaterialization for WorthQueryApplicationCommittedChanges {
+    fn materialize_field(
         &self,
         context: &mut MapKernelContext<'_, '_>,
         entity: EntityId,

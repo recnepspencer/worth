@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_checkpoint::OutputCorrespondenceRestoration;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 

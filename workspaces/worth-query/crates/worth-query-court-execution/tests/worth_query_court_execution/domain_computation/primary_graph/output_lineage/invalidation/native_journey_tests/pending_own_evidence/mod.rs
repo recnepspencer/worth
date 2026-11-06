@@ -1,4 +1,5 @@
 //! A pending upstream cannot hide a conclusive change to a candidate's own output.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_checkpoint::court_doors_for_test::OutputCorrespondenceRestorationDoorsOps;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole;
