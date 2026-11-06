@@ -124,7 +124,9 @@ where
 
 #[derive(Debug)]
 pub enum BankApplicationQueryDenial {
-    HistoryOutput(worth_query_host::facade::application_entry::WorthQueryHistoryOutputReadDenial),
+    HistoryOutput(
+        Box<worth_query_host::facade::application_entry::WorthQueryHistoryOutputReadDenial>,
+    ),
     ExecutionRequest(
         worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
@@ -235,7 +237,7 @@ impl BankApplicationQueryDenial {
                 Self::ManagedIndex(Box::new(cause))
             }
             WorthQueryApplicationRequestQueryDenial::HistoryOutput(cause) => {
-                Self::HistoryOutput(cause)
+                Self::HistoryOutput(Box::new(cause))
             }
             WorthQueryApplicationRequestQueryDenial::RequestMode => Self::RequestMode,
             WorthQueryApplicationRequestQueryDenial::CapabilityInstallation(denial) => {

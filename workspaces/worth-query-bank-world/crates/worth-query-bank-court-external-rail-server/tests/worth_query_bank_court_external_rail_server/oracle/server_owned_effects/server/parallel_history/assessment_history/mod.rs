@@ -162,7 +162,6 @@ fn prepare_assessment_history(width: usize) -> impl FnOnce() {
             )
             .unwrap()
     );
-    drop(workflow);
     move || {
         let workflow = fixture
             .world
