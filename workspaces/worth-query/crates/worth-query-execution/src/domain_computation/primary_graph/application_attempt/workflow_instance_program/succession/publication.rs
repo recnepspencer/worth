@@ -1,6 +1,6 @@
 //! Descriptive projection of the exact native successor recorded by this request.
 use super::super::super::{
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationCommitReceipt,
 };
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
 use super::{

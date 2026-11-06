@@ -32,7 +32,6 @@ pub(in crate::domain_computation::primary_graph) use publication::observe_read_o
 
 pub use preparation::{
     WorkflowProposalBindingDenial, WorkflowProposalPreparationDenial,
-    WorthQueryWorkflowProposalAdapter,
 };
 pub use {
     publication::PerformedWorkflowProposal, publication::PreparedWorkflowProposal,

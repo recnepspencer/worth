@@ -1,9 +1,8 @@
 //! A succession request holds the selection; the attempt seals the succession authority.
 use super::*;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding,
-    WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryPreserveOutput,
+    WorthQueryApplicationOutputRole, WorthQueryPreserveOutput,
 };
 use crate::domain_computation::primary_graph::application_attempt::{
     RequiredWorkflowSuccession, WorkflowSuccessionTarget,

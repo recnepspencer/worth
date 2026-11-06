@@ -222,7 +222,6 @@ pub use {
     workflow_proposal_program::WorkflowProposalBindingDenial,
     workflow_proposal_program::WorkflowProposalOutcome,
     workflow_proposal_program::WorkflowProposalPreparationDenial,
-    workflow_proposal_program::WorthQueryWorkflowProposalAdapter,
 };
 pub use {
     workflow_transition_program::PerformedWorkflowApproval,
