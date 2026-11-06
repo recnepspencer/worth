@@ -15,7 +15,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<
         WorkflowProgressOutcome,
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     >
     where
         Schema: ApplicationSchema,
@@ -60,7 +60,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<
         WorkflowProgressOutcome,
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     >
     where
         Schema: ApplicationSchema,
@@ -118,7 +118,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<
         WorkflowProgressOutcome,
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     >
     where
         Schema: ApplicationSchema,
@@ -209,8 +209,8 @@ impl WorthQueryWorkflowAdvanceAdapter {
 
 fn owner_custody_denial(
     required: &RequiredWorkflowOperation,
-) -> crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial {
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
+) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
         crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
         required.node_path(),
     )

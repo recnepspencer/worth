@@ -22,7 +22,7 @@ impl Denial {
     ) -> Self {
         if let Some(request) = cause.request_cause() {
             return Self::provider_execution_denied(Stage::EffectLowering,
-                crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(request.into(), None),
+                crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(request.into(), None),
                 "domain value write admission refused the original request");
         }
         Self {

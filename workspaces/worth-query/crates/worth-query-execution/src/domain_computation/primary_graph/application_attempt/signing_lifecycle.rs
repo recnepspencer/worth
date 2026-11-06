@@ -85,14 +85,14 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
         || {
             admission
                 .validate_current_authority()
-                .map_err(super::WorthQueryApplicationAttemptDenial::request_authority_lost)
+                .map_err(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::request_authority_lost)
         },
     )
     .map_err(attempt)?;
     let facts = facts
         .append_completed(
             extra,
-            super::retained_decision_facts::StorageControl::new(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
                 request.allocation_policy(),
                 Some(admission.publication_request()),
             ),
@@ -100,7 +100,7 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
         .map_err(|cause| attempt(cause.into_attempt_denial(admission.operation())))?;
     admission
         .validate_current_authority()
-        .map_err(super::WorthQueryApplicationAttemptDenial::request_authority_lost)
+        .map_err(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::request_authority_lost)
         .map_err(attempt)?;
     effects
         .try_reserve(batch.effects.len())
@@ -118,7 +118,7 @@ fn unavailable() -> Outcome {
 fn capacity() -> Outcome {
     refused(Kind::SigningLifecycleRepresentationCapacity)
 }
-fn attempt(cause: super::WorthQueryApplicationAttemptDenial) -> Outcome {
+fn attempt(cause: crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial) -> Outcome {
     match cause.kind() {
         crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::Cancelled => Outcome::Cancelled,
         crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded => Outcome::TimedOut,

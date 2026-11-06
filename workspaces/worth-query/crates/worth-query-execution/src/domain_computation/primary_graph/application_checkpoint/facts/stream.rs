@@ -1,6 +1,6 @@
 //! Bounded visitation over the same current fact codec, without a retained Vec.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
 
 pub(in crate::domain_computation::primary_graph) struct FactDecoder<'bytes, 'scope, 'authority> {
     cursor: CheckpointCursor<'bytes>,
@@ -40,7 +40,7 @@ impl<'bytes, 'scope, 'authority> FactDecoder<'bytes, 'scope, 'authority> {
         control.check_live().map_err(FactDecodeDenial::Retention)?;
         let quote = super::payload::parse_quote(bytes.len(), count)
             .ok_or(FactDecodeDenial::Retention(
-                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Representability))?;
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::Representability))?;
         let funding = CodecPayloadReservation::admit(control, quote)?;
         Ok(Self {
             funding,

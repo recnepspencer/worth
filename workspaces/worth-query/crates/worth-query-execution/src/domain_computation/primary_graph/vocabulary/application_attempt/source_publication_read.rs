@@ -1,28 +1,30 @@
-//! Attribution of an actual source-query observation to its original attempt.
-use {crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity, crate::domain_computation::primary_graph::vocabulary::application_contribution::source_qualification::OutputSourceAddress, crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication};
-use std::{cmp::Ordering, sync::Arc};
+//! Moved whole from `domain_computation::primary_graph::application_attempt::fact::source_publication_read`: the items below and every impl they own.
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::source_qualification::OutputSourceAddress;
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
+use std::cmp::Ordering;
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct SourcePublicationRead {
     admission: WorthQueryOperationAdmissionIdentity,
     address: Arc<OutputSourceAddress>,
 }
+
 impl SourcePublicationRead {
+    /// The address is the observed source publication's own (`ObservedSourcePublication::address`).
     pub(in crate::domain_computation::primary_graph) fn new(
         admission: WorthQueryOperationAdmissionIdentity,
-        observation: Arc<ObservedSourcePublication>,
+        address: Arc<OutputSourceAddress>,
     ) -> Self {
-        Self {
-            admission,
-            address: observation.address(),
-        }
+        Self { admission, address }
     }
-    pub(in crate::domain_computation::primary_graph) fn admits_observation(
+    /// The same admission read the same publication address (`Arc` identity, not equality).
+    pub(in crate::domain_computation::primary_graph) fn admits_address(
         &self,
         admission: WorthQueryOperationAdmissionIdentity,
-        observation: &ObservedSourcePublication,
+        address: &Arc<OutputSourceAddress>,
     ) -> bool {
-        self.admits(admission) && Arc::ptr_eq(&self.address, &observation.address())
+        self.admits(admission) && Arc::ptr_eq(&self.address, address)
     }
     pub(in crate::domain_computation::primary_graph) fn admits(
         &self,
@@ -31,6 +33,7 @@ impl SourcePublicationRead {
         self.admission == admission
     }
 }
+
 // Keys identify the original read, not its result. A second read cannot replace
 // the first observation whose expected value the original attempt must validate.
 impl Ord for SourcePublicationRead {
@@ -40,14 +43,17 @@ impl Ord for SourcePublicationRead {
             .then_with(|| self.address.cmp(&other.address))
     }
 }
+
 impl PartialOrd for SourcePublicationRead {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
+
 impl PartialEq for SourcePublicationRead {
     fn eq(&self, other: &Self) -> bool {
         self.cmp(other) == Ordering::Equal
     }
 }
+
 impl Eq for SourcePublicationRead {}

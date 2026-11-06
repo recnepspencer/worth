@@ -1,6 +1,6 @@
 //! Specific fact owner: only local authoring contains RefCell slots. The
 //! retained payload is move-only and has no policy/request references.
-use super::{AdmittedFactKey, RetainedFact, RetainedFactStore, StorageControl, StoreDenial};
+use {super::AdmittedFactKey, super::RetainedFact, super::RetainedFactStore, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial};
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use worth_execution::{ExecutionArray, ExecutionArrayIntoIter};
 

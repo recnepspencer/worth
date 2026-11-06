@@ -11,11 +11,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 
 use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
-use {
-    super::observe_field_value, super::WorthQueryApplicationAttemptDenial,
-    super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {super::observe_field_value, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 /// Deadlines are recorded as Unix-epoch milliseconds on the installed clock.
 const TIMELINE: ApplicationCapabilityValidityTimeline =

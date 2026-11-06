@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::{
     value_decode::ValueDecodeState,
 };
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 type ComputationReads = (ObservedComputationInputs, CompletedComputationRetention);
 

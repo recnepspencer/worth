@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use super::super::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::expected_steps::WorthQueryExpectedEffectStepPreparationWork;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 use crate::domain_computation::{

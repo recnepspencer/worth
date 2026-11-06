@@ -1,4 +1,4 @@
-use super::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayBuilder};
 
 /// Moves only the known inline payload into fresh admitted backing. Upstream

@@ -4,7 +4,7 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::retirement::rebase;
 pub use crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::retirement::tests;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationSourceAdjacencyEndpoints as AdmittedAdjacencyEndpoints;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::sequence::FactSequence;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_dependencies;
@@ -285,7 +285,7 @@ pub fn normal_rebase(
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
-            exact(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase(execution, runtime, selected.application_basis_for_test().snapshot_handle(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit_for_test(facts, [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true))
+            exact(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase(execution, runtime, selected.application_basis_for_test().snapshot_handle(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit_for_test(facts, [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true))
         })
 }
 

@@ -1,8 +1,5 @@
 //! Checkpoint format and retention refusals retain their distinct causes.
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::StoreDenial,
-    application_checkpoint::FactDecodeDenial,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial, crate::domain_computation::primary_graph::application_checkpoint::FactDecodeDenial};
 use {
     super::denial,
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,

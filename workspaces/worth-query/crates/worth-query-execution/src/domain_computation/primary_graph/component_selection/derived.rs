@@ -1,5 +1,6 @@
 //! Derived selections retain the genuine Member43 scope and Member46 layout.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionKey;
 use worth_query_installation::facade::{
     WorthQueryOperationDerivedSourceReadScope as Scope, WorthQueryOperationGraphReadScope,
 };
@@ -22,9 +23,9 @@ impl ComponentSelection {
             return Ok(None);
         };
         poll()?;
-        crate::domain_computation::primary_graph::aggregate_observation::member_work::checkpoint_names(&member,&mut poll)?;
+        crate::domain_computation::primary_graph::vocabulary::aggregate_observation::member_work::checkpoint_names(&member,&mut poll)?;
         for body in &aggregates {
-            crate::domain_computation::primary_graph::aggregate_observation::member_work::checkpoint_names(body.key().member(),&mut poll)?;
+            crate::domain_computation::primary_graph::vocabulary::aggregate_observation::member_work::checkpoint_names(body.key().member(),&mut poll)?;
         }
         if handle.parts().identity.name != scope.relation()
             || aggregates.len() != 1

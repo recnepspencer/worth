@@ -7,15 +7,7 @@ pub(super) use installation::install;
 use std::sync::Arc;
 use worth_foundational::{expression_api::ExpressionValue, facade::AspectValue};
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyValueSnapshot;
-use {
-    super::super::HandlerExecutionDenial, super::super::WorthQueryApplicationAttemptDenial,
-    super::super::WorthQueryApplicationOperationInvariantProjectionReader,
-    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
-    crate::domain_computation::request_execution::QueryRequestExecution,
-    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
-    crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-};
+use {super::super::HandlerExecutionDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::super::WorthQueryApplicationOperationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, crate::domain_computation::request_execution::QueryRequestExecution, crate::domain_computation::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 pub(in crate::domain_computation::primary_graph) fn prepare<
     S: worth_query_installation::facade::ApplicationSchema,
     O,

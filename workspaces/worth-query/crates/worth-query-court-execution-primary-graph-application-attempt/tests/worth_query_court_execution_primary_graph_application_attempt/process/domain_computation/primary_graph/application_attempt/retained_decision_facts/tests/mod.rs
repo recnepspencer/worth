@@ -143,8 +143,8 @@ fn conflicting_body_refuses_the_entire_attempt() {
 
 pub fn control<'scope, 'authority>(
     policy: Policy<'scope, 'authority>,
-) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl<'scope, 'authority>{
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(policy, None)
+) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'scope, 'authority>{
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(policy, None)
 }
 
 #[test]

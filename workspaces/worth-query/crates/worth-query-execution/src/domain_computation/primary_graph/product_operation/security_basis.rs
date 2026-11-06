@@ -129,7 +129,7 @@ trait SecurityBasisOwnOps<Schema: ApplicationSchema>:
                     use crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Currency;
                     match denial {
                         Currency::Execution(cause) => WorthQueryProductBranchAdmissionDenial::Stopped(
-                            crate::facade::primary_graph::relational_execution_kind(cause, None)),
+                            crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None)),
                         Currency::Basis(_) | Currency::IndexUnavailable(_) => WorthQueryProductBranchAdmissionDenial::Refused(
                             AdmissionRefusal::ObservationRejected),
                     }

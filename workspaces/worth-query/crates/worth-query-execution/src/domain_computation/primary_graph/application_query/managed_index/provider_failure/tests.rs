@@ -5,10 +5,7 @@ use crate::domain_computation::vocabulary::primary_graph::provider_failure::equa
 use crate::domain_computation::vocabulary::primary_graph::provider_failure::PaidProviderDenial;
 use crate::domain_computation::vocabulary::primary_graph::provider_failure::WorthQueryManagedIndexProviderFailure;
 use worth_execution::ChargedBytes;
-use {
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct Domain(u8);

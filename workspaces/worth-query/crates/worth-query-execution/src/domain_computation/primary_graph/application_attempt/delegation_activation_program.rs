@@ -3,11 +3,7 @@ use super::effect_validation::denial;
 use crate::domain_computation::authorization::{
     WorthQueryDelegationActivationBinding, WorthQueryDelegationActivationEffect,
 };
-use {
-    super::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEffectProgram,
-    super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEffectProgram, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 /// Exact child activation produced from Query-owned delegation authority.
 pub struct WorthQueryDelegationActivationProgram<Schema, Operation, Input, Scope> {

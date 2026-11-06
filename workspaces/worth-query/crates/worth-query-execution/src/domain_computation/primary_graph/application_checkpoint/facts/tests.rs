@@ -43,7 +43,7 @@ fn complete_comparable_fact_kinds_round_trip_without_losing_absence_or_sets() {
             direction: RelationalAdjacencyDirection::Incoming,
             native_revision: None,
             comparison_work_limit: 20,
-            endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::from_observed(&[entity], worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
+            endpoints: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints::from_observed(&[entity], worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
         },
         Fact::Entity {
             entity_id: entity,
@@ -175,7 +175,7 @@ fn total_byte_capacity_does_not_widen_each_membership_set() {
         direction: RelationalAdjacencyDirection::Outgoing,
         native_revision: Some(VersionId(1)),
         comparison_work_limit: MAXIMUM_SET_ENTITIES + 1,
-        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::from_observed(&(vec![entity; MAXIMUM_SET_ENTITIES + 1]), worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
+        endpoints: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints::from_observed(&(vec![entity; MAXIMUM_SET_ENTITIES + 1]), worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
     };
     assert!(encode(&[adjacency]).is_none());
     let large_fact = Fact::SourceAspectRevision {

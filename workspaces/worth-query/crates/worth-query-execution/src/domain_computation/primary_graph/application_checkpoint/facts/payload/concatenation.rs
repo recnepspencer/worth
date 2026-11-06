@@ -1,8 +1,6 @@
 //! Complete native read roots append through admitted, balanced path copies.
-use super::{FactPayload, FactStorage, StorageControl};
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::StoreDenial, fact_verification_observation,
-};
+use {super::FactPayload, super::FactStorage, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial, crate::domain_computation::primary_graph::fact_verification_observation};
 use worth_execution::ExecutionArrayBuilder;
 
 impl FactPayload {

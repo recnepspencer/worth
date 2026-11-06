@@ -2,6 +2,7 @@
 use super::*;
 use std::sync::OnceLock;
 use worth_execution::ExecutionMemoryReservation;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 
 pub(super) struct PreparedLeaf {
     pub(super) original: FactPayload,

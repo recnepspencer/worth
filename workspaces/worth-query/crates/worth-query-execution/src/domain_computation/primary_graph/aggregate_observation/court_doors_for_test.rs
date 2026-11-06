@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::key::AggregateKey;
 
 impl<Member> AggregateObservation<Member> {
     #[doc(hidden)]

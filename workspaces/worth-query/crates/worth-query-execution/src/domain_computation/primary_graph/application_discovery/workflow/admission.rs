@@ -34,7 +34,7 @@ pub enum WorthQueryWorkflowReadDenial {
     Relational(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Phase(crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase),
     Inspection(crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial),
-    Execution(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
+    Execution(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial),
     Principal(crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial),
     Authorization(WorthQueryOperationAuthorizationDenial),
 }

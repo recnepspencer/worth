@@ -23,7 +23,7 @@ pub(super) fn publish_aggregate_projection(
             after,
             pending.committed.patch(),
         ).map_err(|cause| WorthQueryProviderSessionFailure::checked_read_stopped(
-            super::super::relational_execution_denial::relational_execution_kind(cause,None),
+            crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause,None),
             crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
             "aggregate source read stopped after publication",
         ).with_recovery_posture(crate::domain_computation::WorthQueryProviderSessionRecoveryPosture::RecoveryRequired))?;

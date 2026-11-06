@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use worth_foundational::facade::AspectKey;
 use worth_relational::facade::identity::EntityId;
 
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFactKey as Key;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey as Key;
 
 #[derive(Default)]
 pub(super) struct PresenceKeys {

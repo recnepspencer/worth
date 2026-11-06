@@ -4,14 +4,10 @@ use key_scope::key_entities_are_in_scope;
 use worth_execution::ExecutionAllocationPolicy;
 use worth_query_installation::facade::{ApplicationRelationRef, OperationReads};
 
-use super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey, super::super::fact::WorthQueryApplicationObservedFact};
 use super::super::read_phase::WorthQueryProjectedApplicationMutation;
 use super::{denial, WorthQueryApplicationReadAttempt, WorthQueryCompleteApplicationReadSet};
-use {
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationReadAttempt<
@@ -44,7 +40,7 @@ impl<Schema, Operation, Input, Scope>
     > {
         let phase_request = match phase.request_for_source(self.lease.handle().relational_runtime_instance_id()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
+            Err(_) => return Err(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
         };
         let execution = &phase_request;
         self.complete_projected_dependencies_with_request(execution, allocation_policy)
@@ -81,7 +77,7 @@ impl<Schema, Operation, Input, Scope>
                 &self.admission.retain_graph_contract(),
                 self.admission.scope_entity_id(),
                 self.lease.snapshot(),
-                super::super::retained_decision_facts::StorageControl::new(
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
                     allocation_policy,
                     Some(self.admission.publication_request()),
                 ),

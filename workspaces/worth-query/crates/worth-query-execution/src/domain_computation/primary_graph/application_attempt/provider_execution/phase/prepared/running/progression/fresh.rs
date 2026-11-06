@@ -106,7 +106,7 @@ where
     let receipt = match authority.provider().capture_application_read_set(
         execution,
         &staged.read_authority(),
-        graph::application_attempt::retained_decision_facts::StorageControl::new(
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
             allocation_control.policy(),
             Some(authority.admission().publication_request()),
         ),
@@ -119,7 +119,7 @@ where
     };
     match authority.provider().compare_application_read_set(execution,
         &staged.read_authority(), receipt,
-        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
             allocation_control.policy(), Some(authority.admission().publication_request()),
         ),
     ) {

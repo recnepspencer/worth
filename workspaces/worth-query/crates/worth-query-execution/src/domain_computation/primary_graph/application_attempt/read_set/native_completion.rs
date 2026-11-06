@@ -5,10 +5,7 @@ use super::complete_read_set_core::{
 use super::computation_routing::NativeReadRefresh;
 use super::mutation_read_attempt_core::MutationReadAttemptCore;
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::{
-    check_request_live,
-    retained_decision_facts::{StorageControl, StoreDenial},
-};
+use {crate::domain_computation::primary_graph::application_attempt::check_request_live, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial};
 use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 use worth_execution::ExecutionAllocationPolicy;
@@ -203,7 +200,7 @@ impl NativeReadCompletion {
             Some(routes) => routes,
             None => super::super::CompletedFactRoutes::from_facts(
                 facts.clone(),
-                super::super::retained_decision_facts::StorageControl::new(
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
                     policy,
                     Some(admission.publication_request()),
                 ),

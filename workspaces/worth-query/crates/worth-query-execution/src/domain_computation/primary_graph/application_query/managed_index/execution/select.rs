@@ -73,7 +73,7 @@ where
     }
     graph.with_runtime(execution, |runtime| {
         root.source.authorization.validate_current(runtime, execution, selected.application_basis().snapshot_handle())
-    }).map_err(|stop| Denial::SourceVerification(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::output_observation(stop)))?;
+    }).map_err(|stop| Denial::SourceVerification(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::output_observation(stop)))?;
     let material = graph.with_runtime(execution, |runtime| {
         runtime.read_truth().public_managed_index_cache_payload(
             execution, selected.application_basis().snapshot_handle(), &root.cache,

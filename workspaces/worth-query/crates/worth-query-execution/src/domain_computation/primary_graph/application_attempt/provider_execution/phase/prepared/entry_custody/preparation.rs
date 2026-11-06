@@ -161,7 +161,7 @@ where
     } else {
         match crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
             lifecycle.facts.clone(),
-            crate::domain_computation::primary_graph::StorageControl::new(execution.allocation_policy(), Some(admission.publication_request())),
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(execution.allocation_policy(), Some(admission.publication_request())),
         ) {
             Ok(routes) => routes,
             Err(cause) => return terminal(WorthQueryApplicationCommitOutcome::Denied(

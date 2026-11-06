@@ -10,10 +10,7 @@ use worth_query_installation::facade::{
 
 use crate::basis::{WorthQueryProductBranch, WorthQueryProductBranchReadIdentity};
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
-use crate::domain_computation::primary_graph::{
-    PreparedWorkflowDefinitionPublication, WorthQueryAdmittedApplicationOperation,
-    WorthQueryApplicationAttemptDenial, WorthQueryOperationProjectionDenial,
-};
+use {crate::domain_computation::primary_graph::PreparedWorkflowDefinitionPublication, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial};
 
 /// Owner-bound definition contract for one exact selected branch occurrence.
 ///

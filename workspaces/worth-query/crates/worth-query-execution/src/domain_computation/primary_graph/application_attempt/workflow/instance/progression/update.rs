@@ -2,7 +2,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowCon
 use worth_relational::facade::identity::{EntityId, VersionId};
 
 use crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use {
     super::SettledWorkflowTransition, super::WorkflowInstanceProgress,
     super::WorkflowInstanceProgressRetention, super::WorkflowInstanceProgressRetentionDenial,

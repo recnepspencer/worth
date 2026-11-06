@@ -3,7 +3,7 @@ use {super::super::super::observe_adjacency, crate::domain_computation::primary_
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
-use {super::mismatch, super::ApplicationSchema, super::ApplicationWorkflowSpec, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowLineageCarry};
+use {super::mismatch, super::ApplicationSchema, super::ApplicationWorkflowSpec, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowLineageCarry};
 impl<
         Schema: ApplicationSchema,
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,

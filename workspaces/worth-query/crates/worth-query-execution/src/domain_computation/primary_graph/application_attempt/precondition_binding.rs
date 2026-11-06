@@ -12,7 +12,7 @@ use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 use worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts;
 use worth_relational::facade::identity::EntityId;
 
-use super::WorthQueryApplicationFactKey;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 use super::WorthQueryApplicationObservedFact;
 use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 

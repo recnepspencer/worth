@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn workflow_actor_native_cause_survives_reentry_stop_and_resource_mapping() {
         use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial as Authorization;
-        use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Attempt;
+        use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Attempt;
         use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
         for cause in [
             Native::Cancelled,

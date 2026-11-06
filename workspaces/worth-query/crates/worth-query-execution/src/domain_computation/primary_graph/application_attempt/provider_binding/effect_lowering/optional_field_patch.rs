@@ -15,7 +15,7 @@ use super::{
     effect_step, mutation, ObservedFactIndex, UniqueValueWrites, WorthQueryLoweredProviderEffect,
 };
 use crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryApplicationOptionalFieldWrite;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::WorthQueryProvisionalEffectAction;
 
 struct AspectFieldPatch {

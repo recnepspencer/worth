@@ -1,6 +1,6 @@
 //! Admission of original, pre-effect facts into the shared native carrier.
-use super::super::retained_decision_facts::StorageControl;
-use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationObservedFact};
 use crate::domain_computation::primary_graph::application_checkpoint::facts::{
     FactPayload, NativeFactPayloadBuilder,
 };

@@ -13,7 +13,7 @@ pub fn map_bootstrap_commit_denial(
         Error::Execution { denial, .. } => {
             let translated = match denial.kind {
                 worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
-                    super::super::provider::relational_execution_denial::relational_execution_kind(
+                    crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(
                         cause,
                         denial.partition_identity,
                     )

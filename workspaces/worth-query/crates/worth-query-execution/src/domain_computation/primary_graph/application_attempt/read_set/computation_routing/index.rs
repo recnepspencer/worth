@@ -1,8 +1,9 @@
 //! Original ordinals and persistent per-call dependency sets.
-use super::super::super::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 use super::*;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionOrderedMap};
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ComputationFactIndex {
     pub(super) ordinals: std::sync::Arc<ExecutionOrderedMap<usize, WorthQueryApplicationFactKey>>,

@@ -58,19 +58,19 @@ pub enum WorkflowApprovalRequestEncodingDenial {
     TooLarge,
     NonPortableValue,
     InvalidRequest,
-    Native(Box<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>),
+    Native(Box<crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>),
 }
 
 #[derive(Debug)]
 pub enum WorkflowApprovalRequestDecodingDenial {
     InvalidRequest,
-    Actor(Box<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>),
+    Actor(Box<crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>),
 }
-impl From<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
+impl From<crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>
     for WorkflowApprovalRequestDecodingDenial
 {
     fn from(
-        cause: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        cause: crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     ) -> Self {
         Self::Actor(Box::new(cause))
     }

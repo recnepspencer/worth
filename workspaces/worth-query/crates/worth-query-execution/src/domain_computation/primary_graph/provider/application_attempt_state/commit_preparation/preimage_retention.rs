@@ -57,7 +57,7 @@ pub(super) fn retain_attempt_preimage(
         .ok_or_else(|| retention_failure(WorthQueryPreImageRetentionDenial::EmptyDemand))?;
     let candidates = attempt.facts().preimage_candidates(demand, &footprint, policy)
         .map_err(|cause| match cause {
-            crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial) =>
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial) =>
                 WorthQueryProviderSessionFailure::allocation_denied(denial),
             _ => provider_failure(WorthQueryProviderSessionProtocolStage::Commit,
                 "preimage projection capacity exhausted"),
@@ -130,7 +130,7 @@ fn retention_failure(
         |detail| provider_failure(WorthQueryProviderSessionProtocolStage::Commit, detail);
     let failure = match denial {
         WorthQueryPreImageRetentionDenial::Content(cause) => {
-            let stop = crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(
+            let stop = crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(
                 cause.into_execution_cause(), None);
             WorthQueryProviderSessionFailure::checked_read_stopped(
                 stop,

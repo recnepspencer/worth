@@ -1,7 +1,26 @@
 //! Complete governed Native components become roots only after whole-cohort visibility.
 use super::super::interruption::NativeReadInterruption;
 use super::*;
-use {crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation, crate::domain_computation::primary_graph::aggregate_observation::AggregateQuery, crate::domain_computation::primary_graph::aggregate_observation::AggregateSelection, crate::domain_computation::primary_graph::application_query::observed_source::DeclaredComponentSelection, crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection, crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan, crate::domain_computation::primary_graph::component_selection::acquisition, crate::domain_computation::primary_graph::component_selection::acquisition::CohortSourceCapture, crate::domain_computation::primary_graph::component_selection::acquisition::ComponentAcquisitionReader, crate::domain_computation::primary_graph::component_selection::acquisition::CouplingObservationDenial, crate::domain_computation::primary_graph::component_selection::ComponentSelection, crate::domain_computation::primary_graph::component_selection::ComponentSelectionSubject, crate::domain_computation::primary_graph::root_path_selection::RootPathOrientation, crate::domain_computation::primary_graph::root_path_selection::RootPathReadBasis, crate::domain_computation::primary_graph::root_path_selection::RootPathSelection, crate::domain_computation::primary_graph::root_path_selection::RootPathSelectionRequest, crate::domain_computation::graph_layout::ComponentSetLayout, crate::domain_computation::primary_graph::source_facts::SourceFacts, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation, crate::domain_computation::primary_graph::source_facts::SourceFactsBuilder};
+use crate::domain_computation::graph_layout::ComponentSetLayout;
+use crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation;
+use crate::domain_computation::primary_graph::aggregate_observation::AggregateQuery;
+use crate::domain_computation::primary_graph::application_query::observed_source::DeclaredComponentSelection;
+use crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection;
+use crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan;
+use crate::domain_computation::primary_graph::component_selection::ComponentSelection;
+use crate::domain_computation::primary_graph::component_selection::acquisition;
+use crate::domain_computation::primary_graph::component_selection::acquisition::CohortSourceCapture;
+use crate::domain_computation::primary_graph::component_selection::acquisition::ComponentAcquisitionReader;
+use crate::domain_computation::primary_graph::component_selection::acquisition::CouplingObservationDenial;
+use crate::domain_computation::primary_graph::root_path_selection::RootPathOrientation;
+use crate::domain_computation::primary_graph::root_path_selection::RootPathReadBasis;
+use crate::domain_computation::primary_graph::root_path_selection::RootPathSelection;
+use crate::domain_computation::primary_graph::root_path_selection::RootPathSelectionRequest;
+use crate::domain_computation::primary_graph::source_facts::SourceFacts;
+use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
+use crate::domain_computation::primary_graph::source_facts::SourceFactsBuilder;
+use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection;
+use crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionSubject;
 use std::{collections::BTreeMap, sync::Arc};
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryComponentMeaning, ApplicationQueryComponentSelection,

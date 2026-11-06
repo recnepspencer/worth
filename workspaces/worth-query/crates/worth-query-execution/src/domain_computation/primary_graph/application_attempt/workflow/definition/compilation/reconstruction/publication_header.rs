@@ -9,8 +9,11 @@ use super::{
     WorkflowDefinitionCompilationPosture,
 };
 use crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::publication_binding::WorkflowDefinitionPublicationRevisions;
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact};
 use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef;
 
 pub(super) struct ObservedWorkflowPublicationHeader {
     pub(super) definition: EntityId,
@@ -106,7 +109,7 @@ fn observe_adjacency_revision(
         direction: RelationalAdjacencyDirection::Outgoing,
         native_revision: revision,
         comparison_work_limit: COMPARISON_WORK_LIMIT,
-        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
+        endpoints: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints::empty(),
     });
     Ok(revision)
 }

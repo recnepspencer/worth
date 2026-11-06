@@ -97,9 +97,9 @@ impl WorkflowOperationSettlementBasis {
     pub(in crate::domain_computation::primary_graph) fn prepare_progress_update(
         &self,
         operation_receipt_identity: [u8; 32],
-    ) -> Result<PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial>{
+    ) -> Result<PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>{
         self.progress_basis.as_ref().ok_or_else(|| {
-            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::new(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
                 crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
                 "workflow transition progress basis is unavailable",
             )
@@ -162,9 +162,9 @@ impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operati
         &self,
         outcome: ApplicationWorkflowControlOutcome,
         operation_receipt_identity: Option<[u8; 32]>,
-    ) -> Result<PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial>{
+    ) -> Result<PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>{
         self.progress_basis.as_ref().ok_or_else(|| {
-            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::new(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
                 crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
                 "workflow transition progress basis is unavailable",
             )
@@ -187,9 +187,9 @@ impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operati
 
     pub(in crate::domain_computation::primary_graph) fn prepare_assessment_collection_update(
         &self,
-    ) -> Result<PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial>{
+    ) -> Result<PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>{
         self.progress_basis.as_ref().ok_or_else(|| {
-            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::new(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
                 crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
                 "assessment collection progress basis is unavailable",
             )

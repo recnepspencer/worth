@@ -1,5 +1,6 @@
 //! Complete component inspection under installation-owned projection authority.
-use {crate::domain_computation::primary_graph::aggregate_observation::AggregateSelection, crate::domain_computation::graph_layout::ComponentSetLayout};
+use crate::domain_computation::graph_layout::ComponentSetLayout;
+use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection;
 use worth_query_declaration::facade::application_schema::ApplicationComponentSetRef;
 use worth_query_installation::facade::ApplicationSchema;
 use {

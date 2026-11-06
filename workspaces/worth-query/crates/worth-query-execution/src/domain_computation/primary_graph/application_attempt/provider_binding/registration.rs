@@ -105,7 +105,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         return abort_registration(staged, DenialStage::DecisionReadSet);
     }
     let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(context.admission(&inspection).publication_request(), allocation_policy);
-    let control = crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(context.admission(&inspection).publication_request()));
+    let control = crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(allocation_control.policy(), Some(context.admission(&inspection).publication_request()));
     // The completed handler payload precedes fresh authorization's overlay.
     // Correctable ordinary sources retain all semantic reads, including the
     // projected prefix, rather than only output-source observations.

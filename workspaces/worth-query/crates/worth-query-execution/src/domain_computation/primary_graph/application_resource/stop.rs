@@ -39,7 +39,7 @@ pub(super) enum ResourceCause {
     Principal(crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial),
     Scope(crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial),
     ScopeCapture(Result<crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind, crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind>),
-    ParameterCapture(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
+    ParameterCapture(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial),
     Admission(ResourceAdmissionDenial),
     Storage(ResourceStorageDenial),
     Value(CaptureStop<ResourceValueDenial>),

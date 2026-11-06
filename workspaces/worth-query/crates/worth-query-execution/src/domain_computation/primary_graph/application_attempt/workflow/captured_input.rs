@@ -68,7 +68,7 @@ pub enum WorkflowCapturedInputDenial {
     DuplicateTarget,
     TargetMismatch,
     ResourceObservation,
-    ResourceRead(Box<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>),
+    ResourceRead(Box<crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>),
     Source(WorthQuerySourceExpectationDenial),
 }
 
@@ -161,7 +161,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         }).map_err(|cause| match cause {
             crate::domain_computation::primary_graph::application_attempt::WorthQueryIndexedSelectionRefusal::Execution(cause) =>
                 WorkflowCapturedInputDenial::ResourceRead(Box::new(
-                    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, B::IDENTITY))),
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, B::IDENTITY))),
             _ => WorkflowCapturedInputDenial::ResourceObservation,
         })?;
         if !matches!(&selection,

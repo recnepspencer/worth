@@ -13,12 +13,7 @@ use {
     super::capture_parameters,
     crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure,
 };
-use {
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
-    crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind, crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector};
 
 #[expect(
     clippy::disallowed_methods,

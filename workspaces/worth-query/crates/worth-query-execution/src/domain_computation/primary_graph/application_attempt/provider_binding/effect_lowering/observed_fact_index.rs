@@ -6,9 +6,7 @@ use worth_foundational::facade::{
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::indexes::DerivedIndexId;
 
-use super::super::{
-    progression_denial, WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
-};
+use {super::super::progression_denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::super::WorthQueryApplicationObservedFact};
 
 /// First matching sealed fact for each effect target. Indexing preserves the
 /// previous first-match semantics while avoiding a full fact scan per effect.
@@ -25,9 +23,7 @@ impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
     pub(in crate::domain_computation::primary_graph::application_attempt::provider_binding) fn new(
         facts: &'facts Facts,
     ) -> Self {
-        use crate::domain_computation::primary_graph::application_attempt::{
-            retained_decision_facts::StorageControl, FactRoutes,
-        };
+        use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::application_attempt::FactRoutes};
         let routes = FactRoutes::build_iter(
             facts.iter(),
             None,
@@ -186,9 +182,7 @@ mod tests {
 
     #[test]
     fn completed_routes_refuse_equal_unrelated_backing_and_keep_first_ordinal() {
-        use crate::domain_computation::primary_graph::application_attempt::{
-            retained_decision_facts::StorageControl, FactContent,
-        };
+        use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::application_attempt::FactContent};
         use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
         use worth_execution::ExecutionAllocationPolicy;
         let locator = planned_single_field_locator(

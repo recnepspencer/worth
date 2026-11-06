@@ -2,15 +2,13 @@ pub(in crate::domain_computation::primary_graph) use fact::SourceReadAuthorizati
 mod output_field_capture;
 
 pub(in crate::domain_computation::primary_graph) use fact::ManagedSourceRead;
-pub(in crate::domain_computation::primary_graph) use fact::SourcePublicationRead;
-pub use output_field_capture::{OutputFieldCaptureFailure, StoreDenial};
+pub use output_field_capture::OutputFieldCaptureFailure;
 mod capability_revocation_program;
 pub(crate) mod commit_authority_binding;
 mod commit_outcome_identity;
 mod commit_terminal;
 pub(crate) mod compare_and_commit;
 mod delegation_activation_program;
-mod denial;
 pub(crate) mod dependency_identity;
 pub(in crate::domain_computation::primary_graph) use dependency_identity::{
     FactContent, OutputCurrentnessFacts, WorthQueryProducerIdentityDenial,
@@ -55,7 +53,7 @@ mod signing_lifecycle;
 pub(in crate::domain_computation::primary_graph) use read_set::request_liveness::check_request_live;
 
 pub(in crate::domain_computation::primary_graph) use read_set::FactRoutes;
-pub(in crate::domain_computation) use read_set::{CompletedFactProjection, CompletedOriginalRead};
+pub(in crate::domain_computation) use read_set::CompletedOriginalRead;
 pub use signed_creation::{
     WorthQuerySignedCreationAdapter, WorthQuerySignedCreationPreparationDenial,
 };
@@ -88,7 +86,6 @@ pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
     WorthQueryProgramActivationUnresolved,
 };
 pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
-pub use denial::WorthQueryApplicationAttemptDenial;
 pub(super) use elevation_approval_outcome::approved_outcome;
 pub use elevation_approval_outcome::{
     WorthQueryApprovedElevation, WorthQueryElevationApprovalOutcome,
@@ -146,8 +143,7 @@ pub use {
 pub(in crate::domain_computation::primary_graph) use {
     fact::observe_adjacency, fact::observe_indexed_candidates,
     fact::reobserve_indexed_entity_selection, fact::FactMovement, fact::ObservedRetained,
-    fact::WorthQueryApplicationFactKey, fact::WorthQueryApplicationObservedRelation,
-    fact::WorthQueryIndexedSelectionRefusal,
+    fact::WorthQueryApplicationObservedRelation, fact::WorthQueryIndexedSelectionRefusal,
 };
 
 pub use idempotency::{
@@ -251,8 +247,6 @@ pub use {
     workflow_transition_program::WorthQueryWorkflowActorContext,
     workflow_transition_program::WorthQueryWorkflowAdvanceAdapter,
 };
-
-pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;
 
 pub(in crate::domain_computation) use fact::consult_observation;
 

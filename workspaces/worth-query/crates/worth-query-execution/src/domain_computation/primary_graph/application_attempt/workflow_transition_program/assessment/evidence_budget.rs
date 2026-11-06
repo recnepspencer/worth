@@ -1,10 +1,9 @@
 //! Streaming demand and retained-evidence admission before materialization.
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationRealizedEffect;
-use {crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout, crate::domain_computation::primary_graph::application_attempt::workflow::workflow_evidence_retained_bytes};
-use {
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::workflow_evidence_retained_bytes;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 pub fn admit(
     layout: &WorthQueryWorkflowLayout,

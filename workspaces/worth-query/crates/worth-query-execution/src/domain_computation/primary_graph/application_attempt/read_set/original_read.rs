@@ -1,8 +1,8 @@
 //! Live original physical-read custody, issued only after native completion.
-use super::super::retained_decision_facts::StorageControl;
-use super::super::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 use super::super::snapshot_lease::WorthQueryApplicationSnapshotLease;
-use super::CompletedFactProjection;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 use std::sync::Arc;
 use worth_relational::facade::runtime::RelationalRuntime;

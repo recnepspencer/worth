@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use std::sync::Arc;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 impl SealedComputationFacts {
     pub(super) fn at_seal(

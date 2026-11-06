@@ -1,6 +1,6 @@
 //! Completion preparation retains an execution refusal at its original phase.
 use super::WorthQueryInboundCompletionPreparationDenial as Denial;
-use crate::domain_computation::primary_graph::provider::relational_execution_denial;
+use crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage as Stage;
 use worth_relational::facade::transactions::{
     CommitExecutionDenialKind, TransactionCommitError as Error,
@@ -26,7 +26,7 @@ fn commit_denial(error: &Error, stage: Stage, ordinary: Denial) -> Denial {
             let cause = match denial.kind {
                 CommitExecutionDenialKind::Cause(cause) => cause,
             };
-            match relational_execution_denial::relational_execution_kind(
+            match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(
                 cause,
                 denial.partition_identity,
             ) {

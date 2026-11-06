@@ -112,7 +112,7 @@ where
                     crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::SnapshotIdentityExhausted) => {
                         super::snapshot_identity_reconstruction_denial()
                     }
-                    crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Stopped(cause) => super::denial::read_stopped(crate::facade::primary_graph::relational_execution_kind(cause, None)),
+                    crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Stopped(cause) => super::denial::read_stopped(crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None)),
         crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Refused(_) => reconstruction_denial(
                         WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionIntent,
                         format!("{:?}: {}", denial.kind(), denial.subject()),

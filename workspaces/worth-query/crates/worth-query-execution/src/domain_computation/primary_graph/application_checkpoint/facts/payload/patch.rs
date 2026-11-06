@@ -1,9 +1,6 @@
 //! One prepared fixed-shape edit of existing native leaves. No freshness grant.
-use super::{Fact, FactPayload, FactStorage, StorageControl};
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::StoreDenial,
-    fact_verification_observation as observation,
-};
+use {super::Fact, super::FactPayload, super::FactStorage, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial, crate::domain_computation::primary_graph::fact_verification_observation as observation};
 use std::cell::RefCell;
 use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 

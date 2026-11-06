@@ -1,4 +1,4 @@
-use super::{RetainedFact, StoreDenial};
+use {super::RetainedFact, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial};
 use std::cell::RefCell;
 use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 
@@ -7,7 +7,7 @@ use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 /// already in authored order should bypass this bridge and retain that order.
 pub fn restore_authored_order<T>(
     records: ExecutionArray<RetainedFact<T>>,
-    policy: super::StorageControl<'_, '_>,
+    policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
 ) -> Result<ExecutionArray<RetainedFact<T>>, StoreDenial> {
     let count = records.len();
     policy.check_live()?;

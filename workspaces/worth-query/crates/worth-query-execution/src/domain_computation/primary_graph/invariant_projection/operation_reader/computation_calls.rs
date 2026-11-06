@@ -16,7 +16,7 @@ use worth_relational::facade::identity::EntityId;
 
 use super::decision_reads::DecisionReadOutcome;
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
-use {crate::domain_computation::primary_graph::application_attempt::observe_admitted_fact, crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead, crate::domain_computation::primary_graph::application_attempt::ObservedRetained, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFactKey};
+use {crate::domain_computation::primary_graph::application_attempt::observe_admitted_fact, crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead, crate::domain_computation::primary_graph::application_attempt::ObservedRetained, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey};
 use crate::domain_computation::primary_graph::application_contribution::Comparator;
 use crate::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget;
 

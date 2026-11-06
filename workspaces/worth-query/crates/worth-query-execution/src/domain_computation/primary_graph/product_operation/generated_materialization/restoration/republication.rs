@@ -55,7 +55,7 @@ pub(super) trait RepublicationParentOps<Schema: ApplicationSchema>:
                 &correspondence,
                 &producer.observed_source_facts,
                 witness,
-                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None),
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(execution.allocation_policy(), None),
             )?;
             Some((republished, read_basis))
         });

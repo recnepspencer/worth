@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
 };
 use std::sync::Arc;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 pub struct PreparedComputationFacts {
     index: Arc<ComputationFactIndex>,
@@ -26,7 +27,7 @@ impl SealedComputationFacts {
     }
     pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn retain_projection(
         &mut self,
-        projection: Arc<super::super::CompletedFactProjection>,
+        projection: Arc<crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection>,
     ) {
         self.projection = Some(projection);
     }
@@ -39,7 +40,7 @@ impl SealedComputationFacts {
         attribution: ComputationFactAttribution,
         ordered: impl Iterator<Item = &'a WorthQueryApplicationFactKey>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<PreparedComputationFacts, super::super::super::retained_decision_facts::StoreDenial>
+    ) -> Result<PreparedComputationFacts, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>
     {
         let mut readers = attribution.readers;
         let mut handler = attribution.handler.map(|handler| {

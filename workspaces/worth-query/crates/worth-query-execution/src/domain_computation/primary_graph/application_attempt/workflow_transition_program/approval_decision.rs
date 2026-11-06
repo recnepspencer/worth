@@ -353,7 +353,7 @@ where
         );
         let evidence_currentness = super::super::OutputCurrentnessFacts::admit_owned_program_facts(
             inputs.currentness,
-            super::super::retained_decision_facts::StorageControl::new(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
                 execution.allocation_policy(),
                 Some(self.admission.publication_request()),
             ),

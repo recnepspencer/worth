@@ -1,15 +1,12 @@
 //! Fixed-shape completion consumes the comparator's original native custody.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::{StorageControl, StoreDenial},
-    application_checkpoint::facts::FactPayload,
-    application_contribution::CompletedComputationRetention,
-    fact_verification_observation as observation,
-};
+use super::super::application_projection::CompletedFactProjectionRouting;
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial, crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention, crate::domain_computation::primary_graph::fact_verification_observation as observation};
 use std::sync::Arc;
 use worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts as Contracts;
 use worth_relational::facade::{identity::EntityId, snapshots::SnapshotHandle};
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 pub(in crate::domain_computation::primary_graph) struct NativeReadRefresh {
     prior: SealedComputationFacts,
@@ -208,12 +205,12 @@ impl NativeReadRefresh {
         original: &FactPayload,
         changed: &im::OrdSet<usize>,
         control: StorageControl<'_, '_>,
-    ) -> Result<Arc<super::super::CompletedFactProjection>, StoreDenial> {
+    ) -> Result<Arc<crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection>, StoreDenial> {
         match &self.prior.projection {
             Some(projection) => {
                 projection.refresh(&self.prior.original, original, changed, control)
             }
-            None => super::super::CompletedFactProjection::build(
+            None => crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection::build(
                 original,
                 self.layout.scopes.clone(),
                 control,
@@ -224,7 +221,7 @@ impl NativeReadRefresh {
         mut self,
         original: FactPayload,
         content: Option<super::super::super::FactContent>,
-        projection: Arc<super::super::CompletedFactProjection>,
+        projection: Arc<crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection>,
     ) -> (
         SealedComputationFacts,
         crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,

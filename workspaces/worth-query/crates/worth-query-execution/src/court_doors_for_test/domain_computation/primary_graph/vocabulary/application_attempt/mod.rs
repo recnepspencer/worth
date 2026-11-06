@@ -13,6 +13,8 @@ pub mod observation;
 pub mod output_correspondence;
 #[path = "predecode_admission/mod.rs"]
 pub mod predecode_admission;
+#[path = "retained_decision_facts/mod.rs"]
+pub mod retained_decision_facts;
 #[path = "role_use/mod.rs"]
 pub mod role_use;
 #[path = "scope_bindings/mod.rs"]

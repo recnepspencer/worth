@@ -1,9 +1,6 @@
 use super::WorthQueryApplicationEffectProgramBuilder;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition;
-use {
-    super::super::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>

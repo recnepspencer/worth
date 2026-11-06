@@ -5,10 +5,7 @@ use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
 };
-use {
-    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowTransitionReplay {
     node_path: String,

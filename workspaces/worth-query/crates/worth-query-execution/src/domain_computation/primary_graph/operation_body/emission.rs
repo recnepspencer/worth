@@ -144,9 +144,7 @@ fn invalid_payload(
     recipe: &Recipe,
     kind: DenialKind,
 ) -> crate::domain_computation::primary_graph::HandlerExecutionDenial {
-    use crate::domain_computation::primary_graph::{
-        HandlerExecutionDenial, WorthQueryApplicationAttemptDenial,
-    };
+    use {crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial};
     HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::new(
         kind,
         &recipe.meaning().effect,

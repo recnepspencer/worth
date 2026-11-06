@@ -163,7 +163,7 @@ fn program_request_stop(
     stop: worth_execution::WorkCeilingDenial,
 ) -> WorthQueryApplicationCommitOutcome {
     use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
-    let cause = crate::facade::primary_graph::relational_execution_kind(stop.into(), None);
+    let cause = crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(stop.into(), None);
     match cause {
         Err(Control::Cancelled) => WorthQueryApplicationCommitOutcome::Cancelled,
         Err(Control::TimedOut) => WorthQueryApplicationCommitOutcome::TimedOut,

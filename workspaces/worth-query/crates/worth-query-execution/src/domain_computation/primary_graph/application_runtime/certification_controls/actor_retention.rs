@@ -8,10 +8,10 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         (usize, usize),
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     > {
         let execution = phase.execution_request_for(&self.runtime.product_runtime).map_err(|_| {
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
                 crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase,
                 "actor retention",
             )
@@ -24,7 +24,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         handle.with_query_runtime_mut(&execution, |runtime, _| {
             runtime.retention().run_pass(&execution)
                 .map(|actual| (actual.entity_reclaimed, actual.relation_reclaimed))
-                .map_err(|cause| crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "actor retention"))
+                .map_err(|cause| crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "actor retention"))
         })
     }
 }

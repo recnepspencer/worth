@@ -137,7 +137,7 @@ pub(super) fn commit(
     let prepared_touched_records =
         touched_records::PreparedTouchedRecords::prepare(&candidate, allocation_policy)?;
     let source_fact_rebase = provider.graph.with_runtime(&execution, |runtime| source_fact_rebase.prepare_candidate(&candidate, runtime, before.as_snapshot(),
-        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_policy, Some(attempt.affinity().publication_request())),
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(allocation_policy, Some(attempt.affinity().publication_request())),
     )).map_err(stops::source_rebase_preparation_stop)?;
     let ordinary_index_budget =
         crate::domain_computation::vocabulary::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget();

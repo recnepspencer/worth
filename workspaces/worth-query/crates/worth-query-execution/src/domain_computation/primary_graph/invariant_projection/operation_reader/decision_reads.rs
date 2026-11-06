@@ -14,7 +14,7 @@ pub(in crate::domain_computation::primary_graph) use computation_inputs::Observe
 pub(in crate::domain_computation::primary_graph) use expected_keys::ExpectedFactKeys;
 
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
-use {crate::domain_computation::primary_graph::application_attempt::ComputationFactAttribution, crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFactKey};
+use {crate::domain_computation::primary_graph::application_attempt::ComputationFactAttribution, crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey};
 use crate::domain_computation::primary_graph::application_contribution::{
     CompletedComputationRetention, ComputationDeposit, ComputationPrior, PriorAbsence, Suppression,
 };
@@ -65,11 +65,8 @@ impl FailedDecisionRead {
     pub(in crate::domain_computation::primary_graph) fn into_attempt_denial(
         self,
         operation: &str,
-    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial {
-        use {
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial,
-            crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
-        };
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial {
+        use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
         match self {
             Self::Execution(cause) => Denial::relational_read_stopped(cause, operation),
             failed => Denial::new(Kind::MissingAuthoritativeFact, format!("{failed:?}")),

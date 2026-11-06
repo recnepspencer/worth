@@ -1,10 +1,5 @@
 //! Lazy selector admission at the comparison owner's single exact root.
-use crate::domain_computation::{
-    primary_graph::application_attempt::{
-        retained_decision_facts::StorageControl, WorthQueryApplicationObservedFact,
-    },
-    WorthQueryDecisionReadSetFailure,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact, crate::domain_computation::WorthQueryDecisionReadSetFailure};
 use std::collections::BTreeMap;
 use worth_foundational::facade::AspectFieldLocator;
 use worth_relational::facade::{
@@ -43,7 +38,7 @@ impl PreparedSelections {
     ) -> Result<bool, WorthQueryDecisionReadSetFailure> {
         super::check_control(control)?;
         execution.check_live().map_err(|stop| super::super::fact_read_set_failure(
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::request_read_stopped(stop, "prepared indexed comparison")))?;
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::request_read_stopped(stop, "prepared indexed comparison")))?;
         let WorthQueryApplicationObservedFact::IndexedEntitySelection {
             index_id,
             definition,
@@ -74,7 +69,7 @@ impl PreparedSelections {
                 Err(denial) => match denial.kind() {
                     worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause) => {
                         return Err(super::super::fact_read_set_failure(
-                            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "prepared indexed admission"),
+                            crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "prepared indexed admission"),
                         ));
                     }
                     worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
@@ -112,10 +107,10 @@ pub fn comparison_stop(
     match stop {
         BoundedEntityFieldLookupAdmissionStop::Admission(denial) => Err(denial),
         BoundedEntityFieldLookupAdmissionStop::Lookup(denial) => match denial.kind() {
-            worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause) => Err(super::super::fact_read_set_failure(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "prepared indexed comparison"))),
+            worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause) => Err(super::super::fact_read_set_failure(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "prepared indexed comparison"))),
             _ => Ok(false),
         },
-        BoundedEntityFieldLookupAdmissionStop::AccountingOverflow => Err(super::super::fact_read_set_failure(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
+        BoundedEntityFieldLookupAdmissionStop::AccountingOverflow => Err(super::super::fact_read_set_failure(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
             crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkCounterOverflow, partition_identity: None, policy_ancestor: None }), "prepared indexed comparison accounting"))),
         BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired => Ok(false),
     }

@@ -195,7 +195,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
     ) -> Denial {
         self.native_read_stop.get_or_insert(cause);
         Denial::new(
-            Kind::ReadExecution(crate::facade::primary_graph::relational_execution_kind(
+            Kind::ReadExecution(crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(
                 cause, None,
             )),
             subject,

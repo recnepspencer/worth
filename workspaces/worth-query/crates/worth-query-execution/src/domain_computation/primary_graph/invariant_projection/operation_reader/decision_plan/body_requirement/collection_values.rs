@@ -33,7 +33,7 @@ impl<Schema: ApplicationSchema, Operation>
         let mut observed =
             self.observed_requirement_collection(root, &selection, execution, context)?;
         let kind = self.reader.layout.entity_kind(to).ok_or_else(|| HandlerExecutionDenial::new(
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
                 crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, to,
             )))?;
         let list_bytes = observed

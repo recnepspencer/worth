@@ -23,7 +23,7 @@ impl Purpose<'_> {
         self,
         cause: worth_foundational::expression_api::ExpressionDenial,
     ) -> HandlerExecutionDenial {
-        use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial;
+        use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial;
         HandlerExecutionDenial::new(match self {
             Self::Requirement => {
                 Denial::body_requirement_expression("operation body requirement", cause)

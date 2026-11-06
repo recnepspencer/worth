@@ -4,12 +4,7 @@ use worth_query_installation::facade::{
 };
 
 use crate::domain_computation::primary_graph::WorthQueryObservedApplicationRelation;
-use {
-    super::canonical_key, super::denial, super::WorthQueryApplicationAttemptDenial,
-    super::WorthQueryApplicationEffectProgramBuilder, super::WorthQueryApplicationRealizedEffect,
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {super::canonical_key, super::denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEffectProgramBuilder, super::WorthQueryApplicationRealizedEffect, crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>

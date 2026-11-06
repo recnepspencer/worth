@@ -1,8 +1,8 @@
 //! Pre-effect admission of native publication chunks and their join slots.
 //! Nested Fact heaps retain their original native admission. These arrays own
 //! inline payload backing, under Execution's existing metadata exclusions.
-use super::{Fact, FactPayload, StorageControl};
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+use {super::Fact, super::FactPayload, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 use crate::domain_computation::primary_graph::fact_verification_observation;
 use std::cell::RefCell;
 use worth_execution::{ExecutionAllocationDenial, ExecutionArray, ExecutionArrayBuilder};

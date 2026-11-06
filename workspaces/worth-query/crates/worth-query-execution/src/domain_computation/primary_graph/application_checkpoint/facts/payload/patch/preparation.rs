@@ -1,5 +1,6 @@
 //! Sparse topology planning and funding, before any original Fact is cloned.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 
 type Nodes = ExecutionArrayBuilder<RefCell<Option<PreparedNode>>>;
 

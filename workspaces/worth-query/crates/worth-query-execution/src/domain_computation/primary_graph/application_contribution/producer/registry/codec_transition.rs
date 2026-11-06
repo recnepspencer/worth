@@ -199,7 +199,7 @@ fn request_denial(stop: WorkCeilingDenial) -> WorthQueryPrimaryGraphInstallation
 fn execution_denial(
     cause: RelationalExecutionDenialCause,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
-    let translated = crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None);
+    let translated = crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None);
     let kind = match translated {
         Ok(kind) => DenialKind::ExecutionDenied { kind },
         Err(kind) => DenialKind::ExecutionControlStopped { kind },

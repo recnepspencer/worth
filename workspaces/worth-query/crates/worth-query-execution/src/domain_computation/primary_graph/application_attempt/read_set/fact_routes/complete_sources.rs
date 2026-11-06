@@ -1,5 +1,6 @@
 //! Index complete source bodies once, retaining their actual physical support.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 pub(super) fn entry_count(fact: &Fact) -> Result<u64, StoreDenial> {
     let counts = match fact {
         Fact::StructuralWalk { observation } => (

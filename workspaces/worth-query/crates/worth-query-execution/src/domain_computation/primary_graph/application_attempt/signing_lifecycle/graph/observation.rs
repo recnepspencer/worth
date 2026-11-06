@@ -47,10 +47,10 @@ pub(super) fn edges(
     let (edges, work) = lease.handle().with_runtime(request, |runtime| {
         observe_adjacency_with_work(runtime, request, lease.snapshot(), kind, anchor, direction, maximum)
     }).map_err(|cause| match cause {
-        AdjacencyObservationDenial::Execution(cause) => attempt(super::super::super::super::WorthQueryApplicationAttemptDenial::from(cause)),
+        AdjacencyObservationDenial::Execution(cause) => attempt(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::from(cause)),
         AdjacencyObservationDenial::SnapshotUnavailable => unavailable(),
         AdjacencyObservationDenial::WorkBudgetExceeded => capacity(),
-        AdjacencyObservationDenial::Interrupted(event) => attempt(super::super::super::super::WorthQueryApplicationAttemptDenial::new(
+        AdjacencyObservationDenial::Interrupted(event) => attempt(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
             match event.interruption() {
                 worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::Cancelled,
                 worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,

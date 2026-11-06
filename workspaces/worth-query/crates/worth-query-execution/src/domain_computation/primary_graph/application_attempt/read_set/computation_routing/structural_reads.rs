@@ -1,6 +1,7 @@
 //! Incremental authoring footprint of one newly attributed structural read.
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 fn node<T>(len: usize) -> Option<u64> {
     let after = len.checked_add(1)?;
     let levels = (usize::BITS - after.leading_zeros()) as u64 + 1;

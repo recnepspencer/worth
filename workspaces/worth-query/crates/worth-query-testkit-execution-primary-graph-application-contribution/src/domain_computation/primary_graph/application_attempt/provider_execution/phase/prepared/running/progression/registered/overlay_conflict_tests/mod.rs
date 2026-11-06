@@ -10,7 +10,7 @@ pub fn assert_second_real_overlay_is_rejected(
     world: &AuthorizationWorld,
 ) {
     let (staged, steps, _dispatch_outbox) = registered.into_parts_for_test();
-    let control = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(
+    let control = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         None,
     );

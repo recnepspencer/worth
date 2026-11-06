@@ -6,8 +6,8 @@ pub(crate) mod content_tree;
 pub(crate) mod output_postcondition;
 mod producing_implementation;
 
-use super::retained_decision_facts::StorageControl;
-use super::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 pub(super) use canonical_encoding::authentication_observation_identity;
 use canonical_encoding::lineage_identity;
 use content_tree::dependency_identity;

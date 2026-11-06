@@ -4,10 +4,7 @@ use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
 };
-use {
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial};
 use {
     crate::domain_computation::primary_graph::vocabulary::operation_body::operation_body_value::PreparedBodyValues,
     crate::domain_computation::primary_graph::vocabulary::operation_body::source::PreparedBodySource,

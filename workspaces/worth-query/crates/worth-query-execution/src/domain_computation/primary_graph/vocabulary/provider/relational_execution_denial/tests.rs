@@ -18,7 +18,7 @@ fn committed_storage_failure_keeps_its_subject_and_pre_effect_posture() {
         cause: RelationalStorageUnavailableCause::IntegrityMismatch,
     };
     let cause = Cause::StorageUnavailable(failure);
-    use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Attempt;
+    use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Attempt;
     for attempt in [
         Attempt::native_storage_unavailable(failure, "transaction read"),
         Attempt::from(cause),

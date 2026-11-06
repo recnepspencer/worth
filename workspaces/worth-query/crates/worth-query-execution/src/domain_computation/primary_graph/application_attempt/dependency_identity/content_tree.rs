@@ -1,5 +1,5 @@
 //! Deterministic content over logical ordinals, paired with its exact body.
-use super::super::retained_decision_facts::{StorageControl, StoreDenial};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial};
 use super::{content_rule as rule, output_postcondition::is_output_currentness_fact};
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 use std::sync::Arc;

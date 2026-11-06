@@ -5,16 +5,16 @@ use worth_query_declaration::facade::application_schema::RelationDirection;
 use worth_relational::facade::identity::{EntityId, KindId};
 
 #[derive(Clone, Debug)]
-pub struct StructuralWalkKey(pub(super) Arc<Parameters>);
+pub struct StructuralWalkKey(pub(in crate::domain_computation::primary_graph) Arc<Parameters>);
 
 #[derive(Debug)]
-pub(super) struct Parameters {
-    pub(super) relation: Arc<str>,
-    pub(super) entity_kind: KindId,
-    pub(super) relation_kind: KindId,
-    pub(super) direction: RelationDirection,
-    pub(super) roots: Vec<EntityId>,
-    pub(super) _memory: Option<ExecutionMemoryReservation>,
+pub(in crate::domain_computation::primary_graph) struct Parameters {
+    pub(in crate::domain_computation::primary_graph) relation: Arc<str>,
+    pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
+    pub(in crate::domain_computation::primary_graph) relation_kind: KindId,
+    pub(in crate::domain_computation::primary_graph) direction: RelationDirection,
+    pub(in crate::domain_computation::primary_graph) roots: Vec<EntityId>,
+    pub(in crate::domain_computation::primary_graph) _memory: Option<ExecutionMemoryReservation>,
 }
 
 impl StructuralWalkKey {
@@ -90,7 +90,7 @@ impl PartialOrd for StructuralWalkKey {
 }
 
 #[cfg(test)]
-#[path = "key_ordering_tests.rs"]
+#[path = "key/key_ordering_tests.rs"]
 mod key_ordering_tests;
 
 mod court_doors_for_test;

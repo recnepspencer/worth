@@ -3,10 +3,7 @@ use std::sync::Arc;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::{provider_rejected, snapshot_read_set_failure, WorthQueryPrimaryGraphProvider};
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::StorageControl,
-    WorthQueryPrimaryGraphApplicationDecisionFact,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact};
 use crate::domain_computation::provider_session::WorthQuerySessionReadAuthority;
 use crate::domain_computation::{
     WorthQueryCompleteDecisionReadSetReceipt, WorthQueryDecisionFactComparisonAdmission,

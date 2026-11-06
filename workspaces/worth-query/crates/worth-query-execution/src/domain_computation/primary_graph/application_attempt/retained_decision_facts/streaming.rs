@@ -1,4 +1,4 @@
-use super::{AdmittedFactKey, StoreDenial};
+use {super::AdmittedFactKey, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial};
 use std::fmt;
 use worth_execution::ExecutionByteBuffer;
 use worth_foundational::facade::{
@@ -11,7 +11,7 @@ impl AdmittedFactKey {
     pub(in crate::domain_computation::primary_graph) fn from_borrowed(
         locator: impl Fn(&mut dyn fmt::Write) -> fmt::Result,
         predicate: Option<(&AspectValue, usize)>,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {
         let mut locator_count = Sink::count(policy);
         locator_count.format(&locator)?;
@@ -43,12 +43,12 @@ enum Destination<'buffer> {
 }
 struct Sink<'buffer, 'scope, 'authority> {
     destination: Destination<'buffer>,
-    policy: super::StorageControl<'scope, 'authority>,
+    policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'scope, 'authority>,
     length: usize,
     format_denial: Option<StoreDenial>,
 }
 impl<'buffer, 'scope, 'authority> Sink<'buffer, 'scope, 'authority> {
-    fn count(policy: super::StorageControl<'scope, 'authority>) -> Self {
+    fn count(policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'scope, 'authority>) -> Self {
         Self {
             destination: Destination::Count,
             policy,
@@ -58,7 +58,7 @@ impl<'buffer, 'scope, 'authority> Sink<'buffer, 'scope, 'authority> {
     }
     fn bytes(
         buffer: &'buffer mut ExecutionByteBuffer,
-        policy: super::StorageControl<'scope, 'authority>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'scope, 'authority>,
     ) -> Self {
         Self {
             destination: Destination::Bytes(buffer),

@@ -15,7 +15,7 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> Result<bool, super::super::super::WorthQueryApplicationAttemptDenial> {
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
         Self::remains_equal_in(self, execution, runtime, snapshot)
     }
 }

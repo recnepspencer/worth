@@ -45,7 +45,7 @@ pub(super) fn publish(
             .reserve_successor_observations(&execution, provider)
             .map_err(|denial| match denial {
                 crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Execution(cause) => {
-                    crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None)
+                    crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_stop(cause, None)
                 }
                 crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Unavailable(_) => capacity_exhausted(),
             })?;

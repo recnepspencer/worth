@@ -82,7 +82,7 @@ pub(in crate::domain_computation) use retained::{
 };
 
 use self::retained::{RetainedBasis, TypedPrior};
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead, crate::domain_computation::primary_graph::application_attempt::FactMovement, crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFactKey};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead, crate::domain_computation::primary_graph::application_attempt::FactMovement, crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey};
 use crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader;
 
 type Reader<'reader, 'runtime, Schema, Operation> =
@@ -154,7 +154,7 @@ pub(super) fn begin<Key, Item, Reduced, Schema, Operation>(
     input_digest: [u8; 32],
 ) -> Result<
     Begun<Key, Item, Reduced>,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
 >
 where
     Key: Send + Sync + 'static,

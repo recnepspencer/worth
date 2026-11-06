@@ -87,7 +87,7 @@ impl<Query> WorthQueryObservedSource<Query> {
     ) -> Result<std::sync::Arc<[Fact]>, WorthQuerySourceExpectationDenial> {
         Ok(self
             .validated_facts(layout, &self.query_identifier, SourceFactExpansionControl::legacy(
-                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_policy, request)))?
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(allocation_policy, request)))?
             .into())
     }
 
@@ -208,14 +208,14 @@ impl<'source> ValidatedSourceField<'source> {
     }
 }
 
-fn adjacency_fact(adjacency: &WorthQueryObservedAdjacencyRevision, control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>) -> Result<Fact, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>{
+fn adjacency_fact(adjacency: &WorthQueryObservedAdjacencyRevision, control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>) -> Result<Fact, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>{
     Ok(Fact::SourceAdjacencyRevision {
         relation_kind: adjacency.relation_kind,
         anchor: adjacency.anchor,
         direction: adjacency.direction,
         native_revision: adjacency.native_revision,
         comparison_work_limit: adjacency.comparison_work_limit,
-        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::preserve(&adjacency.endpoints, control)?,
+        endpoints: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints::preserve(&adjacency.endpoints, control)?,
     })
 }
 

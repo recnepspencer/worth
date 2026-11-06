@@ -4,6 +4,7 @@ use std::sync::Arc;
 use worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts;
 use worth_relational::facade::identity::EntityId;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SealedReadLayout {
@@ -147,8 +148,8 @@ impl CheckedReadLayout {
     pub(super) fn after_transition(
         &self,
         transition: &crate::domain_computation::primary_graph::invariant_projection::CallShapeTransition,
-        control: super::super::super::retained_decision_facts::StorageControl<'_, '_>,
-    ) -> Result<Arc<Self>, super::super::super::retained_decision_facts::StoreDenial> {
+        control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
+    ) -> Result<Arc<Self>, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial> {
         use super::reattribution::storage_denial;
         control.check_live()?;
         let memory = if control.policy().uses_accounting() {

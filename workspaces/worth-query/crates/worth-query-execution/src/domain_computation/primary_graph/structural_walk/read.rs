@@ -1,5 +1,6 @@
 //! Invoke Native and retain only the complete body returned by that invocation.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::structural_walk::key::StructuralWalkKey;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::RelationDirection;
 use worth_relational::facade::{
@@ -75,7 +76,7 @@ impl StructuralWalkObservation {
         let bytes = count
             .checked_mul(size_of::<EntityId>())
             .and_then(|n| n.checked_add(query.relation.len()))
-            .and_then(|n| n.checked_add(size_of::<key::Parameters>() + 4 * size_of::<usize>()))
+            .and_then(|n| n.checked_add(size_of::<crate::domain_computation::primary_graph::vocabulary::structural_walk::key::Parameters>() + 4 * size_of::<usize>()))
             .and_then(|n| u64::try_from(n).ok())
             .ok_or(Cause::ChargedBytesOverflow)?;
         let memory = memory::reserve(execution, context.has_accounting(), bytes)?;
@@ -91,7 +92,7 @@ impl StructuralWalkObservation {
             roots.push(visit.entity.entity_id);
         }
         let control = query.control;
-        let query = StructuralWalkKey(Arc::new(key::Parameters {
+        let query = StructuralWalkKey(Arc::new(crate::domain_computation::primary_graph::vocabulary::structural_walk::key::Parameters {
             relation: Arc::from(query.relation),
             entity_kind: query.entity_kind,
             relation_kind: query.relation_kind,

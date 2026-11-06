@@ -92,7 +92,7 @@ pub(super) fn seal(
             &output_correspondence,
             &committed_result.changed_records,
             producer_output,
-            crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), Some(&request)),
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(execution.allocation_policy(), Some(&request)),
         )
     });
     // Opt-in output evaluation keeps only immutable field evidence. A failed
@@ -103,7 +103,7 @@ pub(super) fn seal(
             Err(cause) => Err(Failure::Rebase { reason: cause.reason.into_reason(), own_effect: cause.own_effect }),
             Ok(facts) => crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::copy_performed_field_reads(
                 &facts,
-                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), Some(&request)),
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(execution.allocation_policy(), Some(&request)),
             ).map_err(Failure::Retention),
         })
     } else {

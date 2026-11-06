@@ -5,7 +5,7 @@ use {
 };
 impl WorthQueryApplicationCommitDenial {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn signing_lifecycle_attempt(
-        cause: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        cause: crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     ) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::SigningLifecycleObservation {
@@ -20,7 +20,7 @@ impl WorthQueryApplicationCommitDenial {
     }
     pub fn signing_lifecycle_observation_failure(
         &self,
-    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial> {
+    ) -> Option<&crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
         match self.cause.as_deref() {
             Some(super::denial_cause::DenialCause::SigningLifecycleAttempt(cause)) => Some(cause),
             _ => None,

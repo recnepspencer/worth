@@ -19,7 +19,7 @@ pub fn denial(
 ) -> WorthQueryOutputDemandDenial {
     use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as Execution;
     use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
-    let kind=match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause,None) {
+    let kind=match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause,None) {
                 Ok(kind)=>WorthQueryOutputDemandDenialKind::SourceQueryExecution(Execution::ExecutionRequest(kind)),
                 Err(Control::Cancelled)=>WorthQueryOutputDemandDenialKind::Cancelled,
                 Err(Control::TimedOut)=>WorthQueryOutputDemandDenialKind::TimedOut,

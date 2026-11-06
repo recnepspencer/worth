@@ -78,7 +78,7 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
                 .ok_or(Denial::CandidateMismatch)?
                 .bounded_adjacency_structural_revision(request, current, relation.kind, native_direction, 1)
                 .map_err(|cause| match cause {
-                    worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::Execution(cause) => Denial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::from(cause)),
+                    worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::Execution(cause) => Denial::Attempt(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::from(cause)),
                     _ => Denial::CandidateMismatch,
                 })?
                 .revision().ok_or(Denial::CandidateMismatch)

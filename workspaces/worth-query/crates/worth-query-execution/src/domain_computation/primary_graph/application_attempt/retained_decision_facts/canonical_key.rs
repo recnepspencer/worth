@@ -1,4 +1,4 @@
-use super::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 use std::cmp::Ordering;
 use worth_execution::{ExecutionByteBuffer, ExecutionImmutableBytes};
 
@@ -16,7 +16,7 @@ impl AdmittedFactKey {
     pub(in crate::domain_computation::primary_graph) fn write(
         locator_length: usize,
         predicate: Option<(usize, usize)>,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
         locator: impl FnOnce(&mut ExecutionByteBuffer) -> Result<(), StoreDenial>,
         predicate_writer: impl FnOnce(&mut ExecutionByteBuffer) -> Result<(), StoreDenial>,
     ) -> Result<Self, StoreDenial> {
@@ -46,7 +46,7 @@ impl AdmittedFactKey {
     pub(in crate::domain_computation::primary_graph) fn compare(
         &self,
         other: &Self,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Ordering, StoreDenial> {
         let locator = compare_bytes(self.locator.bytes(), other.locator.bytes(), policy)?;
         if !locator.is_eq() {
@@ -67,7 +67,7 @@ impl AdmittedFactKey {
 fn compare_bytes(
     left: &[u8],
     right: &[u8],
-    policy: super::StorageControl<'_, '_>,
+    policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
 ) -> Result<Ordering, StoreDenial> {
     // Scheduling granule only. Compare every byte; do not compare hashes.
     let common = left.len().min(right.len());

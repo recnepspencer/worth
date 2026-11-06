@@ -4,14 +4,7 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::transactions::CreatedEntityRef;
-use {
-    super::denial, super::ApplicationMutationOutputRoleCardinality, super::EntityReference,
-    super::TypeId, super::WorthQueryApplicationAttemptDenial,
-    super::WorthQueryApplicationOutputCorrespondenceCandidate,
-    super::WorthQueryApplicationOutputPosture,
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {super::denial, super::ApplicationMutationOutputRoleCardinality, super::EntityReference, super::TypeId, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationOutputCorrespondenceCandidate, super::WorthQueryApplicationOutputPosture, crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn birth_subject<

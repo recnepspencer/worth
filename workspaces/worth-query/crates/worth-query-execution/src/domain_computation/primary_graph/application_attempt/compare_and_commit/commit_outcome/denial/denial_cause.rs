@@ -6,7 +6,7 @@ pub(super) enum DenialCause {
     DomainValueAdmission(crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial),
     UnobservedWrite(crate::domain_computation::primary_graph::vocabulary::application_attempt::unobserved_write::WorthQueryApplicationUnobservedWrite),
     SigningLifecycleAttempt(
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     ),
     SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial),
     InvariantExecution(crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure),

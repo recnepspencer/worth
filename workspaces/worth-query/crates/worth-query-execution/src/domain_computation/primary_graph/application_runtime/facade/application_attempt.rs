@@ -5,7 +5,7 @@ use crate::domain_computation::application_aftermath::WorthQueryExternalEffectTr
 use crate::domain_computation::application_aftermath::WorthQueryPerformedExternalRedispatch;
 use crate::domain_computation::application_aftermath::WorthQueryRecoveryEffectAuthority;
 use crate::domain_computation::application_aftermath::WorthQueryRecoveryHandle;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcome;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitReceipt;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEffectProgram;

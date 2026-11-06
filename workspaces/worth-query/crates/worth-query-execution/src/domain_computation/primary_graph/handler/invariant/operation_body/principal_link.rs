@@ -27,7 +27,7 @@ impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, 
             .reader
             .body_field(&identity, field, BodyFieldExpectation::Present)?
         {
-            return Err(HandlerExecutionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
+            return Err(HandlerExecutionDenial::new(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
                 crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, field.entity())));
         }
         self.reader

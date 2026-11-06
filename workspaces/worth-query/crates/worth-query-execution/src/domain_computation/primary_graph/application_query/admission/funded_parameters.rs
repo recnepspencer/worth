@@ -17,10 +17,7 @@ use {
     crate::domain_computation::primary_graph::vocabulary::application_contribution::publication::publication_execution_kind,
     crate::domain_computation::primary_graph::vocabulary::application_contribution::scope::scope_stop_kind,
 };
-use {
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
 
 struct Projected<Query>(ApplicationQueryParameterSet<Query>);
 impl<Query> ChargedBytes for Projected<Query> {

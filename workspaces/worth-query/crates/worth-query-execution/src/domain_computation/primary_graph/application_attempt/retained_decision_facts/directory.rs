@@ -1,4 +1,4 @@
-use super::{run::Run, StoreDenial};
+use {super::run::Run, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial};
 use std::cell::RefCell;
 use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 
@@ -7,7 +7,7 @@ pub struct RunDirectory<T> {
     pub slots: Option<ExecutionArray<RefCell<Option<Run<T>>>>>,
 }
 impl<T> RunDirectory<T> {
-    pub fn new(policy: super::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
+    pub fn new(policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
         policy.check_live()?;
         let mut slots = ExecutionArrayBuilder::allocate(1, policy.policy())?;
         slots.push(RefCell::new(None))?;
@@ -18,7 +18,7 @@ impl<T> RunDirectory<T> {
     pub(in crate::domain_computation::primary_graph) fn ensure(
         &mut self,
         level: usize,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<(), StoreDenial> {
         let current = self.slots.as_ref().unwrap().len();
         if level < current {

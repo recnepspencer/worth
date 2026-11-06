@@ -33,8 +33,6 @@ pub mod outstanding_dispatch;
 pub mod pending_application_publication;
 #[path = "product_retirement/mod.rs"]
 pub mod product_retirement;
-#[path = "relational_execution_denial/mod.rs"]
-pub mod relational_execution_denial;
 #[path = "session_commit/mod.rs"]
 pub mod session_commit;
 #[path = "unpublished_idempotency/mod.rs"]

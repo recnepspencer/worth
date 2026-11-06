@@ -1,8 +1,5 @@
 //! Native expression operands share ordinary decision-read and adjacency sealing.
-use super::{
-    ApplicationOperationDecisionReadTarget, ApplicationSchema, DecisionReadOutcome,
-    WorthQueryApplicationFactKey, WorthQueryApplicationOperationInvariantProjectionReader,
-};
+use {super::ApplicationOperationDecisionReadTarget, super::ApplicationSchema, super::DecisionReadOutcome, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey, super::WorthQueryApplicationOperationInvariantProjectionReader};
 use worth_foundational::expression_api::ExpressionValue;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyRequirementDirection as Direction,
@@ -30,7 +27,7 @@ impl<Schema: ApplicationSchema, Operation>
         crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext,
         HandlerExecutionDenial,
     > {
-        self.query_context.filter(|context| context.query_identifier() == query).cloned().ok_or_else(|| HandlerExecutionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, query)))
+        self.query_context.filter(|context| context.query_identifier() == query).cloned().ok_or_else(|| HandlerExecutionDenial::new(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, query)))
     }
     pub(in crate::domain_computation::primary_graph) fn body_requirement_operand<Entity>(
         &mut self,
@@ -41,7 +38,7 @@ impl<Schema: ApplicationSchema, Operation>
     ) -> Result<PreparedRequirementOperand, HandlerExecutionDenial> {
         match source {
             Source::QueryContext { query, .. } => {
-                let context = self.query_context.filter(|context| context.query_identifier() == query.name()).ok_or_else(|| HandlerExecutionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, query.name())))?;
+                let context = self.query_context.filter(|context| context.query_identifier() == query.name()).ok_or_else(|| HandlerExecutionDenial::new(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, query.name())))?;
                 // Values are already retained by the admission; this is an Arc
                 // clone, not another query, decode or allocation of the tree.
                 Ok(PreparedRequirementOperand {

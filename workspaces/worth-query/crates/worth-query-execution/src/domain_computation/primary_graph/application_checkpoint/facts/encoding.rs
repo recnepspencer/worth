@@ -1,6 +1,6 @@
 //! One fact grammar emits into counted or admitted byte custody, never JSON staging.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
 use worth_execution::{ExecutionAllocationDenial, ExecutionByteBuffer, ExecutionImmutableBytes};
 
 pub(super) trait FactBytes {

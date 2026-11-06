@@ -1,6 +1,6 @@
 //! New deep copies keep their own leaf-local grants, never a parent body.
-use super::{chunk::deep_clone_bytes, FactPayload, FactSequence, StorageControl};
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+use {super::chunk::deep_clone_bytes, super::FactPayload, super::FactSequence, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 use worth_execution::ExecutionArrayBuilder;
 
 impl FactPayload {

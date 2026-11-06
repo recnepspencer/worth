@@ -1,6 +1,6 @@
 //! Remove only the selected alias's checked witness span for republication.
 use super::StableFactSpans;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 
 pub(in crate::domain_computation::primary_graph::output_lineage) fn performed_fact_sequence(

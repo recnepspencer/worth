@@ -29,7 +29,7 @@ fn overlapping_path_and_projection_adjacency_merge_at_one_native_revision() {
     assert!(projected
         .merge_same_source_fact_for_test(
             path,
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
         )
         .unwrap());
     assert!(
@@ -46,7 +46,7 @@ fn overlapping_path_and_projection_adjacency_merge_at_one_native_revision() {
     assert!(!projected
         .merge_same_source_fact_for_test(
             changed,
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
         )
         .unwrap());
 }

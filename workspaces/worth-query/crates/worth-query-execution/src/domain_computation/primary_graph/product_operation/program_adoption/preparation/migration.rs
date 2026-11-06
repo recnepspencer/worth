@@ -46,7 +46,7 @@ pub enum WorthQueryProgramMigrationPreparationDenial {
     /// emitted output, or output production. The text names which.
     UnsupportedPosture(&'static str),
     /// The candidate's effects were refused while building the migration.
-    Candidate(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
+    Candidate(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial),
 }
 
 /// Admission to author a program migration for one target program through one
@@ -209,11 +209,11 @@ impl<
 {
 }
 
-impl From<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
+impl From<crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>
     for WorthQueryProgramMigrationPreparationDenial
 {
     fn from(
-        denial: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        denial: crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     ) -> Self {
         Self::Candidate(denial)
     }

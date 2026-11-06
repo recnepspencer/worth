@@ -9,10 +9,7 @@ use super::effect_lowering::{
     lower_provider_effect, CreatedEffectReferences, ObservedFactIndex, UniqueValueWrites,
     WorthQueryLoweredProviderEffect,
 };
-use super::{
-    invalid_emission_denial, WorthQueryAdmittedApplicationEmissionBatch,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationRealizedEffect,
-};
+use {super::invalid_emission_denial, super::WorthQueryAdmittedApplicationEmissionBatch, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationRealizedEffect};
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission;
 use crate::domain_computation::graph_layout::WorthQueryUniqueFields;
 use crate::domain_computation::WorthQueryProvisionalEffectStep;
@@ -322,7 +319,7 @@ mod tests {
             crate::domain_computation::primary_graph::application_attempt::FactRoutes::build_iter(
                 [].iter(),
                 None,
-                crate::domain_computation::primary_graph::StorageControl::new(
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     None,
                 ),

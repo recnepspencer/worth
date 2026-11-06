@@ -201,7 +201,7 @@ pub fn check_lease(
     // Direct index building exercises leased owner work and the same typed
     // cause conversion as the bootstrap index-build boundary. RequestWorkBudget
     // creates one child lease, so the full policy lease is ancestor 1.
-    let stop = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, denial.partition_identity);
+    let stop = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_stop(cause, denial.partition_identity);
     let outcome = match stop {
         Stop::PreEffectDenied(failure) => {
             provider_compare_denied(Compare::ProviderSession(failure))

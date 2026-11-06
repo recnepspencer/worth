@@ -1,19 +1,19 @@
 //! A descriptive member selection, never permission to read an aggregate.
-use super::AggregateSelection;
+use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection;
 use std::sync::Arc;
 use worth_foundational::facade::AggregateDefinitionIdentity;
 use worth_relational::facade::identity::{EntityId, KindId};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct AggregateKey<Member = EntityId> {
-    pub(super) subject: Arc<str>,
-    pub(super) entity_kind: KindId,
-    pub(super) selection: AggregateSelection,
-    pub(super) member: Member,
-    pub(super) definition: AggregateDefinitionIdentity,
+    pub(in crate::domain_computation::primary_graph) subject: Arc<str>,
+    pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
+    pub(in crate::domain_computation::primary_graph) selection: AggregateSelection,
+    pub(in crate::domain_computation::primary_graph) member: Member,
+    pub(in crate::domain_computation::primary_graph) definition: AggregateDefinitionIdentity,
 }
 impl AggregateKey {
-    pub(super) fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         subject: &str,
         entity_kind: KindId,
         selection: AggregateSelection,
@@ -28,7 +28,7 @@ impl AggregateKey {
             definition,
         }
     }
-    pub(super) fn native_scope(
+    pub(in crate::domain_computation::primary_graph) fn native_scope(
         &self,
     ) -> worth_relational::facade::runtime::PinnedAggregateReadScope<'static> {
         self.selection.scope(self.member)

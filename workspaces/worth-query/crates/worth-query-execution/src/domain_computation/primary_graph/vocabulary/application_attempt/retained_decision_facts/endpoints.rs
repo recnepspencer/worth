@@ -1,6 +1,6 @@
 //! Proposed retained SourceAdjacencyRevision nested owner. Input source storage
 //! remains separately owned; every NEW capture/sort/union backing is admitted.
-use super::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 use std::{cell::Cell, ops::Deref, sync::Arc};
 use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 use worth_relational::facade::identity::EntityId;
@@ -48,11 +48,11 @@ impl AdmittedAdjacencyEndpoints {
         request: Option<
             &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         >,
-    ) -> Result<Self, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
+    ) -> Result<Self, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>
     {
         Self::preserve(
             input,
-            super::StorageControl::new(allocation_policy, request),
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(allocation_policy, request),
         )
         .map_err(|denial| denial.into_attempt_denial("source adjacency endpoints"))
     }
@@ -69,7 +69,7 @@ impl AdmittedAdjacencyEndpoints {
     /// order. Every new retained backing is admitted before copying input.
     pub(in crate::domain_computation::primary_graph) fn preserve(
         input: &[EntityId],
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {
         policy.check_live()?;
         let mut output = ExecutionArrayBuilder::allocate(input.len(), policy.policy())?;
@@ -91,7 +91,7 @@ impl AdmittedAdjacencyEndpoints {
     pub(in crate::domain_computation::primary_graph) fn from_exact_iterator(
         count: usize,
         input: impl IntoIterator<Item = EntityId>,
-        control: super::StorageControl<'_, '_>,
+        control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {
         control.check_live()?;
         let mut output = ExecutionArrayBuilder::allocate(count, control.policy())?;
@@ -112,7 +112,7 @@ impl AdmittedAdjacencyEndpoints {
     }
     pub(in crate::domain_computation::primary_graph) fn capture(
         input: &[EntityId],
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {
         // Do not first clone the input Vec. Temporary sort and final exact unique
         // backing coexist with each other and with the borrowed input owner.
@@ -151,7 +151,7 @@ impl AdmittedAdjacencyEndpoints {
     pub(in crate::domain_computation::primary_graph) fn union(
         &self,
         other: &Self,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {
         let left_sorted = (!self.sorted_unique)
             .then(|| Self::capture(self, policy))
@@ -183,7 +183,7 @@ impl AdmittedAdjacencyEndpoints {
 fn union_visit(
     left: &[EntityId],
     right: &[EntityId],
-    policy: super::StorageControl<'_, '_>,
+    policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     mut emit: impl FnMut(EntityId) -> Result<(), StoreDenial>,
 ) -> Result<(), StoreDenial> {
     let (mut a, mut b) = (0, 0);
@@ -216,7 +216,7 @@ fn union_visit(
 }
 fn heap_sort(
     values: &[Cell<EntityId>],
-    policy: super::StorageControl<'_, '_>,
+    policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
 ) -> Result<(), StoreDenial> {
     for root in (0..values.len() / 2).rev() {
         sift(values, root, values.len(), policy)?;
@@ -231,7 +231,7 @@ fn sift(
     values: &[Cell<EntityId>],
     mut root: usize,
     end: usize,
-    policy: super::StorageControl<'_, '_>,
+    policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
 ) -> Result<(), StoreDenial> {
     loop {
         policy.check_live()?;

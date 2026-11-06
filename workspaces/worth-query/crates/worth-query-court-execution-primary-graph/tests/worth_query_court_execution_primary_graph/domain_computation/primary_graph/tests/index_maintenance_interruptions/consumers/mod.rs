@@ -44,7 +44,7 @@ pub fn assert_consumer(stop: Result<Kind, Control>, consumer: u8) {
     );
     if consumer == 0 {
         assert_eq!(
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::relational_execution_denial::native_preparation_kind(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::native_preparation_kind(
                 &failure
             ),
             stop.map(Some)

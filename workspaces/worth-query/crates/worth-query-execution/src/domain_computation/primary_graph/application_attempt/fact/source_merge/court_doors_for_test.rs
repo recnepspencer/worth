@@ -6,8 +6,8 @@ impl Fact {
     pub fn merge_same_source_fact_for_test(
         &mut self,
         duplicate: Self,
-        control: super::super::super::retained_decision_facts::StorageControl<'_, '_>,
-    ) -> Result<bool, super::super::super::retained_decision_facts::StoreDenial> {
+        control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial> {
         Self::merge_same_source_fact(self, duplicate, control)
     }
 }

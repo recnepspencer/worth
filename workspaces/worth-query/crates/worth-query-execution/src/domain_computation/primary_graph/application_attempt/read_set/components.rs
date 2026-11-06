@@ -1,16 +1,9 @@
 //! A selector seals only its original issued body and exact installed Components scope.
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition;
-use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        fact::WorthQueryApplicationObservedFact as Fact,
-        read_scope::WorthQueryApplicationReadScope,
-        snapshot_lease::WorthQueryApplicationSnapshotLease,
-    },
-    component_selection::{ComponentSelectionKey, ComponentSelectionSubject},
-    invariant_projection::ExpectedFactKeys,
-};
+use {crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact, crate::domain_computation::primary_graph::application_attempt::read_scope::WorthQueryApplicationReadScope, crate::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease, crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionKey, crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionSubject, crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys};
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 pub(super) fn observe<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
@@ -45,7 +38,7 @@ pub(super) fn observe<Schema, Operation, Input, Scope>(
     {
         return Err(mismatch());
     }
-    let descriptor = super::super::WorthQueryApplicationFactKey::ComponentSelection(key.clone());
+    let descriptor = crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey::ComponentSelection(key.clone());
     let position = position
         .or_else(|| {
             admission

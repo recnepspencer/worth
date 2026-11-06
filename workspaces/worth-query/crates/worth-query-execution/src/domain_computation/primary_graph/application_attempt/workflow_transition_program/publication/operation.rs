@@ -298,20 +298,17 @@ impl WorkflowOperationAuthority {
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
+    ) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
         let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
+            Err(_) => return Err(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
         };
         let execution = &phase_request;
 
-        use {
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-            crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-        };
+        use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
         let mismatch = || {
             WorthQueryApplicationAttemptDenial::new(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,

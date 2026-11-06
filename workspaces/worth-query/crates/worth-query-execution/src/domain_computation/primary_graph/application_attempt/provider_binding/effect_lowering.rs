@@ -10,10 +10,7 @@ use worth_relational::facade::transactions::{
     RelationSpec, UpdateEntityFieldsIntent,
 };
 
-use super::{
-    progression_denial, WorthQueryApplicationAttemptDenial, WorthQueryApplicationEmission,
-    WorthQueryApplicationRealizedEffect,
-};
+use {super::progression_denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEmission, super::WorthQueryApplicationRealizedEffect};
 use crate::domain_computation::{
     WorthQueryProvisionalEffectAction, WorthQueryProvisionalEffectStep,
 };

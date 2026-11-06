@@ -142,7 +142,7 @@ fn aftermath_index_currency_denial(
     denial: crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial,
 ) -> WorthQueryAftermathCausalityReadDenial {
     match denial {
-        crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryAftermathCausalityReadDenial::ExecutionDenied(crate::facade::primary_graph::relational_execution_kind(stop, None)),
+        crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryAftermathCausalityReadDenial::ExecutionDenied(crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(stop, None)),
 
         crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
             crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted,
@@ -347,7 +347,7 @@ pub fn aftermath_read_stop(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
 ) -> WorthQueryAftermathCausalityReadDenial {
     WorthQueryAftermathCausalityReadDenial::ExecutionDenied(
-        super::relational_execution_denial::relational_execution_kind(cause, None),
+        crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
     )
 }
 

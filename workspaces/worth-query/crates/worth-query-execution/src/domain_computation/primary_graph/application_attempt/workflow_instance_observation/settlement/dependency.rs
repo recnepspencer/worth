@@ -10,7 +10,8 @@ use super::{denial, observed_text, observed_u64};
 pub(crate) mod aspect_presence;
 mod traversal;
 use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
-use crate::domain_computation::primary_graph::application_attempt::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact};
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::application_attempt::observation::observe_field;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation;
 use crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::{WorkflowEvidenceDependencyKind, decode_direction};
@@ -264,7 +265,7 @@ fn observe_dependency(
                 direction,
                 native_revision: native_revision.map(VersionId),
                 comparison_work_limit,
-                endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
+                endpoints: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints::empty(),
             })
         }
         _ => Err(denial("workflow evidence dependency shape is invalid")),

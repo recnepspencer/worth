@@ -1,12 +1,13 @@
 //! Entity admission for descriptive keys; original issued bodies seal separately.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 pub(super) fn key_entities_are_in_scope(
     key: &WorthQueryApplicationFactKey,
     scope: &super::super::super::read_scope::WorthQueryApplicationReadScope,
 ) -> bool {
     match key {
-        WorthQueryApplicationFactKey::ComponentSelection(key)=>scope.admits(key.root()) && match key.subject() {crate::domain_computation::primary_graph::component_selection::ComponentSelectionSubject::Of(member)=>scope.admits(member),crate::domain_computation::primary_graph::component_selection::ComponentSelectionSubject::DerivedOf(member)=>scope.admits(member.carrier()),crate::domain_computation::primary_graph::component_selection::ComponentSelectionSubject::Census=>true},
+        WorthQueryApplicationFactKey::ComponentSelection(key)=>scope.admits(key.root()) && match key.subject() {crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionSubject::Of(member)=>scope.admits(member),crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionSubject::DerivedOf(member)=>scope.admits(member.carrier()),crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionSubject::Census=>true},
         WorthQueryApplicationFactKey::Aggregate(key) => scope.admits(key.member()),
         WorthQueryApplicationFactKey::StructuralWalk(key) => {
             key.roots().iter().all(|id| scope.admits(*id))

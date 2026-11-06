@@ -110,7 +110,7 @@ fn publication_stop(stop: PrecommitOutputStop) -> WorthQueryProviderSessionCommi
             )) => WorthQueryProviderSessionCommitStop::ControlStopped(
                 super::stops::interruption_control_stopped(event),
             ),
-            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(cause)) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
+            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(cause)) => crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_stop(cause, None),
             PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::SourceQueryAuthorization(kind)) => {
 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Authorization;
                 let detail = "source query authorization is no longer current";

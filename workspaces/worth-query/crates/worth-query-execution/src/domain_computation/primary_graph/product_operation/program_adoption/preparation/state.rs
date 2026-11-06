@@ -53,7 +53,7 @@ fn map_relational_preparation_denial(
     };
     if let Some(cause) = execution_cause {
         return WorthQueryBranchAdoptionPreparationDenial::ReadExecution(
-            crate::facade::primary_graph::relational_execution_kind(cause, None),
+            crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
         );
     }
     if let worth_relational::facade::transactions::TransactionCommitError::Conflict {

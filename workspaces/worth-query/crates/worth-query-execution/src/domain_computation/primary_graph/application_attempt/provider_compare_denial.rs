@@ -48,7 +48,7 @@ pub fn provider_session_denied(
         return Denial::provider_execution_denied(Stage::ProviderCommit, stop, failure.detail())
             .with_provider_session_failure(failure);
     }
-    let kind = match super::super::provider::relational_execution_denial::native_preparation_kind(
+    let kind = match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::native_preparation_kind(
         &failure,
     ) {
         Ok(kind) => kind.unwrap_or(failure.kind()),

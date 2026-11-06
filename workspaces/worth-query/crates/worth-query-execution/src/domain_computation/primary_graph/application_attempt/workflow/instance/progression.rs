@@ -13,7 +13,7 @@ mod replay;
 mod retention;
 
 mod update;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 pub(in crate::domain_computation::primary_graph) use locator::{
     WorkflowAssessmentEvidenceLocator, WorkflowTransitionLocator,

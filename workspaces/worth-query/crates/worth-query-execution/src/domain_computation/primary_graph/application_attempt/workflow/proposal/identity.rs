@@ -131,7 +131,7 @@ impl WorkflowProposalMeaning {
         &mut self,
     ) -> Result<
         Option<std::sync::Arc<super::super::captured_input::WorkflowCapturedInputSupport>>,
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     > {
         self.captured_identity
             .map(|identity| {

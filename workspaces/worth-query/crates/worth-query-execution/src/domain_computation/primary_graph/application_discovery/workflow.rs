@@ -74,7 +74,7 @@ pub(in crate::domain_computation::primary_graph) fn current_definition(
     layout: &WorthQueryWorkflowLayout,
     branch: crate::basis::WorthQueryProductBranch,
     lineage: EntityId,
-) -> Result<Option<WorkflowDefinitionCurrentness>, super::super::WorthQueryApplicationAttemptDenial>
+) -> Result<Option<WorkflowDefinitionCurrentness>, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>
 {
     let relations = observe_adjacency(
         runtime,
@@ -102,7 +102,7 @@ pub(in crate::domain_computation::primary_graph) fn current_definition(
         &layout.definition.content_identity,
     )?;
     execution.check_live().map_err(|stop| {
-        super::super::WorthQueryApplicationAttemptDenial::request_read_stopped(
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::request_read_stopped(
             stop,
             "workflow definition discovery",
         )

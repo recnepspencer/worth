@@ -1,4 +1,4 @@
-use super::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 use worth_execution::ExecutionAllocationPolicy;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 

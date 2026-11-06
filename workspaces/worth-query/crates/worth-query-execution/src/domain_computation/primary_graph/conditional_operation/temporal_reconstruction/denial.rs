@@ -115,7 +115,7 @@ pub(super) fn entity(
             snapshot_identity_reconstruction_denial()
         }
         Kind::Stopped(cause) => read_stopped(
-            crate::facade::primary_graph::relational_execution_kind(cause, None),
+            crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
         ),
         Kind::Refused(_) => reconstruction_denial(
             WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionScope,

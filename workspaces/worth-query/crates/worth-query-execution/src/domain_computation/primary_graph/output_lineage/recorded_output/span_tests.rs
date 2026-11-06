@@ -1,9 +1,6 @@
 //! Replacing retained facts discards their exact alias-local layout.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::StorageControl,
-    application_checkpoint::facts::NativeFactPayloadBuilder,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::application_checkpoint::facts::NativeFactPayloadBuilder};
 
 #[test]
 fn replacing_retained_body_invalidates_its_alias_layout_even_for_equal_data() {

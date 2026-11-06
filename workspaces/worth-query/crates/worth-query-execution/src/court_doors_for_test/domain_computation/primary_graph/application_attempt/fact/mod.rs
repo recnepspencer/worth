@@ -11,6 +11,5 @@ pub mod movement;
 pub mod workflow_history_basis;
 #[path = "workflow_instance_capacity/mod.rs"]
 pub mod workflow_instance_capacity;
-pub use crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey;
 pub use crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 pub use crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation;

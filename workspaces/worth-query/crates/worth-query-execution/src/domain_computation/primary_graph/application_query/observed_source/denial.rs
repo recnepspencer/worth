@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::vocabulary::application_query::obs
 pub struct WorthQuerySourceExpectationDenial {
     kind: WorthQuerySourceExpectationDenialKind,
     subject: String,
-    retention_denial: Option<crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>,
+    retention_denial: Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>,
     authorization_denial: Option<Box<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>>,
 }
 
@@ -24,7 +24,7 @@ impl WorthQuerySourceExpectationDenial {
 
     pub(in crate::domain_computation::primary_graph) fn source_retention_denied(
         subject: &str,
-        denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
+        denial: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial,
     ) -> Self {
         Self {
             kind: WorthQuerySourceExpectationDenialKind::RetainedSourceStorageDenied,
@@ -39,7 +39,7 @@ impl WorthQuerySourceExpectationDenial {
     ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
     {
         match &self.retention_denial {
-            Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)) => Some(*stop),
+            Some(crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)) => Some(*stop),
             _ => None,
         }
     }
@@ -47,17 +47,17 @@ impl WorthQuerySourceExpectationDenial {
     /// The exact original Execution request stop during source conversion.
     pub fn execution_denial(&self) -> Option<&worth_execution::WorkCeilingDenial> {
         match &self.retention_denial {
-            Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::ExecutionRequest(cause)) => Some(cause),
+            Some(crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::ExecutionRequest(cause)) => Some(cause),
             _ => None,
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn retention_denial(&self) -> Option<&crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>{
+    pub(in crate::domain_computation::primary_graph) fn retention_denial(&self) -> Option<&crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>{
         self.retention_denial.as_ref()
     }
 
     pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
         match &self.retention_denial {
-            Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)) => Some(denial), _ => None,
+            Some(crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)) => Some(denial), _ => None,
         }
     }
 

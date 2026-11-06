@@ -5,12 +5,9 @@
 use worth_execution::ChargedBytes;
 use worth_proof::CanonicalUniqueVec;
 
-use super::super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey, super::super::super::fact::WorthQueryApplicationObservedFact};
 use super::{ComputationFactReaders, SealedComputationFact};
-
-fn bytes(count: usize) -> u64 {
-    u64::try_from(count).unwrap_or(u64::MAX)
-}
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::bytes;
 
 /// A list's allocation: its capacity of inline values. The listed values own
 /// nothing more.
@@ -21,31 +18,6 @@ fn list<T>(values: &Vec<T>) -> u64 {
 /// A checked list's allocation: its capacity of inline keys.
 fn canonical<T>(values: &CanonicalUniqueVec<T>) -> u64 {
     bytes(values.capacity().saturating_mul(std::mem::size_of::<T>()))
-}
-
-impl ChargedBytes for WorthQueryApplicationFactKey {
-    fn additional_charged_bytes(&self) -> u64 {
-        match self {
-            // The native read retains its own actual backing and custody.
-            Self::ComponentSelection(_)
-            | Self::ManagedIndexSource(_)
-            | Self::SourceReadAuthorization(_)
-            | Self::SourcePublication(_)
-            | Self::StructuralWalk(_)
-            | Self::Aggregate(_) => 0,
-            Self::Entity { entity, .. } => bytes(entity.capacity()),
-            Self::AspectPresence {
-                entity, locator, ..
-            }
-            | Self::Field {
-                entity, locator, ..
-            } => bytes(entity.capacity())
-                .saturating_add(bytes(locator.owned_allocation_capacity_bytes())),
-            Self::Relation { relation, .. } | Self::Adjacency { relation, .. } => {
-                bytes(relation.capacity())
-            }
-        }
-    }
 }
 
 impl ChargedBytes for WorthQueryApplicationObservedFact {

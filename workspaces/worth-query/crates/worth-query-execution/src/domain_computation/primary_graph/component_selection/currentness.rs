@@ -5,12 +5,7 @@ use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, Locator
 use worth_relational::facade::{
     runtime::RelationalRuntime, transactions::RelationalExecutionDenialCause as Cause,
 };
-use {
-    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact,
-    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationSourceAdjacencyEndpoints as Endpoints,
-    crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification,
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Failure,
-};
+use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as Endpoints, crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Failure};
 impl ComponentSelection {
     pub(in crate::domain_computation::primary_graph) fn visit_physical<E>(
         &self,

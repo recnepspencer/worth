@@ -41,7 +41,7 @@ impl WorthQueryWorkflowDefinitionPublicationAdapter {
     {
         let phase_request = match phase.execution_request_for(selected.application().product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(WorkflowDefinitionPreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
+            Err(_) => return Err(WorkflowDefinitionPreparationDenial::Attempt(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
         };
         let execution = &phase_request;
 

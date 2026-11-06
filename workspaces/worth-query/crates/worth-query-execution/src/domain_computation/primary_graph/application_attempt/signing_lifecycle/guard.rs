@@ -52,7 +52,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn validat
                         )
                         .map_err(|cause| {
                             attempt(
-                                super::super::super::WorthQueryApplicationAttemptDenial::from(
+                                crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::from(
                                     cause,
                                 ),
                             )

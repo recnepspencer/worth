@@ -59,8 +59,8 @@ pub struct WorthQueryApplicationSnapshotLease {
 impl WorthQueryApplicationSnapshotLease {
     pub(super) fn share_original(
         mut self,
-        control: super::retained_decision_facts::StorageControl<'_, '_>,
-    ) -> Result<(Self, Self), super::retained_decision_facts::StoreDenial> {
+        control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
+    ) -> Result<(Self, Self), crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial> {
         let memory = control
             .policy()
             .reserve_memory((size_of::<SharedOriginalSnapshot>() + 2 * size_of::<usize>()) as u64);

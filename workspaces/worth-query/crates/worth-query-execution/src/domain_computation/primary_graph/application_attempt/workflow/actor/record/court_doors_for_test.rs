@@ -43,7 +43,7 @@ impl WorkflowActorFields {
         >,
     ) -> Result<
         Option<EntityId>,
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     > {
         Self::observe(self, runtime, execution, snapshot, entity, kind, facts)
     }

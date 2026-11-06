@@ -156,7 +156,7 @@ impl WorthQueryPreparedCorrectionSource {
     pub(in crate::domain_computation::primary_graph) fn validate_workflow_candidate(
         &self,
         batch: &worth_relational::facade::transactions::WorkerIntentBatch,
-    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
+    ) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>
     {
         match &self.workflow {
             Some(workflow) => workflow.validate_candidate(batch),

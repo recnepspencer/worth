@@ -178,7 +178,7 @@ pub trait RebuildOps<Schema: worth_query_installation::facade::ApplicationSchema
         )
         .map_err(|denial| match denial {
             Denial::ReadRequest(cause) => WorthQueryInboundIndexRepairDenial::ExecutionDenied(
-                crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None),
+                crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
             ),
             Denial::IndexUnavailable | Denial::NotExpired => {
                 WorthQueryInboundIndexRepairDenial::IndexUnavailable

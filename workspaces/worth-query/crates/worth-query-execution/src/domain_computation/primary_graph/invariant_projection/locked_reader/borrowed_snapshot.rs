@@ -1,9 +1,6 @@
 //! Run the same projection reader without acquiring or releasing its owner's snapshot.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::{
-    retained_decision_facts::{RetainedSourceFacts, StorageControl},
-    snapshot_lease::WorthQueryApplicationSnapshotLease,
-};
+use {crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::RetainedSourceFacts, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease};
 
 pub(in crate::domain_computation::primary_graph::invariant_projection) struct CompletedSnapshotRead<
     Output,

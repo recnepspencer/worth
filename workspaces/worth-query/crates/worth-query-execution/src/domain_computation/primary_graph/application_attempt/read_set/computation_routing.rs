@@ -15,7 +15,7 @@ use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;
 use worth_proof::CanonicalUniqueVec;
 
-use super::super::fact::WorthQueryApplicationFactKey;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 /// Every owner call that read one decision fact while the attempt runs. A
 /// call that reads the fact again is still one call.
@@ -307,7 +307,7 @@ pub struct SealedComputationFacts {
     pub original:
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     content: Option<super::super::FactContent>,
-    projection: Option<std::sync::Arc<super::CompletedFactProjection>>,
+    projection: Option<std::sync::Arc<crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection>>,
     layout: layout::SealedReadLayout,
 }
 

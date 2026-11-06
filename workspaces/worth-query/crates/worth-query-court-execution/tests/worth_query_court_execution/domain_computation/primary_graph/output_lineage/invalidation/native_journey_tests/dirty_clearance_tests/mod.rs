@@ -230,7 +230,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
                 assert!(changes.at_snapshot_for_test(runtime, &basis_handle).is_none(), "later evidence cannot bless an earlier source snapshot");
                 let original = tracked_facts.for_comparison().unwrap().facts_for_test().clone();
                 let changes = changes.bind_original_for_test(original.clone());
-                let control = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(request_execution.allocation_policy(), None);
+                let control = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(request_execution.allocation_policy(), None);
                 let carry = changes.carry_for_test(&original, 1, &OrdSet::new(), &latest_handle, control).unwrap().unwrap();
                 let empty = worth_relational::facade::history::RelationalDescriptiveTouchGraph::Exact(Vec::new());
                 let selected = carry.select_for_test(&empty, 1, &[], control).unwrap().unwrap().ordinals_into_for_test();
