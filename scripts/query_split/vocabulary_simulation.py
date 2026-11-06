@@ -35,12 +35,16 @@ from ownership_units import TYPE_KINDS, node_of, resolved_mentions, units  # noq
 
 MOVABLE_TYPES = ('struct', 'enum', 'type', 'union')
 VOCABULARY = 'vocabulary:'
+# Modules every family sits above: the owner vocabulary itself and the runtime identity host
+# every host trait extends.
+BOTTOM = ('vocabulary', 'runtime_host')
 
 
 def host_order(root, parent, children, stack):
     """Bottom-to-top order of `parent`'s children by the host supertraits that compile: a module
     whose host extends another's sits above it; application_runtime and application_installation
-    sit on top; the stack breaks the ties the host order leaves open."""
+    sit on top, `vocabulary` and `runtime_host` at the bottom; the stack breaks the ties the host
+    order leaves open."""
     import re
     dc = root / 'workspaces/worth-query/crates/worth-query-execution/src/domain_computation'
     owner_of = {}
@@ -71,6 +75,8 @@ def host_order(root, parent, children, stack):
             if a and b and a != b:
                 below[a].add(b)
     rank = {m: i for i, m in enumerate(stack)}
+    for m in BOTTOM:                 # below every family whatever a stack file says
+        rank[m] = -1 - BOTTOM.index(m)
     top = [m for m in ('application_installation', 'application_runtime') if m in children]
     # The known seam: authorization's host names a primary-graph host; the primary graph's hosts
     # extend authorization's, which wins (merges.md section 2 lowers the shared vocabulary).

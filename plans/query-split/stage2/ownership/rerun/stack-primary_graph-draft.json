@@ -1,10 +1,18 @@
 {
  "parent": "domain_computation::primary_graph",
- "note": "Draft target layer stack, bottom to top; within a layer, modules are listed bottom to top too. Each purpose is read from the module's own documentation (or its root items where it has none). Rerun: application_inbound (new in phase 2) placed just below application_attempt. workflow is gone (nested under application_attempt in phase 1); runtime_host placed at the top of the identity layer.",
+ "note": "Draft target layer stack, bottom to top; within a layer, modules are listed bottom to top too. Each purpose is read from the module's own documentation (or its root items where it has none). Rerun: application_inbound (new in phase 2) placed just below application_attempt. workflow is gone (nested under application_attempt in phase 1); runtime_host and vocabulary placed at the bottom (every host trait extends runtime_host; vocabulary sits below every family).",
  "layers": [
   {
    "name": "identity_keys_and_refusals",
    "modules": [
+    [
+     "vocabulary",
+     "each family's refusals, observations, identities and evidence, below every family"
+    ],
+    [
+     "runtime_host",
+     "the runtime identity every module host extends (phase 2)"
+    ],
     [
      "application_branch",
      "the sole ordinary-branch name constant"
@@ -92,10 +100,6 @@
     [
      "resolution_denial",
      "why a principal could not be resolved"
-    ],
-    [
-     "runtime_host",
-     "the runtime identity every module host extends (phase 2)"
     ]
    ]
   },
