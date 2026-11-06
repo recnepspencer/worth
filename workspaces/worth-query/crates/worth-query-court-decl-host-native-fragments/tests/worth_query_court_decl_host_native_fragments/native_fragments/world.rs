@@ -29,6 +29,15 @@ pub(crate) struct World {
 
 impl World {
     pub(crate) fn new(mode: Mode) -> Self {
+        Self::seeded(mode, |seed| seed)
+    }
+
+    pub(super) fn seeded(
+        mode: Mode,
+        seed_fields: impl FnOnce(
+            WorthQueryApplicationEntitySeed<Fixture, Item>,
+        ) -> WorthQueryApplicationEntitySeed<Fixture, Item>,
+    ) -> Self {
         worth_query_host::facade::application_contribution::with_bootstrap_advancement(
             execution_policy(),
             |phase| {
@@ -121,7 +130,7 @@ impl World {
                             .unwrap();
                     }
                 }
-                bootstrap.bind_entity(seed).unwrap();
+                bootstrap.bind_entity(seed_fields(seed)).unwrap();
                 bootstrap
                     .bind_entity(
                         WorthQueryApplicationEntitySeed::new(

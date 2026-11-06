@@ -141,7 +141,7 @@ fn extension_relation_links_and_traverses_through_view() {
 fn extension_relation_view_traversal_requires_the_declared_read_grant() {
     let world = World::new(Mode::Named);
     world
-        .admitted_relation_projection(FieldsOnly::reference(), |reader, item| {
+        .admitted_projection(FieldsOnly::reference(), |reader, item| {
             assert!(matches!(
                 reader
                     .fragment(Annotations)
@@ -177,7 +177,7 @@ fn a_swallowed_extension_relation_traversal_failure_cannot_seal_a_projection() {
         })
         .unwrap();
     let world = World::new(Mode::Named);
-    let result = world.admitted_relation_projection(ChangeForm::reference(), |reader, _| {
+    let result = world.admitted_projection(ChangeForm::reference(), |reader, _| {
         assert!(reader
             .fragment(Annotations)
             .unwrap()

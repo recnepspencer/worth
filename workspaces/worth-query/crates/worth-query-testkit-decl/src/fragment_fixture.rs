@@ -29,7 +29,12 @@ impl Entity for Item {
     type Aspects = (
         Metrics,
         RequiredNote,
-        (Option<Label>, Option<Note>, Exclusive<Form>),
+        (
+            Option<Label>,
+            Option<Note>,
+            Exclusive<Form>,
+            Option<super::fragment_codec_fixture::OwnedValue>,
+        ),
         super::fragment_auth_fixture::ItemIdentity,
     );
     type Relations = (Next,);
@@ -276,6 +281,9 @@ pub fn samples(binding: &RecordBinding) -> Vec<Box<dyn BindingSample>> {
         return super::fragment_context_fixture::samples(binding.value_type());
     }
     let value = binding.value_type();
+    if let Some(samples) = super::fragment_codec_fixture::samples(value) {
+        return samples;
+    }
     if value == TypeId::of::<bool>() {
         return vec![scalar_sample(false), scalar_sample(true)];
     }

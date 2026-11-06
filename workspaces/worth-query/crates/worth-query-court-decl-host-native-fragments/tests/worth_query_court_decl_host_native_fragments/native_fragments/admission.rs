@@ -1,15 +1,42 @@
-//! Relation refusal courts enter the authenticated, contract-limited operation projection.
+//! Courts enter the authenticated, contract-limited installed operation projection.
 use super::authentication::{authenticate_external, live_scope};
 use super::*;
 use std::time::Duration;
 impl World {
-    pub(super) fn admitted_relation_projection<O, Output>(
+    pub(super) fn admitted_projection<O, Output>(
         &self,
         reference: ApplicationOperationRef<Fixture, O, ()>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Fixture, O>,
             &ObservedEntity<Item>,
         ) -> Output,
+    ) -> Result<Output, HandlerExecutionDenial>
+    where
+        O: ApplicationOperationMarkerIdentity<Fixture, InputBinding = UnitInput> + 'static,
+    {
+        self.admitted_projection_when(reference, projection, |_| true)
+    }
+    pub(super) fn admitted_read<O, Output>(
+        &self,
+        reference: ApplicationOperationRef<Fixture, O, ()>,
+        projection: impl FnOnce(
+            &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Fixture, O>,
+            &ObservedEntity<Item>,
+        ) -> Result<Output, FragmentDenial>,
+    ) -> Result<Result<Output, FragmentDenial>, HandlerExecutionDenial>
+    where
+        O: ApplicationOperationMarkerIdentity<Fixture, InputBinding = UnitInput> + 'static,
+    {
+        self.admitted_projection_when(reference, projection, Result::is_ok)
+    }
+    fn admitted_projection_when<O, Output>(
+        &self,
+        reference: ApplicationOperationRef<Fixture, O, ()>,
+        projection: impl FnOnce(
+            &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Fixture, O>,
+            &ObservedEntity<Item>,
+        ) -> Output,
+        should_complete: impl FnOnce(&Output) -> bool,
     ) -> Result<Output, HandlerExecutionDenial>
     where
         O: ApplicationOperationMarkerIdentity<Fixture, InputBinding = UnitInput> + 'static,
@@ -67,6 +94,11 @@ impl World {
                     )
                     .map_err(HandlerExecutionDenial::new)?;
                 let (output, projection, _) = completed.into_parts();
+                // A refused SDK read has no successful attempt to complete. The
+                // relation courts still demand completion to catch swallowed failures.
+                if !should_complete(&output) {
+                    return Ok(output);
+                }
                 self.application
                     .begin_projected_application_read_attempt(
                         &phase,

@@ -846,6 +846,7 @@ dependencies = [
  "worth-query-decl",
  "worth-query-host",
  "worth-query-testkit-decl",
+ "worth-relational",
 ]
 
 [[package]]
@@ -1402,6 +1403,7 @@ dependencies = [
 name = "worth-query-testkit-decl"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "worth-query-decl",
 ]
 

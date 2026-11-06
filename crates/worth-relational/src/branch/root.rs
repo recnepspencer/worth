@@ -24,6 +24,7 @@ mod capture_preparation;
 #[cfg(test)]
 #[path = "root_content_tests.rs"]
 mod content_tests;
+mod court_doors_for_test;
 #[path = "root_identity.rs"]
 mod identity;
 #[path = "root_output_publication.rs"]

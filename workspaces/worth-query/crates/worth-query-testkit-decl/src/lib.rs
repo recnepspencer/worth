@@ -1,6 +1,7 @@
 //! Canonical Query fixture family.
 pub mod facade;
 pub mod fragment_auth_fixture;
+pub mod fragment_codec_fixture;
 pub mod fragment_context_fixture;
 pub mod fragment_fixture;
 pub mod fragment_optional_fixture;

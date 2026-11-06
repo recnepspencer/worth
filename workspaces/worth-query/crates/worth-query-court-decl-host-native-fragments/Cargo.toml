@@ -10,6 +10,7 @@ publish = false
 [dev-dependencies]
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-relational = { path = "../../../../crates/worth-relational" }
 worth-query-decl = { path = "../worth-query-decl" }
 worth-query-host = { path = "../worth-query-host" }
 worth-query-testkit-decl = { path = "../worth-query-testkit-decl" }

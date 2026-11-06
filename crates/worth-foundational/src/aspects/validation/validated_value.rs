@@ -6,6 +6,7 @@ use crate::aspects::keys::AspectKey;
 use crate::aspects::structs::StructAspectValue;
 use crate::values::AspectValue;
 use serde::Serialize;
+mod court_doors_for_test;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ContractValidatedAspectValue {

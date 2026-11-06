@@ -10,7 +10,16 @@ impl Fragment for Annotations {
     const NAME: &'static str = "annotations";
     type Bindings = Bindings;
     type Members = (
-        (Extend<Item, (Option<Annotation>,), (WithAspects<Annotates, (Option<EdgeWeight>,)>,)>,),
+        (
+            Extend<
+                Item,
+                (
+                    Option<Annotation>,
+                    Option<super::fragment_codec_fixture::ExtendedValue>,
+                ),
+                (WithAspects<Annotates, (Option<EdgeWeight>,)>,),
+            >,
+        ),
         ExtensionAccess,
     );
 }
@@ -39,6 +48,18 @@ impl Registration<Fixture> for ExtensionAccess {
     {
         let operation = ApplicationOperationRef::<Fixture, ChangeForm, ()>::from_declaration();
         Ok(builder
+            .operation_read_record(
+                operation,
+                Fixture,
+                Item,
+                super::fragment_codec_fixture::OwnedValue,
+            )
+            .operation_read_record(
+                operation,
+                Annotations,
+                Item,
+                super::fragment_codec_fixture::ExtendedValue,
+            )
             .operation_read_relation(operation, relation(Annotations, Item, Annotates))
             .operation_link(operation, relation(Annotations, Item, Annotates))
             .operation_read_record(operation, Annotations, Item, Annotation)

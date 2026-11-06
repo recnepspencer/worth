@@ -11,6 +11,7 @@ mod candidate;
 mod inspection;
 mod read;
 mod resources;
+mod stored_value_corruption;
 mod world;
 mod write;
 pub(crate) use world::{Mode, World};
@@ -30,4 +31,4 @@ mod extensions;
 
 mod relation_compile_fail;
 
-mod relation_admission;
+mod admission;

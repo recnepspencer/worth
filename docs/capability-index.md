@@ -63,6 +63,7 @@ The optional third parameter adds outgoing relations and their payload aspects;
 positive source minimums are refused, and positive target/pair minimums require a target declared by the extending fragment or one it nests.
 Selections remain local to the extending fragment's membership witness and use
 the existing field and View APIs. See [shared entity extensions](build-an-application.md#add-optional-aspects-to-a-shared-entity).
+Fragment `View::read` preserves typed record refusals and complete field paths for damaged stored rows; the [installed corruption courts](../workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/stored_value_corruption.rs) cover owned and extension aspects.
 `fragment::relation_integrity::<R>()` derives descriptive integrity from that relation declaration for operation and query metadata.
 
 

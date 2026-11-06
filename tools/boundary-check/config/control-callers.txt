@@ -1735,3 +1735,8 @@ crates/worth-relational/ crates/worth-court-relational-certification/tests/worth
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/schema_projection.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/cost/schema_projection.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/cost/schema_projection.rs
+
+# Stored-value corruption is confined to Native storage and the installed fragment court.
+crates/worth-foundational/ crates/worth-relational/src/runtime/state/runtime_state/court_doors_for_test.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/stored_value_corruption/storage.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/stored_value_corruption/storage.rs
