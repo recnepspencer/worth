@@ -9,6 +9,7 @@ use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 
 #[derive(Debug)]
 pub(crate) struct SourceOriginalInputs {
+    pub(crate) world_selection: Option<Arc<crate::durability::RelationalWorldSourceCatalog>>,
     pub(crate) current: Arc<InitialInputsImage>,
     pub(crate) covered: Option<Arc<InitialInputsImage>>,
     pub(crate) normalized: Option<Arc<NormalizedOriginalInputs>>,
@@ -19,6 +20,7 @@ pub(crate) fn readmit(
     current: ExecutionImmutableBytes,
     selected: Option<&RelationalCompleteSourceArtifact>,
     checkpoint: Option<&DurableCheckpoint>,
+    world_selection: Option<Arc<crate::durability::RelationalWorldSourceCatalog>>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<SourceOriginalInputs, Refusal> {
     let bytes = std::alloc::Layout::new::<[usize; 2]>()
@@ -37,6 +39,7 @@ pub(crate) fn readmit(
             return Err(Refusal::Malformed);
         }
         return Ok(SourceOriginalInputs {
+            world_selection,
             current,
             covered: None,
             normalized: None,
@@ -109,8 +112,18 @@ pub(crate) fn readmit(
             return Err(Refusal::Malformed);
         }
     }
-    super::chronology::validate(&covered, &normalized, &directory.manifest, request)?;
+    super::chronology::validate(
+        &covered,
+        &normalized,
+        &directory.manifest,
+        &checkpoint.branch_root_schema_images,
+        world_selection
+            .as_deref()
+            .and_then(|world| world.selected_checkpoint()),
+        request,
+    )?;
     Ok(SourceOriginalInputs {
+        world_selection,
         current,
         covered: Some(covered),
         normalized: Some(normalized),

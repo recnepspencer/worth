@@ -27,15 +27,7 @@ impl BranchImages<'_> {
         descriptor: &RelationalBranchBasisDescriptor,
         roots: &FoldedRoots,
     ) -> Result<Arc<RelationalBranchRootSchemaAuthority>, Denial> {
-        let key = (
-            descriptor.branch_id(),
-            descriptor.reference().generation().get(),
-            match descriptor.posture() {
-                RelationalBranchBasisPosture::Live => 0,
-                RelationalBranchBasisPosture::Archived => 1,
-                RelationalBranchBasisPosture::Deleting => 2,
-            },
-        );
+        let key = ObservationKey::of_descriptor(descriptor);
         let axes = self
             .observations
             .get(&key)

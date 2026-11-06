@@ -100,6 +100,16 @@ pub struct RecoveredRelationalRuntimeAuthority {
 }
 
 impl RecoveredRelationalRuntimeAuthority {
+    /// The original Home acknowledges actual World reconciliation, releasing
+    /// preparation pins only. A foreign or stale completion changes nothing.
+    pub fn complete_home_world_selection(
+        &self,
+        completed: worth_proof::CompletedHomeWorldSelection,
+    ) -> Result<(), worth_proof::HomeWorldSelectionAdmissionDenial> {
+        self.recovered_roots
+            .complete_world_selection_handoff(completed)
+    }
+
     /// Whether native recovery retained a distinct codec target for adoption.
     pub fn codec_transition_pending(&self) -> bool {
         self.codec_transition.is_some()

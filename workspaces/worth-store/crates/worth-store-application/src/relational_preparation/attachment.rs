@@ -36,6 +36,12 @@ pub fn attach_relational(
                 )
             }
             crate::home_context::RelationalHomeOpeningInput::Existing(prepared) => {
+                let prepared = prepared.with_home_world_selection(
+                    context
+                        .world_preparation
+                        .as_ref()
+                        .and_then(|prepared| prepared.selection.clone()),
+                );
                 worth_store_relational::UnrecoveredRelationalSection::attach_prepared_home(
                     definition,
                     serving,

@@ -33,6 +33,7 @@ impl UnrecoveredRelationalSection {
             checkpoint_selection,
             prepared.transition.clone(),
             prepared.transition_required.clone(),
+            prepared.world_selection.clone(),
         )
         .map(|attached| Self {
             attached,

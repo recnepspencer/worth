@@ -64,6 +64,9 @@ pub(crate) struct PreparedDescriptor {
     transition: crate::open::readmission::transition::HomeTransitionAdmission,
 }
 impl PreparedDescriptor {
+    pub(crate) fn descriptor(&self) -> &HomeDescriptor {
+        &self.descriptor
+    }
     pub(crate) fn home_identity(&self) -> HomeIdentity {
         self.descriptor.identity
     }

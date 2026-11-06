@@ -51,6 +51,7 @@ impl WorldCheckpointPort {
             source.as_ref(),
             binding.binding(),
             request,
+            None,
         )?;
         let bytes = image
             .encode(request)

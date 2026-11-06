@@ -134,6 +134,7 @@ fn recovered_indexes(
             .unwrap(),
         cut.bounds(),
         source,
+        None,
         request,
     )
     .unwrap();

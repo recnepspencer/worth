@@ -33,46 +33,13 @@ where
         self,
         relational: RelationalOwnerServicePorts,
         bridge: RuntimeWorldCorrespondencePort,
-        medium: Arc<dyn crate::durability::RuntimeWorldDurableMedium>,
-        source: Box<dyn crate::durability::WorldCheckpointReadSource>,
+        prepared: &crate::durability::PreparedWorldHomeSource,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         native: &worth_relational::facade::runtime::RelationalRuntime,
         native_recovery: &worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
     ) -> Result<RuntimeWorldOwner<D, I, E, Ctx, T>, crate::durability::WorldReadmissionDenial> {
-        use crate::durability::{
-            WorldDurableMediumBinding, WorldReadmissionDenial as Denial, WorldRecoveredJournalState,
-        };
-        let binding = WorldDurableMediumBinding::new(medium, request).map_err(Denial::Medium)?;
-        let (recovered, selected_coverage) = WorldRecoveredJournalState::read_protected_source(
-            source.as_ref(),
-            binding.binding(),
-            request,
-        )?;
-        binding
-            .admit_recovered_checkpoint_coverage(selected_coverage)
-            .map_err(Denial::Medium)?;
-        if recovered.branches.len() > 1 {
-            return Err(Denial::OccurrenceReadmissionRequired);
-        }
-        for origin in recovered.branch_origins() {
-            let artifact = origin.record();
-            let crate::durability::WorldRecord::Branch {
-                program_revision, ..
-            } = &artifact.record
-            else {
-                unreachable!("branch frame")
-            };
-            if *program_revision != binding.binding().program_revision() {
-                return Err(Denial::ProgramRevisionMismatch);
-            }
-        }
-        if recovered
-            .opens
-            .values()
-            .any(|open| open.program_revision != binding.binding().program_revision())
-        {
-            return Err(Denial::ProgramRevisionMismatch);
-        }
+        let binding = prepared.binding();
+        let recovered = prepared.recovered();
         let effects = associated_effects::readmit(
             native,
             native_recovery,

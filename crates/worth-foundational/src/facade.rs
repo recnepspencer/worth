@@ -742,3 +742,5 @@ pub use crate::value_shape::{
 pub use worth_value_shape_derive::{ChargedBytes, WorthValue};
 
 pub use crate::projected_candidate_content::ProjectedCandidateContentV1;
+
+pub use crate::durability::WorldOriginalFate;

@@ -70,3 +70,6 @@ pub use home_identity::{HomeIdentity, HomeIdentityDenial};
 pub use home_incarnation::{HomeIncarnation, HomeIncarnationExhausted};
 pub use owner_family::{DurableOwnerFamily, UnsupportedDurableOwnerTag};
 pub use retention_class::{DurableArtifactRetention, RetentionClass};
+
+mod world_original_fate;
+pub use world_original_fate::WorldOriginalFate;

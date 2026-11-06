@@ -69,3 +69,134 @@ impl Axes {
         }
     }
 }
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub(super) struct ObservationKey<'a> {
+    branch: &'a BranchId,
+    generation: u64,
+    truth: u64,
+    posture: u8,
+    commit: Option<CommitId>,
+}
+impl<'a> ObservationKey<'a> {
+    pub(super) fn of_axes(branch: &'a BranchId, axes: &Axes) -> Self {
+        Self {
+            branch,
+            generation: axes.generation.get(),
+            truth: axes.truth.as_u64(),
+            posture: posture(axes.lifecycle),
+            commit: axes.commit,
+        }
+    }
+    pub(super) fn of_descriptor(descriptor: &'a RelationalBranchBasisDescriptor) -> Self {
+        Self {
+            branch: descriptor.branch_id(),
+            generation: descriptor.reference().generation().get(),
+            truth: descriptor.truth_version().as_u64(),
+            posture: match descriptor.posture() {
+                RelationalBranchBasisPosture::Live => 0,
+                RelationalBranchBasisPosture::Archived => 1,
+                RelationalBranchBasisPosture::Deleting => 2,
+            },
+            commit: match descriptor.reference().target() {
+                FoundationalBranchTarget::Empty => None,
+                FoundationalBranchTarget::Basis(target) => {
+                    Some(CommitId(target.selected_commit_id()))
+                }
+            },
+        }
+    }
+}
+
+pub(super) enum RequiredSource<'a> {
+    Canonical(&'a OriginalCanonicalCommit),
+    Transition(&'a RetainedBranchTransition),
+}
+impl<'a> RequiredSource<'a> {
+    pub(super) fn branch(&self) -> &'a BranchId {
+        match self {
+            Self::Canonical(commit) => &commit.envelope.branch_context,
+            Self::Transition(entry) => match entry.positioned.transition() {
+                RelationalBranchTransition::Fork { source, .. } => source,
+                RelationalBranchTransition::Archive { .. }
+                | RelationalBranchTransition::DeletionRequested { .. }
+                | RelationalBranchTransition::Delete { .. }
+                | RelationalBranchTransition::RetainedFork { .. } => {
+                    entry.positioned.transition().branch()
+                }
+            },
+        }
+    }
+    pub(super) fn matches(&self, axes: &Axes, roots: &FoldedRoots) -> bool {
+        match self {
+            Self::Canonical(commit) => {
+                let Some(cell) = &commit.envelope.branch_cell_checkpoint else {
+                    return false;
+                };
+                !axes.removed
+                    && axes.lifecycle == Lifecycle::Live
+                    && cell.branch_id == commit.envelope.branch_context
+                    && axes.matches(
+                        cell.observation.generation(),
+                        cell.truth_version,
+                        cell.observation.target(),
+                        roots,
+                    )
+                    && Arc::ptr_eq(&axes.schema, &commit.inputs.prestate_schema)
+            }
+            Self::Transition(entry) => {
+                if axes.removed || !Arc::ptr_eq(&axes.schema, &entry.schema) {
+                    return false;
+                }
+                match entry.positioned.transition() {
+                    RelationalBranchTransition::Fork {
+                        source_generation,
+                        source_truth_version,
+                        source_head,
+                        ..
+                    } => {
+                        axes.lifecycle == Lifecycle::Live
+                            && axes.generation == *source_generation
+                            && axes.truth == *source_truth_version
+                            && axes.matches_basis(source_head, roots)
+                    }
+                    RelationalBranchTransition::Archive {
+                        prior_generation,
+                        prior_truth_version,
+                        ..
+                    } => {
+                        axes.lifecycle == Lifecycle::Live
+                            && axes.generation == *prior_generation
+                            && axes.truth == *prior_truth_version
+                    }
+                    RelationalBranchTransition::DeletionRequested {
+                        prior_generation,
+                        prior_truth_version,
+                        ..
+                    } => axes.generation == *prior_generation && axes.truth == *prior_truth_version,
+                    RelationalBranchTransition::Delete {
+                        prior_generation,
+                        prior_truth_version,
+                        head_commit,
+                        ..
+                    } => {
+                        axes.generation == *prior_generation
+                            && axes.truth == *prior_truth_version
+                            && axes.commit == *head_commit
+                    }
+                    RelationalBranchTransition::RetainedFork { .. } => false,
+                }
+            }
+        }
+    }
+}
+impl Axes {
+    pub(super) fn same_state(&self, other: &Self) -> bool {
+        self.generation == other.generation
+            && self.truth == other.truth
+            && self.lifecycle == other.lifecycle
+            && self.commit == other.commit
+            && self.removed == other.removed
+            && Arc::ptr_eq(&self.schema, &other.schema)
+    }
+}

@@ -193,3 +193,7 @@ native-world-readmission workspaces/worth-store/crates/worth-store-court-applica
 native-durable-initial-installation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs
 native-home-query-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs
 query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs
+native-fresh-home-source crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source.rs
+world-fresh-home crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source.rs
+world-home-checkpoint-source crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source/journal.rs
+world-home crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source.rs

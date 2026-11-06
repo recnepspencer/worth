@@ -23,6 +23,13 @@ use worth_store::physical_runtime::{
 const PUBLICATION_DEADLINE_MILLIS: u64 = 30_000;
 
 pub(crate) struct StoreJournalMedium {
+    world_selection: Option<
+        Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                Arc<worth_relational::facade::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    >,
     transition: Option<worth_proof::HomeProgramTransitionAuthority>,
     transition_required: Option<worth_proof::HomeProgramTransitionRequired>,
     serving: Option<Arc<ServingPhysicalRuntime>>,
@@ -39,6 +46,7 @@ impl StoreJournalMedium {
         checkpoint_selection: Arc<dyn crate::section::RelationalCheckpointSelectionSource>,
     ) -> Self {
         Self {
+            world_selection: None,
             transition: None,
             transition_required: None,
             serving: Some(serving),
@@ -58,6 +66,19 @@ impl StoreJournalMedium {
         self
     }
 
+    pub(crate) fn with_home_world_selection(
+        mut self,
+        selection: Option<
+            Arc<
+                worth_proof::VerifiedHomeWorldSelection<
+                    Arc<worth_relational::facade::durability::RelationalWorldSourceCatalog>,
+                >,
+            >,
+        >,
+    ) -> Self {
+        self.world_selection = selection;
+        self
+    }
     fn serving(&self) -> &Arc<ServingPhysicalRuntime> {
         self.serving
             .as_ref()
@@ -107,6 +128,18 @@ impl std::fmt::Debug for StoreJournalMedium {
 
 mod home_retirement;
 impl RelationalDurableMedium for StoreJournalMedium {
+    fn home_world_selection(
+        &self,
+    ) -> Option<
+        Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                Arc<worth_relational::facade::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    > {
+        self.world_selection.clone()
+    }
+
     fn home_transition_authority(&self) -> Option<&worth_proof::HomeProgramTransitionAuthority> {
         self.transition.as_ref()
     }

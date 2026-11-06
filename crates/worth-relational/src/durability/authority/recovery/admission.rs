@@ -96,8 +96,12 @@ impl RecoveryRejection {
 
 pub(super) fn admit_recovery(
     runtime: &RelationalRuntime,
-    plan: RecoveryPlan,
+    mut plan: RecoveryPlan,
 ) -> Result<AdmittedRecoveryPlan, RecoveryRejection> {
+    plan.home_world_selection = runtime
+        .durability
+        .medium()
+        .and_then(|medium| medium.home_world_selection());
     let rejected = matches!(
         plan.authority_continuity.verification_outcome,
         crate::durability::data::RecoveryVerificationOutcome::Rejected { .. }
@@ -111,7 +115,8 @@ pub(super) fn admit_recovery(
         entry: recovery_authority_continuity_diagnostic(&plan),
     };
     let result = validate_recovery_authority_continuity(runtime, &plan)
-        .and_then(|()| validate_reported_parity(runtime, &plan));
+        .and_then(|()| validate_reported_parity(runtime, &plan))
+        .and_then(|()| validate_world_source(&plan));
     match result {
         Ok(()) => Ok(AdmittedRecoveryPlan {
             plan,
@@ -170,6 +175,24 @@ fn validate_reported_parity(
                 found: runtime.runtime_name().to_string(),
             },
         ));
+    }
+    Ok(())
+}
+
+fn validate_world_source(plan: &RecoveryPlan) -> Result<(), DurabilityError> {
+    let selected = plan
+        .original_source
+        .as_ref()
+        .and_then(|source| source.world_selection.as_ref());
+    if let Some(selected) = selected {
+        if !plan
+            .home_world_selection
+            .as_ref()
+            .is_some_and(|actual| actual.require_original_source(selected).is_ok())
+        {
+            return Err(DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint,
+                "original World source eligibility belongs to a different or missing Home admission"));
+        }
     }
     Ok(())
 }

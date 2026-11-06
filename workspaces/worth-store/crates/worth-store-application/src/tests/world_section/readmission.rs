@@ -135,8 +135,7 @@ fn empty_world_requires_its_actual_native_recovery_authority_before_construction
     let refused = builder.readmit_world_home(
         home_a.relational.runtime().owner_component_services(),
         bridge,
-        medium.clone(),
-        crate::world_section::checkpoint::readmission_source(&home_a, &execution).unwrap(),
+        &home_a.context.world_preparation.as_ref().unwrap().source,
         &execution,
         home_a.relational.runtime(),
         home_b.relational.world_recovery_authority().unwrap(),
@@ -157,8 +156,7 @@ fn empty_world_requires_its_actual_native_recovery_authority_before_construction
         .readmit_world_home(
             home_a.relational.runtime().owner_component_services(),
             bridge,
-            medium.clone(),
-            crate::world_section::checkpoint::readmission_source(&home_a, &execution).unwrap(),
+            &home_a.context.world_preparation.as_ref().unwrap().source,
             &execution,
             home_a.relational.runtime(),
             home_a.relational.world_recovery_authority().unwrap(),
@@ -347,7 +345,7 @@ fn fresh_world_requires_its_actual_original_native_source_before_construction() 
         home_a.relational.runtime().owner_component_services(),
         bridge,
         medium.clone(),
-        crate::world_section::checkpoint::readmission_source(&home_a, &execution).unwrap(),
+        crate::world_section::checkpoint::readmission_source(&home_a.context, &execution).unwrap(),
         &execution,
         home_a.relational.runtime(),
         home_b.relational.world_fresh_source_admission().unwrap(),

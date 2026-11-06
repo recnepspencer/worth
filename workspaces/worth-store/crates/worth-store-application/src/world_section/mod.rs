@@ -1,8 +1,9 @@
 //! The Home's private World adapter. Only World decodes owner payloads.
 mod attachment;
-mod checkpoint;
+pub(crate) mod checkpoint;
 mod close;
 mod definition;
+pub(crate) mod native_selection;
 pub(crate) use close::{HomeBridgeCloseCustody, RetiredHomeBridgeComposition};
 pub use close::{WorldHomeClosePosture, WorldHomeCloseRefused, WorldSealedApplicationHome};
 pub use definition::{ApplicationHomeWorldDefinition, ApplicationWorldDefinition};

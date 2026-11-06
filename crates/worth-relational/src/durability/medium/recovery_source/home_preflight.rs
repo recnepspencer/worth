@@ -60,6 +60,7 @@ impl RelationalDurableRecoverySource {
         transitions: ExecutionArray<ExecutionImmutableBytes>,
         bounds: super::super::RelationalDurableReadBounds,
         source: Arc<dyn super::super::RelationalDurableColdSource>,
+        world_selection: Option<Arc<crate::durability::RelationalWorldSourceCatalog>>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Refusal> {
         let covered = checkpoint.as_ref().map_or(0, |source| source.covered().0);
@@ -117,7 +118,7 @@ impl RelationalDurableRecoverySource {
         let mut input = Self::new(checkpoint, tail, branch, source);
         input.initial_inputs = initial;
         input.source_memory = memory;
-        input.preflight_home(request)?;
+        input.preflight_home(world_selection, request)?;
         if input.readmitted_originals.as_ref().is_some_and(|original| original.current.entries.iter().any(|entry| match entry {
             crate::durability::source_initial_inputs::image::InitialInputEntry::Birth(_) => false,
             crate::durability::source_initial_inputs::image::InitialInputEntry::Installation { follows_transition, .. } => *follows_transition > bounds.transitions,
@@ -125,7 +126,11 @@ impl RelationalDurableRecoverySource {
         Ok(input)
     }
 
-    fn preflight_home(&mut self, request: &ExecutionRequest<'_, '_>) -> Result<(), Refusal> {
+    fn preflight_home(
+        &mut self,
+        world_selection: Option<Arc<crate::durability::RelationalWorldSourceCatalog>>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Refusal> {
         let complete = self
             .checkpoint
             .as_ref()
@@ -160,6 +165,7 @@ impl RelationalDurableRecoverySource {
             initial,
             complete,
             checkpoint.as_ref(),
+            world_selection,
             request,
         )?));
         Ok(())

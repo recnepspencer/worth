@@ -35,6 +35,13 @@ use crate::history::data::PositionedCanonicalCommit;
 #[derive(Debug)]
 pub(crate) struct RelationalDurableMediumBinding {
     transition: Option<worth_proof::HomeProgramTransitionAuthority>,
+    world_selection: Option<
+        Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                Arc<crate::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    >,
     // Admission observes the writer phase without waiting for medium I/O.
     home_phase: Mutex<Option<RelationalHomeProgramPhase>>,
     state: Mutex<BindingState>,
@@ -124,8 +131,10 @@ impl RelationalDurableMediumBinding {
         let unresolved = Arc::new(OnceLock::new());
         let cold_source = medium.cold_source();
         let transition = medium.home_transition_authority().cloned();
+        let world_selection = medium.home_world_selection();
         Self {
             transition,
+            world_selection,
             cold_source: Some(cold_source),
             home_phase: Mutex::new(Some(phase)),
             state: Mutex::new(BindingState {
@@ -134,6 +143,18 @@ impl RelationalDurableMediumBinding {
             }),
             unresolved,
         }
+    }
+
+    pub(crate) fn home_world_selection(
+        &self,
+    ) -> Option<
+        Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                Arc<crate::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    > {
+        self.world_selection.clone()
     }
 
     pub(crate) fn home_transition_authority(

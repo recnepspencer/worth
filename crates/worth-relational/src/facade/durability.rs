@@ -80,3 +80,9 @@ pub use crate::durability::medium::{
     RelationalDurableOwnedReadRefusal, RelationalDurableReadBounds, RelationalDurableReadPayload,
     RelationalDurableReadProtection,
 };
+
+pub use crate::durability::{
+    RelationalWorldCatalogDenial, RelationalWorldEffectCoordinates,
+    RelationalWorldOriginalDescription, RelationalWorldSourceCatalog,
+    RelationalWorldSourceDescription,
+};

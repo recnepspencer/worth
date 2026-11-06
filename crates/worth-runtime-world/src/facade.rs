@@ -4,10 +4,11 @@
 //! owner modules so callers cannot reach around the composition boundary.
 
 pub use crate::durability::{
-    PreparedWorldCheckpoint, RuntimeWorldDurableMedium, WorldCheckpointJournalRecord,
-    WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial, WorldCheckpointPort,
-    WorldCheckpointReadSource, WorldCheckpointReadView, WorldCheckpointSelection,
-    WorldCheckpointSubject, WorldDurableArtifact, WorldDurableFrameDenial, WorldDurableHomeBinding,
+    PreparedWorldCheckpoint, PreparedWorldHomeData, PreparedWorldHomeSource,
+    RuntimeWorldDurableMedium, WorldCheckpointJournalRecord, WorldCheckpointOriginRetirement,
+    WorldCheckpointOriginRetirementDenial, WorldCheckpointPort, WorldCheckpointReadSource,
+    WorldCheckpointReadView, WorldCheckpointSelection, WorldCheckpointSubject,
+    WorldDurableArtifact, WorldDurableFrameDenial, WorldDurableHomeBinding,
     WorldDurableMediumDenial, WorldPublicationCompletion, WorldPublicationObservation,
     WorldPublicationTaskPosture, WorldReadmissionDenial, WORLD_ARTIFACT_PROTOCOL,
     WORLD_ARTIFACT_VERSION, WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,

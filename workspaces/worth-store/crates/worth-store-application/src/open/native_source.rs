@@ -1,8 +1,9 @@
 //! Original Native source eligibility precedes every descriptor/incarnation effect.
 mod prefixes;
+mod prepared;
 use super::ApplicationHomeOpenRefusal as Denial;
 use crate::checkpoint::{SelectedHomeManifest, SelectedHomeSource};
-use crate::home_context::RelationalHomeOpeningInput;
+use prepared::PreparedNativeOpeningInput;
 use std::sync::Arc;
 use worth_execution::{
     ExecutionArray, ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder,
@@ -30,7 +31,7 @@ pub(super) fn prepare(
                 + Sync,
         >,
     >,
-) -> Result<RelationalHomeOpeningInput, Denial> {
+) -> Result<PreparedNativeOpeningInput, Denial> {
     use worth_store_relational::RelationalHomeSourcePreparation as Preparation;
     match origin {
         RecoveryStorePresence::ProvenAbsent => {
@@ -51,7 +52,7 @@ pub(super) fn prepare(
                 None => Preparation::from_absent_home_read(serving.clone(), request),
             };
             return prepared
-                .map(RelationalHomeOpeningInput::Fresh)
+                .map(PreparedNativeOpeningInput::Fresh)
                 .map_err(Denial::Relational);
         }
         RecoveryStorePresence::ExistingArtifacts => {}
@@ -142,20 +143,19 @@ pub(super) fn prepare(
     let initial = source
         .native_initial_inputs(serving, request)
         .map_err(Denial::Checkpoint)?;
-    preparation
-        .finish(
-            initial,
-            canonical,
-            transitions,
-            RelationalDurableReadBounds {
-                selected_checkpoint: selected.is_some(),
-                canonical: PatchStreamPosition(canonical_head),
-                transitions: RelationalBranchTransitionSequence(transition_head),
-            },
-            request,
-        )
-        .map(RelationalHomeOpeningInput::Existing)
-        .map_err(Denial::Relational)
+    PreparedNativeOpeningInput::existing(
+        preparation,
+        initial,
+        canonical,
+        transitions,
+        RelationalDurableReadBounds {
+            selected_checkpoint: selected.is_some(),
+            canonical: PatchStreamPosition(canonical_head),
+            transitions: RelationalBranchTransitionSequence(transition_head),
+        },
+        request,
+    )
+    .map_err(Denial::Execution)
 }
 
 fn admission_denial(

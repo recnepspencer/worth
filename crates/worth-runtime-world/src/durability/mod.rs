@@ -13,6 +13,8 @@ pub use checkpoint::{
     WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,
 };
 pub(crate) use codec::DecodedWorldRecord;
+mod prepared_home_source;
+pub use prepared_home_source::{PreparedWorldHomeData, PreparedWorldHomeSource};
 mod frontiers;
 mod initial_components;
 pub(crate) use initial_components::RecordedWorldInitialComponents;

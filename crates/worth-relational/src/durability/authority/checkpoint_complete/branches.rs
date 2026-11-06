@@ -18,11 +18,14 @@ use worth_foundational::{
 
 mod axes;
 mod component_admission;
-use axes::Axes;
+mod transitions;
+mod world_releases;
+use axes::{Axes, ObservationKey, RequiredSource};
+use world_releases::WorldReleases;
 
 pub(super) struct BranchImages<'a> {
     current: ExecutionOrderedMap<&'a BranchId, Axes>,
-    observations: ExecutionOrderedMap<(&'a BranchId, u64, u8), Axes>,
+    observations: ExecutionOrderedMap<ObservationKey<'a>, Axes>,
 }
 
 impl<'a> BranchImages<'a> {
@@ -43,6 +46,7 @@ impl<'a> BranchImages<'a> {
         };
         image.record(main, Axes::empty(birth), execution)?;
         let transitions = original.transitions();
+        let mut releases = WorldReleases::prepare(original, execution)?;
         let mut transition = 0usize;
         let mut installation_done = false;
         for position in 0..=commits.len() {
@@ -60,6 +64,17 @@ impl<'a> BranchImages<'a> {
                 if entry.positioned.sequence().0 != transition as u64 + 1 {
                     return Err(Denial::OriginalAuthorityUnavailable);
                 }
+                if !matches!(
+                    entry.positioned.transition(),
+                    RelationalBranchTransition::RetainedFork { .. }
+                ) {
+                    image.select_required_source(
+                        RequiredSource::Transition(entry),
+                        &releases,
+                        roots,
+                        execution,
+                    )?;
+                }
                 image.transition(main, entry, roots, execution)?;
                 transition += 1;
                 image.install_if_due(
@@ -76,30 +91,14 @@ impl<'a> BranchImages<'a> {
             if commit.position.0 != position as u64 + 1 {
                 return Err(Denial::OriginalAuthorityUnavailable);
             }
-            let checkpoint = commit
-                .envelope
-                .branch_cell_checkpoint
-                .as_ref()
-                .ok_or(Denial::OriginalAuthorityUnavailable)?;
             let branch = &commit.envelope.branch_context;
-            let mut before = image
-                .current
-                .get(&branch)
-                .cloned()
-                .ok_or(Denial::OriginalAuthorityUnavailable)?;
-            if before.removed
-                || before.lifecycle != Lifecycle::Live
-                || checkpoint.branch_id != *branch
-                || !before.matches(
-                    checkpoint.observation.generation(),
-                    checkpoint.truth_version,
-                    checkpoint.observation.target(),
-                    roots,
-                )
-                || !Arc::ptr_eq(&before.schema, &commit.inputs.prestate_schema)
-            {
-                return Err(Denial::OriginalAuthorityUnavailable);
-            }
+            let mut before = image.select_required_source(
+                RequiredSource::Canonical(commit),
+                &releases,
+                roots,
+                execution,
+            )?;
+            let predecessor = before.clone();
             before.generation = before
                 .generation
                 .checked_advance()
@@ -110,12 +109,53 @@ impl<'a> BranchImages<'a> {
                 .ok_or(Denial::OriginalAuthorityUnavailable)?;
             before.commit = Some(commit.envelope.commit.commit_id);
             before.schema = commit.inputs.result_schema.clone();
+            releases.retain_original(
+                commit,
+                predecessor,
+                before.clone(),
+                commits,
+                roots,
+                execution,
+            )?;
             image.record(branch, before, execution)?;
         }
         if transition != transitions.len() || original.installation.is_some() != installation_done {
             return Err(Denial::OriginalAuthorityUnavailable);
         }
+        for restoration in releases.restorations() {
+            if image
+                .current
+                .get(&restoration.branch)
+                .is_some_and(|current| current.same_state(&restoration.after))
+            {
+                image.record(restoration.branch, restoration.before.clone(), execution)?;
+            }
+        }
         Ok(image)
+    }
+
+    fn select_required_source(
+        &mut self,
+        required: RequiredSource<'a>,
+        releases: &WorldReleases<'a>,
+        roots: &FoldedRoots,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<Axes, Denial> {
+        let branch = required.branch();
+        let current = self
+            .current
+            .get(&branch)
+            .ok_or(Denial::OriginalAuthorityUnavailable)?;
+        if required.matches(current, roots) {
+            return Ok(current.clone());
+        }
+        let predecessor = releases
+            .predecessor(branch, current)
+            .filter(|before| required.matches(before, roots))
+            .ok_or(Denial::OriginalAuthorityUnavailable)?;
+        let selected = predecessor.clone();
+        self.record(branch, selected.clone(), execution)?;
+        Ok(selected)
     }
 
     fn install_if_due(
@@ -155,122 +195,13 @@ impl<'a> BranchImages<'a> {
         Ok(())
     }
 
-    fn transition(
-        &mut self,
-        main: &BranchId,
-        entry: &'a RetainedBranchTransition,
-        roots: &FoldedRoots,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), Denial> {
-        let record = entry.positioned.transition();
-        if matches!(record, RelationalBranchTransition::RetainedFork { .. }) {
-            return Err(Denial::Durability(crate::durability::data::DurabilityError::new(
-                crate::durability::data::RecoveryFailureClass::UnsupportedRetainedForkReplay,
-                "retained-source forks require original live root custody; historical tail reconstruction is unsupported",
-            )));
-        }
-
-        if let RelationalBranchTransition::Fork {
-            target,
-            source,
-            source_generation,
-            source_truth_version,
-            source_head,
-        } = record
-        {
-            let prior = self
-                .current
-                .get(&source)
-                .ok_or(Denial::OriginalAuthorityUnavailable)?;
-            if self.current.get(&target).is_some()
-                || prior.removed
-                || prior.lifecycle != Lifecycle::Live
-                || (prior.generation != *source_generation
-                    || prior.truth != *source_truth_version
-                    || !prior.matches_basis(source_head, roots))
-                || !Arc::ptr_eq(&prior.schema, &entry.schema)
-            {
-                return Err(Denial::OriginalAuthorityUnavailable);
-            }
-            let mut next = prior.clone();
-            next.generation = Generation::initial();
-            next.truth = RelationalBranchVersion::initial();
-            self.record(target, next, execution)?;
-            return Ok(());
-        }
-        let branch = record.branch();
-        let mut prior = self
-            .current
-            .get(&branch)
-            .cloned()
-            .ok_or(Denial::OriginalAuthorityUnavailable)?;
-        let (generation, truth) = match record {
-            RelationalBranchTransition::Archive {
-                prior_generation,
-                prior_truth_version,
-                ..
-            }
-            | RelationalBranchTransition::DeletionRequested {
-                prior_generation,
-                prior_truth_version,
-                ..
-            }
-            | RelationalBranchTransition::Delete {
-                prior_generation,
-                prior_truth_version,
-                ..
-            } => (*prior_generation, *prior_truth_version),
-            RelationalBranchTransition::Fork { .. }
-            | RelationalBranchTransition::RetainedFork { .. } => {
-                unreachable!("fork is handled above")
-            }
-        };
-        if prior.removed
-            || prior.generation != generation
-            || prior.truth != truth
-            || !Arc::ptr_eq(&prior.schema, &entry.schema)
-        {
-            return Err(Denial::OriginalAuthorityUnavailable);
-        }
-        match record {
-            RelationalBranchTransition::Archive { .. } => {
-                if prior.lifecycle != Lifecycle::Live {
-                    return Err(Denial::OriginalAuthorityUnavailable);
-                }
-                prior.generation = prior
-                    .generation
-                    .checked_advance()
-                    .map_err(|_| Denial::OriginalAuthorityUnavailable)?;
-                prior.lifecycle = Lifecycle::Archived;
-            }
-            RelationalBranchTransition::DeletionRequested { .. } => {
-                if branch == main {
-                    return Err(Denial::OriginalAuthorityUnavailable);
-                }
-                prior.lifecycle = Lifecycle::Deleting;
-            }
-            RelationalBranchTransition::Delete { head_commit, .. } => {
-                if branch == main || prior.commit != *head_commit {
-                    return Err(Denial::OriginalAuthorityUnavailable);
-                }
-                prior.lifecycle = Lifecycle::Deleting;
-                prior.removed = true;
-            }
-            RelationalBranchTransition::Fork { .. }
-            | RelationalBranchTransition::RetainedFork { .. } => {
-                unreachable!("fork is handled above")
-            }
-        }
-        self.record(branch, prior, execution)
-    }
-
     fn record(
         &mut self,
         branch: &'a BranchId,
         axes: Axes,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
-        let key = (branch, axes.generation.get(), posture(axes.lifecycle));
+        let key = ObservationKey::of_axes(branch, &axes);
         self.observations
             .insert_cloned_native_for_request(&key, &axes, *execution)
             .map_err(map_stop)?;
