@@ -77,7 +77,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
         match result {
             Ok(()) => Ok(ReadmittedExistingHomeNativeMeaning {
                 state: self.state,
-                schema: self.schema,
+                schema: self.schema.bind_sources(&native.main_branch_identity()),
                 restore_work: outcome.checkpoint_restore_work,
             }),
             Err(cause) => Err(QueryExistingHomeNativeReadmissionRefused {

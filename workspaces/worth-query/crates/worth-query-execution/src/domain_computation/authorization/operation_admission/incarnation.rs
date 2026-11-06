@@ -8,10 +8,20 @@ impl<Schema, Operation, Input, Scope>
         current: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
     {
+        self.core.refuse_stale_home_authority(current)
+    }
+}
+
+impl super::WorthQueryAdmittedOperation {
+    pub(in crate::domain_computation) fn refuse_stale_home_authority(
+        &self,
+        current: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
+    ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
+    {
         crate::domain_computation::authorization::refuse_stale_home_authority(
             current,
-            self.core.home_owner,
-            &self.core.operation,
+            self.home_owner,
+            &self.operation,
         )
     }
 }

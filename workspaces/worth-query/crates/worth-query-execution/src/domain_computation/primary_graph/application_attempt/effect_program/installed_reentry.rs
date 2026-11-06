@@ -82,6 +82,8 @@ impl WorthQueryApplicationRuntimeCore {
         tag: &BrandTag,
         binding: &ApplicationSchemaBindingIdentity,
     ) -> Result<(), WorthQueryCommitEntryRefusal> {
+        core.refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+            .map_err(WorthQueryCommitEntryRefusal::authorization)?;
         self.validate_commit_phase(phase)?;
         self.validate_commit_installation(core, tag, binding)
             .map_err(WorthQueryCommitEntryRefusal::installation)?;
@@ -93,6 +95,8 @@ impl WorthQueryApplicationRuntimeCore {
         phase: &WorthQueryAdvancementPhase<'_>,
         core: &WorthQueryAdmittedOperation,
     ) -> Result<(), WorthQueryCommitEntryRefusal> {
+        core.refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+            .map_err(WorthQueryCommitEntryRefusal::authorization)?;
         self.validate_commit_phase(Some(phase))?;
         core.validate_current_authority()
             .map_err(WorthQueryCommitEntryRefusal::authorization)
