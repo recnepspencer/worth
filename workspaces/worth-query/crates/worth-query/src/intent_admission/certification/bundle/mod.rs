@@ -230,7 +230,7 @@ pub fn certify_intent_admission(
         worth_query_intent_admission_oracle_report(execution)?,
         worth_query_intent_admission_legacy_parity_report(execution)?,
         worth_query_intent_admission_support_traceability_report(execution)?,
-        worth_query_intent_admission_seeded_certification_report(execution),
+        worth_query_intent_admission_seeded_certification_report(execution)?,
         worth_query_intent_admission_slope_report(execution)?,
     ))
 }

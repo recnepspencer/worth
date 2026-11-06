@@ -50,7 +50,7 @@ impl NormalizedEffectIntent {
         let capability_identity = authoring_basis.capability_identity()?;
         let scoped_basis_identity = authoring_basis.scoped_basis_identity()?;
         let expected_lower_runtime_binding_identity =
-            authoring_basis.expected_lower_runtime_binding_identity();
+            authoring_basis.expected_lower_runtime_binding_identity()?;
         let mut normalized_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
                 .field_shape(
@@ -120,7 +120,7 @@ impl NormalizedEffectIntent {
             source_path,
             normalized_identity,
             counters: EffectLifecycleCounters::normalized(1, 1, 1),
-        })
+        })?
     }
 
     pub fn family(&self) -> EffectFamily {

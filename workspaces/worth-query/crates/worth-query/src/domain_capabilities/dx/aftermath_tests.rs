@@ -230,7 +230,7 @@ fn proof_contract(
     .bind_to_installed_target(target);
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested)?,
-    )));
+    ))?);
     let proof_target = proof_admitted.payload().target().clone();
 
     Ok(success(materialize_projection_consumption_contract(
@@ -238,7 +238,7 @@ fn proof_contract(
             prepare_admitted_domain_capability_contribution_for_materialization(
                 proof_admitted,
                 proof_target,
-            ),
+            )?,
         ),
     )?))
 }
@@ -260,7 +260,7 @@ fn proof_review(
         .bind_to_installed_target(target);
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested)?,
-    )));
+    ))?);
     let proof_target = proof_admitted.payload().target().clone();
 
     Ok(success(materialize_projection_consumption_review(
@@ -268,7 +268,7 @@ fn proof_review(
             prepare_admitted_domain_capability_contribution_for_materialization(
                 proof_admitted,
                 proof_target,
-            ),
+            )?,
         ),
     )?))
 }

@@ -101,7 +101,7 @@ impl WorthQueryWorkflowRuntimeBindingSemantics {
                     )
                     .field_evidence_identity(
                         WorthQueryEvidenceTag::new("plan"),
-                        &preflight.plan().query().plan_digest().evidence_identity(),
+                        &preflight.plan().query().plan_digest().evidence_identity()?,
                     )
                     .field_evidence_identity(
                         WorthQueryEvidenceTag::new("canonical_query"),
@@ -111,7 +111,7 @@ impl WorthQueryWorkflowRuntimeBindingSemantics {
                     )
                     .field_evidence_identity(
                         WorthQueryEvidenceTag::new("basis_proof"),
-                        &preflight.basis().proof().digest().evidence_identity(),
+                        &preflight.basis().proof().digest().evidence_identity()?,
                     )
                     .seal()?
             }

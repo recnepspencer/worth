@@ -205,7 +205,7 @@ impl WorthQueryRuntime {
         let prepared_routing = WorthQueryPreparedAuthoritativeMutationRouting::from_direct_command(
             &command,
             verified_existing_truth_assertion,
-        );
+        )?;
         let receipt = self.execute_backend_or_synthetic_write(
             execution,
             command,
@@ -219,7 +219,7 @@ impl WorthQueryRuntime {
             prepared_routing.naming_intent(),
         );
         let execution_provenance =
-            self.shared_write_execution_provenance(shared_admission.as_ref(), &receipt);
+            self.shared_write_execution_provenance(shared_admission.as_ref(), &receipt)?;
         let decision_trace_envelope = self.shared_write_decision_trace_envelope(
             shared_admission.as_ref(),
             prepared_routing.mutation_family(),
@@ -233,7 +233,7 @@ impl WorthQueryRuntime {
                     decision_trace_envelope,
                     execution_provenance,
                 },
-            ),
+            )?,
         )?;
         self.journal_replay.record_write_receipt(&receipt);
         Ok(receipt)
@@ -251,7 +251,7 @@ impl WorthQueryRuntime {
             | WorthQueryWriteCommand::VerifyExistingAspects { binding, .. } => {
                 Ok(synthetic_existing_assertion_receipt(
                     binding,
-                    &self.current_snapshot_identity_with_request(execution),
+                    &self.current_snapshot_identity_with_request(execution)?,
                     declared_aspect_value_digest,
                 )?)
             }

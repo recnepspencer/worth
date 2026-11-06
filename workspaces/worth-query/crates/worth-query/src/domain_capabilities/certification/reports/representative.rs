@@ -145,7 +145,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
     let public_boundary_digest =
         worth_query_domain_capability_public_surface_inventory().public_surface_digest()?;
 
-    let support_requested = support_traceability_requested(declaration_target.clone());
+    let support_requested = support_traceability_requested(declaration_target.clone())?;
     let request_digest = support_requested.payload().request_digest().to_string();
     let support_eligible = success(evaluate_requested_domain_capability_contribution(
         support_requested,
@@ -153,12 +153,12 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
     let eligibility_digest = support_eligible.eligibility_for_reporting()?;
     let support_admitted = success(admit_eligible_domain_capability_contribution(
         support_eligible,
-    ));
+    )?);
     let admitted_digest = support_admitted.admitted_for_reporting()?;
 
     let support_artifact = success(
         materialize_intent_declaration_support_traceability_artifact(admitted_ready(
-            support_traceability_requested(declaration_target.clone()),
+            support_traceability_requested(declaration_target.clone())?,
         )?)?,
     );
     let support_common = domain
@@ -172,7 +172,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
 
     let different_support = success(
         materialize_intent_declaration_support_traceability_artifact(admitted_ready(
-            plain_support_requested(declaration_target.clone()),
+            plain_support_requested(declaration_target.clone())?,
         )?)?,
     );
     assert_ne!(
@@ -269,7 +269,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
 
     let support_traceability_report =
         success(materialize_intent_admission_support_traceability_report(
-            admitted_ready(plan_support_requested(admitted_plan_target.clone()))?,
+            admitted_ready(plan_support_requested(admitted_plan_target.clone())?)?,
         ));
 
     let capability_row = success(materialize_graph_composition_capability_support_row(
@@ -296,7 +296,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
             "worth.spatial.support.failure",
             "",
         )
-        .bind_to_installed_target(declaration_target.clone()),
+        .bind_to_installed_target(declaration_target.clone())?,
     )? {
         worth_proof::TransitionOutcome::Denied(denial) => denial,
         _ => panic!("expected typed denial"),
@@ -315,37 +315,37 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
             [
                 materialize_canonical_admission_artifact(admitted_ready(admission_requested(
                     admitted_plan_target.clone(),
-                )?)?)
+                )?)?)?
                 .materialization_digest()
                 .to_string(),
                 materialize_canonical_support_traceability_artifact(admitted_ready(
-                    support_traceability_requested(declaration_target.clone()),
-                )?)
+                    support_traceability_requested(declaration_target.clone())?,
+                )?)?
                 .materialization_digest()
                 .to_string(),
                 materialize_canonical_invariant_capability_artifact(admitted_ready(
                     invariant_requested(declaration_target.clone())?,
-                )?)
+                )?)?
                 .materialization_digest()
                 .to_string(),
                 materialize_canonical_workflow_artifact(admitted_ready(workflow_requested(
                     declaration_target.clone(),
-                )?)?)
+                )?)?)?
                 .materialization_digest()
                 .to_string(),
                 materialize_canonical_continuity_artifact(admitted_ready(continuity_requested(
                     admitted_plan_target.clone(),
-                )?)?)
+                )?)?)?
                 .materialization_digest()
                 .to_string(),
                 materialize_canonical_aftermath_artifact(admitted_ready(aftermath_requested(
                     projection_plan_target.clone(),
-                )?)?)
+                )?)?)?
                 .materialization_digest()
                 .to_string(),
-                materialize_canonical_explanation_artifact(admitted_ready(explanation_requested(
-                    lower_runtime_target.clone(),
-                )?)?)
+                materialize_canonical_explanation_artifact(admitted_ready(
+                    explanation_requested(lower_runtime_target.clone())?,
+                )?)?
                 .materialization_digest()
                 .to_string(),
             ],

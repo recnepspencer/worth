@@ -117,7 +117,7 @@ pub(crate) fn snapshot_live_view_name(
     )?
     .with_ordinary_runtime_posture(project_live_subscription_ordinary_runtime_posture(state)?)?;
     if let Some(async_result_state) = state.async_result_state.clone() {
-        snapshot = snapshot.with_async_result_state(async_result_state);
+        snapshot = snapshot.with_async_result_state(async_result_state)?;
     }
     if let Some(remask_posture) = state.remask_posture.clone() {
         snapshot = WorthQueryRuntimeStateSnapshot::deferred(
@@ -138,11 +138,11 @@ pub(crate) fn snapshot_live_view_name(
                 remask_posture.schema_context_for_reporting()
             ),
         )?
-        .with_ordinary_runtime_posture(project_live_subscription_ordinary_runtime_posture(state)?);
+        .with_ordinary_runtime_posture(project_live_subscription_ordinary_runtime_posture(state)?)?;
         if let Some(async_result_state) = state.async_result_state.clone() {
-            snapshot = snapshot.with_async_result_state(async_result_state);
+            snapshot = snapshot.with_async_result_state(async_result_state)?;
         }
-        snapshot = snapshot.with_remask_posture(remask_posture);
+        snapshot = snapshot.with_remask_posture(remask_posture)?;
     }
     Ok(snapshot)
 }

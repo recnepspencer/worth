@@ -89,15 +89,15 @@ pub(super) fn engine_matches_authority(
     artifact: &IdentityEvolutionExecutionArtifact,
     continuity: Option<&WorthQueryContinuityMutationEvidence>,
     lifecycle_target: Option<&crate::memory_workspace::WorthQueryEntityIdentity>,
-) -> bool {
+) -> Result<bool, IdentityDerivationDenial> {
     if let Some(target) = lifecycle_target {
-        return engine_matches_lifecycle_target(artifact, target);
+        return Ok(engine_matches_lifecycle_target(artifact, target)?);
     }
     let Some(continuity) = continuity else {
-        return engine_matches_comparison_outcome(artifact);
+        return Ok(engine_matches_comparison_outcome(artifact));
     };
-    continuity_shape_matches(artifact, continuity)
-        && continuity_successors_match(artifact, continuity)
+    Ok(continuity_shape_matches(artifact, continuity)
+        && continuity_successors_match(artifact, continuity))
 }
 
 fn engine_matches_lifecycle_target(

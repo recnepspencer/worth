@@ -245,7 +245,7 @@ fn former_specialist_closure_digest() -> Result<String, IdentityDerivationDenial
     );
     Ok(hash_parts(&[
         frontier.row_digest()?,
-        writeback.row_digest(),
+        writeback.row_digest()?,
     ]))
 }
 

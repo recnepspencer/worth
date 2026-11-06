@@ -67,7 +67,7 @@ fn materialize_row(
         ScenarioTemplate::WritebackExecuted => {
             scenarios_executed::scalar_writeback_row(execution, index, stepper)?
         }
-        ScenarioTemplate::MergeLowered => scenarios_executed::merge_lowered_row(index, stepper),
+        ScenarioTemplate::MergeLowered => scenarios_executed::merge_lowered_row(index, stepper)?,
         ScenarioTemplate::BatchMutationExecuted => {
             scenarios_executed::batch_mutation_row(execution, index, stepper)?
         }

@@ -30,11 +30,11 @@ impl WorthQueryWriteReceipt {
         let preview_identity = preview_write_receipt_identity(label, sequence)?;
         let commit_identity = WorthQueryCommitIdentity::preview(preview_identity.clone());
         let commit_evidence_identity =
-            super::write_receipt_commit_evidence_identity(&commit_identity);
+            super::write_receipt_commit_evidence_identity(&commit_identity)?;
         let journal_position =
             WorthQueryJournalPosition::preview(preview_identity.clone(), sequence as u64)?;
         let snapshot_evidence_identity =
-            super::write_receipt_snapshot_evidence_identity(&snapshot_identity);
+            super::write_receipt_snapshot_evidence_identity(&snapshot_identity)?;
         let delta = preview_receipt_delta(command, &preview_identity)?;
         let inner = crate::memory_workspace::WorthQueryMutationReceipt {
             commit_identity,
@@ -68,7 +68,7 @@ impl WorthQueryWriteReceipt {
                 .as_ref()
                 .or(Some(&delta.entity_identity)),
             target_collection_identity.as_ref()?,
-        );
+        )?;
         Ok(Self {
             inner,
             commit_evidence_identity,
@@ -107,7 +107,7 @@ impl WorthQueryWriteReceipt {
             declared_aspect_operations: command.declared_aspect_operations(),
             declared_aspect_value_digest: crate::runtime::command_declared_aspect_value_identity(
                 command,
-            ),
+            )?,
             mutation_metadata: command.mutation_metadata(),
             affected_live_view_targets: Vec::new(),
             affected_derived_view_targets: Vec::new(),

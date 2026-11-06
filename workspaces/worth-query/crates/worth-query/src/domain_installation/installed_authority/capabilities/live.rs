@@ -249,20 +249,22 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
                     },
                 )
             }
-        })
+        })?
     }
 
     pub fn close(
         self,
         workspace: &mut WorthQueryWorkspace,
-    ) -> WorthQueryInstalledDomainLiveCloseOutcome<D> {
+    ) -> Result<WorthQueryInstalledDomainLiveCloseOutcome<D>, IdentityDerivationDenial> {
         if let Err(drift) = WorthQueryInstalledDomainExecutionDrift::validate::<D>(
             self.receipt.installed_authority(),
             workspace,
         ) {
-            return WorthQueryInstalledDomainLiveCloseOutcome::AuthorityStopped(self, drift);
+            return Ok(WorthQueryInstalledDomainLiveCloseOutcome::AuthorityStopped(
+                self, drift,
+            ));
         }
-        close_outcome(self.handle.close(workspace), self.receipt)
+        Ok(close_outcome(self.handle.close(workspace), self.receipt)?)
     }
 
     fn validate(

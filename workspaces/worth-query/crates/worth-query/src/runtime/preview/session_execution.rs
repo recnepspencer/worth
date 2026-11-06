@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{WorthQueryDerivedMaterializationTarget, WorthQueryLiveArtifactTarget};
 
 impl<'a> WorthQueryPreviewSession<'a> {
@@ -20,7 +21,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             self.pending_commands.len() + 1,
             &command,
             self.runtime
-                .current_snapshot_identity_with_request(execution),
+                .current_snapshot_identity_with_request(execution)?,
         )?;
         self.pending_commands.push(command);
         self.route_preview_execution(&receipt)?;
@@ -35,7 +36,10 @@ impl<'a> WorthQueryPreviewSession<'a> {
         &self.intent_receipts
     }
 
-    pub(super) fn route_preview_execution(&mut self, receipt: &WorthQueryWriteReceipt) -> Result<(), crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(super) fn route_preview_execution(
+        &mut self,
+        receipt: &WorthQueryWriteReceipt,
+    ) -> Result<(), IdentityDerivationDenial> {
         let mut live_affected: BTreeMap<WorthQueryLiveArtifactTarget, Vec<WorthQueryAspectTouch>> =
             BTreeMap::new();
         let mut computed_affected: BTreeMap<
@@ -52,11 +56,11 @@ impl<'a> WorthQueryPreviewSession<'a> {
             let Some(state) = self.runtime.live_subscriptions.get(&target) else {
                 continue;
             };
-            let affected_aspects = relevant_live_aspects(&state.request, receipt.deltas());
+            let affected_aspects = relevant_live_aspects(&state.request, receipt.deltas())?;
             if affected_aspects.is_empty() {
                 continue;
             }
-            live_affected.insert(target, affected_aspects.clone());
+            live_affected.insert(target, affected_aspects.clone()?);
             self.execution_evidence
                 .push(WorthQueryPreviewExecutionEvidence::for_aspect_touches(
                     &self.basis_admission,
@@ -140,7 +144,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             )?);
         }
         self.execution_evidence.extend(pending_effect_evidence);
-    
-Ok(())
-}
+
+        Ok(())
+    }
 }

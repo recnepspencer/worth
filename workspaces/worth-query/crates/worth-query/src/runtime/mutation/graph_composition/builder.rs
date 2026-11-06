@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeSet;
 
 mod existing_target_methods;
@@ -218,7 +219,7 @@ impl WorthQueryGraphCompositionBuilder {
             self.symbolic_entity_declaration_count,
             self.symbolic_relation_declaration_count,
         )?;
-        let program = WorthQueryGraphCompositionProgram::new(self.program_steps, &breadth);
+        let program = WorthQueryGraphCompositionProgram::new(self.program_steps, &breadth)?;
         Ok((self.commands, breadth, program))
     }
     fn require_clean(&self) -> Result<(), WorthQueryRuntimeError> {
@@ -293,6 +294,9 @@ fn graph_program_step(
 
 fn graph_program_declared_collection(
     collection: impl Into<String>,
-) -> Result<WorthQueryMutationTargetCollectionIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryMutationTargetCollectionIdentity::new("graph-composition-program", collection)?)
+) -> Result<WorthQueryMutationTargetCollectionIdentity, IdentityDerivationDenial> {
+    Ok(WorthQueryMutationTargetCollectionIdentity::new(
+        "graph-composition-program",
+        collection,
+    )?)
 }

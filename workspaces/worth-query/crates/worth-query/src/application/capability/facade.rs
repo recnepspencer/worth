@@ -35,8 +35,13 @@ pub struct WorthQueryApplicationFacade {
 impl WorthQueryApplicationFacade {
     pub fn new(config: WorthQueryConfig) -> Result<Self, ConfigurationAdmissionError> {
         let config = config.validate()?;
-        let registry = WorthQueryCapabilityRegistry::from_validated_config(&config);
-        let support_matrix = WorthQuerySupportMatrix::new(registry);
+        let registry =
+            WorthQueryCapabilityRegistry::from_validated_config(&config).map_err(|cause| {
+                ConfigurationAdmissionError::identity_denied(cause, config.counters().clone())
+            })?;
+        let support_matrix = WorthQuerySupportMatrix::new(registry).map_err(|cause| {
+            ConfigurationAdmissionError::identity_denied(cause, config.counters().clone())
+        })?;
         let facade_digest = hash_parts(&[
             format!("config:{}", config.validated_digest()),
             format!(

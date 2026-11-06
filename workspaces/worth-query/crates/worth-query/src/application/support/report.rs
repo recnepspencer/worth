@@ -250,7 +250,7 @@ impl WorthQuerySupportReport {
                     WorthQueryEvidenceTag::new("query_context_profile_digest"),
                     query_context_support_profile
                         .as_ref()
-                        .map(WorthQueryQueryContextSupportProfile::profile_digest),
+                        .map(WorthQueryQueryContextSupportProfile::profile_digest)?,
                 )
                 .optional_value(
                     WorthQueryEvidenceTag::new("identity_evolution_profile_digest"),

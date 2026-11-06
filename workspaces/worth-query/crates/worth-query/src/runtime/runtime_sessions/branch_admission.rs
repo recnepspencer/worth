@@ -1,5 +1,6 @@
 //! Branch admission and exact comparison-basis capture.
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl WorthQueryRuntime {
     pub fn branch<'a>(
@@ -62,7 +63,7 @@ impl WorthQueryRuntime {
         )?;
         Ok(WorthQueryRuntimeBranchComparisonBasis::new(
             admission,
-            self.current_snapshot_identity_with_request(execution),
+            self.current_snapshot_identity_with_request(execution)?,
         ))
     }
 
@@ -71,7 +72,7 @@ impl WorthQueryRuntime {
         label: WorthQuerySessionLabel,
         effect_policy: WorthQueryEffectPolicy,
         evidence_tag: &'static str,
-    ) -> Result<WorthQueryBranchBasisAdmission, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<WorthQueryBranchBasisAdmission, IdentityDerivationDenial> {
         let branch_support_evidence = self
             .backend
             .support_profile()

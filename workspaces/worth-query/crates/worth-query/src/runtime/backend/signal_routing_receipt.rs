@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeSet;
 
 use crate::evidence_identity::{
@@ -46,7 +47,7 @@ impl SignalInvalidationRoutingReceipt {
         let commit_evidence_identity = commit_identity.evidence_identity();
         let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         let causality_evidence = WorthQueryMutationCausalityEvidence::from_bridge(authority)?;
-        let provenance_evidence = WorthQueryMutationProvenanceEvidence::from_bridge(authority);
+        let provenance_evidence = WorthQueryMutationProvenanceEvidence::from_bridge(authority)?;
         let receipt_identity = routing_identity_basis(
             &commit_evidence_identity,
             &snapshot_evidence_identity,
@@ -118,7 +119,7 @@ impl SignalInvalidationRoutingReceipt {
     pub(crate) fn drift_from_mutation_receipt(
         &self,
         receipt: &WorthQueryMutationReceipt,
-    ) -> Result<Option<String>, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Option<String>, IdentityDerivationDenial> {
         let Some(authority) = receipt.bridge_authority.as_ref() else {
             return Ok(Some(
                 "signal invalidation routing receipt cannot be checked without bridge authority"
@@ -126,7 +127,7 @@ impl SignalInvalidationRoutingReceipt {
             ));
         };
         let causality_evidence = WorthQueryMutationCausalityEvidence::from_bridge(authority)?;
-        let provenance_evidence = WorthQueryMutationProvenanceEvidence::from_bridge(authority);
+        let provenance_evidence = WorthQueryMutationProvenanceEvidence::from_bridge(authority)?;
         Ok((!self
             .commit_identity()
             .is_same_current_identity_as(&receipt.commit_identity)

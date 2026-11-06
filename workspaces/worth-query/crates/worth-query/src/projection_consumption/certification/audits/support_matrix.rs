@@ -222,7 +222,7 @@ fn matrix_row(
     source: &ProjectionConsumptionSource,
     fact_kind: ProjectionFactKind,
 ) -> Result<ProjectionConsumptionSupportMatrixRow, IdentityDerivationDenial> {
-    let support = executable_support_row(source, fact_kind);
+    let support = executable_support_row(source, fact_kind)?;
     let traceability = traceability_for(surface, fact_kind);
     let row_digest = compose_certification_row_digest(
         "projection_consumption_support_matrix_row_v1",
@@ -255,13 +255,13 @@ fn matrix_row(
 fn executable_support_row(
     source: &ProjectionConsumptionSource,
     fact_kind: ProjectionFactKind,
-) -> ProjectionConsumptionSupportRow {
-    discover_projection_consumption_support(source)
+) -> Result<ProjectionConsumptionSupportRow, IdentityDerivationDenial> {
+    Ok(discover_projection_consumption_support(source)?
         .rows()
         .iter()
         .find(|row| row.fact_kind() == fact_kind)
         .cloned()
-        .expect("support report should contain one row for every fact kind")
+        .expect("support report should contain one row for every fact kind"))
 }
 
 #[cfg(test)]
@@ -299,8 +299,9 @@ mod tests {
     }
 
     #[test]
-    fn support_matrix_rows_are_behavior_derived_and_traceable() {
-        let matrix = projection_consumption_support_matrix();
+    fn support_matrix_rows_are_behavior_derived_and_traceable(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let matrix = projection_consumption_support_matrix()?;
         assert_eq!(
             matrix.rows().len(),
             ProjectionConsumptionCertifiedSourceSurface::all().len()
@@ -318,11 +319,14 @@ mod tests {
         }));
         assert!(!matrix.matrix_digest().is_empty());
         assert!(!matrix.support_traceability_digest().is_empty());
+
+        Ok(())
     }
 
     #[test]
-    fn retained_and_live_certified_surfaces_capture_admitted_subsets() {
-        let matrix = projection_consumption_support_matrix();
+    fn retained_and_live_certified_surfaces_capture_admitted_subsets(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let matrix = projection_consumption_support_matrix()?;
         let retained_rows = matrix
             .rows()
             .iter()
@@ -364,5 +368,7 @@ mod tests {
                     ProjectionConsumptionSupportPosture::SourceMismatch
                 )
         }));
+
+        Ok(())
     }
 }

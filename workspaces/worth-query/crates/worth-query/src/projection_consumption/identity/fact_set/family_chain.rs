@@ -6,7 +6,7 @@ pub(super) const FACT_FAMILY_CHUNK_WIDTH: usize = 1_024;
 
 pub(super) fn compose_consumed_projection_fact_family_digest(
     fact_family: &'static str,
-    entries: impl IntoIterator<Item = String>,
+    entries: impl IntoIterator<Item = Result<String, IdentityDerivationDenial>>,
 ) -> Result<String, IdentityDerivationDenial> {
     let mut terminal_chunk_digest = compose_fact_family_genesis_digest(fact_family)?;
     let mut chunk_entries = Vec::with_capacity(FACT_FAMILY_CHUNK_WIDTH);
@@ -14,7 +14,7 @@ pub(super) fn compose_consumed_projection_fact_family_digest(
     let mut chunk_count = 0usize;
 
     for entry in entries {
-        chunk_entries.push(entry);
+        chunk_entries.push(entry?);
         entry_count += 1;
         if chunk_entries.len() == FACT_FAMILY_CHUNK_WIDTH {
             terminal_chunk_digest = compose_fact_family_chunk_digest(

@@ -60,7 +60,7 @@ impl WorthQueryPublishedArtifactEntry {
         let receipt = WorthQueryDerivedMaterializationReceipt::from_evidence(
             &evidence,
             snapshot_identity.clone(),
-        );
+        )?;
         let materialization = WorthQueryDerivedMaterializationResult::from_retained_rows(
             runtime_view.materialization.retained_rows().to_vec(),
             receipt,

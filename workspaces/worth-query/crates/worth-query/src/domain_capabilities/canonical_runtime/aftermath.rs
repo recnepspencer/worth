@@ -63,11 +63,11 @@ impl WorthQueryAftermathProjectionConsumptionReview {
 
 pub fn materialize_canonical_aftermath_artifact<T>(
     contribution: WorthQueryMaterializationReadyAftermathContribution<T>,
-) -> WorthQueryCanonicalAftermathArtifact<T>
+) -> Result<WorthQueryCanonicalAftermathArtifact<T>, IdentityDerivationDenial>
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
+    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
 }
 
 pub(crate) fn materialize_projection_consumption_eligibility<T>(
@@ -155,7 +155,7 @@ where
         }
     };
 
-    let support_report = discover_projection_consumption_support(runtime_semantics.source());
+    let support_report = discover_projection_consumption_support(runtime_semantics.source())?;
     let eligibility = evaluate_projection_consumption_eligibility(&declaration)?;
 
     Ok(TransitionOutcome::Success(

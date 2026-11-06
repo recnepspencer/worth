@@ -209,32 +209,43 @@ fn field_path(path: &str) -> crate::authorized_projection::AuthorizedProjectionF
 
 pub(super) fn support_traceability_requested(
     target: WorthQueryInstalledDeclarationContributionTarget,
-) -> WorthQueryRequestedSupportContribution<WorthQueryInstalledDeclarationContributionTarget> {
-    WorthQuerySupportContributionAuthoring::declaration_traceability(
-        "worth.spatial.traceability.edge_split",
-        "declaration-scoped support remains declaration scoped",
+) -> Result<
+    WorthQueryRequestedSupportContribution<WorthQueryInstalledDeclarationContributionTarget>,
+    IdentityDerivationDenial,
+> {
+    Ok(
+        WorthQuerySupportContributionAuthoring::declaration_traceability(
+            "worth.spatial.traceability.edge_split",
+            "declaration-scoped support remains declaration scoped",
+        )
+        .bind_to_installed_target(target)?,
     )
-    .bind_to_installed_target(target)
 }
 
 pub(super) fn plain_support_requested(
     target: WorthQueryInstalledDeclarationContributionTarget,
-) -> WorthQueryRequestedSupportContribution<WorthQueryInstalledDeclarationContributionTarget> {
-    WorthQuerySupportContributionAuthoring::declaration_support(
+) -> Result<
+    WorthQueryRequestedSupportContribution<WorthQueryInstalledDeclarationContributionTarget>,
+    IdentityDerivationDenial,
+> {
+    Ok(WorthQuerySupportContributionAuthoring::declaration_support(
         "worth.spatial.traceability.edge_split",
         "declaration-scoped support remains declaration scoped",
     )
-    .bind_to_installed_target(target)
+    .bind_to_installed_target(target)?)
 }
 
 pub(super) fn plan_support_requested(
     target: WorthQueryInstalledAdmittedPlanContributionTarget,
-) -> WorthQueryRequestedSupportContribution<WorthQueryInstalledAdmittedPlanContributionTarget> {
-    WorthQuerySupportContributionAuthoring::declaration_support(
+) -> Result<
+    WorthQueryRequestedSupportContribution<WorthQueryInstalledAdmittedPlanContributionTarget>,
+    IdentityDerivationDenial,
+> {
+    Ok(WorthQuerySupportContributionAuthoring::declaration_support(
         "worth.spatial.support.runtime_floor",
         "runtime floor remains explicitly supported",
     )
-    .bind_to_installed_target(target)
+    .bind_to_installed_target(target)?)
 }
 
 pub(super) fn admission_requested(
@@ -248,7 +259,7 @@ pub(super) fn admission_requested(
             "worth.spatial.admission.routing_gap",
             "runtime routing still needs clarification",
         )?
-        .bind_to_installed_target(target),
+        .bind_to_installed_target(target)?,
     )
 }
 
@@ -263,7 +274,7 @@ pub(super) fn workflow_requested(
         "preview mutation planning should preserve canonical workflow semantics",
         BridgePreviewSessionIdentity::from_stable_name("preview-session:certification"),
     )?
-    .bind_to_installed_target(target))
+    .bind_to_installed_target(target)?)
 }
 
 pub(super) fn continuity_requested(
@@ -279,7 +290,7 @@ pub(super) fn continuity_requested(
             "worth.spatial.continuity.edge_split",
             "edge split preserves one authoritative successor",
         )?
-        .bind_to_installed_target(target),
+        .bind_to_installed_target(target)?,
     )
 }
 
@@ -297,7 +308,7 @@ pub(super) fn aftermath_requested(
         binding,
         facts,
     )?
-    .bind_to_installed_target(target))
+    .bind_to_installed_target(target)?)
 }
 
 pub(super) fn explanation_requested(
@@ -316,7 +327,7 @@ pub(super) fn explanation_requested(
         crate::runtime::CausalInspectionRedactionPolicy::PreserveDetail,
         crate::runtime::CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
     )?
-    .bind_to_installed_target(installed_target))
+    .bind_to_installed_target(installed_target)?)
 }
 
 pub(super) fn invariant_requested(
@@ -332,7 +343,7 @@ pub(super) fn invariant_requested(
         "worth.spatial.invariant.edge_split",
         "geometry kernel must reject invalid edge splits",
     )?
-    .bind_to_installed_target(target))
+    .bind_to_installed_target(target)?)
 }
 
 pub(super) fn capability_requested(
@@ -349,7 +360,7 @@ pub(super) fn capability_requested(
         "worth.spatial.capability.face_split",
         "face split still depends on graph-composition capability support",
     )?
-    .bind_to_installed_target(target))
+    .bind_to_installed_target(target)?)
 }
 
 pub(super) fn invariant_denial_requested(
@@ -372,7 +383,7 @@ pub(super) fn invariant_denial_requested(
         "worth.spatial.invariant.non_manifold",
         "non-manifold edge split must deny graph composition",
     )?
-    .bind_to_installed_target(target))
+    .bind_to_installed_target(target)?)
 }
 
 pub(super) fn admitted_ready<P, T>(
@@ -388,10 +399,10 @@ where
     let eligible = success(evaluate_requested_domain_capability_contribution(
         requested,
     )?);
-    let admitted = success(admit_eligible_domain_capability_contribution(eligible));
+    let admitted = success(admit_eligible_domain_capability_contribution(eligible)?);
     let target = admitted.payload().target().clone();
     Ok(success(
-        prepare_admitted_domain_capability_contribution_for_materialization(admitted, target),
+        prepare_admitted_domain_capability_contribution_for_materialization(admitted, target)?,
     ))
 }
 

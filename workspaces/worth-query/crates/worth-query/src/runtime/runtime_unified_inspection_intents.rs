@@ -73,12 +73,12 @@ impl WorthQueryRuntime {
         binding: WorthQueryUnifiedInspectionExecutionBinding,
     ) -> Result<WorthQueryUnifiedInspectionResult, WorthQueryRuntimeError> {
         let inspection = self.inspect_from_generic_seed(binding.seed())?;
-        let snapshot_identity = self.current_snapshot_identity_with_request(execution);
+        let snapshot_identity = self.current_snapshot_identity_with_request(execution)?;
         let receipt = WorthQueryUnifiedInspectionReceipt::from_inspection(
             binding.seed().request_label().clone(),
             &inspection,
-            snapshot_identity.clone(),
-        );
+            snapshot_identity.clone()?,
+        )?;
         let mut result = WorthQueryUnifiedInspectionResult::new(inspection, receipt);
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution_parts(

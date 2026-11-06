@@ -183,7 +183,7 @@ impl WorthQueryRuntime {
                     "the admitted granular source basis is not a relational snapshot identity",
                 ))
             })?,
-            None => self.current_snapshot_identity_with_request(execution),
+            None => self.current_snapshot_identity_with_request(execution)?,
         };
         let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
         let materialized_fact_posture = self.materialized_fact_posture_for_live_read(
@@ -195,7 +195,7 @@ impl WorthQueryRuntime {
             snapshot_identity,
             materialized_fact_posture,
             &rows,
-        );
+        )?;
         let mut result = match maintenance_source_rows {
             Some(support_rows) => {
                 WorthQueryLiveReadResult::new_with_source_rows(rows, support_rows, receipt)

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{WorthQueryEntity, WorthQuerySnapshotIdentity};
 use crate::planning::{FallbackDisposition, PlannedExecutionRoute};
 use crate::query_context::{QueryContextExecutionArtifact, QueryContextExecutionFamily};
@@ -17,7 +18,7 @@ impl WorthQueryReadReceipt {
         records_examined_count: usize,
         input_row_count: usize,
         count: u64,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let execution_counters = execution
             .counters()
             .clone()
@@ -59,7 +60,7 @@ impl WorthQueryReadReceipt {
         )
         .as_str()
         .to_string();
-        Self::from_parts(
+        Ok(Self::from_parts(
             read_graph,
             execution.report().basis_digest().as_str(),
             snapshot_identity,
@@ -68,7 +69,7 @@ impl WorthQueryReadReceipt {
             execution_counters.execution_fallback_taken_count(),
             breadth,
             result_digest,
-        )
+        )?)
     }
 
     pub(in crate::runtime) fn from_materialized_rows(
@@ -77,7 +78,7 @@ impl WorthQueryReadReceipt {
         execution: &crate::execution::ExecutionResultEnvelope,
         rows: &[WorthQueryEntity],
         records_examined_count: usize,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let execution_counters = execution
             .counters()
             .clone()
@@ -89,7 +90,7 @@ impl WorthQueryReadReceipt {
         )
         .as_str()
         .to_string();
-        Self::from_parts(
+        Ok(Self::from_parts(
             read_graph,
             execution.report().basis_digest().as_str(),
             snapshot_identity,
@@ -129,7 +130,7 @@ impl WorthQueryReadReceipt {
                 execution_rollup_input_count: execution_counters.rollup_input_count(),
             },
             result_digest,
-        )
+        )?)
     }
 
     pub(in crate::runtime) fn from_query_context_execution(
@@ -137,7 +138,7 @@ impl WorthQueryReadReceipt {
         snapshot_identity: WorthQuerySnapshotIdentity,
         context_execution: &QueryContextExecutionArtifact,
         rows: &[WorthQueryEntity],
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let result_digest = materialized_result_digest(
             context_execution.query_digest(),
             context_execution.basis_digest(),
@@ -186,9 +187,9 @@ impl WorthQueryReadReceipt {
                 execution_rollup_input_count: 0,
             },
             result_digest,
-        );
+        )?;
         receipt.materialized_fact_posture = context_execution.materialized_fact_posture().cloned();
-        receipt
+        Ok(receipt)
     }
 
     fn from_parts(
@@ -200,13 +201,13 @@ impl WorthQueryReadReceipt {
         fallback_count: usize,
         breadth: WorthQueryReadBreadth,
         result_digest: String,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let relationship_proof_admission = read_graph.relationship_proof_admission().cloned();
         let relationship_proof_support_profile = relationship_proof_admission
             .as_ref()
             .map(support_profile_for_relationship_proof);
         let policy_aware_plan = read_graph.policy_aware_plan();
-        Self {
+        Ok(Self {
             read_graph_identity: read_graph.evidence_identity().clone(),
             graph_family: read_graph.family().clone(),
             collection_result_family: read_graph
@@ -217,7 +218,7 @@ impl WorthQueryReadReceipt {
                 .execution_plan()
                 .query()
                 .plan_digest()
-                .evidence_identity(),
+                .evidence_identity()?,
             canonical_query_digest: read_graph.canonical().query().digest().as_str().to_string(),
             query_digest: read_graph.query_digest().to_string(),
             basis_digest: basis_digest.to_string(),
@@ -257,7 +258,7 @@ impl WorthQueryReadReceipt {
             graph_read_access_complexity_counters: None,
             decision_trace_envelope: None,
             execution_provenance: None,
-        }
+        })
     }
 }
 

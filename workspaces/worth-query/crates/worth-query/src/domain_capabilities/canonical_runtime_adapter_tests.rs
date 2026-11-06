@@ -250,7 +250,7 @@ fn continuity_runtime_materializer_denies_inconsistent_runtime_semantics(
                 crate::runtime::WorthQueryContinuityMutationOutcomeClass::ContinuesAsSplitSuccessors,
                 "edge:12",
                 ["edge:14", "edge:15"],
-            )),
+            )?),
         )?,
     )?)?;
 

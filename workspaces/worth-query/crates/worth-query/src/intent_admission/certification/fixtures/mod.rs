@@ -283,7 +283,7 @@ pub(super) fn certified_failure_intent_fixture(
 pub(super) fn legacy_delegation_parity_fixture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<LegacyDelegationParityFixture, IdentityDerivationDenial> {
-    let read_fixture = read_delegation_parity_fixture(execution);
+    let read_fixture = read_delegation_parity_fixture(execution)?;
     let declaration = authoritative_declaration("certification-authoritative-parity-intent");
     let mut delegated_runtime = certification_runtime(execution);
     let authoritative_legacy = delegated_runtime

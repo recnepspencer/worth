@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{WorthQueryCommitIdentity, WorthQuerySnapshotIdentity};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -32,9 +33,11 @@ pub struct WorthQueryIntentExecution {
 }
 
 impl WorthQueryIntentExecution {
-    pub(in crate::runtime) fn admit_runtime_authority(mut self) -> Self {
-        self.mutation_receipt = self.mutation_receipt.admit_runtime_write_authority();
-        self
+    pub(in crate::runtime) fn admit_runtime_authority(
+        mut self,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        self.mutation_receipt = self.mutation_receipt.admit_runtime_write_authority()?;
+        Ok(self)
     }
 
     pub fn admitted(

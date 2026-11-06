@@ -26,11 +26,11 @@ use crate::runtime::{
 
 pub fn materialize_canonical_invariant_capability_artifact<T>(
     contribution: WorthQueryMaterializationReadyInvariantCapabilityContribution<T>,
-) -> WorthQueryCanonicalInvariantCapabilityArtifact<T>
+) -> Result<WorthQueryCanonicalInvariantCapabilityArtifact<T>, IdentityDerivationDenial>
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
+    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

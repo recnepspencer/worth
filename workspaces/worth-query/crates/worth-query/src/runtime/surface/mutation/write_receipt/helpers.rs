@@ -19,11 +19,11 @@ pub(super) fn symbolic_target_reference_evidence(
     bridge_reference: Option<&worth_runtime_bridge::facade::BridgeSymbolicTargetReferenceBundle>,
     authored_reference: Option<&WorthQuerySymbolicTargetReference>,
     resolved_entity_identity: Option<&WorthQueryEntityIdentity>,
-) -> Option<WorthQuerySymbolicTargetReferenceEvidence> {
+) -> Result<Option<WorthQuerySymbolicTargetReferenceEvidence>, IdentityDerivationDenial> {
     if mutation_family == WorthQueryMutationFamily::Insert {
-        return None;
+        return Ok(None);
     }
-    bridge_reference
+    Ok(bridge_reference
         .map(|bundle| {
             let target_collection = authored_reference.and_then(|reference| {
                 reference
@@ -45,7 +45,7 @@ pub(super) fn symbolic_target_reference_evidence(
                     )
                 },
             )
-        })
+        })?)
 }
 
 pub(super) fn naming_mutation_evidence(
@@ -53,8 +53,8 @@ pub(super) fn naming_mutation_evidence(
     authored_intent: Option<&WorthQueryNamingMutationIntent>,
     resolved_target_entity_identity: Option<&WorthQueryEntityIdentity>,
     target_collection: Option<&WorthQueryMutationTargetCollectionIdentity>,
-) -> Option<WorthQueryNamingMutationEvidence> {
-    bridge_naming
+) -> Result<Option<WorthQueryNamingMutationEvidence>, IdentityDerivationDenial> {
+    Ok(bridge_naming
         .map(|bundle| {
             WorthQueryNamingMutationEvidence::from_bridge_with_query_context(
                 bundle,
@@ -70,7 +70,7 @@ pub(super) fn naming_mutation_evidence(
                     target_collection,
                 )
             })
-        })
+        })?)
 }
 
 pub(super) fn continuity_mutation_evidence(

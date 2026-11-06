@@ -21,11 +21,11 @@ use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
 pub fn materialize_canonical_continuity_artifact<T>(
     contribution: WorthQueryMaterializationReadyContinuityContribution<T>,
-) -> WorthQueryCanonicalContinuityArtifact<T>
+) -> Result<WorthQueryCanonicalContinuityArtifact<T>, IdentityDerivationDenial>
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
+    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
 }
 
 pub(crate) fn materialize_runtime_continuity_evidence<T>(

@@ -21,6 +21,7 @@ use crate::application::{
     WorthQueryDeclarationRouteIntent, WorthQueryDeclarationRoutePlan,
     WorthQueryDeclarationRoutePlanTerminalError,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::WorthQueryInstalledDomainDeclarationContext;
 use crate::application::WorthQueryDomainOperatingContext;
@@ -47,24 +48,28 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub(crate) fn orchestrate_routes_from_progressed_checked<I>(
         &self,
         progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
-    ) -> WorthQueryDeclarationRoutePlanChecked<D, I>
+    ) -> Result<WorthQueryDeclarationRoutePlanChecked<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        worth_query_checked_declaration_route_orchestration_from_progressed_on_handle(
-            self, progressed, None,
+        Ok(
+            worth_query_checked_declaration_route_orchestration_from_progressed_on_handle(
+                self, progressed, None,
+            )?,
         )
     }
 
     pub(crate) fn orchestrate_routes_from_progressed_proof<I>(
         &self,
         progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
-    ) -> WorthQueryDeclarationRouteOrchestrationTranscript<D, I>
+    ) -> Result<WorthQueryDeclarationRouteOrchestrationTranscript<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        worth_query_declaration_route_orchestration_from_progressed_proof_on_handle(
-            self, progressed, None,
+        Ok(
+            worth_query_declaration_route_orchestration_from_progressed_proof_on_handle(
+                self, progressed, None,
+            )?,
         )
     }
 
@@ -84,24 +89,28 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub(crate) fn orchestrate_receipt_from_progressed_checked<I>(
         &self,
         progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
-    ) -> WorthQueryDeclarationReceiptChecked<D, I>
+    ) -> Result<WorthQueryDeclarationReceiptChecked<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        worth_query_checked_declaration_receipt_orchestration_from_progressed_on_handle(
-            self, progressed, None,
+        Ok(
+            worth_query_checked_declaration_receipt_orchestration_from_progressed_on_handle(
+                self, progressed, None,
+            )?,
         )
     }
 
     pub(crate) fn orchestrate_receipt_from_progressed_proof<I>(
         &self,
         progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
-    ) -> WorthQueryDeclarationReceiptOrchestrationTranscript<D, I>
+    ) -> Result<WorthQueryDeclarationReceiptOrchestrationTranscript<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        worth_query_declaration_receipt_orchestration_from_progressed_proof_on_handle(
-            self, progressed, None,
+        Ok(
+            worth_query_declaration_receipt_orchestration_from_progressed_proof_on_handle(
+                self, progressed, None,
+            )?,
         )
     }
 
@@ -136,24 +145,28 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub(crate) fn orchestrate_envelope_from_progressed_checked<I>(
         &self,
         progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
-    ) -> WorthQueryDeclarationEnvelopeChecked<D, I>
+    ) -> Result<WorthQueryDeclarationEnvelopeChecked<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        worth_query_checked_declaration_envelope_orchestration_from_progressed_on_handle(
-            self, progressed, None,
+        Ok(
+            worth_query_checked_declaration_envelope_orchestration_from_progressed_on_handle(
+                self, progressed, None,
+            )?,
         )
     }
 
     pub(crate) fn orchestrate_envelope_from_progressed_proof<I>(
         &self,
         progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
-    ) -> WorthQueryDeclarationEnvelopeOrchestrationTranscript<D, I>
+    ) -> Result<WorthQueryDeclarationEnvelopeOrchestrationTranscript<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        worth_query_declaration_envelope_orchestration_from_progressed_proof_on_handle(
-            self, progressed, None,
+        Ok(
+            worth_query_declaration_envelope_orchestration_from_progressed_proof_on_handle(
+                self, progressed, None,
+            )?,
         )
     }
 
@@ -162,14 +175,16 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         &self,
         progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
         intent: WorthQueryDeclarationRouteIntent,
-    ) -> WorthQueryDeclarationEnvelopeOrchestrationTranscript<D, I>
+    ) -> Result<WorthQueryDeclarationEnvelopeOrchestrationTranscript<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        worth_query_declaration_envelope_orchestration_from_progressed_proof_on_handle(
-            self,
-            progressed,
-            Some(intent),
+        Ok(
+            worth_query_declaration_envelope_orchestration_from_progressed_proof_on_handle(
+                self,
+                progressed,
+                Some(intent),
+            )?,
         )
     }
 }

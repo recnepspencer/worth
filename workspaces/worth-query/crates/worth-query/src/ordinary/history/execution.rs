@@ -83,7 +83,7 @@ impl WorthQueryHistoricalRequest {
             self.context.snapshot_identity().evidence_identity()?,
             schema_basis,
             self.context.workspace_name(),
-        );
+        )?;
         let query_preflight =
             match preflight_execution_basis(graph.execution_plan().clone(), basis.clone()) {
                 Ok(preflight) => preflight,
@@ -98,7 +98,7 @@ impl WorthQueryHistoricalRequest {
             };
         let counters = counters.bind_basis();
         let (basis_context, materialization) = match retained_basis_context(
-            &self.context.basis_label(),
+            &self.context.basis_label()?,
             &basis,
             &query_preflight,
             self.declaration.replay_budget,

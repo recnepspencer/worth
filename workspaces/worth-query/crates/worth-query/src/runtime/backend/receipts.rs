@@ -232,7 +232,7 @@ impl SubscriptionActivationReceipt {
             WorthQueryEvidenceTag::new("remask"),
             remask_posture
                 .as_ref()
-                .map(WorthQueryRuntimeRemaskPosture::remask_identity),
+                .map(WorthQueryRuntimeRemaskPosture::remask_identity)?,
         )
         .seal()?;
 

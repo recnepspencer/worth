@@ -97,7 +97,7 @@ pub(super) fn build_closeout_dx(
 ) -> Result<CloseoutDxEvidence, IdentityDerivationDenial> {
     let mutation = mutation_receipt_surface(execution)?;
     let writeback = writeback_receipt_surface(execution)?;
-    let batch = batch_receipt_surface(execution);
+    let batch = batch_receipt_surface(execution)?;
     let common_path = common_path_story(&mutation);
     let writeback_common_path = writeback_common_path_story(&writeback);
     let inspectable = inspectable_lowered_story(execution)?;
@@ -215,7 +215,7 @@ fn inspectable_lowered_story(
     };
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("dx lowered story normalizes");
     let admitted = match evaluate_effect_eligibility(normalized)? {
-        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
+        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
         other => panic!("expected admitted inspectable story, got {other:?}"),
     };
     let lowered = scope_admitted_effect_plan(admitted)?

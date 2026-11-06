@@ -1,5 +1,6 @@
 //! Current snapshot reads under caller custody.
 use super::WorthQueryWorkspace;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 
 impl WorthQueryWorkspace {
@@ -20,8 +21,9 @@ impl WorthQueryWorkspace {
     pub(crate) fn snapshot_identity_with_request(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> WorthQuerySnapshotIdentity {
-        self.runtime
-            .current_snapshot_identity_with_request(execution)
+    ) -> Result<WorthQuerySnapshotIdentity, IdentityDerivationDenial> {
+        Ok(self
+            .runtime
+            .current_snapshot_identity_with_request(execution)?)
     }
 }

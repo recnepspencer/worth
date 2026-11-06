@@ -140,7 +140,7 @@ pub fn projection_consumption_slope_report(
                     ],
                 )
             }),
-        ),
+        )?,
         eligibility_slope_digest: compose_slope_digest(
             "eligibility",
             (1..=3).map(|scale| {
@@ -163,7 +163,7 @@ pub fn projection_consumption_slope_report(
                     ],
                 )
             }),
-        ),
+        )?,
         contract_binding_slope_digest: compose_slope_digest(
             "contract_binding",
             (1..=3).map(|scale| {
@@ -186,7 +186,7 @@ pub fn projection_consumption_slope_report(
                     ],
                 )
             }),
-        ),
+        )?,
         fact_extraction_slope_digest: compose_slope_digest(
             "fact_extraction",
             (1..=3).map(|scale| {
@@ -203,7 +203,7 @@ pub fn projection_consumption_slope_report(
                     ],
                 )
             }),
-        ),
+        )?,
         receipt_materialization_slope_digest: compose_slope_digest(
             "receipt_materialization",
             (1..=3).map(|scale| {
@@ -219,7 +219,7 @@ pub fn projection_consumption_slope_report(
                     ],
                 )
             }),
-        ),
+        )?,
         envelope_materialization_slope_digest: compose_slope_digest(
             "envelope_materialization",
             (1..=3).map(|scale| {
@@ -238,7 +238,7 @@ pub fn projection_consumption_slope_report(
                     ],
                 )
             }),
-        ),
+        )?,
         support_lookup_slope_digest: compose_slope_digest(
             "support_lookup",
             (1..=3).map(|scale| {
@@ -259,8 +259,8 @@ pub fn projection_consumption_slope_report(
                     ],
                 )
             })?,
-        ),
-    })
+        )?,
+    })?
 }
 
 #[cfg(test)]

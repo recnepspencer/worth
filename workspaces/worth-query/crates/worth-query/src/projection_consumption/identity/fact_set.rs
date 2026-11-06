@@ -67,49 +67,49 @@ pub(crate) fn compose_consumed_projection_fact_set_digest(
     let entity_identity_digest = compose_consumed_projection_fact_family_digest(
         "entity_identity",
         entity_identities.iter().map(compose_entity_identity_entry),
-    );
+    )?;
     let view_local_identity_digest = compose_consumed_projection_fact_family_digest(
         "view_local_identity",
         view_local_identities
             .iter()
             .map(compose_view_local_identity_entry),
-    );
+    )?;
     let membership_digest = compose_consumed_projection_fact_family_digest(
         "membership",
         memberships.iter().map(compose_membership_entry),
-    );
+    )?;
     let display_field_digest = compose_consumed_projection_fact_family_digest(
         "display_field",
         display_fields
             .iter()
             .map(|fact| compose_field_value_entry("display_field", fact)),
-    );
+    )?;
     let derived_field_digest = compose_consumed_projection_fact_family_digest(
         "derived_field",
         derived_fields
             .iter()
             .map(|fact| compose_field_value_entry("derived_field", fact)),
-    );
+    )?;
     let target_identity_digest = compose_consumed_projection_fact_family_digest(
         "target_identity",
         target_identities.iter().map(compose_target_identity_entry),
-    );
+    )?;
     let source_reference_digest = compose_consumed_projection_fact_family_digest(
         "source_reference",
         source_references.iter().map(compose_source_reference_entry),
-    );
+    )?;
     let effect_continuity_digest = compose_consumed_projection_fact_family_digest(
         "effect_continuity",
         effect_continuity_facts
             .iter()
             .flat_map(compose_effect_continuity_entries),
-    );
+    )?;
     let relation_endpoint_digest = compose_consumed_projection_fact_family_digest(
         "relation_endpoint",
         relation_endpoints
             .iter()
             .map(compose_relation_endpoint_entry),
-    );
+    )?;
     Ok(seal(
         encoder
             .field_value_sequence(
@@ -121,7 +121,7 @@ pub(crate) fn compose_consumed_projection_fact_set_digest(
             )
             .field_shape(
                 WorthQueryEvidenceTag::new("counters"),
-                compose_extraction_counters_digest(counters),
+                compose_extraction_counters_digest(counters)?,
             )
             .field_shape(
                 WorthQueryEvidenceTag::new("entity_identity_family"),
@@ -269,7 +269,7 @@ fn compose_source_reference_entry(
 
 fn compose_effect_continuity_entries(
     fact: &ConsumedEffectContinuityFact,
-) -> impl Iterator<Item = String> + '_ {
+) -> impl Iterator<Item = Result<String, IdentityDerivationDenial>> + '_ {
     let primary = seal(
         scope_encoder("consumed_effect_continuity_entry_v1")
             .field_shape(

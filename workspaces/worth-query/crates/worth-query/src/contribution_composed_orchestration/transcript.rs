@@ -4,6 +4,7 @@ use crate::application::{
     WorthQueryInstalledDomainDeclarationContext,
 };
 use crate::binding_pipeline::WorthQueryBindingLinkedArtifacts;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::composition::WorthQueryContributionComposedClassification;
 use super::declaration_record::WorthQueryContributionComposedDeclarationRecord;
@@ -115,24 +116,24 @@ pub(crate) fn orchestrate_declaration_with_contributions_on_handle<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     input: WorthQueryContributionComposedOrchestrationInput<D, I>,
-) -> WorthQueryContributionComposedOrchestrationTranscript<D, I> {
+) -> Result<WorthQueryContributionComposedOrchestrationTranscript<D, I>, IdentityDerivationDenial> {
     let request_descriptor_value = request_descriptor(&input);
-    let request_digest_value = request_identity(&input).as_str().to_string();
+    let request_digest_value = request_identity(&input)?.as_str().to_string();
     let materialization_policy = materialization_policy_label(input.materialization_policy());
     let (declaration_input, contributions, materialization_policy_value) = input.into_parts();
     if contributions.is_empty() {
-        return empty_contribution_transcript(
+        return Ok(empty_contribution_transcript(
             request_descriptor_value,
             request_digest_value,
             materialization_policy,
-        );
+        ));
     }
     let declaration = match lower_declaration(handle, declaration_input) {
         Ok(value) => value,
         Err(outcome) => {
             let linked = linked_artifacts_from_outcome(&outcome);
             let contribution_digest = contribution_digest_from_outcome(&outcome);
-            return WorthQueryContributionComposedOrchestrationTranscript::new(
+            return Ok(WorthQueryContributionComposedOrchestrationTranscript::new(
                 request_descriptor_value,
                 request_digest_value,
                 materialization_policy,
@@ -145,7 +146,7 @@ pub(crate) fn orchestrate_declaration_with_contributions_on_handle<
                 contribution_digest,
                 None,
                 Vec::new(),
-            );
+            ));
         }
     };
     let linked = linked_artifacts_for_envelope(&declaration.envelope);
@@ -156,14 +157,14 @@ pub(crate) fn orchestrate_declaration_with_contributions_on_handle<
         materialization_policy_value,
         linked.clone(),
     );
-    finalize_transcript(
+    Ok(finalize_transcript(
         request_descriptor_value,
         request_digest_value,
         materialization_policy,
         declaration,
         linked,
         intent_results,
-    )
+    ))
 }
 
 fn finalize_transcript<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(

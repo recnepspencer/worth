@@ -29,7 +29,7 @@ pub fn certify_effect_execution_pipeline(
     let phase4 = certify_effect_lifecycle_phase4(execution);
     let mutation = mutation_receipt_surface(execution)?;
     let writeback = writeback_receipt_surface(execution)?;
-    let batch = batch_receipt_surface(execution);
+    let batch = batch_receipt_surface(execution)?;
     let support_matrix = effect_lifecycle_support_matrix()?;
     let public_surface = effect_lifecycle_public_surface_inventory()?;
     let dx = build_closeout_dx(execution, &public_surface)?;

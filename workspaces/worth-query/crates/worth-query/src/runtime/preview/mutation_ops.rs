@@ -49,7 +49,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             self.pending_commands.len() + 1,
             &command,
             self.runtime
-                .current_snapshot_identity_with_request(execution),
+                .current_snapshot_identity_with_request(execution)?,
         )?;
         self.pending_commands.push(command);
         self.writes.push(receipt.clone());
@@ -240,7 +240,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                         self.pending_commands.len() + 1,
                         &concrete,
                         self.runtime
-                            .current_snapshot_identity_with_request(execution),
+                            .current_snapshot_identity_with_request(execution)?,
                     )?
                     .with_symbolic_target_reference(
                         reference,
@@ -268,7 +268,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                         self.pending_commands.len() + 1,
                         &concrete,
                         self.runtime
-                            .current_snapshot_identity_with_request(execution),
+                            .current_snapshot_identity_with_request(execution)?,
                     )?
                     .with_symbolic_target_reference(
                         reference,
@@ -281,7 +281,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                     self.pending_commands.len() + 1,
                     &command,
                     self.runtime
-                        .current_snapshot_identity_with_request(execution),
+                        .current_snapshot_identity_with_request(execution)?,
                 )?,
             };
             if let Some(reference) = symbolic_target_reference.as_ref() {

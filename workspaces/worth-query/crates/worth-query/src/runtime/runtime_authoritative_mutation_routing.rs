@@ -1,5 +1,6 @@
 use super::*;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 
 pub(super) struct WorthQueryAuthoritativeMutationRoutingInput {
@@ -41,14 +42,14 @@ impl WorthQueryPreparedAuthoritativeMutationRouting {
     pub(super) fn from_direct_command(
         command: &WorthQueryWriteCommand,
         existing_truth_assertion: Option<WorthQueryVerifiedExistingTruthAssertion>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             declaration: WorthQueryAuthoritativeMutationDeclaration {
                 mutation_family: command.mutation_family(),
                 declared_collection_identity: command.declared_collection_identity(),
                 declared_entity_identity: command.declared_entity_identity(),
                 declared_aspect_operations: command.declared_aspect_operations(),
-                declared_aspect_value_digest: command_declared_aspect_value_identity(command),
+                declared_aspect_value_digest: command_declared_aspect_value_identity(command)?,
                 mutation_metadata: command.mutation_metadata(),
             },
             target_evidence: WorthQueryAuthoritativeMutationTargetEvidence {
@@ -59,7 +60,7 @@ impl WorthQueryPreparedAuthoritativeMutationRouting {
                 naming_intent: command.naming_intent().cloned(),
                 continuity_intent: command.continuity_intent().cloned(),
             },
-        }
+        })
     }
 
     pub(super) fn mutation_family(&self) -> WorthQueryMutationFamily {
@@ -239,7 +240,7 @@ impl WorthQueryRuntime {
             &retained_live_rows,
             receipt,
             mutation_metadata,
-        );
+        )?;
         let refresh_fallback = computed_result.refresh_fallback();
         let considered_computed_view_count = computed_result.considered_view_count();
         let affected_derived_view_targets = computed_result.affected_view_targets();

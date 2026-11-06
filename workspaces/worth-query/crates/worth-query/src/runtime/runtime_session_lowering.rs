@@ -126,7 +126,7 @@ fn lower_runtime_live_subscription_session(
                 .execution_plan()
                 .query()
                 .plan_digest()
-                .evidence_identity(),
+                .evidence_identity()?,
         )?,
         canonical_query_digest: session.canonical().query().digest().clone(),
         live_view_identity: live_subscription_source_identity(

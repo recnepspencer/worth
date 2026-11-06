@@ -90,7 +90,7 @@ pub fn worth_query_intent_admission_seeded_certification_report(
             .map(|row| row.row_digest().to_string())
             .collect::<Vec<_>>(),
     );
-    let stable_replay = seed_row(execution, 17);
+    let stable_replay = seed_row(execution, 17)?;
     let changed_seed = seed_row(execution, 30);
     let seed_replay_digest = hash_parts(&[
         "worth_query_intent_admission_seed_replay_v1".to_string(),

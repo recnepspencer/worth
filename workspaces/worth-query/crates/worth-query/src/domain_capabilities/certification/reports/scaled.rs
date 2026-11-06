@@ -111,7 +111,7 @@ fn scaled_evidence(
 
         for _ in 0..scale {
             let report = success(materialize_intent_admission_support_traceability_report(
-                admitted_ready(plan_support_requested(admitted_plan_target.clone()))?,
+                admitted_ready(plan_support_requested(admitted_plan_target.clone())?)?,
             ));
             support_width += report.rows().len();
             support_digests.push(report.decision_support_traceability_digest().to_string());

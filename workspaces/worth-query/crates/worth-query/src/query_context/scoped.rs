@@ -2,6 +2,7 @@ use crate::basis_lifecycle::{
     BasisFamily, BasisIntentDenial, BasisLifecycleDeclarationError, BasisLifecycleIntentDraft,
     DeniedBasisCapability, RawBasisIntent, ScopedMaterializationBasis, ScopedObservationBasis,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::{
     admit_legacy_query_basis_context, attach_legacy_query_basis_metadata,
@@ -106,8 +107,8 @@ impl ScopedQueryBasisContext {
     pub(crate) fn admits_runtime_snapshot(
         &self,
         snapshot: &crate::memory_workspace::WorthQuerySnapshotIdentity,
-    ) -> bool {
-        self.context().admits_runtime_snapshot(snapshot)
+    ) -> Result<bool, IdentityDerivationDenial> {
+        Ok(self.context().admits_runtime_snapshot(snapshot)?)
     }
 
     pub fn cost_class(&self) -> &QueryContextCostClass {

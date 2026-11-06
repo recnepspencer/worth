@@ -1,5 +1,6 @@
 use crate::authorized_projection::AuthorizedProjectionArtifact;
 use crate::canonicalization::CanonicalResultShapeArtifact;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::query_context::QueryContextExecutionArtifact;
 use crate::runtime::{
     WorthQueryDerivedArtifactBinding, WorthQueryLiveArtifactBinding, WorthQueryLiveReadResult,
@@ -230,11 +231,10 @@ impl crate::runtime::WorthQueryReadReceipt {
     pub fn discover_projection_fact_consumption_support(
         &self,
         result_shape: &CanonicalResultShapeArtifact,
-    ) -> ProjectionConsumptionSupportReport {
-        discover_projection_consumption_support(&ProjectionConsumptionSource::from_read_receipt(
-            self,
-            result_shape,
-        ))
+    ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
+        Ok(discover_projection_consumption_support(
+            &ProjectionConsumptionSource::from_read_receipt(self, result_shape),
+        )?)
     }
 }
 
@@ -259,10 +259,10 @@ impl WorthQueryWriteReceipt {
 
     pub fn discover_projection_fact_consumption_support(
         &self,
-    ) -> ProjectionConsumptionSupportReport {
-        discover_projection_consumption_support(&ProjectionConsumptionSource::from_write_receipt(
-            self,
-        ))
+    ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
+        Ok(discover_projection_consumption_support(
+            &ProjectionConsumptionSource::from_write_receipt(self),
+        )?)
     }
 }
 
@@ -282,10 +282,10 @@ impl QueryContextExecutionArtifact {
 
     pub fn discover_projection_fact_consumption_support(
         &self,
-    ) -> ProjectionConsumptionSupportReport {
-        discover_projection_consumption_support(
+    ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
+        Ok(discover_projection_consumption_support(
             &ProjectionConsumptionSource::from_query_context_execution(self),
-        )
+        )?)
     }
 }
 
@@ -306,10 +306,10 @@ impl WorthQueryDerivedArtifactBinding {
 
     pub fn discover_projection_fact_consumption_support(
         &self,
-    ) -> ProjectionConsumptionSupportReport {
-        discover_projection_consumption_support(
-            &ProjectionConsumptionSource::from_retained_derived_artifact_binding(self),
-        )
+    ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
+        Ok(discover_projection_consumption_support(
+            &ProjectionConsumptionSource::from_retained_derived_artifact_binding(self)?,
+        )?)
     }
 }
 
@@ -334,10 +334,10 @@ impl WorthQueryLiveArtifactBinding {
 
     pub fn discover_projection_fact_consumption_support(
         &self,
-    ) -> ProjectionConsumptionSupportReport {
-        discover_projection_consumption_support(
-            &ProjectionConsumptionSource::from_live_artifact_binding(self),
-        )
+    ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
+        Ok(discover_projection_consumption_support(
+            &ProjectionConsumptionSource::from_live_artifact_binding(self)?,
+        )?)
     }
 }
 

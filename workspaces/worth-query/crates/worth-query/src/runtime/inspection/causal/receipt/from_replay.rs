@@ -6,7 +6,7 @@ impl QueryObservationReceipt {
         receipt: &WorthQueryReadReceipt,
         inspection_basis: crate::basis_lifecycle::ScopedInspectionBasis,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let snapshot_evidence_identity = receipt.snapshot_evidence_identity();
+        let snapshot_evidence_identity = receipt.snapshot_evidence_identity()?;
         Ok(Self::from_parts(ObservationReceiptParts {
             family: QueryObservationReceiptFamily::ReadReceipt,
             observation_receipt_identity: read_observation_receipt_identity(receipt)?,

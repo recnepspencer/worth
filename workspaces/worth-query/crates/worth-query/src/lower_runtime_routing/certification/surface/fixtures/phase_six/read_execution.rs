@@ -172,7 +172,7 @@ fn read_result_evidence_identity(
     result: &WorthQueryReadResult,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let receipt = result.receipt();
-    let snapshot_evidence_identity = receipt.snapshot_evidence_identity();
+    let snapshot_evidence_identity = receipt.snapshot_evidence_identity()?;
     let mut builder =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeSet;
 
 use super::WorthQueryWorkflowValue;
@@ -60,8 +61,8 @@ impl WorthQueryWorkflowIntentValue {
     pub(crate) fn semantically_matches(
         &self,
         value: &super::WorthQueryWorkflowSemanticValue,
-    ) -> bool {
-        match self {
+    ) -> Result<bool, IdentityDerivationDenial> {
+        Ok(match self {
             Self::PredecessorArtifact { .. } | Self::PredecessorArtifactLease { .. } => {
                 matches!(
                     value,
@@ -70,8 +71,8 @@ impl WorthQueryWorkflowIntentValue {
             }
             _ => self
                 .runtime_value()
-                .is_some_and(|runtime| runtime.semantic_value() == *value),
-        }
+                .is_some_and(|runtime| runtime.semantic_value() == *value)?,
+        })
     }
 }
 

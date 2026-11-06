@@ -31,6 +31,7 @@ pub(crate) enum WorthQueryOrdinaryAuthorityDrift {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum WorthQueryMergeAuthorityValidationError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ForeignPhase(
         worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
     ),
@@ -235,17 +236,17 @@ impl WorthQueryRuntime {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryOrdinaryAuthorityAdmission,
-    ) -> WorthQueryOrdinaryAuthorityDrift {
-        if admission.runtime_identity != self.authority_identity {
+    ) -> Result<WorthQueryOrdinaryAuthorityDrift, IdentityDerivationDenial> {
+        Ok(if admission.runtime_identity != self.authority_identity {
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner
         } else if !admission
             .snapshot_identity
-            .is_same_current_identity_as(&self.current_snapshot_identity_with_request(execution))
+            .is_same_current_identity_as(&self.current_snapshot_identity_with_request(execution)?)
         {
             WorthQueryOrdinaryAuthorityDrift::StaleSnapshot
         } else {
             WorthQueryOrdinaryAuthorityDrift::Current
-        }
+        })
     }
 
     pub(crate) fn validate_ordinary_merge_authority(

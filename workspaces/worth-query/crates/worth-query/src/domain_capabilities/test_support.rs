@@ -41,10 +41,10 @@ where
     let eligible = success(evaluate_requested_domain_capability_contribution(
         requested,
     )?);
-    let admitted = success(admit_eligible_domain_capability_contribution(eligible));
+    let admitted = success(admit_eligible_domain_capability_contribution(eligible)?);
     let target = admitted.payload().target().clone();
     Ok(success(
-        prepare_admitted_domain_capability_contribution_for_materialization(admitted, target),
+        prepare_admitted_domain_capability_contribution_for_materialization(admitted, target)?,
     ))
 }
 

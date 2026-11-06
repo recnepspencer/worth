@@ -76,7 +76,7 @@ pub fn control_row_set_lifecycle(
     row_count: usize,
 ) -> Result<ProjectionConsumptionCertifiedLifecycle, IdentityDerivationDenial> {
     let row_set = certification_row_set(row_count);
-    let source = ProjectionConsumptionSource::from_relational_row_set(&row_set);
+    let source = ProjectionConsumptionSource::from_relational_row_set(&row_set)?;
     let declaration = declare_projection_consumption(
         source,
         control_binding(&[
@@ -102,7 +102,7 @@ pub fn control_row_set_lifecycle(
         .extract_from_relational_row_set(&row_set)
         .expect("control extraction should succeed");
     let receipt = facts.issue_receipt()?;
-    let envelope = receipt.projection_consumption_envelope();
+    let envelope = receipt.projection_consumption_envelope()?;
     Ok(ProjectionConsumptionCertifiedLifecycle {
         declaration,
         contract,
@@ -116,7 +116,7 @@ pub fn grouped_worth_lifecycle(
     row_count: usize,
 ) -> Result<ProjectionConsumptionCertifiedLifecycle, IdentityDerivationDenial> {
     let grouped = certification_grouped_projection(row_count);
-    let source = ProjectionConsumptionSource::from_relational_grouped_projection(&grouped);
+    let source = ProjectionConsumptionSource::from_relational_grouped_projection(&grouped)?;
     let declaration = declare_projection_consumption(
         source,
         control_binding(&["identity.id", "status.lane"]),
@@ -131,7 +131,7 @@ pub fn grouped_worth_lifecycle(
         .extract_from_relational_grouped_projection(&grouped)
         .expect("grouped extraction should succeed");
     let receipt = facts.issue_receipt()?;
-    let envelope = receipt.projection_consumption_envelope();
+    let envelope = receipt.projection_consumption_envelope()?;
     Ok(ProjectionConsumptionCertifiedLifecycle {
         declaration,
         contract,
@@ -165,7 +165,7 @@ pub fn parity_row_set_lifecycle(
                     "status.lane",
                     "metrics.priority",
                 ]),
-            ),
+            )?,
         )
         .build()
         .expect("parity declaration should author cleanly");
@@ -174,7 +174,7 @@ pub fn parity_row_set_lifecycle(
         .extract_from_relational_row_set(&row_set)
         .expect("parity extraction should succeed");
     let receipt = facts.issue_receipt()?;
-    let envelope = receipt.projection_consumption_envelope();
+    let envelope = receipt.projection_consumption_envelope()?;
     Ok(ProjectionConsumptionCertifiedLifecycle {
         declaration,
         contract,
@@ -186,7 +186,7 @@ pub fn parity_row_set_lifecycle(
 
 pub fn denied_masked_field_failure_digest() -> Result<String, IdentityDerivationDenial> {
     let row_set = certification_row_set(2);
-    let source = ProjectionConsumptionSource::from_relational_row_set(&row_set);
+    let source = ProjectionConsumptionSource::from_relational_row_set(&row_set)?;
     let declaration = declare_projection_consumption(
         source,
         control_binding(&["identity.id"]),
@@ -212,7 +212,7 @@ pub fn denied_masked_field_failure_digest() -> Result<String, IdentityDerivation
 
 pub fn source_mismatch_failure_digest() -> Result<String, IdentityDerivationDenial> {
     let row_set = certification_row_set(2);
-    let source = ProjectionConsumptionSource::from_relational_row_set(&row_set);
+    let source = ProjectionConsumptionSource::from_relational_row_set(&row_set)?;
     let declaration = declare_projection_consumption(
         source,
         control_binding(&["identity.id", "status.lane"]),

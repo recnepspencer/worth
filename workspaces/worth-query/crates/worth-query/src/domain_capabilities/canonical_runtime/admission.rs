@@ -24,11 +24,11 @@ use crate::intent_admission::{
 
 pub fn materialize_canonical_admission_artifact<T>(
     contribution: WorthQueryMaterializationReadyAdmissionContribution<T>,
-) -> WorthQueryCanonicalAdmissionArtifact<T>
+) -> Result<WorthQueryCanonicalAdmissionArtifact<T>, IdentityDerivationDenial>
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
+    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
 }
 
 pub(crate) fn materialize_runtime_admission_decision<T>(
@@ -88,16 +88,18 @@ pub fn materialize_runtime_admission_support_traceability_report(
     WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionSupportTraceabilityReport>,
     IdentityDerivationDenial,
 > {
-    Ok(match materialize_runtime_admission_support_traceability_row(contribution)? {
-        TransitionOutcome::Success(row) => TransitionOutcome::Success(
-            WorthQueryIntentAdmissionSupportTraceabilityReport::from_rows(vec![row]),
-        ),
-        TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(denial),
-        TransitionOutcome::Stale(stale) => TransitionOutcome::Stale(stale),
-        TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
-        TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
-        TransitionOutcome::Deferred(never) => match never {},
-    })
+    Ok(
+        match materialize_runtime_admission_support_traceability_row(contribution)? {
+            TransitionOutcome::Success(row) => TransitionOutcome::Success(
+                WorthQueryIntentAdmissionSupportTraceabilityReport::from_rows(vec![row]),
+            ),
+            TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(denial),
+            TransitionOutcome::Stale(stale) => TransitionOutcome::Stale(stale),
+            TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
+            TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
+            TransitionOutcome::Deferred(never) => match never {},
+        },
+    )
 }
 
 #[cfg(test)]

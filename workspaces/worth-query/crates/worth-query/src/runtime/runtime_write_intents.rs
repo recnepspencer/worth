@@ -108,7 +108,7 @@ impl WorthQueryRuntime {
             family: binding.family(),
             entrypoint: binding.entrypoint(),
             execution_seam: binding.execution_seam(),
-            request_detail: review_request_detail(handoff.command()),
+            request_detail: review_request_detail(handoff.command())?,
             request_digest: handoff.request_digest().to_string(),
             eligibility_trace: handoff.eligibility_trace().clone(),
             decision_digest: handoff.decision_digest().to_string(),

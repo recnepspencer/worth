@@ -211,7 +211,7 @@ fn prepare_from_resolved_signal_truth<
         &signal_truth,
         &mut witness_checks,
         bridge_checked,
-    );
+    )?;
     let digest = transcript_digest(
         "prepared_continuation",
         I::Family::semantic_family_key(),
@@ -253,7 +253,7 @@ fn prepared_outcome_from_bridge_checked<
                 bridge_request,
                 &routing,
                 required_capability_families,
-            );
+            )?;
             let prepared_digest = prepared_digest::<D, C, I>(
                 handle,
                 bridge_request,

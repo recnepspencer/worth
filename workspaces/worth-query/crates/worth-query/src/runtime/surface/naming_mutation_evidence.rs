@@ -39,8 +39,10 @@ pub struct WorthQueryNamingMutationEvidence {
 
 impl WorthQueryNamingMutationEvidence {
     #[cfg(test)]
-    pub(in crate::runtime) fn from_bridge(bundle: &BridgeNamingMutationBundle) -> Self {
-        Self::from_bridge_with_query_context(bundle, None, None)
+    pub(in crate::runtime) fn from_bridge(
+        bundle: &BridgeNamingMutationBundle,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_bridge_with_query_context(bundle, None, None)?)
     }
 
     pub(in crate::runtime) fn from_bridge_with_query_context(

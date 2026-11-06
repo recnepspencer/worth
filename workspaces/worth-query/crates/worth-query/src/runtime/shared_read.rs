@@ -188,8 +188,12 @@ impl WorthQuerySharedReadContext {
         self.lease.generation().snapshot_identity()
     }
 
-    pub fn inspect_basis(&self) -> WorthQuerySharedReadBasisInspection {
-        WorthQuerySharedReadBasisInspection::from_lease(&self.lease)
+    pub fn inspect_basis(
+        &self,
+    ) -> Result<WorthQuerySharedReadBasisInspection, IdentityDerivationDenial> {
+        Ok(WorthQuerySharedReadBasisInspection::from_lease(
+            &self.lease,
+        )?)
     }
 
     pub fn published_derived_artifact<T>(
@@ -254,7 +258,7 @@ impl WorthQueryRuntime {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQuerySharedReadContext, WorthQueryRuntimeError> {
-        let snapshot_identity = self.current_snapshot_identity_with_request(execution);
+        let snapshot_identity = self.current_snapshot_identity_with_request(execution)?;
         if !self.shared_read_pins.has_current_generation() {
             self.capture_shared_read_generation_for_current_snapshot(snapshot_identity);
         }

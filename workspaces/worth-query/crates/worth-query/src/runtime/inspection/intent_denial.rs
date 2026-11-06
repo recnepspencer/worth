@@ -99,7 +99,7 @@ impl WorthQueryIntentDenialInspection {
                 )
                 .optional_evidence_identity(
                     WorthQueryEvidenceTag::new("snapshot_identity"),
-                    snapshot_evidence_identity.as_ref(),
+                    snapshot_evidence_identity.as_ref()?,
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("denial_digest"),

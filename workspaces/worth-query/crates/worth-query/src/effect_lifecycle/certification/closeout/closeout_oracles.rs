@@ -53,7 +53,7 @@ fn relational_oracle_digest(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<String, IdentityDerivationDenial> {
     let mutation_digest = scalar_mutation_oracle_digest(execution)?;
-    let batch_digest = batch_mutation_oracle_digest(execution);
+    let batch_digest = batch_mutation_oracle_digest(execution)?;
     Ok(crate::identity::hash_parts(&[
         "effect_closeout_relational_oracles_v1".to_string(),
         format!("scalar:{mutation_digest}"),
@@ -90,7 +90,7 @@ fn scalar_mutation_oracle_digest(
     )
     .expect("closeout oracle mutation should normalize");
     let admitted = match evaluate_effect_eligibility(normalized)? {
-        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
+        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
         other => panic!("expected admitted closeout oracle mutation, got {other:?}"),
     };
     let lowered = scope_admitted_effect_plan(admitted)?
@@ -182,7 +182,7 @@ fn bridge_oracle_digest(
     let normalized = normalize_raw_effect_intent(&basis, raw)
         .expect("closeout bridge oracle writeback normalizes");
     let admitted = match evaluate_effect_eligibility(normalized)? {
-        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
+        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
         other => panic!("expected admitted closeout bridge writeback, got {other:?}"),
     };
     let executed = scope_admitted_effect_plan(admitted)?

@@ -80,7 +80,7 @@ pub(in crate::intent_admission::certification) fn certified_read_intent_fixture(
 
 pub(in crate::intent_admission::certification) fn read_delegation_parity_fixture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> ReadDelegationParityFixture {
+) -> Result<ReadDelegationParityFixture, IdentityDerivationDenial> {
     let mut delegated_current = certification_read_workspace(execution, "delegated-read-current");
     let current_family = certification_read_family(&mut delegated_current, "tasks");
     let current_legacy = delegated_current
@@ -107,7 +107,7 @@ pub(in crate::intent_admission::certification) fn read_delegation_parity_fixture
     let basis_context = current_context_for_family(
         &basis_family,
         certification_snapshot_identity("certification-read-basis"),
-    );
+    )?;
     let basis_legacy = delegated_basis
         .execute_read_family_in_basis_context(execution, &basis_family, &basis_context)
         .expect("delegated basis read should execute");
@@ -117,7 +117,7 @@ pub(in crate::intent_admission::certification) fn read_delegation_parity_fixture
     let canonical_context = current_context_for_family(
         &canonical_basis_family,
         certification_snapshot_identity("certification-read-basis"),
-    );
+    )?;
     let basis_review = canonical_basis
         .review_read_execution(canonical_basis_family, Some(canonical_context))
         .expect("canonical basis review should succeed");
@@ -131,12 +131,12 @@ pub(in crate::intent_admission::certification) fn read_delegation_parity_fixture
         .execute_bound_read_execution(execution, basis_binding)
         .expect("canonical basis read should execute");
 
-    ReadDelegationParityFixture {
+    Ok(ReadDelegationParityFixture {
         current_legacy,
         current_canonical,
         basis_legacy,
         basis_canonical,
-    }
+    })
 }
 
 fn certification_read_workspace(

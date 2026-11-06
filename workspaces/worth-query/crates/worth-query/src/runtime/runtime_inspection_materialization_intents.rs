@@ -175,7 +175,7 @@ impl WorthQueryWorkspace {
         let review = self
             .review_derived_materialization(target.terminal_view_name_projection().to_string())?;
         let handoff = self.resolve_reviewed_admitted_derived_materialization_handoff(review)?;
-        let binding = self.into_runtime_derived_materialization_binding(handoff);
+        let binding = self.into_runtime_derived_materialization_binding(handoff)?;
         self.execute_bound_derived_materialization(execution, binding)
     }
 }
@@ -288,11 +288,11 @@ impl WorthQueryRuntime {
             .ok_or_else(|| {
                 WorthQueryRuntimeError::MissingDerivedView(binding.view_name().to_string())
             })?;
-        let snapshot_identity = self.current_snapshot_identity_with_request(execution);
+        let snapshot_identity = self.current_snapshot_identity_with_request(execution)?;
         let receipt = WorthQueryDerivedMaterializationReceipt::from_evidence(
             &evidence,
-            snapshot_identity.clone(),
-        );
+            snapshot_identity.clone()?,
+        )?;
         let mut result = WorthQueryDerivedMaterializationResult::from_retained_rows(rows, receipt);
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution_parts(
@@ -330,9 +330,11 @@ impl WorthQueryRuntime {
         binding: WorthQueryDerivedInspectionExecutionBinding,
     ) -> Result<WorthQueryDerivedInspectionResult, WorthQueryRuntimeError> {
         let evidence = self.derived_view_evidence(binding.view_name())?;
-        let snapshot_identity = self.current_snapshot_identity_with_request(execution);
-        let receipt =
-            WorthQueryDerivedInspectionReceipt::from_evidence(&evidence, snapshot_identity.clone());
+        let snapshot_identity = self.current_snapshot_identity_with_request(execution)?;
+        let receipt = WorthQueryDerivedInspectionReceipt::from_evidence(
+            &evidence,
+            snapshot_identity.clone()?,
+        )?;
         let mut result = WorthQueryDerivedInspectionResult::new(evidence, receipt);
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution_parts(

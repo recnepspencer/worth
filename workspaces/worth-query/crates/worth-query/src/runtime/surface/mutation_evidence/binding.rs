@@ -82,7 +82,7 @@ impl WorthQueryExistingTruthBindingEvidence {
                     WorthQueryEvidenceTag::new("collection"),
                     target_collection
                         .as_ref()
-                        .map(WorthQueryMutationTargetCollectionIdentity::evidence_identity),
+                        .map(WorthQueryMutationTargetCollectionIdentity::evidence_identity)?,
                 )
                 .seal()?;
         Ok(Self {

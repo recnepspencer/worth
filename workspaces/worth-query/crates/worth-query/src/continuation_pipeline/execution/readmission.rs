@@ -61,16 +61,16 @@ pub(crate) fn prepared_execution_readmission_from_routing<
     bridge_request: &WorthQueryDeclarationBridgeContinuationRequest,
     routing: &WorthQueryDeclarationBridgeRouting<D, I>,
     required_capability_families: Vec<crate::application::WorthQueryCapabilityFamily>,
-) -> WorthQueryPreparedContinuationExecutionReadmission {
-    let basis_witness = basis_witness_from_binding(bridge_request, routing.binding());
+) -> Result<WorthQueryPreparedContinuationExecutionReadmission, IdentityDerivationDenial> {
+    let basis_witness = basis_witness_from_binding(bridge_request, routing.binding())?;
     let authority_witness = authority_witness_from_binding(routing.binding());
-    WorthQueryPreparedContinuationExecutionReadmission::new(
+    Ok(WorthQueryPreparedContinuationExecutionReadmission::new(
         basis_witness,
         authority_witness,
         WorthQueryPreparedContinuationFreshnessPosture::Stable,
         None,
         required_capability_families,
-    )
+    ))
 }
 
 pub(crate) fn current_readmission_evidence_from_handle<
@@ -226,10 +226,10 @@ fn basis_witness_from_binding(
 ) -> Result<WorthQueryPreparedContinuationBasisWitness, IdentityDerivationDenial> {
     Ok(match binding {
         WorthQueryDeclarationBridgeBinding::RuntimeRoute(request) => {
-            let commit_identity = bridge_commit_evidence_identity(request.commit_identity());
+            let commit_identity = bridge_commit_evidence_identity(request.commit_identity())?;
             WorthQueryPreparedContinuationBasisWitness::new(
                 WorthQueryPreparedContinuationBasisKind::Current,
-                commit_identity.clone(),
+                commit_identity.clone()?,
                 Some(commit_identity),
                 None,
             )
@@ -263,7 +263,7 @@ fn basis_witness_from_binding(
                             .selector()
                             .commit_identity()
                             .map(bridge_commit_evidence_identity)
-                    }),
+                    })?,
             )
         }
         WorthQueryDeclarationBridgeBinding::PreviewSession(request) => {

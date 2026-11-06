@@ -12,11 +12,11 @@ fn summary_digest_changes_with_mutation_family() -> Result<(), IdentityDerivatio
     let update = super::super::summarize_existing_truth_modes(
         &[WorthQueryMutationFamily::Update],
         &[Some(backend_verified.clone())],
-    );
+    )?;
     let delete = super::super::summarize_existing_truth_modes(
         &[WorthQueryMutationFamily::Delete],
         &[Some(backend_verified)],
-    );
+    )?;
 
     assert_ne!(update.4, delete.4);
 
@@ -34,11 +34,11 @@ fn summary_digest_changes_with_assertion_mode() -> Result<(), IdentityDerivation
     let retained_summary = super::super::summarize_existing_truth_modes(
         &[WorthQueryMutationFamily::Assertion],
         &[Some(retained)],
-    );
+    )?;
     let verified_summary = super::super::summarize_existing_truth_modes(
         &[WorthQueryMutationFamily::Assertion],
         &[Some(backend_verified)],
-    );
+    )?;
 
     assert_ne!(retained_summary.4, verified_summary.4);
 
@@ -56,7 +56,7 @@ fn summary_panics_on_invalid_family_mode_pair() -> Result<(), IdentityDerivation
     let _ = super::super::summarize_existing_truth_modes(
         &[WorthQueryMutationFamily::Update],
         &[Some(retained)],
-    );
+    )?;
 
     Ok(())
 }

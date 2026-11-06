@@ -43,7 +43,7 @@ impl WorthQueryContinuityContributionAuthoring {
                 crate::runtime::WorthQueryContinuityMutationOutcomeClass::ContinuesAsSingleSuccessor,
                 prior_authoritative_identity,
                 [successor_authoritative_identity],
-            ),
+            )?,
         )?)
     }
 
@@ -77,7 +77,7 @@ impl WorthQueryContinuityContributionAuthoring {
                 crate::runtime::WorthQueryContinuityMutationOutcomeClass::ContinuesAsSplitSuccessors,
                 prior_authoritative_identity,
                 successor_authoritative_identities,
-            ),
+            )?,
         )?)
     }
 
@@ -107,7 +107,7 @@ impl WorthQueryContinuityContributionAuthoring {
                 crate::runtime::WorthQueryContinuityMutationOutcomeClass::ContinuesViaTruthLoweredCanonicalMergeSuccessor,
                 prior_authoritative_identity,
                 [successor_authoritative_identity],
-            ),
+            )?,
         )?)
     }
 

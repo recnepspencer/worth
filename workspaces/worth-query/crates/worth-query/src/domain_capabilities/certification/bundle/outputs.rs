@@ -1,4 +1,5 @@
 use crate::domain_capabilities::identity::compose_certification_bundle_digest;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::reports::{
     WorthQueryDomainCapabilityRepresentativeReport, WorthQueryDomainCapabilitySlopeReport,
@@ -103,10 +104,10 @@ pub(crate) fn assemble_certification_outputs(
 
 pub(crate) fn certification_bundle_digest(
     outputs: &[WorthQueryDomainCapabilityCertificationOutputSpec],
-) -> String {
-    compose_certification_bundle_digest(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(compose_certification_bundle_digest(
         outputs
             .iter()
             .map(|output| (output.name(), output.digest())),
-    )
+    )?)
 }

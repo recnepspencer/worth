@@ -30,7 +30,7 @@ where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    if let Some(denial) = stale_installation_generation_denial(requested.payload()) {
+    if let Some(denial) = stale_installation_generation_denial(requested.payload())? {
         return Ok(TransitionOutcome::Denied(denial));
     }
     if requested
@@ -79,40 +79,52 @@ where
 
 pub fn admit_eligible_domain_capability_contribution<P, T>(
     eligible: WorthQueryEligibleDomainCapabilityContribution<P, T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryAdmittedDomainCapabilityContribution<P, T>>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<
+        WorthQueryAdmittedDomainCapabilityContribution<P, T>,
+    >,
+    IdentityDerivationDenial,
+>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    if let Some(denial) = stale_installation_generation_denial(eligible.payload()) {
-        return TransitionOutcome::Denied(denial);
+    if let Some(denial) = stale_installation_generation_denial(eligible.payload())? {
+        return Ok(TransitionOutcome::Denied(denial));
     }
     let basis = contribution_basis(&eligible.0);
     let payload = eligible.into_inner().into_parts().into_parts().0;
-    TransitionOutcome::Success(WorthQueryAdmittedDomainCapabilityContribution(
-        remint_with_phase(payload, basis, admitted_proof()),
+    Ok(TransitionOutcome::Success(
+        WorthQueryAdmittedDomainCapabilityContribution(remint_with_phase(
+            payload,
+            basis,
+            admitted_proof(),
+        )),
     ))
 }
 
 pub fn prepare_admitted_domain_capability_contribution_for_materialization<P, T>(
     admitted: WorthQueryAdmittedDomainCapabilityContribution<P, T>,
     current_target: T,
-) -> WorthQueryDomainCapabilityTransitionOutcome<
-    WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>,
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<
+        WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>,
+    >,
+    IdentityDerivationDenial,
 >
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    if let Some(denial) = stale_installation_generation_denial(admitted.payload()) {
-        return TransitionOutcome::Denied(denial);
+    if let Some(denial) = stale_installation_generation_denial(admitted.payload())? {
+        return Ok(TransitionOutcome::Denied(denial));
     }
     let basis = contribution_basis(&admitted.0);
     let payload = admitted.into_inner().into_parts().into_parts().0;
     let category = payload.category().as_str();
     let bound_target = payload.target();
     if bound_target.binding_identity() != current_target.binding_identity() {
-        return match current_target.kind() {
+        return Ok(match current_target.kind() {
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope => {
                 TransitionOutcome::Stale(WorthQueryDomainCapabilityStale::new(
                     category,
@@ -125,11 +137,15 @@ where
                 bound_target.target_identity(),
                 current_target.target_identity(),
             )),
-        };
+        });
     }
 
-    TransitionOutcome::Success(WorthQueryMaterializationReadyDomainCapabilityContribution(
-        remint_with_phase(payload, basis, materialization_ready_proof()),
+    Ok(TransitionOutcome::Success(
+        WorthQueryMaterializationReadyDomainCapabilityContribution(remint_with_phase(
+            payload,
+            basis,
+            materialization_ready_proof(),
+        )),
     ))
 }
 

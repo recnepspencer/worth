@@ -94,7 +94,7 @@ impl QueryObservationReceipt {
             )?,
             outcome,
             evidence_identities,
-        }))
+        })?)
     }
 }
 

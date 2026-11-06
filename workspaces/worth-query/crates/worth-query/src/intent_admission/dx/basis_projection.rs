@@ -181,7 +181,9 @@ impl WorthQueryProjectionConsumptionAdmittedIntent {
         &self.plan
     }
 
-    pub fn bind_contract(&self) -> MaterializedProjectionContract {
-        self.plan.bind_contract()
+    pub fn bind_contract(
+        &self,
+    ) -> Result<MaterializedProjectionContract, IdentityDerivationDenial> {
+        Ok(self.plan.bind_contract()?)
     }
 }

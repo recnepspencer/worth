@@ -96,8 +96,8 @@ impl WorthQueryAuthoritativeMutationIntentSeed {
         mutation_intent_name(&self.command)
     }
 
-    pub fn command_input_digest(&self) -> String {
-        mutation_input_digest(&self.command)
+    pub fn command_input_digest(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(mutation_input_digest(&self.command)?)
     }
 }
 
@@ -187,10 +187,12 @@ fn mutation_intent_name(command: &WorthQueryWriteCommand) -> String {
     format!("mutation.{family}.{target}")
 }
 
-fn mutation_input_digest(command: &WorthQueryWriteCommand) -> String {
-    authoritative_mutation_input_identity(command)
+fn mutation_input_digest(
+    command: &WorthQueryWriteCommand,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(authoritative_mutation_input_identity(command)?
         .as_str()
-        .to_string()
+        .to_string())
 }
 
 pub(crate) fn authoritative_mutation_input_identity(
@@ -220,8 +222,8 @@ pub(crate) fn authoritative_mutation_input_identity(
         .map(declared_aspect_operation_identity)
         .collect::<Vec<_>>();
     let metadata_identities = metadata_identities(command);
-    let naming_identity = naming_identity(command);
-    let continuity_identity = continuity_identity(command);
+    let naming_identity = naming_identity(command)?;
+    let continuity_identity = continuity_identity(command)?;
     let mut identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
             .field_shape(
@@ -270,11 +272,11 @@ pub(crate) fn authoritative_mutation_input_identity(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("naming"),
-                naming_identity.as_ref(),
+                naming_identity.as_ref()?,
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("continuity"),
-                continuity_identity.as_ref(),
+                continuity_identity.as_ref()?,
             );
     if let Some(identity_evidence) = declared_entity_identity {
         identity = identity.field_evidence_identity(

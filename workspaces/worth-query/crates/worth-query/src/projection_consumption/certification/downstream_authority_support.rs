@@ -104,7 +104,7 @@ fn support_row(
     surface: ProjectionConsumptionCertifiedSourceSurface,
 ) -> Result<ConsumedProjectionAuthoritySupportRow, IdentityDerivationDenial> {
     let source = representative_source(surface)?;
-    let report = discover_projection_consumption_support(&source);
+    let report = discover_projection_consumption_support(&source)?;
     let admitted_fact_kinds = report
         .rows()
         .iter()

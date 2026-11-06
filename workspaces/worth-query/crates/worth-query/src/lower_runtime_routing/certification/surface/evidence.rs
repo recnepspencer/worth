@@ -259,8 +259,8 @@ pub fn worth_query_lower_runtime_representative_surface(
         .collect::<Vec<_>>();
     let query_digest = digest_query_subjects(&requests);
     let route_parity_digest = hash_parts(&[
-        normalized_parity_digest("compose-read", &envelopes),
-        normalized_parity_digest("basis-readmission", &envelopes),
+        normalized_parity_digest("compose-read", &envelopes)?,
+        normalized_parity_digest("basis-readmission", &envelopes)?,
         hostile_parity_divergence_digest(&envelopes)?,
     ]);
 

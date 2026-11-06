@@ -106,22 +106,22 @@ pub(crate) fn worth_query_domain_capability_slope_report_in(
             "contribution-materialization",
             &scaled,
             |e| (e.contribution_width(), e.contribution_digest()),
-        ),
+        )?,
         trace_materialization_slope_digest: slope_digest("trace-materialization", &scaled, |e| {
             (e.trace_width(), e.trace_digest())
-        }),
+        })?,
         category_materialization_slope_digest: slope_digest(
             "category-materialization",
             &scaled,
             |e| (e.category_width(), e.category_digest()),
-        ),
+        )?,
         support_materialization_slope_digest: slope_digest(
             "support-materialization",
             &scaled,
             |e| (e.support_width(), e.support_digest()),
-        ),
+        )?,
         counter_snapshot,
-    })
+    })?
 }
 
 fn slope_digest(

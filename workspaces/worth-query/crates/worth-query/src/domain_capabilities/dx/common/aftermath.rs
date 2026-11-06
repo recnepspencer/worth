@@ -229,7 +229,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                     self.binding,
                     self.requested_facts,
                 )?
-                .bind_to_installed_target(self.target)
+                .bind_to_installed_target(self.target)?
             }
             WorthQueryAftermathContributionPosture::ConsumesFact => {
                 WorthQueryAftermathContributionAuthoring::consumes_projection_contract(
@@ -239,7 +239,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                     self.binding,
                     self.requested_facts,
                 )?
-                .bind_to_installed_target(self.target)
+                .bind_to_installed_target(self.target)?
             }
             WorthQueryAftermathContributionPosture::DeclaresResidue => {
                 WorthQueryAftermathContributionAuthoring::declares_projection_residue(
@@ -249,7 +249,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                     self.binding,
                     self.requested_facts,
                 )?
-                .bind_to_installed_target(self.target)
+                .bind_to_installed_target(self.target)?
             }
         })
     }

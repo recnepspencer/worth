@@ -135,7 +135,7 @@ pub fn certify_projection_consumption_closeout_core(
 ) -> Result<ProjectionConsumptionCertificationBundle, IdentityDerivationDenial> {
     let lifecycle = control_row_set_lifecycle(2)?;
     let family_inventory = projection_consumption_family_inventory()?;
-    let support_matrix = projection_consumption_support_matrix();
+    let support_matrix = projection_consumption_support_matrix()?;
     let public_boundary_audit = projection_consumption_public_boundary_audit()?;
     let proof_shape_audit = projection_consumption_proof_shape_audit()?;
     let forbidden_fallback_audit = projection_consumption_forbidden_fallback_audit()?;

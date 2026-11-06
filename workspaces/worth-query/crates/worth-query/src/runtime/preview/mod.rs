@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::{
@@ -69,9 +70,9 @@ impl<'a> WorthQueryPreviewSession<'a> {
         runtime: &'a mut WorthQueryRuntime,
         effect_policy: WorthQueryEffectPolicy,
         basis_admission: WorthQueryPreviewBasisAdmission,
-    ) -> Self {
-        let basis_snapshot_identity = runtime.current_snapshot_identity_with_request(execution);
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let basis_snapshot_identity = runtime.current_snapshot_identity_with_request(execution)?;
+        Ok(Self {
             label,
             runtime,
             effect_policy,
@@ -84,6 +85,6 @@ impl<'a> WorthQueryPreviewSession<'a> {
             intent_receipts: Vec::new(),
             promoted: false,
             discarded: false,
-        }
+        })
     }
 }

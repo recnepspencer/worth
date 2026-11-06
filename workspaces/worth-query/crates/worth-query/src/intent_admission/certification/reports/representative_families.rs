@@ -96,7 +96,7 @@ impl WorthQueryIntentAdmissionRepresentativeFamilyReport {
 pub fn worth_query_intent_admission_representative_family_report(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryIntentAdmissionRepresentativeFamilyReport, IdentityDerivationDenial> {
-    let basis = certified_basis_observation_intent_fixture();
+    let basis = certified_basis_observation_intent_fixture()?;
     let effect = certified_effect_intent_fixture(execution)?;
     let projection_admitted = certified_projection_consumption_admitted_fixture()?;
     let projection_warning = certified_projection_consumption_warning_fixture()?;

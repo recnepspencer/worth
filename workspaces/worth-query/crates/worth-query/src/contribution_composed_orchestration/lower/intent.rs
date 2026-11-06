@@ -65,7 +65,7 @@ fn process_intent(
             order_index,
             WorthQueryDeclarationEntryContributionCategoryFamily::Admission,
             declaration_aspect_record,
-            value.bind_to_installed_target(target),
+            value.bind_to_installed_target(target)?,
             materialization_profile,
             linked_artifacts,
         )?,
@@ -73,7 +73,7 @@ fn process_intent(
             order_index,
             WorthQueryDeclarationEntryContributionCategoryFamily::SupportTraceability,
             declaration_aspect_record,
-            value.bind_to_installed_target(target),
+            value.bind_to_installed_target(target)?,
             materialization_profile,
             linked_artifacts,
         )?,
@@ -81,7 +81,7 @@ fn process_intent(
             order_index,
             WorthQueryDeclarationEntryContributionCategoryFamily::ExplanationInspection,
             declaration_aspect_record,
-            value.bind_to_installed_target(target),
+            value.bind_to_installed_target(target)?,
             materialization_profile,
             linked_artifacts,
         )?,
@@ -89,7 +89,7 @@ fn process_intent(
             order_index,
             WorthQueryDeclarationEntryContributionCategoryFamily::WorkflowPreview,
             declaration_aspect_record,
-            value.bind_to_installed_target(target),
+            value.bind_to_installed_target(target)?,
             materialization_profile,
             linked_artifacts,
         )?,
@@ -97,7 +97,7 @@ fn process_intent(
             order_index,
             WorthQueryDeclarationEntryContributionCategoryFamily::ContinuityLineage,
             declaration_aspect_record,
-            value.bind_to_installed_target(target),
+            value.bind_to_installed_target(target)?,
             materialization_profile,
             linked_artifacts,
         )?,
@@ -173,7 +173,7 @@ where
         "contribution request is eligible for admission",
         Some(eligible.eligibility_identity()?),
     );
-    let admitted = match admit_eligible_domain_capability_contribution(eligible) {
+    let admitted = match admit_eligible_domain_capability_contribution(eligible)? {
         TransitionOutcome::Success(value) => value,
         TransitionOutcome::Denied(value) => {
             return Ok(WorthQueryContributionComposedIntentResult::new(
@@ -225,7 +225,7 @@ where
         }
         TransitionOutcome::Deferred(never) => match never {},
     };
-    let evidence = evidence_from_admitted(&admitted);
+    let evidence = evidence_from_admitted(&admitted)?;
     let installed_authority =
         crate::domain_installation::WorthQueryInstalledDomainAuthorityWitness::from_authority(
             admitted.payload().target().authority_arc(),
@@ -250,7 +250,7 @@ where
         let ready = match prepare_admitted_domain_capability_contribution_for_materialization(
             admitted,
             current_target,
-        ) {
+        )? {
             TransitionOutcome::Success(value) => value,
             TransitionOutcome::Denied(value) => {
                 return Ok(retained_after_admission_result(

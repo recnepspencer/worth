@@ -251,7 +251,7 @@ pub(crate) fn resolve_runtime_historical_snapshot_basis(
     snapshot_identity: WorthQueryEvidenceIdentity,
     schema_basis: SchemaBasisDigest,
     workspace_scope: impl Into<String>,
-) -> ResolvedSnapshotBasis {
+) -> Result<ResolvedSnapshotBasis, IdentityDerivationDenial> {
     let reporting_label = snapshot_identity.as_str().to_string();
     let intent = ExecutionBasisIntent::new(
         BasisAuthorityFamily::Runtime,
@@ -265,12 +265,12 @@ pub(crate) fn resolve_runtime_historical_snapshot_basis(
         schema_basis,
         SnapshotLineageClass::ReplayEquivalent,
     );
-    ResolvedSnapshotBasis::new_with_reporting_label(
+    Ok(ResolvedSnapshotBasis::new_with_reporting_label(
         intent,
         identity,
         BasisResolutionMode::RuntimeDirect,
         reporting_label,
-    )
+    )?)
 }
 
 pub fn admit_runtime_current_snapshot_basis(

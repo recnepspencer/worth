@@ -13,11 +13,11 @@ use crate::domain_capabilities::{
 
 pub fn materialize_canonical_support_traceability_artifact<T>(
     contribution: WorthQueryMaterializationReadySupportContribution<T>,
-) -> WorthQueryCanonicalSupportTraceabilityArtifact<T>
+) -> Result<WorthQueryCanonicalSupportTraceabilityArtifact<T>, IdentityDerivationDenial>
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
+    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -43,12 +43,12 @@ impl WorthQueryDomainCapabilityCertificationBundle {
     fn new(
         representative_report: WorthQueryDomainCapabilityRepresentativeReport,
         slope_report: WorthQueryDomainCapabilitySlopeReport,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let output_manifest =
             worth_query_domain_capability_certification_output_manifest().to_vec();
         let output_specs = assemble_certification_outputs(&representative_report, &slope_report);
         validate_output_manifest(&output_manifest, &output_specs);
-        let certification_bundle_digest = certification_bundle_digest(&output_specs);
+        let certification_bundle_digest = certification_bundle_digest(&output_specs)?;
         let outputs = output_specs
             .iter()
             .map(|output| {
@@ -59,13 +59,13 @@ impl WorthQueryDomainCapabilityCertificationBundle {
             })
             .collect::<Vec<_>>();
 
-        Self {
+        Ok(Self {
             output_manifest,
             representative_report,
             slope_report,
             outputs,
             certification_bundle_digest,
-        }
+        })
     }
 
     pub fn output_manifest(&self) -> &[&'static str] {
@@ -119,7 +119,7 @@ pub(crate) fn certify_domain_capabilities_in(
     Ok(WorthQueryDomainCapabilityCertificationBundle::new(
         representative_report,
         slope_report,
-    ))
+    )?)
 }
 
 fn validate_output_manifest(

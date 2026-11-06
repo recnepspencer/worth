@@ -149,13 +149,15 @@ impl ProjectionConsumptionSource {
         }
     }
 
-    pub fn from_relational_row_set(row_set: &RelationalAuthoritativeRowSetArtifact) -> Self {
-        Self {
+    pub fn from_relational_row_set(
+        row_set: &RelationalAuthoritativeRowSetArtifact,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             source_reference_identities: Vec::new(),
             family: ProjectionSourceFamily::RelationalRowSet,
             capability_profile: ProjectionSourceCapabilityProfile::RelationalRowSet,
             query_digest: None,
-            basis_digest: Some(snapshot_identity_digest(row_set.snapshot_identity())),
+            basis_digest: Some(snapshot_identity_digest(row_set.snapshot_identity())?),
             basis_authority: ProjectionSourceBasisAuthority::runtime_snapshot(
                 snapshot_identity_authority(row_set.snapshot_identity()),
             ),
@@ -163,20 +165,20 @@ impl ProjectionConsumptionSource {
             result_shape_digest: None,
             source_identity: ProjectionSourceIdentity::artifact(row_set.digest().as_str()),
             materialized_fact_posture: None,
-        }
+        })
     }
 
     pub fn from_relational_grouped_projection(
         grouped_projection: &RelationalGroupedProjectionArtifact,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             source_reference_identities: Vec::new(),
             family: ProjectionSourceFamily::RelationalGroupedProjection,
             capability_profile: ProjectionSourceCapabilityProfile::RelationalGroupedProjection,
             query_digest: None,
             basis_digest: Some(snapshot_identity_digest(
                 grouped_projection.snapshot_identity(),
-            )),
+            )?),
             basis_authority: ProjectionSourceBasisAuthority::runtime_snapshot(
                 snapshot_identity_authority(grouped_projection.snapshot_identity()),
             ),
@@ -186,16 +188,18 @@ impl ProjectionConsumptionSource {
                 grouped_projection.digest().as_str(),
             ),
             materialized_fact_posture: None,
-        }
+        })
     }
 
-    pub fn from_bridge_truth_view_row_set(row_set: &BridgeMaterializedRowSetArtifact) -> Self {
-        Self {
+    pub fn from_bridge_truth_view_row_set(
+        row_set: &BridgeMaterializedRowSetArtifact,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             source_reference_identities: Vec::new(),
             family: ProjectionSourceFamily::BridgeTruthViewRowSet,
             capability_profile: ProjectionSourceCapabilityProfile::BridgeTruthViewRowSet,
             query_digest: None,
-            basis_digest: Some(snapshot_identity_digest(row_set.basis_snapshot_identity())),
+            basis_digest: Some(snapshot_identity_digest(row_set.basis_snapshot_identity())?),
             basis_authority: ProjectionSourceBasisAuthority::runtime_snapshot(
                 snapshot_identity_authority(row_set.basis_snapshot_identity()),
             ),
@@ -203,20 +207,20 @@ impl ProjectionConsumptionSource {
             result_shape_digest: None,
             source_identity: ProjectionSourceIdentity::artifact(row_set.digest().as_str()),
             materialized_fact_posture: None,
-        }
+        })
     }
 
     pub fn from_bridge_grouped_truth_view(
         grouped_truth_view: &BridgeGroupedTruthViewArtifact,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             source_reference_identities: Vec::new(),
             family: ProjectionSourceFamily::BridgeGroupedTruthView,
             capability_profile: ProjectionSourceCapabilityProfile::BridgeGroupedTruthView,
             query_digest: None,
             basis_digest: Some(snapshot_identity_digest(
                 grouped_truth_view.basis_snapshot_identity(),
-            )),
+            )?),
             basis_authority: ProjectionSourceBasisAuthority::runtime_snapshot(
                 snapshot_identity_authority(grouped_truth_view.basis_snapshot_identity()),
             ),
@@ -226,7 +230,7 @@ impl ProjectionConsumptionSource {
                 grouped_truth_view.digest().as_str(),
             ),
             materialized_fact_posture: None,
-        }
+        })
     }
 
     pub fn from_retained_derived_artifact_binding(

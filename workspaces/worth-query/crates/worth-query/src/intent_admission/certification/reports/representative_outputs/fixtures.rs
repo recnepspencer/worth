@@ -72,9 +72,10 @@ impl RepresentativeOutputFixtures {
     }
 }
 
-pub(super) fn basis_observation_fixture_digest_output() -> OutputRow {
-    let basis = certified_basis_observation_intent_fixture();
-    output(
+pub(super) fn basis_observation_fixture_digest_output(
+) -> Result<OutputRow, IdentityDerivationDenial> {
+    let basis = certified_basis_observation_intent_fixture()?;
+    Ok(output(
         "basis_observation_fixture_digest",
         hash_parts(&[
             basis.request.request_digest().to_string(),
@@ -82,7 +83,7 @@ pub(super) fn basis_observation_fixture_digest_output() -> OutputRow {
             basis.plan.request_digest().to_string(),
             basis.scoped_basis_digest.clone(),
         ]),
-    )
+    ))
 }
 
 pub(super) fn projection_consumption_fixture_digest_output(

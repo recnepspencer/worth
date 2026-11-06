@@ -48,8 +48,10 @@ impl WorthQueryBatchWriteReceipt {
 
     pub fn graph_composition_lifecycle_outcomes(
         &self,
-    ) -> Option<WorthQueryGraphCompositionLifecycleOutcomes> {
-        WorthQueryGraphCompositionLifecycleOutcomes::derive(&self.graph_composition_program)
+    ) -> Result<Option<WorthQueryGraphCompositionLifecycleOutcomes>, IdentityDerivationDenial> {
+        Ok(WorthQueryGraphCompositionLifecycleOutcomes::derive(
+            &self.graph_composition_program,
+        )?)
     }
 
     pub fn graph_composition_resolution_map(&self) -> &WorthQueryGraphCompositionResolutionMap {

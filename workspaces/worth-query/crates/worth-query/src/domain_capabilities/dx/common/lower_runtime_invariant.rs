@@ -48,7 +48,7 @@ impl WorthQueryLowerRuntimeDomainContributionSurface {
             qualify_semantic_code(target.authority(), semantic_code.as_ref()),
             detail,
         )?
-        .bind_to_installed_target(target.clone());
+        .bind_to_installed_target(target.clone())?;
         Ok(WorthQueryLowerRuntimeGraphInvariantDenialContribution { requested, target })
     }
 }

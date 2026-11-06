@@ -116,7 +116,7 @@ impl LiveQueryAdmissionArtifact {
         let basis_posture = subscription_posture_for_basis(&scoped_declaration_basis);
         let query_identity =
             crate::identity::validated_query_evidence_identity(descriptor.query_digest())?;
-        let plan_identity = descriptor.plan_digest().evidence_identity().clone();
+        let plan_identity = descriptor.plan_digest().evidence_identity().clone()?;
         let collection_identity = descriptor
             .collection_digest()
             .map(crate::identity::collection_plan_evidence_identity)

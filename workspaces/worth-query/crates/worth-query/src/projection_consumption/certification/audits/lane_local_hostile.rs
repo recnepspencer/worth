@@ -7,8 +7,9 @@ use crate::projection_consumption::ProjectionConsumptionSupportPosture;
 use crate::projection_consumption::ProjectionFactKind;
 
 #[test]
-fn query_context_lane_rows_keep_lane_local_traceability_and_structural_proofs() {
-    let matrix = projection_consumption_support_matrix();
+fn query_context_lane_rows_keep_lane_local_traceability_and_structural_proofs(
+) -> Result<(), IdentityDerivationDenial> {
+    let matrix = projection_consumption_support_matrix()?;
     let query_context_rows = matrix
         .rows()
         .iter()
@@ -29,6 +30,8 @@ fn query_context_lane_rows_keep_lane_local_traceability_and_structural_proofs() 
     assert!(query_context_rows
         .iter()
         .all(|row| !row.structural_proof().as_str().is_empty()));
+
+    Ok(())
 }
 
 #[test]
@@ -52,8 +55,9 @@ fn hostile_projection_audits_stay_narrow_and_zero_fallback() -> Result<(), Ident
 }
 
 #[test]
-fn query_context_lane_keeps_historical_identity_denial_distinct_from_current_and_preview() {
-    let matrix = projection_consumption_support_matrix();
+fn query_context_lane_keeps_historical_identity_denial_distinct_from_current_and_preview(
+) -> Result<(), IdentityDerivationDenial> {
+    let matrix = projection_consumption_support_matrix()?;
     let historical_identity_row = matrix
         .rows()
         .iter()
@@ -150,4 +154,6 @@ fn query_context_lane_keeps_historical_identity_denial_distinct_from_current_and
         preview_source_reference_row.support_digest(),
         "preview-derived query-context warnings must not collapse into current-row warnings"
     );
+
+    Ok(())
 }

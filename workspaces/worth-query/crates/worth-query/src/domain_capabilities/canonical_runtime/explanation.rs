@@ -55,11 +55,11 @@ impl WorthQueryExplanationInspectionReview {
 
 pub fn materialize_canonical_explanation_artifact<T>(
     contribution: WorthQueryMaterializationReadyExplanationContribution<T>,
-) -> WorthQueryCanonicalExplanationArtifact<T>
+) -> Result<WorthQueryCanonicalExplanationArtifact<T>, IdentityDerivationDenial>
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
+    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
 }
 
 pub(crate) fn materialize_query_causal_inspection_artifact<T>(

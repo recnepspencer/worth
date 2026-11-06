@@ -45,7 +45,7 @@ pub(super) fn scalar_mutation_row(
     let normalized =
         normalize_raw_effect_intent(&basis, raw).expect("mutation scenario should normalize");
     let admitted = match evaluate_effect_eligibility(normalized.clone())? {
-        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
+        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
         other => panic!("expected admitted mutation scenario, got {other:?}"),
     };
     let scoped = scope_admitted_effect_plan(admitted)?;
@@ -108,7 +108,7 @@ pub(super) fn scalar_writeback_row(
     let normalized =
         normalize_raw_effect_intent(&basis, raw).expect("writeback scenario should normalize");
     let admitted = match evaluate_effect_eligibility(normalized.clone())? {
-        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
+        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
         other => panic!("expected admitted writeback scenario, got {other:?}"),
     };
     let scoped = scope_admitted_effect_plan(admitted)?;
@@ -169,7 +169,7 @@ pub(super) fn merge_lowered_row(
     let normalized =
         normalize_raw_effect_intent(&basis, raw).expect("merge scenario should normalize");
     let admitted = match evaluate_effect_eligibility(normalized.clone())? {
-        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
+        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
         other => panic!("expected admitted merge scenario, got {other:?}"),
     };
     let scoped = scope_admitted_effect_plan(admitted)?;

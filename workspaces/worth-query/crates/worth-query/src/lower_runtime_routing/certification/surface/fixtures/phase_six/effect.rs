@@ -186,7 +186,7 @@ fn admit_effect(
     let normalized =
         normalize_raw_effect_intent(&basis, raw).expect("effect fixture should normalize");
     Ok(match evaluate_effect_eligibility(normalized)? {
-        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
+        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
         other => panic!("expected admitted effect fixture, got {other:?}"),
     })
 }

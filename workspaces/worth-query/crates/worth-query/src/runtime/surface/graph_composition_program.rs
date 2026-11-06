@@ -177,7 +177,7 @@ impl WorthQueryGraphCompositionProgram {
         Ok(Self::new(
             Vec::new(),
             &WorthQueryGraphCompositionBreadth::empty()?,
-        ))
+        )?)
     }
 
     pub fn is_empty(&self) -> bool {

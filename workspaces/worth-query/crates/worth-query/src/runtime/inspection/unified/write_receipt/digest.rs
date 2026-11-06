@@ -166,7 +166,7 @@ pub(super) fn build_write_receipt_inspection_digest(
         continuity_mutation_evidence,
         causality_evidence,
         provenance_evidence,
-    )
+    )?
     .field_shape(
         WorthQueryEvidenceTag::new("runtime_artifact_family"),
         runtime_evidence.artifact_family(),

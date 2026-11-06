@@ -70,7 +70,7 @@ impl WorthQueryRuntime {
             let verified_existing_truth_assertion =
                 self.verified_existing_assertion_for_command(execution, &command)?;
             let declared_aspect_operations = command.declared_aspect_operations();
-            let declared_aspect_value_digest = command_declared_aspect_value_identity(&command);
+            let declared_aspect_value_digest = command_declared_aspect_value_identity(&command)?;
             let mutation_metadata = command.mutation_metadata();
             let symbolic_target_reference = command.symbolic_target_reference().cloned();
             let naming_intent = command.naming_intent().cloned();
@@ -91,7 +91,7 @@ impl WorthQueryRuntime {
                 naming_intent,
                 continuity_intent,
                 declared_aspect_operations,
-                declared_aspect_value_digest.clone(),
+                declared_aspect_value_digest.clone()?,
                 command.symbolic_aspect_references().to_vec(),
                 symbolic_aspect_resolution_evidence,
                 mutation_metadata,
@@ -113,14 +113,14 @@ impl WorthQueryRuntime {
                 WorthQueryWriteCommand::AssertExistingAspects { binding, .. } => {
                     synthetic_existing_assertion_receipt(
                         &binding,
-                        &self.current_snapshot_identity_with_request(execution),
+                        &self.current_snapshot_identity_with_request(execution)?,
                         declared_aspect_value_digest.as_ref(),
                     )?
                 }
                 WorthQueryWriteCommand::VerifyExistingAspects { binding, .. } => {
                     synthetic_existing_assertion_receipt(
                         &binding,
-                        &self.current_snapshot_identity_with_request(execution),
+                        &self.current_snapshot_identity_with_request(execution)?,
                         declared_aspect_value_digest.as_ref(),
                     )?
                 }
@@ -350,7 +350,7 @@ impl WorthQueryRuntime {
         }
         let batch_request_detail = format!("batch-write:{}", write_receipts.len());
         let execution_provenance =
-            batch_execution_provenance(shared_admission.as_ref(), &combined_receipt);
+            batch_execution_provenance(shared_admission.as_ref(), &combined_receipt)?;
         let decision_trace_envelope = batch_decision_trace_envelope(
             shared_admission.as_ref(),
             &combined_receipt,

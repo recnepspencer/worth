@@ -187,6 +187,8 @@ fn unsupported_effect_message(normalized: &NormalizedEffectIntent) -> &'static s
     }
 }
 
-pub fn admit_effect_intent(eligibility: EffectEligibility) -> AdmittedEffectIntent {
-    AdmittedEffectIntent::new(eligibility)
+pub fn admit_effect_intent(
+    eligibility: EffectEligibility,
+) -> Result<AdmittedEffectIntent, IdentityDerivationDenial> {
+    Ok(AdmittedEffectIntent::new(eligibility)?)
 }

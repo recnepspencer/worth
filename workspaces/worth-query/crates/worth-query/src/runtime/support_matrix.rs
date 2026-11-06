@@ -190,7 +190,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
                 .support_digest()
                 .to_string(),
             ),
-        ));
+        )?);
 
         rows.push(WorthQueryRuntimePublicSupportMatrixRow::new(
             "temporal-async-certification",
@@ -202,7 +202,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
             true,
             false,
             None::<String>,
-        ));
+        )?);
 
         rows.push(WorthQueryRuntimePublicSupportMatrixRow::new(
             "temporal-async-remask",
@@ -214,7 +214,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
             true,
             true,
             None::<String>,
-        ));
+        )?);
 
         rows.push(WorthQueryRuntimePublicSupportMatrixRow::new(
             "downstream-delivery-contract",
@@ -232,7 +232,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
                 .contract_for_reporting()
                 .to_string(),
             ),
-        ));
+        )?);
 
         rows.push(WorthQueryRuntimePublicSupportMatrixRow::new(
             "shared-read-pinning-boundary-closure",
@@ -244,7 +244,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
             true,
             true,
             Some(shared_read_pinning_boundary_closure_contract_digest()),
-        ));
+        )?);
 
         rows.push(WorthQueryRuntimePublicSupportMatrixRow::new(
             "milestone-9.7-derived-closure-posture",
@@ -256,7 +256,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
             true,
             true,
             Some(milestone_nine_seven_derived_closure_contract_digest()),
-        ));
+        )?);
 
         let stable_row_count = rows
             .iter()

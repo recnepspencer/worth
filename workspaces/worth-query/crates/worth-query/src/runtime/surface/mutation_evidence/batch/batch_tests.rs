@@ -125,14 +125,14 @@ fn naming_batch_digest_changes_with_attachment_identity() -> Result<(), Identity
             bridge_naming_target(RelationalBridgeRecordIdentityParts::entity(1, 2, 0)),
             Some(bridge_naming_collection("Task")),
         ),
-    );
+    )?;
     let right = WorthQueryNamingMutationEvidence::from_bridge(
         &BridgeNamingMutationBundle::attach_new_target(
             bridge_naming_attachment("persistent-name:right")?,
             bridge_naming_target(RelationalBridgeRecordIdentityParts::entity(1, 2, 0)),
             Some(bridge_naming_collection("Task")),
         ),
-    );
+    )?;
 
     let left_digest =
         batch_naming_mutation_digest(&[Some(left)])?.expect("left digest should exist");

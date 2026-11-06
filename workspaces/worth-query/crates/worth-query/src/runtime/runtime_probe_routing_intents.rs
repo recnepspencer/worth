@@ -94,12 +94,12 @@ impl WorthQueryRuntime {
             .backend
             .probe_existing_truth(binding.request())
             .map_err(WorthQueryRuntimeError::ExistingTruthProbeDenied)?;
-        let snapshot_identity = self.current_snapshot_identity_with_request(execution);
+        let snapshot_identity = self.current_snapshot_identity_with_request(execution)?;
         let receipt = WorthQueryExistingTruthProbeReceipt::from_probe(
             binding.request(),
             &probe,
             snapshot_identity,
-        );
+        )?;
         let mut result = WorthQueryExistingTruthProbeResult::new(probe, receipt);
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution_parts(
@@ -120,7 +120,7 @@ impl WorthQueryRuntime {
                 "existing-truth-probe",
             );
         let snapshot_evidence_identity = self
-            .current_snapshot_identity_with_request(execution)
+            .current_snapshot_identity_with_request(execution)?
             .evidence_identity()?;
         let execution_provenance =
             WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(

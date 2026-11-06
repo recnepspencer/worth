@@ -103,7 +103,7 @@ impl QueryObservationReceipt {
                 .unwrap_or(fallback_target_identity),
             outcome: CausalObservationOutcome::Changed,
             evidence_identities,
-        }))
+        })?)
     }
 
     pub fn from_intent_receipt_inspection(

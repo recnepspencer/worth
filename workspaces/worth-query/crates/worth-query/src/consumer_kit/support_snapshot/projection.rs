@@ -19,7 +19,7 @@ pub fn project_support_snapshot(
 pub fn project_workspace_support_snapshot(
     workspace: &WorthQueryWorkspace,
 ) -> Result<WorthQuerySupportSnapshot, IdentityDerivationDenial> {
-    let matrix = workspace.public_support_matrix();
+    let matrix = workspace.public_support_matrix()?;
     Ok(project_support_snapshot(&matrix)?)
 }
 
