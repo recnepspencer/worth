@@ -1,4 +1,5 @@
 use crate::authoring::{AspectFieldSelector, AuthoredResultShapeField};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -25,14 +26,16 @@ use super::super::{
 
 pub(crate) fn representative_causal_bridge_materialization_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let read_result = certification_read_result(execution);
     let inspection_basis = crate::basis_lifecycle::basis_lifecycle()
         .historical_snapshot("certification-read", true)
         .inspect()
         .expect("causal bridge inspection basis should admit");
-    let observation =
-        QueryObservationReceipt::from_read_receipt(read_result.receipt(), inspection_basis.clone());
+    let observation = QueryObservationReceipt::from_read_receipt(
+        read_result.receipt(),
+        inspection_basis.clone(),
+    )?;
     let plan = CausalInspection::for_observation(observation, inspection_basis)
         .why_replayed()
         .materialized_detail()
@@ -52,16 +55,17 @@ pub(crate) fn representative_causal_bridge_materialization_row(
                 WorthQueryEvidenceTag::new("bridge_envelope"),
                 artifact.bridge_envelope_for_reporting().unwrap_or("none"),
             )
-            .seal();
-    route_planned_row(
+            .seal()?;
+    Ok(route_planned_row(
         WorthQueryLowerRuntimeSeamKey::CausalBridgeMaterialization,
         WorthQueryLowerRuntimeAuthorityOwner::RuntimeBridge,
         "Causal bridge materialization",
         evidence,
-    )
+    )?)
 }
 
-pub(crate) fn representative_frontier_evidence_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_frontier_evidence_row(
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let planned = SignalFrontierSurfaceEvidence::from_planning_estimate(
         &InvalidationPlanningEstimate::default(),
     );
@@ -90,13 +94,13 @@ pub(crate) fn representative_frontier_evidence_row() -> RepresentativeArtifacts 
                 WorthQueryEvidenceTag::new("realized_breadth"),
                 executed.realized_breadth().unwrap_or_default().to_string(),
             )
-            .seal();
-    route_planned_row(
+            .seal()?;
+    Ok(route_planned_row(
         WorthQueryLowerRuntimeSeamKey::FrontierEvidenceIntake,
         WorthQueryLowerRuntimeAuthorityOwner::Signal,
         "Frontier evidence intake",
         evidence,
-    )
+    )?)
 }
 
 fn route_planned_row(
@@ -104,7 +108,7 @@ fn route_planned_row(
     owner: WorthQueryLowerRuntimeAuthorityOwner,
     capability_label: &str,
     evidence: WorthQueryEvidenceIdentity,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         seam_key,
         WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -114,35 +118,35 @@ fn route_planned_row(
             "phase-six-causal-signal-route-subject",
         )
         .field_evidence_identity(WorthQueryEvidenceTag::new("source"), &evidence)
-        .seal(),
-    );
+        .seal()?,
+    )?;
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request.clone(),
         &evidence,
-    );
+    )?;
     let route_plan = WorthQueryLowerRuntimeRoutePlan::new(
         eligibility.clone(),
         crate::lower_runtime_routing::WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
             "phase-six-causal-signal-route",
             &evidence,
-        ),
-    );
+        )?,
+    )?;
     let retained_evidence_identity =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "phase-six-causal-signal-route",
             &evidence,
-        );
+        )?;
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
         &route_plan,
         &retained_evidence_identity,
-    );
+    )?;
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         seam_key,
         &route_plan,
         &boundary_receipt,
         &retained_evidence_identity,
-    );
-    RepresentativeArtifacts {
+    )?;
+    Ok(RepresentativeArtifacts {
         seam_key,
         request,
         eligibility,
@@ -150,7 +154,7 @@ fn route_planned_row(
         boundary_receipt,
         envelope,
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }
 
 fn certification_read_result(

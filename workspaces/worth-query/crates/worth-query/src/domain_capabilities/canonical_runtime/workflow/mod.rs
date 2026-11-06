@@ -138,7 +138,7 @@ where
         runtime_semantics.freshness_policy().clone(),
     );
 
-    match admit_query_workflow_declaration(&binding, request) {
+    Ok(match admit_query_workflow_declaration(&binding, request) {
         Ok(declaration) => TransitionOutcome::Success(declaration),
         Err(error) => TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
             WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
@@ -151,9 +151,7 @@ where
                 error.message()
             ),
         )?),
-    }
-
-    Ok(())
+    })
 }
 
 pub trait WorthQueryWorkflowDeclarationMaterializationTarget:

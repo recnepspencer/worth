@@ -7,6 +7,7 @@ use super::identity::{
 use super::receipt::ProjectionConsumptionReceipt;
 use super::receipt_transitions::ProjectionConsumptionDeferredNeighborFamily;
 use super::source::ProjectionSourceFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProjectionConsumptionEnvelopeSourceRefs {
@@ -17,7 +18,9 @@ pub struct ProjectionConsumptionEnvelopeSourceRefs {
 }
 
 impl ProjectionConsumptionEnvelopeSourceRefs {
-    fn from_receipt(receipt: &ProjectionConsumptionReceipt) -> Self {
+    fn from_receipt(
+        receipt: &ProjectionConsumptionReceipt,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let receipt_digest = receipt.receipt_digest().to_string();
         let fact_set_digest = receipt.fact_set_digest().to_string();
         let contract_digest = receipt.contract_digest().to_string();
@@ -25,13 +28,13 @@ impl ProjectionConsumptionEnvelopeSourceRefs {
             &receipt_digest,
             &fact_set_digest,
             &contract_digest,
-        );
-        Self {
+        )?;
+        Ok(Self {
             receipt_digest,
             fact_set_digest,
             contract_digest,
             source_refs_digest,
-        }
+        })
     }
 
     pub fn receipt_digest(&self) -> &str {
@@ -69,8 +72,10 @@ pub struct SelfDescribingProjectionConsumptionEnvelope {
 }
 
 impl SelfDescribingProjectionConsumptionEnvelope {
-    pub(crate) fn from_receipt(receipt: &ProjectionConsumptionReceipt) -> Self {
-        let sources = ProjectionConsumptionEnvelopeSourceRefs::from_receipt(receipt);
+    pub(crate) fn from_receipt(
+        receipt: &ProjectionConsumptionReceipt,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let sources = ProjectionConsumptionEnvelopeSourceRefs::from_receipt(receipt)?;
         let transition_rules = receipt.transition_rules();
         let deferred_neighbors = receipt.deferred_neighbors().to_vec();
         let transition_rules_digest = transition_rules.rules_digest().to_string();
@@ -78,14 +83,14 @@ impl SelfDescribingProjectionConsumptionEnvelope {
         let performance_digest = compose_envelope_performance_digest(
             receipt.receipt_digest(),
             receipt.counter_snapshot_digest(),
-        )
+        )?
         .into_boxed_str();
         let boundary_digest = compose_envelope_boundary_digest(
             receipt.source_family(),
             receipt.source_identity(),
             receipt.support_posture(),
             receipt.warning_kinds(),
-        );
+        )?;
         let envelope_digest = compose_envelope_digest(
             receipt.receipt_digest(),
             &integrity_digest,
@@ -93,8 +98,8 @@ impl SelfDescribingProjectionConsumptionEnvelope {
             &boundary_digest,
             &transition_rules_digest,
             sources.source_refs_digest(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             source_family: receipt.source_family(),
             source_identity: receipt.source_identity().to_string(),
             support_posture: receipt.support_posture().clone(),
@@ -108,7 +113,7 @@ impl SelfDescribingProjectionConsumptionEnvelope {
             boundary_digest,
             sources,
             envelope_digest,
-        }
+        })
     }
 
     pub fn source_family(&self) -> ProjectionSourceFamily {

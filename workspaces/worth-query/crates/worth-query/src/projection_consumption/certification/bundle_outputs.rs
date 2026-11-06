@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::identity::{
     compose_closeout_forbidden_fallback_surface_row_digest,
     compose_closeout_oracle_surface_row_digest, compose_closeout_proof_shape_surface_row_digest,
@@ -39,17 +40,17 @@ pub fn assemble_closeout_bundle_outputs(
     oracle_report: &ProjectionConsumptionOracleReport,
     seeded_report: &ProjectionConsumptionSeededCertificationReport,
     slope_report: &ProjectionConsumptionSlopeReport,
-) -> ProjectionConsumptionBundleOutputs {
-    let transition_rules = ProjectionConsumptionTransitionRules::current_phase_five_surface();
-    let target_dx_digest = target_dx_digest();
+) -> Result<ProjectionConsumptionBundleOutputs, IdentityDerivationDenial> {
+    let transition_rules = ProjectionConsumptionTransitionRules::current_phase_five_surface()?;
+    let target_dx_digest = target_dx_digest()?;
     let negative_dx_boundary_digest = compose_negative_dx_boundary_digest(
         public_boundary_audit.audit_digest(),
         proof_shape_audit.proof_shape_digest(),
-    );
+    )?;
     let failure_digest = compose_failure_digest_bundle(
-        &denied_masked_field_failure_digest(),
-        &source_mismatch_failure_digest(),
-    );
+        &denied_masked_field_failure_digest()?,
+        &source_mismatch_failure_digest()?,
+    )?;
     let rows = vec![
         certification_row(
             ProjectionConsumptionCertificationLane::SupportMatrixSurface,
@@ -305,7 +306,7 @@ pub fn assemble_closeout_bundle_outputs(
             slope_report.support_lookup_slope_digest().to_string(),
         ),
     ];
-    ProjectionConsumptionBundleOutputs { rows, outputs }
+    Ok(ProjectionConsumptionBundleOutputs { rows, outputs })
 }
 
 fn certification_row(
@@ -320,6 +321,6 @@ fn certification_row(
     }
 }
 
-fn target_dx_digest() -> String {
-    compose_target_dx_digest()
+fn target_dx_digest() -> Result<String, IdentityDerivationDenial> {
+    Ok(compose_target_dx_digest()?)
 }

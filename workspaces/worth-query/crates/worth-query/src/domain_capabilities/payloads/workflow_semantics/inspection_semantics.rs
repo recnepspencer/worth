@@ -70,7 +70,7 @@ impl WorthQueryWorkflowInspectionSemantics {
     pub(crate) fn semantics_identity(
         &self,
     ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        match self {
+        Ok(match self {
             Self::MergeConflict {
                 lowered_merge,
                 relational_inspection,
@@ -108,9 +108,7 @@ impl WorthQueryWorkflowInspectionSemantics {
                     )
                     .seal()?
             }
-        }
-
-        Ok(())
+        })
     }
 }
 

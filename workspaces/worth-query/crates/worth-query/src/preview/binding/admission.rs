@@ -2,6 +2,7 @@ use crate::basis::{BasisAuthorityFamily, ExecutionPreflightBundle};
 use crate::collection::{
     AggregateFunctionFamily, CollectionResultFamily, DerivedFieldComputationClass,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::preview::binding::accounting::PreviewBindingCounters;
 use crate::preview::binding::contract::{
     PreviewBindingReport, PreviewLifecycleMetadata, PreviewSessionBasis,
@@ -147,14 +148,14 @@ fn validate_active_linkage(
 fn build_preview_binding(
     preflight: ExecutionPreflightBundle,
     query_context: PreviewSessionQueryContext,
-) -> PreviewSessionPlanBinding {
+) -> Result<PreviewSessionPlanBinding, IdentityDerivationDenial> {
     let source = query_context.source.snapshot();
     let counters = PreviewBindingCounters::for_admitted_path();
     let lifecycle_metadata = PreviewLifecycleMetadata::from_source(
         source.lifecycle_state_kind,
         source.execution_record_identity.clone(),
     );
-    let binding_tuple = PreviewSessionBindingTuple::from_admitted(&preflight, &query_context);
+    let binding_tuple = PreviewSessionBindingTuple::from_admitted(&preflight, &query_context)?;
     let basis = PreviewSessionBasis::new(binding_tuple.clone());
     let report = PreviewBindingReport::new(
         binding_tuple.digest().to_string(),
@@ -162,13 +163,13 @@ fn build_preview_binding(
         counters,
     );
 
-    PreviewSessionPlanBinding::from_admitted(
+    Ok(PreviewSessionPlanBinding::from_admitted(
         preflight,
         query_context,
         basis,
         lifecycle_metadata,
         report,
-    )
+    ))
 }
 
 fn invalid_preview_basis(message: &'static str) -> PreviewBindingError {

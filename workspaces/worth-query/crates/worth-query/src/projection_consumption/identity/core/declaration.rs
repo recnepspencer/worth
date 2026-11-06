@@ -1,5 +1,6 @@
 use super::super::scope::{consumption_scope_encoder, seal};
 use super::entries::compose_fact_request_entry_digest;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::WorthQueryEvidenceTag;
 
 use super::super::super::declaration::ProjectionConsumptionBindingContext;
@@ -10,7 +11,7 @@ pub(crate) fn compose_declaration_digest(
     source: &ProjectionConsumptionSource,
     binding: &ProjectionConsumptionBindingContext,
     requested: &ProjectMaterializedFacts,
-) -> String {
+) -> Result<String, IdentityDerivationDenial> {
     let mut encoder = consumption_scope_encoder("projection_consumption_declaration_v1")
         .field_shape(
             WorthQueryEvidenceTag::new("source_family"),
@@ -43,5 +44,8 @@ pub(crate) fn compose_declaration_digest(
             compose_fact_request_entry_digest(request, requested.native_contract_for(request))
         })
         .collect::<Vec<_>>();
-    seal(encoder.field_value_sequence(WorthQueryEvidenceTag::new("requested_fact"), fact_requests))
+    Ok(seal(encoder.field_value_sequence(
+        WorthQueryEvidenceTag::new("requested_fact"),
+        fact_requests,
+    ))?)
 }

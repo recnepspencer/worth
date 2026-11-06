@@ -181,7 +181,7 @@ fn default_admission_trace(
 ) -> Result<WorthQueryGraphCompositionAdmissionTrace, IdentityDerivationDenial> {
     use WorthQueryGraphCompositionAdmissionTraceStage as Stage;
 
-    match kind {
+    Ok(match kind {
         WorthQueryGraphCompositionDenialKind::EmptyComposition => {
             WorthQueryGraphCompositionAdmissionTrace::new(
                 vec![Stage::ProgramParsed, Stage::DeniedBeforeExecution],
@@ -231,7 +231,5 @@ fn default_admission_trace(
                 Stage::VerificationSubstrateEvaluated,
             )?
         }
-    }
-
-    Ok(())
+    })
 }

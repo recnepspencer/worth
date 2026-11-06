@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::identity::{
     compose_certification_row_digest, compose_digest_sequence, compose_phase_progression_digest,
 };
@@ -92,7 +93,8 @@ impl ProjectionConsumptionProofShapeAudit {
     }
 }
 
-pub fn projection_consumption_proof_shape_audit() -> ProjectionConsumptionProofShapeAudit {
+pub fn projection_consumption_proof_shape_audit(
+) -> Result<ProjectionConsumptionProofShapeAudit, IdentityDerivationDenial> {
     use ProjectionConsumptionCompileFailProof::*;
     use ProjectionConsumptionProofShapeEnforcement::*;
     use ProjectionConsumptionProofShapeViolation::*;
@@ -150,22 +152,23 @@ pub fn projection_consumption_proof_shape_audit() -> ProjectionConsumptionProofS
         "projection_consumption_proof_shape_audit_v1",
         "row",
         rows.iter().map(|row| row.row_digest().to_string()),
-    );
+    )?;
     let phase_progression_digest = compose_phase_progression_digest(
         &proof_shape_digest,
         "declaration>eligibility>contract>fact_set>receipt>envelope>certification",
-    );
-    ProjectionConsumptionProofShapeAudit {
+    )?;
+    Ok(ProjectionConsumptionProofShapeAudit {
         rows,
         proof_shape_digest,
         phase_progression_digest,
-    }
+    })
 }
 
-pub fn projection_consumption_phase_progression_digest() -> String {
-    projection_consumption_proof_shape_audit()
+pub fn projection_consumption_phase_progression_digest() -> Result<String, IdentityDerivationDenial>
+{
+    Ok(projection_consumption_proof_shape_audit()?
         .phase_progression_digest()
-        .to_string()
+        .to_string())
 }
 
 fn row(
@@ -175,7 +178,7 @@ fn row(
     rejected_artifact: &'static str,
     enforcement: ProjectionConsumptionProofShapeEnforcement,
     enforcement_proof: ProjectionConsumptionCompileFailProof,
-) -> ProjectionConsumptionProofShapeAuditRow {
+) -> Result<ProjectionConsumptionProofShapeAuditRow, IdentityDerivationDenial> {
     let row_digest = compose_certification_row_digest(
         "projection_consumption_proof_shape_row_v1",
         &[
@@ -186,8 +189,8 @@ fn row(
             ("enforcement", enforcement.as_str()),
             ("proof", enforcement_proof.as_str()),
         ],
-    );
-    ProjectionConsumptionProofShapeAuditRow {
+    )?;
+    Ok(ProjectionConsumptionProofShapeAuditRow {
         violation,
         attempted_shortcut,
         required_prior_artifact,
@@ -195,7 +198,7 @@ fn row(
         enforcement,
         enforcement_proof,
         row_digest,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -203,11 +206,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn proof_shape_audit_binds_every_named_violation_to_a_real_proof() {
-        let audit = projection_consumption_proof_shape_audit();
+    fn proof_shape_audit_binds_every_named_violation_to_a_real_proof(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let audit = projection_consumption_proof_shape_audit()?;
         assert_eq!(audit.rows().len(), 6);
         assert!(audit.rows().iter().all(|row| !row.row_digest().is_empty()));
         assert!(!audit.proof_shape_digest().is_empty());
         assert!(!audit.phase_progression_digest().is_empty());
+
+        Ok(())
     }
 }

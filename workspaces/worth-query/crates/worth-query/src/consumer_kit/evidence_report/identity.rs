@@ -165,13 +165,11 @@ fn derive_field_inventory_identity(
 fn derive_field_inventory_or_diagnostic_identity(
     field: &EvidenceReportField,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    if field.participation().participates_in_report_identity() {
+    Ok(if field.participation().participates_in_report_identity() {
         derive_field_inventory_identity(field)?
     } else {
         derive_field_value_identity(field)?
-    }
-
-    Ok(())
+    })
 }
 
 fn derive_field_value_identity(
@@ -189,7 +187,7 @@ fn derive_field_value_identity(
                 field.participation().as_str(),
             );
 
-    match field.value() {
+    Ok(match field.value() {
         EvidenceReportFieldValue::Shape(value) => encoder
             .field_shape(WorthQueryEvidenceTag::new("field_value"), value)
             .seal()?,
@@ -219,7 +217,5 @@ fn derive_field_value_identity(
             .field_bool(WorthQueryEvidenceTag::new("field_present"), value.is_some())
             .optional_evidence_identity(WorthQueryEvidenceTag::new("field_value"), value.as_ref())
             .seal()?,
-    }
-
-    Ok(())
+    })
 }

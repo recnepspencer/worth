@@ -39,7 +39,7 @@ pub(crate) fn worth_query_checked_declaration_relational_routing<
 >(
     input: WorthQueryDeclarationRelationalRoutingInput<D, I>,
 ) -> Result<WorthQueryDeclarationRelationalRoutingChecked<D, I>, IdentityDerivationDenial> {
-    match input {
+    Ok(match input {
         WorthQueryDeclarationRelationalRoutingInput::EnvelopeChecked(checked) => {
             worth_query_checked_declaration_relational_routing(lower_checked_input(checked))?
         }
@@ -73,9 +73,7 @@ pub(crate) fn worth_query_checked_declaration_relational_routing<
                 ),
             )
         }
-    }
-
-    Ok(())
+    })
 }
 
 pub(crate) fn worth_query_checked_declaration_relational_routing_on_handle<
@@ -87,7 +85,7 @@ pub(crate) fn worth_query_checked_declaration_relational_routing_on_handle<
     support_status: WorthQueryDeclarationRelationalTruthRoutingSupportStatus,
     input: WorthQueryDeclarationRelationalRoutingInput<D, I>,
 ) -> Result<WorthQueryDeclarationRelationalRoutingChecked<D, I>, IdentityDerivationDenial> {
-    match input {
+    Ok(match input {
         WorthQueryDeclarationRelationalRoutingInput::EnvelopeChecked(checked) => {
             worth_query_checked_declaration_relational_routing_on_handle(
                 handle_identity_digest,
@@ -136,9 +134,7 @@ pub(crate) fn worth_query_checked_declaration_relational_routing_on_handle<
             }
             worth_query_checked_declaration_relational_routing(other)?
         }
-    }
-
-    Ok(())
+    })
 }
 
 fn route_enveloped<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(

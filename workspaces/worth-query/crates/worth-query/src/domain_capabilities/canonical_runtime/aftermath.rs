@@ -79,7 +79,7 @@ pub(crate) fn materialize_projection_consumption_eligibility<T>(
 where
     T: WorthQueryAftermathProjectionTarget,
 {
-    match materialize_projection_consumption_review(contribution)? {
+    Ok(match materialize_projection_consumption_review(contribution)? {
         TransitionOutcome::Success(review) => {
             TransitionOutcome::Success(review.eligibility().clone())
         }
@@ -88,9 +88,7 @@ where
         TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
         TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
         TransitionOutcome::Deferred(never) => match never {},
-    }
-
-    Ok(())
+    })
 }
 
 pub(crate) fn materialize_projection_consumption_support_report<T>(
@@ -102,7 +100,7 @@ pub(crate) fn materialize_projection_consumption_support_report<T>(
 where
     T: WorthQueryAftermathProjectionTarget,
 {
-    match materialize_projection_consumption_review(contribution)? {
+    Ok(match materialize_projection_consumption_review(contribution)? {
         TransitionOutcome::Success(review) => {
             TransitionOutcome::Success(review.support_report().clone())
         }
@@ -111,9 +109,7 @@ where
         TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
         TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
         TransitionOutcome::Deferred(never) => match never {},
-    }
-
-    Ok(())
+    })
 }
 
 pub(crate) fn materialize_projection_consumption_review<T>(
@@ -179,7 +175,7 @@ pub(crate) fn materialize_admitted_projection_consumption<T>(
 where
     T: WorthQueryAftermathProjectionTarget,
 {
-    match materialize_projection_consumption_review(contribution)? {
+    Ok(match materialize_projection_consumption_review(contribution)? {
         TransitionOutcome::Success(review) => match review.eligibility() {
             ProjectionConsumptionEligibility::Admitted(admitted) => {
                 TransitionOutcome::Success(admitted.clone())
@@ -233,9 +229,7 @@ where
         TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
         TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
         TransitionOutcome::Deferred(never) => match never {},
-    }
-
-    Ok(())
+    })
 }
 
 pub(crate) fn materialize_projection_consumption_contract<T>(
@@ -247,7 +241,7 @@ pub(crate) fn materialize_projection_consumption_contract<T>(
 where
     T: WorthQueryAftermathProjectionTarget,
 {
-    match materialize_admitted_projection_consumption(contribution)? {
+    Ok(match materialize_admitted_projection_consumption(contribution)? {
         TransitionOutcome::Success(admitted) => {
             TransitionOutcome::Success(admitted.bind_contract())
         }
@@ -256,9 +250,7 @@ where
         TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
         TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
         TransitionOutcome::Deferred(never) => match never {},
-    }
-
-    Ok(())
+    })
 }
 
 pub(crate) trait WorthQueryAftermathProjectionTarget:

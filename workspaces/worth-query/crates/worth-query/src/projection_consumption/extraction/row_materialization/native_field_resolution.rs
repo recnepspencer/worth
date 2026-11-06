@@ -3,6 +3,7 @@ use super::super::super::contracts::{BoundProjectionFactFamily, MaterializedProj
 use super::super::super::facts::{ProjectionFactFieldPath, ProjectionFactKind};
 use super::super::super::identity::compose_scoped_row_source_identity;
 use super::super::ProjectionFactExtractionError;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::AspectValuePosture;
 
 pub(in crate::projection_consumption::extraction) fn native_value_or_absence(
@@ -112,14 +113,16 @@ pub(super) fn missing_declared_field(
     row_identity: &str,
     field_path: &ProjectionFactFieldPath,
     fact_kind: ProjectionFactKind,
-) -> ProjectionFactExtractionError {
-    ProjectionFactExtractionError::MissingDeclaredFieldEvidence {
-        source_family: contract.source_family(),
-        source_identity: compose_scoped_row_source_identity(
-            contract.source_identity(),
-            row_identity,
-        ),
-        field_key: field_path.terminal_projection_for_boundary().to_string(),
-        fact_kind,
-    }
+) -> Result<ProjectionFactExtractionError, IdentityDerivationDenial> {
+    Ok(
+        ProjectionFactExtractionError::MissingDeclaredFieldEvidence {
+            source_family: contract.source_family(),
+            source_identity: compose_scoped_row_source_identity(
+                contract.source_identity(),
+                row_identity,
+            )?,
+            field_key: field_path.terminal_projection_for_boundary().to_string(),
+            fact_kind,
+        },
+    )
 }

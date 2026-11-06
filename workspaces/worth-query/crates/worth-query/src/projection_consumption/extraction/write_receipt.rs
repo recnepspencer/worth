@@ -7,6 +7,7 @@ use super::super::consumed::{
 use super::super::contracts::MaterializedProjectionContract;
 use super::super::facts::ProjectionFactKind;
 use super::super::source::ProjectionSourceFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::ProjectionFactExtractionError;
 use crate::runtime::WorthQueryWriteReceipt;
 
@@ -142,12 +143,15 @@ impl ExtractedWriteReceiptFacts {
         Ok(())
     }
 
-    fn into_fact_set(self, contract: &MaterializedProjectionContract) -> ConsumedProjectionFactSet {
+    fn into_fact_set(
+        self,
+        contract: &MaterializedProjectionContract,
+    ) -> Result<ConsumedProjectionFactSet, IdentityDerivationDenial> {
         let extracted_count = self.target_identities.len()
             + self.source_references.len()
             + self.effect_continuity.len()
             + self.relation_endpoints.len();
-        ConsumedProjectionFactSet::new(
+        Ok(ConsumedProjectionFactSet::new(
             ConsumedProjectionContractProvenance::from_contract(contract),
             ConsumedProjectionSourceTruth::from_contract(
                 contract,
@@ -173,7 +177,7 @@ impl ExtractedWriteReceiptFacts {
                 effect_continuity_facts: self.effect_continuity,
                 relation_endpoints: self.relation_endpoints,
             },
-        )
+        )?)
     }
 }
 

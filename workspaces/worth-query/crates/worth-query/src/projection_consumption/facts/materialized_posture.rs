@@ -1,4 +1,5 @@
 use super::super::identity::compose_materialized_fact_posture_digest;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ProjectionMaterializedFactPostureKind {
@@ -38,7 +39,7 @@ impl ProjectionMaterializedFactPosture {
         basis_digest: impl Into<String>,
         support_evidence_digest: impl Into<String>,
         runtime_origin_digest: Option<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let lower_declaration_digest = lower_declaration_digest.into();
         let basis_digest = basis_digest.into();
         let support_evidence_digest = support_evidence_digest.into();
@@ -48,15 +49,15 @@ impl ProjectionMaterializedFactPosture {
             &basis_digest,
             &support_evidence_digest,
             runtime_origin_digest.as_deref(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             kind,
             lower_declaration_digest,
             basis_digest,
             support_evidence_digest,
             runtime_origin_digest,
             posture_digest,
-        }
+        })
     }
 
     pub fn kind(&self) -> ProjectionMaterializedFactPostureKind {

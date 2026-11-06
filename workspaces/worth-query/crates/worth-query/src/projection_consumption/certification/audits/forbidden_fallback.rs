@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::identity::{
     compose_certification_row_digest, compose_forbidden_fallback_audit_digest,
 };
@@ -122,7 +123,7 @@ impl ProjectionConsumptionForbiddenFallbackAudit {
 }
 
 pub fn projection_consumption_forbidden_fallback_audit(
-) -> ProjectionConsumptionForbiddenFallbackAudit {
+) -> Result<ProjectionConsumptionForbiddenFallbackAudit, IdentityDerivationDenial> {
     let rows = ProjectionConsumptionOrdinaryPathSurface::all()
         .iter()
         .copied()
@@ -132,12 +133,12 @@ pub fn projection_consumption_forbidden_fallback_audit(
     let audit_digest = compose_forbidden_fallback_audit_digest(
         rows.iter().map(|row| row.row_digest()),
         total_occurrence_count,
-    );
-    ProjectionConsumptionForbiddenFallbackAudit {
+    )?;
+    Ok(ProjectionConsumptionForbiddenFallbackAudit {
         rows,
         total_occurrence_count,
         audit_digest,
-    }
+    })
 }
 
 fn rows_for_surface(
@@ -153,7 +154,7 @@ fn rows_for_surface(
 fn row(
     ordinary_surface: ProjectionConsumptionOrdinaryPathSurface,
     forbidden_seam: ProjectionConsumptionForbiddenFallbackSeam,
-) -> ProjectionConsumptionForbiddenFallbackAuditRow {
+) -> Result<ProjectionConsumptionForbiddenFallbackAuditRow, IdentityDerivationDenial> {
     let occurrence_count = ordinary_surface
         .source()
         .matches(forbidden_seam.needle())
@@ -166,13 +167,13 @@ fn row(
             ("seam", forbidden_seam.as_str()),
             ("occurrences", occurrences.as_str()),
         ],
-    );
-    ProjectionConsumptionForbiddenFallbackAuditRow {
+    )?;
+    Ok(ProjectionConsumptionForbiddenFallbackAuditRow {
         ordinary_surface,
         forbidden_seam,
         occurrence_count,
         row_digest,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -180,8 +181,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn forbidden_fallback_audit_stays_zero_for_ordinary_path_sources() {
-        let audit = projection_consumption_forbidden_fallback_audit();
+    fn forbidden_fallback_audit_stays_zero_for_ordinary_path_sources(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let audit = projection_consumption_forbidden_fallback_audit()?;
         assert_eq!(
             audit.rows().len(),
             ProjectionConsumptionOrdinaryPathSurface::all().len()
@@ -190,5 +192,7 @@ mod tests {
         assert_eq!(audit.total_occurrence_count(), 0);
         assert!(audit.rows().iter().all(|row| row.occurrence_count() == 0));
         assert!(!audit.audit_digest().is_empty());
+
+        Ok(())
     }
 }

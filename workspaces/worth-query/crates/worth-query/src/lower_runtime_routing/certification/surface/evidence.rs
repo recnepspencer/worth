@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeMap;
 
 use crate::identity::hash_parts;
@@ -193,7 +194,7 @@ impl WorthQueryLowerRuntimeRepresentativeSurface {
 
 pub fn worth_query_lower_runtime_representative_surface(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryLowerRuntimeRepresentativeSurface {
+) -> Result<WorthQueryLowerRuntimeRepresentativeSurface, IdentityDerivationDenial> {
     let concrete_rows = vec![
         representative_compose_read_row(execution),
         representative_execute_read_family_row(execution),
@@ -233,7 +234,7 @@ pub fn worth_query_lower_runtime_representative_surface(
         if concrete_seams.contains(&row.seam_key().as_str()) {
             continue;
         }
-        rows.push(synthetic_inventory_row(row));
+        rows.push(synthetic_inventory_row(row)?);
     }
 
     let requests = rows
@@ -260,10 +261,10 @@ pub fn worth_query_lower_runtime_representative_surface(
     let route_parity_digest = hash_parts(&[
         normalized_parity_digest("compose-read", &envelopes),
         normalized_parity_digest("basis-readmission", &envelopes),
-        hostile_parity_divergence_digest(&envelopes),
+        hostile_parity_divergence_digest(&envelopes)?,
     ]);
 
-    WorthQueryLowerRuntimeRepresentativeSurface {
+    Ok(WorthQueryLowerRuntimeRepresentativeSurface {
         requests,
         eligibilities,
         route_plans,
@@ -283,7 +284,7 @@ pub fn worth_query_lower_runtime_representative_surface(
             .collect(),
         receipts_by_seam: collect_surface_map(&rows, |row| row.boundary_receipt.clone()),
         envelopes_by_seam: collect_surface_map(&rows, |row| row.envelope.clone()),
-    }
+    })
 }
 
 fn digest_query_subjects(requests: &[WorthQueryLowerRuntimeCapabilityRequest]) -> String {

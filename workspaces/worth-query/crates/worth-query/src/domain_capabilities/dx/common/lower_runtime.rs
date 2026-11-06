@@ -262,7 +262,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
         IdentityDerivationDenial,
     > {
         let semantic_code = qualify_semantic_code(self.target.authority(), &self.semantic_code);
-        match self.kind {
+        Ok(match self.kind {
             WorthQueryLowerRuntimeExplanationRequestKind::CrossRuntimeContext {
                 reference_set,
                 target,
@@ -315,8 +315,6 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 materialization_policy,
             )?
             .bind_to_installed_target(self.target),
-        }
-
-        Ok(())
+        })
     }
 }

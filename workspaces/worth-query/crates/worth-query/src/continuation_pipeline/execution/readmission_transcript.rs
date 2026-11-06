@@ -18,7 +18,7 @@ pub(super) fn transcript_from_readmission_denial<
     linked: crate::binding_pipeline::WorthQueryBindingLinkedArtifacts,
     stop: WorthQueryContinuationExecutionReadmissionStop,
 ) -> Result<WorthQueryContinuationExecutionTranscript<D, I>, IdentityDerivationDenial> {
-    match stop.kind() {
+    Ok(match stop.kind() {
         WorthQueryContinuationExecutionReadmissionStopKind::StaleBasis => transcript(
             request_descriptor,
             linked,
@@ -91,9 +91,7 @@ pub(super) fn transcript_from_readmission_denial<
             "current lower-runtime authority no longer matches retained continuation authority",
             "authority_mismatch",
         )?,
-    }
-
-    Ok(())
+    })
 }
 
 fn transcript<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(

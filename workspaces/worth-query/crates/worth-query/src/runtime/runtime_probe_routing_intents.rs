@@ -54,7 +54,7 @@ impl WorthQueryRuntime {
             .request()
             .existing_truth_probe_seed()
             .expect("probe routing review must preserve probe routing seed");
-        match seed.preflight() {
+        Ok(match seed.preflight() {
             WorthQueryExistingTruthProbeRoutingPreflight::BindingDenied(denial) => {
                 WorthQueryRuntimeError::MutationBindingDenied(denial.clone())
             }
@@ -72,9 +72,7 @@ impl WorthQueryRuntime {
                     )?,
                 )
             }
-        }
-    
-Ok(())
+        })
 }
 
     pub(crate) fn prepare_existing_truth_probe_execution_binding(

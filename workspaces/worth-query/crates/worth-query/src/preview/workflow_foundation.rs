@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::execution::ExecutionCounters;
 use crate::identity::{CanonicalQueryDigest, ValidatedQueryDigest};
 use crate::preview::binding::PreviewSessionPlanBinding;
@@ -219,18 +220,18 @@ impl AdmittedPreviewWorkflowFoundation {
 fn derive_preview_workflow_foundation(
     binding: &PreviewSessionPlanBinding,
     request: PreviewWorkflowFoundationRequest,
-) -> PreviewWorkflowFoundationArtifact {
+) -> Result<PreviewWorkflowFoundationArtifact, IdentityDerivationDenial> {
     let binding_tuple = binding.basis().binding_tuple();
     let execution_record_identity = binding_tuple
         .execution_record_identity()
         .cloned()
         .expect("active preview bindings must carry an execution record identity");
     let binding_identity =
-        workflow_context_identity::compose_preview_binding_tuple_workflow_identity(binding_tuple);
+        workflow_context_identity::compose_preview_binding_tuple_workflow_identity(binding_tuple)?;
     let declaration_digest_identity =
         workflow_context_identity::compose_preview_declaration_digest_workflow_identity(
             binding_tuple,
-        );
+        )?;
     let artifact_identity =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
             .field_shape(
@@ -269,9 +270,9 @@ fn derive_preview_workflow_foundation(
                 WorthQueryEvidenceTag::new("evaluation_class"),
                 binding_tuple.evaluation_class().as_str(),
             )
-            .seal();
+            .seal()?;
 
-    PreviewWorkflowFoundationArtifact {
+    Ok(PreviewWorkflowFoundationArtifact {
         artifact_identity,
         binding_identity,
         canonical_query_digest: binding_tuple.canonical_query_digest().clone(),
@@ -283,9 +284,9 @@ fn derive_preview_workflow_foundation(
         lifecycle_state_kind: binding_tuple.lifecycle_state_kind(),
         evaluation_class: binding_tuple.evaluation_class().clone(),
         execution_record_identity,
-        shape_check_width: PreviewComparisonShapeContract::from_preflight(binding.preflight())
+        shape_check_width: PreviewComparisonShapeContract::from_preflight(binding.preflight())?
             .shape_check_width,
-    }
+    })
 }
 
 pub fn admit_preview_workflow_foundation(

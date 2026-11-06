@@ -83,7 +83,7 @@ impl WorthQueryWorkflowRuntimeBindingSemantics {
     pub(crate) fn semantics_identity(
         &self,
     ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        match self {
+        Ok(match self {
             Self::RuntimePreflight {
                 runtime_snapshot_identity,
             } => domain_capability_scope_encoder("worth_query_workflow_runtime_binding_v1")
@@ -129,8 +129,6 @@ impl WorthQueryWorkflowRuntimeBindingSemantics {
                     evaluation_class.as_str(),
                 )
                 .seal()?,
-        }
-
-        Ok(())
+        })
     }
 }

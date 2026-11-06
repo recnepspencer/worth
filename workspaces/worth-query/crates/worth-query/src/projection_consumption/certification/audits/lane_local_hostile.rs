@@ -2,6 +2,7 @@ use super::{
     projection_consumption_forbidden_fallback_audit, projection_consumption_public_boundary_audit,
     projection_consumption_support_matrix, ProjectionConsumptionCertifiedSourceSurface,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::ProjectionConsumptionSupportPosture;
 use crate::projection_consumption::ProjectionFactKind;
 
@@ -31,9 +32,10 @@ fn query_context_lane_rows_keep_lane_local_traceability_and_structural_proofs() 
 }
 
 #[test]
-fn hostile_projection_audits_stay_narrow_and_zero_fallback() {
-    let boundary = projection_consumption_public_boundary_audit();
-    let fallback = projection_consumption_forbidden_fallback_audit();
+fn hostile_projection_audits_stay_narrow_and_zero_fallback() -> Result<(), IdentityDerivationDenial>
+{
+    let boundary = projection_consumption_public_boundary_audit()?;
+    let fallback = projection_consumption_forbidden_fallback_audit()?;
 
     assert!(boundary.rows().iter().all(|row| {
         !row.blocked_entrypoint().is_empty()
@@ -45,6 +47,8 @@ fn hostile_projection_audits_stay_narrow_and_zero_fallback() {
         .rows()
         .iter()
         .all(|row| row.occurrence_count() == 0));
+
+    Ok(())
 }
 
 #[test]

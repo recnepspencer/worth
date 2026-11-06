@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -14,9 +15,9 @@ use super::super::{RepresentativeArtifacts, WorthQueryLowerRuntimeRepresentative
 
 pub(crate) fn representative_runtime_intent_authority_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let receipt = certification_intent_receipt(execution);
-    route_planned_row(
+    Ok(route_planned_row(
         WorthQueryLowerRuntimeSeamKey::RuntimeIntentAuthorityAdapter,
         "Runtime intent authority seam",
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
@@ -32,27 +33,27 @@ pub(crate) fn representative_runtime_intent_authority_row(
                 WorthQueryEvidenceTag::new("provenance"),
                 receipt.execution_provenance_chain_digest(),
             )
-            .seal(),
+            .seal()?,
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_value(
                 WorthQueryEvidenceTag::new("execution_binding"),
                 receipt.execution_binding_digest(),
             )
-            .seal(),
+            .seal()?,
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_value(
                 WorthQueryEvidenceTag::new("execution_provenance"),
                 receipt.execution_provenance_chain_digest(),
             )
-            .seal(),
-    )
+            .seal()?,
+    )?)
 }
 
 pub(crate) fn representative_intent_runtime_execution_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let receipt = certification_intent_receipt(execution);
-    route_planned_row(
+    Ok(route_planned_row(
         WorthQueryLowerRuntimeSeamKey::IntentRuntimeExecution,
         "Intent runtime execution",
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
@@ -69,15 +70,15 @@ pub(crate) fn representative_intent_runtime_execution_row(
                 WorthQueryEvidenceTag::new("receipt"),
                 receipt.receipt_digest(),
             )
-            .seal(),
+            .seal()?,
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_value(
                 WorthQueryEvidenceTag::new("admission_decision"),
                 receipt.admission_decision_digest(),
             )
-            .seal(),
+            .seal()?,
         receipt.receipt_identity().clone(),
-    )
+    )?)
 }
 
 fn certification_intent_receipt(
@@ -111,7 +112,7 @@ fn route_planned_row(
     subject_identity: WorthQueryEvidenceIdentity,
     route_identity: WorthQueryEvidenceIdentity,
     retained_evidence_source: WorthQueryEvidenceIdentity,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         seam_key,
         WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -121,35 +122,35 @@ fn route_planned_row(
             "phase-six-intent-route-subject",
         )
         .field_evidence_identity(WorthQueryEvidenceTag::new("subject"), &subject_identity)
-        .seal(),
-    );
+        .seal()?,
+    )?;
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request.clone(),
         &retained_evidence_source,
-    );
+    )?;
     let route_plan = WorthQueryLowerRuntimeRoutePlan::new(
         eligibility.clone(),
         crate::lower_runtime_routing::WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
             "phase-six-intent-route",
             &route_identity,
-        ),
-    );
+        )?,
+    )?;
     let retained_evidence_identity =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "phase-six-intent-route",
             &retained_evidence_source,
-        );
+        )?;
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
         &route_plan,
         &retained_evidence_identity,
-    );
+    )?;
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         seam_key,
         &route_plan,
         &boundary_receipt,
         &retained_evidence_identity,
-    );
-    RepresentativeArtifacts {
+    )?;
+    Ok(RepresentativeArtifacts {
         seam_key,
         request,
         eligibility,
@@ -157,5 +158,5 @@ fn route_planned_row(
         boundary_receipt,
         envelope,
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }

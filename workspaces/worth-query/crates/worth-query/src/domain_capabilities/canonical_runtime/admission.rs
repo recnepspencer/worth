@@ -49,7 +49,7 @@ where
         unreachable!("admitted-plan bound target should preserve admitted-plan semantics")
     };
 
-    match payload.posture() {
+    Ok(match payload.posture() {
         WorthQueryAdmissionContributionPosture::Advisory => TransitionOutcome::Success(
             WorthQueryIntentAdmissionDecision::Advisory(WorthQueryIntentAdvisoryDecision::new(
                 family,
@@ -76,9 +76,7 @@ where
                 domain_contribution.request_identity().clone(),
             )?)
         }
-    }
-
-    Ok(())
+    })
 }
 
 #[cfg(test)]
@@ -90,7 +88,7 @@ pub fn materialize_runtime_admission_support_traceability_report(
     WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionSupportTraceabilityReport>,
     IdentityDerivationDenial,
 > {
-    match materialize_runtime_admission_support_traceability_row(contribution)? {
+    Ok(match materialize_runtime_admission_support_traceability_row(contribution)? {
         TransitionOutcome::Success(row) => TransitionOutcome::Success(
             WorthQueryIntentAdmissionSupportTraceabilityReport::from_rows(vec![row]),
         ),
@@ -99,9 +97,7 @@ pub fn materialize_runtime_admission_support_traceability_report(
         TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
         TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
         TransitionOutcome::Deferred(never) => match never {},
-    }
-
-    Ok(())
+    })
 }
 
 #[cfg(test)]

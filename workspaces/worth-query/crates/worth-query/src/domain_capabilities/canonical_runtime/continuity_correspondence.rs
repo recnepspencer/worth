@@ -46,16 +46,14 @@ pub fn materialize_correspondence_evidence_resolved(
         ));
     };
 
-    match resolve_correspondence_evidence(correspondence_semantics.to_request()) {
+    Ok(match resolve_correspondence_evidence(correspondence_semantics.to_request()) {
         Ok(resolved) => TransitionOutcome::Success(resolved),
         Err(error) => TransitionOutcome::Denied(correspondence_error_denial(
             payload,
             domain_contribution.request_identity().clone(),
             error.failure_class(),
         )?),
-    }
-
-    Ok(())
+    })
 }
 
 #[cfg(test)]

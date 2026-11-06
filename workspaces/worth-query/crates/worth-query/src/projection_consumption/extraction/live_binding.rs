@@ -8,6 +8,7 @@ use super::super::facts::ProjectionFactKind;
 use super::super::identity::compose_live_binding_row_identity;
 use super::super::source::ProjectionSourceFamily;
 use super::row_materialization::query_read_result_row_fields;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::ProjectionFactExtractionError;
 use crate::runtime::{WorthQueryLiveArtifactBinding, WorthQueryLiveArtifactTarget};
 
@@ -156,7 +157,7 @@ impl ExtractedLiveBindingFacts {
         self,
         contract: &MaterializedProjectionContract,
         source_references: Vec<ConsumedSourceReferenceFact>,
-    ) -> ConsumedProjectionFactSet {
+    ) -> Result<ConsumedProjectionFactSet, IdentityDerivationDenial> {
         let row_identity_surface_count =
             usize::from(self.extracts_entity_identity || self.extracts_view_local_identity);
         let extracted_fact_count = self.entity_identities.len()
@@ -171,7 +172,7 @@ impl ExtractedLiveBindingFacts {
             self.row_count * (self.requested_field_lookups + row_identity_surface_count),
             source_references.len(),
         );
-        ConsumedProjectionFactSet::new(
+        Ok(ConsumedProjectionFactSet::new(
             ConsumedProjectionContractProvenance::from_contract(contract),
             ConsumedProjectionSourceTruth::from_contract(
                 contract,
@@ -192,12 +193,20 @@ impl ExtractedLiveBindingFacts {
                 effect_continuity_facts: Vec::new(),
                 relation_endpoints: Vec::new(),
             },
-        )
+        )?)
     }
 }
 
-fn live_binding_row_identity(binding_digest: &str, view_name: &str, index: usize) -> String {
-    compose_live_binding_row_identity(binding_digest, view_name, index)
+fn live_binding_row_identity(
+    binding_digest: &str,
+    view_name: &str,
+    index: usize,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(compose_live_binding_row_identity(
+        binding_digest,
+        view_name,
+        index,
+    )?)
 }
 
 fn binding_target_source_references<'a>(

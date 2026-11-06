@@ -88,7 +88,7 @@ where
     let domain_target_kind = review.target_kind();
     let materialization_policy = domain_plan.materialization_policy();
     let redaction_policy = domain_plan.redaction_policy();
-    match domain_plan.admission() {
+    Ok(match domain_plan.admission() {
         CausalInspectionProofFlow::Admitted(inspection) => {
             let Some(envelope) = review.bridge_envelope() else {
                 return Ok(TransitionOutcome::Denied(missing_bridge_envelope_denial(
@@ -155,9 +155,7 @@ where
                 materialization_policy,
             ))
         }
-    }
-
-    Ok(())
+    })
 }
 
 pub(crate) fn materialize_query_causal_inspection_review<T>(

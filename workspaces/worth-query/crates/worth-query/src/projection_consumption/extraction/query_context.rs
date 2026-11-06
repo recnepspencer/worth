@@ -7,6 +7,7 @@ use super::super::contracts::MaterializedProjectionContract;
 use super::super::facts::ProjectionFactKind;
 use super::super::identity::compose_query_context_row_identity;
 use super::super::source::ProjectionSourceFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::ProjectionFactExtractionError;
 use crate::query_context::QueryContextExecutionArtifact;
 
@@ -89,10 +90,10 @@ fn admit_query_context_source(
 fn extract_query_context_rows(
     contract: &MaterializedProjectionContract,
     execution: &QueryContextExecutionArtifact,
-) -> ExtractedQueryContextRows {
+) -> Result<ExtractedQueryContextRows, IdentityDerivationDenial> {
     let mut extracted = ExtractedQueryContextRows::default();
     for (index, row) in execution.rows().iter().enumerate() {
-        let row_identity = query_context_row_identity(execution, index);
+        let row_identity = query_context_row_identity(execution, index)?;
         let row_value =
             crate::runtime::WorthQueryAuthoredAspectMutation::native_string_value(row.clone());
         for fact_family in contract.fact_families() {
@@ -140,7 +141,7 @@ fn extract_query_context_rows(
             }
         }
     }
-    extracted
+    Ok(extracted)
 }
 
 fn extract_query_context_source_references(
@@ -174,7 +175,7 @@ struct QueryContextFactSetBuildInput<'a> {
 
 fn build_query_context_fact_set(
     input: QueryContextFactSetBuildInput<'_>,
-) -> ConsumedProjectionFactSet {
+) -> Result<ConsumedProjectionFactSet, IdentityDerivationDenial> {
     let QueryContextFactSetBuildInput {
         contract,
         execution,
@@ -194,7 +195,7 @@ fn build_query_context_fact_set(
         + extracted.derived_fields.len()
         + source_references.len();
 
-    ConsumedProjectionFactSet::new(
+    Ok(ConsumedProjectionFactSet::new(
         ConsumedProjectionContractProvenance::from_contract(contract),
         ConsumedProjectionSourceTruth::from_contract(
             contract,
@@ -221,11 +222,17 @@ fn build_query_context_fact_set(
             effect_continuity_facts: Vec::new(),
             relation_endpoints: Vec::new(),
         },
-    )
+    )?)
 }
 
-fn query_context_row_identity(execution: &QueryContextExecutionArtifact, index: usize) -> String {
-    compose_query_context_row_identity(execution.family().as_str(), index)
+fn query_context_row_identity(
+    execution: &QueryContextExecutionArtifact,
+    index: usize,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(compose_query_context_row_identity(
+        execution.family().as_str(),
+        index,
+    )?)
 }
 
 fn query_context_source_identity(execution: &QueryContextExecutionArtifact) -> String {

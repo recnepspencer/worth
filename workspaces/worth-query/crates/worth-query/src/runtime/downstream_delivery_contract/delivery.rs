@@ -175,7 +175,7 @@ impl WorthQueryRuntimeDownstreamDelivery {
                 self.runtime_resume_support_identity.clone(),
             )?);
         }
-        match basis_identity {
+        Ok(match basis_identity {
             Some(candidate) if candidate == &self.basis_identity => {
                 WorthQueryRuntimeDownstreamResumePosture::new(
                     WorthQueryRuntimeDownstreamResumePostureKind::RuntimeBackedAdmitted,
@@ -196,9 +196,7 @@ impl WorthQueryRuntimeDownstreamDelivery {
                 support_posture,
                 self.runtime_resume_support_identity.clone(),
             )?,
-        }
-    
-Ok(())
+        })
 }
 
     pub fn durable_resume_posture(&self) -> Result<WorthQueryRuntimeDownstreamResumePosture, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {

@@ -7,6 +7,7 @@ use super::super::contracts::MaterializedProjectionContract;
 use super::super::facts::ProjectionFactKind;
 use super::super::identity::compose_retained_binding_row_identity;
 use super::super::source::ProjectionSourceFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::ProjectionFactExtractionError;
 use crate::runtime::{WorthQueryDerivedArtifactBinding, WorthQueryDerivedMaterializationTarget};
 use crate::runtime::{WorthQueryRetainedFieldPath, WorthQueryRetainedValueView};
@@ -179,8 +180,16 @@ fn retained_field_path(
     )
 }
 
-fn retained_binding_row_identity(binding_digest: &str, view_name: &str, index: usize) -> String {
-    compose_retained_binding_row_identity(binding_digest, view_name, index)
+fn retained_binding_row_identity(
+    binding_digest: &str,
+    view_name: &str,
+    index: usize,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(compose_retained_binding_row_identity(
+        binding_digest,
+        view_name,
+        index,
+    )?)
 }
 
 fn binding_target_source_references<'a>(

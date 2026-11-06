@@ -128,7 +128,7 @@ pub(super) fn preview_receipt_delta(
     command: &WorthQueryWriteCommand,
     preview_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<crate::memory_workspace::WorthQueryMutationDelta, IdentityDerivationDenial> {
-    match command {
+    Ok(match command {
         WorthQueryWriteCommand::InsertAspects { collection, .. } => {
             crate::memory_workspace::WorthQueryMutationDelta::from_touched_aspects(
                 collection.as_str(),
@@ -262,9 +262,7 @@ pub(super) fn preview_receipt_delta(
                 Vec::new(),
             )
         }
-    }
-
-    Ok(())
+    })
 }
 
 fn preview_write_receipt_identity(

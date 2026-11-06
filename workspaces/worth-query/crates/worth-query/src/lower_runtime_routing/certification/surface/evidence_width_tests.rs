@@ -1,11 +1,13 @@
 use super::evidence::worth_query_lower_runtime_representative_surface;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[test]
-fn representative_surface_reports_concrete_and_synthetic_coverage_widths() {
+fn representative_surface_reports_concrete_and_synthetic_coverage_widths(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let surface = worth_query_lower_runtime_representative_surface(request_execution);
+    let surface = worth_query_lower_runtime_representative_surface(request_execution)?;
 
     assert_eq!(
         surface.concrete_surface_width() + surface.synthetic_surface_width(),
@@ -49,4 +51,6 @@ fn representative_surface_reports_concrete_and_synthetic_coverage_widths() {
     assert!(!surface
         .synthetic_surface_seams()
         .contains(&"intent-runtime-execution"));
+
+    Ok(())
 }

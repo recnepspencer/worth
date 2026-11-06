@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 use crate::lower_runtime_routing::{
     WorthQueryLowerRuntimeAuthorityOwner, WorthQueryLowerRuntimeBoundaryEnvelope,
@@ -27,20 +28,21 @@ use super::{
 
 pub(crate) fn representative_projection_query_receipts_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let receipt = certification_query_write_receipt(execution);
     let source = ProjectionConsumptionSource::from_write_receipt(&receipt);
 
-    readmission_projection_row(
+    Ok(readmission_projection_row(
         WorthQueryLowerRuntimeSeamKey::ProjectionSourceIntakeFromQueryReceipts,
         WorthQueryLowerRuntimeAuthorityOwner::Query,
         "Projection source intake from Query receipts",
-        projection_source_evidence_identity(&source, "query-receipt-source"),
-        projection_source_evidence_identity(&source, "query-receipt-retained"),
-    )
+        projection_source_evidence_identity(&source, "query-receipt-source")?,
+        projection_source_evidence_identity(&source, "query-receipt-retained")?,
+    )?)
 }
 
-pub(crate) fn representative_projection_relational_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_projection_relational_row(
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let entity_one = RelationalBridgeRecordIdentityParts::entity(1, 1, 1);
     let entity_two = RelationalBridgeRecordIdentityParts::entity(1, 2, 1);
     let packet = SnapshotReadPacket::new(vec![
@@ -85,18 +87,18 @@ pub(crate) fn representative_projection_relational_row() -> RepresentativeArtifa
     .expect("relational projection fixture should group row set");
     let source = ProjectionConsumptionSource::from_relational_grouped_projection(&grouped);
 
-    readmission_projection_row(
+    Ok(readmission_projection_row(
         WorthQueryLowerRuntimeSeamKey::ProjectionSourceIntakeFromRelationalArtifacts,
         WorthQueryLowerRuntimeAuthorityOwner::Relational,
         "Projection source intake from relational artifacts",
-        relational_grouped_projection_evidence(&source, grouped.digest().as_str(), "source"),
-        relational_grouped_projection_evidence(&source, grouped.digest().as_str(), "retained"),
-    )
+        relational_grouped_projection_evidence(&source, grouped.digest().as_str(), "source")?,
+        relational_grouped_projection_evidence(&source, grouped.digest().as_str(), "retained")?,
+    )?)
 }
 
 pub(crate) fn representative_projection_bridge_row(
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let bridge = super::super::projection_bridge_runtime::projection_bridge_runtime();
     let declaration = SourceDeclaration::new(
         SourceDeclarationIdentity::from_stable_name("source:lower-runtime-certification"),
@@ -143,7 +145,7 @@ pub(crate) fn representative_projection_bridge_row(
     .expect("bridge projection fixture should group truth view");
     let source = ProjectionConsumptionSource::from_bridge_grouped_truth_view(&grouped);
 
-    readmission_projection_row(
+    Ok(readmission_projection_row(
         WorthQueryLowerRuntimeSeamKey::ProjectionSourceIntakeFromBridgeArtifacts,
         WorthQueryLowerRuntimeAuthorityOwner::RuntimeBridge,
         "Projection source intake from bridge artifacts",
@@ -151,13 +153,13 @@ pub(crate) fn representative_projection_bridge_row(
             &source,
             &grouped.digest().bridge_admission_evidence(),
             "source",
-        ),
+        )?,
         bridge_grouped_projection_evidence(
             &source,
             &grouped.digest().bridge_admission_evidence(),
             "retained",
-        ),
-    )
+        )?,
+    )?)
 }
 
 fn readmission_projection_row(
@@ -166,7 +168,7 @@ fn readmission_projection_row(
     capability_label: &str,
     subject_identity: WorthQueryEvidenceIdentity,
     retained_evidence_source: WorthQueryEvidenceIdentity,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         seam_key,
         WorthQueryLowerRuntimeRouteKind::ReadmissionHandoff,
@@ -176,29 +178,29 @@ fn readmission_projection_row(
             "phase-six-projection-route-subject",
         )
         .field_evidence_identity(WorthQueryEvidenceTag::new("source"), &subject_identity)
-        .seal(),
-    );
+        .seal()?,
+    )?;
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request.clone(),
         &retained_evidence_source,
-    );
+    )?;
     let retained_evidence_identity =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "phase-six-projection-readmission",
             &retained_evidence_source,
-        );
+        )?;
     let handoff = WorthQueryLowerRuntimeReadmissionReceipt::new(
         eligibility.clone(),
         &retained_evidence_identity,
-    );
+    )?;
     let boundary_receipt =
-        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&handoff);
+        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&handoff)?;
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(
         seam_key,
         &handoff,
         &boundary_receipt,
-    );
-    RepresentativeArtifacts {
+    )?;
+    Ok(RepresentativeArtifacts {
         seam_key,
         request,
         eligibility,
@@ -206,5 +208,5 @@ fn readmission_projection_row(
         boundary_receipt,
         envelope,
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }

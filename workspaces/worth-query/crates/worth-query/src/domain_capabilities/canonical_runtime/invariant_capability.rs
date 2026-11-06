@@ -235,7 +235,7 @@ where
         )?));
     };
 
-    match payload.posture() {
+    Ok(match payload.posture() {
         WorthQueryInvariantCapabilityContributionPosture::CapabilityGap
         | WorthQueryInvariantCapabilityContributionPosture::SupportSummary => {
             TransitionOutcome::Success(WorthQueryGraphCompositionCapabilitySupportRow::new(
@@ -253,9 +253,7 @@ where
                 "capability-gap and support-summary",
             )?)
         }
-    }
-
-    Ok(())
+    })
 }
 
 pub(crate) fn materialize_graph_composition_domain_invariant_denial<T>(
@@ -278,7 +276,7 @@ where
         )?));
     };
 
-    match payload.posture() {
+    Ok(match payload.posture() {
         WorthQueryInvariantCapabilityContributionPosture::InvariantDenial => {
             TransitionOutcome::Success(
                 WorthQueryGraphCompositionDomainInvariantDenial::from_contributed(
@@ -299,9 +297,7 @@ where
                 "invariant-denial",
             )?)
         }
-    }
-
-    Ok(())
+    })
 }
 
 fn graph_invariant_summary(

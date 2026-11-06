@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::identity::{
     compose_certification_counter_snapshot_digest, compose_slope_digest,
     compose_support_matrix_support_width_digest,
@@ -95,7 +96,8 @@ impl ProjectionConsumptionSlopeReport {
     }
 }
 
-pub fn projection_consumption_slope_report() -> ProjectionConsumptionSlopeReport {
+pub fn projection_consumption_slope_report(
+) -> Result<ProjectionConsumptionSlopeReport, IdentityDerivationDenial> {
     let control = control_row_set_lifecycle(2);
     let counters = control.facts().counters();
     let counter_snapshot = ProjectionConsumptionCertificationCounterSnapshot {
@@ -112,9 +114,9 @@ pub fn projection_consumption_slope_report() -> ProjectionConsumptionSlopeReport
             counters.source_row_width_consumed(),
             counters.source_evidence_lookup_width(),
             counters.authority_reopen_count(),
-        ),
+        )?,
     };
-    ProjectionConsumptionSlopeReport {
+    Ok(ProjectionConsumptionSlopeReport {
         counter_snapshot,
         declaration_slope_digest: compose_slope_digest(
             "declaration",
@@ -258,7 +260,7 @@ pub fn projection_consumption_slope_report() -> ProjectionConsumptionSlopeReport
                 )
             }),
         ),
-    }
+    })
 }
 
 #[cfg(test)]
@@ -266,8 +268,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn slope_report_emits_counter_snapshot_and_all_phase_slope_digests() {
-        let report = projection_consumption_slope_report();
+    fn slope_report_emits_counter_snapshot_and_all_phase_slope_digests(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let report = projection_consumption_slope_report()?;
         assert_eq!(report.counter_snapshot().authority_reopen_count(), 0);
         assert!(!report.counter_snapshot().digest().is_empty());
         assert!(!report.declaration_slope_digest().is_empty());
@@ -277,5 +280,7 @@ mod tests {
         assert!(!report.receipt_materialization_slope_digest().is_empty());
         assert!(!report.envelope_materialization_slope_digest().is_empty());
         assert!(!report.support_lookup_slope_digest().is_empty());
+
+        Ok(())
     }
 }

@@ -1,6 +1,7 @@
 use crate::declarative_live::{
     DeclarativeLiveQueryRequest, DeclarativeLiveViewShape, DeclarativeProjectionField,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -39,7 +40,8 @@ mod inventory_fixtures;
 use identity_fixtures::*;
 pub(crate) use inventory_fixtures::*;
 
-pub(crate) fn representative_live_view_schema_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_live_view_schema_row(
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let request = DeclarativeLiveQueryRequest::new("Task", DeclarativeLiveViewShape::table())
         .project(DeclarativeProjectionField::from_authoring_parts(
             "title", "value",
@@ -48,13 +50,13 @@ pub(crate) fn representative_live_view_schema_row() -> RepresentativeArtifacts {
             "status", "value",
         ));
     let admission_receipt =
-        LiveViewDeclarationAdmissionReceipt::from_request("tasks.table", &request);
+        LiveViewDeclarationAdmissionReceipt::from_request("tasks.table", &request)?;
     let boundary_receipt = LiveViewDeclarationAdmissionBoundaryReceipt::from_request(
         "tasks.table",
         &request,
         admission_receipt,
-    );
-    RepresentativeArtifacts {
+    )?;
+    Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::LiveViewSchemaAdmission,
         request: boundary_receipt
             .readmission_receipt()
@@ -66,16 +68,17 @@ pub(crate) fn representative_live_view_schema_row() -> RepresentativeArtifacts {
         boundary_receipt: boundary_receipt.boundary_execution_receipt().clone(),
         envelope: boundary_receipt.boundary_envelope().clone(),
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }
 
-pub(crate) fn representative_write_authority_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_write_authority_row(
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let command = WorthQueryWriteCommand::Delete {
         entity_identity: representative_entity_identity("task-7"),
     };
     let mutation_receipt = WorthQueryMutationReceipt::from_authoritative_parts(
-        representative_commit_identity("commit-route-write-7"),
-        representative_snapshot_identity("snapshot-route-write-7"),
+        representative_commit_identity("commit-route-write-7")?,
+        representative_snapshot_identity("snapshot-route-write-7")?,
         vec![WorthQueryMutationDelta::from_touched_aspects(
             "Task",
             representative_entity_identity("task-7"),
@@ -83,8 +86,8 @@ pub(crate) fn representative_write_authority_row() -> RepresentativeArtifacts {
             vec![status_value_touch()],
         )],
     );
-    let execution = WriteAuthorityExecutionReceipt::from_command(&command, mutation_receipt);
-    RepresentativeArtifacts {
+    let execution = WriteAuthorityExecutionReceipt::from_command(&command, mutation_receipt)?;
+    Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::WriteAuthorityBackendExecution,
         request: execution.route_plan().eligibility().request().clone(),
         eligibility: execution.route_plan().eligibility().clone(),
@@ -92,10 +95,11 @@ pub(crate) fn representative_write_authority_row() -> RepresentativeArtifacts {
         boundary_receipt: execution.boundary_execution_receipt().clone(),
         envelope: execution.boundary_envelope().clone(),
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }
 
-pub(crate) fn representative_signal_invalidation_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_signal_invalidation_row(
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let representative_task_identity = WorthQueryEntityIdentity::from_relational_record(
         worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(1, 9, 0),
     );
@@ -155,8 +159,8 @@ pub(crate) fn representative_signal_invalidation_row() -> RepresentativeArtifact
     let routing = SignalInvalidationRoutingReceipt::from_mutation_receipt(&mutation_receipt)
         .expect("representative signal routing fixture must carry bridge authority");
     let boundary_receipt =
-        SignalInvalidationBoundaryReceipt::from_mutation_receipt(&mutation_receipt, routing);
-    RepresentativeArtifacts {
+        SignalInvalidationBoundaryReceipt::from_mutation_receipt(&mutation_receipt, routing)?;
+    Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
         request: boundary_receipt
             .route_plan()
@@ -168,7 +172,7 @@ pub(crate) fn representative_signal_invalidation_row() -> RepresentativeArtifact
         boundary_receipt: boundary_receipt.boundary_execution_receipt().clone(),
         envelope: boundary_receipt.boundary_envelope().clone(),
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }
 
 fn representative_string_field_contract(
@@ -200,27 +204,32 @@ fn representative_string_field_contract(
     )
 }
 
-fn representative_commit_identity(label: impl AsRef<str>) -> WorthQueryCommitIdentity {
-    WorthQueryCommitIdentity::preview(
+fn representative_commit_identity(
+    label: impl AsRef<str>,
+) -> Result<WorthQueryCommitIdentity, IdentityDerivationDenial> {
+    Ok(WorthQueryCommitIdentity::preview(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WriteReceiptCommitIdentity)
             .field_value(WorthQueryEvidenceTag::new("representative_commit"), label)
-            .seal(),
-    )
+            .seal()?,
+    ))
 }
 
-fn representative_snapshot_identity(label: impl AsRef<str>) -> WorthQuerySnapshotIdentity {
-    WorthQuerySnapshotIdentity::preview(
+fn representative_snapshot_identity(
+    label: impl AsRef<str>,
+) -> Result<WorthQuerySnapshotIdentity, IdentityDerivationDenial> {
+    Ok(WorthQuerySnapshotIdentity::preview(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WriteReceiptSnapshotIdentity)
             .field_value(WorthQueryEvidenceTag::new("representative_snapshot"), label)
-            .seal(),
-    )
+            .seal()?,
+    ))
 }
 
 fn representative_entity_identity(label: impl AsRef<str>) -> WorthQueryEntityIdentity {
     crate::memory_workspace::admit_authored_entity_label(label)
 }
 
-pub(crate) fn representative_live_view_source_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_live_view_source_row(
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let request = DeclarativeLiveQueryRequest::new("Task", DeclarativeLiveViewShape::table())
         .project(DeclarativeProjectionField::from_authoring_parts(
             "identity", "id",
@@ -271,33 +280,33 @@ pub(crate) fn representative_live_view_source_row() -> RepresentativeArtifacts {
                 WorthQueryEvidenceTag::new("schema_basis"),
                 schema_view.basis().render_support_hex(),
             )
-            .seal(),
-    );
+            .seal()?,
+    )?;
     let eligibility = admitted_fixture_eligibility(
         request.clone(),
         "live-view-source-eligibility",
         handle.name(),
-    );
+    )?;
     let route_plan = WorthQueryLowerRuntimeRoutePlan::new(
         eligibility.clone(),
-        fixture_route_subject_identity("live-view-source-route", handle.name()),
-    );
+        fixture_route_subject_identity("live-view-source-route", handle.name())?,
+    )?;
     let retained_evidence =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "representative-live-view-source",
-            &fixture_retained_evidence_identity("representative-live-view-source", handle.name()),
-        );
+            &fixture_retained_evidence_identity("representative-live-view-source", handle.name())?,
+        )?;
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
         &route_plan,
         &retained_evidence,
-    );
+    )?;
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         WorthQueryLowerRuntimeSeamKey::LiveViewSourceDeclaration,
         &route_plan,
         &boundary_receipt,
         &retained_evidence,
-    );
-    RepresentativeArtifacts {
+    )?;
+    Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::LiveViewSourceDeclaration,
         request,
         eligibility,
@@ -305,10 +314,11 @@ pub(crate) fn representative_live_view_source_row() -> RepresentativeArtifacts {
         boundary_receipt,
         envelope,
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }
 
-pub(crate) fn representative_preview_basis_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_preview_basis_row(
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let authority = WorthQueryRuntimeEvidenceAuthority::new();
     let admission = WorthQueryPreviewBasisAdmission::new(
         &authority,
@@ -319,7 +329,7 @@ pub(crate) fn representative_preview_basis_row() -> RepresentativeArtifacts {
             "preview-basis-evidence-a",
             "preview-basis-evidence-b",
         ]),
-    );
+    )?;
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         WorthQueryLowerRuntimeSeamKey::PreviewBasisAdmission,
         WorthQueryLowerRuntimeRouteKind::ReadmissionHandoff,
@@ -339,8 +349,8 @@ pub(crate) fn representative_preview_basis_row() -> RepresentativeArtifacts {
                 WorthQueryEvidenceTag::new("evidence_count"),
                 admission.evidence().len(),
             )
-            .seal(),
-    );
+            .seal()?,
+    )?;
     let admission_evidence_identity =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_value(WorthQueryEvidenceTag::new("label"), admission.label())
@@ -353,27 +363,27 @@ pub(crate) fn representative_preview_basis_row() -> RepresentativeArtifacts {
                 admission.authority_lane().as_str(),
             )
             .field_value_sequence(WorthQueryEvidenceTag::new("evidence"), admission.evidence())
-            .seal();
+            .seal()?;
     let eligibility =
-        admitted_fixture_eligibility_from_evidence(request.clone(), &admission_evidence_identity);
+        admitted_fixture_eligibility_from_evidence(request.clone(), &admission_evidence_identity)?;
     let retained_evidence =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "representative-preview-basis-admission",
             &fixture_retained_evidence_identity(
                 "representative-preview-basis-admission",
                 admission.authority_lane().as_str(),
-            ),
-        );
+            )?,
+        )?;
     let handoff =
-        WorthQueryLowerRuntimeReadmissionReceipt::new(eligibility.clone(), &retained_evidence);
+        WorthQueryLowerRuntimeReadmissionReceipt::new(eligibility.clone(), &retained_evidence)?;
     let boundary_receipt =
-        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&handoff);
+        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&handoff)?;
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(
         WorthQueryLowerRuntimeSeamKey::PreviewBasisAdmission,
         &handoff,
         &boundary_receipt,
-    );
-    RepresentativeArtifacts {
+    )?;
+    Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::PreviewBasisAdmission,
         request,
         eligibility,
@@ -381,5 +391,5 @@ pub(crate) fn representative_preview_basis_row() -> RepresentativeArtifacts {
         boundary_receipt,
         envelope,
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }

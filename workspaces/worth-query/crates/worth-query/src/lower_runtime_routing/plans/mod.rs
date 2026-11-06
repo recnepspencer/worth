@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -14,15 +15,15 @@ impl WorthQueryLowerRuntimeRouteSubjectIdentity {
     pub(crate) fn from_evidence_identity(
         route_family: impl AsRef<str>,
         subject_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             evidence_identity: WorthQueryEvidenceIdentity::compose(
                 WorthQueryEvidenceScope::LowerRuntimeRouteSubject,
             )
             .field_shape(WorthQueryEvidenceTag::new("route_family"), route_family)
             .field_evidence_identity(WorthQueryEvidenceTag::new("subject"), subject_identity)
-            .seal(),
-        }
+            .seal()?,
+        })
     }
 
     pub fn evidence_identity(&self) -> &WorthQueryEvidenceIdentity {
@@ -46,7 +47,7 @@ impl WorthQueryLowerRuntimeRoutePlan {
     pub(crate) fn new(
         eligibility: WorthQueryLowerRuntimeCapabilityEligibility,
         route_subject: WorthQueryLowerRuntimeRouteSubjectIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let route_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeRoutePlan)
                 .field_evidence_identity(
@@ -57,12 +58,12 @@ impl WorthQueryLowerRuntimeRoutePlan {
                     WorthQueryEvidenceTag::new("route_subject"),
                     route_subject.evidence_identity(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             eligibility,
             route_subject,
             route_identity,
-        }
+        })
     }
 
     pub fn eligibility(&self) -> &WorthQueryLowerRuntimeCapabilityEligibility {
@@ -92,7 +93,7 @@ mod tests {
     };
 
     #[test]
-    fn route_plan_digest_reuses_eligibility_digest() {
+    fn route_plan_digest_reuses_eligibility_digest() -> Result<(), IdentityDerivationDenial> {
         let request = WorthQueryLowerRuntimeCapabilityRequest::new(
             WorthQueryLowerRuntimeSeamKey::WriteAuthorityBackendExecution,
             WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -100,30 +101,32 @@ mod tests {
             "write-authority",
             WorthQueryLowerRuntimeSubjectIdentity::compose("test-subject")
                 .field_value(WorthQueryEvidenceTag::new("test_subject"), "subject-1")
-                .seal(),
-        );
+                .seal()?,
+        )?;
         let detail_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )
         .field_value(WorthQueryEvidenceTag::new("test_detail"), "detail-1")
-        .seal();
+        .seal()?;
         let eligibility =
             WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
                 request,
                 &detail_identity,
-            );
+            )?;
         let plan = WorthQueryLowerRuntimeRoutePlan::new(
             eligibility,
             WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
                 "test-route",
                 &detail_identity,
-            ),
-        );
+            )?,
+        )?;
 
         assert_eq!(
             plan.route_subject().evidence_identity().scope(),
             WorthQueryEvidenceScope::LowerRuntimeRouteSubject
         );
         assert!(!plan.route_digest().is_empty());
+
+        Ok(())
     }
 }

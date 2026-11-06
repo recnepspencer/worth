@@ -1,4 +1,5 @@
 use super::identity::{compose_transition_rule_digest, compose_transition_rules_digest};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ProjectionConsumptionDeferredNeighborFamily {
@@ -66,15 +67,15 @@ impl ProjectionConsumptionTransitionRule {
         posture: ProjectionConsumptionTransitionPosture,
         detail: &'static str,
         deferred_neighbor: Option<ProjectionConsumptionDeferredNeighborFamily>,
-    ) -> Self {
-        let rule_digest = compose_transition_rule_digest(kind, posture, detail, deferred_neighbor);
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let rule_digest = compose_transition_rule_digest(kind, posture, detail, deferred_neighbor)?;
+        Ok(Self {
             kind,
             posture,
             detail,
             deferred_neighbor,
             rule_digest,
-        }
+        })
     }
 
     pub fn kind(&self) -> ProjectionConsumptionTransitionKind {
@@ -105,7 +106,7 @@ pub struct ProjectionConsumptionTransitionRules {
 }
 
 impl ProjectionConsumptionTransitionRules {
-    pub(crate) fn current_phase_five_surface() -> Self {
+    pub(crate) fn current_phase_five_surface() -> Result<Self, IdentityDerivationDenial> {
         let rules = vec![
             ProjectionConsumptionTransitionRule::new(
                 ProjectionConsumptionTransitionKind::InspectReceipt,
@@ -143,11 +144,11 @@ impl ProjectionConsumptionTransitionRules {
                 .iter()
                 .map(|rule| rule.rule_digest().to_string())
                 .collect::<Vec<_>>(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             rules,
             rules_digest,
-        }
+        })
     }
 
     pub fn rules(&self) -> &[ProjectionConsumptionTransitionRule] {

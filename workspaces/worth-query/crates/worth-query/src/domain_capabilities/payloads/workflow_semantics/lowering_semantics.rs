@@ -65,7 +65,7 @@ impl WorthQueryWorkflowLoweringSemantics {
     pub(crate) fn semantics_identity(
         &self,
     ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        match self {
+        Ok(match self {
             Self::Mutation {
                 authority_binding_identity,
                 input,
@@ -131,9 +131,7 @@ impl WorthQueryWorkflowLoweringSemantics {
                     )
                     .seal()?
             }
-        }
-
-        Ok(())
+        })
     }
 }
 

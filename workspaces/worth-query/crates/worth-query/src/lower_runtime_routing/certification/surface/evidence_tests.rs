@@ -1,12 +1,13 @@
 use super::evidence::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::lower_runtime_routing::WorthQueryLowerRuntimeSeamKey;
 
 #[test]
-fn representative_surface_covers_every_crossing_row_once() {
+fn representative_surface_covers_every_crossing_row_once() -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let surface = worth_query_lower_runtime_representative_surface(request_execution);
+    let surface = worth_query_lower_runtime_representative_surface(request_execution)?;
     let crossing_count =
         crate::lower_runtime_routing::worth_query_lower_runtime_crossing_inventory()
             .rows()
@@ -17,14 +18,17 @@ fn representative_surface_covers_every_crossing_row_once() {
     assert_eq!(surface.boundary_receipts().len(), crossing_count);
     assert_eq!(surface.envelopes().len(), crossing_count);
     assert!(!surface.route_parity_digest().is_empty());
+
+    Ok(())
 }
 
 #[test]
-fn representative_surface_uses_runtime_backed_fixtures_for_named_seams() {
+fn representative_surface_uses_runtime_backed_fixtures_for_named_seams(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let surface = worth_query_lower_runtime_representative_surface(request_execution);
+    let surface = worth_query_lower_runtime_representative_surface(request_execution)?;
 
     for seam_key in [
         WorthQueryLowerRuntimeSeamKey::ComposeRead,
@@ -60,4 +64,6 @@ fn representative_surface_uses_runtime_backed_fixtures_for_named_seams() {
             Some(WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture)
         );
     }
+
+    Ok(())
 }

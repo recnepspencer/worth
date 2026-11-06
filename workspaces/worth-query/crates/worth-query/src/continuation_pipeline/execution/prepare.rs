@@ -320,7 +320,7 @@ fn prepare_from_binding_transcript<
         required_contract.clone(),
     );
 
-    match checked.into_parts() {
+    Ok(match checked.into_parts() {
         (crate::binding_pipeline::WorthQueryBindingOutcome::Bound(input), _, _) => {
             prepare_continuation_from_input_on_handle(
                 handle,
@@ -343,7 +343,5 @@ fn prepare_from_binding_transcript<
                 linked,
             )
         }
-    }
-
-    Ok(())
+    })
 }

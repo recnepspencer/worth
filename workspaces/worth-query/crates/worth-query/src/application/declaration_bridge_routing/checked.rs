@@ -73,7 +73,7 @@ pub(crate) fn worth_query_checked_declaration_bridge_routing<
 >(
     input: WorthQueryDeclarationBridgeRoutingInput<D, I>,
 ) -> Result<WorthQueryDeclarationBridgeRoutingChecked<D, I>, IdentityDerivationDenial> {
-    match input {
+    Ok(match input {
         WorthQueryDeclarationBridgeRoutingInput::EnvelopeChecked(checked) => {
             worth_query_checked_declaration_bridge_routing(lower_checked_input(checked))?
         }
@@ -106,9 +106,7 @@ pub(crate) fn worth_query_checked_declaration_bridge_routing<
                 ),
             )
         }
-    }
-
-    Ok(())
+    })
 }
 
 pub(crate) fn worth_query_checked_declaration_bridge_routing_on_handle<
@@ -120,7 +118,7 @@ pub(crate) fn worth_query_checked_declaration_bridge_routing_on_handle<
     support_status: WorthQueryDeclarationBridgeRoutingSupportStatus,
     input: WorthQueryDeclarationBridgeRoutingInput<D, I>,
 ) -> Result<WorthQueryDeclarationBridgeRoutingChecked<D, I>, IdentityDerivationDenial> {
-    match input {
+    Ok(match input {
         WorthQueryDeclarationBridgeRoutingInput::EnvelopeChecked(checked) => {
             worth_query_checked_declaration_bridge_routing_on_handle(
                 handle_identity_digest,
@@ -168,9 +166,7 @@ pub(crate) fn worth_query_checked_declaration_bridge_routing_on_handle<
             }
             worth_query_checked_declaration_bridge_routing(other)?
         }
-    }
-
-    Ok(())
+    })
 }
 
 fn route_enveloped<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(

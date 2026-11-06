@@ -10,6 +10,7 @@ use super::super::super::identity::compose_scoped_row_source_identity;
 use super::super::ProjectionFactExtractionError;
 use super::row_like_field_paths::identity_field_path;
 use super::row_like_values::consumed_aspect_value_as_str;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 
 #[derive(Clone, Copy)]
@@ -201,12 +202,12 @@ impl ExtractedRowFacts {
         contract: &MaterializedProjectionContract,
         row_count: usize,
         shape: ExtractionShape,
-    ) -> ConsumedProjectionFactSet {
+    ) -> Result<ConsumedProjectionFactSet, IdentityDerivationDenial> {
         let extracted_fact_count = self.entity_identities.len()
             + self.view_local_identities.len()
             + self.display_fields.len()
             + self.derived_fields.len();
-        ConsumedProjectionFactSet::new(
+        Ok(ConsumedProjectionFactSet::new(
             ConsumedProjectionContractProvenance::from_contract(contract),
             ConsumedProjectionSourceTruth::from_contract(
                 contract,
@@ -232,7 +233,7 @@ impl ExtractedRowFacts {
                 effect_continuity_facts: Vec::new(),
                 relation_endpoints: Vec::new(),
             },
-        )
+        )?)
     }
 }
 

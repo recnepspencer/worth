@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_runtime_bridge::facade::{BridgeTruthViewEvaluationRequest, TruthBranchIdentity};
 
 use crate::basis_lifecycle::{
@@ -22,7 +23,7 @@ use super::readmission_support::{
 
 pub(crate) fn representative_subscription_continuity_row(
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let runtime = continuity_runtime();
     let continuity = delivered_continuity(&runtime, resource_request);
     let record = continuity.canonical_record();
@@ -46,7 +47,7 @@ pub(crate) fn representative_subscription_continuity_row(
                 WorthQueryEvidenceTag::new("continuity_resolution"),
                 record.continuity_resolution_digest(),
             )
-            .seal();
+            .seal()?;
     let scoped = basis_lifecycle()
         .runtime_snapshot("phase-six-continuity", "runtime-bridge-continuity")
         .inspect()
@@ -73,35 +74,35 @@ pub(crate) fn representative_subscription_continuity_row(
             WorthQueryEvidenceTag::new("continuity"),
             &continuity_evidence,
         )
-        .seal(),
-    );
+        .seal()?,
+    )?;
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request.clone(),
         &continuity_evidence,
-    );
+    )?;
     let route_plan = WorthQueryLowerRuntimeRoutePlan::new(
         eligibility.clone(),
         crate::lower_runtime_routing::WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
             "subscription-continuity-route",
             &continuity_evidence,
-        ),
-    );
+        )?,
+    )?;
     let retained_evidence =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "phase-six-continuity-route",
             &continuity_evidence,
-        );
+        )?;
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
         &route_plan,
         &retained_evidence,
-    );
+    )?;
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         WorthQueryLowerRuntimeSeamKey::SubscriptionContinuity,
         &route_plan,
         &boundary_receipt,
         &retained_evidence,
-    );
-    RepresentativeArtifacts {
+    )?;
+    Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::SubscriptionContinuity,
         request,
         eligibility,
@@ -109,12 +110,12 @@ pub(crate) fn representative_subscription_continuity_row(
         boundary_receipt,
         envelope,
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }
 
 pub(crate) fn representative_basis_truth_view_readmission_row(
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let runtime = observation_runtime();
     let evaluation = runtime
         .evaluate(
@@ -146,7 +147,7 @@ pub(crate) fn representative_basis_truth_view_readmission_row(
                 WorthQueryEvidenceTag::new("authority"),
                 evaluation.record().decision_log().authority_digest(),
             )
-            .seal();
+            .seal()?;
     let scoped = basis_lifecycle()
         .runtime_snapshot("phase-six-truth-view", "runtime-bridge-truth-view")
         .observe()
@@ -161,7 +162,7 @@ pub(crate) fn representative_basis_truth_view_readmission_row(
     )
     .expect("truth-view fixture should use canonical scoped readmission");
 
-    readmission_row(
+    Ok(readmission_row(
         WorthQueryLowerRuntimeSeamKey::BasisReadmissionFromTruthViewEvidence,
         "Basis readmission from truth-view evidence",
         crate::lower_runtime_routing::WorthQueryLowerRuntimeSubjectIdentity::compose(
@@ -171,15 +172,15 @@ pub(crate) fn representative_basis_truth_view_readmission_row(
             WorthQueryEvidenceTag::new("truth_view"),
             &truth_view_evidence,
         )
-        .seal(),
+        .seal()?,
         truth_view_evidence.clone(),
         truth_view_evidence,
-    )
+    )?)
 }
 
 pub(crate) fn representative_basis_subscription_readmission_row(
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let runtime = subscription_runtime();
     let admitted = detail_subscription(&runtime, resource_request);
     let subscription_evidence =
@@ -214,7 +215,7 @@ pub(crate) fn representative_basis_subscription_readmission_row(
                     .bridge_admission_evidence()
                     .terminal_projection_for_reporting(),
             )
-            .seal();
+            .seal()?;
     let declaration = basis_lifecycle()
         .runtime_snapshot("phase-six-subscription", "runtime-bridge-subscription")
         .declare_subscription()
@@ -248,7 +249,7 @@ pub(crate) fn representative_basis_subscription_readmission_row(
         assert!(!scoped_digest.is_empty());
     }
 
-    readmission_row(
+    Ok(readmission_row(
         WorthQueryLowerRuntimeSeamKey::BasisReadmissionFromSubscriptionEvidence,
         "Basis readmission from subscription evidence",
         crate::lower_runtime_routing::WorthQueryLowerRuntimeSubjectIdentity::compose(
@@ -258,10 +259,10 @@ pub(crate) fn representative_basis_subscription_readmission_row(
             WorthQueryEvidenceTag::new("subscription"),
             &subscription_evidence,
         )
-        .seal(),
+        .seal()?,
         subscription_evidence.clone(),
         subscription_evidence,
-    )
+    )?)
 }
 
 fn readmission_row(
@@ -270,35 +271,35 @@ fn readmission_row(
     subject_identity: crate::lower_runtime_routing::WorthQueryLowerRuntimeSubjectIdentity,
     eligibility_evidence: WorthQueryEvidenceIdentity,
     retained_evidence: crate::evidence_identity::WorthQueryEvidenceIdentity,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         seam_key,
         WorthQueryLowerRuntimeRouteKind::ReadmissionHandoff,
         WorthQueryLowerRuntimeAuthorityOwner::RuntimeBridge,
         capability_label,
         subject_identity,
-    );
+    )?;
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request.clone(),
         &eligibility_evidence,
-    );
+    )?;
     let retained_evidence_identity =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "phase-six-readmission",
             &retained_evidence,
-        );
+        )?;
     let readmission = WorthQueryLowerRuntimeReadmissionReceipt::new(
         eligibility.clone(),
         &retained_evidence_identity,
-    );
+    )?;
     let boundary_receipt =
-        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&readmission);
+        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&readmission)?;
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(
         seam_key,
         &readmission,
         &boundary_receipt,
-    );
-    RepresentativeArtifacts {
+    )?;
+    Ok(RepresentativeArtifacts {
         seam_key,
         request,
         eligibility,
@@ -306,5 +307,5 @@ fn readmission_row(
         boundary_receipt,
         envelope,
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -79,10 +80,12 @@ impl WorthQueryLowerRuntimeSubjectIdentityEncoder {
         self
     }
 
-    pub(crate) fn seal(self) -> WorthQueryLowerRuntimeSubjectIdentity {
-        WorthQueryLowerRuntimeSubjectIdentity {
-            evidence_identity: self.encoder.seal(),
-        }
+    pub(crate) fn seal(
+        self,
+    ) -> Result<WorthQueryLowerRuntimeSubjectIdentity, IdentityDerivationDenial> {
+        Ok(WorthQueryLowerRuntimeSubjectIdentity {
+            evidence_identity: self.encoder.seal()?,
+        })
     }
 }
 
@@ -103,7 +106,7 @@ impl WorthQueryLowerRuntimeCapabilityRequest {
         authority_owner: WorthQueryLowerRuntimeAuthorityOwner,
         capability_label: impl Into<String>,
         subject_identity: WorthQueryLowerRuntimeSubjectIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let capability_label = capability_label.into();
         let request_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeCapabilityRequest)
@@ -121,15 +124,15 @@ impl WorthQueryLowerRuntimeCapabilityRequest {
                     WorthQueryEvidenceTag::new("subject"),
                     subject_identity.evidence_identity(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             seam_key,
             route_kind,
             authority_owner,
             capability_label,
             subject_identity,
             request_identity,
-        }
+        })
     }
 
     pub fn seam_key(&self) -> WorthQueryLowerRuntimeSeamKey {
@@ -196,7 +199,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn request_digest_binds_seam_route_owner_and_subject() {
+    fn request_digest_binds_seam_route_owner_and_subject() -> Result<(), IdentityDerivationDenial> {
         let request = WorthQueryLowerRuntimeCapabilityRequest::new(
             WorthQueryLowerRuntimeSeamKey::WriteAuthorityBackendExecution,
             WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -204,8 +207,8 @@ mod tests {
             "write-authority",
             WorthQueryLowerRuntimeSubjectIdentity::compose("test-subject")
                 .field_value(WorthQueryEvidenceTag::new("test_subject"), "subject-1")
-                .seal(),
-        );
+                .seal()?,
+        )?;
 
         assert_eq!(
             request.seam_key(),
@@ -225,5 +228,7 @@ mod tests {
             WorthQueryEvidenceScope::LowerRuntimeCapabilitySubject
         );
         assert!(!request.request_digest().is_empty());
+
+        Ok(())
     }
 }

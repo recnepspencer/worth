@@ -236,7 +236,7 @@ fn lowering_error_outcome<S>(
     error: WorkflowLoweringError,
 ) -> Result<WorthQueryDomainCapabilityTransitionOutcome<S>, IdentityDerivationDenial> {
     let posture_identity = workflow_lowering_posture_identity(&target_identity, &error)?;
-    match error.staleness_class() {
+    Ok(match error.staleness_class() {
         WorkflowStalenessClass::StaleDenied => TransitionOutcome::Stale(
             WorthQueryDomainCapabilityStale::new(category, target_identity, posture_identity),
         ),
@@ -257,9 +257,7 @@ fn lowering_error_outcome<S>(
                 error,
             )?)
         }
-    }
-
-    Ok(())
+    })
 }
 
 #[cfg(test)]

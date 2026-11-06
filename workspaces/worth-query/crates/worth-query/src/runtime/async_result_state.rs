@@ -170,7 +170,7 @@ impl WorthQueryRuntimeAsyncResultProjection {
             transition.source_identity(),
             transition.source_digest(),
         )?;
-        match transition.cause() {
+        Ok(match transition.cause() {
             BridgeMixedCauseAsyncResultCause::Completion(state) => Self::CompletionState {
                 state,
                 causality_identity,
@@ -186,9 +186,7 @@ impl WorthQueryRuntimeAsyncResultProjection {
                 class,
                 causality_identity,
             },
-        }
-    
-Ok(())
+        })
 }
 
     pub(super) fn stale_before_bridge_revalidation(

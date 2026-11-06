@@ -1,4 +1,5 @@
 use super::super::scope::{scope_encoder, seal};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::WorthQueryEvidenceTag;
 
 pub(super) const FACT_FAMILY_CHUNK_WIDTH: usize = 1_024;
@@ -6,8 +7,8 @@ pub(super) const FACT_FAMILY_CHUNK_WIDTH: usize = 1_024;
 pub(super) fn compose_consumed_projection_fact_family_digest(
     fact_family: &'static str,
     entries: impl IntoIterator<Item = String>,
-) -> String {
-    let mut terminal_chunk_digest = compose_fact_family_genesis_digest(fact_family);
+) -> Result<String, IdentityDerivationDenial> {
+    let mut terminal_chunk_digest = compose_fact_family_genesis_digest(fact_family)?;
     let mut chunk_entries = Vec::with_capacity(FACT_FAMILY_CHUNK_WIDTH);
     let mut entry_count = 0usize;
     let mut chunk_count = 0usize;
@@ -22,7 +23,7 @@ pub(super) fn compose_consumed_projection_fact_family_digest(
                 entry_count,
                 &terminal_chunk_digest,
                 chunk_entries.drain(..),
-            );
+            )?;
             chunk_count += 1;
         }
     }
@@ -34,11 +35,11 @@ pub(super) fn compose_consumed_projection_fact_family_digest(
             entry_count,
             &terminal_chunk_digest,
             chunk_entries,
-        );
+        )?;
         chunk_count += 1;
     }
 
-    seal(
+    Ok(seal(
         scope_encoder("consumed_projection_fact_family_root_v2")
             .field_shape(WorthQueryEvidenceTag::new("fact_family"), fact_family)
             .field_usize(WorthQueryEvidenceTag::new("entry_count"), entry_count)
@@ -47,14 +48,16 @@ pub(super) fn compose_consumed_projection_fact_family_digest(
                 WorthQueryEvidenceTag::new("terminal_chunk_digest"),
                 terminal_chunk_digest,
             ),
-    )
+    )?)
 }
 
-fn compose_fact_family_genesis_digest(fact_family: &'static str) -> String {
-    seal(
+fn compose_fact_family_genesis_digest(
+    fact_family: &'static str,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(seal(
         scope_encoder("consumed_projection_fact_family_genesis_v2")
             .field_shape(WorthQueryEvidenceTag::new("fact_family"), fact_family),
-    )
+    )?)
 }
 
 fn compose_fact_family_chunk_digest(
@@ -63,8 +66,8 @@ fn compose_fact_family_chunk_digest(
     entry_count_through_chunk: usize,
     predecessor_chunk_digest: &str,
     entries: impl IntoIterator<Item = String>,
-) -> String {
-    seal(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(seal(
         scope_encoder("consumed_projection_fact_family_chunk_v2")
             .field_shape(WorthQueryEvidenceTag::new("fact_family"), fact_family)
             .field_usize(WorthQueryEvidenceTag::new("chunk_ordinal"), chunk_ordinal)
@@ -77,5 +80,5 @@ fn compose_fact_family_chunk_digest(
                 predecessor_chunk_digest,
             )
             .field_value_sequence(WorthQueryEvidenceTag::new("fact_entry"), entries),
-    )
+    )?)
 }

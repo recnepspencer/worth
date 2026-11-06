@@ -5,14 +5,15 @@ use super::{
     worth_query_lower_runtime_representative_surface,
     WorthQueryLowerRuntimeRepresentativeEvidenceSource,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::lower_runtime_routing::WorthQueryLowerRuntimeSeamKey;
 
 #[test]
-fn required_concrete_seams_are_enforced_hostilely() {
+fn required_concrete_seams_are_enforced_hostilely() -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let surface = worth_query_lower_runtime_representative_surface(request_execution)
+    let surface = worth_query_lower_runtime_representative_surface(request_execution)?
         .with_evidence_source_override(
             WorthQueryLowerRuntimeSeamKey::SubscriptionActivation,
             WorthQueryLowerRuntimeRepresentativeEvidenceSource::InventorySynthesized,
@@ -23,14 +24,17 @@ fn required_concrete_seams_are_enforced_hostilely() {
     let message = panic_message(panic);
 
     assert!(message.contains("subscription-activation"));
+
+    Ok(())
 }
 
 #[test]
-fn synthetic_tail_exactness_rejects_unexpected_runtime_backing_drift() {
+fn synthetic_tail_exactness_rejects_unexpected_runtime_backing_drift(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let surface = worth_query_lower_runtime_representative_surface(request_execution)
+    let surface = worth_query_lower_runtime_representative_surface(request_execution)?
         .with_evidence_source_override(
             WorthQueryLowerRuntimeSeamKey::ComposeRead,
             WorthQueryLowerRuntimeRepresentativeEvidenceSource::InventorySynthesized,
@@ -41,6 +45,8 @@ fn synthetic_tail_exactness_rejects_unexpected_runtime_backing_drift() {
     let message = panic_message(panic);
 
     assert!(message.contains("synthetic surface width drifted"));
+
+    Ok(())
 }
 
 fn panic_message(payload: Box<dyn std::any::Any + Send>) -> String {

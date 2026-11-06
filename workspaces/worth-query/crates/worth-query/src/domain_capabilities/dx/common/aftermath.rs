@@ -220,7 +220,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
         IdentityDerivationDenial,
     > {
         let semantic_code = qualify_semantic_code(self.target.authority(), &self.semantic_code);
-        match self.posture {
+        Ok(match self.posture {
             WorthQueryAftermathContributionPosture::EstablishesFact => {
                 WorthQueryAftermathContributionAuthoring::establishes_projection_contract(
                     semantic_code,
@@ -251,9 +251,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                 )?
                 .bind_to_installed_target(self.target)
             }
-        }
-
-        Ok(())
+        })
     }
 
     fn materialize_checked<Success>(

@@ -1,3 +1,7 @@
+mod budget;
+use budget::*;
+
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::num::NonZeroUsize;
 
 use super::super::{RepresentativeArtifacts, WorthQueryLowerRuntimeRepresentativeEvidenceSource};
@@ -48,23 +52,24 @@ const RUNTIME_ACTIVE_LIFECYCLE_BUDGET_POLICY: &str =
 const RUNTIME_CONSUMER_ATTACHMENT_BUDGET_POLICY: &str =
     "runtime-live-consumer-attachment:fanout=1:pacing=1:allocation=1:retain_within_window";
 
-pub(crate) fn representative_public_live_view_declaration_row() -> RepresentativeArtifacts {
-    let fixture = live_aggregate_fixture();
-    aggregate_route_artifacts(
+pub(crate) fn representative_public_live_view_declaration_row(
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
+    let fixture = live_aggregate_fixture()?;
+    Ok(aggregate_route_artifacts(
         WorthQueryLowerRuntimeSeamKey::PublicLiveViewDeclaration,
         "Public live view declaration",
-        public_live_declaration_evidence(&fixture),
-    )
+        public_live_declaration_evidence(&fixture)?,
+    )?)
 }
 
-pub(crate) fn representative_runtime_live_installation_orchestration_row() -> RepresentativeArtifacts
-{
-    let fixture = live_aggregate_fixture();
-    aggregate_route_artifacts(
+pub(crate) fn representative_runtime_live_installation_orchestration_row(
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
+    let fixture = live_aggregate_fixture()?;
+    Ok(aggregate_route_artifacts(
         WorthQueryLowerRuntimeSeamKey::RuntimeLiveInstallationOrchestration,
         "Runtime live installation orchestration",
-        runtime_live_installation_evidence(&fixture),
-    )
+        runtime_live_installation_evidence(&fixture)?,
+    )?)
 }
 
 struct LiveAggregateFixture {
@@ -77,7 +82,7 @@ fn aggregate_route_artifacts(
     seam_key: WorthQueryLowerRuntimeSeamKey,
     capability_label: &'static str,
     evidence: WorthQueryEvidenceIdentity,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         seam_key,
         WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -85,32 +90,32 @@ fn aggregate_route_artifacts(
         capability_label,
         WorthQueryLowerRuntimeSubjectIdentity::compose(capability_label)
             .field_evidence_identity(WorthQueryEvidenceTag::new("aggregate"), &evidence)
-            .seal(),
-    );
+            .seal()?,
+    )?;
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request.clone(),
         &evidence,
-    );
+    )?;
     let route_plan = WorthQueryLowerRuntimeRoutePlan::new(
         eligibility.clone(),
         WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
             capability_label,
             &evidence,
-        ),
-    );
+        )?,
+    )?;
     let retained_evidence =
-        worth_query_lower_runtime_retained_evidence_identity(capability_label, &evidence);
+        worth_query_lower_runtime_retained_evidence_identity(capability_label, &evidence)?;
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
         &route_plan,
         &retained_evidence,
-    );
+    )?;
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         seam_key,
         &route_plan,
         &boundary_receipt,
         &retained_evidence,
-    );
-    RepresentativeArtifacts {
+    )?;
+    Ok(RepresentativeArtifacts {
         seam_key,
         request,
         eligibility,
@@ -118,50 +123,56 @@ fn aggregate_route_artifacts(
         boundary_receipt,
         envelope,
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }
 
-fn public_live_declaration_evidence(fixture: &LiveAggregateFixture) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("declaration_request"),
-            fixture
-                .declaration_boundary
-                .boundary_envelope()
-                .request_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("declaration_envelope"),
-            fixture
-                .declaration_boundary
-                .boundary_envelope()
-                .envelope_identity(),
-        )
-        .seal()
+fn public_live_declaration_evidence(
+    fixture: &LiveAggregateFixture,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("declaration_request"),
+                fixture
+                    .declaration_boundary
+                    .boundary_envelope()
+                    .request_identity(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("declaration_envelope"),
+                fixture
+                    .declaration_boundary
+                    .boundary_envelope()
+                    .envelope_identity(),
+            )
+            .seal()?,
+    )
 }
 
 fn runtime_live_installation_evidence(
     fixture: &LiveAggregateFixture,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("declaration_envelope"),
-            fixture
-                .declaration_boundary
-                .boundary_envelope()
-                .envelope_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("activation_envelope"),
-            fixture
-                .activation_boundary
-                .boundary_envelope()
-                .envelope_identity(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("declaration_envelope"),
+                fixture
+                    .declaration_boundary
+                    .boundary_envelope()
+                    .envelope_identity(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("activation_envelope"),
+                fixture
+                    .activation_boundary
+                    .boundary_envelope()
+                    .envelope_identity(),
+            )
+            .seal()?,
+    )
 }
 
-fn live_aggregate_fixture() -> LiveAggregateFixture {
+fn live_aggregate_fixture() -> Result<LiveAggregateFixture, IdentityDerivationDenial> {
     let request = DeclarativeLiveQueryRequest::new("Task", DeclarativeLiveViewShape::table())
         .project(DeclarativeProjectionField::from_authoring_parts(
             "identity", "id",
@@ -189,16 +200,16 @@ fn live_aggregate_fixture() -> LiveAggregateFixture {
         [],
     );
     let declaration_receipt =
-        LiveViewDeclarationAdmissionReceipt::from_request(LIVE_AGGREGATE_VIEW_NAME, &request);
+        LiveViewDeclarationAdmissionReceipt::from_request(LIVE_AGGREGATE_VIEW_NAME, &request)?;
     let declaration_boundary = LiveViewDeclarationAdmissionBoundaryReceipt::from_request(
         LIVE_AGGREGATE_VIEW_NAME,
         &request,
         declaration_receipt,
-    );
+    )?;
     let session = declare_runtime_live_query_session_with_grouped_baseline(
         request.clone(),
         schema_view,
-        phase_six_snapshot_identity("live-aggregate-snapshot"),
+        phase_six_snapshot_identity("live-aggregate-snapshot")?,
         None::<Vec<crate::view_shape_live::WorthQueryGroupedBaselineMember>>,
     )
     .expect("live aggregate fixture should declare a runtime live session");
@@ -236,14 +247,14 @@ fn live_aggregate_fixture() -> LiveAggregateFixture {
             "certified-live-aggregate-support",
         ),
         None,
-    );
+    )?;
     let activation_identity = activation_receipt.activation_identity().clone();
     let support_identity = activation_receipt.support_identity().clone();
     let activation_boundary = SubscriptionActivationBoundaryReceipt::from_activation(
         LIVE_AGGREGATE_VIEW_NAME,
         &activation,
         activation_receipt,
-    );
+    )?;
     let (attachment, active_lane_counters, consumer_attachment_counters) =
         installation_attachment(&activation);
     let installation = WorthQueryRuntimeLiveSubscriptionInstallation::new(
@@ -251,68 +262,70 @@ fn live_aggregate_fixture() -> LiveAggregateFixture {
         crate::runtime::live_subscription_source_identity(
             "query",
             activation.query_declaration_identity(),
-        ),
+        )?,
         session.canonical().query().digest().clone(),
         crate::runtime::live_subscription_source_identity(
             "live_view",
             &crate::runtime::live_subscription_view_shape_source_identity(
                 session.live_view().lowering().family(),
-            ),
-        ),
+            )?,
+        )?,
         session.canonical().result_shape().digest().clone(),
         subscription_family,
         crate::runtime::live_subscription_source_identity(
             "subscription_declaration",
             activation.query_declaration_identity(),
-        ),
+        )?,
         crate::runtime::live_subscription_source_identity(
             "bridge_declaration",
             &bridge_declaration_identity,
-        ),
-        crate::runtime::live_subscription_source_identity("admission", &admission_identity),
+        )?,
+        crate::runtime::live_subscription_source_identity("admission", &admission_identity)?,
         crate::runtime::live_subscription_source_identity(
             "activation",
             &activation_identity,
-        ),
-        crate::runtime::live_subscription_source_identity("basis_binding", &basis_binding_identity),
+        )?,
+        crate::runtime::live_subscription_source_identity("basis_binding", &basis_binding_identity)?,
         crate::runtime::live_subscription_source_identity(
             "signal_strategy",
             &signal_strategy_identity,
-        ),
+        )?,
         crate::runtime::live_subscription_source_identity(
             "active_lane",
             attachment.lane_digest().evidence_identity(),
-        ),
+        )?,
         &attachment,
-        runtime_subscription_budget_policy(),
+        runtime_subscription_budget_policy()?,
         crate::runtime::WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity::active_lifecycle_policy(
             RUNTIME_ACTIVE_LIFECYCLE_BUDGET_POLICY,
-        ),
+        )?,
         crate::runtime::WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity::consumer_attachment_policy(
             RUNTIME_CONSUMER_ATTACHMENT_BUDGET_POLICY,
-        ),
+        )?,
         active_lane_counters,
         consumer_attachment_counters,
         crate::runtime::live_subscription_source_identity(
             "support",
             &support_identity,
-        ),
+        )?,
         activation.counters().clone(),
-    );
+    )?;
 
-    LiveAggregateFixture {
+    Ok(LiveAggregateFixture {
         declaration_boundary,
         activation_boundary,
         _installation: installation,
-    }
+    })
 }
 
-fn phase_six_snapshot_identity(label: &'static str) -> WorthQuerySnapshotIdentity {
-    WorthQuerySnapshotIdentity::preview(
+fn phase_six_snapshot_identity(
+    label: &'static str,
+) -> Result<WorthQuerySnapshotIdentity, IdentityDerivationDenial> {
+    Ok(WorthQuerySnapshotIdentity::preview(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WriteReceiptSnapshotIdentity)
             .field_shape(WorthQueryEvidenceTag::new("phase_six_fixture"), label)
-            .seal(),
-    )
+            .seal()?,
+    ))
 }
 
 fn installation_attachment(
@@ -344,52 +357,5 @@ fn installation_attachment(
         attachment,
         active_lane_counters,
         consumer_attachment_counters,
-    )
-}
-
-fn work_budget() -> QuerySubscriptionWorkBudget {
-    QuerySubscriptionWorkBudget::scratch_buffer_only(64, 64, 64, 512, 1)
-}
-
-fn slice_budget() -> QuerySubscriptionSliceBudget {
-    QuerySubscriptionSliceBudget::scratch_buffer_only(64, 64, 64, 64, 64, 64, 64, 64)
-}
-
-fn lowering_budget() -> QuerySubscriptionBridgeLoweringBudget {
-    QuerySubscriptionBridgeLoweringBudget::admitted(1, 64, 64, 64, 64)
-}
-
-fn admission_budget() -> QuerySubscriptionAdmissionBudget {
-    QuerySubscriptionAdmissionBudget::admitted(64, 64, 64, 64, 64)
-}
-
-fn active_lifecycle_budget() -> ActiveSubscriptionWorkBudget {
-    ActiveSubscriptionWorkBudget::admitted(
-        ActiveRegistryLookupWidth::measured(1),
-        ActiveFanoutWidth::measured(1),
-        ActiveAllocationScopeWidth::measured(1),
-        ActiveSubscriptionAllocationPosture::LifecycleArena,
-    )
-}
-
-fn consumer_attachment_budget() -> SubscriptionConsumerAttachmentBudget {
-    SubscriptionConsumerAttachmentBudget::admitted(
-        ActiveFanoutWidth::measured(1),
-        ConsumerDeliveryPacingWidth::measured(1),
-        ActiveAllocationScopeWidth::measured(1),
-        DeliveryBackpressurePolicy::RetainWithinWindow,
-    )
-}
-
-fn runtime_subscription_budget_policy(
-) -> crate::runtime::WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity {
-    crate::runtime::WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity::subscription_policy(
-        [
-            RUNTIME_SUBSCRIPTION_FAMILY_BUDGET_POLICY,
-            RUNTIME_SUBSCRIPTION_SLICE_BUDGET_POLICY,
-            RUNTIME_SUBSCRIPTION_BRIDGE_BUDGET_POLICY,
-            RUNTIME_SUBSCRIPTION_ADMISSION_BUDGET_POLICY,
-        ]
-        .join("|"),
     )
 }

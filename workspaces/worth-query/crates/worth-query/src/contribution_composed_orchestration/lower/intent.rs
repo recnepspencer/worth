@@ -60,7 +60,7 @@ fn process_intent(
     materialization_profile: Option<&FoundationalProfileSet>,
     linked_artifacts: WorthQueryBindingLinkedArtifacts,
 ) -> Result<WorthQueryContributionComposedIntentResult, IdentityDerivationDenial> {
-    match intent {
+    Ok(match intent {
         WorthQueryContributionIntent::Admission(value) => process_requested(
             order_index,
             WorthQueryDeclarationEntryContributionCategoryFamily::Admission,
@@ -101,9 +101,7 @@ fn process_intent(
             materialization_profile,
             linked_artifacts,
         )?,
-    }
-
-    Ok(())
+    })
 }
 
 fn process_requested<P>(
