@@ -97,7 +97,7 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
 /// continues unchanged, and a predecessor with no row to continue leaves the
 /// republication without one.
 #[allow(clippy::too_many_arguments)]
-pub(in crate::domain_computation::primary_graph) fn register_republished(
+pub fn register_republished(
     owner: &SourceInvalidationOwner,
     predecessor: &RecordedSettlementIdentity,
     identity: Arc<RecordedSettlementIdentity>,
@@ -202,3 +202,5 @@ impl WorthQueryApplicationOutputLineage {
         }
     }
 }
+
+mod court_doors_for_test;

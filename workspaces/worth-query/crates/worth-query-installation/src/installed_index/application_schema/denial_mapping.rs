@@ -12,6 +12,13 @@ pub(super) fn map_compilation_denial(
     schema: &str,
     denial: ApplicationSchemaCompilationDenial,
 ) -> WorthQueryInstalledApplicationSchemaDenial {
+    let canonical_denial = match &denial {
+        ApplicationSchemaCompilationDenial::Canonical(cause) => Some(*cause),
+        ApplicationSchemaCompilationDenial::Query(denial) => denial.canonical_denial().copied(),
+        ApplicationSchemaCompilationDenial::Operation(denial) => denial.canonical_denial().copied(),
+        ApplicationSchemaCompilationDenial::Resource(denial) => denial.canonical_denial().copied(),
+        _ => None,
+    };
     let (kind, subject) = match denial {
         ApplicationSchemaCompilationDenial::History(denial) => (
             WorthQueryInstalledApplicationSchemaDenialKind::HistoryInstallationDenied,
@@ -95,7 +102,9 @@ pub(super) fn map_compilation_denial(
             (kind, denial.subject().to_string())
         }
         ApplicationSchemaCompilationDenial::Operation(denial) => (
-            WorthQueryInstalledApplicationSchemaDenialKind::OperationInstallationDenied,
+            if denial.kind()==crate::application_operation::WorthQueryApplicationOperationInstallationDenialKind::PreImageDemandNotCoveredByAuthoredAnchors {
+                WorthQueryInstalledApplicationSchemaDenialKind::PreImageDemandNotCoveredByAuthoredAnchors
+            } else { WorthQueryInstalledApplicationSchemaDenialKind::OperationInstallationDenied },
             denial.operation().to_string(),
         ),
         ApplicationSchemaCompilationDenial::ValueBinding(denial) => {
@@ -119,7 +128,11 @@ pub(super) fn map_compilation_denial(
             (kind, denial.subject().to_string())
         }
     };
-    WorthQueryInstalledApplicationSchemaDenial::new(kind, subject)
+    let denial = WorthQueryInstalledApplicationSchemaDenial::new(kind, subject);
+    match canonical_denial {
+        Some(cause) => denial.with_canonical_denial(cause),
+        None => denial,
+    }
 }
 
 pub(super) fn map_index_denial_to_schema_denial(

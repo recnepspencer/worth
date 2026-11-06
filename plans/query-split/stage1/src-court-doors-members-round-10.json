@@ -1,0 +1,24 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage.by_source",
+  "domain_computation::primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle.layout",
+  "domain_computation::primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle.primary_index_ids"
+ ],
+ "method_doors": [
+  "basis::product_branch::observation::WorthQueryProductBranchLease::publication_binding",
+  "basis::product_branch::observation::WorthQueryProductBranchLease::relational_basis",
+  "domain_computation::primary_graph::application_attempt::read_set::computation_routing::sealed::SealedComputationFacts::facts",
+  "domain_computation::primary_graph::application_attempt::read_set::computation_routing::test_mutation::SealedComputationFacts::replace_fact",
+  "domain_computation::primary_graph::index_currency::WorthQueryPrimaryGraphIntegrationHandle::ensure_primary_indexes_for_basis",
+  "domain_computation::primary_graph::root::runtime_access::WorthQueryPrimaryGraphIntegrationHandle::with_runtime_mut",
+  "domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout::field_locator",
+  "domain_computation::provider_session::provisional_attempt::provider_port::WorthQueryProvisionalOverlayEvidence::view"
+ ],
+ "unplaced": [
+  "associated function `of` is private",
+  "method `bind_source_partition` is private",
+  "method `record_restoration` is private"
+ ]
+}

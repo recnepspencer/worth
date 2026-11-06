@@ -1,0 +1,79 @@
+//! Both read values travel through the ordinary installed handler and both seals.
+use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::*;
+use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::binding::*;
+use worth_query_execution::facade::domain_computation::CandidateWriter;
+use worth_query_execution::facade::domain_computation::DecisionReader;
+use worth_query_execution::facade::domain_computation::HandlerExecutionDenial;
+use worth_query_execution::facade::domain_computation::HandlerResult;
+use worth_query_execution::facade::domain_computation::OperationHandler;
+pub struct CheckOrbitHandler;
+impl<S: OrbitModel + Clone> OperationHandler<S, CheckOrbitBinding<S>> for CheckOrbitHandler {
+    fn decide(
+        &self,
+        input: &CheckOrbitInput,
+        reader: &mut DecisionReader<'_, '_, '_, S, CheckOrbitBinding<S>>,
+    ) -> HandlerResult<CheckOrbitDecision, CheckOrbitOutcome> {
+        let result = (|| {
+            let root = reader.scope().clone();
+            reader.field(&root, NodeKey::at("NodeKey"))?;
+            reader.field(&root, Marked::at("Marked"))?;
+            let orbit = reader
+                .orbit(Next::reference(), &root)
+                .map_err(HandlerExecutionDenial::new)?;
+            assert_eq!(
+                reader
+                    .orbit_of(Next::reference(), &root)
+                    .map_err(HandlerExecutionDenial::new)?,
+                *orbit.identity()
+            );
+            // Privileged inspection is available to a handler, but the raw
+            // reader marks opaque context and grants no decision reuse proof.
+            let history = reader
+                .reader()
+                .lineage(Next::reference(), orbit.identity())
+                .map_err(HandlerExecutionDenial::new)?;
+            assert_eq!(history.identity(), orbit.identity());
+            assert_eq!(history.latest_identity().as_ref(), Some(orbit.identity()));
+            assert_eq!(history.retired_at(), None);
+            Ok::<_, HandlerExecutionDenial>(CheckOrbitDecision {
+                root: input.root,
+                count: orbit.len() as u64,
+            })
+        })();
+        match result {
+            Ok(value) => HandlerResult::Completed(value),
+            Err(stop) => HandlerResult::ExecutionDenied(stop),
+        }
+    }
+    fn build_candidate(
+        &self,
+        _: &CheckOrbitInput,
+        decision: CheckOrbitDecision,
+        candidate: &mut CandidateWriter<'_, S, CheckOrbitBinding<S>>,
+    ) -> HandlerResult<CheckOrbitOutcome, CheckOrbitOutcome> {
+        let result = (|| {
+            let root = candidate
+                .resolve_entity(NodeKey::at("NodeKey"), decision.root)
+                .map_err(HandlerExecutionDenial::new)?;
+            candidate
+                .write_field(&root, Marked::at("Marked"), true)
+                .map_err(HandlerExecutionDenial::new)?;
+            Ok::<_, HandlerExecutionDenial>(CheckOrbitOutcome(decision.count))
+        })();
+        match result {
+            Ok(value) => HandlerResult::Completed(value),
+            Err(stop) => HandlerResult::ExecutionDenied(stop),
+        }
+    }
+}
+pub fn install<S: OrbitModel + Clone>(
+    schema: &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<S>,
+    bootstrap: &mut worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphBootstrap<S>,
+) {
+    let installed = schema
+        .installed_mutation_binding::<CheckOrbitBinding<S>>()
+        .unwrap();
+    bootstrap
+        .install_handler(&installed, CheckOrbitHandler)
+        .unwrap();
+}

@@ -9,7 +9,7 @@ pub use checkpoint_transition::{
 mod assembly;
 mod conditional;
 mod construction;
-mod demand;
+pub(crate) mod demand;
 pub(in crate::domain_computation::primary_graph) use demand::OriginalProgramRootCompletion;
 mod derived_artifact;
 mod output_roots;
@@ -22,9 +22,9 @@ mod program_runtime;
 mod roster_authoring;
 mod signing;
 mod specialized_action;
-mod speculation;
+pub(crate) mod speculation;
 pub use signing::WorthQuerySigningOwnerInstallationDenial;
-mod supported_program;
+pub(crate) mod supported_program;
 pub use checkpoint::{
     in_memory_program_from_checkpoint, in_memory_program_from_checkpoint_with_projection,
     in_memory_rostered_program_from_checkpoint,

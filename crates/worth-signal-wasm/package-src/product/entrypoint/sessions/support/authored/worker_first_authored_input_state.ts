@@ -47,6 +47,7 @@ export function createWorkerFirstAuthoredInputState(
     admittedTipEpoch: 0,
     // Host tip ownership epoch — rollback only when this write still owns the tip.
     hostTipEpoch: 0,
+    workerTipEpoch: 0,
   };
 }
 
@@ -94,7 +95,8 @@ export function readWorkerFirstAuthoredInputValue(authoredInputs, id) {
 
 export function applyCommittedWorkerFirstAuthoredInputs(authoredInputs, transactionOps) {
   for (const transactionOp of transactionOps) {
-    if (!transactionOp || transactionOp.kind !== "set" || typeof transactionOp.id !== "string") {
+    if (!transactionOp || (transactionOp.kind !== "set" && transactionOp.kind !== "setWithRegions")
+      || typeof transactionOp.id !== "string") {
       continue;
     }
     const authoredInput = authoredInputs.get(transactionOp.id);
@@ -103,6 +105,9 @@ export function applyCommittedWorkerFirstAuthoredInputs(authoredInputs, transact
     }
     // Tip-epoch ownership: older applies must not clobber a newer tip.
     // Ops without epochAtWrite remain worker catch-up (readable refresh).
+    if (typeof transactionOp.epochAtWrite === "number") {
+      authoredInput.workerTipEpoch = Math.max(authoredInput.workerTipEpoch ?? 0, transactionOp.epochAtWrite);
+    }
     if (
       typeof transactionOp.epochAtWrite === "number"
       && (authoredInput.hostTipEpoch ?? 0) !== transactionOp.epochAtWrite

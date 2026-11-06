@@ -1,11 +1,11 @@
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryAcceptedOutputCheckpointPosture {
+pub enum WorthQueryAcceptedOutputCheckpointPosture {
     Performed,
     StableReused,
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryAcceptedOutputCheckpointIdentity {
+pub struct WorthQueryAcceptedOutputCheckpointIdentity {
     pub(in crate::domain_computation::primary_graph) implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
     pub(in crate::domain_computation::primary_graph) producer: std::sync::Arc<String>,
     pub(in crate::domain_computation::primary_graph) posture:
@@ -50,11 +50,7 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
             .then_with(|| self.roles.cmp(&other.roles))
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn same_output_slot(
-        &self,
-        other: &Self,
-    ) -> bool {
+    pub fn same_output_slot(&self, other: &Self) -> bool {
         self.output_slot() == other.output_slot()
     }
 }
@@ -103,3 +99,5 @@ impl Ord for WorthQueryAcceptedOutputCheckpointIdentity {
             })
     }
 }
+
+mod court_doors_for_test;

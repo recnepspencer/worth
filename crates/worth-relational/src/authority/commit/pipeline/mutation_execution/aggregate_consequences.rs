@@ -22,6 +22,7 @@ impl MutatedCommitExecution {
         });
         let (_, validation, business, _, _, _) = admitted.phase_view().into_parts();
         let authority = validation.schema_authority();
+        let current_ownership = authority.registry().current_publication_storage.is_some();
         if validation.intent().materialization_mode().is_none() {
             let (prepared, reads) = match aggregate_source {
                 Some(source) => source.take_for_commit(
@@ -114,6 +115,11 @@ impl MutatedCommitExecution {
                 // Earlier publication evidence described only the business graph.
                 admitted.take_prevalidated_snapshot_publication();
             }
+        }
+        if current_ownership {
+            // This publication's Native current-ownership consequences share
+            // the remaining replay allocation stream and finish it at completion.
+            return Ok(());
         }
         self.mutation_identities
             .records

@@ -10,17 +10,17 @@ use worth_runtime_world::facade::ProductBranchObservation;
 mod contention;
 mod correction;
 pub use contention::WorthQueryApplicationBranchCommitContentionForTest;
-pub(super) struct WorthQueryApplicationBranchCommitCoordinator {
+pub struct WorthQueryApplicationBranchCommitCoordinator {
     corrections: correction::CorrectionCommitLanes,
     contention: Arc<contention::ContentionControl>,
     lanes: Mutex<BTreeMap<ProductBranchIncarnation, Weak<WorthQueryApplicationBranchCommitLane>>>,
 }
-pub(crate) struct WorthQueryApplicationBranchCommitLane {
+pub struct WorthQueryApplicationBranchCommitLane {
     contention: Arc<contention::ContentionControl>,
     occurrence: ProductBranchIncarnation,
     transition: Mutex<()>,
 }
-pub(crate) struct WorthQueryApplicationBranchCommitCoordination<'lane> {
+pub struct WorthQueryApplicationBranchCommitCoordination<'lane> {
     occurrence: ProductBranchIncarnation,
     _guard: MutexGuard<'lane, ()>,
 }
@@ -68,7 +68,6 @@ impl WorthQueryApplicationBranchCommitCoordinator {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .remove(&occurrence);
     }
-    #[cfg(test)]
     fn entry_count(&self) -> usize {
         self.lanes
             .lock()
@@ -127,5 +126,4 @@ impl WorthQueryApplicationBranchCommitCoordination<'_> {
     }
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

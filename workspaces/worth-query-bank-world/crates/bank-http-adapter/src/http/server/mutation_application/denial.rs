@@ -39,7 +39,8 @@ pub(in crate::http::server) fn request_mutation_denial(
         // another input, the runtime serves no handler for it, the key's
         // record cannot be checked against the request, or the server's own
         // admission resolved the key against another runtime.
-        Denial::Identity
+        Denial::DocumentHistory
+        | Denial::Identity
         | Denial::WorkflowControl
         | Denial::WorkflowCapturedInput
         | Denial::InputNotAdmitted
@@ -98,11 +99,13 @@ pub(in crate::http::server) fn pending_execution_denial(
 ) -> BankHttpDenial {
     use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
     match kind {
+        Kind::Content(cause) => super::super::relational_execution_denial::content(cause.into()),
         Kind::ProjectionContract { denial, .. } => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::ProjectionContract(denial)),
         Kind::HistoricalVisibility { denial, .. } => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::HistoricalVisibility(denial)),
         Kind::StorageUnavailable(failure) => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::StorageUnavailable(failure)),
         Kind::ExecutionResource { denial, .. } => super::commit_denial::execution_resource(denial),
-        Kind::ExecutionWorkerPanicked { .. }
+        Kind::ContentInconsistency | Kind::OutputCorrespondenceMismatch { .. }
+        | Kind::ExecutionWorkerPanicked { .. }
         | Kind::ExecutionUncheckedCustomKernel { .. }
         | Kind::ExecutionIdentitiesNotCanonical { .. }
         | Kind::RetentionIdentityExhausted

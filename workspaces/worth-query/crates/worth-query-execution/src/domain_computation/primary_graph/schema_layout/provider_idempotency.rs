@@ -19,7 +19,7 @@ const OUTCOME_IDENTITY_FIELD: &str = "outcome-identity";
 const EMITTED_EFFECT_COUNT_FIELD: &str = "emitted-effect-count";
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryProviderIdempotencyLayout {
+pub struct WorthQueryProviderIdempotencyLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) key_locator: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) intent_locator: AspectFieldLocator,
@@ -85,3 +85,5 @@ pub(super) fn lower_provider_idempotency(
         },
     ))
 }
+
+mod court_doors_for_test;

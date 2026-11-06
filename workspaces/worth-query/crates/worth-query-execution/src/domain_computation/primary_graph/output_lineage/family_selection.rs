@@ -7,7 +7,7 @@ use super::WorthQueryCurrentOutputFamilyResolution;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::BTreeSet;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
-mod checkpoint_priors;
+pub(crate) mod checkpoint_priors;
 mod publication_heads;
 pub(in crate::domain_computation::primary_graph) use checkpoint_priors::CheckpointPriorSelectionDenial;
 pub(in crate::domain_computation::primary_graph) use checkpoint_priors::CheckpointPriorStructure;
@@ -124,3 +124,5 @@ impl WorthQueryApplicationOutputLineage {
         })
     }
 }
+
+mod court_doors_for_test;

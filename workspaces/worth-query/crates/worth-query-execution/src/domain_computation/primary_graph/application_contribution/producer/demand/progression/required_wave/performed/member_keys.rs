@@ -40,3 +40,5 @@ fn same_key(left: &WorthQueryOutputDemandKey, right: &WorthQueryOutputDemandKey)
         && left.applicability() == right.applicability()
         && left.source_epoch().same_occurrence(right.source_epoch())
 }
+
+mod court_doors_for_test;

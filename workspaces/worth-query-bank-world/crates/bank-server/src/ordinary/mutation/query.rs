@@ -126,7 +126,7 @@ impl<'runtime, 'principal, Mutation, Operation, Scope>
         self.preconditions = self
             .preconditions
             .expect_version(field, expected)
-            .map_err(BankMutationPreconditionDenial::Selection)?;
+            .map_err(|denial| BankMutationPreconditionDenial::Selection(Box::new(denial)))?;
         Ok(self)
     }
 
@@ -144,7 +144,7 @@ impl<'runtime, 'principal, Mutation, Operation, Scope>
         self.preconditions = self
             .preconditions
             .expect_fact(field, expected)
-            .map_err(BankMutationPreconditionDenial::Selection)?;
+            .map_err(|denial| BankMutationPreconditionDenial::Selection(Box::new(denial)))?;
         Ok(self)
     }
 
@@ -166,7 +166,9 @@ use worth_query_host::facade::declaration::application_schema::fragment::RecordS
 #[derive(Debug)]
 pub enum BankMutationPreconditionDenial {
     Encoding(ApplicationValueEncodeDenial),
- Selection(worth_query_host::facade::declaration::application_schema::ApplicationSchemaDeclarationDenial),
+    Selection(
+        Box<worth_query_host::facade::declaration::application_schema::ApplicationSchemaDeclarationDenial>,
+    ),
 }
 impl std::fmt::Display for BankMutationPreconditionDenial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -4,7 +4,7 @@ use worth_execution::{ExecutionByteBuffer, ExecutionImmutableBytes};
 
 /// Mirrors CURRENT StorageKey ordering: locator, optional predicate, numeric limit.
 /// A flattened decimal/string tuple would change ordering (e.g. limit 2 vs 10).
-pub(in crate::domain_computation::primary_graph) struct AdmittedFactKey {
+pub struct AdmittedFactKey {
     locator: ExecutionImmutableBytes,
     predicate: Option<(ExecutionImmutableBytes, usize)>,
 }
@@ -35,14 +35,10 @@ impl AdmittedFactKey {
         };
         Ok(Self { locator, predicate })
     }
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn locator(&self) -> &[u8] {
         self.locator.bytes()
     }
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn predicate_material(
-        &self,
-    ) -> Option<(&[u8], usize)> {
+    pub fn predicate_material(&self) -> Option<(&[u8], usize)> {
         self.predicate
             .as_ref()
             .map(|(bytes, limit)| (bytes.bytes(), *limit))
@@ -114,3 +110,5 @@ impl PartialEq for AdmittedFactKey {
     }
 }
 impl Eq for AdmittedFactKey {}
+
+mod court_doors_for_test;

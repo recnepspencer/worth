@@ -78,11 +78,11 @@ fn duplicate_exact_locus_is_denied() {
     );
 }
 #[test]
-fn multiple_entity_roles_are_denied_before_installation() {
-    assert_eq!(
-        DeclaredPreImageDemand::new([locus(First::at("first")), locus(Second::at("second"))], 64),
-        Err(DeclaredPreImageDemandDenial::MultipleEntityRoles)
-    );
+fn heterogeneous_loci_defer_authored_anchor_admission_to_installation() {
+    let demand =
+        DeclaredPreImageDemand::new([locus(First::at("first")), locus(Second::at("second"))], 64)
+            .unwrap();
+    assert_eq!(demand.loci().len(), 2);
 }
 #[test]
 fn multiple_exact_fields_on_one_entity_role_are_admissible() {

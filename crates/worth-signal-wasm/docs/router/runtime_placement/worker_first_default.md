@@ -52,6 +52,17 @@ The same host tip methods exist on `mainThreadCompatibility`, where the
 runtime applies the tip writes in one synchronous transaction; application
 code does not need a deployment branch to reach them.
 
+## Mutation Acknowledgements
+
+An ordinary published mutation returns committed readback, observation delivery,
+branch state, and diagnostics in one worker response. Host tips still notify the
+UI before that acknowledgement; an older response cannot replace a newer tip.
+A host callback that produces another input requires a dependent worker exchange.
+
+Imported graphs retain current history and export artifacts for their synchronous
+facades. Their acknowledgement combines those reads into the same response, but
+artifact construction still costs more than an ordinary authored mutation.
+
 ## The Honest Boundary
 
 The browser host observes `location`, `popstate`, clicks, and external

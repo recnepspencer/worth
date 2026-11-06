@@ -19,16 +19,13 @@ enum SelectionPurpose {
     OutputDelivery,
 }
 
+mod native_restoration;
 mod native_selection;
 mod recovered_candidates;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) mod retained_liveness;
-mod selected_basis;
+pub(crate) mod retained_liveness;
+pub(crate) mod selected_basis;
 
 pub(super) use selected_basis::source_basis_is_admitted;
-
-#[cfg(test)]
-#[path = "selection/retained_basis_tests.rs"]
-mod retained_basis_tests;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

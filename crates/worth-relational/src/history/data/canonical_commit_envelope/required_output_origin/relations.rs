@@ -28,6 +28,8 @@ pub(super) fn capture_created_relations(
     state: &crate::storage::overlay::WorkingState,
     outputs: &[EntityId],
     prior_count: usize,
+    registry: &crate::schema::data::RelationalSchemaRegistry,
+    contribution_records: Option<&[crate::transactions::data::RecordRef]>,
     lease: Option<&ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<CanonicalRequiredOutputRelation>, TransactionCommitError> {
@@ -56,6 +58,23 @@ pub(super) fn capture_created_relations(
     );
     for (created, id) in relations.iter() {
         context.checkpoint(1).map_err(origin_request)?;
+        if let Some(records) = contribution_records {
+            context
+                .checkpoint(
+                    records.len() as u64
+                        + u64::from(
+                            usize::BITS
+                                - registry.native_private_kinds.len().max(1).leading_zeros(),
+                        )
+                        + 1,
+                )
+                .map_err(origin_request)?;
+            if !records.contains(&crate::transactions::data::RecordRef::Relation(*id))
+                && !registry.native_private_kinds.contains(&created.kind_id)
+            {
+                continue;
+            }
+        }
         let mut resolve = |reference: &EntityReference| match reference {
             EntityReference::Existing(id) => Ok(*id),
             EntityReference::Created(target) => {

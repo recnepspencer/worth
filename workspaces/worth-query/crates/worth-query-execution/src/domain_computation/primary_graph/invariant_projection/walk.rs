@@ -18,8 +18,7 @@ mod result;
 use crate::domain_computation::primary_graph::structural_walk::{
     memory, StructuralWalkObservation, StructuralWalkQuery,
 };
-#[cfg(test)]
-mod tests;
+
 pub use result::{
     WorthQueryInvariantProjectionWalk, WorthQueryInvariantProjectionWalkIter,
     WorthQueryInvariantProjectionWalkStep,
@@ -53,6 +52,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 observation,
                 roots.first(),
                 self.authority_identity,
+                self.native
+                    .candidate_identity()
+                    .map(|id| id.qualification()),
             ))
         });
         match result {
@@ -126,18 +128,20 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             self.walk_checkpoint(context, relation.name())?;
             seeds.push(root.entity_id);
         }
-        let pin = self
-            .runtime
-            .read_truth()
-            .pin_read_capability(self.snapshot, &[], self.execution)
-            .map_err(|denial| match denial {
+        let pin =
+            self.native
+                .pin(self.snapshot, self.execution)
+                .map_err(|denial| {
+                    match denial {
                 worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(
                     stop,
                 ) => self.walk_stop(stop, relation.name()),
                 _ => Denial::new(Kind::EndpointUnavailable, relation.name()),
-            })?;
-        let observed = StructuralWalkObservation::read(
+            }
+                })?;
+        let observed = StructuralWalkObservation::read_projected(
             &pin,
+            self.native.origin(self.snapshot),
             self.execution,
             StructuralWalkQuery {
                 relation: relation.name(),

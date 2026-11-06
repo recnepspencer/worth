@@ -159,6 +159,16 @@ as your compliance archive.
 
 ## Reading The Evidence
 
+The root export preserves the diagnostic summary types while their declarations
+live in separate files for execution, flow, graph, observation, callbacks,
+history, merge, snapshots, performance, host capabilities, events, and policy.
+Import these types through `worth-signals-wasm`, not their internal file paths.
+
+`WebObservationNotice` reports `visited`, `recomputed`, `meaningfulChange`, and
+`triggerMatched`. Its `policy` is an `ObservationPolicySummary` or `null`;
+the policy identifies schema `worth.signal.observation-policy.v2`. Use `visited`
+for observation visitation; the former `touched` field is not present.
+
 Start with `why(signal.id)` when one value is surprising. The explanation can
 include:
 

@@ -66,11 +66,16 @@ impl Node {
     }
 }
 #[derive(Clone, Copy)]
-pub struct Realization;
-impl Entity for Realization {
+pub struct Realization<const AGGREGATE: bool = { super::super::PRIVATE_AGGREGATES }>;
+impl Entity for Realization<false> {
     const NAME: &'static str = "Realization";
     type Aspects = (RealizationFacts,);
     type Relations = (Realizes,);
+}
+impl Entity for Realization<true> {
+    const NAME: &'static str = "Realization";
+    type Aspects = (RealizationFacts,);
+    type Relations = (Realizes, realization::OutputNext, aggregate_schema::RealizationPeers);
 }
 impl Realization {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {
@@ -179,11 +184,7 @@ impl Aspect for RealizationFacts {
     const NAME: &'static str = "RealizationFacts";
     type Row = RealizationFactsValue;
 }
-impl RealizationFacts {
-    pub fn reference() -> AspectSelection<DispatchModel, Realization, Self> {
-        aspect(DispatchModel, Realization, Self)
-    }
-}
+
 pub struct RealizationFactsValue {
     pub realization_key: String,
     pub realized_value: u64,

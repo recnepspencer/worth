@@ -11,9 +11,9 @@ use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget;
 use worth_relational::facade::identity::EntityId;
 
-mod budget;
+pub(crate) mod budget;
 mod captured_inputs;
-pub(super) mod operation_outputs;
+pub(crate) mod operation_outputs;
 use super::super::fact::WorkflowHistoryRequirement;
 use super::super::fact::{observe_adjacency_checked, AdjacencyObservationDenial};
 use budget::HistoryReconstructionCharge;

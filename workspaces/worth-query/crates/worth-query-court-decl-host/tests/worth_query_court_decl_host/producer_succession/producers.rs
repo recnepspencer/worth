@@ -13,6 +13,9 @@ macro_rules! split_phase {
                 creates: [Node, Realization]; links: [GeneratedBy, Realizes]; deletes: [Node, Realization]; unlinks: [GeneratedBy, Realizes];
             });
             pub type Operation = $operation;
+            impl OperationReads<Operation> for OutputNext {}
+            impl OperationLinks<Operation> for OutputNext {}
+            impl OperationUnlinks<Operation> for OutputNext {}
             pub struct Outputs;
             pub struct Output;
             impl WorthQueryApplicationOutputRole for Output {
@@ -44,7 +47,7 @@ macro_rules! split_phase {
                 type Denial = Denial; type DenialBinding = DenialBinding; type Output = Outputs; type ScopeBinding = Scope;
                 type PrincipalBinding = PrincipalBinding; type Mapping = Mapping; type Principal = Principal;
                 type PrincipalIdentity = u64; type PrincipalIdentityBinding = U64ApplicationValueBinding;
-                type SourceExpectation = ApplicationQueryMutationSource<Query>;
+                type SourceExpectation = ApplicationQueryMutationSource<SourceQuery>;
                 const IDENTITY: &'static str = $identity; const HANDLER_IDENTITY: &'static str = $identity; const IDEMPOTENCY_IDENTITY: &'static str = $identity;
                 fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements { ApplicationWorkflowExecutionRequirements::not_applicable() }
                 fn scope_field() -> Key { Key::at("Key") }
@@ -64,6 +67,7 @@ macro_rules! split_phase {
                 const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
                 const OWNERSHIP: ProducerPublicationOwnership = super::OWNERSHIP;
                 const REUSE_POLICY: &'static str = "exact-source";
+
             }
             impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
                 type DenialValue = WorthQueryUndeclaredProducerDenial;
@@ -75,8 +79,8 @@ macro_rules! split_phase {
                     Denial::WrongPriorOutput => "WrongPriorOutput", Denial::WrongParent => "WrongParent",
                 }) }
             }
-            readiness!($identity, RealizedValue, crate::producer_succession::realization::canonical_query, "realization");
-            pub struct Handler(pub Selections, pub Fault, pub u64);
+            readiness!($identity, RealizedValue, realization::canonical_query, "realization");
+            pub struct Handler(pub Selections, pub Fault, pub u64, pub bool);
             impl OperationHandler<Schema, Binding> for Handler {
                 fn decide(&self, input: &Input, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<PublicationDecision, Denial> {
                     let result = (|| {
@@ -85,16 +89,32 @@ macro_rules! split_phase {
                             else { // Initial requires authoritative live absence. Historical
                             // correspondence deliberately refuses a retired generation;
                             // it cannot answer whether a current realization exists.
-                            reader.resolve_optional_entity(RealizationKey::at("RealizationKey"), input.0.key.clone())? };
+                            reader.resolve_optional_entity(RealizationKey::at("RealizationKey"), super::output_key(&input.0))? };
                         self.0.lock().unwrap().push(Selection { key: input.0.key.clone(), tier: TIER, preserve: $preserve, prior: prior.is_some() });
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }
                         if $preserve && prior.is_none() { return Ok(Err(Denial::PreserveMissingOutput)); }
                         let realization = if let Some(prior) = prior {
                             let links = reader.relations_from(Realizes::reference(), &prior).map_err(HandlerExecutionDenial::new)?;
                             if links.len() != 1 || links[0].to().entity_id() != source.entity_id() { return Ok(Err(Denial::WrongPriorOutput)); }
+                            if self.3 {
+                                let orbit = reader.orbit(output_next(), &prior).map_err(HandlerExecutionDenial::new)?;
+                                assert_eq!(orbit.len(), 1);
+                                let links = reader.relations_from(output_next(), &prior).map_err(HandlerExecutionDenial::new)?;
+                                assert_eq!(links.len(), 1);
+                            }
                             let _old_value = reader.field(&prior, RealizedValue::at("RealizedValue"))?;
                             Some(reader.mutation_target(&prior)?)
                         } else { None };
+                        if super::super::PRIVATE_AGGREGATES && input.0.key == "observer" {
+                            if self.3 && let Some(foreign) = reader.resolve_optional_entity(RealizationKey::at("RealizationKey"), "root".to_owned())? {
+                                let orbit = reader.orbit(output_next(), &foreign).map_err(HandlerExecutionDenial::new)?;
+                                assert_eq!(orbit.len(), 1);
+                            }
+                            if input.0.width == 1 {
+                                let walk = reader.walk(GeneratedBy::reference(), RelationDirection::Reverse, &source).map_err(HandlerExecutionDenial::new)?;
+                                assert!(!walk.is_empty());
+                            }
+                        }
                         let parents = reader.relations_from(GeneratedBy::reference(), &source).map_err(HandlerExecutionDenial::new)?;
                         if input.0.generated_by.is_empty() {
                             if !parents.is_empty() { return Ok(Err(Denial::WrongParent)); }
@@ -128,13 +148,19 @@ macro_rules! split_phase {
                         let output = match &decision.realization {
                             Some(prior) => { let output = writer.projected_entity(prior)?; writer.write_field(&output, RealizedValue::at("RealizedValue"), input.0.value + 10)?; output },
                             None => {
-                                let output = writer.create_entity_in_context(&source, Realization::reference(), WorthQueryApplicationEntityKey::new(format!("output:{}", input.0.key)).unwrap())?;
-                                writer.initialize_field(&output, RealizationKey::at("RealizationKey"), input.0.key.clone())?;
+                                let output = writer.create_entity_in_context(&source, Realization::reference(), WorthQueryApplicationEntityKey::new(format!("output:{}", super::output_key(&input.0))).unwrap())?;
+                                writer.initialize_field(&output, RealizationKey::at("RealizationKey"), super::output_key(&input.0))?;
                                 writer.initialize_field(&output, RealizedValue::at("RealizedValue"), input.0.value + 10)?;
-                                writer.link(Realizes::reference(), format!("realizes:{}", input.0.key), &output, &source)?;
+                                writer.link(Realizes::reference(), format!("realizes:{}", super::output_key(&input.0)), &output, &source)?;
                                 output
                             }
                         };
+                        if super::super::PRIVATE_AGGREGATES {
+                            if self.3 || decision.realization.is_none() {
+                                if decision.realization.is_some() { writer.unlink(output_next(), &output, &output)?; }
+                                writer.link(output_next(), format!("next:{}", input.0.key), &output, &output)?;
+                            }
+                        }
                         writer.$writer::<Output>(&output)?;
                         for (index, prior) in decision.children.iter().enumerate() {
                             let key = format!("{}.{}", input.0.key, index);
@@ -166,15 +192,24 @@ macro_rules! split_phase {
                 }
             }
             pub fn declare(schema: ApplicationSchemaDeclarationBuilder<Schema>) -> ApplicationSchemaDeclarationBuilder<Schema> {
-                schema.declared_operation::<Operation>(Operation::reference().definition().no_external_effect().no_aftermath().finish()).application_mutation_binding::<Binding>()
+                let schema = schema.declared_operation::<Operation>(Operation::reference().definition().no_external_effect().no_aftermath().finish()).application_mutation_binding::<Binding>();
+                if super::super::PRIVATE_AGGREGATES {
+                    schema.operation_read_relation(Operation::reference(), output_next())
+                        .operation_link(Operation::reference(), output_next()).operation_unlink(Operation::reference(), output_next())
+                } else { schema }
             }
         }
     };
 }
 macro_rules! split_family {
-    ($module:ident, $tier:expr, $profile:literal, $initial:literal, $preserve:literal, $initial_op:ident, $preserve_op:ident, $ownership:ident) => {
+    ($module:ident, $tier:expr, $profile:literal, $initial:literal, $preserve:literal, $initial_op:ident, $preserve_op:ident, $ownership:ident $(, $prefix:literal)?) => {
         pub mod $module {
             use super::*;
+            type SourceQuery = Query;
+            fn output_key(row: &Row) -> String {
+                let prefix = concat!("" $(, $prefix)?);
+                format!("{prefix}{}", row.key)
+            }
             const TIER: u8 = $tier;
             const PROFILE: &str = $profile;
             const OWNERSHIP: ProducerPublicationOwnership =
@@ -243,16 +278,19 @@ macro_rules! split_family {
                 selections: Selections,
                 fault: Fault,
                 child_width: u64,
+                read_predecessor_orbits: bool,
             ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
                 setup.handler::<initial::Binding, _>(initial::Handler(
                     selections.clone(),
                     fault,
                     child_width,
+                    read_predecessor_orbits,
                 ))?;
                 setup.handler::<preserve::Binding, _>(preserve::Handler(
                     selections,
                     fault,
                     child_width,
+                    read_predecessor_orbits,
                 ))?;
                 setup.producer::<initial::Producer>(initial::Provider)?;
                 setup.producer::<preserve::Producer>(preserve::Provider)?;
@@ -302,3 +340,17 @@ split_family!(
     IndependentParentPreserve,
     Independent
 );
+
+split_family!(
+    twin,
+    2,
+    "split-twin",
+    "dispatch.split.twin.initial",
+    "dispatch.split.twin.preserve",
+    SplitTwinInitial,
+    SplitTwinPreserve,
+    SourceScopeCascade,
+    "twin:"
+);
+#[path = "route_degree/family.rs"]
+pub mod parameter_routes;

@@ -39,11 +39,21 @@ impl DerivedSourceObservation {
         context: &mut MapKernelContext<'_, '_>,
         control: Option<&dyn Fn() -> Result<(), Cause>>,
     ) -> Result<bool, Failure> {
+        self.remains_equal_on_pin(pin, pin.snapshot().into(), execution, context, control)
+    }
+    pub(in crate::domain_computation::primary_graph) fn remains_equal_on_pin<Phase>(
+        &self,
+        pin: &RelationalPinnedRead<Phase>,
+        origin: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
+        execution: &ExecutionRequest<'_, '_>,
+        context: &mut MapKernelContext<'_, '_>,
+        control: Option<&dyn Fn() -> Result<(), Cause>>,
+    ) -> Result<bool, Failure> {
         Self::checkpoint(context).map_err(Failure::Execution)?;
         if let Some(control) = control {
             control().map_err(Failure::Execution)?;
         }
-        if self.source().runtime_instance_id() != pin.snapshot().runtime_instance_id() {
+        if self.source().runtime_instance_id() != origin.runtime_instance_id() {
             return Err(Failure::Unavailable);
         }
         let mut scope = PinnedDerivedRelationScope::new(

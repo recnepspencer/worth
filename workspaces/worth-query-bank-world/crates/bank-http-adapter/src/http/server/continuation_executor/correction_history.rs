@@ -60,7 +60,7 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
     job: &HistoryJob,
 ) -> BankHttpCorrectionHistoryOutcome {
     let request = &job.request;
-    let scope = WorthQueryRequestScope::new(Some(request.deadline), job.cancellation.token());
+    let scope = WorthQueryRequestScope::new(Some(request.deadline), job.cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = match application
         .authenticate(request.credential.clone(), &scope)
         .await

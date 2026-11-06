@@ -35,6 +35,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+node scripts/wasm/verify-worth-signals-release-toolchain.mjs
+if ($LASTEXITCODE -ne 0) {
+    throw "release toolchain verification failed with exit code $LASTEXITCODE"
+}
+
 if (-not $RepositoryUrl) {
     $RepositoryUrl = "https://github.com/recnepspencer/forge.git"
 }

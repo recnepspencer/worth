@@ -1,28 +1,29 @@
 //! A restored birth must reproduce its exact original member, not merely valid bytes.
 use super::{charge, CodecRetirementClosureStop as Stop};
+use crate::history::data::canonical_commit_envelope::{
+    OutputOriginHistory, OwnedValidatedOutputOrigins,
+};
 use crate::{
-    history::data::{CanonicalCommitEnvelope, CommitId},
-    identity::data::EntityId,
-    runtime::RelationalRuntime,
+    history::data::CommitId, identity::data::EntityId, runtime::RelationalRuntime,
     transactions::data::RecordRef,
 };
-use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate_member(
     runtime: &RelationalRuntime,
-    current: &Arc<CanonicalCommitEnvelope>,
+    current: &OwnedValidatedOutputOrigins,
     id: EntityId,
     retirement: CommitId,
     predecessor: CommitId,
     plan: &crate::schema::data::LoweredAspectContractPlan,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let event = current
-        .authored_cascade_restoration
-        .as_ref()
+        .authored_source_restoration()
         .ok_or("restored birth lost recorded inverse")?;
     let origin = current.output_origin_for_entity(id, context)?;
     charge(
@@ -35,13 +36,19 @@ pub(super) fn validate_member(
         .find(|(_, new)| *new == id)
         .ok_or("restored birth has no exact original member")?
         .0;
-    let retired = runtime
-        .history
-        .canonical_envelope(retirement)
+    let retired = validated_history
+        .by_commit(
+            retirement,
+            &mut |commit| runtime.history.canonical_envelope(commit),
+            context,
+        )?
         .ok_or("original retirement unavailable")?;
-    let original = runtime
-        .history
-        .canonical_envelope(predecessor)
+    let original = validated_history
+        .by_commit(
+            predecessor,
+            &mut |commit| runtime.history.canonical_envelope(commit),
+            context,
+        )?
         .ok_or("original producer unavailable")?;
     let prior = retired.output_origin_for_entity(old, context)?;
     let member = original
@@ -74,7 +81,16 @@ pub(super) fn validate_member(
     {
         return Err("restored member changes original role or kind".into());
     }
-    let expected = super::membership::reconstruct(runtime, &original, old, plan, context, lease)?;
+    let expected = super::membership::reconstruct(
+        runtime,
+        &original,
+        old,
+        plan,
+        validated_history,
+        context,
+        lease,
+        schema,
+    )?;
     charge(context, current.patch.authoritative_record_patches.len())?;
     let patch = current
         .patch
@@ -100,21 +116,24 @@ pub(super) fn validate_member(
 /// any single member can be treated as a restored producer birth.
 pub(super) fn validate_groups(
     runtime: &RelationalRuntime,
-    current: &CanonicalCommitEnvelope,
+    current: &OwnedValidatedOutputOrigins,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
-    let Some(event) = &current.authored_cascade_restoration else {
+    let Some(event) = current.authored_source_restoration() else {
         return Ok(());
     };
-    current.validate_restoration_header(context)?;
     charge(context, runtime.history.catalog_len())?;
-    let retired = runtime
-        .history
-        .canonical_envelope(event.retirement)
+    let retired = validated_history
+        .by_commit(
+            event.retirement,
+            &mut |commit| runtime.history.canonical_envelope(commit),
+            context,
+        )?
         .ok_or("restoration retirement absent")?;
     let original = retired
-        .authored_cascade_retirement
-        .as_ref()
+        .authored_source_retirement()
         .ok_or("restoration retirement is not authored")?;
     if original.anchor != event.original_anchor
         || original.publications.len() != event.publications.len()
@@ -129,6 +148,7 @@ pub(super) fn validate_groups(
             .find(|(old, _)| *old == id)
             .map_or(id, |(_, new)| *new)
     };
+    let retired_origins = retired.as_view();
     for origin in &event.publications {
         let crate::history::data::CanonicalOutputPublication::AuthoredRestoration {
             predecessor,
@@ -153,7 +173,7 @@ pub(super) fn validate_groups(
                     && prior.meaning.source_partition == origin.meaning.source_partition
             })
             .ok_or("restoration invents a producer route")?;
-        retired.output_origin_for_route(&prior.meaning, context)?;
+        retired_origins.output_origin_for_route(&prior.meaning, context)?;
         charge(
             context,
             origin.producer.len()
@@ -175,9 +195,12 @@ pub(super) fn validate_groups(
             return Err("restoration changes producer provenance or membership".into());
         }
         charge(context, runtime.history.catalog_len())?;
-        let live = runtime
-            .history
-            .canonical_envelope(predecessor)
+        let live = validated_history
+            .by_commit(
+                predecessor,
+                &mut |commit| runtime.history.canonical_envelope(commit),
+                context,
+            )?
             .ok_or("restoration live predecessor absent")?;
         if live.commit.version_id >= retired.commit.version_id {
             return Err("restoration ancestry moves forward".into());
@@ -224,7 +247,8 @@ pub(super) fn validate_groups(
                 new.id == id
                     && new.kind == edge.kind
                     && new.source == map(edge.source)
-                    && new.target == map(edge.target)
+                    && (new.target == map(edge.target)
+                        || schema.registry().native_private_kinds.contains(&edge.kind))
             }) {
                 return Err("restoration changes owned relation correspondence".into());
             }
@@ -236,19 +260,20 @@ pub(super) fn validate_groups(
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate_relation(
     runtime: &RelationalRuntime,
-    current: &Arc<CanonicalCommitEnvelope>,
+    current: &OwnedValidatedOutputOrigins,
     id: crate::identity::data::RelationId,
     retirement: CommitId,
     predecessor: CommitId,
     plan: &crate::schema::data::LoweredAspectContractPlan,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     use worth_foundational::facade::*;
-    validate_groups(runtime, current, context)?;
+    validate_groups(runtime, current, validated_history, context, schema)?;
     let event = current
-        .authored_cascade_restoration
-        .as_ref()
+        .authored_source_restoration()
         .ok_or("restored edge lost inverse")?;
     if event.retirement != retirement {
         return Err("restored edge changes retirement".into());
@@ -263,15 +288,26 @@ pub(super) fn validate_relation(
         .find(|(_, new)| *new == id)
         .ok_or("restored edge lost original")?
         .0;
-    let original = runtime
-        .history
-        .canonical_envelope(predecessor)
+    let original = validated_history
+        .by_commit(
+            predecessor,
+            &mut |commit| runtime.history.canonical_envelope(commit),
+            context,
+        )?
         .ok_or("restored edge predecessor absent")?;
     if original.commit.version_id >= current.commit.version_id {
         return Err("restored edge ancestry moves forward".into());
     }
-    let expected =
-        super::relation_payload::reconstruct(runtime, &original, old, plan, context, lease)?;
+    let expected = super::relation_payload::reconstruct(
+        runtime,
+        &original,
+        old,
+        plan,
+        validated_history,
+        context,
+        lease,
+        schema,
+    )?;
     let patch = super::authored_restoration::creation_patch(
         expected.as_ref().and_then(|p| p.state.as_ref()),
         plan,

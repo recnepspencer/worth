@@ -1,4 +1,5 @@
 //! Bank-owned closed descriptions of public application-query denials.
+mod output_settlement;
 
 mod admission;
 mod execution;
@@ -49,6 +50,12 @@ pub struct BankApplicationQueryLaneDenial<Kind> {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BankApplicationOutputSettlementDenialKind {
+    WorldRecovery(worth_query_host::facade::primary_graph::RuntimeWorldRecoveryDenial),
+    RecoveryPublication(worth_query_host::facade::primary_graph::NoEffectCause),
+    PublicationReceipt(worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
+    CurrentControlBusy,
+    RetainedVerificationFactUnavailable(Box<WorthQueryOutputDemandDenialKind>),
+    SettlementProvenance(worth_query_host::facade::primary_graph::WorthQueryOutputSettlementProvenanceDenial),
     ManagedIndexSourceDenied,
     ManagedCleanupRequired(worth_query_host::facade::primary_graph::WorthQueryMutationCleanupFailureKind),
     RelationalExecution(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause),
@@ -118,6 +125,9 @@ where
 
 #[derive(Debug)]
 pub enum BankApplicationQueryDenial {
+    HistoryOutput(
+        Box<worth_query_host::facade::application_entry::WorthQueryHistoryOutputReadDenial>,
+    ),
     ExecutionRequest(
         worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
@@ -199,6 +209,9 @@ impl BankApplicationQueryDenial {
     /// Projects an ordinary or correction-disclosure query through the same Bank causes.
     pub fn from_request_query(denial: WorthQueryApplicationRequestQueryDenial) -> Self {
         match denial {
+            WorthQueryApplicationRequestQueryDenial::HistoryOutput(cause) => {
+                Self::HistoryOutput(Box::new(cause))
+            }
             WorthQueryApplicationRequestQueryDenial::ExecutionRequest(cause) => {
                 Self::from_execution_request(cause)
             }
@@ -281,53 +294,7 @@ impl BankApplicationQueryDenial {
     }
 
     fn from_output_settlement(denial: WorthQueryOutputDemandDenial) -> Self {
-        use BankApplicationOutputSettlementDenialKind as Bank;
-        use WorthQueryOutputDemandDenialKind as Query;
-
-        let kind = match denial.kind() {
-            Query::ManagedIndexSourceDenied => Bank::ManagedIndexSourceDenied,
-            Query::ManagedCleanupRequired(kind) => Bank::ManagedCleanupRequired(kind),
-            Query::BridgeConditional(cause) => Bank::BridgeConditional(cause),
-            Query::CorrespondenceDelivery(cause) => Bank::CorrespondenceDelivery(cause),
-            Query::ProductDelivery(cause) => Bank::ProductDelivery(cause),
-            Query::ExecutionRequest(cause) => Bank::ExecutionRequest(cause),
-            Query::SourceQueryInstallation(kind) => {
-                Bank::SourceQueryInstallation(query_installation(kind))
-            }
-            Query::SourcePrincipal(kind) => Bank::SourcePrincipal(WorthQueryPrincipalResolutionDenialKind::Refused(kind)),
-            Query::SourceScope(kind) => {
-                Bank::SourceScope(BankEntityResolutionDenial::from_query(worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(kind)).kind())
-            }
-            Query::SourceQueryAdmission(kind) => Bank::SourceQueryAdmission(admission(kind)),
-            Query::SourceQueryExecution(kind) => Bank::SourceQueryExecution(one_shot(kind)),
-            Query::ForeignSource => Bank::ForeignSource,
-            Query::MissingApplicableProducer => Bank::MissingApplicableProducer,
-            Query::AmbiguousApplicableProducer => Bank::AmbiguousApplicableProducer,
-            Query::ProducerUnavailable => Bank::ProducerUnavailable,
-            Query::ProducerDomainDenied => Bank::ProducerDomainDenied,
-            Query::RequestAuthorization(kind) => Bank::RequestAuthorization(authorization(worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(kind))),
-            Query::ProductSelection(refusal) => Bank::ProductSelection(product_selection(worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::Refused(refusal))),
-            Query::SchedulingRejected => Bank::SchedulingRejected,
-            Query::SchedulingDeferred => Bank::SchedulingDeferred,
-            Query::PublicationStale => Bank::PublicationStale,
-            Query::NoEffect => Bank::NoEffect,
-            Query::Superseded => Bank::Superseded,
-            Query::Cancelled => Bank::Cancelled,
-            Query::TimedOut => Bank::TimedOut,
-            Query::WorkBudgetExceeded => Bank::WorkBudgetExceeded,
-            Query::RetentionBudgetExceeded => Bank::RetentionBudgetExceeded,
-            Query::PublicationCapacityExceeded => Bank::PublicationCapacityExceeded,
-            Query::ForeignDemand => Bank::ForeignDemand,
-            Query::RequiredSuccessorStateUnavailable => Bank::RequiredSuccessorStateUnavailable,
-            Query::ForeignSettlement => Bank::ForeignSettlement,
-            Query::RetainedBasisUnavailable => Bank::RetainedBasisUnavailable,
-            Query::Closed => Bank::Closed,
-            Query::DuplicatePerformedSource => Bank::DuplicatePerformedSource,
-            Query::IncompleteDependencyCoverage => Bank::IncompleteDependencyCoverage,
-            Query::ManagedSourceExpansionUnsupported => Bank::ManagedSourceExpansionUnsupported,
-            Query::UnobservedWrite(cause) => Bank::UnobservedWrite(cause),
-        };
-        Self::OutputSettlement(kind)
+        Self::OutputSettlement(denial.kind().into())
     }
 
     pub(crate) fn from_continuation_execution(
@@ -339,7 +306,7 @@ impl BankApplicationQueryDenial {
         ))
     }
 
-    pub(crate) fn from_live_open(denial: WorthQueryApplicationLiveOpenDenial) -> Self {
+    pub fn from_live_open(denial: WorthQueryApplicationLiveOpenDenial) -> Self {
         Self::LiveOpen(BankApplicationQueryLaneDenial::from_query(
             live(denial.kind()),
             denial.authorization_denial(),

@@ -80,7 +80,6 @@ impl WorthQueryProductRuntime {
         self.admit_product_occurrence(branch.occurrence())
     }
 
-    #[cfg(test)]
     pub(crate) fn admit_product_branch(
         &self,
         identity: &worth_runtime_world::facade::ProductBranchIdentity,
@@ -207,3 +206,5 @@ pub(super) fn map_world_denial(
         ) => WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationRejected),
     }
 }
+
+mod court_doors_for_test;

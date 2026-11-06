@@ -12,8 +12,7 @@ pub use storage_model::*;
 pub use worth_query_host::facade::{declaration, primary_graph};
 pub use worth_query_host::facade::{
     worth_query_application_contribution, worth_query_operation, worth_query_operation_reads,
-    worth_query_operation_writes, worth_query_portable_type, worth_query_principal_binding,
-    worth_query_structured_value_binding,
+    worth_query_operation_writes, worth_query_portable_type, worth_query_structured_value_binding,
 };
 
 #[path = "schema/document_retention_invariants.rs"]

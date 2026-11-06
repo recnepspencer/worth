@@ -379,3 +379,5 @@ Err(PublicationDenial::Stopped(stop)) => RecoveryStep::Retain(
         }
     }
 }
+
+mod court_doors_for_test;

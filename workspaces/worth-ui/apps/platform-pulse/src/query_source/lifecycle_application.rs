@@ -114,7 +114,7 @@ impl PlatformPulseQueryLifecycle {
             WorthQueryCancellationSource, WorthQueryRequestScope,
         };
         let cancellation = WorthQueryCancellationSource::new();
-        let scope = WorthQueryRequestScope::new(None, cancellation.token());
+        let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         cancellation.cancel();
         self.next_attempt_scope_for_test = Some(scope);
     }
@@ -264,5 +264,5 @@ fn fresh_query_scope(
     use worth_query_host::facade::admission::authenticated_principal::{
         WorthQueryCancellationSource, WorthQueryRequestScope,
     };
-    WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token())
+    WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }

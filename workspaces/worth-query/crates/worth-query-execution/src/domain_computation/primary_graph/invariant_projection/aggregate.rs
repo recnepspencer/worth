@@ -8,9 +8,6 @@ mod completed_scan;
 mod execution;
 mod validated_plan;
 
-#[cfg(test)]
-mod tests;
-
 use worth_query_installation::facade::{
     ApplicationRelationRef, ApplicationSchema, ApplicationSignedAggregateValueBinding,
 };

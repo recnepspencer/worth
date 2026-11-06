@@ -28,8 +28,15 @@ pub struct PreparedEntityFieldLookup {
 }
 
 impl PreparedEntityFieldLookup {
+    pub(super) fn source_root(&self) -> (u64, u64) {
+        (self.runtime_identity, self.basis.root().id())
+    }
+
     pub(super) fn belongs_to_owner(&self, runtime_identity: u64) -> bool {
         self.runtime_identity == runtime_identity
+    }
+    pub fn retain_definition(&self) -> Arc<DerivedIndexDefinition> {
+        Arc::clone(&self.definition)
     }
     pub fn index_id(&self) -> DerivedIndexId {
         self.definition.index_id

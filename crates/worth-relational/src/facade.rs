@@ -99,7 +99,10 @@ pub mod history {
         RelationalDescriptiveTouchPrecision, RelationalMergeBranchBasisDenial,
         RelationalReplayRetentionDenial, RelationalTouchAdjacencyDirection, VersionGraphPolicy,
     };
-    pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
+    pub use crate::history::{
+        BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority,
+        OutputOriginHeaderCorruptionForTest,
+    };
     pub use crate::history::{
         RelationalAuthoredEntityIndexDefinition, RelationalAuthoredManagedSourceImpact,
         RelationalAuthoredManagedSourceMaterial, RelationalAuthoredManagedSourcePayloads,
@@ -211,6 +214,10 @@ pub mod runtime {
     pub use crate::presentation::facade::runtime::{
         ImmutableReadContract, RelationalBoundaryContract, RelationalRuntimeApi,
     };
+    #[doc(hidden)]
+    pub use crate::publication::ownership::{
+        CurrentOwnershipContactsForTest, CurrentOwnershipLocalityForTest,
+    };
     pub use crate::publication::{
         PostCommitConsumer, PostCommitConsumptionContext, PostCommitConsumptionFailure,
     };
@@ -228,6 +235,7 @@ pub mod runtime {
         QueryReadExecutionStop, QueryReadPacketDenial, RecoveredCheckpointProgramActivationUpdate,
         RelationProjectionRecord, RelationRecordProjection, RelationalAdjacencyDirection,
         RelationalAdjacencySupportDenial, RelationalAdjacencyVisit,
+        RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
         RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
         RelationalCandidateInputCounters, RelationalEntityMetadata,
         RelationalEntityMetadataPinDenial, RelationalEntityRetirement,

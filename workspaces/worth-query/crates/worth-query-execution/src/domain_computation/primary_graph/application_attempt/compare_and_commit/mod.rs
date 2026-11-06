@@ -5,7 +5,7 @@ pub use cleanup_required::{
 };
 
 mod commit_deferred;
-mod commit_outcome;
+pub(crate) mod commit_outcome;
 mod commit_receipt;
 mod committed_publication;
 
@@ -31,3 +31,5 @@ pub(in crate::domain_computation::primary_graph) use commit_receipt::{
 pub use committed_publication::WorthQueryCommittedProductPublication;
 
 pub(in crate::domain_computation::primary_graph) use commit_receipt::MaterializedCommittedField;
+
+pub(in crate::domain_computation::primary_graph) use commit_receipt::recording;

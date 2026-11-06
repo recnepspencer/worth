@@ -122,7 +122,8 @@ const ATTEMPTS: [(Attempt, Denial, Next); 9] = [
 /// table.
 fn every_kind() -> Vec<(Kind, Denial, Next)> {
     let listed = |kind: Kind| match kind {
-        Kind::CompletionExecutionRequest(_)
+        Kind::AdmissionAuthorization(_)
+        | Kind::CompletionExecutionRequest(_)
         | Kind::RecoveryNotAdmitted
         | Kind::RecoveryAlreadyMinted
         | Kind::SchemaMismatch
@@ -167,6 +168,7 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
     let settling = (Denial::Unavailable, Next::Retry);
     let server_fault = (Denial::InternalDenied, Next::ContactOperator);
     [
+        (Kind::AdmissionAuthorization(bank_server::BankAuthorizationDenialKind::Cancelled), (Denial::Cancelled, Next::Retry)),
         (Kind::RecoveryNotAdmitted, refused),
         (Kind::CompensationNotAdmitted, refused),
         (Kind::ReconciliationNotAdmitted, refused),

@@ -53,14 +53,41 @@ impl<S: ApplicationSchema, O> Reader<'_, '_, S, O> {
             session.refuse_content(Stop::BindingContractMismatch);
             return Err(Denial::BindingContractMismatch);
         };
-        let frame = crate::domain_computation::primary_graph::content::read_selected(
-            self.selected_product
-                .map(|product| product.relational_basis()),
-            self.reader.execution,
-            session,
-            value,
-            format,
-        )?;
+        let frame = match &self.reader.native {
+            super::super::read_basis::NativeProjectionRead::Committed(_) => {
+                crate::domain_computation::primary_graph::content::read_selected(
+                    self.selected_product
+                        .map(|product| product.relational_basis()),
+                    self.reader.execution,
+                    session,
+                    value,
+                    format,
+                )?
+            }
+            super::super::read_basis::NativeProjectionRead::Applied { candidate, .. } => {
+                let frame = candidate
+                    .project_candidate()
+                    .retain_entity_field_content(
+                        self.reader.execution,
+                        identity.entity_id,
+                        identity.kind,
+                        &locator,
+                    )
+                    .map_err(|cause| {
+                        session.refuse_content(Stop::Content(cause));
+                        Denial::Content(cause)
+                    })?
+                    .ok_or_else(|| {
+                        session.refuse_content(Stop::ContentBasisUnavailable);
+                        Denial::UnavailableBasis
+                    })?;
+                if frame.identity() != value {
+                    session.refuse_content(Stop::BindingContractMismatch);
+                    return Err(Denial::BindingContractMismatch);
+                }
+                frame
+            }
+        };
         AdmittedContent::new(self.reader.execution, frame, format)
             .map(Some)
             .map_err(|cause| {

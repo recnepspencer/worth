@@ -7,9 +7,7 @@ use crate::domain_computation::primary_graph::structural_walk::{
 use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
 use worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts as Contracts;
-use worth_relational::facade::{
-    snapshots::SnapshotHandle, transactions::RelationalExecutionDenialCause as Cause,
-};
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 struct Issued {
     body: Arc<StructuralWalkObservation>,
@@ -17,8 +15,7 @@ struct Issued {
     contracts: Arc<Contracts>,
     cookie: u64,
 }
-pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) enum WalkRecordDenial
-{
+pub enum WalkRecordDenial {
     Execution(Cause),
     Conflict,
 }
@@ -43,12 +40,12 @@ impl IssuedWalkValues {
         key: &StructuralWalkKey,
         admission: Admission,
         contracts: &Arc<Contracts>,
-        snapshot: &SnapshotHandle,
+        snapshot: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
     ) -> Option<&Arc<StructuralWalkObservation>> {
         let issued = self.values.get(key)?;
         (issued.admission == admission
             && Arc::ptr_eq(&issued.contracts, contracts)
-            && issued.body.source() == snapshot)
+            && issued.body.source() == &snapshot)
             .then_some(&issued.body)
     }
 }
@@ -67,11 +64,7 @@ impl DecisionReads {
     ) {
         self.failed_walk = true;
     }
-    pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) fn record_walk<
-        Schema,
-        Relation,
-        Entity,
-    >(
+    pub fn record_walk<Schema, Relation, Entity>(
         &mut self,
         walk: &crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWalk<Schema, Relation, Entity>,
         admission: Admission,
@@ -102,7 +95,8 @@ impl DecisionReads {
         if let Some(prior) = prior {
             if prior.admission != admission
                 || !Arc::ptr_eq(&prior.contracts, &contracts)
-                || !walk.issued_at(prior.body.source(), prior.cookie)
+                || walk.observation().source() != prior.body.source()
+                || walk.cookie() != prior.cookie
             {
                 return Err(WalkRecordDenial::Conflict);
             }

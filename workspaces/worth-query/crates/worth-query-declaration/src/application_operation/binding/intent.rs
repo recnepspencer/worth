@@ -61,6 +61,14 @@ where
     /// refused, and the ordinary mutation lane refuses the binding.
     const WORKFLOW_CONTROL: bool = false;
 
+    /// Declares the finite installed owner demands for an authored source change.
+    fn visit_coupled_outputs<
+        Visitor: crate::application_program::ApplicationCoupledOutputVisitor<Schema, Self>,
+    >(
+        _visitor: &mut Visitor,
+    ) {
+    }
+
     /// Explicit inspection meaning for this source's original retained input.
     /// Execute and correction permission do not supply inspection disclosure.
     fn visit_source_disclosure<
@@ -136,6 +144,11 @@ where
                 super::super::source_disclosure::DescribeSourceDisclosure::<Schema, Self>::new(),
             ),
         )
+        .with_coupled_outputs({
+            let mut visitor = crate::application_program::DescribeCoupledOutputs::new();
+            Self::visit_coupled_outputs(&mut visitor);
+            visitor.finish()
+        })
     }
 }
 

@@ -13,7 +13,7 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Ca
 /// The complete selected source meaning, without its revision-bearing identity.
 /// A restored or incomplete observation cannot mint this cutoff input.
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceSelection {
+pub struct WorthQueryObservedSourceSelection {
     runtime_authority: u64,
     schema_binding: ApplicationSchemaBindingIdentity,
     meaning: Arc<WorthQueryObservedSourceMeaning>,
@@ -123,7 +123,7 @@ impl WorthQueryObservedSourceSelection {
     }
 }
 
-fn same_footprint_membership(
+pub fn same_footprint_membership(
     left: &WorthQueryObservedSourceFootprint,
     right: &WorthQueryObservedSourceFootprint,
 ) -> bool {
@@ -249,16 +249,13 @@ fn same_adjacencies(
     true
 }
 
-fn same_text(left: &str, right: &str) -> bool {
+pub fn same_text(left: &str, right: &str) -> bool {
     if left.len() != right.len() {
         return false;
     }
 
     left == right
 }
-
-#[cfg(test)]
-mod tests;
 
 // A managed Parent can hide the path inside its maintained Source contract.
 // This entrance admits no selected-membership cutoff for that whole support.
@@ -269,3 +266,5 @@ fn has_derived_source_path(selection: &WorthQueryObservedRootSelection) -> bool 
                 worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind::Derived)
     })
 }
+
+mod court_doors_for_test;

@@ -5,11 +5,11 @@ use std::collections::BTreeSet;
 mod aggregates;
 mod aspect_presence;
 mod components;
-mod computation_inputs;
-mod expected_keys;
+pub(crate) mod computation_inputs;
+pub(crate) mod expected_keys;
 mod managed_sources;
 mod source_publications;
-pub(super) mod structural_walks;
+pub(crate) mod structural_walks;
 pub(in crate::domain_computation::primary_graph) use computation_inputs::ObservedComputationInputs;
 pub(in crate::domain_computation::primary_graph) use expected_keys::ExpectedFactKeys;
 
@@ -27,7 +27,7 @@ use crate::domain_computation::primary_graph::application_contribution::{
 /// reader is recorded with that call, and one the handler read itself is
 /// recorded as the handler's. A key both read is both.
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct DecisionReads {
+pub struct DecisionReads {
     handler: BTreeSet<WorthQueryApplicationFactKey>,
     source_publications: Option<std::sync::Arc<source_publications::IssuedSourcePublicationValues>>,
     managed_sources: managed_sources::IssuedManagedSourceValues,
@@ -55,7 +55,7 @@ pub(in crate::domain_computation::primary_graph) struct DecisionReads {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum FailedDecisionRead {
+pub enum FailedDecisionRead {
     Key(WorthQueryApplicationFactKey),
     StructuralWalk,
     ManagedSource,
@@ -107,7 +107,7 @@ impl ComputationPriorUnavailable {
 /// What became of one decision read. A field, entity or relation read
 /// records an absent value as its content, so only a traversal can fail.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum DecisionReadOutcome {
+pub enum DecisionReadOutcome {
     Observed,
     Failed,
 }
@@ -141,11 +141,7 @@ impl DecisionReads {
     }
 
     /// The one way a decision read is recorded, on every outcome of the read.
-    pub(super) fn record(
-        &mut self,
-        key: WorthQueryApplicationFactKey,
-        outcome: DecisionReadOutcome,
-    ) {
+    pub fn record(&mut self, key: WorthQueryApplicationFactKey, outcome: DecisionReadOutcome) {
         let key = self.aspect_presence.canonical_key(key);
         if outcome == DecisionReadOutcome::Failed && self.failed.is_none() {
             self.failed = Some(key.clone());
@@ -328,5 +324,4 @@ impl<Schema, Operation>
     }
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

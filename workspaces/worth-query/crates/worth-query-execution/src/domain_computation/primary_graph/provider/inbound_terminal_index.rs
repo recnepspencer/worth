@@ -27,7 +27,7 @@ use crate::domain_computation::application_aftermath::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryCanonicalInboundCompletion {
+pub struct WorthQueryCanonicalInboundCompletion {
     correlation: ExternalEffectCorrelationIdentity,
     operation: String,
     audience: String,
@@ -219,7 +219,7 @@ impl WorthQueryCanonicalInboundCompletion {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryInboundTerminalIndexDenial {
+pub enum WorthQueryInboundTerminalIndexDenial {
     ReadRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     IndexUnavailable,
     ReconstructionWorkExhausted,
@@ -379,7 +379,6 @@ impl WorthQueryInboundTerminalIndex {
         Ok(())
     }
 
-    #[cfg(test)]
     fn destroy_derived(&self) {
         let mut state = self
             .state
@@ -390,3 +389,5 @@ impl WorthQueryInboundTerminalIndex {
         state.generation = state.generation.wrapping_add(1);
     }
 }
+
+mod court_doors_for_test;

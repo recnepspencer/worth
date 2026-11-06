@@ -67,7 +67,7 @@ impl WorthQueryExecutionGraphReadStreamEvidence {
     }
 }
 
-pub(crate) struct WorthQueryGraphReadStreamAccumulator {
+pub struct WorthQueryGraphReadStreamAccumulator {
     materialization: WorthQueryGraphReadMaterialization,
 }
 
@@ -125,3 +125,5 @@ impl WorthQueryGraphReadStreamAccumulator {
         }
     }
 }
+
+mod court_doors_for_test;

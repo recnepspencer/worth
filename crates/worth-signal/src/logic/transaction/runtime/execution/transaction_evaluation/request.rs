@@ -48,6 +48,8 @@ where
         }
     }
 
+    /// Forces `run` to re-execute the requested targets even when they are
+    /// current. Reads ignore it: a read never recomputes a current value.
     pub fn on_demand(mut self) -> Self {
         self.request_mode = EvaluationRequestMode::ForceOnDemand;
         self
@@ -90,7 +92,9 @@ where
             .evaluate_checked(&self.targets, self.request_mode, evaluator, lease)
     }
 
-    pub fn read<F, O>(self, evaluator: &F) -> Result<AspectVersion, SignalError>
+    /// Reads one target. Like `read_many`, it settles only what is not
+    /// current and ignores the request mode.
+    pub fn read<F, O>(mut self, evaluator: &F) -> Result<AspectVersion, SignalError>
     where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
@@ -100,53 +104,42 @@ where
                 "guided read requires exactly one target; use read_many for multiple targets",
             ));
         };
-        if !matches!(
-            self.tx.graph.get_state(*node)?,
-            crate::data::node::NodeState::Clean
-        ) {
-            self.tx.execute_evaluation(
-                TransactionExecutionIntent::Targets {
-                    targets: &self.targets,
-                    request_mode: self.request_mode,
-                    stage_task_candidates: false,
-                },
-                evaluator,
-                self.tx.execution,
-            )?;
-        }
-        self.tx.graph.node_aspect_version(*node)
+        let node = *node;
+        self.settle(evaluator)?;
+        self.tx.graph.node_aspect_version(node)
     }
 
-    pub fn read_many<F, O>(self, evaluator: &F) -> Result<Vec<AspectVersion>, SignalError>
+    /// Reads every target after settling what is not current.
+    pub fn read_many<F, O>(mut self, evaluator: &F) -> Result<Vec<AspectVersion>, SignalError>
     where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        let pending = self
-            .targets
-            .iter()
-            .copied()
-            .filter(|node| {
-                !matches!(
-                    self.tx.graph.get_state(*node),
-                    Ok(crate::data::node::NodeState::Clean)
-                )
-            })
-            .collect::<Vec<_>>();
-        if !pending.is_empty() {
-            self.tx.execute_evaluation(
-                TransactionExecutionIntent::Targets {
-                    targets: &pending,
-                    request_mode: self.request_mode,
-                    stage_task_candidates: false,
-                },
-                evaluator,
-                self.tx.execution,
-            )?;
-        }
+        self.settle(evaluator)?;
         self.targets
-            .into_iter()
-            .map(|node| self.tx.graph.node_aspect_version(node))
+            .iter()
+            .map(|node| self.tx.graph.node_aspect_version(*node))
             .collect()
+    }
+
+    /// A clean node is only locally clean: it is current when nothing above
+    /// it is unsettled, which the planner decides from the whole upstream
+    /// path. Reads therefore always plan in `Default` mode, which keeps
+    /// current targets out of the plan; forcing applies only to `run`.
+    fn settle<F, O>(&mut self, evaluator: &F) -> Result<(), SignalError>
+    where
+        F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
+        O: IntoEvaluationOutput,
+    {
+        self.tx.execute_evaluation(
+            TransactionExecutionIntent::Targets {
+                targets: &self.targets,
+                request_mode: EvaluationRequestMode::Default,
+                stage_task_candidates: false,
+            },
+            evaluator,
+            self.tx.execution,
+        )?;
+        Ok(())
     }
 }

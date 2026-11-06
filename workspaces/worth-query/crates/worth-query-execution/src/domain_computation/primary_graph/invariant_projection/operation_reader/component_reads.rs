@@ -89,8 +89,8 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
             let mut answer=Vec::new();
             answer.try_reserve_exact(aggregates.len()).map_err(|_|self.reader.walk_stop(worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed,set.name()))?;
             crate::domain_computation::primary_graph::component_selection::storage::body(&execution,&allocation).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
-            let body=Arc::new(ComponentSelection::new(scope,layout.clone(),root,member.map_or(ComponentSelectionSubject::Census,|m|ComponentSelectionSubject::Of(m.entity_id)),self.reader.snapshot.clone(),aggregates,facts,allocation,||AggregateObservation::checkpoint(context)).map_err(|cause|self.reader.walk_stop(cause,set.name()))?.ok_or_else(||Denial::new(Kind::ForeignIdentity,set.name()))?);
-            for aggregate in body.physical_aggregates().expect("physical component selection") { answer.push(WorthQueryInvariantProjectionComponent::new(Arc::clone(aggregate),&layout,self.reader.binding_identity.clone(),self.reader.authority_identity).with_selection(Arc::clone(&body))); }
+            let body=Arc::new(ComponentSelection::new(scope,layout.clone(),root,member.map_or(ComponentSelectionSubject::Census,|m|ComponentSelectionSubject::Of(m.entity_id)),self.reader.native.origin(self.reader.snapshot).retained(),aggregates,facts,allocation,||AggregateObservation::checkpoint(context)).map_err(|cause|self.reader.walk_stop(cause,set.name()))?.ok_or_else(||Denial::new(Kind::ForeignIdentity,set.name()))?);
+            for aggregate in body.physical_aggregates().expect("physical component selection") { answer.push(WorthQueryInvariantProjectionComponent::new(Arc::clone(aggregate),&layout,self.reader.binding_identity.clone(),self.reader.authority_identity,self.reader.native.candidate_identity().map(|id|id.qualification())).with_selection(Arc::clone(&body))); }
             Ok((answer,body))
         });
         match result {
@@ -98,11 +98,10 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
             Err(stop) => Err(self.reader.walk_stop(stop.into(), set.name())),
         }
     }
-    fn component_pin(&mut self, subject: &str) -> Result<RelationalPinnedRead, Denial> {
+    fn component_pin(&mut self, subject: &str) -> Result<RelationalPinnedRead<()>, Denial> {
         self.reader
-            .runtime
-            .read_truth()
-            .pin_read_capability(self.reader.snapshot, &[], self.reader.execution)
+            .native
+            .pin(self.reader.snapshot, self.reader.execution)
             .map_err(|stop| match stop {
                 worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(
                     stop,

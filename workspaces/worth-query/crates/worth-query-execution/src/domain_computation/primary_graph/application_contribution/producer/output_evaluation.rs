@@ -1,6 +1,6 @@
 //! One actual producer field comparison, completed before Ready and retained through retries.
 pub(super) mod installation;
-mod native;
+pub(crate) mod native;
 use super::output_equivalence_contract::InstalledProducerOutputEquivalence;
 use crate::domain_computation::primary_graph::{
     application_output_demand::PreparedReadyBacking,
@@ -9,7 +9,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryPrimaryGraphLayout,
 };
-#[cfg(test)]
 pub(super) use native::dependency_matches_output;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
@@ -85,7 +84,7 @@ impl ProducerOutputEvaluation {
 }
 
 /// One installed comparison owns its exact field/role meaning and lowering.
-pub(in crate::domain_computation::primary_graph) struct InstalledOutputComparison {
+pub struct InstalledOutputComparison {
     lowering: Arc<BridgeInstalledConditionalLowering>,
     field: Arc<InstalledProducerOutputEquivalence>,
     role: Arc<str>,

@@ -11,12 +11,24 @@ pub(super) fn resolve_retained_idempotency<Schema, Operation, Input, Scope>(
     product: &crate::basis::WorthQueryProductBranchLease,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     aftermath_causality: Option<&WorthQueryPendingAftermathCausality>,
+    held: Option<&graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
 ) -> Option<WorthQueryApplicationCommitOutcome>
 where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
     let product = product.publication_binding();
+    if let Some(coordination) = held {
+        return resolve_under_coordination(
+            execution,
+            application,
+            admission,
+            &product,
+            idempotency,
+            aftermath_causality,
+            coordination,
+        );
+    }
     let command_lane = application
         .runtime
         .primary_provider
@@ -28,21 +40,45 @@ where
         .application_branch_commit_lane(product.observation());
 
     let coordination = commit_lane.enter();
-    let proof =
-        match application.authorize_retained_idempotency(execution, admission, &coordination) {
-            Ok(proof) => proof,
-            Err(denial) => {
-                return Some(commit_outcome_from_authorization_denial(
-                    denial,
-                    DenialStage::DecisionReadSet,
-                ))
-            }
-        };
+    resolve_under_coordination(
+        execution,
+        application,
+        admission,
+        &product,
+        idempotency,
+        aftermath_causality,
+        &coordination,
+    )
+}
+
+fn resolve_under_coordination<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+    idempotency: WorthQueryApplicationIdempotencyBinding,
+    aftermath_causality: Option<&WorthQueryPendingAftermathCausality>,
+    coordination: &graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
+) -> Option<WorthQueryApplicationCommitOutcome>
+where
+    Schema: ApplicationSchema,
+    Input: Clone + Send + Sync + 'static,
+{
+    let proof = match application.authorize_retained_idempotency(execution, admission, coordination)
+    {
+        Ok(proof) => proof,
+        Err(denial) => {
+            return Some(commit_outcome_from_authorization_denial(
+                denial,
+                DenialStage::DecisionReadSet,
+            ))
+        }
+    };
     match proof.govern((), |()| {
         application
             .runtime
             .primary_provider
-            .resolve_idempotency_binding_at_product(execution, idempotency, &product)
+            .resolve_idempotency_binding_at_product(execution, idempotency, product)
     }) {
         Err(((), denial)) => Some(commit_outcome_from_authorization_denial(
             denial,

@@ -20,6 +20,7 @@ use worth_relational::facade::{
 
 fn prepared(posture: Posture) -> PreparedAuthoredIdentity {
     PreparedAuthoredIdentity {
+        co_anchors: Vec::new(),
         declaration: DeclaredAuthoredCorrection::from_untrusted_parts(
             DeclaredAuthoredCorrectionParts {
                 family: WorthQueryPortableTypeIdentity::from_untrusted(

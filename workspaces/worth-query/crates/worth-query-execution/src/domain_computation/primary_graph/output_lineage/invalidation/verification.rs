@@ -22,7 +22,7 @@ use super::source_alignment::SnapshotAlignedMarkState;
 use super::SourceInvalidationOwner;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum SettlementVerificationStop {
+pub enum SettlementVerificationStop {
     Alignment,
     Admission(CompanionPreflightStop),
     SourceRead(WorthQuerySourceCurrentnessFailure),
@@ -48,7 +48,7 @@ impl From<super::SettlementRegistrationStop> for SettlementVerificationStop {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) enum DirtyReverification {
+pub enum DirtyReverification {
     Verified(VerifiedDirtySettlement),
     HistoricalCurrent,
     AlreadyCurrent,
@@ -58,7 +58,7 @@ pub(in crate::domain_computation::primary_graph) enum DirtyReverification {
 
 /// Minted only after native comparisons at the exact selected source root.
 /// The non-clone image binds cell topology, source position, and derived row.
-pub(in crate::domain_computation::primary_graph) struct VerifiedDirtySettlement {
+pub struct VerifiedDirtySettlement {
     runtime_instance_id: u64,
     cell: CompanionBranchCell<BranchMarkRoot>,
     image: CompanionBranchImage<BranchMarkRoot>,
@@ -187,3 +187,5 @@ impl SourceInvalidationOwner {
         Ok(())
     }
 }
+
+mod court_doors_for_test;

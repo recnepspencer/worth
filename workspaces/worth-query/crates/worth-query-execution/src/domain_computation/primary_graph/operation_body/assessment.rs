@@ -92,6 +92,4 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
-#[cfg(test)]
-#[path = "assessment/tests.rs"]
-mod tests;
+mod court_doors_for_test;

@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSettlement
 
 impl ConsumedOutputEvidence {
     /// Test journeys retain the original identity, facts and selected native root.
-    pub(in crate::domain_computation::primary_graph) fn retained_for_test(
+    pub fn retained_for_test(
         identity: Arc<RecordedSettlementIdentity>,
         source_facts: impl Into<
             crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
@@ -35,7 +35,7 @@ impl ConsumedOutputEvidence {
 impl ConsumedOutputEvidence {
     /// The same retained consumption carrier, with an actual sealed Native
     /// witness supplied by the restored-root reader's full comparison.
-    pub(in crate::domain_computation::primary_graph) fn restored_with_witness_for_test(
+    pub fn restored_with_witness_for_test(
         identity: Arc<RecordedSettlementIdentity>,
         source_facts: impl Into<
             crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,

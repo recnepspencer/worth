@@ -1,6 +1,7 @@
 mod consequence_materialization;
 mod construction;
 mod mutation_tracking;
+mod sequential_apply;
 #[cfg(test)]
 mod tests;
 

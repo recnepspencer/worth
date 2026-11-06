@@ -1,9 +1,9 @@
 pub(super) mod closed;
-pub(super) mod closed_notes;
+pub(crate) mod closed_notes;
 pub(super) use closed_notes::ClosedCleanupLinks;
 pub(super) use closed_notes::ClosedCleanupQueue;
 pub(super) mod custody;
-mod custody_notes;
+pub(crate) mod custody_notes;
 
 pub(super) use custody_notes::CustodyCleanupLinks;
 pub(super) use custody_notes::CustodyCleanupQueue;

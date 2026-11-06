@@ -135,9 +135,7 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
     }
 
     #[allow(dead_code)]
-    pub(in crate::domain_computation) fn provider_session_affinity(
-        &self,
-    ) -> WorthQueryProviderSessionAffinityView<'_> {
+    pub fn provider_session_affinity(&self) -> WorthQueryProviderSessionAffinityView<'_> {
         self.affinity.view()
     }
 
@@ -215,3 +213,5 @@ impl WorthQuerySessionEffectAuthority<'_> {
         &self.terminal_binding
     }
 }
+
+mod court_doors_for_test;

@@ -154,7 +154,6 @@ impl DemandRegistryState {
             .records
             .iter()
             .filter(|(key, record)| {
-                #[cfg(test)]
                 super::post_commit::record_sweep_contact();
                 retired(key, record)
                     && record.prepared_prerequisite_claims == 0
@@ -166,7 +165,6 @@ impl DemandRegistryState {
         let mut released = Vec::with_capacity(count);
         let mut settlements = Vec::with_capacity(count);
         for (key, mut record) in &mut self.records {
-            #[cfg(test)]
             super::post_commit::record_sweep_contact();
             if retired(key, &record)
                 && record.prepared_prerequisite_claims == 0
@@ -224,3 +222,5 @@ impl super::WorthQueryAcceptedOutputAuthority {
         }
     }
 }
+
+mod court_doors_for_test;

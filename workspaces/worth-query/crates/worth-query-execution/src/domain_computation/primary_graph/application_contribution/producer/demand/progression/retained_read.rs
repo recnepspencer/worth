@@ -14,8 +14,6 @@ use super::WorthQueryProducerOutputFamily;
 use crate::domain_computation::primary_graph::application_query::FreshQueryPermissionStop;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
-use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenial;
-use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
 use crate::domain_computation::primary_graph::WorthQueryApplicationProjection;
 use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial;
@@ -315,29 +313,6 @@ fn query_admission_denial(
         other => WorthQueryOutputDemandDenialKind::SourceQueryAdmission(other),
     };
     denial(kind, "")
-}
-
-fn query_execution_denial(
-    stop: WorthQueryApplicationOneShotDenial,
-) -> WorthQueryOutputDemandDenial {
-    use WorthQueryApplicationOneShotDenialKind as Kind;
-    let kind = match stop.kind() {
-        Kind::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
-        Kind::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
-        Kind::Authorization(kind) => {
-            WorthQueryOutputDemandDenialKind::of_request_authorization(kind)
-        }
-        Kind::WorkLimitExceeded => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        Kind::RetentionCapacityExhausted => {
-            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-        }
-        other => WorthQueryOutputDemandDenialKind::SourceQueryExecution(other),
-    };
-    denial(kind, "")
-}
-
-fn work_denial() -> WorthQueryOutputDemandDenial {
-    denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
 }
 
 fn resource_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {

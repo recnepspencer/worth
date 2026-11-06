@@ -1,0 +1,17 @@
+{
+ "interface_items": [
+  "domain_computation::managed_run::relational_observation::WorthQueryManagedRelationalObservationIdentity",
+  "domain_computation::operation_binding::authority::WorthQueryApplicationGraphWorkAffinity",
+  "domain_computation::primary_graph::application_attempt::fact::managed_source_read::ManagedSourceRead",
+  "domain_computation::primary_graph::application_output_demand::registry::claim_readthrough::incoming::ClaimBatch",
+  "domain_computation::primary_graph::application_output_demand::registry::prerequisite_claims::PreparedPrerequisiteClaims",
+  "domain_computation::primary_graph::application_output_demand::registry::required_context::RequiredOutputDemandContext",
+  "domain_computation::primary_graph::application_output_demand::settlement::producer_identity::SettlementProducerIdentity",
+  "domain_computation::primary_graph::application_query::observed_source::root_selection::orbit::DeclaredOrbitSelection",
+  "domain_computation::primary_graph::derived_source::dependencies::DerivedSourceDependencies",
+  "domain_computation::primary_graph::exact_basis_access::WorthQueryExactBasisSnapshotDenial",
+  "domain_computation::primary_graph::output_lineage::input_cutoff::stable_cutover::PublishedStableLineage",
+  "domain_computation::primary_graph::provider::session_commit::receipt_basis_retention::WorthQueryReceiptBasisRetentionStore",
+  "domain_computation::primary_graph::structural_walk::dependencies::StructuralWalkDependencies"
+ ]
+}

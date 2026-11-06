@@ -28,7 +28,7 @@ type Scope<Schema, Binding> =
 
 /// The terminal Query permission result retains original owner stops. A
 /// caller cannot substitute a stale principal or scope into the read plan.
-pub(in crate::domain_computation::primary_graph) enum FreshQueryPermissionStop<E> {
+pub enum FreshQueryPermissionStop<E> {
     Principal(WorthQueryPrincipalResolutionDenial),
     Scope(WorthQueryEntityResolutionDenial),
     Query(WorthQueryApplicationQueryAdmissionDenial),

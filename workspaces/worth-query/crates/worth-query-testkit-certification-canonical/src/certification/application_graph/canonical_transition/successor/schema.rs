@@ -1,7 +1,7 @@
 //! One independently installed source field using the generated canonical binding.
-#[path = "schema/records.rs"]
-mod storage_model;
-pub use super::{binding::NestedBinding, derived_query, edit, model::*, output, producer, query};
+pub use super::{
+    binding::NestedBinding, derived_query, edit, model::*, output, producer, query, retire_source,
+};
 pub use declaration::{application_schema::*, authentication::*};
 pub use storage_model::*;
 pub use worth_query_host::facade::{declaration, *};
@@ -35,12 +35,7 @@ impl ApplicationSchema for CanonicalSchema {
         fragment::visit_correction(Self, source, visitor)
     }
 }
-impl CanonicalSchema {
-    pub fn declaration(
-    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        <Self as ApplicationSchema>::declaration()
-    }
-}
+
 impl ApplicationSchemaComposition for CanonicalSchema {
     type Contributions = <Self as Fragment>::Members;
 }
@@ -145,7 +140,28 @@ impl Registration<CanonicalSchema> for Contracts {
                 edit::Edit::reference(),
                 DocumentValueField::at("DocumentValueField"),
             )
-            .application_mutation_binding::<edit::EditBinding>())
+            .application_mutation_binding::<edit::EditBinding>()
+            .operation(
+                retire_source::RetireSource::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .operation_projection_work_budget(retire_source::RetireSource::reference(), 16)
+            .operation_read_entity(
+                retire_source::RetireSource::reference(),
+                Document::reference(),
+            )
+            .operation_read_field(
+                retire_source::RetireSource::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
+            )
+            .operation_delete(
+                retire_source::RetireSource::reference(),
+                Document::reference(),
+            )
+            .application_mutation_binding::<retire_source::RetireBinding>())
     }
 }
 
@@ -178,3 +194,6 @@ impl DocumentPrincipalBinding {
         )
     }
 }
+
+#[path = "schema/records.rs"]
+mod storage_model;

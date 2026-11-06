@@ -22,6 +22,7 @@ impl<S, E> WorthQueryInvariantEntityIdentity<S, E> {
             kind: self.kind,
             entity: Arc::clone(&self.entity),
             authority_identity: self.authority_identity,
+            phase: self.phase,
             _marker: PhantomData,
         }
     }
@@ -37,6 +38,7 @@ impl<S, E> WorthQueryInvariantMutationTarget<S, E> {
             runtime_authority: self.runtime_authority,
             binding_identity: self.binding_identity.clone(),
             admission_identity: self.admission_identity,
+            phase: self.phase,
             _marker: PhantomData,
         }
     }

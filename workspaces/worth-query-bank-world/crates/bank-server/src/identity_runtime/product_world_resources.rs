@@ -47,7 +47,7 @@ pub(crate) fn bank_product_world_resources() -> WorthQueryProductWorldResources 
                 owner_created_component_custody_records: 2_048,
             },
         },
-        WorthQueryProductWorldClock::start(),
+        WorthQueryProductWorldClock::start(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         worth_query_host::facade::runtime::WorthQueryInvalidationResources::new(),
         BANK_EXECUTION_POLICY,
     )

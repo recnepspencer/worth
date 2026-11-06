@@ -8,7 +8,7 @@ use super::super::super::{
 use super::decision_reads::DecisionReadOutcome;
 use super::WorthQueryApplicationOperationInvariantProjectionReader as Reader;
 use crate::domain_computation::primary_graph::application_attempt::{
-    observe_aspect_presence, WorthQueryApplicationFactKey,
+    observation::aspect_presence::observe_aspect_presence_in_view, WorthQueryApplicationFactKey,
 };
 use std::collections::BTreeMap;
 use worth_query_declaration::facade::application_schema::fragment::{AspectDefinition, Fragment};
@@ -86,14 +86,16 @@ impl<S: ApplicationSchema, O> ReadPort for Reader<'_, '_, S, O> {
             return Err(FragmentDenial::Read(HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::from(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted))));
         }
         self.reader.realized_scope.record(identity.entity_id);
-        let present = observe_aspect_presence(
-            self.reader.runtime,
-            self.reader.execution,
-            self.reader.snapshot,
-            identity.entity_id,
-            identity.kind,
-            locator.aspect().aspect_key(),
-        );
+        let present = match self.reader.native.projection(self.reader.snapshot) {
+            Some(view) => observe_aspect_presence_in_view(
+                &view,
+                self.reader.execution,
+                identity.entity_id,
+                identity.kind,
+                locator.aspect().aspect_key(),
+            ),
+            None => Ok(None),
+        };
         let present = match present {
             Ok(Some(present)) => present,
             Ok(None) => {

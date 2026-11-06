@@ -1,4 +1,4 @@
-mod preflight;
+pub(crate) mod preflight;
 
 pub(in crate::domain_computation) struct WorthQueryDirectReadmissionTransitionPermit {
     _owner: (),

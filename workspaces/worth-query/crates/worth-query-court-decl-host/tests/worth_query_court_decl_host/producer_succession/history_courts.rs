@@ -1,5 +1,5 @@
 //! Atomic history preserves every route's provenance and rejects altered closure anchors.
-use super::{checkpoint::*, courts::*, *};
+use super::{checkpoint::*, settlement::*, *};
 #[test]
 fn checkpoint_keeps_exact_per_route_retirement_and_recovers_the_surviving_generator() {
     let app = world::install(2, Arc::default());

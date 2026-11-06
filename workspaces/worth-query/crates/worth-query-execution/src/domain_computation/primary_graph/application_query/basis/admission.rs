@@ -1,4 +1,3 @@
-#[cfg(test)]
 use super::{map_index_currency_denial, map_registration_denial};
 use crate::domain_computation::primary_graph::application_query::{
     controls::WorthQueryApplicationQueryBasis, WorthQueryApplicationQueryAdmissionDenial,
@@ -78,7 +77,6 @@ where
     }
 }
 
-#[cfg(test)]
 pub(super) fn register_basis<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -102,7 +100,3 @@ where
         .register(execution, basis, graph)
         .map_err(map_registration_denial)
 }
-
-#[cfg(test)]
-#[path = "admission/product_carriage.rs"]
-mod product_carriage_tests;

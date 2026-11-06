@@ -258,7 +258,7 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
         .unwrap(),
         Some(crate::history::data::RequiredOutputRoutePosition::Published(original_commit))
     );
-    let origin = cold.envelope.required_output_origin.as_ref().unwrap();
+    let origin = cold.origin.as_ref();
     assert_eq!(origin.birth, original_commit);
     assert_eq!(origin.birth_producer, "native-creator");
     assert_eq!(origin.producer, "native-creator");

@@ -61,12 +61,12 @@ impl<Schema, Role> WorthQueryProducerOutputEquivalence<Schema, Role> {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in super::super) struct InstalledProducerOutputEquivalence {
+pub struct InstalledProducerOutputEquivalence {
     pub(in super::super) field: FieldExpectation,
     pub(in super::super) meaning: [u8; 32],
 }
 
-pub(in super::super) fn seal<Schema: schema::ApplicationSchema>(
+pub fn seal<Schema: schema::ApplicationSchema>(
     identity: &str,
     role: &str,
     field: &NativeFieldBindingExpectation,
@@ -149,3 +149,5 @@ fn standard_u64_meaning(
         field.frame.map(|frame| frame.as_str()),
     ))
 }
+
+mod court_doors_for_test;

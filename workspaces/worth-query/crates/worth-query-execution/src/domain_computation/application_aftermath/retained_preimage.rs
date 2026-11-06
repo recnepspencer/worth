@@ -51,6 +51,7 @@ impl WorthQueryRetainedPreImageField {
 #[derive(Clone)]
 pub struct WorthQueryRetainedPreImage {
     fields: Vec<WorthQueryRetainedPreImageField>,
+    relations: Option<std::sync::Arc<super::retained_relations::RetainedRelations>>,
     total_encoded_bytes: usize,
     content: worth_relational::facade::content::RelationalContentAttachments,
     _private: (),
@@ -73,6 +74,29 @@ impl std::fmt::Debug for WorthQueryRetainedPreImageField {
 }
 
 impl WorthQueryRetainedPreImage {
+    pub fn relation_loci(
+        &self,
+    ) -> &[worth_query_installation::facade::InstalledPreImageRelationLocus] {
+        self.relations
+            .as_ref()
+            .map_or(&[], |relations| relations.loci())
+    }
+    pub fn relations(&self) -> &[super::WorthQueryRetainedPreImageRelation] {
+        self.relations
+            .as_ref()
+            .map_or(&[], |relations| relations.rows())
+    }
+    pub(crate) fn with_relation_seal(
+        mut self,
+        seal: crate::domain_computation::primary_graph::WorthQueryRetainedRelationPreImageSeal,
+        bytes: usize,
+    ) -> Self {
+        self.relations = Some(super::retained_relations::RetainedRelations::from_seal(
+            seal,
+        ));
+        self.total_encoded_bytes = bytes;
+        self
+    }
     pub(in crate::domain_computation) fn retain_content(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -181,6 +205,7 @@ impl WorthQueryRetainedPreImage {
             .collect();
         Self {
             fields,
+            relations: None,
             total_encoded_bytes,
             content: Default::default(),
             _private: (),

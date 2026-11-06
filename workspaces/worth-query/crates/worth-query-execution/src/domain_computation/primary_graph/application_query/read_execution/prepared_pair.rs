@@ -23,9 +23,8 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Prepa
 }
 
 /// Construction remains with the owner-side admission stage.
-pub(in crate::domain_computation::primary_graph::application_query) struct PreparedPair<'a> {
+pub struct PreparedPair<'a> {
     pub(in crate::domain_computation::primary_graph::application_query) root: EntityId,
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph::application_query) witness:
         Option<std::sync::Arc<super::dispatch_witness::DispatchWitness>>,
     pub(in crate::domain_computation::primary_graph::application_query) first: PreparedRead<'a>,
@@ -35,16 +34,15 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Prepa
         &'a AspectValue,
 }
 
-pub(in crate::domain_computation::primary_graph::application_query) struct ReadOutput {
-    pub(in crate::domain_computation::primary_graph::application_query) raw:
-        RawNonLiveKernelOutcome,
+pub struct ReadOutput {
+    pub raw: RawNonLiveKernelOutcome,
     pub(in crate::domain_computation::primary_graph::application_query) proof:
         WorthQueryPreparedReadCompletion,
     pub(in crate::domain_computation::primary_graph::application_query) batch_rows:
         Option<super::super::batch::PlannedBatchItem>,
 }
 
-pub(in crate::domain_computation::primary_graph::application_query) struct PairOutput {
+pub struct PairOutput {
     pub(in crate::domain_computation::primary_graph::application_query) first: ReadOutput,
     pub(in crate::domain_computation::primary_graph::application_query) second: ReadOutput,
 }
@@ -71,8 +69,7 @@ impl ChargedBytes for PreparedPair<'_> {
             second,
             binding_slot: _binding_slot,
             binding_value: _binding_value,
-            #[cfg(test)]
-                witness: _witness,
+            witness: _witness,
         } = self;
         first
             .additional_charged_bytes()
@@ -105,16 +102,12 @@ impl PreparedPair<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<PairOutput, MapKernelFailure<Denial>> {
-        #[cfg(test)]
         if let Some(witness) = &self.witness {
             witness.enter(self.root);
         }
-        #[cfg(test)]
         let root = self.root;
-        #[cfg(test)]
         let witness = self.witness.clone();
         let outcome = self.compute(execution, context);
-        #[cfg(test)]
         if let Some(witness) = &witness {
             witness.complete(root);
         }
@@ -126,17 +119,12 @@ impl PreparedPair<'_> {
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<PairOutput, MapKernelFailure<Denial>> {
         context.checkpoint(1)?;
-        #[cfg(test)]
         if let Some(witness) = &self.witness {
             witness.charged(self.root, 1);
         }
-        let first = self.first.run(
-            execution,
-            self.root,
-            context,
-            #[cfg(test)]
-            self.witness.as_deref(),
-        )?;
+        let first = self
+            .first
+            .run(execution, self.root, context, self.witness.as_deref())?;
         let [row] = first.raw.raw.rows.raw_rows() else {
             return Err(MapKernelFailure::Domain(Denial::IncompleteDependencies));
         };
@@ -145,17 +133,12 @@ impl PreparedPair<'_> {
         {
             return Err(MapKernelFailure::Domain(Denial::IncompleteDependencies));
         }
-        #[cfg(test)]
         if let Some(witness) = &self.witness {
             witness.before_second(self.root);
         }
-        let second = self.second.run(
-            execution,
-            self.root,
-            context,
-            #[cfg(test)]
-            self.witness.as_deref(),
-        )?;
+        let second = self
+            .second
+            .run(execution, self.root, context, self.witness.as_deref())?;
         Ok(PairOutput { first, second })
     }
 }
@@ -166,7 +149,7 @@ impl PreparedRead<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: EntityId,
         context: &mut MapKernelContext<'_, '_>,
-        #[cfg(test)] witness: Option<&super::dispatch_witness::DispatchWitness>,
+        witness: Option<&super::dispatch_witness::DispatchWitness>,
     ) -> Result<ReadOutput, MapKernelFailure<Denial>> {
         let Self {
             plan,
@@ -181,7 +164,6 @@ impl PreparedRead<'_> {
             let result = u64::try_from(units)
                 .map_err(|_| MapKernelStop::WorkCounterOverflow)
                 .and_then(|units| meter.borrow_mut().checkpoint(units));
-            #[cfg(test)]
             if result.is_ok()
                 && let Some(witness) = witness
             {
@@ -199,7 +181,6 @@ impl PreparedRead<'_> {
         let check = |subject: &str| charge(0, subject);
         let read = session.execute(execution, |runtime, graph| {
             entered.set(true);
-            #[cfg(test)]
             if let Some(witness) = witness {
                 witness.native_read_enter(root);
             }
@@ -212,7 +193,6 @@ impl PreparedRead<'_> {
                 Some(&spent),
                 super::ReadInterruption::Execution(&check),
             );
-            #[cfg(test)]
             if let Some(witness) = witness {
                 witness.native_read_exit(root);
             }
@@ -259,3 +239,5 @@ const _: fn() = || {
     fn send<T: Send>() {}
     send::<PreparedPair<'static>>();
 };
+
+mod court_doors_for_test;

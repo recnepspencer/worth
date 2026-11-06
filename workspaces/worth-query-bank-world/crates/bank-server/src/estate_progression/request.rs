@@ -54,10 +54,9 @@ fn map_request_denial(
 ) -> BankEstateProgressionDenial {
     use WorthQueryApplicationElevationRequestDenial as Query;
     match denial {
-        Query::ExecutionRequest(cause) => BankEstateProgressionDenial::ApplicationEntry(
-            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
-        ),
-        Query::Program(denial) => BankEstateProgressionDenial::ProgramAction(denial),
+        Query::ExecutionRequest(cause) => BankEstateProgressionDenial::ApplicationEntry(Box::new(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))),
+        Query::Program(denial) => BankEstateProgressionDenial::ProgramAction(Box::new(denial)),
         Query::ProgramMismatch => BankEstateProgressionDenial::ProgramMismatch,
         Query::PrincipalBindingInstallation(denial) => {
             BankEstateProgressionDenial::PrincipalBindingInstallation(denial)

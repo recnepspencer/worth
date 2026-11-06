@@ -68,7 +68,7 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_frame_before_au
             // (which can report UnsupportedRecoveredNativeAuthorityLayout) is unreachable.
             assert_eq!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected);
             assert!(cause.subject().contains("UnsupportedLegacySemantics"), "{cause:?}");
-            assert!(cause.subject().contains("unsupported native checkpoint frame; WORTH-REL-CHK15 required"), "{cause:?}");
+            assert!(cause.subject().contains("unsupported native checkpoint frame; WORTH-REL-CHK18 required"), "{cause:?}");
         }
         other => panic!("expected native frame refusal: {other:?}"),
     }

@@ -16,6 +16,7 @@ use worth_foundational::facade::{AspectValue, InternedString};
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 mod native_field_write;
+mod owned_publication;
 mod publication;
 mod signal_publication;
 mod workflow_approval;
@@ -371,15 +372,13 @@ where
         Ok(candidate)
     }
 
-    #[cfg(test)]
-    pub(crate) fn provider_session_resource_count_for_test(&self) -> usize {
+    pub fn provider_session_resource_count_for_test(&self) -> usize {
         self.runtime
             .primary_provider
             .application_attempt_resource_count()
     }
 
-    #[cfg(test)]
-    pub(crate) fn application_attempt_work_for_test(
+    pub fn application_attempt_work_for_test(
         &self,
     ) -> crate::domain_computation::primary_graph::provider::WorthQueryApplicationAttemptWorkSnapshot
     {

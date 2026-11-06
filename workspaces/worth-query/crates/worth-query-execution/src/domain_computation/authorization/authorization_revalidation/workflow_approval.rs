@@ -18,11 +18,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation) fn readmit_workflow_approval_authority<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn readmit_workflow_approval_authority<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQueryWorkflowApprovalAuthorityBasis,

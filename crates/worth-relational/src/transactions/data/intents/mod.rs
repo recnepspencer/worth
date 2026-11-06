@@ -1,4 +1,6 @@
+mod client_key_visit;
 mod client_keys;
+mod entity_references;
 mod materialization_intent;
 mod mutation_intent;
 

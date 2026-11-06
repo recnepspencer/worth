@@ -8,7 +8,7 @@ use worth_query_installation::facade::{
     ApplicationOperationDecisionReadTarget, ApplicationScalarValueBinding, ApplicationSchema,
 };
 use worth_relational::facade::indexes::{
-    BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
+    BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupRequest,
 };
 
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
@@ -129,13 +129,8 @@ impl<Schema: ApplicationSchema, Operation>
         })?;
         let outcome = self
             .reader
-            .runtime
-            .index_access()
-            .execute_bounded_entity_field_lookup(
-                request,
-                BoundedIndexParityMode::Production,
-                execution,
-            )
+            .native
+            .select_entities(request, execution)
             .map_err(|denial| {
                 let examined = denial.examined_entry_count();
                 let admitted = self.reader.work_budget.consume(1 + examined);
@@ -217,7 +212,7 @@ impl<Schema: ApplicationSchema, Operation>
         locator: worth_foundational::facade::AspectFieldLocator,
         value: worth_foundational::facade::AspectValue,
         candidate_limit: usize,
-        outcome: worth_relational::facade::indexes::BoundedEntityFieldLookupOutcome,
+        outcome: super::super::super::read_basis::ProjectionEntitySelection,
     ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
     {
         let index_id = outcome.retain_definition().index_id;
@@ -229,6 +224,11 @@ impl<Schema: ApplicationSchema, Operation>
                 kind,
                 entity: Arc::from(entity),
                 authority_identity: self.reader.authority_identity,
+                phase: self
+                    .reader
+                    .native
+                    .candidate_identity()
+                    .map(|id| id.qualification()),
                 _marker: PhantomData,
             });
         }

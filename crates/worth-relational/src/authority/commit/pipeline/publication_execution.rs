@@ -90,6 +90,7 @@ pub(super) fn prepare_commit_publication_execution(
         aspect_evaluation_traces,
         aspect_emission_traces,
         source_interpretation,
+        lineage_deferred,
     ) = assembled.into_parts();
     let publication = {
         let recovered_codec_publication_custody = admitted
@@ -101,6 +102,7 @@ pub(super) fn prepare_commit_publication_execution(
             execution,
             runtime,
             PreparePublicationPhaseInput {
+                lineage_deferred,
                 source_interpretation: &source_interpretation,
                 recovered_codec_publication_custody,
                 required_output_publication,
@@ -267,6 +269,11 @@ pub(crate) struct PreparedCommitPublicationCompletion {
 }
 
 impl PreparedCommitPublicationExecution {
+    pub(crate) fn canonical_envelope(
+        &self,
+    ) -> &std::sync::Arc<crate::history::data::CanonicalCommitEnvelope> {
+        self.publication.canonical_envelope()
+    }
     pub(crate) fn descriptive_touches(
         &self,
     ) -> &crate::history::data::RelationalDescriptiveTouchGraph {

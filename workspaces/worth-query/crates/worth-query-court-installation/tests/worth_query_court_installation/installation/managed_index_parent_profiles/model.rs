@@ -43,6 +43,10 @@ impl ModelSchema for ParentSchema<8> {
     const MODE: u8 = 8;
     type Model = ParentRecords<true>;
 }
+impl ModelSchema for ParentSchema<9> {
+    const MODE: u8 = 9;
+    type Model = ParentRecords<false>;
+}
 impl<const MODE: u8> ApplicationSchema for ParentSchema<MODE>
 where
     Self: ModelSchema,

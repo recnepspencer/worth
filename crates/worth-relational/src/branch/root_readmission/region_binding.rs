@@ -22,6 +22,24 @@ impl RelationalBranchRoot {
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
         validate_schema_root(&envelope, &descriptor)?;
         required_text::validate(&partitions, symbols)?;
+        for partition in partitions.values() {
+            crate::history::data::current_route_presence::admission::validate(
+                execution,
+                partition,
+                schema_authority.registry(),
+            )
+            .map_err(|cause| match cause {
+                crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable(
+                    cause,
+                ) => RelationalBranchRootCaptureDenial::StorageUnavailable(cause),
+                crate::storage::residency::RelationalResidencyDemandFailure::Request(cause) => {
+                    RelationalBranchRootCaptureDenial::Execution(cause)
+                }
+                crate::storage::residency::RelationalResidencyDemandFailure::Content(cause) => {
+                    RelationalBranchRootCaptureDenial::Content(cause)
+                }
+            })?;
+        }
         let root_id = issuer.issue_root_id()?;
         let entity_slot_count = partitions
             .values()

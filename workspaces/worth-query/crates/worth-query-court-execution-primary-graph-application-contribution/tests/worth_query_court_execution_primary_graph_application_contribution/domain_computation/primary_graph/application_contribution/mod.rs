@@ -1,0 +1,12 @@
+#[path = "computation/mod.rs"]
+pub mod computation;
+#[path = "conditional/mod.rs"]
+pub mod conditional;
+#[path = "contracts/mod.rs"]
+pub mod contracts;
+#[path = "partitioned_computation/mod.rs"]
+pub mod partitioned_computation;
+#[path = "producer/mod.rs"]
+pub mod producer;
+#[path = "request_execution/mod.rs"]
+pub mod request_execution;

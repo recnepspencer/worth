@@ -1,9 +1,6 @@
-#[cfg(test)]
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
-#[cfg(test)]
 use worth_relational::facade::identity::EntityId;
 
-#[cfg(test)]
 use super::super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::super::WorthQueryApplicationObservedFact;
 
@@ -13,7 +10,7 @@ use super::super::WorthQueryApplicationObservedFact;
 /// effect replaced. Normalizing hides such a replacement, so the commit's
 /// rebase marks those ordinals moved.
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct OutputCurrentnessFacts {
+pub struct OutputCurrentnessFacts {
     facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     performed_inputs: Option<
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
@@ -144,7 +141,6 @@ pub(super) fn complete_content_currentness_facts(
     }
 }
 
-#[cfg(test)]
 pub(super) fn complete_output_currentness_facts(
     facts: Vec<WorthQueryApplicationObservedFact>,
     moved_by_own_effect: Vec<usize>,
@@ -197,7 +193,6 @@ pub(super) fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFac
     )
 }
 
-#[cfg(test)]
 pub(super) fn normalized_output_facts(
     facts: &(impl FactSequence + ?Sized),
     effects: &[WorthQueryApplicationRealizedEffect],
@@ -295,7 +290,6 @@ pub(super) fn normalized_output_facts(
         .collect()
 }
 
-#[cfg(test)]
 fn replacement_field_value<'effect>(
     entity_id: EntityId,
     locator: &worth_foundational::facade::AspectFieldLocator,
@@ -319,7 +313,6 @@ fn replacement_field_value<'effect>(
 #[cfg(test)]
 mod owned_program_facts_tests;
 
-#[cfg(test)]
 fn parent_removed(
     entity: EntityId,
     aspect: &worth_foundational::facade::AspectKey,

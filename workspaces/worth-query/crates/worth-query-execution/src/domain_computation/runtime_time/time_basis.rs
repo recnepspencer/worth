@@ -6,7 +6,7 @@ use worth_query_declaration::facade::application_capability::ApplicationCapabili
 use super::time_source::{WorthQueryRuntimeTimeSource, WorthQuerySystemRuntimeTimeSource};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum WorthQueryRuntimeTimeDenial {
+pub enum WorthQueryRuntimeTimeDenial {
     SourceUnavailable,
     BeforeUnixEpoch,
     TimelineValueOverflow,
@@ -35,7 +35,7 @@ impl WorthQueryRuntimeTimeSample {
     }
 }
 
-pub(crate) struct WorthQueryRuntimeClock {
+pub struct WorthQueryRuntimeClock {
     pub(in crate::domain_computation) admission_clock:
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
     source: Box<dyn WorthQueryRuntimeTimeSource>,
@@ -209,3 +209,5 @@ mod tests {
         );
     }
 }
+
+mod court_doors_for_test;

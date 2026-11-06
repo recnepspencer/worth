@@ -3,7 +3,7 @@ use super::{
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
-pub(in crate::domain_computation::primary_graph) fn map_bootstrap_commit_denial(
+pub fn map_bootstrap_commit_denial(
     error: worth_relational::facade::transactions::TransactionCommitError,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     use worth_relational::facade::mvcc::{

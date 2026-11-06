@@ -1,0 +1,27 @@
+//! Doors under `domain_computation::primary_graph::application_query`.
+#[path = "admission/mod.rs"]
+pub mod admission;
+#[path = "authorized_read/mod.rs"]
+pub mod authorized_read;
+#[path = "basis/mod.rs"]
+pub mod basis;
+#[path = "controls/mod.rs"]
+pub mod controls;
+#[path = "derived_view/mod.rs"]
+pub mod derived_view;
+#[path = "managed_index/mod.rs"]
+pub mod managed_index;
+#[path = "observed_source/mod.rs"]
+pub mod observed_source;
+#[path = "one_shot/mod.rs"]
+pub mod one_shot;
+#[path = "output_source_observation/mod.rs"]
+pub mod output_source_observation;
+#[path = "projection/mod.rs"]
+pub mod projection;
+#[path = "read_execution/mod.rs"]
+pub mod read_execution;
+#[path = "resource_lifecycle/mod.rs"]
+pub mod resource_lifecycle;
+#[path = "runtime_support/mod.rs"]
+pub mod runtime_support;

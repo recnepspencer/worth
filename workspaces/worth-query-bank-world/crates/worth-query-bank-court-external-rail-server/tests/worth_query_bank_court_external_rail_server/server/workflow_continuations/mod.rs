@@ -281,7 +281,7 @@ fn cancelled_initiation_cannot_mint_a_continuation() {
         recipient: principal_id(RECIPIENT),
         amount: Money::from_minor(300).unwrap(),
     };
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let request = fixture.world.runtime.request(&owner, &scope);
     let operation = fixture
         .world
@@ -291,8 +291,7 @@ fn cancelled_initiation_cannot_mint_a_continuation() {
         .controls(BankMutationControls::new(
             WorthQueryRequestScope::new(
                 Some(Instant::now() + Duration::from_secs(60)),
-                cancellation.token(),
-            ),
+                cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
             BankIdempotencyKey::new("cancelled-initiation").unwrap(),
         ))
         .retain_operation()

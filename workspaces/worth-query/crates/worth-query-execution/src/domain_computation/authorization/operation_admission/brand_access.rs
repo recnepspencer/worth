@@ -34,16 +34,12 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub(in crate::domain_computation) const fn admission_identity(
-        &self,
-    ) -> WorthQueryOperationAdmissionIdentity {
+    pub const fn admission_identity(&self) -> WorthQueryOperationAdmissionIdentity {
         self.core.admission_identity()
     }
 
     #[inline]
-    pub(in crate::domain_computation) const fn scope_entity_id(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub const fn scope_entity_id(&self) -> worth_relational::facade::identity::EntityId {
         self.core.scope_entity_id()
     }
 
@@ -70,16 +66,12 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub(in crate::domain_computation) fn retain_graph_contract(
-        &self,
-    ) -> Arc<WorthQueryCompiledApplicationOperationContracts> {
+    pub fn retain_graph_contract(&self) -> Arc<WorthQueryCompiledApplicationOperationContracts> {
         self.core.retain_graph_contract()
     }
 
     #[inline]
-    pub(in crate::domain_computation) const fn mutation_preconditions(
-        &self,
-    ) -> &WorthQueryBoundMutationPreconditions {
+    pub const fn mutation_preconditions(&self) -> &WorthQueryBoundMutationPreconditions {
         self.core.mutation_preconditions()
     }
 
@@ -136,9 +128,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub(in crate::domain_computation) fn workflow_approval_authority(
-        &self,
-    ) -> Option<WorthQueryWorkflowApprovalAuthority> {
+    pub fn workflow_approval_authority(&self) -> Option<WorthQueryWorkflowApprovalAuthority> {
         self.core.workflow_approval_authority()
     }
 
@@ -360,3 +350,7 @@ impl<Schema, Operation, Input, Scope>
         self.core.workflow_approval_dependencies_snapshot(execution)
     }
 }
+
+// Mounted beside its path-mounted module, whose directory it shares with the parent.
+#[path = "brand_access_court_doors_for_test.rs"]
+mod court_doors_for_test;

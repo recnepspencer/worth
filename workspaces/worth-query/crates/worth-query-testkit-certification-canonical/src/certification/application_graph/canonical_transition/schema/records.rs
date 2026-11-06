@@ -1,6 +1,5 @@
 //! One record model owns field lowering and reusable scalar bindings.
 use super::*;
-use worth_query_decl::facade::application_schema::{fragment::*, *};
 #[derive(Clone, Copy)]
 pub struct StorageModel;
 impl Fragment for StorageModel {

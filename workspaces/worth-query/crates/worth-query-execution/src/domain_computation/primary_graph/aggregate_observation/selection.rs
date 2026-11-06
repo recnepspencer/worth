@@ -6,7 +6,7 @@ use worth_relational::facade::{
 };
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) enum AggregateSelection {
+pub enum AggregateSelection {
     OrbitRelation(KindId),
     ComponentDefinition(AggregateDefinitionIdentity),
 }

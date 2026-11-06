@@ -287,5 +287,4 @@ fn iteration_start_rejection(
     }
 }
 
-#[cfg(test)]
 mod test_host_policy;

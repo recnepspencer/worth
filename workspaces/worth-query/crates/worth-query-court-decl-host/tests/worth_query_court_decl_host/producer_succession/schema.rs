@@ -1,5 +1,5 @@
 #[path = "schema/records.rs"]
-pub(super) mod storage_model;
+pub mod storage_model;
 use super::*;
 pub use storage_model::{
     DispatchModel, ExternalIdentity, GeneratedBy, Key, Mapping, MappingStatus, MappingTarget, Node,
@@ -75,7 +75,14 @@ pub fn declare(
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let schema = schema
         .principal_binding(PrincipalBinding::reference())
+        .application_query(route_query::definition())
+        .application_query_binding::<route_query::Binding>()
         .application_query(query::definition())
         .application_query_binding::<ReadBinding>();
-    realization::declare(schema)
+    let schema = realization::declare(schema);
+    if super::PRIVATE_AGGREGATES {
+        aggregate_schema::declare(schema)
+    } else {
+        schema
+    }
 }

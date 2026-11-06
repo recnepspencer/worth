@@ -10,14 +10,13 @@ pub(in crate::domain_computation::primary_graph) use carrier::CommitCarrier;
 
 /// The exact program whose installed seal and current authority were readmitted.
 /// Entry callers can neither construct nor extract its owned program.
-pub(in crate::domain_computation) struct ReadmittedCommitProgram<'a, Schema, Program> {
+pub struct ReadmittedCommitProgram<'a, Schema, Program> {
     application: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     program: Program,
 }
 
 /// Commit work borrows the exact advancement that checked its current authority.
-pub(in crate::domain_computation) struct CurrentCommitProgram<'a, 'phase, 'request, Schema, Program>
-{
+pub struct CurrentCommitProgram<'a, 'phase, 'request, Schema, Program> {
     application: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     program: Program,
     phase: &'phase WorthQueryAdvancementPhase<'request>,
@@ -111,7 +110,7 @@ mod conditional_operation;
 mod output_source;
 
 mod forwarding;
-mod preparation;
+pub(crate) mod preparation;
 mod progression;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use preparation::prepare_application_commit;
 
@@ -122,5 +121,4 @@ mod elevation_close;
 mod elevation_request;
 mod mandatory_review;
 
-#[cfg(test)]
-mod preparation_tests;
+mod court_doors_for_test;

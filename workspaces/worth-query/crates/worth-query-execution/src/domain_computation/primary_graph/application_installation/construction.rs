@@ -94,6 +94,7 @@ where
     .map_err(Denial::Contributions)?;
     let (mut invariants, handlers, producers, conditionals, resources, managed_indexes) =
         configured.into_parts().map_err(Denial::Contributions)?;
+    invariants.install_current_publication_ownership(producers.owns_source_scopes());
     conditionals
         .validate_target_coverage(
             runtime.installed_packages(),

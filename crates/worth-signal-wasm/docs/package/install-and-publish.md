@@ -30,13 +30,46 @@ If you just want to start coding, you only need:
 
 The rest of this guide is for local package work and publishing from this repo.
 
+Release tooling uses Node 24.22.2 or later on the 24.x line and npm 12.2.1 or
+later on the 12.x line. The exact starting versions are recorded in
+`.node-version` and `package.json` next to the crate. Before building, run:
+
+```powershell
+node scripts/wasm/verify-worth-signals-release-toolchain.mjs
+```
+
+Node 24.22.2 includes the October 2026 Brotli decoder security backport
+(CVE-2026-111497), OpenSSL 3.5.9, and the other Node security updates. Its
+reported Brotli version remains 1.2.0; the release check uses the patched Node
+version and decoder boundary rather than treating that string as patch status.
+See the [Node security release](https://nodejs.org/en/blog/release/v24.22.1).
+Updating a standalone npm package named `brotli` does not patch Node's decoder.
+
+Package tooling compiles with the native TypeScript 7 compiler and bundles with
+esbuild. Both are platform-native and pinned in the crate's `package-lock.json`,
+so run `npm ci` in `crates/worth-signal-wasm` before building or running the
+package tests; the build installs them on demand when they are missing.
+
 Package contract note:
 
 - the published package is ESM-first
+- published declarations are type-checked for consumers on TypeScript 7.0 and
+  TypeScript 5.9
 - `import` and bundler resolution are the supported consumer paths
 - CommonJS callers should use dynamic `import(...)` instead of `require(...)`
 - **1.5.0 breaking:** default `awaitSettlement()` is tip-status only — see
   [migration-1.5](./migration-1.5.md)
+- **1.6.1:** resource value and summary handles capture native dependencies;
+  form summaries continue following their source after draft edits. Shutdown
+  drains authored work before terminating imported source graphs. Retained
+  native callbacks can use runtime snapshots after borrowed handles are freed;
+  ordinary reads still require a live handle. This release also adds coordinated
+  `form.setFields(...)` updates and preserves `PATCH` methods in request and
+  reconciliation proofs.
+- **1.6.2:** observation declarations accept branded signal handles with
+  arbitrary value types, including `form.summarySignal()` metadata. Direct
+  handles and their public `.id` work with `effect`, `watch`, and `read`.
+  This declaration correction preserves the 1.6.1 runtime.
 
 ## Stable Entry Points
 

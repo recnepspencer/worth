@@ -1,12 +1,14 @@
 //! Named responsibilities for committing one prepared provider session.
 
 mod evidence;
-mod outbox_commit;
-mod receipt_basis_retention;
+pub(crate) mod outbox_commit;
+pub(crate) mod receipt_basis_retention;
 
-pub(crate) use super::application_attempt_state::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation::primary_graph) use super::application_attempt_state::{
     WorthQueryMutationWorkCommitSeal, WorthQueryPreImageRetentionWork,
+};
+pub(crate) use super::application_attempt_state::{
+    WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal,
 };
 pub(in crate::domain_computation::primary_graph) use evidence::WorthQueryCompletedCommitEvidenceStore;
 pub(in crate::domain_computation) use outbox_commit::WorthQueryCommittedDispatchOutboxBinding;

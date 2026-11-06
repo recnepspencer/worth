@@ -8,23 +8,23 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause as Cause,
 };
 mod currentness;
-mod key;
+pub(crate) mod key;
 mod member;
 pub(in crate::domain_computation::primary_graph) mod member_work;
-mod selection;
+pub(crate) mod selection;
 pub(in crate::domain_computation::primary_graph) use key::AggregateKey;
 pub(in crate::domain_computation::primary_graph) use selection::AggregateSelection;
 
 /// Only Native acquisition can construct this body. Source custody is separate
 /// from semantic truth: stored incident lineage is not part of an orbit answer.
 #[derive(Debug)]
-pub(in crate::domain_computation) struct AggregateObservation<Member = EntityId> {
+pub struct AggregateObservation<Member = EntityId> {
     key: AggregateKey<Member>,
     native: PinnedAggregateRead<Member>,
-    source: SnapshotHandle,
+    source: super::projection_read_origin::ProjectionReadOrigin,
     _allocation: Option<Arc<super::source_facts::SourceFactsAllocation>>,
 }
-pub(in crate::domain_computation::primary_graph) struct AggregateQuery<'a> {
+pub struct AggregateQuery<'a> {
     pub allocation: Option<&'a Arc<super::source_facts::SourceFactsAllocation>>,
     pub subject: &'a str,
     pub entity_kind: KindId,
@@ -36,6 +36,14 @@ pub(in crate::domain_computation::primary_graph) struct AggregateQuery<'a> {
 impl AggregateObservation {
     pub(in crate::domain_computation::primary_graph) fn read(
         pin: &RelationalPinnedRead,
+        execution: &ExecutionRequest<'_, '_>,
+        query: AggregateQuery<'_>,
+    ) -> Result<Arc<Self>, PinnedAggregateReadDenial> {
+        Self::read_projected(pin, crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef::Committed(pin.snapshot()), execution, query)
+    }
+    pub(in crate::domain_computation::primary_graph) fn read_projected<Phase>(
+        pin: &RelationalPinnedRead<Phase>,
+        origin: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
         execution: &ExecutionRequest<'_, '_>,
         query: AggregateQuery<'_>,
     ) -> Result<Arc<Self>, PinnedAggregateReadDenial> {
@@ -57,9 +65,29 @@ impl AggregateObservation {
         Ok(Arc::new(Self {
             key,
             native,
-            source: pin.snapshot().clone(),
+            source: origin.retained(),
             _allocation: query.allocation.cloned(),
         }))
+    }
+    pub(in crate::domain_computation::primary_graph) fn refresh_at_member(
+        &self,
+        pin: &RelationalPinnedRead,
+        execution: &ExecutionRequest<'_, '_>,
+        member: EntityId,
+    ) -> Result<Arc<Self>, PinnedAggregateReadDenial> {
+        Self::read(
+            pin,
+            execution,
+            AggregateQuery {
+                allocation: self._allocation.as_ref(),
+                subject: self.key.subject(),
+                entity_kind: self.key.entity_kind(),
+                selection: self.key.selection,
+                member,
+                maximum_work: None,
+                control: None,
+            },
+        )
     }
     pub(in crate::domain_computation::primary_graph) fn same_truth_with_poll<E>(
         &self,
@@ -106,12 +134,14 @@ impl<Member> AggregateObservation<Member> {
     pub(in crate::domain_computation::primary_graph) fn key(&self) -> &AggregateKey<Member> {
         &self.key
     }
-    pub(in crate::domain_computation::primary_graph) fn native(
-        &self,
-    ) -> &PinnedAggregateRead<Member> {
+    pub fn native(&self) -> &PinnedAggregateRead<Member> {
         &self.native
     }
-    pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
+    pub(in crate::domain_computation::primary_graph) fn source(
+        &self,
+    ) -> &super::projection_read_origin::ProjectionReadOrigin {
         &self.source
     }
 }
+
+mod court_doors_for_test;

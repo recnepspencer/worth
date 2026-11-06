@@ -81,7 +81,6 @@ impl WorthQueryDurableAuthorizationDependencies {
         bool,
         crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
     > {
-        #[cfg(test)]
         let _scope = crate::domain_computation::primary_graph::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(crate::domain_computation::primary_graph::application_attempt::consult_observation::Door::Activation);
         execution.check_live().map_err(|stop| denial::admission(
             worth_relational::facade::authorization::RelationalAuthorizationDependencyDenial::Execution(stop.into())))?;
@@ -157,5 +156,4 @@ fn validate(
         .map_err(denial::decode)
 }
 
-#[cfg(test)]
 mod cancellation_tests;

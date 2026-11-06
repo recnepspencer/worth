@@ -14,21 +14,13 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod correlation;
-#[cfg(test)]
-mod layout_tests;
-#[cfg(test)]
-mod owner_test_support;
-mod restoration;
-#[cfg(test)]
-mod test_support;
+
+pub(crate) mod restoration;
+
 mod work;
 
 use restoration::{required_fields, restore_record};
-#[cfg(test)]
-pub(in crate::domain_computation) use test_support::{
-    commit_distinct_records_and_admit_fixture, commit_observe_and_admit_fixture,
-    commit_observe_and_admit_twice_fixture,
-};
+
 pub use work::WorthQueryCommittedDispatchOutboxReadWork;
 
 /// Fresh Query-provider observation of one authoritative Relational outbox row.
@@ -42,7 +34,7 @@ pub struct WorthQueryCommittedDispatchOutboxObservation {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct WorthQueryCommittedDispatchOutboxOwnerObservation {
+pub struct WorthQueryCommittedDispatchOutboxOwnerObservation {
     record: WorthQueryDispatchOutboxRecord,
     commit: RelationalCommitReceipt,
     record_ref: RecordRef,
@@ -116,19 +108,14 @@ impl WorthQueryCommittedDispatchOutboxObservation {
 
     /// Corruption probe for proving the World axis is checked independently
     /// from the Relational runtime axis.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn with_relational_runtime_instance_for_test(
-        mut self,
-        runtime: u64,
-    ) -> Self {
+    pub fn with_relational_runtime_instance_for_test(mut self, runtime: u64) -> Self {
         self.owner.relational_runtime_instance_id = runtime;
         self
     }
 
     /// Substitution probe for proving the exact World publication is paired
     /// with its own Relational owner row before transport admission.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn with_product_publication_for_test(
+    pub fn with_product_publication_for_test(
         mut self,
         publication: WorthQueryCommittedProductPublication,
     ) -> Self {
@@ -315,13 +302,7 @@ mod record_read;
 use record_read::CommittedOutboxRead;
 
 #[cfg(test)]
-#[path = "committed_dispatch_outbox_tests.rs"]
-mod tests;
-
-#[cfg(test)]
 #[path = "committed_dispatch_outbox/restoration_tests.rs"]
 mod restoration_tests;
 
-#[cfg(test)]
-#[path = "committed_dispatch_outbox/corruption_tests.rs"]
-mod corruption_tests;
+mod court_doors_for_test;

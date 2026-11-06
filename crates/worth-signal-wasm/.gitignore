@@ -1,7 +1,14 @@
-# Platform-native Binaryen/esbuild tooling is installed from package-lock on demand.
-# React/TypeScript remain vendored for offline package tests; do not vendor esbuild.
+# Platform-native Binaryen/esbuild/TypeScript tooling is installed from
+# package-lock on demand (`npm ci`). React and its types remain vendored for
+# offline package tests; do not vendor esbuild or TypeScript.
+/node_modules/.package-lock.json
 /node_modules/esbuild/
 /node_modules/@esbuild/
 /node_modules/.bin/esbuild
 /node_modules/.bin/esbuild.cmd
 /node_modules/.bin/esbuild.ps1
+/node_modules/typescript/
+/node_modules/@typescript/
+/node_modules/.bin/tsc
+/node_modules/.bin/tsc.cmd
+/node_modules/.bin/tsc.ps1

@@ -25,7 +25,7 @@ mod cold;
 mod connection;
 mod global_actions;
 pub(in crate::domain_computation::primary_graph) use connection::observe_connection;
-mod node;
+pub(crate) mod node;
 pub(in crate::domain_computation::primary_graph) use node::compile_node;
 mod operation_input;
 mod publication_header;
@@ -289,7 +289,3 @@ fn denial(subject: &str) -> WorthQueryApplicationAttemptDenial {
         subject,
     )
 }
-
-#[cfg(test)]
-#[path = "reconstruction/start_provenance_tests.rs"]
-mod start_provenance_tests;

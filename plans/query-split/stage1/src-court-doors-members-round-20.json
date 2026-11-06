@@ -1,0 +1,21 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [],
+ "method_doors": [
+  "domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::native_witness_roles",
+  "domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::is_empty",
+  "domain_computation::primary_graph::output_lineage::native_prior_checkpoint::NativePriorCheckpointLocator::producer",
+  "domain_computation::primary_graph::output_lineage::native_prior_checkpoint::NativePriorCheckpointLocator::source",
+  "domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity::address",
+  "domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity::source",
+  "domain_computation::primary_graph::schema_layout::field_coordinate::InstalledFieldCoordinate<'_>::field",
+  "domain_computation::primary_graph::schema_layout::field_coordinate::InstalledFieldCoordinate<'_>::native"
+ ],
+ "unplaced": [
+  "associated function `of` is private",
+  "field `performed_origin` of struct `worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput` is private",
+  "method `admit_required_output_demand` is private",
+  "method `decision_field_with_predecode_admission` is private"
+ ]
+}

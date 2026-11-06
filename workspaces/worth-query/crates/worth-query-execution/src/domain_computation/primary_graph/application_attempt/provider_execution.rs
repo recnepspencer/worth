@@ -1,21 +1,21 @@
 mod aftermath_resolution;
-mod application_attempt_affinity;
+pub(crate) mod application_attempt_affinity;
 mod capability_revocation;
 mod delegation_activation;
-mod elevation_currentness;
+pub(crate) mod elevation_currentness;
 mod elevation_lifecycle;
 mod elevation_refusal;
 mod entry;
-mod external_dispatch;
-mod outcome;
+pub(crate) mod external_dispatch;
+pub(crate) mod outcome;
 pub(super) use outcome::commit_outcome_from_authorization_denial;
-mod phase;
-mod program_occurrence_gate;
+pub(crate) mod phase;
+pub(crate) mod program_occurrence_gate;
 pub(super) use program_occurrence_gate::resolve_occurrence_program;
 mod provider_denial;
 mod recovery_evidence;
 pub(in crate::domain_computation::primary_graph::application_attempt) use recovery_evidence::unknown_commit_recovery_evidence;
-mod resource_request;
+pub(crate) mod resource_request;
 pub(in crate::domain_computation) use application_attempt_affinity::WorthQueryApplicationAttemptAffinity;
 pub(in crate::domain_computation) use application_attempt_affinity::WorthQueryApplicationAttemptBasis;
 pub(crate) use external_dispatch::WorthQueryPerformedExternalRedispatchSeal;
@@ -37,3 +37,8 @@ pub(in crate::domain_computation) use phase::{
 pub(in crate::domain_computation) use resource_request::application_resource_request;
 
 pub(in crate::domain_computation::primary_graph) use phase::ReadmittedCommitProgram;
+
+pub(in crate::domain_computation::primary_graph) use phase::{
+    inspect_coupled_application, prepare_coupled_application, register_coupled_application,
+    ApprovedCoupledWriter, CommitPreparedCoupledWriter, InspectedCoupledWriter,
+};

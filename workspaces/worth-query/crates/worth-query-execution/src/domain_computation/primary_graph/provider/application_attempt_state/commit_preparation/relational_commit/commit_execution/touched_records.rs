@@ -12,7 +12,7 @@ use crate::domain_computation::WorthQueryProviderSessionCommitStop;
 /// Exact prepared native identities, physically admitted and sealed before any
 /// publication. The same immutable backing follows every receipt and recovery
 /// holder; Arc headers remain outside the array's payload charge.
-pub(in crate::domain_computation::primary_graph::provider) struct PreparedTouchedRecords {
+pub struct PreparedTouchedRecords {
     records: Arc<ExecutionArray<WorthQueryTouchedRecordIdentity>>,
 }
 
@@ -23,20 +23,7 @@ impl PreparedTouchedRecords {
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, WorthQueryProviderSessionCommitStop> {
         candidate
-            .with_prepared_changed_records(|exact| {
-                let mut records = ExecutionArrayBuilder::allocate(exact.len(), allocation_policy)
-                    .map_err(allocation_denied)?;
-                for record in exact {
-                    records
-                        .push(WorthQueryTouchedRecordIdentity::from_commit_record(
-                            record.clone(),
-                        ))
-                        .map_err(allocation_denied)?;
-                }
-                Ok(Self {
-                    records: Arc::new(records.seal().map_err(allocation_denied)?),
-                })
-            })
+            .with_prepared_changed_records(|exact| Self::from_records(exact, allocation_policy))
             .unwrap_or_else(|| {
                 Err(WorthQueryProviderSessionCommitStop::PreEffectDenied(
                     super::failure(
@@ -44,6 +31,24 @@ impl PreparedTouchedRecords {
                     ),
                 ))
             })
+    }
+
+    pub(in crate::domain_computation::primary_graph::provider) fn from_records(
+        exact: &[RecordRef],
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Self, WorthQueryProviderSessionCommitStop> {
+        let mut records = ExecutionArrayBuilder::allocate(exact.len(), allocation_policy)
+            .map_err(allocation_denied)?;
+        for record in exact {
+            records
+                .push(WorthQueryTouchedRecordIdentity::from_commit_record(
+                    record.clone(),
+                ))
+                .map_err(allocation_denied)?;
+        }
+        Ok(Self {
+            records: Arc::new(records.seal().map_err(allocation_denied)?),
+        })
     }
 
     /// Publication already occurred. This only checks the native performed
@@ -76,5 +81,4 @@ fn allocation_denied(
     )
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

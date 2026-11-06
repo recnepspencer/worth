@@ -12,7 +12,7 @@
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
-mod denial;
+pub(crate) mod denial;
 
 use std::sync::Arc;
 
@@ -315,13 +315,4 @@ where
     }
 }
 
-#[cfg(test)]
-mod composite_dispatch_tests;
-#[cfg(test)]
-mod redispatch_denial_tests;
-#[cfg(test)]
-mod safe_retry_affinity_tests;
-
-#[cfg(test)]
-#[path = "external_dispatch/production_tests.rs"]
-mod tests;
+mod court_doors_for_test;

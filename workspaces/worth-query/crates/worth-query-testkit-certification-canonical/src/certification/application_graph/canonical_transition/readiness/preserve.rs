@@ -105,7 +105,7 @@ pub fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
     DerivedReadinessOperation,
     DerivedReadinessFamily,
 > {
-    readiness_contract(CanonicalSchema::declaration().unwrap().erased())
+    readiness_contract(<CanonicalSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap().erased())
         .unwrap()
         .definition()
         .clone()

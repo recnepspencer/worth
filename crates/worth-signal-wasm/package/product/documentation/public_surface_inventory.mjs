@@ -1,8 +1,17 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import ts from "typescript";
+import { SyntaxKind } from "typescript/unstable/ast";
+import {
+  isClassDeclaration,
+  isFunctionDeclaration,
+  isInterfaceDeclaration,
+  isTypeAliasDeclaration,
+  isVariableDeclaration,
+} from "typescript/unstable/ast/is";
+import { API, SymbolFlags } from "typescript/unstable/sync";
 
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 export const defaultCrateDir = path.resolve(moduleDir, "..", "..", "..");
@@ -52,62 +61,91 @@ function assertPublishedDeclarationsSynchronized(crateDir, entrypoints) {
 }
 
 function declarationKind(declaration) {
-  if (ts.isClassDeclaration(declaration)) return "class";
-  if (ts.isFunctionDeclaration(declaration)) return "function";
-  if (ts.isInterfaceDeclaration(declaration)) return "interface";
-  if (ts.isTypeAliasDeclaration(declaration)) return "type";
-  if (ts.isVariableDeclaration(declaration)) return "value";
-  return ts.SyntaxKind[declaration.kind];
+  if (isClassDeclaration(declaration)) return "class";
+  if (isFunctionDeclaration(declaration)) return "function";
+  if (isInterfaceDeclaration(declaration)) return "interface";
+  if (isTypeAliasDeclaration(declaration)) return "type";
+  if (isVariableDeclaration(declaration)) return "value";
+  return SyntaxKind[declaration.kind];
 }
 
 function resolveExportSymbol(checker, symbol) {
-  return symbol.flags & ts.SymbolFlags.Alias
+  return symbol.flags & SymbolFlags.Alias
     ? checker.getAliasedSymbol(symbol)
     : symbol;
 }
 
-function normalizedDeclarationText(printer, declaration) {
-  const source = declaration.getSourceFile();
-  return printer
-    .printNode(ts.EmitHint.Unspecified, declaration, source)
-    .replaceAll(/\s+/gu, " ")
-    .trim();
+// The TypeScript 7 printer emits declarations without their leading comments,
+// so digests track the declared contract rather than its JSDoc prose.
+function normalizedDeclarationText(emitter, node) {
+  return emitter.printNode(node).replaceAll(/\s+/gu, " ").trim();
 }
 
 function namedMembers(declaration) {
-  if (!ts.isInterfaceDeclaration(declaration) && !ts.isClassDeclaration(declaration)) return [];
+  if (!isInterfaceDeclaration(declaration) && !isClassDeclaration(declaration)) return [];
   return declaration.members
     .map((member) => member.name?.getText(declaration.getSourceFile()) ?? null)
     .filter((name) => name !== null)
     .sort();
 }
 
-function createProgram(crateDir, entrypoints) {
-  return ts.createProgram(
-    entrypoints.map((entrypoint) => path.join(crateDir, entrypoint.declarationPath)),
-    {
-      module: ts.ModuleKind.NodeNext,
-      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+// The TypeScript 7 API loads projects, not loose root files: describe the
+// published entrypoints as a throwaway project.
+function withEntrypointProject(crateDir, entrypoints, collect) {
+  const configDir = mkdtempSync(path.join(tmpdir(), "worth-signals-public-surface-"));
+  const configPath = path.join(configDir, "tsconfig.json");
+  writeFileSync(configPath, JSON.stringify({
+    compilerOptions: {
+      module: "nodenext",
+      moduleResolution: "nodenext",
+      noEmit: true,
       skipLibCheck: true,
-      target: ts.ScriptTarget.ESNext,
+      target: "esnext",
+      types: [],
     },
-  );
+    files: entrypoints.map((entrypoint) => path.join(crateDir, entrypoint.declarationPath)),
+  }));
+  const api = new API({ cwd: crateDir });
+  try {
+    const project = api.updateSnapshot({ openProjects: [configPath] }).getProject(configPath);
+    if (!project) throw new Error("TypeScript did not load the public declaration project");
+    return collect(project);
+  } finally {
+    api.close();
+    rmSync(configDir, { force: true, recursive: true });
+  }
 }
 
-function collectDeclarationFileInventory({ crateDir, printer, program }) {
-  return program.getSourceFiles()
-    .map((source) => ({
-      source: normalizePath(path.relative(crateDir, source.fileName)),
-      signature: printer.printFile(source).replaceAll(/\s+/gu, " ").trim(),
-    }))
+function assertDeclarationsTypecheck(crateDir, program) {
+  const diagnostics = [
+    ...program.getConfigFileParsingDiagnostics(),
+    ...program.getSyntacticDiagnostics(),
+    ...program.getGlobalDiagnostics(),
+    ...program.getSemanticDiagnostics(),
+  ];
+  if (diagnostics.length > 0) {
+    const message = diagnostics
+      .map((diagnostic) => `${diagnostic.fileName ? normalizePath(path.relative(crateDir, diagnostic.fileName)) : "(global)"}: TS${diagnostic.code} ${diagnostic.text}`)
+      .join("\n");
+    throw new Error(`Public declarations do not typecheck:\n${message}`);
+  }
+}
+
+function collectDeclarationFileInventory({ crateDir, emitter, program }) {
+  return program.getSourceFileNames()
+    .map((fileName) => ({ fileName, source: normalizePath(path.relative(crateDir, fileName)) }))
     .filter(({ source }) =>
       (source.startsWith("package/") || source.startsWith("react/"))
       && source.endsWith(".d.ts"),
     )
+    .map(({ fileName, source }) => ({
+      source,
+      signature: normalizedDeclarationText(emitter, program.getSourceFile(fileName)),
+    }))
     .sort((left, right) => left.source.localeCompare(right.source));
 }
 
-function collectEntrypointSurfaces({ checker, crateDir, entrypoint, printer, program }) {
+function collectEntrypointSurfaces({ checker, crateDir, emitter, entrypoint, program }) {
   const sourcePath = path.join(crateDir, entrypoint.declarationPath);
   const source = program.getSourceFile(sourcePath);
   if (!source) throw new Error(`Missing declaration entrypoint: ${entrypoint.declarationPath}`);
@@ -116,10 +154,10 @@ function collectEntrypointSurfaces({ checker, crateDir, entrypoint, printer, pro
 
   return checker.getExportsOfModule(moduleSymbol).map((exportedSymbol) => {
     const resolvedSymbol = resolveExportSymbol(checker, exportedSymbol);
-    const declaration = resolvedSymbol.declarations?.[0];
+    const declaration = resolvedSymbol.declarations[0]?.resolve();
     if (!declaration) throw new Error(`Export ${exportedSymbol.name} has no declaration`);
     const source = normalizePath(path.relative(crateDir, declaration.getSourceFile().fileName));
-    const signature = normalizedDeclarationText(printer, declaration);
+    const signature = normalizedDeclarationText(emitter, declaration);
     const members = namedMembers(declaration);
     return {
       entrypoint: entrypoint.id,
@@ -136,29 +174,20 @@ function collectEntrypointSurfaces({ checker, crateDir, entrypoint, printer, pro
 export function collectPublicContractInventory(crateDir = defaultCrateDir) {
   const entrypointDefinitions = readEntrypointDefinitions(crateDir);
   assertPublishedDeclarationsSynchronized(crateDir, entrypointDefinitions);
-  const program = createProgram(crateDir, entrypointDefinitions);
-  const diagnostics = ts.getPreEmitDiagnostics(program);
-  if (diagnostics.length > 0) {
-    const message = ts.formatDiagnosticsWithColorAndContext(diagnostics, {
-      getCanonicalFileName: (fileName) => fileName,
-      getCurrentDirectory: () => crateDir,
-      getNewLine: () => "\n",
-    });
-    throw new Error(`Public declarations do not typecheck:\n${message}`);
-  }
-  const checker = program.getTypeChecker();
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-  const surfaces = entrypointDefinitions
-    .flatMap((entrypoint) => collectEntrypointSurfaces({ checker, crateDir, entrypoint, printer, program }))
-    .sort((left, right) =>
-      left.entrypoint.localeCompare(right.entrypoint)
-      || left.exportName.localeCompare(right.exportName),
-    );
-  return {
-    declarationFiles: collectDeclarationFileInventory({ crateDir, printer, program }),
-    entrypoints: entrypointDefinitions.map((entrypoint) => entrypoint.id),
-    surfaces,
-  };
+  return withEntrypointProject(crateDir, entrypointDefinitions, ({ checker, emitter, program }) => {
+    assertDeclarationsTypecheck(crateDir, program);
+    const surfaces = entrypointDefinitions
+      .flatMap((entrypoint) => collectEntrypointSurfaces({ checker, crateDir, emitter, entrypoint, program }))
+      .sort((left, right) =>
+        left.entrypoint.localeCompare(right.entrypoint)
+        || left.exportName.localeCompare(right.exportName),
+      );
+    return {
+      declarationFiles: collectDeclarationFileInventory({ crateDir, emitter, program }),
+      entrypoints: entrypointDefinitions.map((entrypoint) => entrypoint.id),
+      surfaces,
+    };
+  });
 }
 
 function matchesRule(surface, rule) {

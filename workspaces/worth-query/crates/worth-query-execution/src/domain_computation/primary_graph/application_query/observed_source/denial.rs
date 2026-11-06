@@ -186,5 +186,4 @@ impl worth_execution::ChargedBytes for WorthQuerySourceExpectationDenial {
     }
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

@@ -11,14 +11,13 @@ use worth_query_installation::facade::OperationReads;
 #[path = "resolution/candidate_verification.rs"]
 mod candidate_verification;
 #[path = "resolution/cardinality.rs"]
-mod cardinality;
+pub(crate) mod cardinality;
 mod current_identity;
 #[path = "resolution/decision_plan_denial.rs"]
 mod decision_plan_denial;
 #[path = "resolution/source_liveness.rs"]
 mod source_liveness;
-#[cfg(test)]
-mod tests;
+
 mod verification_denial;
 use cardinality::classify_current_entities;
 use cardinality::CurrentOutputCardinality;
@@ -203,7 +202,14 @@ where
         self.charge_current_output_work(1, Family::IDENTITY)?;
         let selected_native_root = self
             .reader
-            .runtime
+            .native
+            .committed_runtime()
+            .ok_or_else(|| {
+                WorthQueryCurrentOutputDenial::new(
+                    WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                    Family::IDENTITY,
+                )
+            })?
             .read_truth()
             .positioned_snapshot(self.reader.snapshot)
             .map_err(|_| {

@@ -40,7 +40,6 @@ impl<'request, 'authority, Schema, Operation, Input, Scope, Phase>
             effect_routes: completed.effect_routes,
             postcondition_carry: completed.read.postcondition_carry,
             consumed_outputs: self.consumed_outputs,
-            #[cfg(test)]
             computation_facts: completed.read.computation_facts,
             computation_fact_ordinals: completed.read.computation_fact_ordinals,
             workflow_authority_binding: None,

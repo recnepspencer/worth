@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::{
 /// `retains_computation` is fixed at installation: the producer's operation
 /// runs a partitioned computation whose state its runs retain.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct InstalledProducerEdition {
+pub struct InstalledProducerEdition {
     digest: [u8; 32],
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     binding_type: TypeId,
@@ -236,7 +236,6 @@ impl InstalledProducerEdition {
         self.build_identity
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn for_test(digest: [u8; 32]) -> Self {
         let unit = TypeId::of::<()>();
         Self {
@@ -261,3 +260,5 @@ fn posture_code(posture: ApplicationMutationOutputPosture) -> u8 {
         ApplicationMutationOutputPosture::Retire => 3,
     }
 }
+
+mod court_doors_for_test;

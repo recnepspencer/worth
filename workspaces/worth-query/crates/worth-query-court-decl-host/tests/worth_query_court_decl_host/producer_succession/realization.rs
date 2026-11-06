@@ -1,6 +1,13 @@
 //! A producer owns its separate realization, with a typed link to immutable source.
 use super::*;
-
+pub fn output_next() -> ApplicationRelationRef<Schema, OutputNext, Realization, Realization> {
+    ApplicationRelationRef::from_schema_identifiers(
+        "OutputNext",
+        "Realization",
+        "Realization",
+        ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().orbit(),
+    )
+}
 pub type RealizationTarget = WorthQueryInvariantMutationTarget<Schema, Realization>;
 pub struct PublicationDecision {
     pub source: Target,
@@ -15,8 +22,11 @@ pub fn declare(
     let schema = schema
         .application_query(realization_read::definition())
         .application_query_binding::<realization_read::Binding>();
-    source_control::declare(producers::leaf::declare(producers::child::declare(
-        producers::parent::declare(producers::independent_parent::declare(schema)),
+    let schema = producers::parameter_routes::declare(producers::twin::declare(schema));
+    write_fence::declare(source_control::declare(producers::leaf::declare(
+        producers::child::declare(producers::parent::declare(
+            producers::independent_parent::declare(schema),
+        )),
     )))
 }
 
@@ -26,7 +36,7 @@ pub fn canonical_query() -> worth_query_decl::facade::canonicalization::Canonica
     };
     let query = DetailQueryBuilder::new(RootEntityKey::new("Realization").unwrap())
         .project(
-            AspectFieldSelector::new(RealizationFacts::reference().name(), "RealizedValue")
+            AspectFieldSelector::new(RealizedValue::at("RealizedValue").aspect(), "RealizedValue")
                 .unwrap(),
         )
         .build()
@@ -35,7 +45,7 @@ pub fn canonical_query() -> worth_query_decl::facade::canonicalization::Canonica
     let shape = DetailResultShapeBuilder::new()
         .field(
             AuthoredResultShapeField::new(
-                RealizationFacts::reference().name(),
+                RealizedValue::at("RealizedValue").aspect(),
                 "RealizedValue",
                 "value",
             )
@@ -52,5 +62,10 @@ pub fn canonical_query() -> worth_query_decl::facade::canonicalization::Canonica
 }
 
 pub use super::schema::storage_model::{
-    Realization, RealizationFacts, RealizationKey, RealizedValue, Realizes,
+    Realization, RealizationKey, RealizedValue, Realizes,
 };
+
+pub struct OutputNext;
+impl worth_query_decl::facade::application_schema::fragment::Relation for OutputNext {
+    const NAME: &'static str = "OutputNext"; type To = Realization; const ORBIT: bool = true;
+}

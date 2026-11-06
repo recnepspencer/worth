@@ -73,10 +73,7 @@ impl WorthQueryApplicationAttemptDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn new(
-        kind: WorthQueryApplicationAttemptDenialKind,
-        subject: impl Into<String>,
-    ) -> Self {
+    pub fn new(kind: WorthQueryApplicationAttemptDenialKind, subject: impl Into<String>) -> Self {
         Self::from_cause(kind, subject.into(), AttemptDenialCause::None)
     }
 
@@ -231,12 +228,6 @@ impl std::error::Error for WorthQueryApplicationAttemptDenial {
     }
 }
 
-#[cfg(test)]
-mod allocation_error_source_tests;
-
-#[cfg(test)]
-mod native_query_cause;
-
 mod expression;
 mod request_read;
 
@@ -244,7 +235,6 @@ mod capacity;
 mod indexed_lookup;
 mod managed_index;
 
-#[cfg(test)]
-mod native_storage_tests;
-
 mod decision_read_set;
+
+mod court_doors_for_test;

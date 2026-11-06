@@ -31,8 +31,15 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: crates/worth-signal-wasm/.node-version
           registry-url: https://registry.npmjs.org
+
+      - name: Install the repository npm version
+        run: |
+          npm_version=$(node -p "require('./crates/worth-signal-wasm/package.json').packageManager.split('@')[1]")
+          npm install --global "npm@$npm_version"
+          node --test scripts/wasm/release_toolchain_policy.test.mjs
+          node scripts/wasm/verify-worth-signals-release-toolchain.mjs
 
       - name: Install wasm package dev dependencies
         working-directory: crates/worth-signal-wasm
@@ -47,7 +54,7 @@ jobs:
       - name: Prepare npm metadata
         env:
           WORTH_SIGNAL_WASM_PACKAGE_NAME: worth-signals-wasm
-          WORTH_SIGNAL_WASM_REPOSITORY_URL: https://github.com/recnepspencer/forge.git
+          WORTH_SIGNAL_WASM_REPOSITORY_URL: https://github.com/recnepspencer/worth.git
         run: node scripts/wasm/prepare-worth-signals-wasm-package.mjs crates/worth-signal-wasm/pkg
 
       - name: Verify npm package

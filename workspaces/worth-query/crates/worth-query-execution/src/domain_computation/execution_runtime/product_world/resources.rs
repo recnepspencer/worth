@@ -23,7 +23,7 @@ pub struct WorthQueryProductWorldResources {
 /// the required policy on the calling thread, or leased from the host's
 /// authority when installed beside it. The policy is required at construction.
 #[derive(Clone)]
-pub(crate) struct WorthQueryProductExecution {
+pub struct WorthQueryProductExecution {
     pub(crate) authority: Option<Arc<ExecutionAuthority>>,
     pub(crate) policy: ExecutionRequestPolicy,
 }
@@ -96,14 +96,12 @@ impl WorthQueryProductWorldResources {
         (self.budgets, self.clock, self.invalidation, self.execution)
     }
 
-    #[cfg(test)]
     pub(crate) const fn budgets(&self) -> &RuntimeWorldBudgets {
         &self.budgets
     }
 }
 
-#[cfg(test)]
-pub(in crate::domain_computation) fn test_product_world_resources(
+pub fn test_product_world_resources(
     clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
 ) -> WorthQueryProductWorldResources {
     test_product_world_resources_with_history_limit_for_test(1_024, clock)
@@ -163,3 +161,5 @@ pub(crate) fn test_product_world_resources_with_history_limit_for_test(
         ),
     )
 }
+
+mod court_doors_for_test;

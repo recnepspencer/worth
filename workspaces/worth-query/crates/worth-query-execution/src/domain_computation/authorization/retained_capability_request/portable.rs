@@ -2,8 +2,6 @@
 mod context_inventory;
 mod encoding;
 
-#[cfg(test)]
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
@@ -17,7 +15,7 @@ use worth_relational::facade::identity::EntityId;
 use super::{WorthQueryCapabilityContextKey, WorthQueryRetainedCapabilityRequest};
 
 const PORTABLE_VERSION: u8 = 2;
-pub(in crate::domain_computation) const MAXIMUM_PORTABLE_BYTES: usize = 64 * 1024;
+pub const MAXIMUM_PORTABLE_BYTES: usize = 64 * 1024;
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -56,7 +54,7 @@ struct PortableRelation {
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation) enum WorkflowApprovalRequestEncodingDenial {
+pub enum WorkflowApprovalRequestEncodingDenial {
     TooLarge,
     NonPortableValue,
     InvalidRequest,
@@ -64,7 +62,7 @@ pub(in crate::domain_computation) enum WorkflowApprovalRequestEncodingDenial {
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation) enum WorkflowApprovalRequestDecodingDenial {
+pub enum WorkflowApprovalRequestDecodingDenial {
     InvalidRequest,
     Actor(Box<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>),
 }
@@ -206,5 +204,4 @@ fn portable_value(value: &AspectValue) -> bool {
     )
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

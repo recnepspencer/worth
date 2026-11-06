@@ -108,6 +108,25 @@ impl crate::runtime::RelationalRuntime {
                 "route absence requires the exact installed native basis",
             ));
         }
+        if installed
+            .source_scope_ownership
+            .scope_kind(&meaning.family)
+            .is_some()
+        {
+            installed.require_current_ownership_storage(basis, meaning.source_scope)?;
+        }
+        let current = if installed.source_scope_ownership.is_empty()
+            || basis
+                .inner
+                .root
+                .output_publication_positions
+                .unresolved_prefix()
+                .is_none()
+        {
+            None
+        } else {
+            crate::history::data::current_route_presence::read_current(execution, basis, meaning)?
+        };
         let result = execution.in_scope(|lease| {
             ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
                 lease,
@@ -115,13 +134,17 @@ impl crate::runtime::RelationalRuntime {
                 |context| {
                     let positions = &basis.inner.root.output_publication_positions;
                     use crate::history::data::RequiredOutputRoutePosition as Position;
-                    let selected = match positions.get(meaning, context)? {
+                    let selected = match positions.get(meaning, context)?.or(current) {
                         Some(position) => Some(position),
                         None if positions.unresolved_prefix().is_some() => {
-                            crate::history::data::readmit_required_output_route(
+                            let historical=crate::history::data::readmit_required_output_route(
                                 execution, self, basis, meaning,
-                            )
-                            .map_err(super::custody::cold_stop)?
+                            ).map_err(super::custody::cold_stop)?;
+                            if installed.source_scope_ownership.is_empty() {historical} else {
+                                crate::history::data::current_route_presence::require_current_owned_route(
+                                    execution,self,basis,meaning,historical,
+                                )?
+                            }
                         }
                         None => None,
                     };

@@ -48,9 +48,7 @@ impl WorthQueryOutputDemandRegistry {
     }
 }
 impl WorthQueryOutputDemandInterest {
-    pub(in crate::domain_computation::primary_graph) fn require_read_closeable(
-        &self,
-    ) -> Result<(), WorthQueryOutputReadCloseDenial> {
+    pub fn require_read_closeable(&self) -> Result<(), WorthQueryOutputReadCloseDenial> {
         let state = self
             .owner
             .state

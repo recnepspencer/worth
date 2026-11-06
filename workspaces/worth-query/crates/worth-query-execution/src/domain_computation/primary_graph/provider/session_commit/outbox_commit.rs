@@ -1,29 +1,24 @@
 //! Exact dispatch-outbox identity sealed from the authoritative commit artifact.
 
-#[cfg(test)]
-mod tests;
-
 use crate::domain_computation::application_aftermath::{
     WorthQueryDispatchOutboxRecord, WorthQueryPendingDispatchOutbox,
 };
 use worth_relational::facade::transactions::{CommitResult, RecordRef};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryCommittedDispatchOutboxBinding {
+pub struct WorthQueryCommittedDispatchOutboxBinding {
     record: WorthQueryDispatchOutboxRecord,
     record_ref: RecordRef,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryCommittedDispatchOutboxBindingDenial
-{
+pub enum WorthQueryCommittedDispatchOutboxBindingDenial {
     CreatedEntityMissing,
 }
 
 /// Owner-sealed outcome of binding one pending outbox create to its commit.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryCommittedDispatchOutboxResolution
-{
+pub struct WorthQueryCommittedDispatchOutboxResolution {
     binding: Result<
         Option<WorthQueryCommittedDispatchOutboxBinding>,
         WorthQueryCommittedDispatchOutboxBindingDenial,
@@ -34,8 +29,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCommittedDispa
 ///
 /// The wrapped binding still distinguishes exact `Some` from honest `None`.
 /// No receipt path can manufacture this seal from a denied resolution.
-pub(in crate::domain_computation::primary_graph) struct WorthQueryCommittedDispatchOutboxReceiptSeal
-{
+pub struct WorthQueryCommittedDispatchOutboxReceiptSeal {
     binding: Option<WorthQueryCommittedDispatchOutboxBinding>,
 }
 
@@ -78,15 +72,11 @@ impl WorthQueryCommittedDispatchOutboxResolution {
 }
 
 impl WorthQueryCommittedDispatchOutboxReceiptSeal {
-    pub(in crate::domain_computation::primary_graph) fn binding(
-        &self,
-    ) -> Option<&WorthQueryCommittedDispatchOutboxBinding> {
+    pub fn binding(&self) -> Option<&WorthQueryCommittedDispatchOutboxBinding> {
         self.binding.as_ref()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_binding(
-        self,
-    ) -> Option<WorthQueryCommittedDispatchOutboxBinding> {
+    pub fn into_binding(self) -> Option<WorthQueryCommittedDispatchOutboxBinding> {
         self.binding
     }
 }
@@ -109,7 +99,6 @@ impl WorthQueryCommittedDispatchOutboxBinding {
         }))
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn fixture_from_commit(
         layout: &crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxLayout,
         record: Option<&WorthQueryDispatchOutboxRecord>,
@@ -132,11 +121,9 @@ impl WorthQueryCommittedDispatchOutboxBinding {
         &self.record_ref
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation) const fn fixture(
-        record: WorthQueryDispatchOutboxRecord,
-        record_ref: RecordRef,
-    ) -> Self {
+    pub const fn fixture(record: WorthQueryDispatchOutboxRecord, record_ref: RecordRef) -> Self {
         Self { record, record_ref }
     }
 }
+
+mod court_doors_for_test;

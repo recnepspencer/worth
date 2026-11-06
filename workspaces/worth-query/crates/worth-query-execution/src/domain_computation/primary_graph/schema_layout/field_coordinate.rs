@@ -13,7 +13,7 @@ use worth_relational::facade::identity::KindId;
 
 /// Borrowed installed meaning, never a read permission or a rewritten descriptor.
 #[derive(Clone, Copy, Debug)]
-pub(in crate::domain_computation::primary_graph) struct InstalledFieldCoordinate<'a> {
+pub struct InstalledFieldCoordinate<'a> {
     field: &'a WorthQueryPrimaryFieldLayout,
     native: &'a WorthQueryInstalledApplicationAspectContract,
 }
@@ -32,9 +32,7 @@ impl InstalledFieldCoordinate<'_> {
     pub(in crate::domain_computation::primary_graph) fn entity_kind(&self) -> KindId {
         self.field.entity_kind
     }
-    pub(in crate::domain_computation::primary_graph) fn contract_revision(
-        &self,
-    ) -> AspectContractRevision {
+    pub fn contract_revision(&self) -> AspectContractRevision {
         self.native.contract().revision()
     }
 }
@@ -127,3 +125,5 @@ impl WorthQueryPrimaryGraphLayout {
         Ok(None)
     }
 }
+
+mod court_doors_for_test;

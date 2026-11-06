@@ -20,7 +20,7 @@ pub use prepared_selection::WorthQueryPreparedEntitySelection;
 mod body_requirement;
 mod body_retirement;
 mod body_selection;
-mod field_presence;
+pub(crate) mod field_presence;
 mod operation_body;
 mod predecode_admission;
 mod signed_evidence;

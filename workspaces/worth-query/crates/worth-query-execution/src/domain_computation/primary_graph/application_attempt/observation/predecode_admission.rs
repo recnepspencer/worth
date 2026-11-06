@@ -7,7 +7,7 @@ use worth_relational::facade::{
     storage::RecordLifecycleState,
 };
 
-pub(in crate::domain_computation::primary_graph) fn observe_field_value_borrowed<Output>(
+pub fn observe_field_value_borrowed<Output>(
     runtime: &RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &SnapshotHandle,
@@ -43,7 +43,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_value_borrowed
     })
 }
 
-pub(in crate::domain_computation::primary_graph) fn observe_field_value_borrowed_admitted<
+pub(in crate::domain_computation::primary_graph) fn observe_field_observation_borrowed_admitted<
     Output,
 >(
     runtime: &RelationalRuntime,
@@ -52,26 +52,20 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_value_borrowed
     entity_id: EntityId,
     kind: KindId,
     locator: &AspectFieldLocator,
-    action: impl for<'raw> FnOnce(Option<&'raw AspectValue>) -> Output,
+    action: impl for<'raw> FnOnce(
+        worth_relational::facade::runtime::RelationalProjectedFieldObservation<'raw>,
+    ) -> Output,
 ) -> Result<Option<Output>, worth_relational::facade::transactions::RelationalExecutionDenialCause>
 {
-    observe_field_observation_borrowed_admitted(
-        runtime,
-        execution,
-        snapshot,
-        entity_id,
-        kind,
-        locator,
-        |observed| action(observed.value()),
-    )
+    let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+        return Ok(None);
+    };
+    observe_field_from_view_admitted(&view, execution, entity_id, kind, locator, action)
 }
 
-pub(in crate::domain_computation::primary_graph) fn observe_field_observation_borrowed_admitted<
-    Output,
->(
-    runtime: &RelationalRuntime,
+pub(in crate::domain_computation::primary_graph) fn observe_field_from_view_admitted<Output>(
+    view: &worth_relational::facade::runtime::VisibilityProjectionView,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    snapshot: &SnapshotHandle,
     entity_id: EntityId,
     kind: KindId,
     locator: &AspectFieldLocator,
@@ -88,9 +82,6 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_observation_bo
         [field.clone()],
     )]);
     let mut action = Some(action);
-    let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
-        return Ok(None);
-    };
     // The operation reader already admitted this field into its carried work.
     view.entity_record_with_projection_scope_admitted(
         execution,
@@ -114,8 +105,6 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_observation_bo
     .map(|result| result.unwrap_or_else(|never| match never {}))
 }
 
-/// The rebase already admitted this native field probe. No present scalar is
-/// copied merely to distinguish whole-aspect absence from present content.
 pub(in crate::domain_computation::primary_graph) fn observe_aspect_absence(
     runtime: &RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,

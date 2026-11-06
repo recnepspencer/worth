@@ -35,14 +35,19 @@ impl CanonicalCommitEnvelope {
             .in_scope(|lease| {
                 worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                     .run_with_checkpoint(lease, None, |context| {
+                        let mut origin_frames = OutputOriginHistory::default();
+                        let validated_history = &mut origin_frames;
                         self.install_completion(
+                            execution,
                             runtime,
                             basis,
                             created,
                             created_relations,
                             state,
                             admission,
+                            None,
                             lease,
+                            validated_history,
                             context,
                         )
                     })
@@ -57,13 +62,16 @@ impl CanonicalCommitEnvelope {
     #[allow(clippy::too_many_arguments)]
     pub(super) fn install_completion(
         &mut self,
+        execution: &ExecutionRequest<'_, '_>,
         runtime: &crate::runtime::RelationalPreparationRuntime,
         basis: &AdmittedRelationalBranchBasis,
         created: &CommitCreatedEntityBindings,
         created_relations: &CommitCreatedRelationBindings,
         state: &WorkingState,
         admission: crate::mvcc::RequiredOutputPublicationAdmission,
+        contribution_records: Option<&[crate::transactions::data::RecordRef]>,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        validated_history: &mut OutputOriginHistory,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<crate::history::data::RequiredOutputPublicationPositions, TransactionCommitError>
     {
@@ -89,6 +97,22 @@ impl CanonicalCommitEnvelope {
                 "required-output installation changed before native preparation",
             ));
         }
+        if let Publication::CoupledAuthored { group } = publication {
+            return super::coupled_authored::install(
+                self,
+                execution,
+                runtime,
+                basis,
+                created,
+                created_relations,
+                state,
+                installed,
+                group,
+                lease,
+                validated_history,
+                context,
+            );
+        }
         if let Publication::AuthoredCascadeRestoration {
             admission,
             restoration,
@@ -102,9 +126,10 @@ impl CanonicalCommitEnvelope {
                 created_relations,
                 state,
                 installed,
-                admission,
-                restoration,
+                Some(&admission),
+                &restoration,
                 lease,
+                validated_history,
                 context,
             );
         }
@@ -115,15 +140,17 @@ impl CanonicalCommitEnvelope {
         {
             return super::authored_cascade::install(
                 self,
+                execution,
                 runtime,
                 basis,
                 created,
                 created_relations,
                 state,
                 installed,
-                admission,
+                &admission,
                 predecessor,
                 lease,
+                validated_history,
                 context,
             );
         }
@@ -164,11 +191,13 @@ impl CanonicalCommitEnvelope {
                     predecessor,
                     meaning,
                     lease,
+                    validated_history,
                     context,
                 )?;
                 (meaning, roles, Some(origin))
             }
-            Publication::AuthoredCascadeRetirement { .. }
+            Publication::CoupledAuthored { .. }
+            | Publication::AuthoredCascadeRetirement { .. }
             | Publication::AuthoredCascadeRestoration { .. } => {
                 unreachable!("cascade consumed before ordinary installation")
             }
@@ -183,6 +212,7 @@ impl CanonicalCommitEnvelope {
                     predecessor,
                     meaning,
                     lease,
+                    validated_history,
                     context,
                 )?;
                 super::source_scope_ownership::require_cascade(
@@ -201,6 +231,8 @@ impl CanonicalCommitEnvelope {
             && let Some(prior) = previous
             && let Some(closure) = producer_cascade::prepare(
                 self,
+                execution,
+                basis,
                 runtime,
                 &installed,
                 prior,
@@ -218,6 +250,7 @@ impl CanonicalCommitEnvelope {
                 state,
                 &installed,
                 route_completion::RouteCompletion {
+                    contribution_records,
                     producer,
                     dependency_identity,
                     meaning,
@@ -229,6 +262,7 @@ impl CanonicalCommitEnvelope {
                 },
                 closure,
                 lease,
+                validated_history,
                 context,
             );
         }
@@ -265,6 +299,7 @@ impl CanonicalCommitEnvelope {
             state,
             &installed,
             route_completion::RouteCompletion {
+                contribution_records,
                 producer,
                 dependency_identity,
                 meaning,
@@ -273,6 +308,7 @@ impl CanonicalCommitEnvelope {
                 completion,
             },
             lease,
+            validated_history,
             context,
         )
     }

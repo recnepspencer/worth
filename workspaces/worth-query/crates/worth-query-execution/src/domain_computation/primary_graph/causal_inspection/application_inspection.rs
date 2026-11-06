@@ -9,7 +9,7 @@ pub use availability::{
     WorthQueryInspectionEvidenceAvailability, WorthQueryInspectionRetainedEvidence,
     WorthQueryInspectionSupplierEvidence,
 };
-mod admission;
+pub(crate) mod admission;
 mod connection;
 mod source_original;
 pub use connection::{
@@ -17,8 +17,8 @@ pub use connection::{
     WorthQueryProducerConnectionDenial, WorthQueryProducerEvaluationDecision,
     WorthQueryProducerEvaluationDenial, WorthQueryProducerOutputConnectionDenial,
 };
-mod identity;
-mod report;
+pub(crate) mod identity;
+pub(crate) mod report;
 mod rich;
 pub use rich::{
     WorthQueryApplicationEvidenceFamily, WorthQueryApplicationMaterializationPolicy,
@@ -30,9 +30,9 @@ pub use rich::{
     WorthQueryMaterializedSourceField, WorthQueryMaterializedSourceFieldEffect,
     WorthQueryProjectionMaterializationRefusal,
 };
-mod request;
-mod result;
-mod stop;
+pub(crate) mod request;
+pub(crate) mod result;
+pub(crate) mod stop;
 pub use request::{
     WorthQueryApplicationInspectionRequest, WorthQueryChangedInspectionRequest,
     WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryConnectedInspectionRequest,
@@ -60,10 +60,7 @@ pub use stop::{
     WorthQueryInspectionReadTerminalDenial, WorthQueryManagedGraphReadDenial,
     WorthQueryManagedGraphWorkSessionStartDenial,
 };
-#[cfg(test)]
-#[path = "application_inspection/tests/scope_replacement.rs"]
-mod scope_replacement;
-mod target;
-#[cfg(test)]
-mod tests;
+
+pub(crate) mod target;
+
 pub(in crate::domain_computation) use target::WorthQueryApplicationInspectionTarget;

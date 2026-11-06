@@ -9,16 +9,15 @@ mod entity_creation;
 mod entity_retirement;
 mod entity_selection;
 mod field_observation;
-#[cfg(test)]
 mod forgery;
 mod fragment;
 mod installed_reentry;
-mod model;
+pub(crate) mod model;
 mod operation_body;
 mod optional_field_authoring;
 mod ordinary_field_authoring;
 mod original_input;
-pub(super) mod output_correspondence;
+pub(crate) mod output_correspondence;
 mod record_presence;
 mod relation_effects;
 mod relation_initialization;
@@ -64,8 +63,9 @@ pub(in crate::domain_computation::primary_graph) use output_correspondence::{
     OutputRoleUse, WorthQueryApplicationOutputCorrespondence, WorthQueryCheckpointOutputRole,
 };
 pub use output_correspondence::{
-    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputFamilyEntry,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationClosureEvidenceEntry, WorthQueryApplicationOutputEntity,
+    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationTypedClosureEvidence,
     WorthQueryApplicationTypedOutputCorrespondence,
 };
 use target_admission::installed_contract_admits_program_target;

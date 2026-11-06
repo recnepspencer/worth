@@ -55,6 +55,7 @@ where
                 kind,
                 entity: Arc::from(entity.name()),
                 authority_identity: self.authority_identity,
+                phase: None,
                 _marker: PhantomData,
             })
             .collect())
@@ -103,6 +104,7 @@ where
                         kind: layout.from,
                         entity: Arc::from(relation.from()),
                         authority_identity: self.authority_identity,
+                        phase: None,
                         _marker: PhantomData,
                     },
                     to: WorthQueryInvariantEntityIdentity {
@@ -110,6 +112,7 @@ where
                         kind: layout.to,
                         entity: Arc::from(relation.to()),
                         authority_identity: self.authority_identity,
+                        phase: None,
                         _marker: PhantomData,
                     },
                     _relation: PhantomData,

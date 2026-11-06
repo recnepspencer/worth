@@ -36,7 +36,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         let [key] = locator.field_path().fields() else {
             return None;
         };
-        let projection = self.runtime.read_truth().project_snapshot(self.snapshot)?;
+        let projection = self.native.projection(self.snapshot)?;
         let work = projection.exact_relation_state_read_work_bound()?;
         let work = usize::try_from(work).ok()?;
         if !self.work_budget.consume(work) {

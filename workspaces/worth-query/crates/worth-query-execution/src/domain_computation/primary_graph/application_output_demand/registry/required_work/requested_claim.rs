@@ -8,8 +8,7 @@ use super::selection::SelectedReadyReadmission;
 use super::*;
 
 /// Each node funds its own Box and interest key. No source is reconstructed.
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct RequestedOutputReadClaim
-{
+pub struct RequestedOutputReadClaim {
     node: Box<RequestedReadNode>,
     // Refund after the interest key and physical node backing leave custody.
 }
@@ -143,3 +142,5 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
         "exact requested output claim exceeds required custody",
     )
 }
+
+mod court_doors_for_test;

@@ -32,6 +32,7 @@ pub struct WorthQueryPreparedEntitySelection<
     field: Field,
     native: PreparedEntityFieldLookup,
     snapshot: worth_relational::facade::snapshots::SnapshotHandle,
+    phase: Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
     authority_identity: u64,
     binding_identity: ApplicationSchemaBindingIdentity,
     runtime_authority:
@@ -90,45 +91,45 @@ impl<Schema: ApplicationSchema, Operation>
                 field.field(),
             )
         })?;
-        let view = self
-            .reader
-            .runtime
-            .read_truth()
-            .project_observation(&self.reader.observation)
-            .map_err(|_| {
-                selection_denial(
-                    WorthQueryEntityResolutionDenialKind::Refused(
-                        ResolutionRefusal::EqualityIndexUnavailable,
-                    ),
-                    field.field(),
+        let native = match &self.reader.native {
+            super::super::super::read_basis::NativeProjectionRead::Committed(runtime) => {
+                let view = runtime
+                    .read_truth()
+                    .project_observation(&self.reader.observation)
+                    .map_err(|_| {
+                        selection_denial(
+                            WorthQueryEntityResolutionDenialKind::Refused(
+                                ResolutionRefusal::EqualityIndexUnavailable,
+                            ),
+                            field.field(),
+                        )
+                    })?;
+                runtime.index_access().prepare_entity_field_lookup(
+                    &view,
+                    index,
+                    layout.entity_kind,
+                    &layout.locator,
+                    execution,
                 )
-            })?;
-        let native = self
-            .reader
-            .runtime
-            .index_access()
-            .prepare_entity_field_lookup(
-                &view,
-                index,
-                layout.entity_kind,
-                &layout.locator,
-                execution,
-            )
-            .map_err(|denied| {
-                if let BoundedEntityFieldLookupDenialKind::Execution(cause) = denied.kind() {
-                    self.reader.native_read_stop.get_or_insert(cause);
-                    return HandlerExecutionDenial::new(
-                        WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None),
-                    );
-                }
+            }
+            super::super::super::read_basis::NativeProjectionRead::Applied { before, .. } => before
+                .prepare_entity_field_lookup(index, layout.entity_kind, &layout.locator, execution),
+        }
+        .map_err(|denied| {
+            if let BoundedEntityFieldLookupDenialKind::Execution(cause) = denied.kind() {
+                self.reader.native_read_stop.get_or_insert(cause);
+                return HandlerExecutionDenial::new(
+                    WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None),
+                );
+            }
 
-                selection_denial(
-                    WorthQueryEntityResolutionDenialKind::Refused(
-                        ResolutionRefusal::EqualityIndexUnavailable,
-                    ),
-                    field.field(),
-                )
-            })?;
+            selection_denial(
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::EqualityIndexUnavailable,
+                ),
+                field.field(),
+            )
+        })?;
         self.reader
             .retention_control
             .check_live()
@@ -137,6 +138,11 @@ impl<Schema: ApplicationSchema, Operation>
             field,
             native,
             snapshot: self.reader.snapshot.clone(),
+            phase: self
+                .reader
+                .native
+                .candidate_identity()
+                .map(|id| id.qualification()),
             authority_identity: self.reader.authority_identity,
             binding_identity: self.binding_identity.clone(),
             runtime_authority: self.runtime_authority,
@@ -160,9 +166,15 @@ impl<Schema: ApplicationSchema, Operation>
         >,
     {
         let execution = self.reader.execution;
-        if prepared.authority_identity != self.reader.authority_identity
+        if prepared.phase
+            != self
+                .reader
+                .native
+                .candidate_identity()
+                .map(|id| id.qualification())
+            || prepared.authority_identity != self.reader.authority_identity
             || prepared.snapshot != *self.reader.snapshot
-            || prepared.snapshot.runtime_instance_id() != self.reader.runtime.runtime_instance_id()
+            || prepared.snapshot.runtime_instance_id() != self.reader.native.runtime_instance_id()
             || prepared.runtime_authority != self.runtime_authority
             || prepared.binding_identity != *self.binding_identity
             || prepared.admission_identity != self.admission_identity
@@ -185,75 +197,118 @@ impl<Schema: ApplicationSchema, Operation>
                 prepared.field.field(),
             )
         })?;
-        let outcome = self
-            .reader
-            .runtime
-            .index_access()
-            .execute_prepared_entity_field_lookup(
+        let outcome = match &self.reader.native {
+            super::super::super::read_basis::NativeProjectionRead::Committed(runtime) => {
+                let outcome =
+                    runtime
+                        .index_access()
+                        .execute_prepared_entity_field_lookup(
+                            &prepared.native,
+                            &value,
+                            candidate_limit,
+                            BoundedIndexParityMode::Production,
+                            execution,
+                            || control.check_live(),
+                        )
+                        .map_err(|stop| match stop {
+                            Stop::Admission(denial) => HandlerExecutionDenial::new(denial),
+                            Stop::Lookup(denial) => {
+                                let examined = denial.examined_entry_count();
+                                let admitted = self.reader.work_budget.consume(1 + examined);
+                                if admitted {
+                                    self.reader.work.record_lookup(examined);
+                                }
+                                let kind = match denial.kind() {
+                            BoundedEntityFieldLookupDenialKind::Execution(cause) => {
+                                self.reader.native_read_stop.get_or_insert(cause);
+                                return HandlerExecutionDenial::new(
+                                    WorthQueryInvariantProjectionDenial::execution_request_stopped(
+                                        cause, None,
+                                    ),
+                                );
+                            }
+                            BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+                            | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => {
+                                WorthQueryEntityResolutionDenialKind::Refused(
+                                    ResolutionRefusal::CorruptIdentityIndex,
+                                )
+                            }
+                            BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+                            | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+                            | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+                            | BoundedEntityFieldLookupDenialKind::WrongIndexKind
+                            | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable => {
+                                WorthQueryEntityResolutionDenialKind::Refused(
+                                    ResolutionRefusal::EqualityIndexUnavailable,
+                                )
+                            }
+                        };
+                                if !admitted {
+                                    return selection_denial(
+                                        WorthQueryEntityResolutionDenialKind::Stopped(
+                                            NativeReadStop::WorkExhausted,
+                                        ),
+                                        prepared.field.field(),
+                                    );
+                                }
+                                selection_denial(kind, prepared.field.field())
+                            }
+                            Stop::AccountingOverflow => {
+                                let cause = NativeReadStop::WorkCounterOverflow;
+                                self.reader.native_read_stop.get_or_insert(cause);
+                                HandlerExecutionDenial::new(
+                                    WorthQueryInvariantProjectionDenial::execution_request_stopped(
+                                        cause, None,
+                                    ),
+                                )
+                            }
+                            Stop::ExactBasisRequired => selection_denial(
+                                WorthQueryEntityResolutionDenialKind::Refused(
+                                    ResolutionRefusal::EqualityIndexUnavailable,
+                                ),
+                                prepared.field.field(),
+                            ),
+                        })?;
+                super::super::super::read_basis::ProjectionEntitySelection::committed(outcome)
+            }
+            super::super::super::read_basis::NativeProjectionRead::Applied {
+                candidate, ..
+            } => super::super::super::read_basis::ProjectionEntitySelection::applied(
+                candidate,
                 &prepared.native,
                 &value,
                 candidate_limit,
-                BoundedIndexParityMode::Production,
                 execution,
-                || control.check_live(),
             )
-            .map_err(|stop| match stop {
-                Stop::Admission(denial) => HandlerExecutionDenial::new(denial),
-                Stop::Lookup(denial) => {
-                    let examined = denial.examined_entry_count();
-                    let admitted = self.reader.work_budget.consume(1 + examined);
-                    if admitted {
-                        self.reader.work.record_lookup(examined);
+            .map_err(|cause| {
+                let examined = cause.examined_entry_count();
+                self.reader.work.record_lookup(examined);
+                let kind = match cause.kind() {
+                    BoundedEntityFieldLookupDenialKind::Execution(cause) => {
+                        WorthQueryEntityResolutionDenialKind::Stopped(cause)
                     }
-                    let kind = match denial.kind() {
-                        BoundedEntityFieldLookupDenialKind::Execution(cause) => {
-                            self.reader.native_read_stop.get_or_insert(cause);
-                            return HandlerExecutionDenial::new(
-                                WorthQueryInvariantProjectionDenial::execution_request_stopped(
-                                    cause, None,
-                                ),
-                            );
-                        }
-                        BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
-                        | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => {
-                            WorthQueryEntityResolutionDenialKind::Refused(
-                                ResolutionRefusal::CorruptIdentityIndex,
-                            )
-                        }
-                        BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
-                        | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
-                        | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
-                        | BoundedEntityFieldLookupDenialKind::WrongIndexKind
-                        | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable => {
-                            WorthQueryEntityResolutionDenialKind::Refused(
-                                ResolutionRefusal::EqualityIndexUnavailable,
-                            )
-                        }
-                    };
-                    if !admitted {
-                        return selection_denial(
-                            WorthQueryEntityResolutionDenialKind::Stopped(
-                                NativeReadStop::WorkExhausted,
-                            ),
-                            prepared.field.field(),
-                        );
+                    BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+                    | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => {
+                        WorthQueryEntityResolutionDenialKind::Refused(
+                            ResolutionRefusal::CorruptIdentityIndex,
+                        )
                     }
-                    selection_denial(kind, prepared.field.field())
-                }
-                Stop::AccountingOverflow => {
-                    let cause = NativeReadStop::WorkCounterOverflow;
-                    self.reader.native_read_stop.get_or_insert(cause);
-                    HandlerExecutionDenial::new(
-                        WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None),
-                    )
-                }
-                Stop::ExactBasisRequired => selection_denial(
-                    WorthQueryEntityResolutionDenialKind::Refused(
+                    _ => WorthQueryEntityResolutionDenialKind::Refused(
                         ResolutionRefusal::EqualityIndexUnavailable,
                     ),
-                    prepared.field.field(),
-                ),
-            })?;
+                };
+                if !self.reader.work_budget.consume(1 + examined) {
+                    return selection_denial(
+                        WorthQueryEntityResolutionDenialKind::Stopped(
+                            NativeReadStop::WorkExhausted,
+                        ),
+                        prepared.field.field(),
+                    );
+                }
+                selection_denial(kind, prepared.field.field())
+            })?,
+        };
+        control.check_live().map_err(HandlerExecutionDenial::new)?;
         if !self
             .reader
             .work_budget

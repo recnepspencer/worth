@@ -10,8 +10,6 @@
 //! gives its Ready back. The outputs the dependent consumed stay recorded
 //! in its lineage, which is what certifies it when it reopens.
 
-#[cfg(test)]
-mod walk_bounds;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -215,7 +213,7 @@ pub(super) fn closed_superseded(record: &DemandRecord) -> bool {
 }
 
 /// The newest row of `key`'s occurrence holds a Ready no refresh replaced.
-pub(super) fn newest_ready(records: &Records, key: &WorthQueryOutputDemandKey) -> bool {
+pub fn newest_ready(records: &Records, key: &WorthQueryOutputDemandKey) -> bool {
     ready_at_newest(records, newest_of_occurrence(records, key))
 }
 
@@ -262,11 +260,7 @@ pub(super) fn claimants_where(
 }
 
 /// A demand, a dependent's claim, or unfinished work still holds the row.
-pub(super) fn held(
-    records: &Records,
-    key: &WorthQueryOutputDemandKey,
-    record: &DemandRecord,
-) -> bool {
+pub fn held(records: &Records, key: &WorthQueryOutputDemandKey, record: &DemandRecord) -> bool {
     held_by_row(record) || awaited_by_stale_owner(records, key)
 }
 
@@ -280,3 +274,5 @@ pub(super) fn held_by_row(record: &DemandRecord) -> bool {
         || record.performed_source.is_some()
         || record.held_successor.is_some()
 }
+
+mod court_doors_for_test;

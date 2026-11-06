@@ -14,11 +14,7 @@ impl WorthQueryPrimaryGraphLayout {
             Err(never) => match never {},
         }
     }
-    pub(in crate::domain_computation) fn aspect_contract(
-        &self,
-        entity: &str,
-        aspect: &AspectKey,
-    ) -> Option<&AspectContract> {
+    pub fn aspect_contract(&self, entity: &str, aspect: &AspectKey) -> Option<&AspectContract> {
         match self.aspect_contract_with_admission(entity, aspect, &mut |_, _| {
             Ok::<_, std::convert::Infallible>(())
         }) {

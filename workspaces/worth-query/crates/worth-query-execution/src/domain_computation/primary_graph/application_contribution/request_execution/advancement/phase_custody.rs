@@ -239,14 +239,15 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     }
 }
 
-#[cfg(test)]
 impl<'scope> WorthQueryAdvancementPhase<'scope> {
     pub(crate) fn test_host_request(&self) -> super::test_host_policy::TestHostRequest<'scope> {
         super::test_host_policy::TestHostRequest::from_installed(self)
     }
 
     /// Budget-only fixture controls borrow the existing host request.
-    pub(crate) fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
+    pub fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
         self.admitted_request()
     }
 }
+
+mod court_doors_for_test;

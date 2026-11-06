@@ -19,7 +19,7 @@ use super::WorthQueryPartitionedComputationDenial as Denial;
 /// Records canonical preparation work for native full-equivalent reuse.
 /// This is a receipt counter, never a separate admission ceiling.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) struct PreparationWork {
+pub struct PreparationWork {
     spent: Option<u64>,
     request_local: RequestLocal,
 }

@@ -36,6 +36,7 @@ impl WorthQueryCompiledApplicationQuery {
         let canonical_work_policy =
             crate::application_query::WorthQueryApplicationQueryCanonicalWorkPolicy::for_definition(
                 definition,
+                schema.identity_budget,
             );
         let read_graph = WorthQueryInstalledGraphReadContract::compile(
             definition,

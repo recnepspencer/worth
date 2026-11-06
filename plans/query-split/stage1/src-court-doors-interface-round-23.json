@@ -1,0 +1,13 @@
+{
+ "interface_items": [
+  "domain_computation::primary_graph::admitted_capture::retained_stage::RetainedCaptureMemory",
+  "domain_computation::primary_graph::application_output_demand::settlement::producing_publication::OriginalProducingPublication",
+  "domain_computation::primary_graph::entity_resolution::retained_selector::WorthQueryObservedScopeSelector",
+  "domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge",
+  "domain_computation::primary_graph::output_lineage::source_facts::ComparableSourceFacts",
+  "domain_computation::primary_graph::product_operation::document_history::navigation::output_authority::producer_invocation::HistoryProducerInvocation",
+  "domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::FailedRebase",
+  "domain_computation::primary_graph::root::application_publication::ApplicationPublication",
+  "domain_computation::primary_graph::schema_layout::WorthQueryPrimaryRelationLayout"
+ ]
+}

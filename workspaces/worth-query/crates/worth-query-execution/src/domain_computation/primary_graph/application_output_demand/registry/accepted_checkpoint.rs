@@ -1,7 +1,7 @@
 use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
-pub(in crate::domain_computation::primary_graph) enum AcceptedCheckpointFactSource {
+pub enum AcceptedCheckpointFactSource {
     Committed(crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt),
     Stable(crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage),
 }
@@ -93,7 +93,6 @@ impl WorthQueryOutputDemandRegistry {
         accepted
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn accepted_checkpoint_identities(
         &self,
     ) -> Vec<WorthQueryAcceptedOutputCheckpointIdentity> {
@@ -103,3 +102,5 @@ impl WorthQueryOutputDemandRegistry {
             .collect()
     }
 }
+
+mod court_doors_for_test;

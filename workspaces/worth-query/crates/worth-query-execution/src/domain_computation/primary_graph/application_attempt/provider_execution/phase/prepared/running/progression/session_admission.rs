@@ -1,38 +1,55 @@
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialStage as DenialStage;
 
-pub(super) struct WorthQueryAdmittedProviderSession<'run> {
+pub struct WorthQueryAdmittedProviderSession<'run> {
     staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
     mutation_run:
         crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,
 }
 
-pub(super) struct WorthQueryProviderSessionAdmissionFailure {
+pub struct WorthQueryProviderSessionAdmissionFailure {
     outcome: WorthQueryProviderProgressionOutcome,
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
 }
 
-pub(super) struct WorthQueryRegisteredProviderSession<'run> {
+pub struct WorthQueryRegisteredProviderSession<'run> {
     registered: super::WorthQueryRegisteredProviderAttempt<'run>,
     mutation_run:
         crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,
 }
 
-pub(super) struct WorthQueryProviderSessionRegistrationFailure {
+pub struct WorthQueryProviderSessionRegistrationFailure {
     outcome: WorthQueryProviderProgressionOutcome,
     mutation_run:
         crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,
 }
 
-pub(super) fn admit_provider_session<'run>(
+pub fn admit_provider_session<'run>(
     phase: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     running: &'run mut crate::domain_computation::WorthQueryRunningDirectRun,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     product: crate::basis::WorthQueryProductBranchLease,
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
 ) -> Result<WorthQueryAdmittedProviderSession<'run>, WorthQueryProviderSessionAdmissionFailure> {
-    let staged = match running
-        .admit_provider_execution_plan(graph)
+    admit_provider_plan(
+        phase,
+        running.admit_provider_execution_plan(graph),
+        product,
+        mutation_run,
+    )
+}
+
+/// Borrowed ordinary runs and owned coupled runs enter the same protocol owner.
+pub(super) fn admit_provider_plan<'run>(
+    phase: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    plan: Result<
+        crate::domain_computation::provider_session::WorthQueryAdmittedProviderExecutionPlan<'run>,
+        crate::domain_computation::WorthQueryProviderSessionFailure,
+    >,
+    product: crate::basis::WorthQueryProductBranchLease,
+    mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
+) -> Result<WorthQueryAdmittedProviderSession<'run>, WorthQueryProviderSessionAdmissionFailure> {
+    let staged = match plan
         .and_then(|plan| plan.bind_application_product(product))
         .and_then(|plan| plan.readmit(phase))
         .and_then(|session| session.prepare())
@@ -64,6 +81,48 @@ pub(super) fn admit_provider_session<'run>(
             })
         }
     }
+}
+
+pub(super) fn admit_coupled_provider_session<'run>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    phase: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    running: crate::domain_computation::WorthQueryRunningDirectRun,
+    graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+    product: crate::basis::WorthQueryProductBranchLease,
+    mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
+) -> CoupledProviderSessionAdmission<'run> {
+    use crate::domain_computation::provider_session::CoupledProviderPlanAdmission as Plan;
+    match running.into_coupled_provider_execution_plan(execution, graph) {
+        Plan::Admitted { plan, returned } => CoupledProviderSessionAdmission::Entered {
+            session: admit_provider_plan(phase, Ok(plan), product, mutation_run),
+            returned,
+        },
+        Plan::Refused { cause, returned } => CoupledProviderSessionAdmission::Entered {
+            session: admit_provider_plan(phase, Err(cause), product, mutation_run),
+            returned,
+        },
+        Plan::AllocationDenied { run, cause } => {
+            CoupledProviderSessionAdmission::AllocationDenied {
+                run,
+                cause,
+                mutation_run,
+            }
+        }
+    }
+}
+pub(super) enum CoupledProviderSessionAdmission<'run> {
+    Entered {
+        session: Result<
+            WorthQueryAdmittedProviderSession<'run>,
+            WorthQueryProviderSessionAdmissionFailure,
+        >,
+        returned: crate::domain_computation::provider_session::ReturnedProviderDirectRun,
+    },
+    AllocationDenied {
+        run: crate::domain_computation::WorthQueryRunningDirectRun,
+        cause: worth_execution::ExecutionAllocationDenial,
+        mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
+    },
 }
 
 impl<'run> WorthQueryAdmittedProviderSession<'run> {
@@ -110,15 +169,6 @@ impl<'run> WorthQueryAdmittedProviderSession<'run> {
     }
 }
 
-#[cfg(test)]
-mod registration_conflict_tests {
-    include!("registration_conflict_tests.rs");
-    // A child, so the court reuses these private helpers without widening them.
-    mod interrupted_registration_tests {
-        include!("session_admission/interrupted_registration_tests.rs");
-    }
-}
-
 impl WorthQueryProviderSessionAdmissionFailure {
     pub(super) fn into_completion(self) -> super::WorthQueryProviderProgressionCompletion {
         super::WorthQueryProviderProgressionCompletion {
@@ -140,6 +190,15 @@ impl WorthQueryProviderSessionRegistrationFailure {
 }
 
 impl<'run> WorthQueryRegisteredProviderSession<'run> {
+    pub(super) fn into_coupled_parts(
+        self,
+    ) -> (
+        super::WorthQueryRegisteredProviderAttempt<'run>,
+        crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,
+    ) {
+        (self.registered, self.mutation_run)
+    }
+
     pub(super) fn deny(
         self,
         outcome: WorthQueryProviderProgressionOutcome,
@@ -155,6 +214,7 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
     pub(super) fn progress<Schema, Operation, Input, Scope>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         authority: &super::WorthQueryApplicationCommitProgressionAuthority<
             '_,
             '_,
@@ -172,7 +232,7 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
         super::WorthQueryProviderProgressionCompletion {
             outcome: self
                 .registered
-                .progress(execution, authority, allocation_policy),
+                .progress(execution, phase, authority, allocation_policy),
             cleanup: super::WorthQueryApplicationMutationCleanupOwner::ProviderBound(
                 self.mutation_run,
             ),
@@ -180,13 +240,4 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
     }
 }
 
-#[cfg(test)]
-#[path = "session_admission/overlay_conflict_tests.rs"]
-mod overlay_conflict_tests;
-
-#[cfg(test)]
-#[path = "session_admission/comparison_scope_tests.rs"]
-mod comparison_scope_tests;
-
-#[cfg(test)]
-mod principal_comparison_tests;
+mod court_doors_for_test;

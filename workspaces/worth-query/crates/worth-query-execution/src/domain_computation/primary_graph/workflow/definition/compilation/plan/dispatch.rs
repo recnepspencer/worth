@@ -7,7 +7,7 @@ pub(super) struct CompiledWorkflowDispatchEdge {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(in super::super) struct CompiledWorkflowDispatch {
+pub struct CompiledWorkflowDispatch {
     outgoing: Box<[Box<[CompiledWorkflowDispatchEdge]>]>,
     incoming: Box<[Box<[CompiledWorkflowDispatchEdge]>]>,
 }
@@ -97,3 +97,5 @@ mod tests {
         assert_eq!(dispatch.incoming(5_000)[0].peer, 4_999);
     }
 }
+
+mod court_doors_for_test;

@@ -1,5 +1,6 @@
 mod access;
 pub use access::{
+    AppliedEntityFieldLookupDenial, AppliedEntityFieldLookupOutcome, AppliedEntityFieldMatch,
     BoundedEntityFieldLookupRead, BoundedEntityFieldSelectedLookup, DerivedIndexDefinitionLookup,
     PreparedEntityFieldLookup,
 };

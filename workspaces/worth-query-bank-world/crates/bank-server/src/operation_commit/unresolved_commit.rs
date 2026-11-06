@@ -17,6 +17,9 @@ pub enum BankCommitRecoveryKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankProviderFailureKind {
+    ContentInconsistency,
+    Content(worth_query_host::facade::primary_graph::RelationalContentRejection),
+    OutputCorrespondenceMismatch { cause: worth_query_host::facade::primary_graph::WorthQueryApplicationOutputProjectionDenial },
     ProjectionContract {
         denial: worth_query_host::facade::primary_graph::RelationalProjectionContractDenial,
         partition_identity: Option<u64>,
@@ -161,6 +164,11 @@ const fn provider_failure_kind(
 ) -> BankProviderFailureKind {
     use WorthQueryProviderSessionDenialKind as Query;
     match kind {
+        Query::ContentInconsistency => BankProviderFailureKind::ContentInconsistency,
+        Query::Content(cause) => BankProviderFailureKind::Content(cause),
+        Query::OutputCorrespondenceMismatch { cause } => {
+            BankProviderFailureKind::OutputCorrespondenceMismatch { cause }
+        }
         Query::ProjectionContract {
             denial,
             partition_identity,

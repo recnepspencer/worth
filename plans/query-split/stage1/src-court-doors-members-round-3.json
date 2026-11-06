@@ -1,0 +1,24 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt.authority_binding (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState.records",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState.records (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::prerequisite_claims::PreparedPrerequisiteClaims.claim_batch",
+  "domain_computation::primary_graph::application_output_demand::registry::prerequisite_claims::PreparedPrerequisiteClaims.claim_batch (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::prerequisite_claims::PreparedPrerequisiteClaims.predecessors",
+  "domain_computation::primary_graph::application_output_demand::registry::prerequisite_claims::PreparedPrerequisiteClaims.predecessors (mut)",
+  "domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerObservation.correspondence",
+  "domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerObservation.read",
+  "domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerObservation.runtime_authority",
+  "domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerObservation.schema",
+  "domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerObservation.source"
+ ],
+ "method_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::prerequisite_claims::publication::PreparedPrerequisiteClaims::publish",
+  "domain_computation::primary_graph::application_output_demand::registry::prerequisite_claims::publication::PreparedPrerequisiteClaims::reserve_identity",
+  "domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout::provider_dispatch_outbox"
+ ],
+ "unplaced": []
+}

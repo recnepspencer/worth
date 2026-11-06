@@ -21,7 +21,7 @@ fn external_signature_ceremony_reproduces_the_frozen_release_and_report() {
     assert_eq!(report["artifact_posture"], "untrusted-signed-envelope");
     assert_eq!(
         report["package_identity"],
-        "b252098143f06caf6cc143c0af20bc10778339ae6d1e250ad7fb9b3bce14a9b8"
+        "bc5923afa113ac168ab43d923a50b5e0cdee3002ea50888f4bd1453fc084bffd"
     );
     assert_eq!(report["source_reference"], "refs/tags/query-9.16.2");
     // The golden envelope is the archive crate's release golden, re-frozen
@@ -29,7 +29,7 @@ fn external_signature_ceremony_reproduces_the_frozen_release_and_report() {
     assert_eq!(report["envelope_protocol_version"], 1);
     assert_eq!(report["archive_protocol_version"], 2);
     assert_eq!(report["manifest_protocol_version"], 1);
-    assert_eq!(report["record_protocol_version"], 6);
+    assert_eq!(report["record_protocol_version"], 18);
 
     let second_envelope = world.output_path("second.worth-query");
     let second_report = world.output_path("second.json");

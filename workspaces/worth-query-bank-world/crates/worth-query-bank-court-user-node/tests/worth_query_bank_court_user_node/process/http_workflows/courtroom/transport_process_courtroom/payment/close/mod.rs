@@ -16,8 +16,7 @@ async fn close_before_payment_callback_preserves_unresolved_dispatch() {
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let authority = ApprovePayment {
         payment: payment_id,
         approver: principal_id(APPROVER),

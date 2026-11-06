@@ -6,10 +6,10 @@ use worth_execution::{ExecutionAllocationDenial, ExecutionMemoryReservation, Exe
 use worth_relational::facade::history::{BranchId, CommitId, RelationalCommitReceipt};
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryCorrectionHistoryPageAllocation {
+pub struct WorthQueryCorrectionHistoryPageAllocation {
     memory: Option<ExecutionMemoryReservation>,
 }
-type Denial = WorthQueryAftermathCausalityReadDenial;
+pub type Denial = WorthQueryAftermathCausalityReadDenial;
 impl WorthQueryCorrectionHistoryPageAllocation {
     pub(super) fn new(execution: &ExecutionRequest<'_, '_>) -> Result<Self, Denial> {
         Ok(Self {
@@ -21,10 +21,7 @@ impl WorthQueryCorrectionHistoryPageAllocation {
     }
 
     /// Reserves the concrete result capacity before allocating it, without a separate quota.
-    pub(in crate::domain_computation::primary_graph) fn reserve_projection_slots<T>(
-        &mut self,
-        count: usize,
-    ) -> Result<Vec<T>, Denial> {
+    pub fn reserve_projection_slots<T>(&mut self, count: usize) -> Result<Vec<T>, Denial> {
         let requested = slots::<T>(count)?;
         self.grow(requested)?;
         let mut values = Vec::new();
@@ -153,5 +150,4 @@ fn allocation_failed() -> Denial {
     )
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

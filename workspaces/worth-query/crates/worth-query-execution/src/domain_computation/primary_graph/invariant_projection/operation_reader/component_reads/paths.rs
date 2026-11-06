@@ -22,7 +22,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
         start: EntityId,
         orientation: RootPathOrientation,
         capture_set: bool,
-        pin: &RelationalPinnedRead,
+        pin: &RelationalPinnedRead<()>,
         subject: &str,
         allocation: &Arc<
             crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
@@ -30,9 +30,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
     ) -> Result<RootPathSelection, Denial> {
         let execution = *self.reader.execution;
         let graph = self.reader.layout;
-        let projection = pin
-            .project_snapshot(self.reader.snapshot)
-            .ok_or_else(|| Denial::new(Kind::EndpointUnavailable, subject))?;
+        let projection = pin.project_read();
         let mut reads = WorthQueryInvariantProjectionWork::default();
         let checkpoint = |_: &str| execution.consult().map_err(Cause::from);
         let mut guard =
@@ -49,6 +47,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
             &RootPathReadBasis {
                 execution: &execution,
                 runtime: pin,
+                origin: self.reader.native.origin(self.reader.snapshot),
                 graph,
                 projection,
             },
@@ -119,7 +118,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
 }
 fn read_guard(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    pin: &RelationalPinnedRead,
+    pin: &RelationalPinnedRead<()>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     scope: &WorthQueryOperationComponentReadScope,
     guard: &WorthQueryInstalledRootPathGuard,

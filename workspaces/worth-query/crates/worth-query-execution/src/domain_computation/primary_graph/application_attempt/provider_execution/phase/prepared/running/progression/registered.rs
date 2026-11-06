@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 
-pub(in crate::domain_computation) struct WorthQueryRegisteredProviderAttempt<'run> {
+pub struct WorthQueryRegisteredProviderAttempt<'run> {
     staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
 
     steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
@@ -12,7 +12,7 @@ pub(in crate::domain_computation) struct WorthQueryRegisteredProviderAttempt<'ru
         Option<crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord>,
 }
 
-pub(in crate::domain_computation) struct WorthQueryProviderAttemptRegistrationContext<
+pub struct WorthQueryProviderAttemptRegistrationContext<
     'a,
     Schema,
     Operation,
@@ -140,9 +140,52 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
         }
     }
 
+    pub(super) fn inspect_coupled(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        provider: &std::sync::Arc<WorthQueryPrimaryGraphProvider>,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        (
+            crate::domain_computation::WorthQueryProposedStateInspection<'run>,
+            Option<
+                crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+            >,
+        ),
+        WorthQueryProviderProgressionOutcome,
+    > {
+        let control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(request, allocation_policy);
+        let freshness = provider.capture_and_compare_application_read_set(
+            execution, &self.staged.read_authority(), Some(candidate),
+            crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(control.policy(), Some(request)),
+        );
+        let fresh = match freshness {
+            Ok(crate::domain_computation::WorthQueryDecisionReadSetFreshnessOutcome::Fresh(
+                fresh,
+            )) => fresh,
+            Ok(crate::domain_computation::WorthQueryDecisionReadSetFreshnessOutcome::Stale(
+                stale,
+            )) => {
+                let _ = self.staged.abort();
+                return Err(WorthQueryProviderProgressionOutcome::Stale(crate::domain_computation::primary_graph::WorthQueryApplicationStaleAttempt::new(stale.stale_fact_count())));
+            }
+            Err(cause) => {
+                let _ = self.staged.abort();
+                return Err(crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::read_set_failure(cause));
+            }
+        };
+        super::invariant::begin_invariant_inspection(self.staged, fresh, self.steps)
+            .map(|inspection| (inspection, self.dispatch_outbox))
+    }
+
     pub(super) fn progress<Schema, Operation, Input, Scope>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         authority: &super::WorthQueryApplicationCommitProgressionAuthority<
             '_,
             '_,
@@ -169,32 +212,42 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
                 return outcome
             }
         };
+        let assembly = crate::domain_computation::primary_graph::application_contribution::DeclaredProducerAssembly::new(
+            phase, authority.coordination(), authority.application(), authority.admission().graph_work().authenticating_principal(),
+            authority.product, authority.admission().publication_request(), authority.coupled_outputs,
+        );
         let candidate = match fresh.progress_invariant(
             execution,
             self.steps,
             authority.provider(),
+            authority.coupled_outputs.is_declared().then_some(&assembly as &dyn crate::domain_computation::primary_graph::provider::CoupledProducerAssembly),
             allocation_policy,
         ) {
             Ok(candidate) => candidate,
-            Err(outcome) => return outcome,
+            Err(outcome) => {
+                assembly.abort_writers(execution);
+                return match assembly.take_denial() {
+                    Some(denial) => WorthQueryProviderProgressionOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::coupled_producer(denial)),
+                    None => outcome,
+                };
+            },
         };
-        super::authorized::authorize_and_resolve_provider_commit(
+        if let Err(denial) = assembly.authorize_members(execution, authority.coordination()) {
+            candidate.discard();
+            assembly.abort_writers(execution);
+            return crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::progression_from_authorization_denial(
+                denial, crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
+            );
+        }
+        let outcome = super::authorized::authorize_and_resolve_provider_commit(
             execution,
             candidate,
             authority,
             self.dispatch_outbox,
             allocation_policy,
-        )
+        );
+        assembly.settle_writers(execution, outcome)
     }
 }
 
-#[cfg(test)]
-#[path = "registered/overlay_conflict_tests.rs"]
-mod overlay_conflict_tests;
-
-#[cfg(test)]
-pub(super) use overlay_conflict_tests::assert_second_real_overlay_is_rejected;
-
-#[cfg(test)]
-#[path = "registered/comparison_tests.rs"]
-mod comparison_tests;
+mod court_doors_for_test;

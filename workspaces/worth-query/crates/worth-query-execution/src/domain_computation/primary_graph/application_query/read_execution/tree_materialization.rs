@@ -24,6 +24,8 @@ use crate::domain_computation::primary_graph::application_query::projection::{
 };
 
 mod bounded_ordering;
+mod read_basis;
+use read_basis::ResultTreeRead;
 mod collection_selection;
 mod field_presence;
 pub(super) use collection_selection::*;
@@ -35,7 +37,7 @@ pub(in crate::domain_computation::primary_graph::application_query) use relation
 mod relation_distribution;
 mod relation_occurrence;
 mod relation_target_filter;
-mod source_footprint;
+pub(crate) mod source_footprint;
 mod work;
 use fields::{direct_projections, project_fields, projection_scope};
 
@@ -77,16 +79,90 @@ pub(super) fn materialize_result_tree(
         &Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
     >,
 ) -> Result<MaterializedApplicationResultTree, WorthQueryApplicationReadExecutionDenial> {
-    let projection = runtime
-        .project_snapshot(snapshot)
+    let read = ResultTreeRead::committed(runtime, snapshot)
         .ok_or_else(|| projection_denial(contract.root_entity()))?;
+    materialize_projection_tree(
+        execution,
+        &read,
+        graph,
+        contract,
+        governance,
+        parameters,
+        root_ids,
+        selected_predicate_source,
+        root_path_source,
+        collection_selection,
+        interruption,
+        spent,
+        material_source,
+    )
+}
+
+pub(super) fn materialize_applied_source_tree(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead<
+        worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+    >,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    contract: &WorthQueryInstalledGraphReadContract,
+    governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
+    parameters: &WorthQueryAdmittedApplicationQueryParameters,
+    root_ids: &[EntityId],
+    selected_predicate_source: Option<&crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedFieldRevision>,
+    root_path_source: Option<&BTreeMap<EntityId, Arc<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection>>>,
+
+    interruption: super::ReadInterruption<'_>,
+
+    spent: Option<&OneShotReadWorkObservation<'_>>,
+    material_source: Option<
+        &Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
+    >,
+) -> Result<MaterializedApplicationResultTree, WorthQueryApplicationReadExecutionDenial> {
+    let read = ResultTreeRead::applied(runtime);
+    materialize_projection_tree(
+        execution,
+        &read,
+        graph,
+        contract,
+        governance,
+        parameters,
+        root_ids,
+        selected_predicate_source,
+        root_path_source,
+        ResultTreeCollectionSelection::Complete,
+        interruption,
+        spent,
+        material_source,
+    )
+}
+
+fn materialize_projection_tree(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    read: &ResultTreeRead<'_>,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    contract: &WorthQueryInstalledGraphReadContract,
+    governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
+    parameters: &WorthQueryAdmittedApplicationQueryParameters,
+    root_ids: &[EntityId],
+    selected_predicate_source: Option<&crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedFieldRevision>,
+    root_path_source: Option<&BTreeMap<EntityId, Arc<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection>>>,
+
+    collection_selection: ResultTreeCollectionSelection,
+    interruption: super::ReadInterruption<'_>,
+
+    spent: Option<&OneShotReadWorkObservation<'_>>,
+    material_source: Option<
+        &Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
+    >,
+) -> Result<MaterializedApplicationResultTree, WorthQueryApplicationReadExecutionDenial> {
+    let projection = &read.projection;
     let mut work = ResultTreeWork::new(interruption, spent, *execution, material_source);
     work.checkpoint("root")?;
     let mut collection_selection = ActiveResultTreeCollectionSelection::new(collection_selection);
     let mut rows = project_nodes(
         execution,
-        runtime,
-        &projection,
+        read,
+        projection,
         graph,
         contract,
         governance,
@@ -104,7 +180,7 @@ pub(super) fn materialize_result_tree(
     order_collection(contract, governance, "root", &mut rows, &mut work)?;
     let source_footprints = source_footprint::collect_source_footprints(
         execution,
-        &projection,
+        projection,
         graph,
         contract,
         governance,
@@ -132,7 +208,7 @@ pub(super) fn materialize_result_tree(
 #[allow(clippy::too_many_arguments)]
 fn project_nodes(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    read: &ResultTreeRead<'_>,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
@@ -199,7 +275,7 @@ fn project_nodes(
         if !governance.is_disclosed(relation.slot_key_identity().as_ref()) {
             advance_omitted_relation(
                 execution,
-                runtime,
+                read,
                 graph,
                 relation,
                 &nodes,
@@ -210,7 +286,7 @@ fn project_nodes(
         }
         attach_relation(
             execution,
-            runtime,
+            read,
             projection,
             graph,
             contract,

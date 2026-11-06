@@ -97,7 +97,7 @@ pub fn relational_execution_kind(
 }
 
 /// Preparation executes before publication; a refusal never asks for recovery.
-pub(in crate::domain_computation::primary_graph) fn relational_execution_stop(
+pub fn relational_execution_stop(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
     partition_identity: Option<u64>,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
@@ -120,7 +120,7 @@ pub(in crate::domain_computation::primary_graph) fn relational_execution_stop(
 }
 
 /// Native preparation evidence keeps the typed cause at the application boundary.
-pub(in crate::domain_computation::primary_graph) fn native_preparation_kind(
+pub fn native_preparation_kind(
     failure: &crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> Result<
     Option<crate::domain_computation::WorthQueryProviderSessionDenialKind>,
@@ -158,3 +158,15 @@ pub(in crate::domain_computation::primary_graph) fn query_read_execution_kind(
 #[cfg(test)]
 #[path = "relational_execution_denial/tests.rs"]
 mod tests;
+
+pub(in crate::domain_computation::primary_graph) fn request_commit_stop(
+    cause: worth_execution::WorkCeilingDenial,
+) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    use crate::domain_computation::{
+        WorthQueryProviderSessionCommitControlStopped, WorthQueryProviderSessionCommitStop as Stop,
+    };
+    match crate::domain_computation::primary_graph::application_contribution::publication_execution_kind(cause) {
+        Ok(kind) => Stop::PreEffectDenied(crate::domain_computation::WorthQueryProviderSessionFailure::checked_read_stopped(Ok(kind), crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit, "coupled publication request stopped before effect")),
+        Err(kind) => Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(kind, "coupled publication request stopped before effect")),
+    }
+}

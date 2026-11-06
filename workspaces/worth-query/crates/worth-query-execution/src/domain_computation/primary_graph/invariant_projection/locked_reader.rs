@@ -8,6 +8,7 @@ use worth_query_installation::facade::{
     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding, ApplicationSchema,
 };
 
+use super::read_basis::NativeProjectionRead;
 use super::work::WorthQueryInvariantProjectionWorkBudget;
 use super::{
     WorthQueryApplicationInvariantProjectionAuthority,
@@ -17,7 +18,6 @@ use super::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
-    WorthQueryPrincipalResolutionMode,
 };
 
 mod borrowed_snapshot;
@@ -27,7 +27,8 @@ mod content;
 mod operation_body;
 #[path = "locked_reader/predecode_admission.rs"]
 mod predecode_admission;
-pub(super) use borrowed_snapshot::CompletedSnapshotRead;
+mod reader_execution;
+pub(super) use borrowed_snapshot::CompletedProjectionRead;
 mod requirement_collection;
 pub(super) use requirement_collection::ObservedRequirementItems;
 #[path = "locked_reader/traversal_denial.rs"]
@@ -45,7 +46,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) value_bindings: &'runtime worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     pub(super) value_decode: &'runtime super::super::value_decode::ValueDecodeSession<'runtime>,
     pub(super) execution: &'runtime worth_execution::ExecutionRequest<'runtime, 'runtime>,
-    pub(super) runtime: &'runtime mut worth_relational::facade::runtime::RelationalRuntime,
+    pub(super) native: NativeProjectionRead<'runtime>,
     pub(super) layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     pub(super) snapshot: &'runtime worth_relational::facade::snapshots::SnapshotHandle,
     entity_resolution: &'runtime super::super::WorthQueryInstalledEntityResolutionContext,
@@ -207,7 +208,7 @@ where
                 retention_control,
             )
         }));
-        let CompletedSnapshotRead {
+        let CompletedProjectionRead {
             output,
             work,
             realized_scope,
@@ -266,3 +267,5 @@ impl<Schema, Output> WorthQueryCompletedInvariantProjection<Schema, Output> {
 }
 
 mod record_reads;
+
+mod court_doors_for_test;

@@ -36,12 +36,10 @@ pub(super) fn refuse_late_claim() {
         installed,
         custody: birth,
     } = publisher;
-    let birth_commit = birth.envelope.commit.clone();
+    let birth_commit = birth.origin.commit.clone();
     assert!(!birth
-        .envelope
-        .required_output_origin
+        .origin
         .as_ref()
-        .unwrap()
         .relations
         .iter()
         .any(|row| row.id == edge));
@@ -54,13 +52,7 @@ pub(super) fn refuse_late_claim() {
             birth.authority(),
         )
         .unwrap();
-    let meaning = birth
-        .envelope
-        .required_output_origin
-        .as_ref()
-        .unwrap()
-        .meaning
-        .clone();
+    let meaning = birth.origin.as_ref().meaning.clone();
     let mut transaction = runtime
         .begin_branch_transaction(&basis(&runtime), RelationalTransactionIntent::ordinary())
         .unwrap();
@@ -108,10 +100,8 @@ pub(super) fn refuse_late_claim() {
     let preserve_commit = committed.commit.clone();
     let preserved = committed.required_output_publication(&installed).unwrap();
     assert!(!preserved
-        .envelope
-        .required_output_origin
+        .origin
         .as_ref()
-        .unwrap()
         .relations
         .iter()
         .any(|row| row.id == edge));

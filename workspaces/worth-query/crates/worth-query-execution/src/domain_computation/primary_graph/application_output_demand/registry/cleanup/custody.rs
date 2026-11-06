@@ -4,7 +4,6 @@ use super::*;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 impl DemandRegistryState {
-    #[cfg(test)]
     pub(in super::super) fn drain_completed_custody(&mut self) {
         let visits = self.custody_cleanup.len;
         for _ in 0..visits {
@@ -59,3 +58,5 @@ impl DemandRegistryState {
         }
     }
 }
+
+mod court_doors_for_test;

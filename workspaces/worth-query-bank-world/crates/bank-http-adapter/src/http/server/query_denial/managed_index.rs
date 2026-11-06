@@ -1,4 +1,5 @@
 //! HTTP projection of the managed receiver's original owned denial.
+mod native_source;
 use super::*;
 pub(super) fn managed_index(
     cause: &worth_query_host::facade::primary_graph::WorthQueryManagedIndexDenial,
@@ -6,6 +7,15 @@ pub(super) fn managed_index(
     use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestInterruption as Stop;
     use worth_query_host::facade::primary_graph::WorthQueryManagedIndexDenialCause as Cause;
     match cause.cause() {
+        Cause::CurrentControl(cause) => output_settlement(cause.kind().into()),
+        Cause::SourceVerification { kind, authorization, execution } => {
+            if let Some(cause) = execution { return crate::http::server::relational_execution_denial::denial(cause); }
+            if let Some(cause) = authorization { return authorization_denial(cause.into()); }
+            crate::http::server::estate_denial::attempt_kind(kind.into())
+        }
+        Cause::NativeSource(cause) => native_source::source(cause),
+        Cause::NativeAdmission(cause) => crate::http::server::relational_execution_denial::companion(cause.clone()),
+        Cause::LiveAdmission(cause) => query_denial(BankApplicationQueryDenial::from_live_open(cause.clone())),
         Cause::Request(stop) => crate::http::server::advancement_denial::request(stop),
         Cause::Interrupted(Stop::Cancelled) => cancelled(),
         Cause::Interrupted(Stop::DeadlineExceeded) => deadline(),
@@ -61,7 +71,7 @@ fn allocation(
     }
 }
 
-fn work(
+pub(in crate::http::server) fn work(
     cause: &worth_query_host::facade::primary_graph::WorthQueryManagedIndexWorkDenial,
 ) -> BankHttpDenial {
     use worth_query_host::facade::{
@@ -71,6 +81,56 @@ fn work(
         runtime::ExecutionRequestArrayDenial as Storage,
     };
     match cause {
+        Work::Controlled(Stop::Projection(cause)) => {
+            use worth_query_host::facade::primary_graph::WorthQueryApplicationProjectionDenialKind as Projection;
+            match cause.kind() {
+                Projection::ValueDecode(cause) => value_decode(cause),
+                Projection::DomainProjectionRejected => permission_denied(),
+                Projection::FieldNotProjected
+                | Projection::FieldContractMismatch
+                | Projection::FieldTypeMismatch
+                | Projection::FieldOmitted
+                | Projection::RelationNotProjected
+                | Projection::RelationContractMismatch
+                | Projection::RelationCardinalityMismatch
+                | Projection::RelationOmitted => internal_denied(),
+            }
+        }
+        Work::Controlled(Stop::Content(cause)) => {
+            crate::http::server::relational_execution_denial::content(*cause)
+        }
+        Work::Controlled(Stop::MaterialStorage(cause)) => {
+            crate::http::server::relational_execution_denial::denial(*cause)
+        }
+        Work::Controlled(Stop::NativeSource(cause)) => native_source::walk(*cause),
+        Work::Controlled(Stop::OrderedStorage(cause)) => {
+            use worth_query_host::facade::runtime::ExecutionOrderedMapDenial as Ordered;
+            match cause {
+                Ordered::Request(cause) => crate::http::server::advancement_denial::request(*cause),
+                Ordered::Allocation(cause) => allocation(cause),
+                Ordered::CapacityOverflow => internal_denied(),
+            }
+        }
+        Work::Controlled(
+            Stop::IncrementalUnavailable
+            | Stop::SourceStructureUnavailable
+            | Stop::MembershipUnavailable
+            | Stop::RefinementUnavailable
+            | Stop::SummaryUnavailable,
+        ) => unavailable(),
+        Work::Controlled(
+            Stop::Coverage(_)
+            | Stop::ForeignCoverage
+            | Stop::IncompleteCoverage
+            | Stop::IncompleteRefinement
+            | Stop::IncompleteTraversal
+            | Stop::SummaryMismatch
+            | Stop::ForeignSummarySource
+            | Stop::SourceStructureIncomplete
+            | Stop::DuplicateSourceSlot
+            | Stop::DuplicateNodeParent
+            | Stop::SourceStructureCycle,
+        ) => internal_denied(),
         Work::Controlled(Stop::Request(stop) | Stop::Storage(Storage::Request(stop))) => {
             crate::http::server::advancement_denial::request(*stop)
         }

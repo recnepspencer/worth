@@ -3,10 +3,12 @@
 use worth_relational::facade::history::{BranchId, RelationalCommitReceipt};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCommittedApplication {
+pub struct WorthQueryPrimaryGraphCommittedApplication {
     application_outcome_identity: Option<
         crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
     >,
+    coupled_members: Option<std::sync::Arc<worth_execution::ExecutionArray<std::sync::OnceLock<Self>>>>,
+    coupled_member: bool,
     runtime_instance_id: u64,
     changed_record_count: usize,
     emitted_effect_count: usize,
@@ -35,6 +37,8 @@ impl WorthQueryPrimaryGraphCommittedApplication {
         let committed_product_publication = crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication::from_receipt(product_publication);
         Self {
             application_outcome_identity: Some(outcome_identity),
+            coupled_members: None,
+            coupled_member: false,
             runtime_instance_id,
             changed_record_count,
             emitted_effect_count,
@@ -44,6 +48,47 @@ impl WorthQueryPrimaryGraphCommittedApplication {
             exact_output_settlement: None,
             aftermath_causality: None,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph::provider) fn detach_coupled_delivery(
+        &mut self,
+    ) {
+        self.retire_publication();
+        self.coupled_member = true;
+    }
+    pub(in crate::domain_computation::primary_graph) fn is_coupled_member(&self) -> bool {
+        self.coupled_member
+    }
+    pub(in crate::domain_computation::primary_graph) fn retain_coupled_members(
+        &mut self,
+        members: std::sync::Arc<worth_execution::ExecutionArray<std::sync::OnceLock<Self>>>,
+    ) {
+        assert!(self.coupled_members.replace(members).is_none());
+    }
+    pub(in crate::domain_computation::primary_graph) fn complete_coupled_member(
+        &self,
+        ordinal: usize,
+        member: Self,
+    ) {
+        self.coupled_members
+            .as_ref()
+            .expect("pre-effect group evidence slots")[ordinal]
+            .set(member)
+            .unwrap_or_else(|_| panic!("each performed writer settles exactly once"));
+    }
+    pub(in crate::domain_computation::primary_graph) fn publication_members(
+        &self,
+    ) -> impl Iterator<Item = &Self> {
+        std::iter::once(self).chain(
+            self.coupled_members
+                .iter()
+                .flat_map(|members| members.iter())
+                .map(|member| {
+                    member.get().expect(
+                        "group settlement completes every writer before receipt publication",
+                    )
+                }),
+        )
     }
 
     /// Takes the World history protection out of this copy. Evidence retained
@@ -164,9 +209,9 @@ impl WorthQueryPrimaryGraphCommittedApplication {
         Some(self.commit_evidence.mutation_work())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn commit_evidence(
-        &self,
-    ) -> &super::super::super::WorthQueryPrimaryGraphCommitEvidence {
+    pub fn commit_evidence(&self) -> &super::super::super::WorthQueryPrimaryGraphCommitEvidence {
         &self.commit_evidence
     }
 }
+
+mod court_doors_for_test;

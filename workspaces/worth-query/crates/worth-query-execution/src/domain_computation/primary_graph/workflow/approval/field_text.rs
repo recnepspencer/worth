@@ -10,7 +10,7 @@ use worth_relational::facade::{
     symbols::{RelationalFieldText, RelationalFieldTextAdmissionDenial as Native},
 };
 
-pub(in crate::domain_computation::primary_graph) struct WorkflowApprovalFieldText {
+pub struct WorkflowApprovalFieldText {
     pub(super) request: RelationalFieldText,
     pub(super) principal: RelationalFieldText,
     pub(super) lineage: RelationalFieldText,
@@ -55,3 +55,5 @@ pub(super) fn denial(cause: Native) -> Denial {
         }
     }
 }
+
+mod court_doors_for_test;

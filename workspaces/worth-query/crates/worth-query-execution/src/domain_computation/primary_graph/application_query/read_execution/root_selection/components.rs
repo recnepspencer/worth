@@ -71,6 +71,7 @@ pub(super) fn select(
             basis: RootPathReadBasis {
                 execution,
                 runtime,
+            origin: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef::Committed(runtime.snapshot()),
                 graph,
                 projection,
             },
@@ -163,7 +164,6 @@ impl ComponentAcquisitionReader for QueryComponentAcquisition<'_, '_, '_, '_, '_
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<SourceFacts, Self::Error> {
         acquisition::observe_coupling(self.basis.execution,self.basis.runtime,&self.allocation,self.layout,body,context).map_err(|stop|match stop {
-            CouplingObservationDenial::Unavailable=>path_union::traversal_denial(self.plan.name),
             CouplingObservationDenial::Execution(cause)=>self.native_denial(cause),
             CouplingObservationDenial::Source(crate::domain_computation::primary_graph::source_facts::SourceFactReadDenial::Execution(cause))=>self.native_denial(cause),
             CouplingObservationDenial::Source(_)=>path_union::traversal_denial(self.plan.name),

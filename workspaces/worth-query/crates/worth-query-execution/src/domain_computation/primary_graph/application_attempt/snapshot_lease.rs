@@ -7,14 +7,14 @@ use crate::domain_computation::primary_graph::product_operation::SharedSelectedP
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryApplicationSnapshotLeaseDenial {
+pub enum WorthQueryApplicationSnapshotLeaseDenial {
     ForeignRuntime,
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     SnapshotIdentityExhausted,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryApplicationSnapshotRelease {
+pub enum WorthQueryApplicationSnapshotRelease {
     NativeSnapshotReleased,
     SharedBasisRelease(WorthQueryApplicationBasisReleaseOutcome),
 }
@@ -76,7 +76,14 @@ impl SnapshotCustody {
     }
 }
 
-pub(in crate::domain_computation) struct WorthQueryApplicationSnapshotLease {
+pub struct WorthQueryApplicationSnapshotLease {
+    applied_source_qualification:
+        Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
+    applied_projection: Option<
+        worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    >,
     custody: Option<SnapshotCustody>,
     product: crate::basis::WorthQueryProductBranchLease,
     selection_origin: super::super::product_operation::SelectedQueryOrigin,
@@ -84,7 +91,62 @@ pub(in crate::domain_computation) struct WorthQueryApplicationSnapshotLease {
 }
 
 impl WorthQueryApplicationSnapshotLease {
-    pub(super) fn share_original(
+    /// The snapshot remains the genuine before authorization lease. This
+    /// separately retained image supplies applied decision data and no Current receipt.
+    pub(super) fn with_applied_projection(
+        mut self,
+        pin: worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) -> Self {
+        self.applied_projection = Some(pin);
+        self
+    }
+    pub(in crate::domain_computation::primary_graph) fn bind_applied_source_projection(
+        &mut self,
+        pin: worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) {
+        self.applied_source_qualification = Some(pin.candidate_identity().qualification());
+        self.applied_projection = Some(pin);
+    }
+    pub(super) fn applied_source_qualification(
+        &self,
+    ) -> Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>
+    {
+        self.applied_source_qualification
+    }
+    pub(super) fn applied_projection(
+        &self,
+    ) -> Option<
+        &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    > {
+        self.applied_projection.as_ref()
+    }
+    pub(super) fn projection_origin(
+        &self,
+    ) -> super::super::projection_read_origin::ProjectionReadOriginRef<'_> {
+        match self.applied_qualification() {
+            Some(candidate) => {
+                super::super::projection_read_origin::ProjectionReadOriginRef::Applied(candidate)
+            }
+            None => self.snapshot().into(),
+        }
+    }
+
+    pub(super) fn applied_qualification(
+        &self,
+    ) -> Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>
+    {
+        self.applied_projection
+            .as_ref()
+            .map(|pin| pin.candidate_identity().qualification())
+    }
+
+    pub(in crate::domain_computation) fn share_original(
         mut self,
         control: super::retained_decision_facts::StorageControl<'_, '_>,
     ) -> Result<(Self, Self), super::retained_decision_facts::StoreDenial> {
@@ -103,6 +165,8 @@ impl WorthQueryApplicationSnapshotLease {
         };
         self.custody = Some(SnapshotCustody::Original(shared.clone()));
         let retained = Self {
+            applied_source_qualification: self.applied_source_qualification,
+            applied_projection: self.applied_projection.clone(),
             custody: Some(SnapshotCustody::Original(shared)),
             product: self.product.retained_clone(),
             selection_origin: self.selection_origin,
@@ -137,6 +201,8 @@ impl WorthQueryApplicationSnapshotLease {
             Ok(snapshot)
         })?;
         Ok(Self {
+            applied_source_qualification: None,
+            applied_projection: None,
             custody: Some(SnapshotCustody::Owned { handle, snapshot }),
             product,
             selection_origin: Default::default(),
@@ -167,6 +233,8 @@ impl WorthQueryApplicationSnapshotLease {
             "existing application snapshot must carry the admitted composite occurrence"
         );
         Self {
+            applied_source_qualification: None,
+            applied_projection: None,
             custody: Some(SnapshotCustody::Owned { handle, snapshot }),
             product,
             selection_origin: Default::default(),
@@ -192,6 +260,8 @@ impl WorthQueryApplicationSnapshotLease {
         // guard, Bridge Arc and layout Arc are all shallow fixed copies.
 
         Ok(Self {
+            applied_source_qualification: None,
+            applied_projection: None,
             custody: Some(SnapshotCustody::Shared(basis)),
             product: selected.product().retained_clone(),
             selection_origin: selected.selection_origin(),
@@ -228,9 +298,7 @@ impl WorthQueryApplicationSnapshotLease {
             .snapshot()
     }
 
-    pub(in crate::domain_computation) fn product(
-        &self,
-    ) -> &crate::basis::WorthQueryProductBranchLease {
+    pub fn product(&self) -> &crate::basis::WorthQueryProductBranchLease {
         &self.product
     }
 
@@ -241,14 +309,11 @@ impl WorthQueryApplicationSnapshotLease {
             .handle()
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation) fn release(self) -> bool {
         self.release_custody().snapshot_released()
     }
 
-    pub(in crate::domain_computation) fn release_custody(
-        mut self,
-    ) -> WorthQueryApplicationSnapshotRelease {
+    pub fn release_custody(mut self) -> WorthQueryApplicationSnapshotRelease {
         release_custody(self.custody.take().expect("snapshot lease releases once"))
     }
 }
@@ -281,3 +346,5 @@ fn release_custody(custody: SnapshotCustody) -> WorthQueryApplicationSnapshotRel
         },
     }
 }
+
+mod court_doors_for_test;

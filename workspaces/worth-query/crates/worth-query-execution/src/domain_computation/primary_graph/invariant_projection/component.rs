@@ -12,8 +12,6 @@ use worth_query_installation::facade::ApplicationSchema;
 mod physical_reads;
 mod result;
 pub use result::WorthQueryInvariantProjectionComponent;
-#[cfg(test)]
-mod tests;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
     /// Inspect a complete component at this reader's exact snapshot. This broad
@@ -44,6 +42,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 &layout,
                 self.binding_identity.clone(),
                 self.authority_identity,
+                self.native
+                    .candidate_identity()
+                    .map(|id| id.qualification()),
             ))
         });
         match result {

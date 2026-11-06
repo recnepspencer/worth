@@ -13,7 +13,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 
 type Endpoints =
     crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints;
-pub(super) struct SelectedRebase {
+pub struct SelectedRebase {
     facts: FactPayload,
     posting_basis: Option<
         crate::domain_computation::primary_graph::output_lineage::invalidation::PostingRebaseBasis,
@@ -123,6 +123,7 @@ impl SelectedRebase {
         snapshot: &SnapshotHandle,
         retired: &BTreeSet<EntityId>,
         producer: bool,
+        predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
 
         control: StorageControl<'_, '_>,
     ) -> RebasedSourceFacts {
@@ -143,7 +144,14 @@ impl SelectedRebase {
                 continue;
             }
             let prepared = resolution::PreparedFactRebase::prepare(
-                runtime, execution, snapshot, fact, retired, producer, endpoints,
+                runtime,
+                execution,
+                snapshot,
+                fact,
+                retired,
+                producer,
+                predecessor,
+                endpoints,
             );
             match prepared {
                 Err(stop) => {
@@ -289,3 +297,5 @@ fn storage_stop(cause: StoreDenial, own_effect: OwnEffectOnReads) -> RebasedSour
     };
     RebasedSourceFacts::VerificationRequired { reason, own_effect }
 }
+
+mod court_doors_for_test;

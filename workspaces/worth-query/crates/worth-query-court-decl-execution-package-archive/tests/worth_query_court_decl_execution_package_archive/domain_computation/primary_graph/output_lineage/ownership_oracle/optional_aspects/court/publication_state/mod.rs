@@ -1,0 +1,151 @@
+//! Observe the real primary payload and complete roster's native incidence.
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::*;
+use worth_relational::facade::runtime::ProjectionAspectRequirement;
+use worth_relational::facade::runtime::ProjectionAspectScope;
+
+pub fn observe<Schema: BirthSchema>(
+    runtime: &crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Application<Schema>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    settled: &WorthQueryOutputDemandSettlement,
+    roles: &[RequiredOutputRoleTarget],
+) -> RelationId {
+    let id_for = |name| {
+        let mut matches = roles.iter().filter(|role| role.entity_name == name);
+        let EntityReference::Existing(id) = matches.next().unwrap().target else {
+            panic!("settled correspondence must contain actual native IDs")
+        };
+        assert!(matches.next().is_none(), "one exact member per entity kind");
+        id
+    };
+    let present = id_for("PresentNode");
+    let keeping = roles
+        .iter()
+        .all(|role| role.posture == RequiredOutputRolePosture::Preserve);
+    let primary = if keeping {
+        settled.output_correspondence.entity_for_binding_role_for_test::<Binding<Schema, true>>(
+            <<Preserve<Schema> as WorthQueryApplicationProducerBinding<Schema>>::OutputRole
+                as WorthQueryApplicationOutputRole>::NAME,
+        )
+    } else {
+        settled.output_correspondence.entity_for_binding_role_for_test::<Binding<Schema, false>>(
+            <<Initial<Schema> as WorthQueryApplicationProducerBinding<Schema>>::OutputRole
+                as WorthQueryApplicationOutputRole>::NAME,
+        )
+    }
+    .unwrap();
+    assert_eq!(
+        primary, present,
+        "the actual producer primary is the present member"
+    );
+    observe_roles(runtime, phase, primary, roles)
+}
+pub fn observe_roles<Schema: BirthSchema>(
+    runtime: &crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Application<Schema>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    primary: EntityId,
+    roles: &[RequiredOutputRoleTarget],
+) -> RelationId {
+    let id_for = |name| {
+        let mut found = roles.iter().filter(|role| role.entity_name == name);
+        let EntityReference::Existing(id) = found.next().unwrap().target else {
+            unreachable!()
+        };
+        assert!(found.next().is_none());
+        id
+    };
+    let execution = phase
+        .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
+        .unwrap();
+    let selected = runtime
+        .on_branch(runtime.current_world())
+        .select(phase)
+        .unwrap();
+    let graph = runtime
+        .runtime_for_test()
+        .primary_provider_for_test()
+        .graph_for_test();
+    let field = Value::at("Value");
+    let locator = (*graph.layout_for_test())
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
+        .unwrap();
+    let aspect = locator.aspect().aspect_key();
+    let key = &locator.field_path().fields()[0];
+    // The renewing fixture's Preserve handler declares a real unequal write.
+    // Choose its one expected payload from that fixture contract, never from
+    // the observed bytes; birth and ordinary controls retain their old golden.
+    let expected = if Schema::RENEW_OUTPUT
+        && roles
+            .iter()
+            .all(|role| role.posture == RequiredOutputRolePosture::Preserve)
+    {
+        "native-changed"
+    } else {
+        "native-present"
+    };
+    graph.with_runtime(&execution, |native| {
+        let view = native
+            .read_truth()
+            .project_snapshot(selected.application_basis_for_test().snapshot_handle())
+            .unwrap();
+        let value = view
+            .entity_record_with_projection_scope(
+                &execution,
+                primary,
+                ProjectionAspectScope::from_requirements([ProjectionAspectRequirement::fields(
+                    aspect.clone(),
+                    [key.clone()],
+                )]),
+                |record| {
+                    assert_eq!(record.kind_name(), field.entity());
+                    record.aspect_field_value(aspect, key).cloned()
+                },
+            )
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            value,
+            StringApplicationValueBinding::encode(&expected.to_owned()).unwrap(),
+            "readiness observes the real existing payload, never a wake-only write"
+        );
+        // Every role retains its exact native identity and kind, including the
+        // wholly absent Optional member and the genuinely fieldless member.
+        for role in roles {
+            let EntityReference::Existing(id) = role.target else {
+                unreachable!()
+            };
+            assert!(view
+                .entity_record_with_projection_scope(
+                    &execution,
+                    id,
+                    ProjectionAspectScope::empty(),
+                    |record| {
+                        assert_eq!(record.kind_id(), role.kind);
+                        assert_eq!(record.kind_name(), role.entity_name);
+                        Some(())
+                    },
+                )
+                .unwrap()
+                .is_some());
+        }
+        let node = id_for("OutputNode");
+        let fieldless = id_for("FieldlessNode");
+        let incidence = view
+            .outgoing_relations_of_kind(
+                &execution,
+                node,
+                (*(*graph.layout_for_test())
+                    .relation("Incidence")
+                    .unwrap()
+                    .kind_for_test()),
+            )
+            .unwrap();
+        assert_eq!(
+            incidence.len(),
+            1,
+            "the complete real incidence remains present"
+        );
+        assert_eq!(incidence[0].source, node);
+        assert_eq!(incidence[0].target, fieldless);
+        incidence[0].relation_id
+    })
+}

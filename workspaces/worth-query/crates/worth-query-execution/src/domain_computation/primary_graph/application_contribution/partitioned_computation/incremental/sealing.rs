@@ -45,7 +45,6 @@ impl CompletedComputationRetention {
             },
         }
     }
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn seal(
         self,
         facts: Option<SealedComputationFacts>,
@@ -58,6 +57,13 @@ impl CompletedComputationRetention {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<SealedComputationRetention, ()> {
         self.seal_at_optional(facts, Some(snapshot))
+    }
+    pub(in crate::domain_computation::primary_graph) fn seal_at_projection(
+        self,
+        facts: Option<SealedComputationFacts>,
+        origin: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
+    ) -> Result<SealedComputationRetention, ()> {
+        self.seal_at_optional(facts, origin.committed_snapshot())
     }
     fn seal_at_optional(
         self,

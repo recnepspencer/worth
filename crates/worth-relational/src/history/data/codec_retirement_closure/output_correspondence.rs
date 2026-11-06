@@ -1,10 +1,11 @@
 //! Re-admit complete original output association on the recovered source state.
 use super::{charge, request, CodecRetirementClosureStop as Stop};
+use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::{branch::AdmittedRelationalBranchBasis, runtime::RelationalRuntime};
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 #[derive(Clone)]
 pub(crate) struct SelectedOutputPublication {
-    pub(crate) envelope: std::sync::Arc<crate::history::data::CanonicalCommitEnvelope>,
+    pub(crate) evidence: crate::publication::ownership::PublicationEvidence,
     pub(crate) origin: std::sync::Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
     pub(crate) ordinal: usize,
 }
@@ -48,7 +49,9 @@ pub(crate) fn validate_codec_output_correspondence(
                     .exact_entity_state_read_navigation_work_bound()
                     .ok_or("output correspondence has no exact native navigation")?;
                 let bound = runtime.history.catalog_len();
-                let mut first: Option<Origin> = None;
+                let mut origin_frames = OutputOriginHistory::default();
+    let validated_history = &mut origin_frames;
+    let mut first: Option<Origin> = None;
                 for (index, role) in roles.iter().enumerate() {
                     let crate::transactions::data::EntityReference::Existing(id) = role.target else {
                         return Err("recovered output role requires exact existing identity".into());
@@ -65,8 +68,8 @@ pub(crate) fn validate_codec_output_correspondence(
                     }
                     context.checkpoint_cost(work, navigation).map_err(request)?;
                     let origin = if role.posture == crate::mvcc::RequiredOutputRolePosture::Retire {
-                        let selected = super::membership::latest(runtime, basis, id, context, lease)?;
-                        super::membership::validate_member(runtime, basis, &selected, id, None, context, lease)?
+                        let selected = super::membership::latest(runtime, basis, id, validated_history, context, lease)?;
+                        super::membership::validate_member(runtime, basis, &selected, id, None, validated_history, context, lease)?
                     } else { branch
                         .read_exact_entity_state(execution, id, |metadata, payload| {
                             // The native probe permits wildcard lookup; historical roles do not.
@@ -80,8 +83,8 @@ pub(crate) fn validate_codec_output_correspondence(
                                     charge(context, value.semantic_byte_width())?;
                                 }
                             }
-                            let selected = super::membership::latest(runtime, basis, id, context, lease)?;
-                            super::membership::validate_member(runtime, basis, &selected, id, payload, context, lease)
+                            let selected = super::membership::latest(runtime, basis, id, validated_history, context, lease)?;
+                            super::membership::validate_member(runtime, basis, &selected, id, payload, validated_history, context, lease)
                         })
                         .map_err(|denial| match denial {
                             crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => Stop::Request(cause),
@@ -137,7 +140,7 @@ pub(crate) fn validate_codec_output_correspondence(
                     }
                 }
                 let origin = first.ok_or("complete output association absent")?;
-                super::relations::validate_complete_publication(runtime, &basis.inner.root, &origin, context, lease)?;
+                super::relations::validate_complete_publication(runtime, &basis.inner.root, &origin, validated_history, context, lease)?;
                 charge(context, bound)?;
                 let envelope = runtime.history.canonical_envelope(origin.commit.commit_id)
                     .ok_or("complete publication history absent")?;
@@ -147,7 +150,7 @@ pub(crate) fn validate_codec_output_correspondence(
                     if std::sync::Arc::ptr_eq(candidate, &origin) { ordinal = Some(index); break; }
                 }
                 let ordinal = ordinal.ok_or("selected publication lost its canonical route coordinate")?;
-                Ok(SelectedOutputPublication { envelope, origin, ordinal })
+                Ok(SelectedOutputPublication { evidence:crate::publication::ownership::PublicationEvidence::Canonical(envelope), origin, ordinal })
             },
         )
     });

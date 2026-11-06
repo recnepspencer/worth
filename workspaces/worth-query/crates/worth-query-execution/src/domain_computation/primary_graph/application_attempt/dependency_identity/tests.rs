@@ -1,3 +1,4 @@
+use super::output_postcondition::normalized_output_facts;
 use worth_foundational::facade::{
     AspectContractRevision, AspectFieldLocator, AspectIdentity, AspectKey, AspectValue,
     CanonicalFieldPath, FieldKey, LocatorAuthority, PortableAspectContractBasis,
@@ -21,7 +22,7 @@ fn dependency_identity(
     ),
     (),
 > {
-    super::dependency_identity(declared_key, facts)
+    super::content_tree::dependency_identity(declared_key, facts)
 }
 
 #[test]

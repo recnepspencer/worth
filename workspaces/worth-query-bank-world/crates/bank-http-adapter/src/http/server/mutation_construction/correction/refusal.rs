@@ -118,6 +118,7 @@ fn restored_support(cause: WorthQueryCorrectionRestoredSupportDenial) -> BankHtt
         D::Interrupted(stop) => advancement_denial::request(WorkCeilingDenial::Stopped(stop)),
         D::Execution(cause) => crate::http::server::relational_execution_denial::denial(cause),
         D::Native(cause) => native_support(cause),
+        D::ManagedProvider(cause) => query_denial::managed_work(&cause),
         D::Allocation(cause) | D::Storage(Storage::Allocation(cause)) => {
             input_capture(WorthQueryOperationInputCaptureDenial::Allocation(cause))
         }
@@ -149,7 +150,10 @@ fn native_support(cause: RelationalAuthoredWriteDenial) -> BankHttpDenial {
         D::SizeOverflow | D::OrderedStorage(Storage::CapacityOverflow) => {
             BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator)
         }
-        D::ForeignOwner
+        D::ForeignManagedSourceProgram
+        | D::UnsupportedManagedSourceSelector
+        | D::IncompleteManagedSourceHistory
+        | D::ForeignOwner
         | D::NoSelectedCommit
         | D::NotExactSelection
         | D::SourceUnavailable

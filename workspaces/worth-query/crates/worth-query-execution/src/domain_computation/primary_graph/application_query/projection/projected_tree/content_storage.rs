@@ -1,7 +1,7 @@
 //! Physical scratch faults are descriptive; the original caller owns refusal.
 use worth_execution::ExecutionMemoryReservation;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum ProjectionContentStorageFault {
+pub enum ProjectionContentStorageFault {
     CapacityOverflow,
     AllocationFailed,
 }

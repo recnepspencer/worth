@@ -10,7 +10,7 @@ use crate::domain_computation::{
 /// Provider-bound is the only posture that can complete a commit receipt. An
 /// unbound owner remains necessary to close a run whose provider admission was
 /// denied before a session existed.
-pub(super) enum WorthQueryApplicationMutationCleanupOwner {
+pub enum WorthQueryApplicationMutationCleanupOwner {
     Unbound(WorthQueryMutationRunBinding),
     ProviderBound(WorthQueryProviderSessionBoundMutationRun),
 }

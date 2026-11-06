@@ -10,6 +10,7 @@ pub(super) fn append(
     description: &ApplicationMutationDescription,
 ) {
     basis.text(format!("{prefix}.kind"), "application-mutation");
+    super::coupled_outputs::append(basis, prefix, description.coupled_outputs());
     if let Some(disclosure) = description.inspection_disclosure() {
         let disclosure_prefix = format!("{prefix}.inspection-disclosure");
         let parts = disclosure.parts();

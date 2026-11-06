@@ -170,6 +170,11 @@ fn push_correction_contract(
                 builder.text(format!("preimage-aspect-{index}"), locus.aspect());
                 builder.text(format!("preimage-field-{index}"), locus.field());
             }
+            for (index, locus) in inverse.preimage_demand().relations().iter().enumerate() {
+                builder.text(format!("preimage-relation-{index}-kind"), locus.relation());
+                builder.text(format!("preimage-relation-{index}-from"), locus.from());
+                builder.text(format!("preimage-relation-{index}-to"), locus.to());
+            }
             push_postcondition(builder, inverse.postcondition());
         }
         Some(PortableCorrectionMechanism::Compensation(compensation)) => {

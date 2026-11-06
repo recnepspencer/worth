@@ -7,13 +7,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
 
-mod storage;
+pub(crate) mod storage;
 pub(super) use storage::SourceFacts;
-
-#[cfg(test)]
-mod indexed_selection;
-#[cfg(test)]
-mod merging;
 
 pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -29,6 +24,18 @@ fn compare_source_facts<Schema, Operation, Input, Scope>(
     admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: &WorthQueryApplicationSnapshotLease,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    if let Some(expected) = lease.applied_source_qualification() {
+        // Source expansion was sealed from this exact immutable Native image.
+        // Its qualification is separate from the before authorization lease.
+        return if lease.applied_qualification() == Some(expected) {
+            Ok(())
+        } else {
+            Err(denial(
+                WorthQueryApplicationAttemptDenialKind::SourceChanged,
+                admission.operation(),
+            ))
+        };
+    }
     for fact in admission.source_facts() {
         super::super::super::fact_verification_observation::source_admission();
         if let Some(stop) = admission.publication_request().interruption() {
@@ -76,7 +83,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
     }
 }
 
-pub(super) fn merge_source_facts(
+pub fn merge_source_facts(
     admitted: Vec<WorthQueryApplicationObservedFact>,
     dependent: Option<RetainedSourceFacts>,
     operation: &str,

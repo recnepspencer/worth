@@ -13,6 +13,7 @@ pub(super) fn canonicalize_relation_integrity_declarations(
 ) -> Result<RelationIntegrityDeclarations, SchemaRegistryError> {
     let mut seen_contract_ids = BTreeSet::new();
     let mut aggregate_identity = declarations.aggregate_identity;
+    let current_publication_storage = declarations.current_publication_storage;
     if let Some(contract) = aggregate_identity.as_mut() {
         contract.source.canonicalize();
     }
@@ -114,9 +115,11 @@ pub(super) fn canonicalize_relation_integrity_declarations(
             &partition_isolation_contracts,
             &connectivity_minimum_contracts,
             aggregate_identity.as_ref(),
+            current_publication_storage.as_ref(),
         ),
         endpoint_kind_contracts,
         aggregate_identity,
+        current_publication_storage,
         cardinality_contracts,
         uniqueness_contracts,
         symmetry_contracts,

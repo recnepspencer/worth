@@ -15,7 +15,7 @@ use super::denial::{
 use super::external_effect_contract::InstalledExternalEffectPosture;
 use super::install_validation::{
     escaping_effect_subject, validate_axis_pair, validate_preimage_coverage,
-    OperationDeclaredReadFields,
+    OperationDeclaredPreImageReads,
 };
 use super::lowering_correspondence::{
     AftermathLoweringCorrespondenceCatalog, InstalledLoweringCorrespondence,
@@ -137,7 +137,7 @@ pub(crate) fn install_application_aftermath(
     let binding = operation.binding();
     let operation_slot = operation.operation();
     let declared_reads =
-        OperationDeclaredReadFields::from_targets(operation.portable_decision_reads());
+        OperationDeclaredPreImageReads::from_targets(operation.portable_decision_reads());
     let external_effect = operation.external_effect();
     let lowering_catalog = derived_lowering_catalog(binding, portable)?;
     let compatibility_generation = binding.generation();

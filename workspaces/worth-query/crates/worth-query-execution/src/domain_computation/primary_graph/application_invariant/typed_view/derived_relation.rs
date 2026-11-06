@@ -2,8 +2,7 @@
 use super::{
     WorthQueryApplicationInvariantEntity as Entity, WorthQueryApplicationInvariantReadView as View,
 };
-#[cfg(test)]
-mod native_audience;
+
 use crate::domain_computation::primary_graph::application_invariant::{
     WorthQueryApplicationInvariantDerivedRelationBinding as Binding,
     WorthQueryInvariantAccessDenial as Denial, WorthQueryInvariantAccessDenialKind as Kind,
@@ -143,10 +142,6 @@ pub(in crate::domain_computation::primary_graph::application_invariant) fn nativ
 
 #[cfg(test)]
 use worth_testkit_relational::derived_relation as native_fixture;
-#[cfg(test)]
-mod native_snapshot;
-#[cfg(test)]
-mod native_source_shapes;
 
 #[test]
 fn malformed_event_chain_preserves_its_typed_query_denial() {

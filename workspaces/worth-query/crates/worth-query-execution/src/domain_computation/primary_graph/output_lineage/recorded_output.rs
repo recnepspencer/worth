@@ -10,7 +10,8 @@ use crate::domain_computation::primary_graph::{
     application_attempt::CompletedHandlerFactBoundary, invariant_projection::ConsumedOutputEvidence,
 };
 
-pub(in crate::domain_computation::primary_graph) struct RecordedOutput {
+pub struct RecordedOutput {
+    pub(super) coupled_completion: Option<super::CoupledOutputCompletion>,
     pub(super) producing_implementation:
         Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(super) required_publication:
@@ -39,7 +40,7 @@ pub(in crate::domain_computation::primary_graph) struct RecordedOutput {
     pub(super) mutable: Mutex<RecordedOutputMutable>,
 }
 
-pub(super) struct RecordedOutputMutable {
+pub struct RecordedOutputMutable {
     pub(super) verification_requirement: Option<FullVerificationReason>,
     observed_source_facts: Option<
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
@@ -200,3 +201,5 @@ impl RecordedOutput {
 
 #[cfg(test)]
 mod span_tests;
+
+mod court_doors_for_test;

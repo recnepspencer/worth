@@ -19,6 +19,8 @@ use worth_execution::ExecutionResourceLease;
 use worth_foundational::PartitionIdentity;
 
 mod checked_fragments;
+mod consequence_patch;
+pub(crate) use consequence_patch::extend_patch;
 
 pub(super) fn assemble_patch(
     runtime: &crate::runtime::RelationalPreparationRuntime,

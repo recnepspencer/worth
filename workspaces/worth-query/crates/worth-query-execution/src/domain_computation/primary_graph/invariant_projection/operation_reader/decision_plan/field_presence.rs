@@ -4,7 +4,7 @@ use worth_query_installation::facade::{
     WorthQueryOperationTouchContract, WorthQueryOperationTouchScope,
 };
 
-pub(super) fn may_write(
+pub fn may_write(
     contract: &WorthQueryOperationTouchContract,
     entity: &str,
     locator: &AspectFieldLocator,
@@ -15,41 +15,4 @@ pub(super) fn may_write(
         if write.entity() == entity && write.contract().key() == locator.aspect().aspect_key()
             && write.field_path() == locator.field_path())
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::domain_computation::primary_graph::tests::fixture::{
-        installed_authorization_world, AccountNote, AccountScore, PatchAccountDraftOperation,
-        WrongFieldRetentionOperation,
-    };
-
-    #[test]
-    fn optional_aspect_initialization_presence_follows_exact_installed_write_membership() {
-        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
-        let schema = world.application.installed_schema();
-        let writer = schema
-            .installed_operation(PatchAccountDraftOperation::reference())
-            .unwrap();
-        let nonwriter = schema
-            .installed_operation(WrongFieldRetentionOperation::reference())
-            .unwrap();
-        let graph = world.application.runtime.primary_graph().unwrap();
-        for field in [
-            AccountNote::at("AccountNote").field(),
-            AccountScore::at("AccountScore").field(),
-        ] {
-            let locator = graph
-                .layout
-                .field_locator("Account", AccountNote::at("AccountNote").aspect(), field)
-                .unwrap();
-            assert!(may_write(writer.contracts().touches(), "Account", locator));
-            assert!(!may_write(
-                nonwriter.contracts().touches(),
-                "Account",
-                locator
-            ));
-        }
-    }
 }

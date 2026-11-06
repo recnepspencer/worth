@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCo
 /// Rebased source facts cannot replace what the computation actually read.
 /// This evidence has no default and derived runtime records must copy it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct ComputationSourceEvidence(Origin);
+pub struct ComputationSourceEvidence(Origin);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum Origin {
@@ -66,10 +66,7 @@ impl ComputationSourceEvidence {
         }
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn for_test(
-        superseded_by_own_effect: bool,
-    ) -> Self {
+    pub fn for_test(superseded_by_own_effect: bool) -> Self {
         Self(Origin::Performed {
             superseded_by_own_effect,
         })
@@ -94,3 +91,5 @@ impl ComputationSourceEvidence {
         super::RetainedSourceFacts::retain(self, facts)
     }
 }
+
+mod court_doors_for_test;

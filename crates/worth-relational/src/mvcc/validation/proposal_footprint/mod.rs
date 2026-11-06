@@ -1,4 +1,6 @@
-//! Exact field-mutation truth projected from one owner-validated mutation.
+//! Exact mutation truth projected from one owner-validated mutation.
+mod relations;
+pub use relations::{ValidatedRelationMutation, ValidatedRelationMutationFootprint};
 
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, CanonicalFieldPath, PortableAspectPatchOperation,

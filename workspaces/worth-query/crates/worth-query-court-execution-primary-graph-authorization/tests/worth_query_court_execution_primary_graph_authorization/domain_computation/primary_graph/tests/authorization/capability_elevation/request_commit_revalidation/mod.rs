@@ -1,0 +1,175 @@
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::idempotency;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_world_installation::installed_elevated_capability_world;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_status_mutation::revoke_current_capability;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityElevationIdentity;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_elevation_seed::CapabilityElevationScenario;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityReviewIdentity;
+use crate::domain_computation::primary_graph::tests::authorization::capability_progression::time;
+use worth_query_execution::facade::domain_computation::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage;
+use worth_query_execution::facade::domain_computation::WorthQueryElevationRequestOutcome;
+use worth_query_execution::facade::domain_computation::WorthQueryEntityResolutionDenialKind;
+use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
+
+#[test]
+fn governed_upper_bound_support_is_revalidated_at_request_commit() {
+    let world = installed_elevated_capability_world(CapabilityElevationScenario::Active);
+    world
+        .authorization_time
+        .script(std::iter::repeat_n(time(100), 8));
+    let request = live_scope();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            crate::domain_computation::primary_graph::tests::authorization::capability_elevation::request_transition::request_reads(
+                &(phase).test_host_request_for_test(),
+                &world,
+                &principal,
+                &request,
+                crate::domain_computation::primary_graph::tests::authorization::capability_elevation::request_transition::honest_input(),
+            )
+            .materialize_elevation_request_program()
+            .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            revoke_current_capability(
+                &(phase).test_host_request_for_test(),
+                &host_custody.borrowed_request_for_test(),
+                &world,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+
+    let WorthQueryElevationRequestOutcome::Denied(denial) = world
+        .application
+        .compare_and_commit_elevation_request(program, idempotency(74, 74))
+    else {
+        panic!("revoked upper-bound support must deny before lifecycle effects");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProviderRejected
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::DecisionReadSet
+    );
+}
+
+#[test]
+fn provider_time_rejects_a_request_program_after_its_exact_window_expires() {
+    let world = installed_elevated_capability_world(CapabilityElevationScenario::Active);
+    world
+        .authorization_time
+        .script(std::iter::repeat_n(time(100), 8));
+    let request = live_scope();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            crate::domain_computation::primary_graph::tests::authorization::capability_elevation::request_transition::request_reads(
+                &(phase).test_host_request_for_test(),
+                &world,
+                &principal,
+                &request,
+                crate::domain_computation::primary_graph::tests::authorization::capability_elevation::request_transition::honest_input(),
+            )
+            .materialize_elevation_request_program()
+            .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+
+    world
+        .authorization_time
+        .script(std::iter::repeat_n(time(106), 4));
+    let WorthQueryElevationRequestOutcome::Denied(denial) = world
+        .application
+        .compare_and_commit_elevation_request(program, idempotency(75, 75))
+    else {
+        panic!("provider time must deny an expired request program without minting a receipt");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProviderRejected
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::DecisionReadSet
+    );
+
+    let elevation = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            world
+                .application
+                .select_product_branch_for_test(
+                    &host_custody.borrowed_request_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+                    "elevation-2".to_owned().into(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap_err()
+        })
+        .expect("the fixture read owns its installed host call");
+    assert_eq!(
+        elevation.kind(),
+        WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity)
+    );
+    let review = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            world
+                .application
+                .select_product_branch_for_test(
+                    &host_custody.borrowed_request_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
+                    "review-2".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap_err()
+        })
+        .expect("the fixture read owns its installed host call");
+    assert_eq!(
+        review.kind(),
+        WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity)
+    );
+}

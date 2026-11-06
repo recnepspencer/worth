@@ -1,7 +1,6 @@
 //! Owner-side admission mints the concrete read capability and raw scope binding.
 
 use super::super::Denial;
-#[cfg(test)]
 use crate::domain_computation::primary_graph::application_query::DispatchWitness;
 use crate::domain_computation::primary_graph::application_query::{
     authorized_read::{
@@ -103,7 +102,6 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
         }
     }
 
-    #[cfg(test)]
     pub(super) fn worker(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -178,7 +176,6 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
         pins.second = Some(second.retained_pin());
         Ok(PreparedPair {
             root,
-            #[cfg(test)]
             witness: DispatchWitness::carried(),
             first: PreparedRead {
                 plan: ReadPlan::public_worker(&self.first),
@@ -247,3 +244,5 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
         Ok(())
     }
 }
+
+mod court_doors_for_test;

@@ -52,6 +52,16 @@ console.log(form.fields.title.value());       // "Publish docs"
 `set(...)` changes controller-local draft truth. It does not write through to
 the source. `clearDraft()` removes the draft for that field.
 
+For coordinated edits, `form.setFields({ title: "Publish docs", done: true })`
+prepares all declared field paths and write postures before changing the draft,
+then publishes one summary revision. Field IDs, rather than source property
+paths, are the keys. `form.setFields({}, { clearDraft: ["title", "done"] })`
+removes those overlays together. Unknown IDs, duplicate IDs, and overlapping
+parent/child paths are rejected before the draft changes. The source remains
+authoritative for fields outside the batch.
+Pass `touch: ["title"]` in the same options object to record field interaction
+in that summary revision. Touch IDs are validated before any draft change.
+
 ## 4. Read The Form
 
 ```ts

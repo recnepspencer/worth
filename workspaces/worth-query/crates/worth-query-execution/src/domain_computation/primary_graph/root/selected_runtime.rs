@@ -22,3 +22,5 @@ impl WorthQueryPrimaryGraph {
         self.source_owner.with_runtime_mut(execution, mutate)
     }
 }
+
+mod court_doors_for_test;

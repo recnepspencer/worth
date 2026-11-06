@@ -9,7 +9,7 @@ use super::super::super::{
 use super::super::{WorthQueryCheckpointCaptureDenial, FORMAT_VERSION};
 use super::sizing::ValidatedCheckpointSize;
 
-pub(super) fn write(
+pub fn write(
     bytes: &mut worth_execution::ExecutionByteBuffer,
     native: &[u8],
     publication: &WorthQueryPrimaryGraphPublication,

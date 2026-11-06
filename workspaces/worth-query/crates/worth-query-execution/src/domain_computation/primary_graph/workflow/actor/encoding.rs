@@ -9,7 +9,7 @@ use crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDen
 /// Clones retain the same text allocation and its original payer. No owned
 /// String can be extracted; an independent field copy requires fresh admission.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct FundedActorText(ExecutionImmutableBytes);
+pub struct FundedActorText(ExecutionImmutableBytes);
 
 impl FundedActorText {
     pub(in crate::domain_computation) fn bytes(&self) -> &ExecutionImmutableBytes {
@@ -39,7 +39,7 @@ impl AsRef<str> for FundedActorText {
     }
 }
 
-pub(in crate::domain_computation) fn encode(
+pub fn encode(
     execution: &ExecutionRequest<'_, '_>,
     value: &impl Serialize,
     maximum: usize,
@@ -140,3 +140,5 @@ pub(in crate::domain_computation) fn check_live(
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "workflow actor JSON payload")
     })
 }
+
+mod court_doors_for_test;

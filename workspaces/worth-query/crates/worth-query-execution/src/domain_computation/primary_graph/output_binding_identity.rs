@@ -3,7 +3,7 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub(super) struct OutputBindingIdentity(Arc<str>);
+pub struct OutputBindingIdentity(Arc<str>);
 
 impl OutputBindingIdentity {
     pub(super) fn declared(name: &str) -> Self {
@@ -15,7 +15,7 @@ impl OutputBindingIdentity {
 }
 
 #[derive(Default)]
-pub(super) struct OutputBindingInventory {
+pub struct OutputBindingInventory {
     by_type: HashMap<TypeId, OutputBindingIdentity>,
     by_identity: HashMap<OutputBindingIdentity, TypeId>,
 }
@@ -37,3 +37,5 @@ impl OutputBindingInventory {
         self.by_identity.get(identity).copied()
     }
 }
+
+mod court_doors_for_test;

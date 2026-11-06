@@ -46,16 +46,13 @@ where
         self.graph_work.identity()
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation) fn graph_work_managed_run_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity {
         self.graph_work.managed_run_identity()
     }
 
-    pub(in crate::domain_computation) fn graph_work_branch(
-        &self,
-    ) -> &worth_relational::facade::history::BranchId {
+    pub fn graph_work_branch(&self) -> &worth_relational::facade::history::BranchId {
         self.graph_work.branch().relational()
     }
 
@@ -161,3 +158,5 @@ where
         self.canonical_work
     }
 }
+
+mod court_doors_for_test;

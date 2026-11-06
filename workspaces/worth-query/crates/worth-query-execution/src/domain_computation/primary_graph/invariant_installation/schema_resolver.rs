@@ -171,6 +171,3 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
         )
     }
 }
-
-#[cfg(test)]
-mod tests;

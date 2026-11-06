@@ -41,6 +41,7 @@ pub(in crate::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
 }
 
 pub(super) struct PublicationPreparationInput<'a> {
+    pub(super) defer_lineage: bool,
     pub(super) working_state: &'a mut crate::runtime::WorkingState,
     pub(super) selected_branch_state: &'a crate::branch::SelectedRelationalBranchState,
     pub(super) patch: CanonicalAuthoritativePatch,
@@ -67,6 +68,7 @@ pub(super) fn prepare_publication_artifacts(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<PublicationPreparation, TransactionCommitError> {
     let PublicationPreparationInput {
+        defer_lineage,
         working_state,
         selected_branch_state,
         patch,
@@ -147,6 +149,7 @@ pub(super) fn prepare_publication_artifacts(
     let authority = prepare_authoritative_publication(
         runtime,
         PublicationAuthorityInput {
+            defer_lineage,
             working_state,
             patch: &patch,
             commit_reference,

@@ -22,6 +22,7 @@ pub(super) fn lower_relation_integrity_plan(
         &declarations.partition_isolation_contracts,
         &declarations.connectivity_minimum_contracts,
         declarations.aggregate_identity.as_ref(),
+        declarations.current_publication_storage.as_ref(),
     );
     let candidate_source_kinds = declarations
         .endpoint_kind_contracts

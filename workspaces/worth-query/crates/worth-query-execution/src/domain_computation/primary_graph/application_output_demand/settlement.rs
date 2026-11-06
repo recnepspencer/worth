@@ -1,13 +1,13 @@
 mod authority;
-mod producer_identity;
+pub(crate) mod producer_identity;
 use producer_identity::SettlementProducerIdentity;
 mod current_commit;
 use current_commit::reacquire_current_committed_output;
 mod current_accepted;
-pub(super) mod observation;
-mod producing_publication;
+pub(crate) mod observation;
+pub(crate) mod producing_publication;
 pub(in crate::domain_computation::primary_graph) use producing_publication::OriginalProducingPublication;
-mod receipt_custody;
+pub(crate) mod receipt_custody;
 mod reused;
 use receipt_custody::SettlementReceiptCustody;
 use std::sync::Arc;
@@ -42,12 +42,9 @@ pub struct WorthQueryOutputDemandSettlement {
     producer_identity: SettlementProducerIdentity,
     output_family_identity: String,
     receipt: Option<SettlementReceiptCustody>,
-    pub(in crate::domain_computation::primary_graph) stable:
-        Option<super::super::output_lineage::PublishedStableLineage>,
-    pub(in crate::domain_computation::primary_graph) output_correspondence:
-        Arc<WorthQueryApplicationOutputCorrespondence>,
-    pub(in crate::domain_computation::primary_graph) restored_source:
-        Option<super::WorthQueryRestoredAcceptedOutput>,
+    pub stable: Option<super::super::output_lineage::PublishedStableLineage>,
+    pub output_correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    pub restored_source: Option<super::WorthQueryRestoredAcceptedOutput>,
     readiness_delivery: Option<WorthQueryOutputReadinessDeliveryEvidence>,
     producer_contacts_in_this_demand: usize,
     observation: Arc<WorthQueryApplicationReadObservation>,
@@ -160,6 +157,19 @@ impl WorthQueryOutputDemandSettlement {
         WorthQueryApplicationOutputProjectionDenial,
     > {
         self.output_correspondence.outputs_of()
+    }
+
+    /// Retired descendant witnesses used only to admit this performed succession.
+    /// They are not canonical roles returned by `outputs_of`.
+    pub fn closure_evidence_of<Contract: 'static>(
+        &self,
+    ) -> Result<
+        super::super::WorthQueryApplicationTypedClosureEvidence<'_, Contract>,
+        WorthQueryApplicationOutputProjectionDenial,
+    > {
+        self.output_correspondence
+            .outputs_of::<Contract>()
+            .map(|roles| roles.closure_evidence())
     }
 
     pub fn producer_identity(&self) -> &str {
@@ -304,3 +314,5 @@ where
             })
     }
 }
+
+mod court_doors_for_test;

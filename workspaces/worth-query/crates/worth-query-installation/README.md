@@ -84,7 +84,7 @@ canonical rules, ordering, versions, or identities of previously admitted
 packages and schemas.
 
 Installed graph-obligation, authorization-path, authorization-policy and
-operation-definition identities use an internal allowance derived from the
+operation-definition and installed-query identities use an internal allowance derived from the
 admitted declaration: at most **16 times its canonical entries and encoded
 bytes** for each derivation. The allowance is carried from the freshly admitted
 schema commitment, never supplied by an application or inferred from derived
@@ -123,6 +123,16 @@ the following source assignment bounds its identity by 16E entries and 16B bytes
   and the subject declaration. Query and managed-index graph meanings are fixed
   digests, not expansions of their graphs; inspection meaning embeds its already
   admitted definition once. The operation-definition identity has four entries.
+- Installed query, read-graph, normalized planning and continuation identities
+  use the same schema-derived allowance. Query fields, predicates, traversals,
+  selectors and ordering are already embedded in the admitted schema; their
+  lowered facts and result paths replace corresponding declared facts and paths.
+  Request parameter and admission-planning budgets remain separate runtime bounds.
+
+Coupled correction outputs, authored co-anchors and relation pre-image
+loci are emitted by the schema's canonical member visitor before this allowance
+is derived. They cannot be omitted by an installation-local member whitelist.
+Their retention, native deletion and correspondence checks remain unchanged.
 
 Under this assignment each source fact supplies at most four derived facts,
 including framing. Values are copied or replaced by fixed integers/digests;
@@ -148,7 +158,8 @@ version and entry count frame each table member; exact canonical entries decide
 sharing. Masks, field paths, bindings, structural scopes and resources keep their
 exact meaning. The v3 rule changes graph-obligation identities and dependent
 seals; portable package/schema and authorization identity rules remain unchanged.
-`canonical_denial()` still retains canonical derivation failures, but ordinary
+Query, resource and operation `canonical_denial()` accessors retain canonical
+derivation failures with their requested and maximum counts, but ordinary
 admitted declaration breadth no longer encounters a second fixed cliff.
 
 Courts install a 40-record / 12-field operation and an exactly 64 MiB admitted

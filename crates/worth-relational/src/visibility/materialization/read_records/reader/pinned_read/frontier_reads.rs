@@ -5,7 +5,7 @@ use crate::identity::data::{EntityId, KindId};
 use crate::storage::partition::AdjacencyDirection;
 use std::collections::BTreeSet;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
-impl RelationalPinnedRead {
+impl<Snapshot> RelationalPinnedRead<Snapshot> {
     pub fn bounded_outgoing_relations_for_frontier(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,

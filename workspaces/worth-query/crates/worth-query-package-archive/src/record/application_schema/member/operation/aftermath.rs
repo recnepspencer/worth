@@ -2,7 +2,7 @@ use worth_query_declaration::facade::application_aftermath::{
     DeclaredAftermathPostcondition, DeclaredCompensation, DeclaredCorrectionAuthority,
     DeclaredLoweringCorrespondenceRef, DeclaredReconciliationProcedure,
     PortableApplicationAftermathContract, PortableCorrectionMechanism, PortablePreImageDemand,
-    PortablePreImageLocus, PortableRecordedInverse,
+    PortablePreImageLocus, PortablePreImageRelationLocus, PortableRecordedInverse,
 };
 
 use crate::binary_encoding::BinaryEncodingSink;
@@ -67,8 +67,17 @@ fn write_mechanism(
 ) -> Result<(), Denial> {
     match mechanism {
         PortableCorrectionMechanism::RecordedInverse(value) => {
-            output.u16(1)?;
-            write_recorded_inverse(output, value)
+            let relations = value.preimage_demand().relations();
+            output.u16(if relations.is_empty() { 1 } else { 3 })?;
+            write_recorded_inverse(output, value)?;
+            if !relations.is_empty() {
+                write_sequence(output, relations, |output, locus| {
+                    output.text(locus.relation())?;
+                    output.text(locus.from())?;
+                    output.text(locus.to())
+                })?;
+            }
+            Ok(())
         }
         PortableCorrectionMechanism::Compensation(value) => {
             output.u16(2)?;
@@ -92,6 +101,31 @@ fn decode_mechanism(
             DeclaredCompensation::new(slot, postcondition)
                 .map(PortableCorrectionMechanism::Compensation)
                 .map_err(|_| Denial::new(Kind::InvalidRecordShape))
+        }
+        3 => {
+            let value = decode_recorded_inverse(input, budget)?;
+            let relations = decode_sequence(input, budget, 12, |input, _| {
+                Ok(PortablePreImageRelationLocus::from_untrusted_fields(
+                    input.text()?.to_owned(),
+                    input.text()?.to_owned(),
+                    input.text()?.to_owned(),
+                ))
+            })?;
+            if relations.is_empty() {
+                return Err(Denial::new(Kind::InvalidRecordShape));
+            }
+            let demand = value
+                .preimage_demand()
+                .clone()
+                .with_untrusted_relations(relations);
+            Ok(PortableCorrectionMechanism::RecordedInverse(
+                PortableRecordedInverse::from_untrusted_fields(
+                    value.inverse_operation_slot().to_owned(),
+                    value.lowering_correspondence().clone(),
+                    value.postcondition().clone(),
+                    demand,
+                ),
+            ))
         }
         _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
     }

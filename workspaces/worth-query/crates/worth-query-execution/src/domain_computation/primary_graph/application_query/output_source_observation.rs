@@ -51,7 +51,7 @@ pub(in crate::domain_computation::primary_graph) struct SourceQueryReaderAccess<
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum SourceQueryObservationStop {
+pub enum SourceQueryObservationStop {
     CurrentControl(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
     ManagedIndex(Arc<super::managed_index::WorthQueryManagedIndexDenial>),
     Installation(worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial),
@@ -69,7 +69,7 @@ pub(in crate::domain_computation::primary_graph) enum SourceQueryObservationStop
 
 /// Diagnostic location on the original read; it grants no admission or state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum SourceQueryPreparationPhase {
+pub enum SourceQueryPreparationPhase {
     Parameters,
     Permission,
     Session,

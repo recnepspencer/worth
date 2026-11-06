@@ -1,0 +1,301 @@
+//! Genuine Native computations that change their own source inputs at commit.
+
+use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::tests::TestsWorthQueryObservedSourceSelectionForTest;
+
+use std::sync::Arc;
+use worth_execution::ExecutionAllocationPolicy;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
+use crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
+use crate::domain_computation::primary_graph::tests::application_attempt::idempotency;
+use crate::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::retained_status_program;
+use crate::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::RetainedAccount;
+use crate::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::RetentionMutationBreadth;
+use crate::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::RetentionOutputs;
+use crate::domain_computation::primary_graph::tests::application_attempt::resolved_account;
+use crate::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
+use crate::domain_computation::primary_graph::tests::fixture::own_write_computation::GeneratedAccount;
+use crate::domain_computation::primary_graph::tests::fixture::own_write_computation::OwnWriteComputation;
+use crate::domain_computation::primary_graph::tests::fixture::own_write_computation::OwnWriteOutputs;
+use crate::domain_computation::primary_graph::tests::fixture::AccountLabel;
+use crate::domain_computation::primary_graph::tests::fixture::AccountStatus;
+use crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt;
+use worth_foundational::facade::PartitionIdentity;
+use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
+pub fn with_committed_own_write(
+    test: impl FnOnce(
+        &AuthorizationWorld,
+        WorthQueryApplicationCommitReceipt,
+        Arc<std::sync::OnceLock<RecordedOutput>>,
+        worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources,
+    ),
+) {
+    commit_own_write(false, test);
+}
+pub fn with_generated_own_write(
+    test: impl FnOnce(
+        &AuthorizationWorld,
+        WorthQueryApplicationCommitReceipt,
+        Arc<std::sync::OnceLock<RecordedOutput>>,
+        worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources,
+    ),
+) {
+    commit_own_write(true, test);
+}
+pub fn commit_own_write(
+    generated: bool,
+    test: impl FnOnce(
+        &AuthorizationWorld,
+        WorthQueryApplicationCommitReceipt,
+        Arc<std::sync::OnceLock<RecordedOutput>>,
+        worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources,
+    ),
+) {
+    let product_resources =
+        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+    let resources = product_resources.invalidation_resources();
+    let world = crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world_with_product_resources(product_resources);
+    world.declare_output_contract::<OwnWriteOutputs>("OwnWriteOutputs");
+    let request = live_scope();
+    let seed = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+            let principal = authenticated_principal(
+                &(phase_custody).test_host_request_for_test(),
+                &world,
+                &request,
+            );
+            let account = resolved_account(
+                &(phase_custody).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            );
+            retained_status_program(
+                &(phase_custody).test_host_request_for_test(),
+                &world,
+                &principal,
+                &account,
+                &request,
+                "1",
+                RetentionMutationBreadth::Narrow,
+            )
+        })
+        .expect("the fixture host admits its seed reads");
+    assert!(matches!(
+        world.application.compare_and_commit_application(
+            seed,
+            idempotency(231, 231),
+            ExecutionAllocationPolicy::SystemAllocation
+        ),
+        WorthQueryApplicationCommitOutcome::Committed(_)
+    ));
+    let mut program = world.application.with_host_advancement(|phase| {
+        let phase_custody = &phase;
+    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), &world, &request);
+    let account = resolved_account(&(phase_custody).test_host_request_for_test(), &world, "1", &request);
+    let operation = world
+        .application
+        .installed_schema()
+        .installed_operation(OwnWriteComputation::reference())
+        .unwrap();
+    let mut admitted = world
+        .selected_product(&(phase_custody).test_host_request_for_test(), )
+        .authorize_operation(phase_custody,
+            &principal,
+            &account,
+            &operation,
+            TypedMutationPreconditions::new(),
+            &request,
+        )
+        .unwrap();
+    admitted.bind_source_partition_for_test([7; 32]);
+    let (computed, projection, _) = world
+        .invariant
+        .project_admitted_operation(phase_custody,
+            &admitted,
+            |reader, projected| {
+                reader
+                    .require_decision_field(projected, AccountLabel::at("AccountLabel"))
+                    .unwrap();
+                reader.begin_computation_reads_for_test();
+                let x = reader.attributed_for_test(
+                    ComputationRead::Partition(PartitionIdentity::new(7)),
+                    |reader| {
+                        reader
+                            .decision_field(projected, AccountStatus::at("AccountStatus"))
+                            .unwrap()
+                            .unwrap()
+                    },
+                );
+                assert_eq!(x, "1");
+                format!("computed-from-{x}")
+            },
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
+        .into_parts();
+    let reads = world
+        .application
+        .begin_projected_application_read_attempt(phase_custody,
+            admitted,
+            projection,
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let mut effects = reads
+        .complete_projected_dependencies(phase_custody, ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap()
+        .begin_effect_program();
+    let source = effects.existing_entity(&account).unwrap();
+    let output = if generated {
+        effects.prepare_output_contract_for_test::<OwnWriteOutputs>();
+        let output = effects
+            .create_entity(
+                crate::domain_computation::primary_graph::tests::fixture::Account::reference(),
+                worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityKey::new(
+                    "computed-own-write".to_owned(),
+                )
+                .unwrap(),
+            )
+            .unwrap();
+        effects
+            .bind_output_for_test(OutputRoleUse::fixed_for_test::<GeneratedAccount>(), &output)
+            .unwrap();
+        effects.initialize_field(&output, crate::domain_computation::primary_graph::tests::fixture::AccountIdentity::at("AccountIdentity"), "computed-own-write".to_owned()).unwrap();
+        effects.initialize_field(&output, crate::domain_computation::primary_graph::tests::fixture::AccountMembershipTag::at("AccountMembershipTag"), "open".to_owned()).unwrap();
+        effects
+            .initialize_field(&output, AccountStatus::at("AccountStatus"), "generated".to_owned())
+            .unwrap();
+        output
+    } else {
+        effects.prepare_output_contract_for_test::<RetentionOutputs>();
+        effects
+            .bind_output_for_test(OutputRoleUse::fixed_for_test::<RetainedAccount>(), &source)
+            .unwrap();
+        effects.existing_entity(&account).unwrap()
+    };
+    if generated {
+        effects
+            .initialize_field(&output, AccountLabel::at("AccountLabel"), computed)
+            .unwrap();
+    } else {
+        effects
+            .write_field(&output, AccountLabel::at("AccountLabel"), computed)
+            .unwrap();
+    }
+    effects
+        .write_field(&source, AccountStatus::at("AccountStatus"), "2".to_owned())
+        .unwrap();
+
+        effects.finish().unwrap().with_output_demand_observation()
+    }).expect("the fixture host admits its own-write preparation");
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph_for_test()
+        .unwrap();
+    let handle = graph.integration_handle_for_test();
+    let (key, dependency) = world
+        .application
+        .with_host_advancement(|phase| {
+            let execution = phase.borrowed_request_for_test();
+            if generated {
+                program.producer_idempotency_identities::<OwnWriteOutputs>(
+                    &world.application,
+                    &execution,
+                    [11; 32],
+                    worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11;16], [0x22;32]).unwrap(),
+                    None,
+                    execution.allocation_policy(),
+                    false,
+                )
+            } else {
+                program.producer_idempotency_identities::<RetentionOutputs>(
+                    &world.application,
+                    &execution,
+                    [11; 32],
+                    worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11;16], [0x22;32]).unwrap(),
+                    None,
+                    execution.allocation_policy(),
+                    false,
+                )
+            }
+            .unwrap()
+        })
+        .expect("the installed host lends the identity request");
+    let identity =
+        worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding::new_for_test(
+            key, [232; 32],
+        )
+        .bind_source(Some(&[11; 32]))
+        .bind_source_partition(&[7; 32])
+        .bind_producer_dependency(&dependency);
+    let outcome = world.application.compare_and_commit_application(
+        program,
+        identity,
+        ExecutionAllocationPolicy::SystemAllocation,
+    );
+    let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
+        panic!("the legal effect commits: {outcome:?}");
+    };
+
+    if generated {
+        // The tested boundary starts at an already performed record, not at
+        // producer selection. Give that real computation its test edition and
+        // prepared-input metadata; Native facts, own-effect evidence and output
+        // witness remain the actual commit's. These identities are not under test.
+        let mut lineage = handle.output_lineage.lock().unwrap();
+        let cell = (*lineage.by_source_mut_for_test())
+            .values_mut()
+            .flat_map(|branches| branches.values_mut())
+            .flat_map(|history| history.values_mut())
+            .flat_map(|rows| rows.iter_mut())
+            .rfind(|cell| {
+                (*cell.get().unwrap().source_partition_identity_for_test()) == Some([7; 32])
+            })
+            .unwrap();
+        let recorded = Arc::get_mut(cell)
+            .expect("performed cell has only lineage custody")
+            .get_mut()
+            .unwrap();
+        let count = recorded
+            .observed_source_facts_for_test()
+            .unwrap()
+            .len_for_test();
+        let boundary = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary::completed_for_test(count);
+        let context = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext::new_for_test(
+            worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract::canonical_bitwise(
+                worth_query_execution::facade::application_contribution::WorthQueryDecisionContextDependencies::KEY), Some([11;32]), None, None).unwrap();
+        (*recorded.completed_decision_reuse_mut_for_test()) = boundary.seal_decision_reuse_for_test(
+            context,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse::default().key_for_test(),
+        );
+        (*recorded.completed_handler_facts_mut_for_test()) = Some(boundary);
+        (*recorded.prepared_input_reuse_key_mut_for_test()) = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey::new_for_test(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection::selecting_for_test(u64::try_from(count).unwrap()),
+            [11;32], worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition::for_test_for_test([12;32])));
+    }
+    let cell = (*handle.output_lineage.lock().unwrap().by_source_for_test())
+        .values()
+        .flat_map(|branches| branches.values())
+        .flat_map(|history| history.values())
+        .flat_map(|rows| rows.iter())
+        .rfind(|cell| (*cell.get().unwrap().source_partition_identity_for_test()) == Some([7; 32]))
+        .cloned()
+        .expect("the committed output has a retained cell");
+    let completed = (*(*world.application.runtime_for_test()).primary_provider_for_test())
+        .observe_completed_application_for_test(receipt.commit_reference())
+        .unwrap();
+    assert!(
+        completed
+            .commit_evidence()
+            .source_facts_superseded_by_own_effect()
+            .next()
+            .is_some(),
+        "the actual commit carries the computation's own-write staleness"
+    );
+    test(&world, receipt, cell, resources);
+}

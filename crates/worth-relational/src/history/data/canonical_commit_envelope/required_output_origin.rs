@@ -6,12 +6,22 @@ use crate::identity::data::{EntityId, KindId, VersionId};
 use crate::transactions::data::TransactionCommitError;
 use serde::{Deserialize, Serialize};
 mod authored_cascade;
+mod coupled_authored;
+mod coupled_authored_header;
+pub(crate) use coupled_authored::{
+    CanonicalCoupledAuthoredPublication, CanonicalCoupledAuthoredSources,
+};
 mod authored_restoration;
 mod installation;
 pub(crate) use authored_cascade::CanonicalAuthoredRetirement;
 pub(crate) use authored_restoration::CanonicalAuthoredRestoration;
 pub(crate) use installation::CanonicalProducerRetirement;
 mod group_selection;
+mod header_corruption;
+mod header_work;
+mod origin_history;
+pub(crate) use group_selection::{OwnedValidatedOutputOrigins, ValidatedOutputOrigins};
+pub(crate) use origin_history::OutputOriginHistory;
 mod members;
 mod payload_coverage;
 mod producer_retirement_header;
@@ -112,5 +122,12 @@ impl PartialEq for CanonicalRequiredOutputOrigin {
     }
 }
 impl Eq for CanonicalRequiredOutputOrigin {}
+
+impl CanonicalRequiredOutputOrigin {
+    /// Native's complete publication coordinate survives current-fact decoding.
+    pub(crate) fn same_publication(&self, other: &Self) -> bool {
+        self.commit == other.commit && self.meaning == other.meaning
+    }
+}
 
 mod source_scope_ownership;

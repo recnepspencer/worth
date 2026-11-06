@@ -2,6 +2,7 @@
 use super::*;
 use crate::mvcc::{RequiredOutputPublicationMeaning, RequiredOutputRoleTarget};
 pub(super) struct RouteCompletion<'a> {
+    pub(super) contribution_records: Option<&'a [crate::transactions::data::RecordRef]>,
     pub(super) producer: &'a str,
     pub(super) dependency_identity: [u8; 32],
     pub(super) meaning: &'a RequiredOutputPublicationMeaning,
@@ -21,10 +22,12 @@ impl CanonicalCommitEnvelope {
         installed: &crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
         route: RouteCompletion<'_>,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        validated_history: &mut OutputOriginHistory,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<crate::history::data::RequiredOutputPublicationPositions, TransactionCommitError>
     {
         let RouteCompletion {
+            contribution_records,
             producer,
             dependency_identity,
             meaning,
@@ -139,6 +142,8 @@ impl CanonicalCommitEnvelope {
             state,
             &outputs,
             previous.map_or(0, |prior| prior.relations.len()),
+            basis.inner.root.schema_authority().registry(),
+            contribution_records,
             lease,
             context,
         )?;
@@ -192,18 +197,30 @@ impl CanonicalCommitEnvelope {
             issuer: Some(installed.authority.clone()),
             _funding: Some(memory),
         }));
-        crate::history::data::publication_relations::validate(
+        if contribution_records.is_none() {
+            use crate::history::data::publication_relations::CurrentPublicationFrame;
+            let current = if retiring {
+                CurrentPublicationFrame::Retiring(self)
+            } else {
+                CurrentPublicationFrame::Complete(
+                    self.validate_output_origins(context)
+                        .map_err(|stop| relation_context(stop, "candidate", basis, self))?,
+                )
+            };
+            crate::history::data::publication_relations::validate(
             &basis.inner.root,
             Some(state),
             self.required_output_origin.as_deref().unwrap(/* Proof: This method assigns Some(required_output_origin) immediately above and borrows it without an intervening take or mutation. */ ),
-            Some(self),
+            Some(current),
             &mut |commit| runtime.history.canonical_envelope(commit),
             &mut |version| runtime.history.canonical_envelope_for_version(version),
             runtime.history.canonical_catalog_len(),
             lease,
+            validated_history,
             context,
         )
         .map_err(|stop| relation_context(stop, "candidate", basis, self))?;
+        }
         if retiring
             && self
                 .required_output_origin

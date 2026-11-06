@@ -18,6 +18,7 @@ pub struct WorthQueryInvariantProjectionComponent<Schema, Set, Entity> {
     member: Arc<str>,
     member_kind: KindId,
     authority: u64,
+    phase: Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
     _entity: PhantomData<fn() -> Entity>,
 }
 impl<Schema, Set, Entity> WorthQueryInvariantProjectionComponent<Schema, Set, Entity> {
@@ -26,6 +27,9 @@ impl<Schema, Set, Entity> WorthQueryInvariantProjectionComponent<Schema, Set, En
         layout: &ComponentSetLayout,
         binding: ApplicationSchemaBindingIdentity,
         authority: u64,
+        phase: Option<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification,
+        >,
     ) -> Self {
         Self {
             identity: WorthQueryAggregateIdentity::from_component_read(aggregate.native(), binding),
@@ -34,6 +38,7 @@ impl<Schema, Set, Entity> WorthQueryInvariantProjectionComponent<Schema, Set, En
             member: Arc::clone(&layout.member),
             member_kind: layout.member_kind,
             authority,
+            phase,
             _entity: PhantomData,
         }
     }
@@ -67,13 +72,11 @@ impl<Schema, Set, Entity> WorthQueryInvariantProjectionComponent<Schema, Set, En
                 kind: self.member_kind,
                 entity: Arc::clone(&self.member),
                 authority_identity: self.authority,
+                phase: self.phase,
                 _marker: PhantomData,
             })
     }
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn aggregate(
-        &self,
-    ) -> &Arc<AggregateObservation> {
+    pub fn aggregate(&self) -> &Arc<AggregateObservation> {
         &self.aggregate
     }
 }

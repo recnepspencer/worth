@@ -1,6 +1,9 @@
 //! Fail-closed retention from the admitted decision read-set.
 
-mod selection;
+mod authored_anchors;
+mod relations;
+pub(crate) mod selection;
+pub(crate) use relations::WorthQueryRetainedRelationPreImageSeal;
 
 pub(crate) use selection::WorthQueryRetainedPreImageSeal;
 
@@ -43,8 +46,15 @@ pub(super) fn retain_attempt_preimage(
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     candidate: &worth_relational::facade::mvcc::ValidatedRelationalProposal,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
+    layout: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<WorthQueryPreparedPreImageRetention, WorthQueryProviderSessionFailure> {
+    if let Some(source) = attempt
+        .aftermath_causality()
+        .map(|causality| causality.prepared_correction())
+    {
+        source.validate_relation_inverse(candidate, execution, layout)?;
+    }
     let Some(demand) = attempt.preimage_demand() else {
         return Ok(WorthQueryPreparedPreImageRetention {
             retained: None,
@@ -64,10 +74,22 @@ pub(super) fn retain_attempt_preimage(
                 "preimage projection capacity exhausted"),
         })?;
     let examined = candidates.examined();
-    let (mut retained, candidates_materialized) =
+    let selected = if let Some(anchors) = authored_anchors::select(attempt)? {
+        selection::retain_from_authored_anchors(demand, candidates.iter(), &footprint, &anchors)
+    } else {
         selection::retain_from_attempt(demand, candidates.iter(), &footprint)
-            .map_err(retention_failure)?
-            .into_parts();
+    };
+    let (mut retained, candidates_materialized) = selected.map_err(retention_failure)?.into_parts();
+    if !demand.relations().is_empty() {
+        retained = relations::retain(
+            execution,
+            layout,
+            demand,
+            candidate,
+            candidates.as_slice(),
+            retained,
+        )?;
+    }
     retained
         .retain_content(
             execution,
@@ -87,7 +109,7 @@ pub(super) fn retain_attempt_preimage(
             mutation_targets_materialized: footprint_work.mutation_targets_materialized(),
             decision_facts_examined: examined,
             candidates_materialized,
-            demanded_loci_examined: demand.loci().len(),
+            demanded_loci_examined: demand.loci().len() + demand.relations().len(),
         },
     })
 }

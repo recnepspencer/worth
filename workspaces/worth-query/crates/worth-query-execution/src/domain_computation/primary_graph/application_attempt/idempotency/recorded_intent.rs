@@ -110,3 +110,5 @@ fn is_hex(digits: &str) -> bool {
         .bytes()
         .all(|digit| matches!(digit, b'0'..=b'9' | b'a'..=b'f'))
 }
+
+mod court_doors_for_test;

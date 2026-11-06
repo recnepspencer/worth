@@ -58,3 +58,22 @@ the emitted manifests through real offline Cargo metadata.
 The root/Store plans and trial diagnostics belong under `target/`, not source
 control. A trial's compile errors are migration work, not passing tests. The real
 tree must remain unmigrated during Track B step 1.
+
+## In-source test families
+
+```text
+python scripts/test_topology/src_audit.py workspaces/worth-query/crates/worth-query-execution/src/lib.rs --out plans/query-split/stage1
+python -m unittest discover -s scripts/test_topology -p test_src_audit.py -v
+```
+
+`src_families.py` inventories the outermost `cfg(test)`-gated modules of a library target
+(cfg predicates are evaluated three-valued, so `not(test)` and `any(test, ..)` do not
+gate), with test names, canonical token hashes of their bodies, and local `macro_rules!`
+that emit tests. `src_surface.py` resolves every name a family uses to its defining item
+through named and glob re-export chains, and classifies it as public (reachable from the
+crate's bare-`pub` modules), a test hook (some hop is test-gated, or a method defined only
+under `cfg(test)`), private, or unresolved (macro-generated items). `src_audit.py` joins the
+families with `src-court-baseline.json` and `src-court-private-logic-audit.json` and decides
+each family: public surface (move), runtime root with public needs (move), runtime root with
+private needs or hooks (blocked on an owner ruling), private logic (stays), admitted, or
+support. The audit is item-level; method visibility is confirmed by the compiler at apply.

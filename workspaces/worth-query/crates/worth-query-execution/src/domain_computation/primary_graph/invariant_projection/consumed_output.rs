@@ -17,9 +17,8 @@ mod publication_recovery;
 pub(in crate::domain_computation::primary_graph) use publication_recovery::PublicationRecoveryStop;
 mod rebound;
 mod requested_read;
-#[cfg(test)]
 mod test_support;
-mod verification;
+pub(crate) mod verification;
 pub(in crate::domain_computation::primary_graph) use pending_dependency::SelectedPendingConsumedOutput;
 pub(in crate::domain_computation::primary_graph) use verification::map_admission_stop;
 pub(in crate::domain_computation::primary_graph) use verification::map_verification_stop;
@@ -33,7 +32,7 @@ pub use verification::VerificationCapacityStop;
 /// the identity; Arc only shares retained evidence and is not an identity.
 /// This runtime-only record is never serialized through a TypeId-bearing key.
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct ConsumedOutputEvidence {
+pub struct ConsumedOutputEvidence {
     _computation: crate::domain_computation::primary_graph::output_lineage::CurrentComputation,
     identity: Arc<RecordedSettlementIdentity>,
     source_facts: crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
@@ -89,9 +88,7 @@ impl ConsumedOutputEvidence {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn identity(
-        &self,
-    ) -> &Arc<RecordedSettlementIdentity> {
+    pub fn identity(&self) -> &Arc<RecordedSettlementIdentity> {
         &self.identity
     }
 
@@ -189,3 +186,5 @@ impl ConsumedOutputEvidence {
         }
     }
 }
+
+mod court_doors_for_test;

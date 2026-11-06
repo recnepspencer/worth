@@ -4,7 +4,6 @@ use crate::basis::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
-#[cfg(test)]
 use worth_runtime_world::facade::ProductBranchIdentity;
 
 /// How the live selected snapshot entered this operation. This is selection
@@ -59,7 +58,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self.runtime.product_runtime
     }
 
-    #[cfg(test)]
     pub(crate) fn select_product_branch(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -342,3 +340,5 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             })
     }
 }
+
+mod court_doors_for_test;

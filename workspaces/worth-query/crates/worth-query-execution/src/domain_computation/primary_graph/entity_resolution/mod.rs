@@ -3,16 +3,57 @@
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 mod admitted_scope;
+mod applied;
 mod freshness;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) mod interruption_control;
-mod product;
+pub mod interruption_control {
+    use std::{
+        cell::{Cell, RefCell},
+        rc::Rc,
+    };
+    use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
+    thread_local! { pub static PENDING: RefCell<Option<Pending>> = const { RefCell::new(None) }; }
+    pub enum Action {
+        Cancel(WorthQueryCancellationSource),
+        Deadline {
+            time: worth_execution::MonotonicTimeController,
+            deadline: std::time::Instant,
+        },
+    }
+    pub struct Pending {
+        pub action: Action,
+        pub remaining: usize,
+        pub triggered: Rc<Cell<bool>>,
+    }
+    pub fn cancel_before_lookup_for_test() {
+        let pending = PENDING.with(|slot| {
+            let mut slot = slot.borrow_mut();
+            let pending = slot.as_mut()?;
+            if pending.remaining > 0 {
+                pending.remaining -= 1;
+                return None;
+            }
+            slot.take()
+        });
+        if let Some(pending) = pending {
+            pending.triggered.set(true);
+            match pending.action {
+                Action::Cancel(source) => source.cancel(),
+                Action::Deadline { time, deadline } => {
+                    let elapsed = deadline
+                        .checked_duration_since(time.clock().now())
+                        .expect("the held request is fresh before lookup");
+                    time.advance(elapsed).unwrap();
+                }
+            }
+        }
+    }
+}
+
+pub(crate) mod product;
 pub(in crate::domain_computation) use product::WorthQueryIssuedSelectedScope;
-mod resolved;
-mod retained_selector;
+pub(crate) mod resolved;
+pub(crate) mod retained_selector;
 pub(in crate::domain_computation) use retained_selector::WorthQueryObservedScopeSelector;
-#[cfg(test)]
-mod tests;
 
 pub use resolved::WorthQueryApplicationEntityIdentity;
 use resolved::WorthQueryEntityResolutionSubject;
@@ -35,7 +76,7 @@ use super::{
 };
 
 #[derive(Clone)]
-pub(in crate::domain_computation) struct WorthQueryInstalledEntityResolutionContext {
+pub struct WorthQueryInstalledEntityResolutionContext {
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     relational_runtime_instance_id: u64,
@@ -43,7 +84,7 @@ pub(in crate::domain_computation) struct WorthQueryInstalledEntityResolutionCont
     layout: Arc<WorthQueryPrimaryGraphLayout>,
 }
 
-pub(in crate::domain_computation) struct WorthQueryEntityResolutionTruth<'truth> {
+pub struct WorthQueryEntityResolutionTruth<'truth> {
     installed: &'truth WorthQueryInstalledEntityResolutionContext,
     relational: &'truth worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &'truth worth_relational::facade::snapshots::SnapshotHandle,
@@ -51,9 +92,7 @@ pub(in crate::domain_computation) struct WorthQueryEntityResolutionTruth<'truth>
 }
 
 impl WorthQueryPrimaryGraph {
-    pub(in crate::domain_computation) fn retain_entity_resolution_context(
-        &self,
-    ) -> WorthQueryInstalledEntityResolutionContext {
+    pub fn retain_entity_resolution_context(&self) -> WorthQueryInstalledEntityResolutionContext {
         WorthQueryInstalledEntityResolutionContext {
             runtime_authority: self.runtime_authority(),
             relational_runtime_instance_id: self.relational_runtime_instance_id(),
@@ -144,7 +183,6 @@ impl WorthQueryEntityResolutionTruth<'_> {
                 2,
             )
             .map_err(|denial| map_index_denial(denial.kind(), field))?;
-            #[cfg(test)]
             interruption_control::cancel_before_lookup_for_test();
             let lookup = self
                 .relational
@@ -243,3 +281,5 @@ fn entity_denial(
 ) -> WorthQueryEntityResolutionDenial {
     WorthQueryEntityResolutionDenial::new(kind, subject)
 }
+
+mod court_doors_for_test;

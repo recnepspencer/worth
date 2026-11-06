@@ -6,13 +6,11 @@ use worth_execution::{
 };
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct CheckpointMetadataFunding {
+pub struct CheckpointMetadataFunding {
     held: ExecutionMemoryReservation,
 }
 impl CheckpointMetadataFunding {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, CheckpointDecodeDenial> {
+    pub fn new(execution: &ExecutionRequest<'_, '_>) -> Result<Self, CheckpointDecodeDenial> {
         execution
             .consult()
             .map_err(CheckpointDecodeDenial::execution)?;
@@ -125,3 +123,5 @@ impl CheckpointMetadataFunding {
         self.copy_text(value, execution)
     }
 }
+
+mod court_doors_for_test;

@@ -11,9 +11,7 @@ use super::WorthQueryProgressedApplicationCommit;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::WorthQueryManagedRunTerminalKind;
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn finish_application_commit<
-    Schema,
->(
+pub fn finish_application_commit<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
@@ -23,6 +21,23 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
 where
     Schema: ApplicationSchema,
 {
+    finish_application_commit_with_delivery(execution, phase, application, progressed, true)
+}
+pub(super) fn finish_coupled_application_commit<Schema: ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    progressed: WorthQueryProgressedApplicationCommit,
+) -> WorthQueryApplicationCommitOutcome {
+    finish_application_commit_with_delivery(execution, phase, application, progressed, false)
+}
+fn finish_application_commit_with_delivery<Schema: ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    progressed: WorthQueryProgressedApplicationCommit,
+    delivers_product: bool,
+) -> WorthQueryApplicationCommitOutcome {
     let WorthQueryProgressedApplicationCommit {
         outcome,
         workflow_settlement_publication,
@@ -57,7 +72,9 @@ where
         ))
     });
     if let WorthQueryApplicationCommitOutcome::Committed(receipt) = &committed {
-        crate::domain_computation::primary_graph::application_contribution::record_advancement_commit(receipt);
+        if delivers_product {
+            crate::domain_computation::primary_graph::application_contribution::record_advancement_commit(receipt);
+        }
         if let Some(publication) = workflow_settlement_publication {
             publication.maintain(application, receipt);
         }
@@ -80,7 +97,8 @@ const fn terminal_for(
             WorthQueryManagedRunTerminalKind::Cancelled
         }
         WorthQueryProviderProgressionOutcome::TimedOut => WorthQueryManagedRunTerminalKind::Failed,
-        WorthQueryProviderProgressionOutcome::Denied(_)
+        WorthQueryProviderProgressionOutcome::CoupledFailure(_)
+        | WorthQueryProviderProgressionOutcome::Denied(_)
         | WorthQueryProviderProgressionOutcome::ProductUnpublished(_)
         | WorthQueryProviderProgressionOutcome::Deferred(_)
         | WorthQueryProviderProgressionOutcome::Aborted
@@ -89,7 +107,3 @@ const fn terminal_for(
         }
     }
 }
-
-#[cfg(test)]
-#[path = "association_tests.rs"]
-mod association_tests;

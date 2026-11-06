@@ -1,0 +1,217 @@
+//! Active native court, using actual installed publisher and exact performed row.
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::*;
+pub use worth_relational::facade::identity::EntityId;
+pub use worth_relational::facade::identity::RelationId;
+pub use worth_relational::facade::mvcc::RequiredOutputPublicationMeaning;
+pub use worth_relational::facade::mvcc::RequiredOutputRolePosture;
+pub use worth_relational::facade::mvcc::RequiredOutputRoleTarget;
+pub use worth_relational::facade::transactions::EntityReference;
+
+pub use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::ordinary::assert_ordinary;
+pub use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::own_effect::observe_performed_receipt;
+
+pub fn readmit<Schema: BirthSchema>(
+    runtime: &crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Application<Schema>,
+    settled: &WorthQueryOutputDemandSettlement,
+    owned: bool,
+) -> (Vec<EntityId>, RelationId) {
+    assert!(
+        owned,
+        "use the real ordinary action court instead of an output demand"
+    );
+    readmit_with_ordinary(runtime, settled, None)
+}
+pub fn readmit_with_ordinary<Schema: BirthSchema>(
+    runtime: &crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Application<Schema>,
+    settled: &WorthQueryOutputDemandSettlement,
+    ordinary: Option<&WorthQueryApplicationCommitReceipt>,
+) -> (Vec<EntityId>, RelationId) {
+    let scope = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+    runtime
+        .with_application_advancement(&scope, |phase| {
+            let execution = phase
+                .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
+                .unwrap();
+            let (_, product, _basis) = runtime
+                .on_branch(runtime.current_world())
+                .select(&phase)
+                .unwrap()
+                .into_parts_for_test();
+            let graph = runtime.runtime_for_test().primary_provider_for_test().graph_for_test();
+            let publisher = graph.application_publication.as_ref().unwrap();
+            let roles: Vec<_> = settled
+                .output_correspondence
+                .native_witness_roles_for_test()
+                .map(|(role, posture, name, entity)| RequiredOutputRoleTarget {
+                    role: role.to_owned(),
+                    entity_name: name.to_owned(),
+                    kind: (*graph.layout_for_test()).entity_kind_for_test(name).unwrap(),
+                    posture: match posture {
+                        WorthQueryApplicationOutputPosture::Create => {
+                            RequiredOutputRolePosture::Create
+                        }
+                        WorthQueryApplicationOutputPosture::Preserve => {
+                            RequiredOutputRolePosture::Preserve
+                        }
+                        _ => panic!("no retirement"),
+                    },
+                    target: EntityReference::Existing(entity),
+                })
+                .collect();
+            assert_eq!(roles.len(), 4);
+            let incidence = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::publication_state::observe(runtime, &phase, settled, &roles);
+            let source_entity = runtime
+                .on_branch(runtime.current_world())
+                .select(&phase)
+                .unwrap()
+                .resolve_entity(
+                    &phase,
+                    BodyKey::at("BodyKey"),
+                    crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::ANCHOR.to_owned(),
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id_for_test();
+            let recorded = settled.application_commit_receipt()
+                .and_then(|receipt| receipt.exact_output_settlement_for_test());
+            let retained = recorded.is_none().then(||
+                runtime.select_output_demand_settlement(&execution, settled).unwrap());
+            let lineage = graph.output_lineage.lock().unwrap();
+            let keeping = roles.iter().all(|role| role.posture == RequiredOutputRolePosture::Preserve);
+            let binding = if keeping { worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<Binding<Schema, true>>() } else { worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<Binding<Schema, false>>() };
+            let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource::new_for_test((*runtime.runtime_for_test()).authority_identity_for_test().as_u64(), runtime.installed_schema().binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(source_entity), lineage.binding_identity_for_test(binding).unwrap());
+
+            let (occurrence, generation, slot) = match recorded {
+                Some(identity) => {
+                    assert_eq!(identity.source_for_test(), &source, "receipt's exact semantic source");
+                    identity.address_for_test()
+                }
+                None => {
+                    let coordinate = retained.as_ref().unwrap().product().observation_for_test();
+                    (coordinate.lifecycle_incarnation(), coordinate.reference_generation().get(), 0)
+                }
+            };
+            let rows = &(*lineage.by_source_for_test())[&source][&occurrence][&generation];
+            if recorded.is_none() {
+                assert_eq!(rows.len(), 1, "retained recovered/stable observation is unambiguous");
+            }
+            let row = rows[slot].get().unwrap();
+            assert_eq!((*row.settlement_identity_for_test()).source_for_test(), &source);
+            assert_eq!((*row.settlement_identity_for_test()).address_for_test(), (occurrence, generation, slot));
+            assert!((*row.correspondence_for_test()).native_witness_roles_for_test()
+                .eq(settled.output_correspondence.native_witness_roles_for_test()), "exact recorded correspondence");
+            let locator = (*row.native_prior_checkpoint_for_test()).as_ref();
+            assert!((*row.native_output_witness_for_test()).get().is_some(), "performed publication retains actual warm native custody");
+            let locator = locator.expect(
+                "actual required Query handoff records the performed locator",
+            );
+            let producer = locator.producer_for_test().to_owned();
+            let dependency = (*row.producer_dependency_identity_for_test()).unwrap();
+            let meaning = RequiredOutputPublicationMeaning {
+                implementation: (*row.producing_implementation_for_test()).expect("the actual producer publication retains its original implementation"),
+                family: settled.output_family_identity().to_owned(),
+                source_scope: source_entity,
+                source_partition: (*row.source_partition_identity_for_test()).unwrap(),
+                source_epoch: locator.source_for_test(),
+            };
+            drop(lineage);
+            let ordinary_roles = ordinary.map(|receipt| {
+                let roles = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::ordinary::roles_and_nonownership(runtime, receipt);
+                crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::ordinary::observe(runtime, &phase, receipt, &roles);
+                roles
+            });
+            graph.with_runtime(&execution, |native| {
+                let result = native.readmit_required_output_publication(
+                    &execution,
+                    &publisher.native,
+                    product.relational_basis_for_test(),
+                    &producer,
+                    &dependency,
+                    &meaning,
+                    &roles,
+                );
+                result.expect("cold complete native publication readmits");
+                if let Some(roles) = ordinary_roles {
+                    assert!(native.readmit_required_output_publication(
+                        &execution, &publisher.native, product.relational_basis_for_test(),
+                        &producer, &dependency, &meaning, &roles,
+                    ).is_err(), "real ordinary records cannot borrow a valid producer's ownership");
+                }
+            });
+            let ids = roles
+                .into_iter()
+                .map(|role| {
+                    let EntityReference::Existing(id) = role.target else {
+                        unreachable!()
+                    };
+                    id
+                })
+                .collect();
+            (ids, incidence)
+        })
+        .unwrap()
+}
+
+pub fn edit_source<Schema: BirthSchema>(
+    runtime: &crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Application<Schema>,
+) {
+    edit_source_to(runtime, 2);
+}
+
+pub fn edit_source_to<Schema: BirthSchema>(
+    runtime: &crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Application<Schema>,
+    value: u64,
+) {
+    use worth_relational::facade::transactions::*;
+    let scope = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+    runtime
+        .with_application_advancement(&scope, |phase| {
+            let execution = phase
+                .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
+                .unwrap();
+            let source = runtime
+                .on_branch(runtime.current_world())
+                .select(&phase)
+                .unwrap()
+                .resolve_entity(
+                    &phase,
+                    BodyKey::at("BodyKey"),
+                    crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::ANCHOR.to_owned(),
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            let locator = (*(*(*(*runtime
+                .runtime_for_test())
+                .primary_provider_for_test())
+                .graph_for_test())
+                .layout_for_test())
+                .field_locator_for_test("Body", PositionY::at("PositionY").aspect(), "PositionY")
+                .unwrap()
+                .clone();
+            let batch =
+                WorkerIntentBatch::new("actual-optional-source-edit").push(MutationIntent::Entity(
+                    EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                        entity_id: source.entity_id_for_test(),
+                        fields: AspectFieldPatch::from(std::collections::BTreeMap::from([(
+                            locator,
+                            U64ApplicationValueBinding::encode(&value).unwrap(),
+                        )])),
+                    }),
+                ));
+            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation_on_application(
+                &execution, runtime, batch,
+            );
+        })
+        .unwrap();
+}
+
+#[path = "ordinary/mod.rs"]
+pub mod ordinary;
+#[path = "output_revision/mod.rs"]
+pub mod output_revision;
+#[path = "own_effect/mod.rs"]
+pub mod own_effect;
+#[path = "publication_state/mod.rs"]
+pub mod publication_state;

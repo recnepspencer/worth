@@ -130,6 +130,11 @@ impl<Schema: ApplicationSchema, Operation>
             kind,
             entity: std::sync::Arc::from(field.entity()),
             authority_identity: self.reader.authority_identity,
+            phase: self
+                .reader
+                .native
+                .candidate_identity()
+                .map(|id| id.qualification()),
             _marker: std::marker::PhantomData,
         };
         self.reader.realized_scope.record(entity_id);

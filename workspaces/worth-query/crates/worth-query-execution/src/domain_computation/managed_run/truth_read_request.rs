@@ -91,27 +91,4 @@ impl WorthQueryManagedTruthReadRequest {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use worth_runtime_bridge::facade::{BridgeReplayMode, SnapshotReadPacket};
-
-    use super::WorthQueryManagedTruthReadRequest;
-
-    #[test]
-    fn ordinary_managed_truth_requests_disable_replay_by_default() {
-        let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-            .build()
-            .expect("valid native runtime configuration");
-        let identity = runtime.main_branch_identity();
-        let (descriptor, _) = runtime.observe_branch(&identity).unwrap();
-        let (_, _, replay, _, _, product_observation) =
-            WorthQueryManagedTruthReadRequest::from_relational_basis(
-                descriptor,
-                SnapshotReadPacket::new(Vec::new()),
-            )
-            .into_parts();
-
-        assert_eq!(replay, BridgeReplayMode::Disabled);
-        assert!(product_observation.is_none());
-    }
-}
+mod court_doors_for_test;

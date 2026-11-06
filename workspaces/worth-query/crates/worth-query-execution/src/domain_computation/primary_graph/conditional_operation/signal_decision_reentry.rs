@@ -10,7 +10,7 @@ mod admitted;
 mod selected_projections;
 pub(in crate::domain_computation::primary_graph) use selected_projections::WorthQuerySelectedSignalProjections;
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalTruthBasis {
+pub struct WorthQueryConditionalTruthBasis {
     product: crate::basis::WorthQueryProductBranchLease,
     _application_basis:
         super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,

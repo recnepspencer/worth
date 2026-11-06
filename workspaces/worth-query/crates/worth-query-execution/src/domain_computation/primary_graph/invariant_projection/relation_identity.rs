@@ -59,3 +59,4 @@ impl<S, R, F, T> PartialEq for WorthQueryInvariantRelation<S, R, F, T> {
     }
 }
 impl<S, R, F, T> Eq for WorthQueryInvariantRelation<S, R, F, T> {}
+mod court_doors_for_test;

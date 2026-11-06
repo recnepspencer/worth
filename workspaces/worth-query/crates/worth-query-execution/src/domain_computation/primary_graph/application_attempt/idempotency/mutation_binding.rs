@@ -53,10 +53,7 @@ impl WorthQueryApplicationIdempotencyBinding {
     }
 
     /// Whether the slot names exactly this mutation binding identity.
-    pub(in crate::domain_computation::primary_graph) fn is_for_mutation_binding(
-        &self,
-        binding_identity: &str,
-    ) -> bool {
+    pub fn is_for_mutation_binding(&self, binding_identity: &str) -> bool {
         self.mutation_binding_identity == Some(slot(binding_identity))
     }
 }

@@ -10,7 +10,6 @@ use super::super::{
     WorthQueryManagedComputationInterruption, WorthQueryManagedComputationResourceDenial,
 };
 use super::reader::{WorthQueryComputationInputDenial, WorthQueryComputationReadDenial};
-#[cfg(test)]
 use super::routing::ComputationPartitionRoutingDenial;
 
 /// Why one partition stopped.
@@ -109,7 +108,6 @@ pub enum WorthQueryReductionInputDenial {
     PartitionAlreadyPresent { partition: PartitionIdentity },
 }
 
-#[cfg(test)]
 impl<Stopped> From<ComputationPartitionRoutingDenial>
     for WorthQueryPartitionedComputationDenial<Stopped>
 {

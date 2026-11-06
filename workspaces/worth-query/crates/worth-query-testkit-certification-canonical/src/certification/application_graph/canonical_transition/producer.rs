@@ -160,6 +160,7 @@ impl WorthQueryApplicationProducerBinding<CanonicalSchema> for Producer {
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = INITIAL;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const REUSE_POLICY: &'static str = "exact-source";
+    const OWNERSHIP: ProducerPublicationOwnership = super::OWNERSHIP;
 }
 impl WorthQueryApplicationProducerProvider<CanonicalSchema, Producer> for Provider {
     type DenialValue = WorthQueryUndeclaredProducerDenial;

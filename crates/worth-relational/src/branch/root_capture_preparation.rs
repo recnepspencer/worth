@@ -145,7 +145,7 @@ fn prepare_regions(
     })
 }
 
-fn root_slot_counts(
+pub(super) fn root_slot_counts(
     regions: &RelationalPersistentRegionSet,
     previous: Option<&Arc<RelationalBranchRoot>>,
     published_delta: &RelationalPublishedPartitionDelta,

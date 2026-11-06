@@ -94,6 +94,18 @@ pub(crate) struct VisibilitySnapshotBasis {
 }
 
 impl VisibilitySnapshotBasis {
+    pub(crate) fn from_applied_root(
+        branch_id: BranchId,
+        version_id: VersionId,
+        root: Arc<RelationalBranchRoot>,
+    ) -> Self {
+        Self {
+            key: VisibilitySnapshotStateKey::exact(branch_id, version_id, &root),
+            root,
+            _retained_observation: None,
+        }
+    }
+
     pub(crate) fn from_observation(observation: &crate::mvcc::RelationalBranchObservation) -> Self {
         let version_id = observation.version_id();
         let root = Arc::clone(observation.selected_root());

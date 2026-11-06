@@ -1,6 +1,7 @@
 //! Re-admit governed complete codec retirement before it can end a route generation.
 use super::{charge, request, CodecRetirementClosureStop as Stop};
 use crate::capabilities::AspectPlanSource;
+use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::history::data::{
     canonical_commit_envelope::*, CanonicalCommitEnvelope, RequiredOutputRoutePosition,
 };
@@ -20,6 +21,7 @@ pub(super) fn validate(
     envelope: &Arc<CanonicalCommitEnvelope>,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     charge(
         context,
@@ -40,9 +42,19 @@ pub(super) fn validate(
         .ok_or_else(super::memory_overflow)?;
     let _roster_memory = super::reserve(lease, bytes)?;
     let mut groups = Vec::with_capacity(envelope.required_output_codec_retirements.len());
+    let mut origin_frames = OutputOriginHistory::default();
+    let validated_history = &mut origin_frames;
     // Serialized sibling headers contribute no aggregate effect authority.
     for event in &envelope.required_output_codec_retirements {
-        groups.push(validate_group(runtime, envelope, event, context, lease)?);
+        groups.push(validate_group(
+            runtime,
+            envelope,
+            event,
+            validated_history,
+            context,
+            lease,
+            schema,
+        )?);
     }
     effect_coverage::validate(envelope, &groups, context)
 }
@@ -51,8 +63,10 @@ fn validate_group(
     runtime: &RelationalRuntime,
     envelope: &Arc<CanonicalCommitEnvelope>,
     event: &CanonicalRequiredOutputCodecRetirement,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<Arc<CanonicalRequiredOutputOrigin>, Stop> {
     let transition = envelope
         .schema_transition
@@ -88,9 +102,12 @@ fn validate_group(
         .history
         .canonical_envelope(source_commit)
         .ok_or("codec disposition source schema history absent")?;
-    let original = runtime
-        .history
-        .canonical_envelope(event.publication)
+    let original = validated_history
+        .by_commit(
+            event.publication,
+            &mut |commit| runtime.history.canonical_envelope(commit),
+            context,
+        )?
         .ok_or("codec disposition original publication absent")?;
     let origin = original.validate_output_membership_header()?;
     charge(
@@ -113,6 +130,7 @@ fn validate_group(
         context,
         lease,
         true,
+        schema,
     )?;
     let _metadata = metadata::reserve(&event.kinds, context, lease)?;
     let (before, after) =
@@ -151,8 +169,16 @@ fn validate_group(
             .entity_plans
             .get(&member.kind)
             .ok_or("codec disposition omits a complete member kind")?;
-        let payload =
-            super::membership::reconstruct(runtime, &original, member.id, plan, context, lease)?;
+        let payload = super::membership::reconstruct(
+            runtime,
+            &original,
+            member.id,
+            plan,
+            validated_history,
+            context,
+            lease,
+            schema,
+        )?;
         if member.posture == crate::mvcc::RequiredOutputRolePosture::Retire {
             continue;
         }
@@ -210,8 +236,10 @@ fn validate_group(
             &original,
             relation.id,
             plan,
+            validated_history,
             context,
             lease,
+            schema,
         )?;
         deletion_grammar::relation(
             runtime,
@@ -232,9 +260,10 @@ fn validate_group(
 
 pub(super) fn validate_birth(
     runtime: &RelationalRuntime,
-    birth: &Arc<CanonicalCommitEnvelope>,
+    birth: &OwnedValidatedOutputOrigins,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let origin = birth.validate_output_membership_header()?;
     let prior = super::route_selection::select_at(
@@ -243,6 +272,7 @@ pub(super) fn validate_birth(
         &origin.meaning,
         context,
         lease,
+        schema,
     )?;
     match (&origin.publication, prior) {
         (CanonicalOutputPublication::Birth, None) => Ok(()),

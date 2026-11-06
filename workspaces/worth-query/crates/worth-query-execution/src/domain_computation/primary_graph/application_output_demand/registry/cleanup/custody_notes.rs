@@ -3,14 +3,14 @@ use super::super::{DemandRegistryState, SourceCustody};
 use worth_runtime_world::facade::CompositeCommitIdentity as Commit;
 
 #[derive(Default)]
-pub(in super::super) struct CustodyCleanupQueue {
+pub struct CustodyCleanupQueue {
     pub head: Option<Commit>,
     tail: Option<Commit>,
     pub len: usize,
 }
 
 #[derive(Default)]
-pub(in super::super) struct CustodyCleanupLinks {
+pub struct CustodyCleanupLinks {
     pub queued: bool,
     previous: Option<Commit>,
     pub next: Option<Commit>,
@@ -195,3 +195,5 @@ impl Drop for CustodyNote<'_> {
         }
     }
 }
+
+mod court_doors_for_test;

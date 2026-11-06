@@ -16,7 +16,7 @@ use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIden
 use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease;
 
 mod inspection_preparation;
-mod inspection_read;
+pub(crate) mod inspection_read;
 mod managed_index_read;
 mod mutation;
 mod mutation_readmission;
@@ -25,7 +25,7 @@ pub(in crate::domain_computation) use managed_index_read::{
     WorthQueryManagedIndexSessionDenial,
 };
 use mutation::MutationProductBasis;
-mod prepared_query_read;
+pub(crate) mod prepared_query_read;
 mod product_read;
 mod query_preparation;
 mod query_read;
@@ -87,7 +87,7 @@ pub enum WorthQueryManagedGraphWorkSessionStartDenial {
 }
 
 /// Live authority opened from exactly one sealed, capacity-reserved plan.
-pub(in crate::domain_computation) struct WorthQueryManagedGraphWorkSession {
+pub struct WorthQueryManagedGraphWorkSession {
     identity: WorthQueryGraphWorkSessionIdentity,
     managed_run: WorthQueryGraphWorkManagedRunIdentity,
     runtime: WorthQueryRuntimeAuthorityIdentity,
@@ -221,9 +221,7 @@ impl WorthQueryManagedGraphWorkSession {
         }
     }
 
-    pub(in crate::domain_computation) fn mutation_product(
-        &self,
-    ) -> Option<&crate::basis::WorthQueryProductBranchLease> {
+    pub fn mutation_product(&self) -> Option<&crate::basis::WorthQueryProductBranchLease> {
         self.mutation_lease()
             .map(WorthQueryApplicationSnapshotLease::product)
     }

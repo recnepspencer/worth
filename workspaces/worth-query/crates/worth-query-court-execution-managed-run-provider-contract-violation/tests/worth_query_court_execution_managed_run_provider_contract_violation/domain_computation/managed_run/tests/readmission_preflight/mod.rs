@@ -1,0 +1,223 @@
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::readmission_direct::yielded_direct;
+use crate::process::domain_computation::managed_run::tests::*;
+
+#[test]
+fn foreign_bridge_denies_before_fresh_query_or_provider_work_and_preserves_retry() {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+        let active_request = execution;
+
+        let (yielded, bridge, runtime) = yielded_direct(execution, resource_request);
+        let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
+        let resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
+        let foreign_bridge =
+            worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::managed_run::tests::causal_fixture::managed_admission_context(&resource_request).bridge;
+        let denied = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &foreign_bridge)
+            };
+            match fixture_phase_result {
+                worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => {
+                    denied
+                }
+                _ => panic!("foreign Bridge runtime should deny during Bridge preflight"),
+            }
+        };
+        assert_eq!(
+        denied.kind(),
+        worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionDenialKind::BridgeReadmissionDenied
+    );
+        let evidence = denied.readmission_evidence();
+        let counters = evidence.query_counters();
+        assert_eq!(counters.preflight_check_count(), 1);
+        assert_eq!(counters.fresh_resource_attempt_count(), 0);
+        assert_eq!(counters.bridge_readmission_attempt_count(), 0);
+        assert_eq!(counters.provider_restore_attempt_count(), 0);
+        let bridge_counters = evidence
+            .bridge_counters()
+            .expect("foreign Bridge denial must carry Bridge preflight evidence");
+        assert_eq!(bridge_counters.preflight_check_count(), 1);
+        assert_eq!(bridge_counters.signal_attempt_admission_count(), 0);
+        assert_eq!(bridge_counters.abort_count(), 0);
+        assert_eq!(bridge_counters.commit_count(), 0);
+        let yielded = denied.into_yielded();
+        assert_eq!(yielded.inspection().checkpoint().identity(), checkpoint);
+        assert_eq!(
+            yielded.inspection().yielded_attempt_identity(),
+            resource_attempt
+        );
+
+        let active = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted.into_active(),
+                _ => panic!("foreign-Bridge denial must preserve exact retry authority"),
+            }
+        };
+        let completion = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = active.fixture_phase_for_test(execution);
+                active.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+                _ => panic!("restored provider should complete"),
+            }
+        };
+        assert!(completion
+            .into_running()
+            .completed()
+            .unwrap()
+            .cleanup()
+            .is_ok());
+    });
+}
+
+#[test]
+fn crossed_bridge_denial_preserves_both_interleaved_direct_peers() {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+        let active_request = execution;
+
+        let (first, first_bridge, first_runtime) = yielded_direct(execution, resource_request);
+        let (second, second_bridge, second_runtime) = yielded_direct(execution, resource_request);
+
+        let first = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = first.fixture_phase_for_test(active_request);
+                first.readmit_same_runtime(&installed_fixture_phase, &first_runtime, &second_bridge)
+            };
+            match fixture_phase_result {
+                worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => {
+                    assert_eq!(
+                denied.kind(),
+                worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionDenialKind::BridgeReadmissionDenied
+            );
+                    assert_eq!(
+                        denied
+                            .readmission_evidence()
+                            .query_counters()
+                            .fresh_resource_attempt_count(),
+                        0
+                    );
+                    denied.into_yielded()
+                }
+                _ => panic!("a peer Bridge runtime must not readmit the first direct run"),
+            }
+        };
+
+        let first = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = first.fixture_phase_for_test(active_request);
+                first.readmit_same_runtime(&installed_fixture_phase, &first_runtime, &first_bridge)
+            };
+            match fixture_phase_result {
+                worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted.into_active(),
+                _ => panic!("the first owner must retain its rightful readmission"),
+            }
+        };
+        let second = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = second.fixture_phase_for_test(active_request);
+                second.readmit_same_runtime(
+                    &installed_fixture_phase,
+                    &second_runtime,
+                    &second_bridge,
+                )
+            };
+            match fixture_phase_result {
+                worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted.into_active(),
+                _ => panic!("the untouched peer must retain its rightful readmission"),
+            }
+        };
+
+        for active in [first, second] {
+            let completion = {
+                let fixture_phase_result = {
+                    let installed_fixture_phase = active.fixture_phase_for_test(execution);
+                    active.advance(&installed_fixture_phase)
+                };
+                match fixture_phase_result {
+                    WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+                    _ => panic!("each rightful peer must complete independently"),
+                }
+            };
+            assert!(completion
+                .into_running()
+                .completed()
+                .unwrap()
+                .cleanup()
+                .is_ok());
+        }
+    });
+}
+
+#[test]
+fn successor_installation_denies_stale_yield_before_any_fresh_authority() {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+        let active_request = execution;
+
+        let (yielded, _bridge, mut runtime) = yielded_direct(execution, resource_request);
+        let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
+        runtime
+            .commit_successor_installation(Arc::new(
+                runtime.installed_packages().successor_generation(),
+            ))
+            .expect("successor installation should commit");
+        let bridge = worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::managed_run::tests::causal_fixture::managed_admission_context(&resource_request).bridge;
+        let denied = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => {
+                    denied
+                }
+                _ => panic!("stale yielded installation should deny"),
+            }
+        };
+        assert_eq!(
+        denied.kind(),
+        worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionDenialKind::StaleInstallationGeneration
+    );
+        let evidence = denied.readmission_evidence();
+        let counters = evidence.query_counters();
+        assert_eq!(counters.fresh_resource_attempt_count(), 0);
+        assert_eq!(counters.bridge_readmission_attempt_count(), 0);
+        assert_eq!(counters.provider_restore_attempt_count(), 0);
+        assert!(evidence.bridge_counters().is_none());
+        let yielded = denied.into_yielded();
+        assert_eq!(yielded.inspection().checkpoint().identity(), checkpoint);
+        assert_eq!(
+            complete_direct_yield_cleanup(yielded)
+                .checkpoint()
+                .unwrap()
+                .identity(),
+            checkpoint
+        );
+    });
+}

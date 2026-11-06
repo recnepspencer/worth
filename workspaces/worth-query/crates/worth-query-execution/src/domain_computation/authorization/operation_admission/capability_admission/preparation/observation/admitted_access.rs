@@ -156,6 +156,7 @@ pub struct WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Ope
 where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
+    authentication: Arc<dyn std::any::Any + Send + Sync>,
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: ApplicationSchemaBindingIdentity,
@@ -221,6 +222,7 @@ where
             prepared.governed_input_work,
         ));
     WorthQueryAdmittedApplicationCapabilityAccess {
+        authentication: prepared.principal.retain_authentication(),
         runtime_authority: prepared.runtime.runtime.authority_identity(),
         binding_identity: prepared.capability.binding_identity().clone(),
         capability: prepared.capability.contract().name().into(),

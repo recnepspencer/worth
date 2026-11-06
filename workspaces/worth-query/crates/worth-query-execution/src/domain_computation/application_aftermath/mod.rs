@@ -2,9 +2,9 @@
 
 mod correction;
 pub(in crate::domain_computation) use correction::OriginalCorrectionDisclosure;
-mod commit_causality;
+pub(crate) mod commit_causality;
 pub(crate) use commit_causality::ApplicationCommitCausality;
-mod causal_fact;
+pub(crate) mod causal_fact;
 mod correction_coordinates;
 pub use correction_coordinates::WorthQueryCorrectionSourceCoordinates;
 pub mod derivation_failure;
@@ -13,6 +13,11 @@ pub mod recovery_handle;
 mod recovery_posture;
 pub mod recovery_progression;
 pub mod retained_preimage;
+mod retained_relations;
+pub use retained_relations::{
+    WorthQueryRelationPreImageDenial, WorthQueryRelationPreImageFailure,
+    WorthQueryRetainedPreImageRelation,
+};
 
 pub use derivation_failure::WorthQueryAftermathDerivationFailure;
 
@@ -22,7 +27,6 @@ pub use causal_fact::{
     WorthQueryCorrectionLineageBinding, WorthQueryRecordedCorrectionSource,
 };
 pub(in crate::domain_computation) use external_effect::dispatch_external_effect;
-#[cfg(test)]
 pub(crate) use external_effect::dispatch_outbox_create_intent;
 pub use external_effect::WorthQueryInboundCleanupReport;
 pub(crate) use external_effect::{
@@ -78,7 +82,5 @@ pub use retained_preimage::{
 // consumes it by name, and this phase does not export for consumers that do
 // not exist.
 
-#[cfg(test)]
-pub(crate) mod aftermath_schema_fixture;
 #[cfg(test)]
 mod retained_preimage_tests;

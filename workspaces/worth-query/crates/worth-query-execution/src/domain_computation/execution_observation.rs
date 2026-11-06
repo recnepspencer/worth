@@ -47,7 +47,7 @@ impl Drop for WorthQueryExecutionObservation {
         }
     }
 }
-pub(in crate::domain_computation) fn is_installed() -> bool {
+pub fn is_installed() -> bool {
     LISTENERS.with(Cell::get) != 0
 }
 pub(in crate::domain_computation) fn register_cleanup(cleanup: fn()) {

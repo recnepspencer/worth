@@ -1,0 +1,306 @@
+pub use std::num::NonZeroUsize;
+pub use std::time::Duration;
+
+pub use worth_query_admission::facade::graph_read_access::WorthQueryGraphReadAccessRequirementKind;
+pub use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
+
+pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_query::current_controls;
+pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_query::installed_forged_selector_query;
+pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_query::installed_nested_query;
+pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_query::installed_query;
+pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
+pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world_with_label;
+pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
+pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::application_queries::parameter_reference::status_parameter;
+pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
+
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionDenialKind;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryOmissionPosture;
+pub use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
+
+#[test]
+fn root_result_limit_does_not_cap_nested_dependency_records() {
+    // Root cardinality is independent of nested dependency records.
+    let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world_with_resource_profile(
+        worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryResourceProfile::new(std::num::NonZeroUsize::new(64).expect("concurrent graph work is non-zero")),
+    );
+    let request = live_scope();
+    let external = world.authenticate("alice", Duration::from_secs(60), &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            world
+                .application
+                .select_product_branch_for_test(
+                    &host_custody.borrowed_request_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            world
+                .application
+                .select_product_branch_for_test(
+                    &host_custody.borrowed_request_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::at("AccountStatus"),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let query = installed_nested_query(&world);
+    let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
+    let controls =
+        worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls::new(
+            NonZeroUsize::new(1).unwrap(),
+            &request,
+        );
+    let plan = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request_for_test())
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new()
+                        .bind(status_parameter(), "open".to_string())
+                        .expect("fixture query parameter must encode"),
+                    controls,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+
+    let result = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .execute_application_query_one_shot(&phase, plan)
+                .expect("one root may carry multiple bounded dependency records")
+        })
+        .expect("the fixture read owns its installed host call");
+
+    assert_eq!(result.rows().len(), 1);
+    assert_eq!(result.receipt().result_count(), 1);
+    assert_eq!(result.receipt().projected_record_count(), 7);
+    assert!(result.receipt().total_work_units() <= 10_000);
+    assert_eq!(result.receipt().fallback_count(), 0);
+}
+
+#[test]
+fn invented_selector_contract_denies_domain_projection() {
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let request = live_scope();
+    let external = world.authenticate("alice", Duration::from_secs(60), &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            world
+                .application
+                .select_product_branch_for_test(
+                    &host_custody.borrowed_request_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            world
+                .application
+                .select_product_branch_for_test(
+                    &host_custody.borrowed_request_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::at("AccountStatus"),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let query = installed_forged_selector_query(&world);
+    let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
+    let plan = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request_for_test())
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new()
+                        .bind(status_parameter(), "open".to_string())
+                        .expect("fixture query parameter must encode"),
+                    current_controls(&request),
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+
+    let denial = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .execute_application_query_one_shot(&phase, plan)
+                .err()
+                .expect("an invented selector contract must deny projection")
+        })
+        .expect("the fixture read owns its installed host call");
+
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationOneShotDenialKind::Projection(
+            WorthQueryApplicationProjectionDenialKind::FieldContractMismatch,
+        )
+    );
+}
+
+#[test]
+fn variable_width_scalar_projects_without_a_caller_byte_estimate() {
+    let world = installed_authorization_world_with_label(&"x".repeat(50_000), worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryResourceProfile::new(std::num::NonZeroUsize::new(64).expect("concurrent graph work is non-zero")));
+    let request = live_scope();
+    let external = world.authenticate("alice", Duration::from_secs(60), &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            world
+                .application
+                .select_product_branch_for_test(
+                    &host_custody.borrowed_request_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            world
+                .application
+                .select_product_branch_for_test(
+                    &host_custody.borrowed_request_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::at("AccountStatus"),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let query = installed_query(&world);
+    let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
+    let plan = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request_for_test())
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new()
+                        .bind(status_parameter(), "open".to_string())
+                        .expect("fixture query parameter must encode"),
+                    current_controls(&request),
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+
+    let result = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .execute_application_query_one_shot(&phase, plan)
+                .expect("actual variable-width values need no caller byte forecast")
+        })
+        .expect("the fixture read owns its installed host call");
+
+    assert_eq!(result.rows().len(), 1);
+    assert_eq!(result.rows()[0].label(), "x".repeat(50_000));
+}
+
+#[path = "nested_projection_preserves_sibling_slots_cardinality_and_direct/mod.rs"]
+pub mod nested_projection_preserves_sibling_slots_cardinality_and_direct;
+#[path = "relation_predicate/mod.rs"]
+pub mod relation_predicate;

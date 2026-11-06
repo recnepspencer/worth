@@ -199,8 +199,7 @@ Err(PublicationDenial::Stopped(stop)) => Err(failure(
     }
 }
 
-#[cfg(test)]
-fn recovery_execution<'scope>(
+pub fn recovery_execution<'scope>(
     phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
     runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
 ) -> Result<worth_execution::ExecutionRequest<'scope, 'scope>, WorthQueryBranchAdoptionRecoveryDenial>
@@ -209,10 +208,6 @@ fn recovery_execution<'scope>(
         .checked_execution_request_for(runtime)
         .map_err(WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied)
 }
-
-#[cfg(test)]
-#[path = "foreign_phase_tests.rs"]
-mod foreign_phase_tests;
 
 impl crate::domain_computation::execution_observation::WorthQueryExecutionObservation {
     /// Drives the private continuation with an already selected product and

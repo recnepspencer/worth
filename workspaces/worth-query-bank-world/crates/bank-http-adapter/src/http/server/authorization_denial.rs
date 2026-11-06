@@ -82,7 +82,8 @@ pub(super) fn authorization_denial(kind: BankAuthorizationDenialKind) -> BankHtt
         | Authorization::GraphWorkAdmissionUnavailable => (Kind::Unavailable, Next::Retry),
         // Repeating the request cannot install or repair its policy.
         Authorization::PolicyNotInstalled => (Kind::Unavailable, Next::ContactOperator),
-        Authorization::ForeignPhase
+        Authorization::InputNotAdmitted
+        | Authorization::ForeignPhase
         | Authorization::CapabilityProjectionRejected
         | Authorization::ElevationProjectionRejected
         | Authorization::InvalidInstalledPolicy
@@ -112,7 +113,10 @@ fn execution_request_denial(
                 | Resource::ScratchCapacityExceeded,
             ..
         } => BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest),
-        kind @ (Session::ProjectionContract { .. }
+        kind @ (Session::ContentInconsistency
+        | Session::Content(_)
+        | Session::OutputCorrespondenceMismatch { .. }
+        | Session::ProjectionContract { .. }
         | Session::HistoricalVisibility { .. }
         | Session::StorageUnavailable(_)
         | Session::ExecutionResource {
@@ -126,6 +130,7 @@ fn execution_request_denial(
                 | Resource::NestedLeaseMisuse
                 | Resource::NestedAdvancementOpening
                 | Resource::ForeignAdvancementPhase
+                | Resource::ForeignAdmissionClock
                 | Resource::NoActiveExecutionScope
                 | Resource::EquivalenceContractUnavailable,
             ..

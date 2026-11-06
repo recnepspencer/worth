@@ -15,11 +15,13 @@ impl WorthQueryApplicationCommitDenial {
         mut self,
         failure: crate::domain_computation::WorthQueryProviderSessionFailure,
     ) -> Self {
-        if failure.allocation_denial().is_some() {
+        if failure.allocation_denial().is_some() || failure.candidate_support_failure().is_some() {
             self.detail = Some(failure.detail().into());
         }
         if failure.allocation_denial().is_some()
+            || failure.relation_preimage_failure().is_some()
             || failure.native_preparation_error().is_some()
+            || failure.candidate_support_failure().is_some()
             || failure.output_verification_capacity_stop().is_some()
         {
             self.cause = Some(Box::new(DenialCause::ProviderSession(failure)));
@@ -124,3 +126,5 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 }
+
+mod court_doors_for_test;

@@ -31,6 +31,9 @@ pub(crate) struct CanonicalEnvelopeWire<'a> {
     authored_cascade_retirement: Option<std::sync::Arc<super::CanonicalAuthoredRetirement>>,
     authored_cascade_restoration: Option<std::sync::Arc<super::CanonicalAuthoredRestoration>>,
     #[serde(default)]
+    coupled_authored_publication:
+        Option<std::sync::Arc<super::CanonicalCoupledAuthoredPublication>>,
+    #[serde(default)]
     required_output_materialization:
         Option<std::sync::Arc<super::CanonicalRequiredOutputMaterialization>>,
     #[serde(default)]
@@ -106,6 +109,7 @@ impl CanonicalEnvelopeWire<'_> {
             producer_cascade_retirement: self.producer_cascade_retirement,
             authored_cascade_retirement: self.authored_cascade_retirement,
             authored_cascade_restoration: self.authored_cascade_restoration,
+            coupled_authored_publication: self.coupled_authored_publication,
             required_output_materialization: self.required_output_materialization,
             authored_index_writes: self.authored_index_writes,
             commit: self.commit,

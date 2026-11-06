@@ -1,0 +1,58 @@
+//! Stops raised at the native lookup retain the ordinary resolution answer.
+use crate::domain_computation::primary_graph::entity_resolution::tests::*;
+use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::entity_resolution::interruption_control::FreshnessCancellationGuardForTest;
+use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+#[test]
+fn ordinary_resolution_keeps_lookup_cancellation_and_deadline() {
+    let _observation =
+        worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
+    for deadline_stop in [false, true] {
+        let time = worth_execution::MonotonicTimeController::new().unwrap();
+        let held = time.hold();
+        let world = installed_authorization_world(true, time.clock());
+        let selected = world
+            .application
+            .with_host_advancement(|phase| {
+                world.selected_product(&phase.test_host_request_for_test())
+            })
+            .unwrap();
+        let cancellation = WorthQueryCancellationSource::new();
+        let deadline = held + std::time::Duration::from_secs(1);
+        let request = WorthQueryRequestScope::new(
+            deadline_stop.then_some(deadline),
+            cancellation.token(),
+            time.clock(),
+        );
+        world
+            .application
+            .with_application_advancement(&request, |phase| {
+                let control = if deadline_stop {
+                    FreshnessCancellationGuardForTest::deadline_on_this_thread(time.clone(), deadline)
+                } else {
+                    FreshnessCancellationGuardForTest::install_on_this_thread(cancellation, 0)
+                };
+                let denial = selected
+                    .resolve_entity(
+                        &phase,
+                        AccountStatus::at("AccountStatus"),
+                        "open".to_owned(),
+                        &request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .err()
+                    .unwrap();
+                assert!(control.triggered(), "the native lookup ran after admission");
+                assert_eq!(
+                    denial.kind(),
+                    if deadline_stop {
+                        WorthQueryEntityResolutionDenialKind::Stopped(worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed)
+                    } else {
+                        WorthQueryEntityResolutionDenialKind::Stopped(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled)
+                    }
+                );
+                assert_eq!(denial.subject(), "AccountStatus");
+            })
+            .unwrap();
+    }
+}

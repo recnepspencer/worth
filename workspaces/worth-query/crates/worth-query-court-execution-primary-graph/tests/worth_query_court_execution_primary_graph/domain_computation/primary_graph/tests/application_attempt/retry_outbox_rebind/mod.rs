@@ -1,0 +1,313 @@
+//! Final-source retry/outbox proof over the C7 application-attempt owner.
+
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::retained_status_program;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::RetentionMutationBreadth;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_program;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::idempotency;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitTerminalKind;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt;
+use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchRequest;
+use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
+use worth_query_execution::facade::domain_computation::WorthQueryExternalTransportOutcome;
+
+pub struct CompletingTransport(AtomicUsize);
+
+impl WorthQueryExternalEffectTransport for CompletingTransport {
+    fn dispatch(
+        &self,
+        _request: WorthQueryExternalDispatchRequest<'_>,
+    ) -> WorthQueryExternalTransportOutcome {
+        self.0.fetch_add(1, Ordering::AcqRel);
+        WorthQueryExternalTransportOutcome::Completed
+    }
+}
+
+#[test]
+fn response_loss_retry_performs_no_second_managed_application_attempt() {
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let transport = Arc::new(CompletingTransport(AtomicUsize::new(0)));
+    world
+        .application
+        .install_external_effect_transport(transport.clone())
+        .unwrap();
+    let original = { commit_response_lost(&world, &transport) };
+    retry_without_managed_work(&world, &transport, &original);
+    consume_armed_session_and_invariant_sentinels(&world);
+    assert_unseen_commit_uses_the_managed_path(&world);
+}
+
+pub fn commit_response_lost(
+    world: &AuthorizationWorld,
+    transport: &CompletingTransport,
+) -> WorthQueryApplicationCommitReceipt {
+    let request = live_scope();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            authenticated_principal(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            resolved_account(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                "open",
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let original = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            retained_status_program(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                &principal,
+                &account,
+                &request,
+                "response-lost",
+                RetentionMutationBreadth::Narrow,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world.faults.lose_next_commit_response();
+    let before_commit = world.application.application_attempt_work_for_test();
+    let WorthQueryApplicationCommitOutcome::Committed(original) =
+        world.application.compare_and_commit_application(
+            original,
+            idempotency(201, 202),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+    else {
+        panic!("response-loss recovery must return the authoritative commit");
+    };
+    let committed_work = world
+        .application
+        .application_attempt_work_for_test()
+        .since_for_test(before_commit);
+    assert!(original.dispatch_outbox().is_some());
+    assert_eq!((*committed_work.external_dispatch_admissions_for_test()), 1);
+    assert_eq!(transport.0.load(Ordering::Acquire), 1);
+    assert_eq!(
+        original.terminal().kind(),
+        WorthQueryApplicationCommitTerminalKind::Executed
+    );
+    assert_eq!(original.terminal().attempt_resources_released(), Some(true));
+    original
+}
+
+pub fn retry_without_managed_work(
+    world: &AuthorizationWorld,
+    transport: &CompletingTransport,
+    original: &WorthQueryApplicationCommitReceipt,
+) {
+    let retry_request = live_scope();
+    let retry_principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            authenticated_principal(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                &retry_request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry_account = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            resolved_account(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                "response-lost",
+                &retry_request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            retained_status_program(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                &retry_principal,
+                &retry_account,
+                &retry_request,
+                "response-lost",
+                RetentionMutationBreadth::Narrow,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world.faults.reject_next_session_prepare();
+    world.faults.skip_next_invariant_owner_execution();
+    let before_retry = world.application.application_attempt_work_for_test();
+    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(201, 202),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+    else {
+        panic!("equivalent retry must resolve the response-lost commit");
+    };
+    let retry_work = world
+        .application
+        .application_attempt_work_for_test()
+        .since_for_test(before_retry);
+    assert_eq!((*retry_work.retained_resolutions_for_test()), 1);
+    assert_no_managed_attempt_work(retry_work);
+    assert_eq!(transport.0.load(Ordering::Acquire), 1);
+    assert!(recovered.is_same_authoritative_commit(original));
+    assert_eq!(recovered.dispatch_outbox(), original.dispatch_outbox());
+    assert_eq!(recovered.terminal().attempt_resources_released(), None);
+    assert_eq!(
+        world.application.provider_session_resource_count_for_test(),
+        0
+    );
+}
+
+pub fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld) {
+    let request = live_scope();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            authenticated_principal(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let probe_account = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            resolved_account(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                "unrelated",
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let rejected_session = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            admitted_program(
+                phase_custody,
+                world,
+                &principal,
+                &probe_account,
+                &request,
+                "session-sentinel",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let WorthQueryApplicationCommitOutcome::Denied(session_denial) =
+        world.application.compare_and_commit_application(
+            rejected_session,
+            idempotency(203, 204),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+    else {
+        panic!("the retry must leave the provider-session sentinel armed");
+    };
+    assert_eq!(
+        session_denial.stage(),
+        WorthQueryApplicationCommitDenialStage::ProviderPlan
+    );
+    let request = live_scope();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            authenticated_principal(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let probe_account = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            resolved_account(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                "unrelated",
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let rejected_invariant = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            admitted_program(
+                phase_custody,
+                world,
+                &principal,
+                &probe_account,
+                &request,
+                "invariant-sentinel",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let WorthQueryApplicationCommitOutcome::Denied(invariant_denial) =
+        world.application.compare_and_commit_application(
+            rejected_invariant,
+            idempotency(205, 206),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+    else {
+        panic!("the retry must leave the invariant-owner sentinel armed");
+    };
+    assert_eq!(
+        invariant_denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
+}
+#[path = "managed_path_evidence/mod.rs"]
+pub mod managed_path_evidence;
+use managed_path_evidence::assert_no_managed_attempt_work;
+use managed_path_evidence::assert_unseen_commit_uses_the_managed_path;

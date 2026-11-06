@@ -31,6 +31,7 @@ impl WorthQueryApplicationContribution<CanonicalSchema> for CanonicalContributio
         setup.handler::<producer::ProduceBinding, _>(producer::Handler)?;
         setup.handler::<producer::preserve::Binding, _>(producer::preserve::Handler)?;
         setup.handler::<super::edit::EditBinding, _>(super::edit::Handler)?;
+        setup.handler::<super::retire_source::RetireBinding, _>(super::retire_source::Handler)?;
         setup.producer::<producer::Producer>(producer::Provider)?;
         setup.producer::<producer::preserve::Producer>(producer::preserve::Provider)?;
         setup.conditional::<super::readiness::DerivedReadiness>(())?;

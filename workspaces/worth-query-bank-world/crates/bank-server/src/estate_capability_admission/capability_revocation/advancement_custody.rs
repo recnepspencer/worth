@@ -24,9 +24,11 @@ impl Drop for Restore {
     }
 }
 fn assert_refused(denial: BankEstateProgressionDenial, placement: Placement, memory: bool) {
-    let BankEstateProgressionDenial::ApplicationEntry(Mutation::ExecutionRequest(cause)) = denial
-    else {
+    let BankEstateProgressionDenial::ApplicationEntry(entry) = denial else {
         panic!("the public entry names its opening refusal")
+    };
+    let Mutation::ExecutionRequest(cause) = *entry else {
+        panic!("the public entry retains its execution refusal");
     };
     match (placement, memory) {
         (_, false) => assert_eq!(cause, Denial::Resource(Resource::WorkExhausted)),

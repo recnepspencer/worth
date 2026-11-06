@@ -57,7 +57,7 @@ pub(super) fn compile_access_contracts<Schema: ApplicationSchema>(
             requirements.get(&purpose.action()),
             &capabilities,
         )
-        .map_err(|_| Denial::new(Kind::AccessContractInvalid, &parts.name))?;
+        .map_err(|cause| Denial::graph_obligation(&parts.name, cause))?;
         contracts.insert(
             purpose,
             Arc::new(Contract {

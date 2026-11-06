@@ -38,7 +38,7 @@ pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts: Fa
     composed_aspects: BTreeSet<worth_relational::facade::identity::EntityId>,
 }
 
-pub(super) struct WorthQueryRegisteredProviderEffects {
+pub struct WorthQueryRegisteredProviderEffects {
     content_attachments: worth_relational::facade::content::RelationalContentAttachments,
     body_external_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
     expected_steps: WorthQueryExpectedEffectSteps,
@@ -286,6 +286,49 @@ impl WorthQueryRegisteredProviderEffects {
         self.emissions
     }
 
+    pub(super) fn seal_output_correspondence_from_publication(
+        &self,
+        publication: &worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
+    ) -> super::super::effect_program::WorthQueryApplicationOutputCorrespondence {
+        self.output_correspondence
+            .clone()
+            .seal_from_publication(publication)
+    }
+    pub(super) fn admit_output_correspondence(
+        &mut self,
+        prepared: &worth_relational::facade::mvcc::RelationalPreparedOutputPublications,
+    ) -> Result<
+        (),
+        (
+            crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial,
+            String,
+        ),
+    > {
+        if let Some(members) = prepared.primary_output_members() {
+            self.output_correspondence
+                .admit_primary_publication(members)?;
+        }
+        Ok(())
+    }
+    pub(super) fn admit_owned_output_correspondence(
+        &mut self,
+        prepared: &worth_relational::facade::mvcc::RelationalPreparedOutputPublications,
+        producer: &str,
+        meaning: &worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+    ) -> Result<
+        (),
+        (
+            crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial,
+            String,
+        ),
+    > {
+        let members=prepared.output_members_for(producer,meaning).ok_or_else(||(
+            crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial::MissingRole,
+            producer.to_owned(),
+        ))?;
+        self.output_correspondence
+            .admit_primary_publication(members)
+    }
     pub(super) fn seal_output_correspondence(
         &self,
         commit: &worth_relational::facade::transactions::CommitResult,
@@ -332,3 +375,5 @@ mod tests {
         assert_eq!(accumulator.mutation_partition, issued);
     }
 }
+
+mod court_doors_for_test;

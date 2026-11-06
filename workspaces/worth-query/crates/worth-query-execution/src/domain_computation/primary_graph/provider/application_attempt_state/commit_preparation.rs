@@ -10,10 +10,14 @@ use super::super::{
     WorthQueryPrimaryGraphProvider,
 };
 
-mod preimage_retention;
-mod relational_commit;
+mod coupled;
+pub(super) use coupled::CoupledCommitPreparation;
+pub(crate) mod preimage_retention;
+pub(crate) mod relational_commit;
 pub(in crate::domain_computation::primary_graph) use preimage_retention::WorthQueryPreImageRetentionWork;
-pub(crate) use preimage_retention::WorthQueryRetainedPreImageSeal;
+pub(crate) use preimage_retention::{
+    WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal,
+};
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::ManagedUnpublishedAttempt;
 pub(in crate::domain_computation::primary_graph) use relational_commit::RebaseVerificationFailure;
@@ -24,6 +28,7 @@ pub(in crate::domain_computation::primary_graph) use relational_commit::{
 
 pub(super) struct WorthQueryPreparedApplicationCommit {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
+    members: Vec<super::CoupledApplicationMember>,
     candidate: worth_relational::facade::mvcc::ValidatedRelationalProposal,
     predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
     work: WorthQueryPrimaryMutationWorkCounters,
@@ -100,20 +105,30 @@ fn take_prepared_session(
     })?;
     let (mut attempt, approved, completion) = prepared.into_parts();
     let super::WorthQueryApprovedApplicationCandidate {
+        mut members,
         native: candidate,
         work,
         predicate,
     } = approved;
+    coupled::prepare(
+        &mut members,
+        &candidate,
+        &session.execution_request(),
+        &provider.graph.layout,
+        allocation_policy,
+    )?;
     let source_fact_rebase = attempt.take_source_fact_rebase();
     let (retained_preimage, preimage_retention_work) = preimage_retention::retain_attempt_preimage(
         &attempt,
         &candidate,
         &session.execution_request(),
+        &provider.graph.layout,
         allocation_policy,
     )?
     .into_parts();
     Ok(WorthQueryPreparedApplicationCommit {
         attempt,
+        members,
         candidate,
         predicate,
         work,
@@ -149,6 +164,11 @@ fn preparation_stop(
             Stop::ControlStopped(Control::execution_preparation(kind, failure.detail()))
         }
         Some(Ok(_)) => Stop::PreEffectDenied(failure),
+        None if failure.relation_preimage_failure().is_some()
+            || failure.candidate_support_failure().is_some() =>
+        {
+            Stop::PreEffectDenied(failure)
+        }
         None => Stop::from(failure),
     }
 }

@@ -8,6 +8,9 @@ use worth_query_host::facade::primary_graph::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankCommitDenialKind {
+    ContentInconsistency,
+    Content(worth_query_host::facade::primary_graph::RelationalContentRejection),
+    DomainValueRejected,
     StorageUnavailable(worth_query_host::facade::primary_graph::RelationalStorageUnavailable),
     ExecutionResource {
         denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial,
@@ -101,6 +104,9 @@ pub(crate) const fn denial_kind(
 ) -> BankCommitDenialKind {
     use WorthQueryApplicationCommitDenialKind as Query;
     match kind {
+        Query::ContentInconsistency => BankCommitDenialKind::ContentInconsistency,
+        Query::Content(cause) => BankCommitDenialKind::Content(cause),
+        Query::DomainValueRejected => BankCommitDenialKind::DomainValueRejected,
         Query::StorageUnavailable(failure) => BankCommitDenialKind::StorageUnavailable(failure),
         Query::ExecutionResource {
             denial,

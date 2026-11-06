@@ -29,8 +29,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 /// The commit owner distinguishes a new effect from a descriptive replay.
 /// Only this conversion constructs the fact used to mark the advance.
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct ProducerCommitReceipt
-{
+pub struct ProducerCommitReceipt {
     receipt: WorthQueryApplicationCommitReceipt,
     publication: CommitPublication,
 }
@@ -64,9 +63,6 @@ impl ProducerCommitReceipt {
         self.receipt
     }
 }
-
-#[cfg(test)]
-mod publication_record_tests;
 
 /// A successful producer returns its original pre-effect Ready storage.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PreparedProducerExecutionOutcome
@@ -129,7 +125,7 @@ where
 }
 
 /// Maps a producer commit to its receipt or to the demand denial it settles as.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn commit_receipt(
+pub fn commit_receipt(
     identity: &str,
     outcome: WorthQueryApplicationCommitOutcome,
 ) -> Result<ProducerCommitReceipt, WorthQueryOutputDemandDenial> {
@@ -295,10 +291,9 @@ fn refused_preflight(
 }
 
 #[cfg(test)]
-mod tests;
-
-#[cfg(test)]
 mod invariant_refusal_tests;
 
 #[cfg(test)]
 mod domain_denial_tests;
+
+mod court_doors_for_test;

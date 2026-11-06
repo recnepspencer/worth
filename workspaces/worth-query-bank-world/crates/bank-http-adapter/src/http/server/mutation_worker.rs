@@ -32,7 +32,7 @@ pub(super) async fn run<A: BankHttpApplicationAuthenticator>(
                 response,
             } => {
                 let scope =
-                    WorthQueryRequestScope::new(Some(command.deadline), cancellation.token());
+                    WorthQueryRequestScope::new(Some(command.deadline), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
                 let outcome = super::mutation_advancement::execute(
                     application.as_ref(),
                     &mut records,
