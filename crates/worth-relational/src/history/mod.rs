@@ -24,7 +24,7 @@ pub use access::{
     RelationalRecordHistoryPageLimits, RelationalRecordHistorySelection,
     RelationalRecordHistorySelectionLimits, RelationalRecordHistorySubject,
 };
-pub use authority::HistoryAuthority;
+pub use authority::{HistoryAuthority, OutputOriginHeaderCorruptionForTest};
 pub(crate) use commit::{
     RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind, RelationalCommitCatalog,
     RelationalCommitCatalogEnvelopeAppendDenial,

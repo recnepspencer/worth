@@ -17,6 +17,7 @@ pub(crate) use authored_cascade::CanonicalAuthoredRetirement;
 pub(crate) use authored_restoration::CanonicalAuthoredRestoration;
 pub(crate) use installation::CanonicalProducerRetirement;
 mod group_selection;
+mod header_corruption;
 mod header_work;
 mod origin_history;
 pub(crate) use group_selection::{OwnedValidatedOutputOrigins, ValidatedOutputOrigins};

@@ -1727,3 +1727,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 
 # Restoration header cost court observes only the envelope-owned read-only batch.
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/restoration_header.rs
+# Header corruption courts arm only their owning runtime's recorded history.
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/restoration_header/mod.rs
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/restoration_header/scope.rs
