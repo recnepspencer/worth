@@ -9,7 +9,7 @@ use worth_query_installation::facade::{
 };
 
 use crate::basis::{WorthQueryProductBranch, WorthQueryProductBranchReadIdentity};
-use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use crate::domain_computation::primary_graph::application_attempt::WorkflowSelectionBasis;
 use crate::domain_computation::primary_graph::{
     PreparedWorkflowDefinitionPublication, WorthQueryAdmittedApplicationOperation,
     WorthQueryApplicationAttemptDenial, WorthQueryOperationProjectionDenial,
@@ -88,7 +88,7 @@ impl std::fmt::Display for WorkflowDefinitionPreparationDenial {
 
 impl std::error::Error for WorkflowDefinitionPreparationDenial {}
 
-impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
+impl<Schema> WorkflowSelectionBasis<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
@@ -186,4 +186,3 @@ where
     }
 }
 
-mod court_doors_for_test;

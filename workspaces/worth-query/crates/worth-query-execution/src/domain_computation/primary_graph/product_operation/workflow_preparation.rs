@@ -11,9 +11,13 @@ use crate::domain_computation::primary_graph::application_attempt::WorkflowSelec
 use worth_query_installation::facade::ApplicationSchema;
 
 mod captured_input;
+mod definition;
 mod instance;
 mod proposal;
 mod transition;
+pub use definition::{
+    WorthQueryWorkflowDefinitionPublicationAdapter, WorthQueryWorkflowDefinitionRetirementAdapter,
+};
 pub use instance::{
     WorthQueryWorkflowBirthAdapter, WorthQueryWorkflowInstanceAdapter,
     WorthQueryWorkflowSuccessionAdapter,

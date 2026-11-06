@@ -109,7 +109,7 @@ pub mod workflow_definition_publication {
     pub use {
         crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowDefinitionBindingDenial,
         crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowDefinitionPreparationDenial,
-        crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDefinitionPublicationAdapter,
+        crate::domain_computation::primary_graph::product_operation::WorthQueryWorkflowDefinitionPublicationAdapter,
         crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef,
         crate::domain_computation::primary_graph::PerformedWorkflowDefinitionPublication,
         crate::domain_computation::primary_graph::PreparedWorkflowDefinitionPublication,
@@ -121,7 +121,7 @@ pub mod workflow_definition_publication {
 pub mod workflow_definition_retirement {
     pub use {
         crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowDefinitionPreparationDenial,
-        crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDefinitionRetirementAdapter,
+        crate::domain_computation::primary_graph::product_operation::WorthQueryWorkflowDefinitionRetirementAdapter,
         crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef,
         crate::domain_computation::primary_graph::PerformedWorkflowDefinitionRetirement,
         crate::domain_computation::primary_graph::PreparedWorkflowDefinitionRetirement,
@@ -142,14 +142,15 @@ pub mod workflow_advance {
 pub mod workflow_birth {
     pub use crate::domain_computation::primary_graph::application_attempt::{
         RequiredWorkflowBirth, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot,
-        WorthQueryWorkflowBirthAdapter,
     };
+    pub use crate::domain_computation::primary_graph::product_operation::WorthQueryWorkflowBirthAdapter;
 }
 pub mod workflow_succession {
     pub use crate::domain_computation::primary_graph::application_attempt::{
         RequiredWorkflowSuccession, WorkflowSuccessionAuthority, WorkflowSuccessionAuthoritySlot,
-        WorkflowSuccessionTarget, WorthQueryWorkflowSuccessionAdapter,
+        WorkflowSuccessionTarget,
     };
+    pub use crate::domain_computation::primary_graph::product_operation::WorthQueryWorkflowSuccessionAdapter;
 }
 
 pub mod workflow_proposal {

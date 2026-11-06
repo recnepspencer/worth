@@ -6,7 +6,6 @@ pub(crate) mod facts;
 mod global_actions;
 mod inbound_codec;
 mod preparation;
-mod publication;
 pub(in crate::domain_computation::primary_graph) mod retained_descriptor;
 mod retirement;
 
@@ -28,5 +27,3 @@ pub(in crate::domain_computation::primary_graph) use facts::{
 };
 pub(in crate::domain_computation::primary_graph) use preparation::BoundWorkflowDefinitionContract;
 pub use preparation::{WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial};
-pub use publication::WorthQueryWorkflowDefinitionPublicationAdapter;
-pub use retirement::WorthQueryWorkflowDefinitionRetirementAdapter;
