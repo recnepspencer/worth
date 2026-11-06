@@ -1,7 +1,9 @@
 use super::artifact_execution::AssembledCommitExecution;
+use super::phase_backing::CommitPhaseBacking;
 
 mod phase;
 mod preparation;
+mod prepared_candidate;
 
 use phase::finalize_publication_phase;
 use preparation::{
@@ -66,82 +68,91 @@ impl PublishedCommitExecution {
 pub(super) fn prepare_commit_publication_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    assembled: AssembledCommitExecution,
+    assembled: CommitPhaseBacking<AssembledCommitExecution>,
     required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
     required_output_materialization: Option<
         std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>,
     >,
     caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
-) -> Result<PreparedCommitPublicationExecution, crate::transactions::data::TransactionCommitError> {
-    super::consult_stage(execution, super::CommitStage::PublicationPreparation)?;
-    let (
-        mut admitted,
-        selected_branch_state,
-        public_structural_summary,
-        working_state,
-        invariant_executions,
-        version_id,
-        created_entities,
-        created_relations,
-        mutation_identities,
-        history,
-        merge_parent_branches,
-        publication,
-        publication_snapshot,
-        aspect_evaluation_traces,
-        aspect_emission_traces,
-        source_interpretation,
-    ) = assembled.into_parts();
-    let publication = {
-        let recovered_codec_publication_custody = admitted
-            .validation_input()
-            .recovered_codec_publication_custody()
-            .cloned();
-        let (_, _, _, _, commit_log, _) = admitted.phase_view().into_parts();
-        prepare_publication_phase(
-            execution,
-            runtime,
-            PreparePublicationPhaseInput {
-                structural: &public_structural_summary,
-                validation: &invariant_executions,
-                caller_association,
-                source_interpretation: &source_interpretation,
-                recovered_codec_publication_custody,
-                required_output_publication,
-                required_output_materialization,
-                created_entities: &created_entities,
-                created_relations: &created_relations,
-                commit_log,
-                working_state,
-                mutation_identities,
-                selected_branch_state,
-                publication,
-                version_id,
-                previous_branch_head_version: history.previous_branch_head_version,
-                commit_id: history.commit_id,
-                commit_reference: history.commit_reference.clone(),
-                branch_basis: history.branch_basis.clone(),
-                branch_id: history.branch_id.clone(),
-                merge_base_commits: history.merge_base_commits.clone(),
-                merge_parent_branches,
-            },
-        )?
+) -> Result<
+    CommitPhaseBacking<PreparedCommitPublicationExecution>,
+    crate::transactions::data::TransactionCommitError,
+> {
+    // Producer temporaries retire before funding the retained successor,
+    // matching the former caller-side allocation boundary.
+    let result = {
+        let assembled = assembled.into_inner();
+        super::consult_stage(execution, super::CommitStage::PublicationPreparation)?;
+        let (
+            mut admitted,
+            selected_branch_state,
+            public_structural_summary,
+            working_state,
+            invariant_executions,
+            version_id,
+            created_entities,
+            created_relations,
+            mutation_identities,
+            history,
+            merge_parent_branches,
+            publication,
+            publication_snapshot,
+            aspect_evaluation_traces,
+            aspect_emission_traces,
+            source_interpretation,
+        ) = assembled.into_parts();
+        let publication = {
+            let recovered_codec_publication_custody = admitted
+                .validation_input()
+                .recovered_codec_publication_custody()
+                .cloned();
+            let (_, _, _, _, commit_log, _) = admitted.phase_view().into_parts();
+            prepare_publication_phase(
+                execution,
+                runtime,
+                PreparePublicationPhaseInput {
+                    structural: &public_structural_summary,
+                    validation: &invariant_executions,
+                    caller_association,
+                    source_interpretation: &source_interpretation,
+                    recovered_codec_publication_custody,
+                    required_output_publication,
+                    required_output_materialization,
+                    created_entities: &created_entities,
+                    created_relations: &created_relations,
+                    commit_log,
+                    working_state,
+                    mutation_identities,
+                    selected_branch_state,
+                    publication,
+                    version_id,
+                    previous_branch_head_version: history.previous_branch_head_version,
+                    commit_id: history.commit_id,
+                    commit_reference: history.commit_reference.clone(),
+                    branch_basis: history.branch_basis.clone(),
+                    branch_id: history.branch_id.clone(),
+                    merge_base_commits: history.merge_base_commits.clone(),
+                    merge_parent_branches,
+                },
+            )?
+        };
+        PreparedCommitPublicationExecution {
+            source_interpretation,
+            admitted,
+            public_structural_summary,
+            invariant_executions,
+            version_id,
+            created_entities,
+            created_relations,
+            history,
+            publication,
+            publication_snapshot,
+            aspect_evaluation_traces,
+            aspect_emission_traces,
+            prepared_indexes: None,
+        }
     };
-    Ok(PreparedCommitPublicationExecution {
-        source_interpretation,
-        admitted,
-        public_structural_summary,
-        invariant_executions,
-        version_id,
-        created_entities,
-        created_relations,
-        history,
-        publication,
-        publication_snapshot,
-        aspect_evaluation_traces,
-        aspect_emission_traces,
-        prepared_indexes: None,
-    })
+    CommitPhaseBacking::new(execution, result)
 }
 
 pub(crate) fn publish_commit_execution(
@@ -243,7 +254,7 @@ pub(crate) struct PreparedCommitPublicationExecution {
     created_entities: crate::transactions::data::CommitCreatedEntityBindings,
     created_relations: crate::transactions::data::CommitCreatedRelationBindings,
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
-    publication: PreparedPublicationPhase,
+    publication: CommitPhaseBacking<PreparedPublicationPhase>,
     publication_snapshot: crate::snapshots::data::SnapshotHandle,
     aspect_evaluation_traces: Vec<crate::transactions::data::AspectEvaluationTrace>,
     aspect_emission_traces:
@@ -268,114 +279,6 @@ pub(crate) struct PreparedCommitPublicationCompletion {
         Vec<super::artifact_execution::preparation::PreparedAspectEmissionTrace>,
     published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
     prepared_indexes: Option<crate::indexes::PreparedCandidateIndexPublication>,
-}
-
-impl PreparedCommitPublicationExecution {
-    pub(crate) fn candidate_symbols(&self) -> crate::runtime::RuntimeSymbolTable {
-        self.publication.candidate_symbols.clone()
-    }
-
-    pub(crate) fn caller_association(&self) -> Option<crate::mvcc::RelationalCallerAssociation> {
-        self.publication.caller_association()
-    }
-    pub(crate) fn descriptive_touches(
-        &self,
-    ) -> &crate::history::data::RelationalDescriptiveTouchGraph {
-        self.publication.descriptive_touches()
-    }
-    pub(crate) fn changed_record_count(&self) -> usize {
-        self.publication.changed_record_count()
-    }
-    pub(crate) fn changed_records(&self) -> &[crate::transactions::data::RecordRef] {
-        &self.publication.changed_records
-    }
-    pub(crate) fn attach_prepared_indexes(
-        &mut self,
-        prepared: crate::indexes::PreparedCandidateIndexPublication,
-    ) -> Result<(), crate::indexes::data::DerivedIndexMaintenanceDenialKind> {
-        if self.prepared_indexes.is_some() {
-            return Err(
-                crate::indexes::data::DerivedIndexMaintenanceDenialKind::CandidateIndexesAlreadyPrepared,
-            );
-        }
-        if !prepared.matches_root(self.prepared_root()) {
-            return Err(crate::indexes::data::DerivedIndexMaintenanceDenialKind::CommitMismatch);
-        }
-        self.prepared_indexes = Some(prepared);
-        Ok(())
-    }
-    pub(crate) fn recovered_codec_publication_custody(
-        &self,
-    ) -> Option<&std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>> {
-        self.admitted
-            .validation_input()
-            .recovered_codec_publication_custody()
-    }
-
-    pub(crate) fn home_step(
-        &self,
-    ) -> Option<&std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>> {
-        self.admitted.validation_input().home_step()
-    }
-
-    pub(crate) fn has_prepared_indexes(&self) -> bool {
-        self.prepared_indexes.is_some()
-    }
-
-    pub(crate) fn reservation_count(&self) -> usize {
-        self.publication.reservation_count()
-    }
-
-    pub(crate) fn prepared_root(&self) -> &std::sync::Arc<crate::branch::RelationalBranchRoot> {
-        self.publication.prepared_root()
-    }
-
-    pub(crate) fn is_retained_entity_selection(&self) -> bool {
-        self.admitted.semantic_plan().selection().is_some()
-    }
-
-    pub(crate) fn release_transaction_retention(&mut self) {
-        self.admitted.release_transaction_retention();
-    }
-
-    pub(crate) fn append_diagnostics(
-        &mut self,
-        diagnostics: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
-    ) {
-        self.admitted.append_diagnostics(diagnostics);
-    }
-
-    pub(crate) fn split(
-        self,
-        published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
-    ) -> (
-        crate::mvcc::PreparedCanonicalBranchMovement,
-        PreparedCommitPublicationCompletion,
-    ) {
-        let (movement, publication) = self.publication.split();
-        let completion = PreparedCommitPublicationCompletion {
-            source_interpretation: self.source_interpretation,
-            admitted: self.admitted,
-            public_structural_summary: self.public_structural_summary,
-            invariant_executions: self.invariant_executions,
-            version_id: self.version_id,
-            created_entities: self.created_entities,
-            created_relations: self.created_relations,
-            history: self.history,
-            publication,
-            publication_snapshot: self.publication_snapshot,
-            aspect_evaluation_traces: self.aspect_evaluation_traces,
-            aspect_emission_traces: self.aspect_emission_traces,
-            published_snapshot_slot,
-            prepared_indexes: self.prepared_indexes,
-        };
-        (movement, completion)
-    }
-
-    #[cfg(test)]
-    pub(crate) fn materialization_counts(&self) -> (u64, u64) {
-        self.publication.materialization_counts()
-    }
 }
 
 impl PublishedCommitExecution {

@@ -1,5 +1,6 @@
 use super::history_binding::HistoryBoundCommitExecution;
 use super::invariant_phase::enforce_snapshot_publication_phase;
+use super::phase_backing::CommitPhaseBacking;
 
 pub(super) struct SnapshotValidatedCommitExecution {
     admitted: super::execution_admission::AdmittedCommitState,
@@ -71,12 +72,21 @@ impl SnapshotValidatedCommitExecution {
 pub(super) fn validate_snapshot_publication(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    mut history_bound: HistoryBoundCommitExecution,
+    history_bound: CommitPhaseBacking<HistoryBoundCommitExecution>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
-) -> Result<SnapshotValidatedCommitExecution, crate::transactions::data::TransactionCommitError> {
-    super::consult_stage(execution, super::CommitStage::Snapshot)?;
-    enforce_snapshot_invariant(runtime, &mut history_bound, execution, control)?;
-    Ok(into_snapshot_validated_execution(history_bound))
+) -> Result<
+    CommitPhaseBacking<SnapshotValidatedCommitExecution>,
+    crate::transactions::data::TransactionCommitError,
+> {
+    // Producer temporaries retire before funding the retained successor,
+    // matching the former caller-side allocation boundary.
+    let result = {
+        let mut history_bound = history_bound.into_inner();
+        super::consult_stage(execution, super::CommitStage::Snapshot)?;
+        enforce_snapshot_invariant(runtime, &mut history_bound, execution, control)?;
+        into_snapshot_validated_execution(history_bound)
+    };
+    CommitPhaseBacking::new(execution, result)
 }
 
 fn enforce_snapshot_invariant(

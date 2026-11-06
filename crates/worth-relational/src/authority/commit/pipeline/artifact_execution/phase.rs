@@ -1,3 +1,4 @@
+use super::super::phase_backing::CommitPhaseBacking;
 use super::super::rejection::{attach_rejection, elapsed_micros};
 use super::preparation::{
     prepare_publication_artifacts, PublicationPreparation, PublicationPreparationInput,
@@ -42,7 +43,7 @@ pub(super) fn assemble_authoritative_publication_phase(
     phase_timing: &mut CommitPhaseTiming,
     input: ArtifactAssemblyInput<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<PublicationPreparation, TransactionCommitError> {
+) -> Result<CommitPhaseBacking<PublicationPreparation>, TransactionCommitError> {
     commit_log.begin_phase(CommitPhase::ArtifactAssembly);
     let phase_started = std::time::Instant::now();
     let mut effect = input.effect;
@@ -83,7 +84,7 @@ pub(super) fn assemble_authoritative_publication_phase(
         execution,
     )
     .map_err(|error| attach_rejection(commit_log, CommitPhase::ArtifactAssembly, error))?;
-    record_publication_phase_artifacts(commit_log, &publication);
+    record_publication_phase_artifacts(commit_log, publication.value());
     commit_log.complete_phase(CommitPhase::ArtifactAssembly);
     phase_timing.artifact_assembly_micros = elapsed_micros(phase_started);
     Ok(publication)

@@ -1,3 +1,4 @@
+use super::super::phase_backing::CommitPhaseBacking;
 mod authoritative_publication;
 use crate::authority::commit::phases::publication::canonicalize_changed_records;
 use crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan;
@@ -64,7 +65,7 @@ pub(super) fn prepare_publication_artifacts(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     input: PublicationPreparationInput<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<PublicationPreparation, TransactionCommitError> {
+) -> Result<CommitPhaseBacking<PublicationPreparation>, TransactionCommitError> {
     let PublicationPreparationInput {
         working_state,
         selected_branch_state,
@@ -169,17 +170,20 @@ pub(super) fn prepare_publication_artifacts(
             authored_index_writes,
         },
     )?;
-    Ok(finish_publication_preparation(PublicationCompletionInput {
-        patch,
-        commit_reference,
-        changed_records: publication.changed_records,
-        canonical_deltas: publication.canonical_deltas,
-        adjacency_deltas: adjacency.deltas,
-        traces,
-        authority,
-        deferred_diagnostic_artifacts,
-        target_schema_registry: schema_continuity.target_schema_registry.clone(),
-    }))
+    finish_publication_preparation(
+        PublicationCompletionInput {
+            patch,
+            commit_reference,
+            changed_records: publication.changed_records,
+            canonical_deltas: publication.canonical_deltas,
+            adjacency_deltas: adjacency.deltas,
+            traces,
+            authority,
+            deferred_diagnostic_artifacts,
+            target_schema_registry: schema_continuity.target_schema_registry.clone(),
+        },
+        execution,
+    )
 }
 
 struct PublicationCompletionInput<'a> {
@@ -189,55 +193,62 @@ struct PublicationCompletionInput<'a> {
     canonical_deltas: Vec<crate::authority::mutation::CanonicalRecordAspectDelta>,
     adjacency_deltas: Vec<crate::authority::mutation::AdjacencyDelta>,
     traces: PublicationTraceCapture,
-    authority: PreparedPublicationAuthority,
+    authority: CommitPhaseBacking<PreparedPublicationAuthority>,
     deferred_diagnostic_artifacts: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
     target_schema_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
 }
 
-fn finish_publication_preparation(input: PublicationCompletionInput<'_>) -> PublicationPreparation {
-    let PublicationCompletionInput {
-        patch,
-        commit_reference,
-        changed_records,
-        canonical_deltas,
-        adjacency_deltas,
-        traces,
-        authority,
-        deferred_diagnostic_artifacts,
-        target_schema_registry,
-    } = input;
-    let mut changed_records = changed_records;
-    canonicalize_changed_records(&mut changed_records);
-    let change_summary = CommitChangeSummary {
-        changed_record_count: changed_records.len(),
-        adjacency_delta_count: adjacency_deltas.len(),
-    };
-    let aspect_summary = summarize_commit_aspects(&canonical_deltas);
-    let summary = CommitPublicationSummary {
-        patch_record_count: patch.authoritative_record_patches.len(),
-        diagnostics_entry_count: authority.artifacts.diagnostics_summary.entries.len(),
-        lineage_event_count: authority.lineage_event_count,
-        patch_position: None,
-        final_snapshot_id: Some(authority.artifacts.snapshot.snapshot_id),
-        merge_parent_count: commit_reference.parents.len().saturating_sub(1),
-    };
-
-    PublicationPreparation {
-        change_summary,
-        aspect_summary,
-        aspect_evaluation_traces: traces.aspect_evaluation_traces,
-        aspect_emission_traces: traces.aspect_emission_traces,
-        summary,
-        finalize: PublicationFinalizeArtifacts {
-            artifacts: authority.artifacts,
+fn finish_publication_preparation(
+    input: PublicationCompletionInput<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<CommitPhaseBacking<PublicationPreparation>, TransactionCommitError> {
+    let result = {
+        let PublicationCompletionInput {
+            patch,
+            commit_reference,
             changed_records,
-            canonical_commit_envelope: authority.canonical_commit_envelope,
+            canonical_deltas,
             adjacency_deltas,
-            lineage_nodes: authority.lineage_nodes,
+            traces,
+            authority,
             deferred_diagnostic_artifacts,
             target_schema_registry,
-        },
-    }
+        } = input;
+        let authority = authority.into_inner();
+        let mut changed_records = changed_records;
+        canonicalize_changed_records(&mut changed_records);
+        let change_summary = CommitChangeSummary {
+            changed_record_count: changed_records.len(),
+            adjacency_delta_count: adjacency_deltas.len(),
+        };
+        let aspect_summary = summarize_commit_aspects(&canonical_deltas);
+        let summary = CommitPublicationSummary {
+            patch_record_count: patch.authoritative_record_patches.len(),
+            diagnostics_entry_count: authority.artifacts.diagnostics_summary.entries.len(),
+            lineage_event_count: authority.lineage_event_count,
+            patch_position: None,
+            final_snapshot_id: Some(authority.artifacts.snapshot.snapshot_id),
+            merge_parent_count: commit_reference.parents.len().saturating_sub(1),
+        };
+
+        PublicationPreparation {
+            change_summary,
+            aspect_summary,
+            aspect_evaluation_traces: traces.aspect_evaluation_traces,
+            aspect_emission_traces: traces.aspect_emission_traces,
+            summary,
+            finalize: PublicationFinalizeArtifacts {
+                artifacts: authority.artifacts,
+                changed_records,
+                canonical_commit_envelope: authority.canonical_commit_envelope,
+                adjacency_deltas,
+                lineage_nodes: authority.lineage_nodes,
+                deferred_diagnostic_artifacts,
+                target_schema_registry,
+            },
+        }
+    };
+    CommitPhaseBacking::new(execution, result)
 }
 
 impl PublicationPreparation {

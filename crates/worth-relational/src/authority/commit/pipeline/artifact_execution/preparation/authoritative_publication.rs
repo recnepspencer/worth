@@ -1,4 +1,5 @@
 //! Assemble canonical authority for the checked complete semantic plan.
+use super::CommitPhaseBacking;
 use super::{
     CanonicalAuthoritativePatch, PublishedMergeExecutionAuthority, RecordRef,
     RelationalCommitReceipt, RelationalSemanticPlan, SchemaContinuityPlan, TransactionCommitError,
@@ -37,57 +38,60 @@ pub(super) fn prepare_authoritative_publication(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     input: PublicationAuthorityInput<'_>,
-) -> Result<PreparedPublicationAuthority, TransactionCommitError> {
-    let artifacts = runtime
-        .publication_preparation_authority()
-        .assemble_publication_bundle(
-            input.commit_reference.clone(),
-            input.version_id,
-            input.patch.clone(),
-            input.diagnostics_summary.clone(),
-            input.schema_continuity.target_schema_authority().clone(),
-        )
-        .map_err(TransactionCommitError::publication_failed)?;
-    let prepared_lineage = runtime
-        .lineage_preparation_authority()
-        .ensure_lineage_for_commit(
-            execution,
-            input.working_state,
+) -> Result<CommitPhaseBacking<PreparedPublicationAuthority>, TransactionCommitError> {
+    let result = {
+        let artifacts = runtime
+            .publication_preparation_authority()
+            .assemble_publication_bundle(
+                input.commit_reference.clone(),
+                input.version_id,
+                input.patch.clone(),
+                input.diagnostics_summary.clone(),
+                input.schema_continuity.target_schema_authority().clone(),
+            )
+            .map_err(TransactionCommitError::publication_failed)?;
+        let prepared_lineage = runtime
+            .lineage_preparation_authority()
+            .ensure_lineage_for_commit(
+                execution,
+                input.working_state,
+                input.commit_reference,
+                &input.merged_plan.commands().merged_intents,
+                input.changed_records,
+            )?;
+        let lineage_event_count = prepared_lineage
+            .artifact()
+            .event_batch()
+            .counters()
+            .event_batch_width;
+        let (lineage_artifact, lineage_nodes) = prepared_lineage.into_parts();
+        let mut canonical_commit_envelope = canonical_commit_envelope(
+            runtime,
+            input.working_state.content.clone(),
+            input.index_definition_delta,
             input.commit_reference,
-            &input.merged_plan.commands().merged_intents,
-            input.changed_records,
+            input.branch_id,
+            input.merged_plan.canonical_authority_kind(),
+            input.strategy_artifacts,
+            input.merge_execution_authority,
+            input.merge_parent_branches,
+            input.merge_base_commits,
+            input.merged_plan.commands(),
+            input.patch.clone(),
+            input.descriptive_touches,
+            input.diagnostics_summary.clone(),
+            lineage_artifact,
+            crate::indexes::data::DerivedIndexArtifacts::default(),
+            input.schema_continuity,
         )?;
-    let lineage_event_count = prepared_lineage
-        .artifact()
-        .event_batch()
-        .counters()
-        .event_batch_width;
-    let (lineage_artifact, lineage_nodes) = prepared_lineage.into_parts();
-    let mut canonical_commit_envelope = canonical_commit_envelope(
-        runtime,
-        input.working_state.content.clone(),
-        input.index_definition_delta,
-        input.commit_reference,
-        input.branch_id,
-        input.merged_plan.canonical_authority_kind(),
-        input.strategy_artifacts,
-        input.merge_execution_authority,
-        input.merge_parent_branches,
-        input.merge_base_commits,
-        input.merged_plan.commands(),
-        input.patch.clone(),
-        input.descriptive_touches,
-        input.diagnostics_summary.clone(),
-        lineage_artifact,
-        crate::indexes::data::DerivedIndexArtifacts::default(),
-        input.schema_continuity,
-    )?;
-    canonical_commit_envelope.authored_index_writes = input.authored_index_writes;
-    canonical_commit_envelope.install_record_allocations(input.record_allocations.to_vec());
-    Ok(PreparedPublicationAuthority {
-        artifacts,
-        canonical_commit_envelope,
-        lineage_event_count,
-        lineage_nodes,
-    })
+        canonical_commit_envelope.authored_index_writes = input.authored_index_writes;
+        canonical_commit_envelope.install_record_allocations(input.record_allocations.to_vec());
+        PreparedPublicationAuthority {
+            artifacts,
+            canonical_commit_envelope,
+            lineage_event_count,
+            lineage_nodes,
+        }
+    };
+    CommitPhaseBacking::new(execution, result)
 }
