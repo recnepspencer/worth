@@ -48,6 +48,17 @@ fn retained_v2_snapshot_materializes_kind_metadata_from_its_root_authority() {
         Some(SchemaVersionId(2))
     );
 
+    let pin = world
+        .runtime
+        .read_truth()
+        .pin_read_capability(&transitioned.snapshot, &[], execution)
+        .unwrap();
+    assert_eq!(
+        Some(pin.read_context().schema_version),
+        pin.schema().authority_snapshot().primary_schema_version_id
+    );
+    assert_eq!(pin.read_context().schema_version, SchemaVersionId(2));
+
     world
         .runtime
         .snapshots()

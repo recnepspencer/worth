@@ -1,5 +1,6 @@
 mod authority_projection;
 mod current_publication_storage;
+mod primary_schema_version;
 pub use current_publication_storage::CurrentPublicationStorage;
 mod aspect_contracts;
 mod aspect_traces;

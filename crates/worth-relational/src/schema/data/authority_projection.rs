@@ -1,8 +1,11 @@
 //! Project one registry into its canonical durable schema authority.
 use super::*;
 
+mod projection_count;
+
 impl RelationalSchemaRegistry {
     pub fn authority_snapshot(&self) -> SchemaAuthoritySnapshot {
+        projection_count::record();
         let (primary_schema_id, primary_schema_version_id) = self
             .authoritative_schema_basis()
             .ok()
