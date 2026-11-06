@@ -1415,3 +1415,29 @@ Final phase tools are deliberately held at a source-ready sentinel until the rem
 - Counts:2checks+6clippy,7focusedbuilds,5nextestruns,8ordinaryexecutions,
   6diagnosticreexecutions,2ownedtoolruns. No ignored test, scale, exhaustive
   oracle or scenario executed. Sourcecommitted; no push.
+
+## Whole-binary census turn: pre-implementation boundary
+- Base remains dae78e6ff7, clean; no product edits or dev rebuilds. The entire
+  requested seven-binary PE census is in frame-census.md and raw JSON inputs.
+- Corrected census: 1658 owner functions >=32 KiB; 375 >=128 KiB, 485 64–128 KiB,
+  798 32–64 KiB. All572 initially anonymous entries resolved from retained COFF
+  objects; no ambiguous normalized owner path or nearest-symbol guess. Exact
+  artifact GUID/age and hashes retained. The first review rejected four real
+  diagnostic defects; all corrected together. Never use superseded1831 count.
+- Single committed release build green, with 83 named functions >=32 KiB,
+  including 11 >=64 KiB. The complete release maximum is 114152 bytes. Release
+  has88unattributed physical entries: its temporary objects were removed. No
+  release runtime or dev-main success claimed.
+- Next: independent review of the census attribution and deduplication before
+  writing/implementing the batch design. whole-frame-boundary.md records the
+  actual Signal and Query source boundaries and original-funding constraints.
+- Counts so far: 0 check/clippy, 1 release build, 0 tests. No ignored test,
+  scale, exhaustive oracle, scenario or stack override. No push.
+- Fresh corrected-census reviewer APPROVE, no material findings. All6earlier
+  diagnostic findings resolved; whole-frame-census-review.md records them.
+- Next implementation design is still unapproved. Source trace found a useful
+  existing funding route: phase.checked_execution_request_for is public and
+  ExecutionMemoryReservation supports grow_for_allocation after capture. A
+  zero-byte original ticket may allow later concrete operation/history backing
+  without inventing a grant. Verify RequestAllocationControl's original scope
+  policy and cancellation semantics before using it. No product edits made.
