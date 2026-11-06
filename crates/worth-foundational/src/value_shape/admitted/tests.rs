@@ -197,3 +197,37 @@ fn a_standalone_shape_proof_does_not_admit_an_unsupported_seed() {
         Err(D::UnsupportedAdmission)
     );
 }
+
+#[test]
+fn immutable_text_copies_carry_proof_without_sharing_allocation_custody() {
+    let bounds = ValueDecodeBounds::unrestricted();
+    let text = encode_stored_canonical_value(&Text("alpha".to_owned()), bounds).unwrap();
+    let copy = text.clone();
+    assert_eq!(text, copy);
+    assert_ne!(
+        text.raw_text().unwrap().as_ptr(),
+        copy.raw_text().unwrap().as_ptr()
+    );
+    let before = counts();
+    decode_stored_canonical_value::<Text>(&copy, bounds, None).unwrap();
+    assert_eq!(
+        counts(),
+        before,
+        "a byte-identical immutable copy carries the seal"
+    );
+}
+
+#[test]
+fn checking_a_restored_copy_seals_the_same_immutable_source_bytes() {
+    let bounds = ValueDecodeBounds::unrestricted();
+    let text: InternedString = serde_json::from_str(r#"{"Raw":"\"alpha\""}"#).unwrap();
+    let copy = text.clone();
+    decode_stored_canonical_value::<Text>(&copy, bounds, None).unwrap();
+    let checked = counts();
+    decode_stored_canonical_value::<Text>(&text, bounds, None).unwrap();
+    assert_eq!(
+        counts(),
+        checked,
+        "read copies carry proof back to the immutable stored artifact"
+    );
+}

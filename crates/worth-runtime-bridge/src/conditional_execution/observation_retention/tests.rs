@@ -117,7 +117,7 @@ fn observation_retention_charges_its_copy_without_the_sources_spare_capacity() {
 }
 
 #[test]
-fn immutable_stored_text_retention_funds_the_shared_backing_it_keeps_alive() {
+fn immutable_stored_text_copies_proof_without_retaining_source_spare_capacity() {
     use worth_foundational::facade::{AspectMask, InternedString, StoredValueText};
     let mut donor = String::with_capacity(4096);
     donor.push_str("retained");
@@ -130,21 +130,11 @@ fn immutable_stored_text_retention_funds_the_shared_backing_it_keeps_alive() {
         artifact.payload().contract().clone(),
         AspectMask::whole_aspect(),
     );
-    let insufficient = BridgeRetentionLedger::new(BridgeConditionalRetentionBudget {
+    let ledger = BridgeRetentionLedger::new(BridgeConditionalRetentionBudget {
         maximum_retained_bytes: Some((capacity - 1) as u64),
         ..BridgeConditionalRetentionBudget::development()
     })
     .unwrap();
-    assert!(prepare_observations(
-        &plan,
-        &Default::default(),
-        [Some(&artifact)].into_iter(),
-        &insufficient
-    )
-    .is_err());
-    assert_eq!(insufficient.usage(), (0, 0, 0));
-    let ledger =
-        BridgeRetentionLedger::new(BridgeConditionalRetentionBudget::development()).unwrap();
     let retained = prepare_observations(
         &plan,
         &Default::default(),
@@ -152,14 +142,15 @@ fn immutable_stored_text_retention_funds_the_shared_backing_it_keeps_alive() {
         &ledger,
     )
     .unwrap();
-    assert!(ledger.usage().2 > capacity as u64);
-    drop(artifact);
+    assert!(ledger.usage().2 < capacity as u64);
     let worth_foundational::facade::ContractValidatedAspectValueView::Scalar(value) =
         retained.current(0).unwrap().payload().view()
     else {
         panic!("scalar fixture")
     };
-    assert_eq!(value.raw_text().unwrap().as_ptr(), pointer);
+    assert_ne!(value.raw_text().unwrap().as_ptr(), pointer);
+    drop(artifact);
+    assert_eq!(value.raw_text(), Some("retained"));
     drop(retained);
     assert_eq!(ledger.usage(), (0, 0, 0));
 }

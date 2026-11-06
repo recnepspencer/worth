@@ -79,7 +79,7 @@ pub fn decode_stored_canonical_value<Value: CanonicalValue>(
     }
 }
 
-/// Encode and certify once; clones share immutable bytes and their codec seal.
+/// Encode and certify once; immutable copies carry their codec seal.
 pub fn encode_stored_canonical_value<Value: CanonicalValue>(
     value: &Value,
     bounds: ValueDecodeBounds,

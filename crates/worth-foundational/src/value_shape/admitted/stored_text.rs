@@ -5,15 +5,15 @@ use std::sync::{Arc, OnceLock};
 /// Immutable stored text. The optional codec seal is process-local derived
 /// evidence and never crosses serialization or a trust boundary.
 #[derive(Clone, Debug)]
-pub struct StoredValueText(Arc<StoredText>);
+pub struct StoredValueText(Box<StoredText>);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct StoredText {
     text: String,
-    seal: OnceLock<CodecSeal>,
+    seal: Arc<OnceLock<CodecSeal>>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct CodecSeal {
     delegate: TypeId,
     bounds: ValueDecodeBounds,
@@ -22,9 +22,9 @@ struct CodecSeal {
 impl StoredValueText {
     /// Untrusted text; the first codec read performs the full canonical check.
     pub fn new(text: String) -> Self {
-        Self(Arc::new(StoredText {
+        Self(Box::new(StoredText {
             text,
-            seal: OnceLock::new(),
+            seal: Arc::new(OnceLock::new()),
         }))
     }
 
@@ -40,8 +40,21 @@ impl StoredValueText {
     }
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
         std::mem::size_of::<StoredText>()
-            .saturating_add(2 * std::mem::size_of::<usize>())
             .saturating_add(self.0.text.capacity())
+            .saturating_add(Self::proof_capacity_bytes())
+    }
+
+    /// A copy owns length-sized text and retains its fixed shared proof cell.
+    /// Quotes include that reachable proof once per observer; they exclude
+    /// source spare text capacity and allocator bookkeeping.
+    pub fn clone_allocation_capacity_bytes(&self) -> usize {
+        std::mem::size_of::<StoredText>()
+            .saturating_add(self.0.text.len())
+            .saturating_add(Self::proof_capacity_bytes())
+    }
+
+    fn proof_capacity_bytes() -> usize {
+        std::mem::size_of::<OnceLock<CodecSeal>>() + 2 * std::mem::size_of::<usize>()
     }
 
     pub(in crate::value_shape) fn matches<Delegate: ValueSeedDelegate>(
