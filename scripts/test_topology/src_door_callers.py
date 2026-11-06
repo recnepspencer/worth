@@ -47,7 +47,7 @@ def control_owners(root):
         crates += [d for d in sorted((root / 'crates').iterdir()) if (d / 'src').is_dir()]
     for directory in crates:
         for name in declared_in(directory / 'src'):
-            seen.setdefault(name, set()).add(str(directory.relative_to(root)) + '/')
+            seen.setdefault(name, set()).add(directory.relative_to(root).as_posix() + '/')
     return {name: next(iter(dirs)) for name, dirs in seen.items() if len(dirs) == 1}
 
 
@@ -75,7 +75,7 @@ def updated(root, lines):
     files = moved_files(root)
     by_key = {}
     for f in files:
-        rel = str(f.relative_to(root))
+        rel = f.relative_to(root).as_posix()
         by_key.setdefault(module_key(rel), []).append(rel)
     out, present = [], set()
     for line in lines:
@@ -93,7 +93,7 @@ def updated(root, lines):
     added = []
     owners = control_owners(root)
     for f in files:
-        rel = str(f.relative_to(root))
+        rel = f.relative_to(root).as_posix()
         own = '/'.join(rel.split('/')[:4]) + '/'
         names = {t.value for t in tokens(f.read_text(encoding='utf-8')) if t.kind == 'ident'}
         for owner in sorted({owners[n] for n in names if n in owners} - {own}):
@@ -140,7 +140,7 @@ def relocate_certification_callers(root):
     """Move closed certification-construction callers the move relocated, and give a registered
     caller's child module files that name the factory the same entry; returns lines written."""
     path = root / CERTIFICATION
-    files = [str(f.relative_to(root)) for f in moved_files(root)]
+    files = [f.relative_to(root).as_posix() for f in moved_files(root)]
     out, moved = [], 0
     for line in path.read_text(encoding='utf-8').splitlines():
         parts = line.split()
@@ -177,7 +177,7 @@ def relocate_denial_exclusions(root):
     that name it. Returns the number of exclusion lines written."""
     path = root / ROAD
     lines = path.read_text(encoding='utf-8').split('\n')
-    files = [str(f.relative_to(root)) for f in moved_files(root)]
+    files = [f.relative_to(root).as_posix() for f in moved_files(root)]
     idents = {f: {t.value for t in tokens((root / f).read_text(encoding='utf-8')) if t.kind == 'ident'} for f in files}
     out, written, block = [], 0, None
     for i, line in enumerate(lines):
@@ -217,7 +217,7 @@ LINK = re.compile(r'\]\(([^)\s#]*worth-query-execution/src/[^)\s#]+)(#[^)\s]*)?\
 def relocate_doc_links(root):
     """Relative doc links to library test files the move relocated point at the moved file of the
     same module; a module split between a court and testkits links to its one court half."""
-    files = [str(f.relative_to(root)) for f in moved_files(root)]
+    files = [f.relative_to(root).as_posix() for f in moved_files(root)]
     by_stem = {}
     for f in files:
         by_stem.setdefault(re.sub(r'(\.rs|/mod\.rs)$', '', module_key(f) or ''), []).append(f)
@@ -233,14 +233,14 @@ def relocate_doc_links(root):
             target = (path.parent / match.group(1)).resolve()
             if target.exists():
                 return match.group(0)
-            stem = re.sub(r'(\.rs|/mod\.rs)$', '', module_key(str(target)) or '')
+            stem = re.sub(r'(\.rs|/mod\.rs)$', '', module_key(target.as_posix()) or '')
             found = by_stem.get(stem, [])
             if len(found) > 1:  # split between a court (the tests) and testkits (support)
                 found = [f for f in found if f.split('/')[3].startswith('worth-query-court-')]
             if len(found) != 1:
                 return match.group(0)
             count += 1
-            rel = os.path.relpath(root / found[0], path.parent)
+            rel = Path(os.path.relpath(root / found[0], path.parent)).as_posix()
             return f']({rel}{match.group(2) or ""})'
         new = LINK.sub(moved, text)
         if new != text:
