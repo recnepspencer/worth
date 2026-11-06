@@ -1,14 +1,16 @@
 //! Resolve extensions after all entity declarations, independent of tuple order.
-use super::{AspectMembers, Builder, Denial, FragmentMember, Lowering};
+use super::{AspectMembers, Builder, Denial, FragmentMember, Lowering, RelationMembers};
 use crate::application_schema::fragment::{Entity, Extend, OptionalExtensionMembers};
 use std::marker::PhantomData;
 
 #[doc(hidden)]
-pub struct ExtensionWitness<W>(PhantomData<W>);
-impl<S, Set, E, Members, W> FragmentMember<S, Set, ExtensionWitness<W>> for Extend<E, Members>
+pub struct ExtensionWitness<A, R>(PhantomData<(A, R)>);
+impl<S, Set, E, Members, Relations, A, R> FragmentMember<S, Set, ExtensionWitness<A, R>>
+    for Extend<E, Members, Relations>
 where
     E: Entity,
-    Members: OptionalExtensionMembers<E> + AspectMembers<S, Set, W>,
+    Members: OptionalExtensionMembers<E> + AspectMembers<S, Set, A>,
+    Relations: RelationMembers<S, Set, R>,
 {
     fn lower(builder: Builder<S>, _: &str, _: &mut Lowering) -> Result<Builder<S>, Denial> {
         Ok(builder)
@@ -37,6 +39,7 @@ where
         state
             .extension_identity_paths
             .insert(path.clone(), owner.clone());
-        Members::lower(builder, &path, E::NAME, state)
+        let builder = Members::lower(builder, &path, E::NAME, state)?;
+        Relations::lower(builder, &path, E::NAME, state)
     }
 }

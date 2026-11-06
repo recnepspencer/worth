@@ -13,8 +13,8 @@ where
 pub fn relation<S, F, E, R, EP, RP>(_: F, _: E, _: R) -> ApplicationRelationRef<S, R, E, R::To>
 where
     F: Fragment,
-    E: Entity + In<F::Members, EP, F>,
-    R: Relation + In<E::Relations, RP, E>,
+    E: Entity,
+    R: Relation + In<F::Members, (EP, RP), (F, E)>,
 {
     ApplicationRelationRef::from_schema_identifiers(
         R::NAME,

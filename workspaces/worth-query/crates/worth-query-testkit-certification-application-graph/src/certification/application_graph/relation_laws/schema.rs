@@ -237,3 +237,7 @@ pub use payload::{EdgeFacts, EdgeWeight, Payload};
 #[path = "schema/model.rs"]
 mod model;
 pub use model::*;
+
+#[path = "schema/extension_payload.rs"]
+mod extension_payload;
+pub use extension_payload::ExtensionPayload;

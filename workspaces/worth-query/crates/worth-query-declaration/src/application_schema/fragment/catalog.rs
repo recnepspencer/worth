@@ -12,6 +12,7 @@ use std::collections::BTreeMap;
 mod field_selection;
 mod record_access;
 mod record_encoding;
+mod relation;
 mod relation_payload;
 pub(in crate::application_schema) use record_access::{expand_record_access, RecordAccess};
 
@@ -19,7 +20,7 @@ pub(in crate::application_schema) use record_access::{expand_record_access, Reco
 pub struct FragmentCatalog {
     definitions: BTreeMap<TypeId, FragmentDefinition>,
     extension_paths: std::collections::BTreeSet<String>,
-    aspect_names: BTreeMap<(String, String), String>,
+    member_names: BTreeMap<(String, String), String>,
     native_aspects: BTreeMap<u64, String>,
 }
 
@@ -162,19 +163,19 @@ impl FragmentCatalog {
         super::super::identifier_validation::validate_simple_identifier(A::NAME)?;
         let path = format!("{entity_path}.{}", A::NAME);
         let key = (entity.to_owned(), A::NAME.to_owned());
-        if let Some(first) = self.aspect_names.get(&key) {
+        if let Some(first) = self.member_names.get(&key) {
             return Err(
                 if first == &path && !self.extension_paths.contains(entity_path) {
                     Denial::DuplicateFragmentMember { path }
                 } else {
-                    Denial::DuplicateExtensionAspect {
+                    Denial::DuplicateExtensionMember {
                         first: first.clone(),
                         path,
                     }
                 },
             );
         }
-        self.aspect_names.insert(key, path.clone());
+        self.member_names.insert(key, path.clone());
         let native_identity = super::identity::native_aspect_identity(entity, A::NAME);
         if let Some(first) = self.native_aspects.get(&native_identity) {
             return Err(if first == &path {
@@ -255,30 +256,6 @@ impl FragmentCatalog {
             .map(|(key, _)| *key)
             .ok_or(Denial::MissingEntity)?;
         owner.groups.insert((entity_type, group.marker()), group);
-        Ok(())
-    }
-
-    pub(crate) fn relation<R: super::Relation>(
-        &mut self,
-        entity_path: &str,
-        entity: &str,
-    ) -> Result<(), Denial> {
-        let owner = self.owner(entity_path)?;
-        let entity_type = owner
-            .entities
-            .iter()
-            .find(|(_, name)| name.as_str() == entity)
-            .map(|(key, _)| *key)
-            .ok_or(Denial::MissingEntity)?;
-        owner.relations.insert(
-            (entity_type, TypeId::of::<R>()),
-            RelationDefinition {
-                name: R::NAME.to_owned(),
-                from: entity.to_owned(),
-                to: R::To::NAME.to_owned(),
-                integrity: super::declaration::relation_integrity::<R>(),
-            },
-        );
         Ok(())
     }
 }

@@ -94,6 +94,11 @@ impl World {
                             let target = view.target(&observed).unwrap();
                             if observe_extensions {
                                 use worth_query_testkit_decl::fragment_extension_fixture::*;
+                                reader
+                                    .fragment(Annotations)
+                                    .unwrap()
+                                    .relations_from(&observed, Annotates)
+                                    .unwrap();
                                 work(|work| {
                                     reader
                                         .fragment(Annotations)

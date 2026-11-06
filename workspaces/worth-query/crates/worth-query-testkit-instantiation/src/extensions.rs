@@ -68,6 +68,10 @@ impl Fragment for ExtensionFirst {
                     Option<ExtensionFact<19>>,
                 ),
             ),
+            (
+                WithAspects<ExtensionLink<0>, (Option<ExtensionPayload<0>>,)>,
+                WithAspects<ExtensionLink<1>, (Option<ExtensionPayload<1>>,)>,
+            ),
         >,
     );
 }
@@ -105,6 +109,10 @@ impl Fragment for ExtensionSecond {
                     Option<ExtensionFact<39>>,
                 ),
             ),
+            (
+                WithAspects<ExtensionLink<2>, (Option<ExtensionPayload<2>>,)>,
+                WithAspects<ExtensionLink<3>, (Option<ExtensionPayload<3>>,)>,
+            ),
         >,
     );
 }
@@ -119,3 +127,16 @@ pub use application_3::extension_application_3;
 
 mod view_access;
 pub use view_access::extension_views;
+
+pub struct ExtensionLink<const I: usize>;
+impl<const I: usize> Relation for ExtensionLink<I> {
+    const NAME: &'static str = model::NAMES[I];
+    type To = ExtensionItem;
+}
+pub struct ExtensionPayload<const I: usize>;
+impl<const I: usize> Aspect for ExtensionPayload<I> {
+    const NAME: &'static str = "payload";
+    type Row = u64;
+}
+mod relations;
+pub use relations::extension_relations;

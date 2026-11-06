@@ -31,7 +31,7 @@ pub struct Contribution;
 impl ApplicationSchemaContribution<Schema> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("relation-only-inverse.contribution.v1");
-    type Members = (StorageModel, Contracts, correction::UndoSpawn);
+    type Members = (StorageModel, LinksFeature, Contracts, correction::UndoSpawn);
 }
 pub struct Contracts;
 impl Registration<Schema> for Contracts {

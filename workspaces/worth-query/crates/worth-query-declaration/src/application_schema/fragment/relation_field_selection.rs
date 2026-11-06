@@ -19,6 +19,7 @@ impl<F, E, R, A, T> Clone for RelationFieldSelection<F, E, R, A, T> {
 }
 impl<F, E, R, A, T> sealed::Sealed for RelationFieldSelection<F, E, R, A, T> {}
 
+#[inline(always)]
 pub fn select_relation_field<F, E, R, A, T, EP, RP, AP>(
     _: F,
     _: E,
@@ -28,10 +29,10 @@ pub fn select_relation_field<F, E, R, A, T, EP, RP, AP>(
 ) -> RelationFieldSelection<F, E, R, A, T>
 where
     F: Fragment,
-    E: Entity + In<F::Members, EP, F>,
-    R: Relation + In<E::Relations, RP, E>,
-    E::Relations: PayloadMembers<R, RP>,
-    A: Aspect + In<<E::Relations as PayloadMembers<R, RP>>::Aspects, AP, R>,
+    E: Entity,
+    R: Relation + In<F::Members, (EP, RP), (F, E)>,
+    F::Members: PayloadMembers<R, (EP, RP)>,
+    A: Aspect + In<<F::Members as PayloadMembers<R, (EP, RP)>>::Aspects, AP, R>,
     T: 'static,
     F::Bindings: Scalar<T> + Record<A::Row>,
 {
@@ -49,18 +50,23 @@ where
     type Aspect = A;
     type Value = T;
     type Binding = <F::Bindings as Scalar<T>>::Binding;
+    #[inline(always)]
     fn entity(self) -> &'static str {
         R::NAME
     }
+    #[inline(always)]
     fn aspect(self) -> &'static str {
         super::identity::native_relation_aspect_key::<R, A>()
     }
+    #[inline(always)]
     fn field(self) -> &'static str {
         self.path
     }
+    #[inline(always)]
     fn expected_recipe(self) -> Recipe {
         Recipe::of::<Self::Binding>(Locus::for_relation(R::NAME, self.aspect(), self.path))
     }
+    #[inline(always)]
     fn checked(self) -> Result<RecordField<R, A, T>, Denial> {
         super::field_handle::checked_field::<F::Bindings, R, A, T>(
             self.path,
@@ -100,9 +106,11 @@ where
 {
     type From = E;
     type To = R::To;
+    #[inline(always)]
     fn from(self) -> &'static str {
         E::NAME
     }
+    #[inline(always)]
     fn to(self) -> &'static str {
         <R::To as Entity>::NAME
     }
@@ -113,12 +121,12 @@ impl<F: Fragment, E: Entity, R: Relation, A: Aspect, T: 'static>
 where
     F::Bindings: Scalar<T> + Record<A::Row>,
 {
+    #[inline(always)]
     pub const fn at<EP, RP, AP>(path: &'static str) -> Self
     where
-        E: In<F::Members, EP, F>,
-        R: In<E::Relations, RP, E>,
-        E::Relations: PayloadMembers<R, RP>,
-        A: In<<E::Relations as PayloadMembers<R, RP>>::Aspects, AP, R>,
+        R: In<F::Members, (EP, RP), (F, E)>,
+        F::Members: PayloadMembers<R, (EP, RP)>,
+        A: In<<F::Members as PayloadMembers<R, (EP, RP)>>::Aspects, AP, R>,
     {
         Self {
             path,

@@ -1,9 +1,9 @@
-//! Optional additions preserve creation completeness at the declaring entity's owner.
+//! Optional facts and outgoing relations preserve creation completeness at the declaring entity's owner.
 use super::{Aspect, Entity, Exclusive};
 use std::marker::PhantomData;
 
-pub struct Extend<E: Entity, Members: OptionalExtensionMembers<E>>(
-    PhantomData<fn() -> (E, Members)>,
+pub struct Extend<E: Entity, Members: OptionalExtensionMembers<E>, Relations = ()>(
+    PhantomData<fn() -> (E, Members, Relations)>,
 );
 
 #[doc(hidden)]

@@ -2,10 +2,13 @@ use super::ApplicationOperationDependencyLocus;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationSchemaDeclarationDenial {
+    ExtensionRelationMinimum {
+        path: String,
+    },
     UndeclaredExtensionEntity {
         path: String,
     },
-    DuplicateExtensionAspect {
+    DuplicateExtensionMember {
         first: String,
         path: String,
     },

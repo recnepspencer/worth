@@ -87,10 +87,10 @@ pub fn relation_aspect<F, E, R, A, EP, RP, AP>(
 ) -> RelationAspectSelection<F, E, R, A>
 where
     F: Fragment,
-    E: Entity + In<F::Members, EP, F>,
-    R: super::Relation + In<E::Relations, RP, E>,
-    E::Relations: super::PayloadMembers<R, RP>,
-    A: Aspect + In<<E::Relations as super::PayloadMembers<R, RP>>::Aspects, AP, R>,
+    E: Entity,
+    R: super::Relation + In<F::Members, (EP, RP), (F, E)>,
+    F::Members: super::PayloadMembers<R, (EP, RP)>,
+    A: Aspect + In<<F::Members as super::PayloadMembers<R, (EP, RP)>>::Aspects, AP, R>,
 {
     RelationAspectSelection(PhantomData)
 }

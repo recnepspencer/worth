@@ -58,7 +58,9 @@ binding set supplies reusable records. Arrays and nested records become the
 existing flat scalar fields. Typed record field handles serve operation bodies,
 requirements, principal bindings, bootstrap seeds and authorization predicates without a second field declaration.
 A feature fragment may add optional aspects to an entity declared by another
-fragment with `Extend<Entity, (Option<Aspect>, Option<Exclusive<Group>>)>`.
+fragment with `Extend<Entity, (Option<Aspect>, Option<Exclusive<Group>>), Relations>`.
+The optional third parameter adds outgoing relations and their payload aspects;
+positive source minimums are refused, and positive target/pair minimums require a target declared by the extending fragment or one it nests.
 Selections remain local to the extending fragment's membership witness and use
 the existing field and View APIs. See [shared entity extensions](build-an-application.md#add-optional-aspects-to-a-shared-entity).
 `fragment::relation_integrity::<R>()` derives descriptive integrity from that relation declaration for operation and query metadata.

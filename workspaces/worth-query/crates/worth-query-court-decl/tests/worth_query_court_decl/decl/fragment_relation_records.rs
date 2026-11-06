@@ -61,7 +61,11 @@ fn history_contract_selection_retains_the_actual_relation_record_owner() {
         .members()
         .iter()
         .find_map(|member| match member {
-            ApplicationSchemaMember::RelationAspect { definition } => Some(definition.parts()),
+            ApplicationSchemaMember::RelationAspect { definition }
+                if definition.parts().relation == "connect" =>
+            {
+                Some(definition.parts())
+            }
             _ => None,
         })
         .unwrap();
@@ -85,4 +89,30 @@ fn history_contract_selection_refuses_a_different_fragment_with_the_same_native_
         )),
         Err(ApplicationSchemaDeclarationDenial::InvalidRecordMember { .. })
     ));
+}
+
+#[test]
+fn history_contract_selection_accepts_an_extension_relation_payload() {
+    use worth_query_testkit_decl::fragment_extension_fixture::{
+        Annotates, Annotations, EdgeWeight,
+    };
+    let builder = declaration_builder(Fixture).unwrap();
+    let actual = builder
+        .selected_aspect_contract(relation_aspect(Annotations, Item, Annotates, EdgeWeight))
+        .unwrap();
+    let declaration = builder.build().unwrap();
+    let parts = declaration
+        .erased()
+        .members()
+        .iter()
+        .find_map(|member| match member {
+            ApplicationSchemaMember::RelationAspect { definition }
+                if definition.parts().relation == "annotates" =>
+            {
+                Some(definition.parts())
+            }
+            _ => None,
+        })
+        .unwrap();
+    assert_eq!(actual, (parts.identity, parts.revision));
 }

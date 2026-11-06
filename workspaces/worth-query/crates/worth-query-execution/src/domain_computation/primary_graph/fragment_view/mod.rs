@@ -7,6 +7,7 @@ mod denial;
 mod entity;
 mod group_read;
 mod read;
+mod relation;
 mod write;
 
 pub(in crate::domain_computation::primary_graph) use access::{ReadPort, WritePort};

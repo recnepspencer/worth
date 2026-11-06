@@ -2,7 +2,9 @@
 
 use std::marker::PhantomData;
 
-#[diagnostic::on_unimplemented(message = "`{Self}` is not an aspect of entity/fragment `{Owner}`")]
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not an aspect or relation of entity/fragment `{Owner}`"
+)]
 pub trait In<Members, Witness, Owner>: private::Sealed<Members, Witness, Owner> {}
 impl<T, Members, Witness, Owner> In<Members, Witness, Owner> for T where
     T: private::Sealed<Members, Witness, Owner>
@@ -32,13 +34,16 @@ where
     A: In<E::Aspects, (P, Kind), E>,
 {
 }
-impl<A, F, E: super::Entity, Members, P, Kind>
-    private::Sealed<super::Extend<E, Members>, (ExtensionPosition<P>, Kind), (F, E)> for A
+impl<A, F, E: super::Entity, Members, Relations, P, Kind>
+    private::Sealed<super::Extend<E, Members, Relations>, (ExtensionPosition<P>, Kind), (F, E)>
+    for A
 where
     Members: super::OptionalExtensionMembers<E>,
     A: In<Members, (P, Kind), E>,
 {
 }
+
+mod relation;
 
 macro_rules! tuple_positions {
     ($($member:ident:$position:literal),+) => {
@@ -57,6 +62,10 @@ macro_rules! tuple_positions {
         where CaseType: In<GroupType::Cases, CasePosition, Owner> {}
         impl<$($before,)* R, Members, $($rest,)* Owner> private::Sealed<($($before,)* super::WithAspects<R, Members>, $($rest,)*), (Position<$position>, super::PayloadWitness<()>), Owner> for R {}
         impl<$($before,)* R, Members, $($rest,)*> super::PayloadMembers<R, (Position<$position>, super::PayloadWitness<()>)> for ($($before,)* super::WithAspects<R, Members>, $($rest,)*) { type Aspects = Members; }
+        impl<$($before,)* $member, $($rest,)* Selected, InnerPosition, Kind> super::PayloadMembers<Selected, (NestedPosition<Position<$position>, InnerPosition>, Kind)> for ($($before,)* $member, $($rest,)*)
+        where $member: super::PayloadMembers<Selected, (InnerPosition, Kind)> {
+            type Aspects = <$member as super::PayloadMembers<Selected, (InnerPosition, Kind)>>::Aspects;
+        }
         tuple_positions!(@each ($($before,)* $member,); $($rest:$next),*);
     };
     (@each ($($before:ident,)*);) => {};

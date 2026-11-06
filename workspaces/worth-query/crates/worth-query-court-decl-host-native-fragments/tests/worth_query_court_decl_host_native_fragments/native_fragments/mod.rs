@@ -27,3 +27,7 @@ pub(crate) fn measured() -> Measurements {
 }
 
 mod extensions;
+
+mod relation_compile_fail;
+
+mod relation_admission;

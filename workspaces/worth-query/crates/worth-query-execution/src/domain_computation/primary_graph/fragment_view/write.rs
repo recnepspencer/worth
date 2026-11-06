@@ -84,8 +84,8 @@ impl<F: Fragment> View<'_, F, Writing<'_>> {
         to: &CandidateEntity<R::To>,
     ) -> Result<(), FragmentDenial>
     where
-        E: Entity + In<F::Members, EntityWitness, F>,
-        R: Relation + In<E::Relations, RelationWitness, E>,
+        E: Entity,
+        R: Relation + In<F::Members, (EntityWitness, RelationWitness), (F, E)>,
     {
         let definition =
             self.definition

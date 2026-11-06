@@ -11,3 +11,5 @@ mod fragment_revisions;
 mod fragment_extensions;
 
 mod extension_compile_fail;
+
+mod fragment_relation_extensions;
