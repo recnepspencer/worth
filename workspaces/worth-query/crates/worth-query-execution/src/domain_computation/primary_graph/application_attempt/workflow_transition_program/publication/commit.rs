@@ -19,7 +19,7 @@ where
         phase: &WorthQueryAdvancementPhase<'_>,
 
         prepared: PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        idempotency: super::super::super::WorthQueryApplicationIdempotencyBinding,
+        idempotency: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     ) -> WorkflowProgressOutcome
     where
         Input: Clone + Send + Sync + 'static,

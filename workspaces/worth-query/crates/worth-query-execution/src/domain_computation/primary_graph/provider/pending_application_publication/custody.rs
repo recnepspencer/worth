@@ -5,7 +5,7 @@ use std::sync::Arc;
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplicationPublication {
     pub(super) predicate: Option<PredicatePreparationOwner>,
     pub(super) product_incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
-    pub(super) idempotency: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+    pub(super) idempotency: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     pub(super) attempt: Option<WorthQueryPrimaryGraphApplicationAttempt>,
     pub(super) before: Option<worth_relational::facade::snapshots::SnapshotHandle>,
     pub(super) next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
@@ -81,7 +81,7 @@ impl WorthQueryPendingApplicationPublication {
 
     pub(super) const fn idempotency(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding{
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding{
         self.idempotency
     }
 }

@@ -6,7 +6,7 @@ use worth_query_installation::facade::{
 use crate::domain_computation::primary_graph::conditional_operation::canonical_identity::{
     CanonicalIdentityMaterial, WorthQueryTemporalRuntimeBindingIdentity,
 };
-use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 
 pub(super) struct WorthQueryPreparedTemporalIdempotency {
     binding: WorthQueryApplicationIdempotencyBinding,

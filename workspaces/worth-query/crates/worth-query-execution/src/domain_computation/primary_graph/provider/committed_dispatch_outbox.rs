@@ -6,9 +6,7 @@ use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionA
 use worth_relational::facade::transactions::RecordRef;
 
 use super::WorthQueryPrimaryGraphProvider;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryCommittedProductPublication,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication};
 use {
     crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout,
     crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,

@@ -31,7 +31,7 @@ impl MutationHandlerBindingProof {
     /// derive its intent from the input the handler decided on.
     pub(in crate::domain_computation::primary_graph::application_attempt) fn refusal(
         &self,
-        idempotency: &super::super::WorthQueryApplicationIdempotencyBinding,
+        idempotency: &crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     ) -> Option<super::super::WorthQueryApplicationCommitDenial> {
         if !idempotency.is_for_mutation_binding(self.binding) {
             return Some(

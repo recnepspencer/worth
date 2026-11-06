@@ -4,10 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::EntryScopedOp
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryDelegationActivationProgram,
-};
+use {super::super::WorthQueryApplicationCommitOutcome, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, super::super::WorthQueryDelegationActivationProgram};
 
 pub trait DelegationActivationOps<Schema>:
     crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>

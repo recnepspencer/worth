@@ -19,7 +19,7 @@ pub struct WorthQueryPrimaryGraphCommitEvidence {
     provider_session_binding:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     idempotency:
-        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     commit: worth_relational::facade::history::RelationalCommitReceipt,
     mutation_work: WorthQueryPrimaryMutationWorkEvidence,
     retained_preimage:
@@ -185,7 +185,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
 
     pub(in crate::domain_computation::primary_graph) const fn idempotency(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding
 {
         self.idempotency
     }

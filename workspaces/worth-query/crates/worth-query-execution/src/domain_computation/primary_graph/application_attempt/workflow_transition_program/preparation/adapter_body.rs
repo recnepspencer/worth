@@ -17,7 +17,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
         principal_identity: &Binding::PrincipalIdentity,
-        idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        idempotency: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     ) -> Result<super::super::publication::WorkflowApprovalBodyPreparation<PreparedWorkflowAdvance<Schema, Binding::Operation, Binding::Input,
         <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>>, super::super::publication::WorkflowApprovalBodyDenial>
     where Schema: ApplicationSchema,

@@ -83,7 +83,7 @@ impl WorthQueryProviderCommitAuthorization {
         let Some(provider) = self.provider.take() else {
             let _ = staged.abort();
             return Err(crate::domain_computation::primary_graph::progression_denied(
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
             ));
         };
         prepared.register(staged, provider, attempt_basis, context, allocation_policy)

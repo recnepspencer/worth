@@ -7,10 +7,7 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::{
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationUncommitted,
-};
+use {super::super::WorthQueryApplicationEffectProgram, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, super::super::WorthQueryApplicationUncommitted};
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef;
 
 /// Opaque, live application-attempt publication program.

@@ -67,23 +67,23 @@ impl WorthQueryApplicationIdempotencyBinding {
             "conditional-definition",
             self.conditional_definition_identity,
         );
-        workflow_definition::append_identity_slot(&mut encoded, self.workflow_definition_identity);
-        workflow_instance::append_identity_slot(&mut encoded, self.workflow_instance_identity);
-        workflow_proposal_context::append_identity_slot(&mut encoded, self.workflow_proposal);
-        workflow_transition::append_identity_slot(&mut encoded, self.workflow_transition_identity);
-        workflow_transition::append_support_identity_slot(
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::workflow_definition::append_identity_slot(&mut encoded, self.workflow_definition_identity);
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::workflow_instance::append_identity_slot(&mut encoded, self.workflow_instance_identity);
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::workflow_proposal_context::append_identity_slot(&mut encoded, self.workflow_proposal);
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::workflow_transition::append_identity_slot(&mut encoded, self.workflow_transition_identity);
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::workflow_transition::append_support_identity_slot(
             &mut encoded,
             self.workflow_support_identity,
         );
-        workflow_transition::append_client_key_identity_slot(
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::workflow_transition::append_client_key_identity_slot(
             &mut encoded,
             self.workflow_client_key_identity,
         );
-        workflow_transition::append_approval_identity_slot(
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::workflow_transition::append_approval_identity_slot(
             &mut encoded,
             self.workflow_approval_identity,
         );
-        mutation_binding::append_identity_slot(&mut encoded, self.mutation_binding_identity);
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::mutation_binding::append_identity_slot(&mut encoded, self.mutation_binding_identity);
         if self.correction_identity.is_some() {
             append_identity_slot(&mut encoded, "correction", self.correction_identity);
         }

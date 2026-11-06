@@ -46,7 +46,7 @@ where
                 None,
             ));
         }
-        let idempotency = crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding::for_mutation_identities(identities);
+        let idempotency = crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding::for_mutation_identities(identities);
         self.commit_selected_required_source::<Root, Source>(
             phase,
             access,

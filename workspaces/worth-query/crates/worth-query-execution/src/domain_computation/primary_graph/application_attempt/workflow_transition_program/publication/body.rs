@@ -67,7 +67,7 @@ where
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
         principal_identity: &Binding::PrincipalIdentity,
-        idempotency: super::super::super::WorthQueryApplicationIdempotencyBinding,
+        idempotency: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     ) -> Result<WorkflowApprovalBodyPreparation<Self>, WorkflowApprovalBodyDenial>
     where
         Binding: ApplicationMutationBinding<

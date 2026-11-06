@@ -18,7 +18,7 @@ impl Denial {
         kind: Kind,
     ) -> Terminal {
         Terminal::ApplicationExecution {
-            stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
+            stage: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
             cause: Ok(kind),
         }
     }

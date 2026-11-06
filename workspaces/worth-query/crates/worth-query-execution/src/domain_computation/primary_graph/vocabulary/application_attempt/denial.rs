@@ -141,3 +141,24 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// can be compared against one.
     ProgramActivationUnresolved,
 }
+
+/// The commit stage at which a denial was decided, for diagnostics.
+///
+/// The stage locates the refusal; the denial kind says what it was.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryApplicationCommitDenialStage {
+    ProposalBinding,
+    BridgePlanning,
+    BasisAdmission,
+    ResourceAdmission,
+    ManagedRunAdmission,
+    ProviderPlan,
+    Idempotency,
+    DecisionReadSet,
+    EffectLowering,
+    ElevationTransition,
+    DelegationTransition,
+    ProvisionalState,
+    InvariantExecution,
+    ProviderCommit,
+}

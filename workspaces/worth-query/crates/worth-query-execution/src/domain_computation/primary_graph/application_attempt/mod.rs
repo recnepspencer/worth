@@ -29,7 +29,6 @@ mod elevation_lifecycle_facts;
 mod elevation_request_outcome;
 mod elevation_request_program;
 pub(crate) mod fact;
-mod idempotency;
 pub(crate) mod idempotency_resolution;
 mod mandatory_review_outcome;
 mod mandatory_review_program;
@@ -105,25 +104,7 @@ pub use elevation_request_outcome::{
 pub(super) use elevation_request_program::validate_elevation_request_program;
 pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
-pub use {
-    compare_and_commit::WorthQueryApplicationCleanupRequired,
-    compare_and_commit::WorthQueryApplicationCommitDeferred,
-    compare_and_commit::WorthQueryApplicationCommitDeferredKind,
-    compare_and_commit::WorthQueryApplicationCommitDenial,
-    compare_and_commit::WorthQueryApplicationCommitDenialStage,
-    compare_and_commit::WorthQueryApplicationCommitOutcome,
-    compare_and_commit::WorthQueryApplicationCommitPublicationSource,
-    compare_and_commit::WorthQueryApplicationCommitReceipt,
-    compare_and_commit::WorthQueryApplicationCommitRecoveryKind,
-    compare_and_commit::WorthQueryApplicationCommittedChanges,
-    compare_and_commit::WorthQueryApplicationManagedCleanup,
-    compare_and_commit::WorthQueryApplicationManagedCleanupFailure,
-    compare_and_commit::WorthQueryApplicationNoEffect,
-    compare_and_commit::WorthQueryApplicationNoEffectCause,
-    compare_and_commit::WorthQueryApplicationUncommitted,
-    compare_and_commit::WorthQueryApplicationUnresolvedCommitEvidence,
-    compare_and_commit::WorthQueryCommittedProductPublication,
-};
+pub use {compare_and_commit::WorthQueryApplicationCleanupRequired, compare_and_commit::WorthQueryApplicationCommitDeferred, compare_and_commit::WorthQueryApplicationCommitDeferredKind, compare_and_commit::WorthQueryApplicationCommitDenial, compare_and_commit::WorthQueryApplicationCommitOutcome, compare_and_commit::WorthQueryApplicationCommitPublicationSource, compare_and_commit::WorthQueryApplicationCommitReceipt, compare_and_commit::WorthQueryApplicationCommitRecoveryKind, compare_and_commit::WorthQueryApplicationCommittedChanges, compare_and_commit::WorthQueryApplicationManagedCleanup, compare_and_commit::WorthQueryApplicationManagedCleanupFailure, compare_and_commit::WorthQueryApplicationNoEffect, compare_and_commit::WorthQueryApplicationNoEffectCause, compare_and_commit::WorthQueryApplicationUncommitted, compare_and_commit::WorthQueryApplicationUnresolvedCommitEvidence};
 pub(in crate::domain_computation::primary_graph) use {
     effect_program::WorthQueryAdmittedApplicationEmissionBatch,
     effect_program::WorthQueryApplicationCreationPartition,
@@ -150,9 +131,7 @@ pub(in crate::domain_computation::primary_graph) use {
     fact::WorthQueryIndexedSelectionRefusal,
 };
 
-pub use idempotency::{
-    WorthQueryApplicationIdempotencyBinding, WorthQueryCapabilityWorkflowIdempotency,
-};
+
 
 pub use idempotency_resolution::WorthQueryGuardedWorkflowOperationCustody;
 pub(super) use mandatory_review_outcome::reviewed_outcome;

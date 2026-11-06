@@ -2,13 +2,7 @@ pub(crate) mod installed_readmission;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryElevationApprovalOutcome, WorthQueryElevationApprovalProgram,
-    WorthQueryElevationCloseOutcome, WorthQueryElevationCloseProgram,
-    WorthQueryElevationRequestOutcome, WorthQueryElevationRequestProgram,
-    WorthQueryMandatoryReviewOutcome, WorthQueryMandatoryReviewProgram,
-};
+use {super::super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, super::super::WorthQueryElevationApprovalOutcome, super::super::WorthQueryElevationApprovalProgram, super::super::WorthQueryElevationCloseOutcome, super::super::WorthQueryElevationCloseProgram, super::super::WorthQueryElevationRequestOutcome, super::super::WorthQueryElevationRequestProgram, super::super::WorthQueryMandatoryReviewOutcome, super::super::WorthQueryMandatoryReviewProgram};
 
 mod elevation_approval;
 mod elevation_close;

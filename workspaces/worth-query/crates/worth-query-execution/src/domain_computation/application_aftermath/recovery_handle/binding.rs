@@ -13,12 +13,7 @@ use {
     crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity,
     crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
 };
-use {
-    crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryMutationWorkEvidence,
-    crate::domain_computation::vocabulary::primary_graph::commit_authority_binding::WorthQueryRetainedGovernedInput,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryPrimaryMutationWorkEvidence, crate::domain_computation::vocabulary::primary_graph::commit_authority_binding::WorthQueryRetainedGovernedInput};
 
 use super::denial::{WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind};
 
@@ -29,7 +24,7 @@ pub struct WorthQueryRecoveryHandleBinding {
     schema_identity: [u8; 32],
     commit: RelationalCommitReceipt,
     committed_product_publication:
-        crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
     /// Generation of the installed application schema binding.
     application_binding_generation: u64,
     installed_operation: [u8; 32],
@@ -121,7 +116,7 @@ impl WorthQueryRecoveryHandleBinding {
 
     pub const fn committed_product_publication(
         &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication {
         &self.committed_product_publication
     }
 

@@ -50,7 +50,7 @@ pub struct WorthQueryApplicationCommitReceipt {
     pub(super) outcome_identity: Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity>,
     pub(super) provider_runtime_instance_id: u64,
     pub(super) commit: RelationalCommitReceipt,
-    pub(super) committed_product_publication: super::WorthQueryCommittedProductPublication,
+    pub(super) committed_product_publication: crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
     pub(super) basis_descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
     pub(super) changed_record_count: usize,
     pub(super) emitted_effect_count: usize,
@@ -157,7 +157,7 @@ impl WorthQueryApplicationCommitReceipt {
 
     pub const fn committed_product_publication(
         &self,
-    ) -> &super::WorthQueryCommittedProductPublication {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication {
         &self.committed_product_publication
     }
 
@@ -321,7 +321,7 @@ impl WorthQueryApplicationCommitReceipt {
 
     pub const fn idempotency_binding(
         &self,
-    ) -> super::super::WorthQueryApplicationIdempotencyBinding {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding {
         self.authority_binding.idempotency_binding()
     }
 

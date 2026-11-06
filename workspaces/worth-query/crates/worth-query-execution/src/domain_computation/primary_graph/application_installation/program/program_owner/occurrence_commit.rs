@@ -16,11 +16,7 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{program_required, ApplicationCommitCausality, WorthQueryProgramOwner};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationRetainedCommitOutcome,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome, crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationRetainedCommitOutcome};
 
 type ActionProgram<Schema, Binding> = WorthQueryApplicationEffectProgram<
     Schema,

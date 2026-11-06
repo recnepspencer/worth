@@ -2,7 +2,7 @@ use super::super::provider_execution::{
     progression_denied, WorthQueryProviderAttemptRegistrationContext,
     WorthQueryProviderProgressionOutcome, WorthQueryRegisteredProviderAttempt,
 };
-use super::super::WorthQueryApplicationCommitDenialStage as DenialStage;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as DenialStage;
 use super::WorthQueryPreparedApplicationProviderAttempt;
 
 mod provider_registration;
@@ -17,7 +17,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     affinity: super::super::provider_execution::WorthQueryApplicationAttemptAffinity,
     decision_facts: crate::domain_computation::authorization::WorthQueryProviderDecisionFactBinding,
     effects: super::effect_accumulator::WorthQueryRegisteredProviderEffects,
-    idempotency: super::super::WorthQueryApplicationIdempotencyBinding,
+    idempotency: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     original_authority: std::sync::Arc<super::super::WorthQueryApplicationCommitAuthorityBinding>,
     outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
     retained_authorization_fact_count: usize,

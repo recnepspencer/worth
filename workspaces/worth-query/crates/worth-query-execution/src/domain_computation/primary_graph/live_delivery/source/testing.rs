@@ -1,9 +1,7 @@
 use std::sync::{atomic::Ordering, Arc};
 
 use super::WorthQueryLiveDeliverySource;
-use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationEmission, WorthQueryCommittedProductPublication,
-};
+use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission, crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication};
 
 impl WorthQueryLiveDeliverySource {
     pub(crate) fn set_limits(&self, batch_capacity: usize) {

@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::MatchedRequiredPredecessors;

@@ -4,12 +4,7 @@ use worth_query_declaration::facade::application_history::{
     ApplicationHistoryBinding, ApplicationHistoryModel, ApplicationHistoryNavigationBinding,
 };
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
-use {
-    crate::domain_computation::primary_graph::application_query::CompletedMetadataRead,
-    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
-    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
-    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
-};
+use {crate::domain_computation::primary_graph::application_query::CompletedMetadataRead, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::request_execution::WorthQueryAdvancementPhase};
 
 pub(in crate::domain_computation::primary_graph) enum HistoryOutputLookupPhase {
     AwaitingOutputs,

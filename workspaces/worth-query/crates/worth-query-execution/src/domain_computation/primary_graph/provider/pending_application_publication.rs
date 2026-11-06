@@ -33,7 +33,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn inspect_pending_application_idempotency(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    ) -> Option<Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding>>{
+    ) -> Option<Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding>>{
         let pending = self
             .pending_application_publications
             .lock()
@@ -61,7 +61,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         binding: Option<
-            crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
         >,
     ) -> Result<WorthQueryApplicationPublicationRecoveryReservation, &'static str> {
         registry::WorthQueryPendingApplicationPublicationRegistry::reserve(

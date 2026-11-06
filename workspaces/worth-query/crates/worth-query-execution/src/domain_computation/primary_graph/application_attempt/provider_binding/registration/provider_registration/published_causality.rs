@@ -25,7 +25,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     pub(in crate::domain_computation::primary_graph) fn publish_causality(
         self,
         provider: &WorthQueryPrimaryGraphProvider,
-        publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        publication: crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
         predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PreparedPredicatePublication>,
     ) -> WorthQueryPublishedApplicationCausality {
         let emitted_effect_count = provider.publish_application_commit_causality(

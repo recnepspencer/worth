@@ -34,13 +34,13 @@ impl WorthQueryObservedApplicationFactBasis {
 }
 
 pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryApplicationIdempotencyBasis {
-    binding: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+    binding: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
 }
 
 impl WorthQueryApplicationIdempotencyBasis {
     pub(super) const fn new(
-        binding: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+        binding: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
         product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     ) -> Self {
         Self { binding, product }

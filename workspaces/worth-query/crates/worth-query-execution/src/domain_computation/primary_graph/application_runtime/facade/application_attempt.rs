@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcome;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitReceipt;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEffectProgram;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyResolutionDenial;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApprovedElevation;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryCapabilityRevocationProgram;

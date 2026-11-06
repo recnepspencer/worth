@@ -2,10 +2,7 @@ use self::session_admission::admit_provider_session;
 use super::WorthQueryRunningApplicationCommit;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::WorthQueryApplicationAttemptBasis;
-use crate::domain_computation::primary_graph::application_attempt::{
-    provider_binding::WorthQueryPreparedApplicationProviderAttempt,
-    snapshot_lease::WorthQueryApplicationSnapshotLease, WorthQueryApplicationIdempotencyBinding,
-};
+use {crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryPreparedApplicationProviderAttempt, crate::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding};
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::provider::{
     WorthQueryApplicationBranchCommitCoordination, WorthQueryPrimaryGraphProvider,
@@ -264,7 +261,7 @@ where
     let Some(authorization) = authorization.finish_registration() else {
         return registered_session.deny(
             crate::domain_computation::primary_graph::application_attempt::provider_execution::progression_denied(
-                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
             ),
         );
     };

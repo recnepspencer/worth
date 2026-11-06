@@ -7,7 +7,7 @@ use worth_relational::facade::transactions::{
 
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
 

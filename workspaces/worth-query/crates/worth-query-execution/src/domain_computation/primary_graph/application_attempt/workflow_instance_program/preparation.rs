@@ -15,11 +15,7 @@ use crate::domain_computation::primary_graph::application_attempt::workflow::ins
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryOperationProjectionDenial,
-    WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 
 /// Why a workflow instance request could not bind to the branch's program: the installed
 /// spec belongs to another schema, the adopted program could not be inspected, the branch

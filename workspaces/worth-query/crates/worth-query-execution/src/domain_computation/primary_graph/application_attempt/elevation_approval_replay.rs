@@ -2,12 +2,7 @@ use crate::domain_computation::primary_graph::application_attempt::IdempotencyRe
 use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionScopedOps;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{
-    approved_outcome, WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
-    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryElevationApprovalOutcome,
-    WorthQueryRequestedElevation,
-};
+use {super::approved_outcome, super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitOutcome, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, super::WorthQueryApplicationIdempotencyResolution, super::WorthQueryApplicationIdempotencyResolutionDenial, super::WorthQueryElevationApprovalOutcome, super::WorthQueryRequestedElevation};
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 
 pub trait ElevationApprovalReplayOps<Schema: ApplicationSchema>:

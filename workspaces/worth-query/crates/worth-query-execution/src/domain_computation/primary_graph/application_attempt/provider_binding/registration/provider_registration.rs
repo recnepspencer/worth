@@ -4,7 +4,7 @@ use super::WorthQueryApplicationAttemptRegistration;
 use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptAffinity;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 
 use crate::domain_computation::primary_graph::provider::dispatch_outbox::WorthQueryDispatchOutboxBasis;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;

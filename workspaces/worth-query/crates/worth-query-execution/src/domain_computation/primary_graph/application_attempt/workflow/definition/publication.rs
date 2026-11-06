@@ -9,12 +9,7 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledWorkflowDefinitionContract,
 };
 
-use crate::domain_computation::primary_graph::{
-    PreparedWorkflowDefinitionPublication, WorkflowDefinitionExpectedPredecessor,
-    WorkflowDefinitionPreparationDenial, WorkflowDefinitionPublicationOutcome,
-    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationIdempotencyBinding,
-    WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::primary_graph::PreparedWorkflowDefinitionPublication, crate::domain_computation::primary_graph::WorkflowDefinitionExpectedPredecessor, crate::domain_computation::primary_graph::WorkflowDefinitionPreparationDenial, crate::domain_computation::primary_graph::WorkflowDefinitionPublicationOutcome, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 
 /// Narrow cross-crate adapter used by Publication's application-entry owner.
 /// It is not a product-facing workflow API.

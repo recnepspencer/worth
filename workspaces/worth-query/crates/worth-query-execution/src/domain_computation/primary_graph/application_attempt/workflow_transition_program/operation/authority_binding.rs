@@ -66,7 +66,7 @@ impl<Schema, Operation, Input, Scope>
         Binding,
     >(
         &self,
-        idempotency: &crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        idempotency: &crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     ) -> bool
     where
         Schema: ApplicationSchema,

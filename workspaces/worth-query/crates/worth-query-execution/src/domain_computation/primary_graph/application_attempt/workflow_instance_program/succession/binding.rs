@@ -1,8 +1,5 @@
 //! Bind the native completed-chain proof and existing output to one guarded candidate.
-use super::super::super::{
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationRealizedEffect,
-};
+use {super::super::super::WorthQueryApplicationEffectProgram, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, super::super::super::WorthQueryApplicationRealizedEffect};
 use super::{mismatch, WorkflowSuccessionAuthority, WorthQueryApplicationAttemptDenial};
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial,

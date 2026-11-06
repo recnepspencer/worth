@@ -1,8 +1,5 @@
 //! Lifecycle refusals occur before either source or consequence is published.
-use {
-    super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitDenialStage,
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
-};
+use {super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind};
 impl WorthQueryApplicationCommitDenial {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn signing_lifecycle_attempt(
         cause: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,

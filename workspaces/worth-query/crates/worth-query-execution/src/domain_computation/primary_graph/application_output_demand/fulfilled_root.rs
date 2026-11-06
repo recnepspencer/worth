@@ -1,9 +1,6 @@
 //! Retrospective custody of the root that fulfilled a performed source.
 use super::WorthQueryOutputSettlementPosture;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationReadObservation,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation};
 use std::sync::Arc;
 
 /// The actual required demand fulfilled the source's obligation at this output

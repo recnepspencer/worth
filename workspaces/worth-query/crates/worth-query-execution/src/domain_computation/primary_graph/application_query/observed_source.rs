@@ -57,8 +57,8 @@ impl WorthQueryBoundSourceExpectation {
 
     pub fn bind_idempotency(
         self,
-        idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
-    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding {
+        idempotency: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding {
         idempotency
             .bind_source(Some(&self.identity))
             .bind_source_partition(&self.partition_identity)

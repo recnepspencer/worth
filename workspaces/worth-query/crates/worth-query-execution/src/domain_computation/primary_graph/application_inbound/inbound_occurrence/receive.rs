@@ -58,7 +58,7 @@ pub enum WorthQueryInboundAdmissionDenial {
     PublicationInProgress,
     PublicationRetryRequired,
     PublicationAllocationDenied {
-        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        stage: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
         kind: worth_execution::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },
@@ -68,12 +68,12 @@ pub enum WorthQueryInboundAdmissionDenial {
     },
     /// Publication remains retryable; the execution owner retains its cause.
     PublicationExecutionDenied {
-        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        stage: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
         kind: crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
     },
     /// Cancellation or deadline during preparation remains retryable.
     PublicationExecutionControlStopped {
-        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        stage: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
         kind: crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     },
     RecoveryStaleProduct,
@@ -281,7 +281,7 @@ impl WorthQueryInboundAdmissionDenial {
     pub(in crate::domain_computation::primary_graph) fn advancement(
         cause: crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ) -> Self {
-        let stage = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ResourceAdmission;
+        let stage = crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage::ResourceAdmission;
         match crate::domain_computation::provider_session::protocol::advancement_denial_cause(cause)
         {
             Ok(kind) => Self::PublicationExecutionDenied { stage, kind },

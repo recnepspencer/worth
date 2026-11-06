@@ -12,7 +12,7 @@ use crate::domain_computation::execution_runtime::product_world::{
 use crate::domain_computation::primary_graph::application_output_demand::{
     PreparedOutputRootKind, WorthQueryRequiredOutputSourcePreparation,
 };
-use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 
 pub(super) enum ProgramOutputSourcePayload {
     Required(TypeId),
@@ -103,7 +103,7 @@ impl WorthQueryUnpublishedProgramOutputSource {
 /// refuse promotion; a partial transfer never drops an already-taken witness.
 pub struct WorthQueryRecoveredProgramOutputSource {
     pub(super) publication:
-        crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
     pub(super) change: Option<Arc<WorthQueryPerformedRelationalProductChange>>,
     pub(super) observation: Option<worth_runtime_world::facade::ProductBranchObservation>,
 }
@@ -111,7 +111,7 @@ pub struct WorthQueryRecoveredProgramOutputSource {
 impl WorthQueryRecoveredProgramOutputSource {
     pub(in crate::domain_computation::primary_graph) fn publication(
         &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication {
         &self.publication
     }
     pub(in crate::domain_computation::primary_graph) fn product_branch(
@@ -190,7 +190,7 @@ impl WorthQueryRecoveredProgramOutputSource {
         publication: &WorthQueryProductPublicationReceipt,
     ) -> Self {
         Self {
-            publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication::from_receipt(publication.clone()),
+            publication: crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication::from_receipt(publication.clone()),
             change: publication.take_fresh_delivery().map(Arc::new),
             observation: publication.take_output_demand_observation(),
         }

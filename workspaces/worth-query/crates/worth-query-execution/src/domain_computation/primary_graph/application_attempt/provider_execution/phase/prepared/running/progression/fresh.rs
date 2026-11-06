@@ -12,7 +12,7 @@ use graph::application_attempt::provider_execution::outcome::{
 };
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
 use graph::provider::{WorthQueryPrimaryGraphProvider, WorthQueryProviderIdempotencyResolution};
-use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
 use session::WorthQueryProviderSessionTerminalBinding as TerminalBinding;
 use worth_query_installation::facade::ApplicationSchema;
 use {
@@ -24,7 +24,7 @@ use {
     graph::application_attempt::WorthQueryCommittedReceiptProjection,
 };
 
-use graph::application_attempt::WorthQueryApplicationCommitDenialStage as DenialStage;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as DenialStage;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryRegisteredEquivalentCommitReceiptPermit
 {

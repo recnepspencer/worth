@@ -1,9 +1,6 @@
 //! Typed refusals decided while lowering a program's effects.
 
-use {
-    super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitDenialStage,
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
-};
+use {super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind};
 use {
     crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
     crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,

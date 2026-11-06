@@ -122,10 +122,7 @@ fn cause(
     };
     use super::signal_decision_reentry::WorthQueryOperationBackpressureCause as Backpressure;
     use super::signal_decision_reentry::WorthQueryRetainedConditionalDecision as Decision;
-    use {
-        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as CommitKind,
-        graph::WorthQueryApplicationCommitDenialStage as Stage,
-    };
+    use {crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as CommitKind, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as Stage};
     match decision {
         Decision::OperationExecutionControlRetryable(_, kind) => {
             Some(Cause::ApplicationExecutionDenied {
@@ -352,7 +349,7 @@ fn authorization_cause(denial: &graph::WorthQueryOperationAuthorizationDenial) -
         AuthorizationKind::Stopped(Err(Control::Cancelled)) => Cause::Cancelled,
         AuthorizationKind::Stopped(Err(Control::TimedOut)) => Cause::TimedOut,
         AuthorizationKind::Stopped(Ok(kind)) => Cause::ApplicationExecutionDenied {
-            stage: graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
+            stage: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
             cause: Ok(kind),
         },
         AuthorizationKind::Refused(_) => Cause::TerminalFailure,

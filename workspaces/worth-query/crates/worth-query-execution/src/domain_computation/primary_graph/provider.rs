@@ -175,7 +175,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn bind_application_idempotency_intent(
         &self,
         batch: worth_relational::facade::transactions::WorkerIntentBatch,
-        idempotency: super::application_attempt::WorthQueryApplicationIdempotencyBinding,
+        idempotency: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
         outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
         emitted_effect_count: u64,
         mutation_partition: worth_relational::facade::identity::PartitionId,

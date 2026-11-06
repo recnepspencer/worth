@@ -31,7 +31,7 @@ fn custom_semantic_violation_preserves_owner_identity() {
         Some(&WorthQueryCustomInvariantDenial::Violation { identity, refusal })
     );
     let denial = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
-            crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage::InvariantExecution,
             failure.clone(),
         );
     assert_eq!(
@@ -102,7 +102,7 @@ fn invariant_materialization_refusal_is_not_exhaustion() {
         ] {
             let failure = map_transaction_staging_failure(owner_denial);
             let denial = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution,
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage::InvariantExecution,
                 failure,
             );
             let retained = denial.invariant_execution_failure().unwrap();
@@ -121,11 +121,7 @@ fn semantic_identity() -> CustomInvariantSemanticIdentity {
 
 #[test]
 fn original_law_payload_survives_all_query_refusal_translations() {
-    use crate::domain_computation::primary_graph::{
-        application_attempt::provider_compare_denial::provider_session_denied,
-        bootstrap_publication::map_bootstrap_commit_denial, WorthQueryApplicationCommitDenial,
-        WorthQueryApplicationCommitDenialStage,
-    };
+    use {crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied, crate::domain_computation::primary_graph::bootstrap_publication::map_bootstrap_commit_denial, crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage};
     use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
     use worth_relational::facade::schema::ContractId;
     use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
@@ -279,10 +275,7 @@ fn publication_transport_error(
 
 #[test]
 fn authored_retirement_transport_preserves_typed_refusal_and_record_subject() {
-    use crate::domain_computation::primary_graph::{
-        WorthQueryApplicationCommitDenial as Denial,
-        WorthQueryApplicationCommitDenialStage as Stage,
-    };
+    use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as Stage};
     use worth_relational::facade::{
         publication::{AuthoredRetirementRefusal, PublicationError, PublicationStage},
         transactions::TransactionCommitError,

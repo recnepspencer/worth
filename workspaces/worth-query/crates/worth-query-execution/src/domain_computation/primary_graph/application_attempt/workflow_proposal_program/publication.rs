@@ -6,7 +6,7 @@ use worth_query_declaration::facade::application_program::ApplicationProgramRevi
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, super::super::WorthQueryApplicationEffectProgram, super::super::WorthQueryApplicationIdempotencyBinding, super::super::WorthQueryApplicationIdempotencyResolution, super::super::WorthQueryApplicationIdempotencyResolutionDenial, super::super::WorthQueryApplicationUncommitted};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, super::super::WorthQueryApplicationEffectProgram, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, super::super::WorthQueryApplicationIdempotencyResolution, super::super::WorthQueryApplicationIdempotencyResolutionDenial, super::super::WorthQueryApplicationUncommitted};
 use crate::domain_computation::primary_graph::application_attempt::workflow::proposal::derive_workflow_proposal_context_identity;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 

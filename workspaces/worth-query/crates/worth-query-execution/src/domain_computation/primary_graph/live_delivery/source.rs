@@ -39,7 +39,7 @@ impl From<Cause> for WorthQueryLiveAdmissionDenial {
 }
 
 use super::super::application_attempt::WorthQueryApplicationEmission;
-use crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication;
 
 const RETAINED_COMMIT_BATCH_CAPACITY: usize = 64;
 

@@ -16,7 +16,7 @@ impl Denial {
                 }
                 Preparation::AllocationDenied { stage, kind, requested_payload_bytes } => Retry::PublicationAllocationDenied { stage, kind, requested_payload_bytes },
                 Preparation::StagingAllocationDenied { kind, requested_payload_bytes } => Retry::PublicationAllocationDenied {
-                    stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::EffectLowering,
+                    stage: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage::EffectLowering,
                     kind, requested_payload_bytes,
                 },
                 Preparation::StagingCardinalityOverflow => Retry::PublicationStagingCardinalityOverflow,

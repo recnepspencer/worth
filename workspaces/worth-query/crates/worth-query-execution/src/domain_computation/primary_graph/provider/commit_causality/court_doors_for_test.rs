@@ -11,7 +11,7 @@ impl WorthQueryPrimaryGraphProvider {
 impl WorthQueryPrimaryGraphProvider {
     #[doc(hidden)]
     pub fn committed_application_emissions_for_test(
-    &self, publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication) -> Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission>{
+    &self, publication: &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication) -> Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission>{
         Self::committed_application_emissions(self, publication)
     }
 }
