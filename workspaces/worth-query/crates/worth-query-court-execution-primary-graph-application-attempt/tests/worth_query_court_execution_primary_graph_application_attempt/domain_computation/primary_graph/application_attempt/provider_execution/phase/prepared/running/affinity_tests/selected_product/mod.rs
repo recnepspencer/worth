@@ -15,8 +15,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
             let running = start(
                 phase,
                 &world,
-                retained_program(
-                    &host_custody.phase_for_application_for_test(&world.application),
+                retained_program( &(&host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     "product-owner",
                 ),
@@ -71,8 +70,7 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
             let running = start(
                 phase,
                 &world,
-                retained_program(
-                    &host_custody.phase_for_application_for_test(&world.application),
+                retained_program( &(&host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     "product-owner",
                 ),
@@ -130,7 +128,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 start(
                     &phase,
                     &a,
-                    retained_program(&phase, &a, "readmission-a"),
+                    retained_program( &(&phase).test_host_request_for_test(), &a, "readmission-a"),
                     idempotency(181, 181),
                 )
             })
@@ -141,7 +139,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 start(
                     &phase,
                     &b,
-                    retained_program(&phase, &b, "readmission-b"),
+                    retained_program( &(&phase).test_host_request_for_test(), &b, "readmission-b"),
                     idempotency(182, 182),
                 )
             })

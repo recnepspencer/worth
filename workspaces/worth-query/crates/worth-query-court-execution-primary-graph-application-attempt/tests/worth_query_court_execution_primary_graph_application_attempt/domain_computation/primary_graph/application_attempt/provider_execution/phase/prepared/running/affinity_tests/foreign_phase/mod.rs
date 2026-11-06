@@ -19,7 +19,7 @@ fn prepared_running_refuses_foreign_phase_with_the_same_typed_cause() {
                         .application
                         .validate_commit_program_in_advancement_for_test(
                             &phase,
-                            retained_program(&phase, &world, "foreign-phase"),
+                            retained_program( &(&phase).test_host_request_for_test(), &world, "foreign-phase"),
                         )
                         .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
                     idempotency(197, 198),
