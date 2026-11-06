@@ -34,6 +34,14 @@ impl WorthQueryApplicationCommittedChanges {
         }
     }
 
+    /// The commit's authoritative record patches, in canonical order, for the
+    /// attempt's field and output interpretation. The envelope stays private.
+    pub(in crate::domain_computation::primary_graph) fn record_patches(
+        &self,
+    ) -> &[PublishedAuthoritativeRecordPatch] {
+        &self.envelope.patch.authoritative_record_patches
+    }
+
     pub fn commit_reference(&self) -> &RelationalCommitReceipt {
         &self.envelope.commit
     }
@@ -148,7 +156,7 @@ impl WorthQueryApplicationCommittedChanges {
         Ok((!duplicate).then_some(committed).flatten())
     }
 
-    fn committed_field_value(
+    pub(in crate::domain_computation::primary_graph) fn committed_field_value(
         &self,
         entity: EntityId,
         locator: &AspectFieldLocator,

@@ -7,7 +7,7 @@ use worth_relational::facade::identity::EntityId;
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 
 mod storage;
-use storage::CorrespondenceStorage;
+pub(in crate::domain_computation::primary_graph) use storage::CorrespondenceStorage;
 
 mod family_entry;
 pub use family_entry::WorthQueryApplicationOutputFamilyEntry;
@@ -39,11 +39,27 @@ impl WorthQueryCheckpointOutputRole {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct CommittedOutputBinding {
+pub(in crate::domain_computation::primary_graph) struct CommittedOutputBinding {
     posture: WorthQueryApplicationOutputPosture,
     entity_name: String,
     entity_type: TypeId,
     entity: EntityId,
+}
+
+impl CommittedOutputBinding {
+    pub(in crate::domain_computation::primary_graph) const fn new(
+        posture: WorthQueryApplicationOutputPosture,
+        entity_name: String,
+        entity_type: TypeId,
+        entity: EntityId,
+    ) -> Self {
+        Self {
+            posture,
+            entity_name,
+            entity_type,
+            entity,
+        }
+    }
 }
 
 /// Sealed role-to-identity correspondence resolved from one Relational commit.
@@ -60,6 +76,44 @@ pub struct WorthQueryApplicationOutputCorrespondence {
 }
 
 impl WorthQueryApplicationOutputCorrespondence {
+    /// The correspondence a candidate sealed at its performed commit, with
+    /// `roles` already in role-name order.
+    pub(in crate::domain_computation::primary_graph) fn from_committed(
+        binding_type: Option<TypeId>,
+        contract_type: Option<TypeId>,
+        optional_roles: Vec<String>,
+        roles: Vec<(String, CommittedOutputBinding)>,
+    ) -> Self {
+        Self {
+            binding_type,
+            contract_type,
+            storage: std::sync::Arc::new(CorrespondenceStorage::from_committed(
+                optional_roles,
+                roles,
+            )),
+        }
+    }
+
+    /// The correspondence restored from checkpoint roles, sorted and admitted
+    /// by the restoration, retaining the reservation that funded its rows.
+    pub(in crate::domain_computation::primary_graph) fn from_restored(
+        binding_type: TypeId,
+        contract_type: TypeId,
+        optional_roles: Vec<String>,
+        roles: Vec<(String, CommittedOutputBinding)>,
+        funding: worth_execution::ExecutionMemoryReservation,
+    ) -> Self {
+        Self {
+            binding_type: Some(binding_type),
+            contract_type: Some(contract_type),
+            storage: std::sync::Arc::new(CorrespondenceStorage {
+                optional_roles,
+                roles,
+                _funding: Some(funding),
+            }),
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn native_witness_roles(
         &self,
     ) -> impl ExactSizeIterator<Item = (&str, WorthQueryApplicationOutputPosture, &str, EntityId)> + Clone

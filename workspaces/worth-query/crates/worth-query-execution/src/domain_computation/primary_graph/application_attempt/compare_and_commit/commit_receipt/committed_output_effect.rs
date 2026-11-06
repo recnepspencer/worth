@@ -1,5 +1,7 @@
 //! Conservative invalidation of one carried output publication by canonical effects.
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges;
+use worth_relational::facade::publication::RecordStructuralChange;
+use worth_relational::facade::transactions::RecordRef;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 
 impl WorthQueryApplicationCommittedChanges {
@@ -10,7 +12,7 @@ impl WorthQueryApplicationCommittedChanges {
         context: &mut worth_execution::MapKernelContext<'_, '_>,
         outputs: &WorthQueryApplicationOutputCorrespondence,
     ) -> Result<bool, worth_execution::MapKernelStop> {
-        for patch in &self.envelope.patch.authoritative_record_patches {
+        for patch in self.record_patches() {
             crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(
                 context, 1,
             )?;

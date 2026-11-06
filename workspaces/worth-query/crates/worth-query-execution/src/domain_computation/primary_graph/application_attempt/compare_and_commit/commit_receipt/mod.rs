@@ -380,7 +380,8 @@ impl WorthQueryApplicationCommitReceipt {
 
 
 mod court_doors_for_test;
-pub(in crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt) mod committed_actor_observation;
-pub(in crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt) mod committed_field_effect;
-pub(crate) mod materialized_committed_field;
-pub(in crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt) mod committed_output_effect;
+mod committed_actor_observation;
+mod committed_field_effect;
+mod materialized_committed_field;
+pub(in crate::domain_computation::primary_graph) use materialized_committed_field::MaterializedCommittedField;
+mod committed_output_effect;

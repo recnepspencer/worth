@@ -19,4 +19,4 @@ pub(in crate::domain_computation::primary_graph) use commit_receipt::{
 
 pub use {commit_outcome::WorthQueryApplicationCommitDenial, commit_outcome::WorthQueryApplicationCommitOutcome, commit_outcome::WorthQueryApplicationCommitRecoveryKind, commit_outcome::WorthQueryApplicationManagedCleanupFailure, commit_outcome::WorthQueryApplicationNoEffect, commit_outcome::WorthQueryApplicationNoEffectCause, commit_outcome::WorthQueryApplicationUncommitted, commit_outcome::WorthQueryApplicationUnresolvedCommitEvidence};
 
-
+pub(in crate::domain_computation::primary_graph) use commit_receipt::MaterializedCommittedField;

@@ -1,5 +1,12 @@
 //! Reconstruct correspondence only after admitting its independent owned payload.
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::CommittedOutputBinding, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::CorrespondenceStorage, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::TypeId, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputRoleNameDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputRoleNameDenial;
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::CommittedOutputBinding,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::CorrespondenceStorage,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole,
+};
 use crate::domain_computation::primary_graph::application_checkpoint::{
     CheckpointDecodeDenial, CheckpointMetadataFunding,
 };
@@ -39,12 +46,12 @@ impl WorthQueryApplicationOutputCorrespondence {
             })?;
             rebound.push((
                 funding.copy_text(&role.role, execution)?,
-                CommittedOutputBinding {
-                    posture: role.posture,
-                    entity_name: funding.copy_text(&role.entity_name, execution)?,
-                    entity_type: marker,
-                    entity: role.entity,
-                },
+                CommittedOutputBinding::new(
+                    role.posture,
+                    funding.copy_text(&role.entity_name, execution)?,
+                    marker,
+                    role.entity,
+                ),
             ));
         }
         rebound.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
@@ -55,15 +62,13 @@ impl WorthQueryApplicationOutputCorrespondence {
         // share this store, so they cannot duplicate heaps or abandon their payer.
         funding.slots::<CorrespondenceStorage>(1, execution)?;
         funding.slots::<Self>(1, execution)?;
-        Ok(Self {
-            binding_type: Some(binding_type),
-            contract_type: Some(contract_type),
-            storage: std::sync::Arc::new(CorrespondenceStorage {
-                optional_roles: optional,
-                roles: rebound,
-                _funding: Some(funding),
-            }),
-        })
+        Ok(Self::from_restored(
+            binding_type,
+            contract_type,
+            optional,
+            rebound,
+            funding.into_reservation(),
+        ))
     }
 }
 #[cfg(test)]

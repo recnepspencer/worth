@@ -1,5 +1,9 @@
 //! An immutable original envelope and full-generation patch seal a Native value position.
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges;
+use worth_foundational::facade::AspectValue;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::publication::RecordStructuralChange;
+use worth_relational::facade::transactions::RecordRef;
 use worth_execution::{MapKernelContext, MapKernelStop};
 use worth_relational::facade::publication::{
     PublishedAuthoritativeFieldEffect as Effect, PublishedAuthoritativeFieldValueLocation,
@@ -21,9 +25,7 @@ impl MaterializedCommittedField {
     }
     pub(in crate::domain_computation::primary_graph) fn value(&self) -> Option<&AspectValue> {
         self.original
-            .envelope
-            .patch
-            .authoritative_record_patches
+            .record_patches()
             .get(self.patch?)?
             .authoritative_patch
             .field_value_at(self.value?)
@@ -37,12 +39,7 @@ impl WorthQueryApplicationCommittedChanges {
         coordinate: InstalledFieldCoordinate<'_>,
     ) -> Result<MaterializedCommittedField, MapKernelStop> {
         let mut selected = None;
-        for (index, patch) in self
-            .envelope
-            .patch
-            .authoritative_record_patches
-            .iter()
-            .enumerate()
+        for (index, patch) in self.record_patches().iter().enumerate()
         {
             checkpoint(context, 1)?;
             if patch.target != RecordRef::Entity(entity) {
@@ -60,7 +57,7 @@ impl WorthQueryApplicationCommittedChanges {
         let (effect, value) = match selected {
             None => (Effect::Unchanged, None),
             Some(index) => {
-                let patch = &self.envelope.patch.authoritative_record_patches[index];
+                let patch = &self.record_patches()[index];
                 if !matches!(
                     patch.structural_change,
                     RecordStructuralChange::Created | RecordStructuralChange::Updated

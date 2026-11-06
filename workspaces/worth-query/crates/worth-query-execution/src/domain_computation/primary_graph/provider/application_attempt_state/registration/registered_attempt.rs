@@ -1,6 +1,6 @@
 //! Atomic registration of Query-owned application-attempt records.
 
-use crate::domain_computation::primary_graph::application_attempt::provider_binding::registration::WorthQueryApplicationAttemptRegistration;
+use crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryApplicationAttemptRegistration;
 use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptAffinity;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity;
@@ -259,19 +259,12 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
 }
 
 impl WorthQueryApplicationAttemptRegistrationCompletion {
-    pub(in crate::domain_computation::primary_graph) fn finish<'run>(
+    /// The dispatch-outbox record the registration bound, which the attempt
+    /// carries into its registered provider attempt under its own seal.
+    pub(in crate::domain_computation::primary_graph) fn into_dispatch_outbox(
         self,
-        seal: crate::domain_computation::primary_graph::application_attempt::provider_binding::registration::WorthQueryRegisteredProviderAttemptSeal,
-        staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
-        steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
-    ) -> crate::domain_computation::primary_graph::WorthQueryRegisteredProviderAttempt<'run> {
-        crate::domain_computation::primary_graph::WorthQueryRegisteredProviderAttempt::from_registration(
-            seal,
-            staged,
-
-            steps,
-            self.dispatch_outbox,
-        )
+    ) -> Option<WorthQueryDispatchOutboxRecord> {
+        self.dispatch_outbox
     }
 }
 
@@ -299,7 +292,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         registration: WorthQueryApplicationAttemptRegistration<'a>,
     ) -> Result<WorthQueryPreparedApplicationAttempt, ApplicationAttemptRegistrationStop> {
-        let crate::domain_computation::primary_graph::application_attempt::provider_binding::registration::WorthQueryApplicationAttemptRegistration {
+        let crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryApplicationAttemptRegistration {
             workflow_origin,
             required_output_demand,
             effect_owner: _effect_owner,

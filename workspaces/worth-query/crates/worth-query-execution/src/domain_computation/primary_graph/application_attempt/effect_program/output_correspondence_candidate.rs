@@ -14,7 +14,13 @@ use worth_relational::facade::transactions::{CommitResult, EntityReference};
 use contract::{ExpectedOutputBinding, ExpectedOutputFamily};
 
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::CommittedOutputBinding, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputRoleNameDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse};
+use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputRoleNameDenial;
+use {
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::CommittedOutputBinding,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse,
+};
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
@@ -235,12 +241,12 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                 };
                 (
                     role,
-                    CommittedOutputBinding {
-                        posture: binding.posture,
-                        entity_name: binding.entity_name,
-                        entity_type: binding.entity_type,
+                    CommittedOutputBinding::new(
+                        binding.posture,
+                        binding.entity_name,
+                        binding.entity_type,
                         entity,
-                    },
+                    ),
                 )
             })
             .collect();
@@ -250,14 +256,12 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
             .filter(|(_, expected)| expected.cardinality.admits_absence())
             .map(|(role, _)| role)
             .collect();
-        WorthQueryApplicationOutputCorrespondence {
-            binding_type: self.binding_type,
-            contract_type: self.contract_type,
-            storage: std::sync::Arc::new(crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::CorrespondenceStorage::from_committed(
-                optional_roles,
-                roles,
-            )),
-        }
+        WorthQueryApplicationOutputCorrespondence::from_committed(
+            self.binding_type,
+            self.contract_type,
+            optional_roles,
+            roles,
+        )
     }
 }
 

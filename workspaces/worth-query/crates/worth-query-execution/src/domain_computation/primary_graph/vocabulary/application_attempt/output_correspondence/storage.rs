@@ -1,13 +1,13 @@
 //! One sorted immutable role store, shared by correspondence clones.
 use super::CommittedOutputBinding;
-use crate::domain_computation::primary_graph::application_checkpoint::CheckpointMetadataFunding;
 
 #[derive(Debug, Default)]
-pub(super) struct CorrespondenceStorage {
+pub(in crate::domain_computation::primary_graph) struct CorrespondenceStorage {
     pub(super) optional_roles: Vec<String>,
     pub(super) roles: Vec<(String, CommittedOutputBinding)>,
-    // Last to drop: the rows and their strings retain their actual admission.
-    pub(super) _funding: Option<CheckpointMetadataFunding>,
+    // Last to drop: the rows and their strings retain their actual admission,
+    // the reservation that funded a checkpoint restoration.
+    pub(super) _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl PartialEq for CorrespondenceStorage {
     fn eq(&self, other: &Self) -> bool {

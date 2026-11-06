@@ -1,6 +1,8 @@
 //! Closed certification inspection of original immutable committed actor fields.
 //! These values never construct native selection evidence or capability access.
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges;
+use worth_foundational::facade::AspectValue;
+use worth_relational::facade::identity::EntityId;
 use worth_query_declaration::facade::application_capability::ApplicationWorkflowRecordedRole;
 
 impl WorthQueryApplicationCommittedChanges {
@@ -70,7 +72,7 @@ impl WorthQueryApplicationCommittedChanges {
             .map_err(|_| invalid("committed approval request locator is invalid"))?;
         // The receipt must own this exact artifact; its native runtime identity
         // and canonical commit select the retained poststate, never current head.
-        if !Arc::ptr_eq(&self.envelope, &receipt.committed_changes().envelope) {
+        if !self.shares_original(receipt.committed_changes()) {
             return Err(invalid("committed approval receipt envelope differs"));
         }
         let Some(AspectValue::String(worth_foundational::facade::InternedString::Symbol(symbol))) =

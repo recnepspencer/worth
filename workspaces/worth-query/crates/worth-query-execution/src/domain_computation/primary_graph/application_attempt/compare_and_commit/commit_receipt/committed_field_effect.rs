@@ -1,5 +1,8 @@
 //! Interpret one canonical occurrence through its actual installed Native coordinate.
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::publication::RecordStructuralChange;
+use worth_relational::facade::transactions::RecordRef;
 use crate::domain_computation::primary_graph::schema_layout::InstalledFieldCoordinate;
 use worth_relational::facade::publication::PublishedAuthoritativeFieldEffect as Effect;
 
@@ -14,7 +17,7 @@ impl WorthQueryApplicationCommittedChanges {
     ) -> Result<Effect, worth_execution::MapKernelStop> {
         let mut result = Effect::Unchanged;
         let mut seen = false;
-        for patch in &self.envelope.patch.authoritative_record_patches {
+        for patch in self.record_patches() {
             crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(
                 context, 1,
             )?;

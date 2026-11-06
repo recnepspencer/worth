@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::CapturedWorkflowIdempotency;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::read_set::{
     MutationHandlerBindingProof, WorkflowOperationBindingProof,

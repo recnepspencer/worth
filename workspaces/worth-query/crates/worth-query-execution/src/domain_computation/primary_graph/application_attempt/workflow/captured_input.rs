@@ -72,6 +72,20 @@ pub enum WorkflowCapturedInputDenial {
     Source(WorthQuerySourceExpectationDenial),
 }
 
+/// The attempt's comparison of a committed idempotency binding with the
+/// captured request contract it must have committed.
+pub(in crate::domain_computation::primary_graph) trait CapturedWorkflowIdempotency {
+    fn matches_captured_workflow_contract(&self, expected: &WorkflowCapturedInputContract) -> bool;
+}
+
+impl CapturedWorkflowIdempotency
+    for crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding
+{
+    fn matches_captured_workflow_contract(&self, expected: &WorkflowCapturedInputContract) -> bool {
+        self.matches_captured_workflow_request(&expected.key, expected.source, &expected.input)
+    }
+}
+
 impl WorkflowCapturedInputContract {
     /// Compare the complete original request after fresh native authorization,
     /// but before its source owner or any effect is consumed. Descriptive equality

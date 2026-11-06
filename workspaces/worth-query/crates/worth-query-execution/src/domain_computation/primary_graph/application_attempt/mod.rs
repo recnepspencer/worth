@@ -270,3 +270,4 @@ pub(in crate::domain_computation::primary_graph) use workflow_transition_program
 pub(crate) mod external_dispatch_attempt;
 pub(crate) mod host;
 mod mutation_partition;
+pub(in crate::domain_computation::primary_graph) use compare_and_commit::MaterializedCommittedField;

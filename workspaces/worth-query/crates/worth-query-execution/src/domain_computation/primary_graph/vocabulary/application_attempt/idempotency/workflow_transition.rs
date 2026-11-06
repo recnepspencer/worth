@@ -25,14 +25,18 @@ impl WorthQueryApplicationIdempotencyBinding {
             && self.workflow_transition_identity.as_ref() == Some(transition)
             && self.matches_workflow_operation(receipt)
     }
-    pub(in crate::domain_computation::primary_graph) fn matches_captured_workflow_contract(
+    /// Whether this binding commits the captured request: its client key, its
+    /// source identity and partition, and its governed input.
+    pub(in crate::domain_computation::primary_graph) fn matches_captured_workflow_request(
         &self,
-        expected: &crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputContract,
+        key: &[u8; 32],
+        source: Option<(u64, [u8; 32], [u8; 32])>,
+        input: &[u8; 32],
     ) -> bool {
-        self.workflow_client_key_identity == Some(expected.key)
-            && self.source_identity == expected.source.map(|source| source.1)
-            && self.source_partition_identity == expected.source.map(|source| source.2)
-            && self.intent_identity == expected.input
+        self.workflow_client_key_identity == Some(*key)
+            && self.source_identity == source.map(|source| source.1)
+            && self.source_partition_identity == source.map(|source| source.2)
+            && self.intent_identity == *input
     }
     pub(in crate::domain_computation::primary_graph) const fn bind_workflow_support(
         mut self,
