@@ -12,6 +12,8 @@ use crate::storage::overlay::{
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 mod creation;
+mod current_frame;
+pub(crate) use current_frame::CurrentPublicationFrame;
 mod endpoints;
 mod incidence;
 pub(super) use creation::validate_owned;
@@ -21,11 +23,12 @@ pub(super) fn validate(
     root: &RelationalBranchRoot,
     candidate: Option<&WorkingState>,
     origin: &CanonicalRequiredOutputOrigin,
-    current: Option<&CanonicalCommitEnvelope>,
+    current: Option<CurrentPublicationFrame<'_>>,
     lookup_commit: &mut impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
     lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
     maximum_hops: usize,
     lease: Option<&ExecutionResourceLease<'_>>,
+    validated_history: &mut crate::history::data::canonical_commit_envelope::OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
     let overlay;
@@ -124,7 +127,15 @@ pub(super) fn validate(
         )?;
     }
     incidence::validate(
-        incidence, state, root, origin, current, lookup, lease, context,
+        incidence,
+        state,
+        root,
+        origin,
+        current,
+        lookup,
+        lease,
+        validated_history,
+        context,
     )
 }
 

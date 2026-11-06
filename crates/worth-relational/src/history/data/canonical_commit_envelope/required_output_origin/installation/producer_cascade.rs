@@ -161,6 +161,7 @@ impl CanonicalCommitEnvelope {
         root: RouteCompletion<'_>,
         closure: ProducerRetirementClosure,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        validated_history: &mut OutputOriginHistory,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<crate::history::data::RequiredOutputPublicationPositions, TransactionCommitError>
     {
@@ -176,6 +177,7 @@ impl CanonicalCommitEnvelope {
                 ..root
             },
             lease,
+            validated_history,
             context,
         )?;
         let root_origin = self
@@ -217,6 +219,7 @@ impl CanonicalCommitEnvelope {
                 &predecessor,
                 &origin.meaning,
                 lease,
+                validated_history,
                 context,
             )
             .map_err(|failure| typed_corruption(failure, origin.meaning.source_scope))?;
@@ -248,6 +251,7 @@ impl CanonicalCommitEnvelope {
                     },
                 },
                 lease,
+                validated_history,
                 context,
             )
             .map_err(|failure| typed_corruption(failure, origin.meaning.source_scope))?;

@@ -37,19 +37,11 @@ fn aspect_native_source_and_realization_operation_installs() {
 }
 
 #[test]
-fn truly_excessive_distinct_facts_refuse_with_requested_and_maximum_counts() {
-    use worth_query_installation::facade::CanonicalDigestDerivationDenial;
-    use worth_query_installation::facade::WorthQueryApplicationOperationInstallationDenialKind;
-    let denial = model::install::<18, 16>()
-        .err()
-        .expect("identity limit still applies");
-    println!("{denial}");
-    assert_eq!(denial.operation(), "apply-preserve");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationOperationInstallationDenialKind::CanonicalEntryBudgetExceeded
-    );
-    assert!(
-        matches!(denial.canonical_denial(), Some(CanonicalDigestDerivationDenial::EntryLimitExceeded { actual, maximum }) if *maximum == 4096 && *actual > *maximum)
-    );
+fn formerly_excessive_distinct_facts_install_after_admission() {
+    model::install::<18, 16>().expect("admission is the declaration size door");
+}
+
+#[test]
+fn large_aspect_native_operation_installs() {
+    model::install::<40, 12>().unwrap();
 }

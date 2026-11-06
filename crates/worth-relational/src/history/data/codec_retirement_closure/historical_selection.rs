@@ -1,19 +1,20 @@
 //! Follow the selected producer antecedent, never the displaced current publication.
-use super::{
-    charge, CanonicalCommitEnvelope, CodecRetirementClosureStop as Stop, RelationalRuntime,
+use super::{charge, CodecRetirementClosureStop as Stop, RelationalRuntime};
+use crate::history::data::canonical_commit_envelope::{
+    OutputOriginHistory, OwnedValidatedOutputOrigins,
 };
 use crate::{
     history::data::CanonicalOutputPublication, mvcc::RequiredOutputRolePosture as Posture,
 };
-use std::sync::Arc;
 use worth_execution::MapKernelContext;
 
 pub(crate) fn antecedent(
     runtime: &RelationalRuntime,
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &OwnedValidatedOutputOrigins,
     origin: &crate::history::data::CanonicalRequiredOutputOrigin,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
-) -> Result<Arc<CanonicalCommitEnvelope>, Stop> {
+) -> Result<OwnedValidatedOutputOrigins, Stop> {
     let CanonicalOutputPublication::HistoricalSelection {
         selected,
         generation,
@@ -22,9 +23,12 @@ pub(crate) fn antecedent(
     else {
         return Err("historical reconstruction requires a selection origin".into());
     };
-    let previous = runtime
-        .history
-        .canonical_envelope(selected)
+    let previous = validated_history
+        .by_commit(
+            selected,
+            &mut |commit| runtime.history.canonical_envelope(commit),
+            context,
+        )?
         .ok_or("historical producer antecedent is unavailable")?;
     if previous.commit.version_id != generation || selected == envelope.commit.commit_id {
         return Err("historical producer antecedent generation differs".into());

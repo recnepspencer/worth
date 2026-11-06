@@ -83,24 +83,90 @@ remain separate costs. Raising it changes admission headroom without changing
 canonical rules, ordering, versions, or identities of previously admitted
 packages and schemas.
 
-Each installed graph-obligation identity has a separate fixed limit of 4,096
-canonical entries and 1 MiB of digest material. Its v2 encoding includes every
-distinct aspect contract once in an identity-local table and one ordinal
-reference per read projection or touch. Contract version and entry count frame
-each table member; exact canonical contract entries determine sharing, never a
-hash or aspect name alone. Projection masks, selected field paths, schema and
-entity bindings, structural scopes and resources still contribute their own
-entries and bytes. Repeated field writes therefore pay references rather than
-copies of their whole aspect. Table construction, references and masks share
-that one budget; the application resource profile cannot raise it.
+Installed graph-obligation, authorization-path, authorization-policy and
+operation-definition and installed-query identities use an internal allowance derived from the
+admitted declaration: at most **16 times its canonical entries and encoded
+bytes** for each derivation. The allowance is carried from the freshly admitted
+schema commitment, never supplied by an application or inferred from derived
+output. There is no smaller independent installation ceiling. Declaration
+meaning is admitted at package validation under the shared 64 MiB ceiling and
+its byte-derived entry-storage bound. The 32,768-entry / 4 MiB budget in
+`admission/identity.rs` governs support metadata, not declaration meaning.
+A declaration-size refusal belongs at that validation door and retains the typed
+kind and requested/maximum counts.
 
-Entry or byte exhaustion refuses before operation authority is issued.
-`WorthQueryApplicationOperationInstallationDenial::canonical_denial()` preserves
-the underlying requested (`actual` or `attempted`) and `maximum` counts. Entry
-construction stops at the first over-limit append; its requested count is that
-append, not a forecast of the rest of the declaration. The v2 rule changes
-graph-obligation identities and their dependent authority seals; it does not
-change portable package/schema identities or execution semantics.
+### Derived identity bound
+
+Let E and B be the admitted schema commitment's entry and encoded-byte counts.
+For any one operation (or query, inspection, resource or managed-index purpose),
+the following source assignment bounds its identity by 16E entries and 16B bytes:
+
+- Distinct native contracts are charged to their declaring aspects and fields
+  once. A flat Struct field emits four native contract facts; its declaration
+  already emits twelve field facts. Scalar, opaque and reference contracts have
+  fixed framing charged to their aspect declaration. The two table framing
+  entries are charged to that same declaration. No new nested shape is involved.
+- Each projection/touch occurrence is charged to its own read/program member.
+  It emits one contract ordinal, at most four binding entries and its kind,
+  entity/aspect/relation and selected path facts. Installed paths are flat scalar
+  fields. Complete explicit Struct masks emit one `complete-fields-v1` marker
+  against the exact referenced contract; partial and whole-aspect masks retain
+  their exact canonical material. No field inventory is multiplied by the
+  number of references.
+- Authorization paths reuse the declaration's exact canonical component emitter
+  plus one family entry. A policy emits its three names, path count and one
+  digest per declared path; operation authorization emits one digest per
+  applicable declared ability/capability. Effects and invariant executions emit
+  each applicable declaration once, including every state-load family and bound.
+  There is no cross product of requirements, paths or fields within an identity.
+- Subject, binding, role/count and resource framing is charged to schema headers
+  and the subject declaration. Query and managed-index graph meanings are fixed
+  digests, not expansions of their graphs; inspection meaning embeds its already
+  admitted definition once. The operation-definition identity has four entries.
+- Installed query, read-graph, normalized planning and continuation identities
+  use the same schema-derived allowance. Query fields, predicates, traversals,
+  selectors and ordering are already embedded in the admitted schema; their
+  lowered facts and result paths replace corresponding declared facts and paths.
+  Request parameter and admission-planning budgets remain separate runtime bounds.
+
+Coupled correction outputs, authored co-anchors and relation pre-image
+loci are emitted by the schema's canonical member visitor before this allowance
+is derived. They cannot be omitted by an installation-local member whitelist.
+Their retention, native deletion and correspondence checks remain unchanged.
+
+Under this assignment each source fact supplies at most four derived facts,
+including framing. Values are copied or replaced by fixed integers/digests;
+qualified locus/domain/framing overhead is at most four times its source encoding
+(the source already frames domain, kind, locus and value). Thus even charging
+both multiplicities gives 16E and 16B, including the smallest declarations and
+all constant framing. E is at most floor(64 MiB / 30), so 16E fits u32; 16B is
+at most 1 GiB and fits usize on supported 32-bit targets. Multiplication is checked.
+This is a per-identity bound, not a claim about total installation allocation or
+all operations' summed work.
+
+The installed-index v4 identity commits the exact source package/admission table
+and catalog cardinalities. All catalogs are deterministic projections of those
+validated sources; repeating definition semantics or owner strings adds no
+meaning. Its allowance sums the per-package derived allowances (saturating at
+representable budget maxima); the empty index has eight fixed framing entries.
+This removes the index's former 32,768-entry / 4 MiB installation gap without
+multiplying long owner names by catalog breadth.
+
+The v3 graph-obligation rule encodes every distinct aspect contract once in an
+identity-local table and one ordinal per read projection or touch. Contract
+version and entry count frame each table member; exact canonical entries decide
+sharing. Masks, field paths, bindings, structural scopes and resources keep their
+exact meaning. The v3 rule changes graph-obligation identities and dependent
+seals; portable package/schema and authorization identity rules remain unchanged.
+Query, resource and operation `canonical_denial()` accessors retain canonical
+derivation failures with their requested and maximum counts, but ordinary
+admitted declaration breadth no longer encounters a second fixed cliff.
+
+Courts install a 40-record / 12-field operation and an exactly 64 MiB admitted
+package, refuse its one-byte-larger twin at validation, install authorization
+paths/policies beyond the former fixed ceiling, preserve identity sensitivity
+and linear growth, and reject replacement of the derived allowance by the old
+fixed budget.
 
 ## Related Docs
 

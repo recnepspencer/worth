@@ -90,7 +90,8 @@ impl RelationalRuntime {
                 worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                     .run_with_checkpoint(lease, None, |context| {
                         envelope
-                            .output_origin_for_route(meaning, context)
+                            .validate_output_origins(context)
+                            .and_then(|origins| origins.output_origin_for_route(meaning, context))
                             .map(Arc::clone)
                     })
             })

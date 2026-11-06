@@ -104,7 +104,9 @@ pub(super) fn select_at(
                     origin.meaning.family.len() + meaning.family.len() + 64,
                 )?;
                 if origin.meaning.same_route(meaning) {
-                    retired.output_origin_for_route(meaning, context)?;
+                    retired
+                        .validate_output_origins(context)
+                        .and_then(|origins| origins.output_origin_for_route(meaning, context))?;
                     envelope.validate_restoration_header(context)?;
                     return Ok(Some(RequiredOutputRoutePosition::Published(commit)));
                 }
@@ -121,7 +123,9 @@ pub(super) fn select_at(
                     .saturating_add(64),
             )?;
             if origin.meaning.same_route(meaning) {
-                envelope.output_origin_for_route(meaning, context)?;
+                envelope
+                    .validate_output_origins(context)
+                    .and_then(|origins| origins.output_origin_for_route(meaning, context))?;
                 return Ok(Some(RequiredOutputRoutePosition::Published(commit)));
             }
         }

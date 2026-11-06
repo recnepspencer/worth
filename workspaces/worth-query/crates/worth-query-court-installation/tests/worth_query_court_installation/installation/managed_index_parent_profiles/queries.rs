@@ -70,7 +70,7 @@ fn shape<S: ModelSchema, Q: ApplicationQueryMarkerIdentity<S>>() -> TypedApplica
             ReadOnly,
             EqualityPredicate,
             NoApplicationUnit,
-        >::new("identity", PrincipalIdentity::reference()),
+        >::new(identity_output::<S>(), PrincipalIdentity::reference()),
     );
     let shape = if S::MODE == 8 {
         shape.field(ApplicationQueryResultFieldRef::<
@@ -89,6 +89,13 @@ fn shape<S: ModelSchema, Q: ApplicationQueryMarkerIdentity<S>>() -> TypedApplica
         shape
     };
     shape.build()
+}
+fn identity_output<S: ModelSchema>() -> &'static str {
+    if S::MODE == 9 {
+        crate::cost::admitted_query_identity::identity_output()
+    } else {
+        "identity"
+    }
 }
 pub fn source<S: ModelSchema>(
 ) -> ApplicationQueryDefinition<S, SourceQuery, (), PrincipalQueryResult, Principal> {

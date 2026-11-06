@@ -9,9 +9,11 @@ use crate::application_query::WorthQueryInstalledManagedIndexReadMeaning;
 use std::sync::Arc;
 
 pub(crate) fn bind_managed_index_obligations(
+    budget: worth_foundational::facade::CanonicalDigestWorkBudget,
     meaning: &Arc<WorthQueryInstalledManagedIndexReadMeaning>,
 ) -> Result<WorthQueryInstalledGraphObligationSet, WorthQueryGraphObligationInstallationDenial> {
     WorthQueryInstalledGraphObligationSet::for_managed_index(
+        budget,
         meaning.binding_identity(),
         meaning.definition().parts().name.clone(),
         meaning.parent_binding().to_owned(),

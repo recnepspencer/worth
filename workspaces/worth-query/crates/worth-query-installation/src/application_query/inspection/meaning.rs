@@ -41,6 +41,7 @@ impl CompiledInspectionMeaning {
         }
         let query = binding.query();
         let obligations = bind_inspection_obligations(
+            schema.identity_budget,
             &schema.binding_identity(),
             name,
             definition,

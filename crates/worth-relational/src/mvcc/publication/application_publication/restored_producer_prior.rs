@@ -3,9 +3,7 @@ use super::*;
 use crate::execution::request_stage::checkpoint;
 use crate::{
     branch::AdmittedRelationalBranchBasis,
-    history::data::{
-        CanonicalCommitEnvelope, CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
-    },
+    history::data::{CanonicalOutputPublication, CanonicalRequiredOutputOrigin},
     identity::data::EntityId,
     runtime::RelationalRuntime,
     transactions::data::RecordRef,
@@ -53,9 +51,14 @@ impl RelationalRuntime {
         }
         let antecedent = execution
             .run_native_with_checkpoint(|context| {
-                let mut current: Arc<CanonicalCommitEnvelope> = self
-                    .history
-                    .canonical_envelope(publication.origin.commit.commit_id)
+                let mut validated_history = crate::history::data::OutputOriginHistory::default();
+                let mut current = validated_history
+                    .by_commit(
+                        publication.origin.commit.commit_id,
+                        &mut |commit| self.history.canonical_envelope(commit),
+                        context,
+                    )
+                    .map_err(custody::cold_stop)?
                     .ok_or_else(|| corrupt(publication.origin.meaning.source_scope))?;
                 let mut origin = Arc::clone(&publication.origin);
                 let bound = self.history.catalog_len();
@@ -67,7 +70,11 @@ impl RelationalRuntime {
                         checkpoint(context, 1).map_err(custody::execution_stop)?;
                         let meaning = origin.meaning.clone();
                         current = crate::history::data::historical_producer_antecedent(
-                            self, &current, &origin, context,
+                            self,
+                            &current,
+                            &origin,
+                            &mut validated_history,
+                            context,
                         )
                         .map_err(custody::cold_stop)?;
                         origin = current
@@ -101,9 +108,13 @@ impl RelationalRuntime {
                         .ok_or_else(corrupted)?;
                     let mut original = origin.meaning.clone();
                     original.source_scope = old;
-                    current = self
-                        .history
-                        .canonical_envelope(predecessor)
+                    current = validated_history
+                        .by_commit(
+                            predecessor,
+                            &mut |commit| self.history.canonical_envelope(commit),
+                            context,
+                        )
+                        .map_err(custody::cold_stop)?
                         .ok_or_else(corrupted)?;
                     origin = current
                         .output_origin_for_route(&original, context)

@@ -75,6 +75,7 @@ pub(super) fn install(
     installed: crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
     group: RelationalCoupledAuthoredPublication,
     lease: Option<&ExecutionResourceLease<'_>>,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
     if group.parts.is_empty() {
@@ -101,6 +102,7 @@ pub(super) fn install(
                     publications: custody.retirements.clone(),
                 },
                 lease,
+                validated_history,
                 context,
             )
         } else {
@@ -130,6 +132,7 @@ pub(super) fn install(
                 group.binding.retirement_admission.as_deref(),
                 restoration,
                 lease,
+                validated_history,
                 context,
             )?;
             CanonicalCoupledAuthoredSources::Restoration(
@@ -159,6 +162,7 @@ pub(super) fn install(
                         publications: custody.retirements.clone(),
                     },
                     lease,
+                    validated_history,
                     context,
                 )?;
             } else {
@@ -201,6 +205,7 @@ pub(super) fn install(
                 },
                 Some(&part.records),
                 lease,
+                validated_history,
                 context,
             )?;
             participants.push(CanonicalCoupledParticipant {
@@ -232,16 +237,24 @@ pub(super) fn install(
     // Incidence sees the complete canonical birth frame, after every writer's
     // own roster is installed. A partial writer view cannot classify a later
     // writer's edge to an earlier output.
+    let current = envelope
+        .validate_output_origins(context)
+        .map_err(super::installation::relation_stop)?;
     for origin in envelope.output_origins() {
         crate::history::data::publication_relations::validate(
             &basis.inner.root,
             Some(state),
             origin,
-            Some(envelope),
+            Some(
+                crate::history::data::publication_relations::CurrentPublicationFrame::Complete(
+                    current,
+                ),
+            ),
             &mut |commit| runtime.history.canonical_envelope(commit),
             &mut |version| runtime.history.canonical_envelope_for_version(version),
             runtime.history.canonical_catalog_len(),
             lease,
+            validated_history,
             context,
         )
         .map_err(super::installation::relation_stop)?;

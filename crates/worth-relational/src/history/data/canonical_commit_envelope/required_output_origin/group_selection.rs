@@ -37,65 +37,6 @@ impl CanonicalCommitEnvelope {
             )
     }
 
-    pub(crate) fn output_origin_for_entity(
-        &self,
-        id: EntityId,
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
-        self.validate_cascade_header(context)?;
-        for origin in self.output_origins() {
-            super::super::super::codec_retirement_closure::charge(
-                context,
-                (usize::BITS - origin.outputs.len().leading_zeros()) as usize
-                    + origin.members.len()
-                    + 1,
-            )?;
-            if origin.outputs.binary_search(&id).is_ok() {
-                self.validate_output_origin_header(origin)?;
-                return Ok(origin);
-            }
-        }
-        Err("exact member has no canonical publication".into())
-    }
-
-    pub(crate) fn output_origin_for_relation(
-        &self,
-        id: RelationId,
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
-        self.validate_cascade_header(context)?;
-        for origin in self.output_origins() {
-            super::super::super::codec_retirement_closure::charge(
-                context,
-                origin.relations.len() + origin.members.len() + 1,
-            )?;
-            if origin.relations.iter().any(|edge| edge.id == id) {
-                self.validate_output_origin_header(origin)?;
-                return Ok(origin);
-            }
-        }
-        Err("incident relation is outside complete publication membership".into())
-    }
-
-    pub(crate) fn output_origin_for_route(
-        &self,
-        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
-        self.validate_cascade_header(context)?;
-        for origin in self.output_origins() {
-            super::super::super::codec_retirement_closure::charge(
-                context,
-                origin.meaning.family.len() + meaning.family.len() + origin.members.len() + 65,
-            )?;
-            if origin.meaning.same_route(meaning) {
-                self.validate_output_origin_header(origin)?;
-                return Ok(origin);
-            }
-        }
-        Err("exact route has no canonical publication".into())
-    }
-
     fn validate_cascade_header(&self, context: &mut MapKernelContext<'_, '_>) -> Result<(), Stop> {
         if let Some(event) = &self.coupled_authored_publication {
             return self.validate_coupled_authored_header(event, context);
@@ -201,5 +142,151 @@ impl CanonicalCommitEnvelope {
             }
         }
         Ok(())
+    }
+}
+
+/// The envelope owner alone mints this immutable, envelope-bound validation result.
+#[derive(Clone, Copy)]
+pub(crate) struct ValidatedOutputOrigins<'a> {
+    envelope: &'a CanonicalCommitEnvelope,
+}
+
+impl CanonicalCommitEnvelope {
+    pub(crate) fn validate_output_origins(
+        &self,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<ValidatedOutputOrigins<'_>, Stop> {
+        self.validate_cascade_header(context)?;
+        // Group validators certify their complete origin rosters. A standalone
+        // publication has no component validator to establish that fact.
+        if self.producer_cascade_retirement.is_none() {
+            if let Some(origin) = &self.required_output_origin {
+                super::super::super::codec_retirement_closure::charge(
+                    context,
+                    origin.members.len() + 1,
+                )?;
+                self.validate_output_origin_header(origin)?;
+            }
+        }
+        Ok(ValidatedOutputOrigins { envelope: self })
+    }
+}
+
+impl<'a> ValidatedOutputOrigins<'a> {
+    pub(crate) fn output_origin_for_entity(
+        &self,
+        id: EntityId,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<&'a Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        for origin in self.envelope.output_origins() {
+            super::super::super::codec_retirement_closure::charge(
+                context,
+                (usize::BITS - origin.outputs.len().leading_zeros()) as usize + 1,
+            )?;
+            if origin.outputs.binary_search(&id).is_ok() {
+                return Ok(origin);
+            }
+        }
+        Err("exact member has no canonical publication".into())
+    }
+
+    pub(crate) fn output_origin_for_relation(
+        &self,
+        id: RelationId,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<&'a Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        for origin in self.envelope.output_origins() {
+            super::super::super::codec_retirement_closure::charge(
+                context,
+                origin.relations.len() + 1,
+            )?;
+            if origin.relations.iter().any(|edge| edge.id == id) {
+                return Ok(origin);
+            }
+        }
+        Err("incident relation is outside complete publication membership".into())
+    }
+
+    pub(crate) fn output_origin_for_route(
+        &self,
+        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<&'a Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        for origin in self.envelope.output_origins() {
+            super::super::super::codec_retirement_closure::charge(
+                context,
+                origin.meaning.family.len() + meaning.family.len() + 65,
+            )?;
+            if origin.meaning.same_route(meaning) {
+                return Ok(origin);
+            }
+        }
+        Err("exact route has no canonical publication".into())
+    }
+}
+
+impl<'a> ValidatedOutputOrigins<'a> {
+    pub(crate) fn envelope(&self) -> &'a CanonicalCommitEnvelope {
+        self.envelope
+    }
+}
+
+/// Owns the exact immutable envelope whose header was admitted. No raw-envelope
+/// constructor or mutation surface can separate the header proof from its data.
+#[derive(Clone)]
+pub(crate) struct OwnedValidatedOutputOrigins {
+    envelope: Arc<CanonicalCommitEnvelope>,
+}
+
+impl OwnedValidatedOutputOrigins {
+    pub(crate) fn validate(
+        envelope: Arc<CanonicalCommitEnvelope>,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<Self, Stop> {
+        envelope.validate_output_origins(context)?;
+        Ok(Self { envelope })
+    }
+
+    pub(crate) fn as_view(&self) -> ValidatedOutputOrigins<'_> {
+        ValidatedOutputOrigins {
+            envelope: &self.envelope,
+        }
+    }
+}
+
+impl std::ops::Deref for OwnedValidatedOutputOrigins {
+    type Target = Arc<CanonicalCommitEnvelope>;
+    fn deref(&self) -> &Self::Target {
+        &self.envelope
+    }
+}
+
+impl OwnedValidatedOutputOrigins {
+    pub(crate) fn validate_output_membership_header(
+        &self,
+    ) -> Result<&CanonicalRequiredOutputOrigin, Stop> {
+        self.as_view().validate_output_membership_header()
+    }
+
+    pub(crate) fn output_origin_for_entity(
+        &self,
+        id: EntityId,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        self.as_view().output_origin_for_entity(id, context)
+    }
+    pub(crate) fn output_origin_for_relation(
+        &self,
+        id: RelationId,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        self.as_view().output_origin_for_relation(id, context)
+    }
+    pub(crate) fn output_origin_for_route(
+        &self,
+        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        self.as_view().output_origin_for_route(meaning, context)
     }
 }

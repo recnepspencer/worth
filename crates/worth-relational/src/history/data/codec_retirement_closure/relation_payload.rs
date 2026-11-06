@@ -1,6 +1,9 @@
 //! Reconstruct one live incident edge over its exact publication predecessors.
 use super::{charge, memory_overflow, reserve, CodecRetirementClosureStop as Stop};
 use crate::branch::RelationalBranchRoot;
+use crate::history::data::canonical_commit_envelope::{
+    OutputOriginHistory, OwnedValidatedOutputOrigins,
+};
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::RelationId;
 use crate::publication::patch::data::RecordStructuralChange as Change;
@@ -12,8 +15,9 @@ use worth_execution::{ExecutionResourceLease, MapKernelContext};
 pub(super) fn validate(
     runtime: &RelationalRuntime,
     root: &RelationalBranchRoot,
-    selected: &Arc<CanonicalCommitEnvelope>,
+    selected: &OwnedValidatedOutputOrigins,
     id: RelationId,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<(), Stop> {
@@ -70,6 +74,7 @@ pub(super) fn validate(
         selected,
         id,
         plan,
+        validated_history,
         context,
         lease,
         root.schema_authority(),
@@ -87,9 +92,10 @@ pub(super) fn validate(
 
 pub(super) fn reconstruct(
     runtime: &RelationalRuntime,
-    selected: &Arc<CanonicalCommitEnvelope>,
+    selected: &OwnedValidatedOutputOrigins,
     id: RelationId,
     plan: &crate::schema::data::LoweredAspectContractPlan,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,
@@ -102,7 +108,7 @@ pub(super) fn reconstruct(
             .ok_or_else(memory_overflow)?,
     )?;
     let mut chain = Vec::with_capacity(bound);
-    let mut current = Arc::clone(selected);
+    let mut current = selected.clone();
     loop {
         if chain.len() >= bound {
             return Err("relation succession incomplete or cyclic".into());
@@ -114,12 +120,18 @@ pub(super) fn reconstruct(
             .iter()
             .find(|relation| relation.id == id)
             .ok_or("relation predecessor membership absent")?;
-        chain.push(Arc::clone(&current));
+        chain.push(current.clone());
         if matches!(
             origin.publication,
             crate::history::data::CanonicalOutputPublication::HistoricalSelection { .. }
         ) {
-            current = super::historical_selection::antecedent(runtime, &current, origin, context)?;
+            current = super::historical_selection::antecedent(
+                runtime,
+                &current,
+                origin,
+                validated_history,
+                context,
+            )?;
             continue;
         }
         let Some(before) = relation.before_write else {
@@ -135,6 +147,7 @@ pub(super) fn reconstruct(
                     retirement,
                     predecessor,
                     plan,
+                    validated_history,
                     context,
                     lease,
                     schema,
@@ -148,9 +161,12 @@ pub(super) fn reconstruct(
         let Some(predecessor) = origin.publication.predecessor() else {
             return Err("relation has predecessor under initial publication".into());
         };
-        let previous = runtime
-            .history
-            .canonical_envelope(predecessor)
+        let previous = validated_history
+            .by_commit(
+                predecessor,
+                &mut |commit| runtime.history.canonical_envelope(commit),
+                context,
+            )?
             .ok_or("relation predecessor absent")?;
         let old = previous.output_origin_for_relation(id, context)?;
         charge(context, old.relations.len())?;

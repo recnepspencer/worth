@@ -1,5 +1,6 @@
 //! Restore plans reconstruct exactly recorded members and owned edges, with fresh generations.
 use super::{authored_cascade::reject, charge, CodecRetirementClosureStop as Stop};
+use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::{
     branch::AdmittedRelationalBranchBasis, history::data::CommitId, identity::data::EntityId,
     mvcc::*, publication::data::AuthoredRetirementRefusal as Cause, runtime::RelationalRuntime,
@@ -176,6 +177,8 @@ impl RelationalRuntime {
                                     ));
                                 }
                             }
+                            let mut origin_frames = OutputOriginHistory::default();
+                            let validated_history = &mut origin_frames;
                             let mut inverse = Vec::new();
                             let mut content =
                                 crate::content::RelationalContentAttachments::default();
@@ -186,9 +189,13 @@ impl RelationalRuntime {
                                     prior.origin.publication.predecessor().ok_or_else(|| {
                                         reject(Cause::CorruptPublication, original)
                                     })?;
-                                let live = self
-                                    .history
-                                    .canonical_envelope(predecessor)
+                                let live = validated_history
+                                    .by_commit(
+                                        predecessor,
+                                        &mut |commit| self.history.canonical_envelope(commit),
+                                        context,
+                                    )
+                                    .map_err(failure)?
                                     .ok_or_else(|| reject(Cause::CorruptPublication, original))?;
                                 for member in &prior.origin.members {
                                     let plan = basis
@@ -204,6 +211,7 @@ impl RelationalRuntime {
                                         &live,
                                         member.id,
                                         plan,
+                                        validated_history,
                                         context,
                                         lease,
                                         basis.inner.root.schema_authority(),
@@ -255,6 +263,7 @@ impl RelationalRuntime {
                                         &live,
                                         edge.id,
                                         plan,
+                                        validated_history,
                                         context,
                                         lease,
                                         basis.inner.root.schema_authority(),

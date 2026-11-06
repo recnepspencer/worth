@@ -15,9 +15,10 @@ pub(super) fn validate(
     state: &dyn CurrentPartitionAccess,
     root: &RelationalBranchRoot,
     origin: &CanonicalRequiredOutputOrigin,
-    current: Option<&CanonicalCommitEnvelope>,
+    current: Option<super::CurrentPublicationFrame<'_>>,
     lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    validated_history: &mut crate::history::data::canonical_commit_envelope::OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
     for output in &origin.outputs {
@@ -95,7 +96,15 @@ pub(super) fn validate(
                 if source == target {
                     return Err("unclaimed internal or misindexed incident relation lacks producer provenance".into());
                 }
-                creation::validate(state, *id, origin, current, lookup, context)?;
+                creation::validate(
+                    state,
+                    *id,
+                    origin,
+                    current,
+                    lookup,
+                    validated_history,
+                    context,
+                )?;
                 let kind = row.kind_id().ok_or("incident relation kind absent")?;
                 if root.schema_authority().relation_aspect_plan(kind).is_none() {
                     return Err("incident relation installed plan absent".into());
