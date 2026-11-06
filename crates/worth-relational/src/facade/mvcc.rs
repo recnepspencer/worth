@@ -42,11 +42,11 @@ pub use crate::mvcc::{
     RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
     RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
     RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
-    RelationalPerformedOutputPublications, RelationalPreparedOutputPublications,
-    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
-    RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
-    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
-    RequiredOutputRoleTarget,
+    RelationalPerformedOutputPublications, RelationalPredecessorBasisDenial,
+    RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
+    RelationalRequiredOutputRouteAbsence, RelationalRestoredProducerPrior,
+    RequiredOutputProducingImplementation, RequiredOutputPublication,
+    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
 };
 pub use crate::publication::RelationalSettlementPort;
 pub use crate::transactions::data::{

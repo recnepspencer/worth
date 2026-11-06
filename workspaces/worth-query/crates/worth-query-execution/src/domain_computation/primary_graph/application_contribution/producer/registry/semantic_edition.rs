@@ -199,6 +199,25 @@ impl InstalledProducerEdition {
                 .identity()
             }
         };
+        let digest = match &declaration.predecessor_reads {
+            None => digest,
+            Some(reads) => application_value_identity(
+                ApplicationValueIdentityDomain::ProducerImplementationEdition,
+                &declaration.identity,
+                &(
+                    "producer-predecessor-reads.v1",
+                    digest,
+                    reads.iter().map(|r| (r.name, r.input)).collect::<Vec<_>>(),
+                ),
+            )
+            .map_err(|_| {
+                WorthQueryPrimaryGraphInstallationDenial::new(
+                    DenialKind::ProducerBindingMeaningMismatch,
+                    declaration.identity.clone(),
+                )
+            })?
+            .identity(),
+        };
         let digest = application_value_identity(
             ApplicationValueIdentityDomain::ProducerImplementationEdition,
             &declaration.identity,

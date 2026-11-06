@@ -108,6 +108,9 @@ where
                 Binding::IDENTITY,
             ));
         }
+        if let Some(contract) = Binding::PREDECESSOR_READS {
+            contract.validate(installed, Binding::OWNERSHIP)?;
+        }
         declared.owned_scope_entity =
             super::scope_ownership::validate::<Schema, Binding>(&mutation, &source_query)?;
         declared.installed_output_equivalence = declared

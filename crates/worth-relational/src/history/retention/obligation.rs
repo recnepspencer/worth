@@ -116,6 +116,7 @@ impl RelationalTransactionRetentionObligation {
 #[derive(Debug)]
 pub(crate) struct RelationalCandidateRetentionObligation {
     guard: super::RelationalRetentionGuard,
+    _publication_bases: Arc<dyn super::PublicationBasisAccess>,
 }
 
 impl RelationalCandidateRetentionObligation {
@@ -124,14 +125,22 @@ impl RelationalCandidateRetentionObligation {
         identity: crate::branch::RelationalBranchIdentity,
         expected_root: Arc<RelationalBranchRoot>,
         prepared_root: Arc<RelationalBranchRoot>,
+        publication_bases: Arc<dyn super::PublicationBasisAccess>,
     ) -> Result<Self, super::RelationalRetentionAcquisitionDenial> {
+        prepared_root
+            .publication_bases
+            .set(Arc::downgrade(&publication_bases))
+            .map_err(|_| super::RelationalRetentionAcquisitionDenial::BindingMismatch)?;
         binding
             .acquire(
                 RelationalRetentionObligationKind::Candidate,
                 vec![expected_root, prepared_root],
                 Some(identity),
             )
-            .map(|guard| Self { guard })
+            .map(|guard| Self {
+                guard,
+                _publication_bases: publication_bases,
+            })
     }
 
     pub(super) fn into_performed_settlement(

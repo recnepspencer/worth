@@ -9,11 +9,11 @@ pub use application_publication::{
     RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
     RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
     RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
-    RelationalPerformedOutputPublications, RelationalPreparedOutputPublications,
-    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
-    RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
-    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
-    RequiredOutputRoleTarget,
+    RelationalPerformedOutputPublications, RelationalPredecessorBasisDenial,
+    RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
+    RelationalRequiredOutputRouteAbsence, RelationalRestoredProducerPrior,
+    RequiredOutputProducingImplementation, RequiredOutputPublication,
+    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
 };
 pub(crate) use preparation_denial::PublicationPreparationDenial;
 mod candidate;

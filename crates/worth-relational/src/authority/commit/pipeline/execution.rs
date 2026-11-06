@@ -38,7 +38,8 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         .inner
         .retention_binding
         .clone();
-    let expected_basis = context.validation_input.basis().descriptor().clone();
+    let decision_basis = context.validation_input.basis().clone();
+    let expected_basis = decision_basis.descriptor().clone();
     let expected_root = std::sync::Arc::clone(&context.validation_input.basis().inner.root);
     if let Some(interruption) =
         control.observe(crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation)
@@ -114,12 +115,18 @@ pub(crate) fn prepare_consulted_authoritative_commit(
             }
         }
     })?;
+    let publication_bases = crate::history::retention::PublicationBasisImage::prepare(
+        execution,
+        &decision_basis,
+        prepared.prepared_root(),
+    )?;
     let candidate_retention =
         crate::history::retention::RelationalCandidateRetentionObligation::acquire(
             &retention_binding,
             publication_cell.identity().clone(),
             std::sync::Arc::clone(&expected_root),
             std::sync::Arc::clone(prepared.prepared_root()),
+            publication_bases,
         )
         .map_err(|denial| match denial {
             crate::history::retention::RelationalRetentionAcquisitionDenial::CapacityExhausted => {
