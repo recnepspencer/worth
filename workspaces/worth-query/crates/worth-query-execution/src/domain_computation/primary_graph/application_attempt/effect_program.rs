@@ -18,7 +18,6 @@ mod operation_body;
 mod optional_field_authoring;
 mod ordinary_field_authoring;
 mod original_input;
-pub(crate) mod output_correspondence;
 mod relation_effects;
 mod relation_initialization;
 mod target_admission;
@@ -28,6 +27,8 @@ mod write_index;
 mod external_payload_tests;
 #[cfg(test)]
 mod outbox_persistence_tests;
+pub(crate) mod output_correspondence_candidate;
+pub(crate) mod output_correspondence_checkpoint;
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
@@ -56,15 +57,12 @@ pub use {
 use super::effect_validation::{canonical_key, denial};
 use super::read_set::WorthQueryCompleteApplicationReadSet;
 use crate::domain_computation::primary_graph::WorthQueryApplicationEntityKey;
-pub(in crate::domain_computation::primary_graph) use output_correspondence::WorthQueryApplicationOutputCorrespondence;
+
 use target_admission::installed_contract_admits_program_target;
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryProjectedApplicationMutation, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
-pub use {
-    output_correspondence::WorthQueryApplicationOutputEntity,
-    output_correspondence::WorthQueryApplicationOutputFamilyEntry,
-    output_correspondence::WorthQueryApplicationOutputPosture,
-    output_correspondence::WorthQueryApplicationTypedOutputCorrespondence,
-};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
+use super::WorthQueryProjectedApplicationMutation;
+pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<

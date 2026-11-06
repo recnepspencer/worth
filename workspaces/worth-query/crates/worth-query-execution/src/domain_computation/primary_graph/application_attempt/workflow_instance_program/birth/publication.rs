@@ -1,7 +1,5 @@
 //! Receipt projection describes the one native birth; it cannot authorize it.
-use super::super::super::{
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
-};
+use {super::super::super::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding};
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
 use {super::mismatch, super::ApplicationMutationBinding, super::ApplicationSchema, super::RequiredWorkflowBirth, super::TypeId, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationOutputRole, super::WorthQueryWorkflowBirthAdapter};
 

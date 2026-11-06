@@ -30,9 +30,7 @@ pub use recovery::{
 
 use super::{WorthQueryCompletedGeneratedOutputReconstruction, WorthQuerySuspendedGeneratedOutput};
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationProducerBinding,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence, crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding};
 
 /// A generated output restored to its product branch, with the restoration
 /// receipt.

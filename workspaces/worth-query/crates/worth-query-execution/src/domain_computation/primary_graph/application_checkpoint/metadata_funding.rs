@@ -22,6 +22,13 @@ impl CheckpointMetadataFunding {
             })?;
         Ok(Self { held })
     }
+    /// The reservation itself, for a restored value that keeps its payer
+    /// alive as long as the rows it funded.
+    pub(in crate::domain_computation::primary_graph) fn into_reservation(
+        self,
+    ) -> ExecutionMemoryReservation {
+        self.held
+    }
     pub(in crate::domain_computation::primary_graph) fn check_live(
         &self,
         execution: &ExecutionRequest<'_, '_>,

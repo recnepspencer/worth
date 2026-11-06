@@ -199,7 +199,7 @@ pub(in crate::domain_computation::primary_graph) fn closed_outcome(
                         }
                         Err(binding) => WorthQueryElevationCloseOutcome::Denied(
                             WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
-                                super::WorthQueryApplicationCommitDenialStage::Idempotency,
+                                crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage::Idempotency,
                                 "committed elevation status is invalid",
                             ),
                             binding.into_approved(),
@@ -208,7 +208,7 @@ pub(in crate::domain_computation::primary_graph) fn closed_outcome(
                 }
                 None => WorthQueryElevationCloseOutcome::Denied(
                     WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
-                        super::WorthQueryApplicationCommitDenialStage::Idempotency,
+                        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage::Idempotency,
                         "committed close fields are unavailable",
                     ),
                     binding.into_approved(),

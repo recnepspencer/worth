@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryOutstandingInF
 use crate::domain_computation::vocabulary::primary_graph::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial;
 
 use crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportPendingReason;
-use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage as Stage;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as Stage;
 use crate::domain_computation::vocabulary::primary_graph::denial::WorthQueryExternalDispatchAttemptDenial;
 use {
     crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control,

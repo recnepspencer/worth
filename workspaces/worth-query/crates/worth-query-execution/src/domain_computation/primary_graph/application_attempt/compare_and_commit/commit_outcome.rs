@@ -49,9 +49,7 @@ impl WorthQueryApplicationNoEffect {
 pub(crate) mod denial;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt;
 pub(in crate::domain_computation::primary_graph) use denial::WorthQueryProgramActivationUnresolved;
-pub use {
-    denial::WorthQueryApplicationCommitDenial, denial::WorthQueryApplicationCommitDenialStage,
-};
+pub use denial::WorthQueryApplicationCommitDenial;
 
 /// Every way an application compare-and-commit can end.
 ///

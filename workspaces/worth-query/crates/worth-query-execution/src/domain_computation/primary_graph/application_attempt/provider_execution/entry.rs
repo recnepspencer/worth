@@ -3,10 +3,7 @@ use crate::domain_computation::primary_graph::application_attempt::EntryCustodyS
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
-};
+use {super::super::WorthQueryApplicationCommitDenial, super::super::WorthQueryApplicationCommitOutcome, super::super::WorthQueryApplicationEffectProgram, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding};
 use super::program_occurrence_gate::{
     require_occurrence_acts_through, require_selected_program_matches_occurrence,
     resolve_occurrence_program,

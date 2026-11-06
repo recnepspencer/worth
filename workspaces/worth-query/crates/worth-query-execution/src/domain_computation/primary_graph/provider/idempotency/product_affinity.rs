@@ -27,7 +27,7 @@ impl WorthQueryProductIdempotencyAffinity {
     }
 
     pub(in crate::domain_computation::primary_graph) fn from_publication(
-        publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        publication: &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
     ) -> Self {
         Self::new(
             publication.product_branch().clone(),

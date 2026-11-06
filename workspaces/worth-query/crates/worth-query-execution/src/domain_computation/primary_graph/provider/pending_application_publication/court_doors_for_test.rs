@@ -7,7 +7,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         binding: Option<
-            crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
         >,
     ) -> Result<WorthQueryApplicationPublicationRecoveryReservation, &'static str> {
         Self::reserve_application_publication_recovery(self, observation, binding)

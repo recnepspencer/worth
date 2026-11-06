@@ -90,7 +90,7 @@ impl WorthQueryCorrectionIntent {
 
     pub(super) fn with_recorded_definition(
         mut self,
-        recorded: &crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        recorded: &crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     ) -> Self {
         self.replay_definition_identity = recorded.conditional_definition_identity();
         self
@@ -98,8 +98,8 @@ impl WorthQueryCorrectionIntent {
 
     pub fn bind_idempotency(
         self,
-        binding: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
-    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding {
+        binding: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding {
         binding
             .bind_correction_command(&self.command_key.identity(), &self.identity)
             .bind_conditional_definition(self.replay_definition_identity.as_ref())
@@ -107,7 +107,7 @@ impl WorthQueryCorrectionIntent {
 
     pub(super) fn matches(
         &self,
-        binding: &crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        binding: &crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     ) -> bool {
         binding.correction_identity() == Some(&self.identity)
     }

@@ -24,17 +24,17 @@ pub(in crate::domain_computation::primary_graph) use read::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundCompletionPreparationDenial {
     ExecutionDenied {
-        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        stage: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
         kind: crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
     },
     ExecutionControlStopped {
-        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        stage: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
         kind: crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     },
     OriginalOutboxNotAnEntity,
     ForeignOrStaleBasis,
     AllocationDenied {
-        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        stage: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
         kind: worth_execution::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },

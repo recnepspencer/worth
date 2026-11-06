@@ -79,7 +79,7 @@ pub(in crate::domain_computation::primary_graph) use recorded_source_identity::R
 use resolution::latest_output_matching;
 
 use super::provider::WorthQueryPrimaryGraphCommittedApplication;
-use super::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 
 mod binding_inventory;
 pub(crate) mod semantic_source;

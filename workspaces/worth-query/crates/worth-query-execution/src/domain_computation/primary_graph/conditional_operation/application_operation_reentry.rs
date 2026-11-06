@@ -71,7 +71,7 @@ pub enum WorthQueryTemporalTerminalFailure {
         crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
     ),
     ApplicationExecution {
-        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        stage: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
         cause: Result<
             crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
             crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,

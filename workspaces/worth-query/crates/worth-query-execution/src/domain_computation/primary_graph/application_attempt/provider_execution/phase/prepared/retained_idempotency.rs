@@ -3,7 +3,7 @@ use crate::domain_computation::authorization::AuthorizationRevalidationScopedOps
 use crate::domain_computation::primary_graph as graph;
 use graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
-use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
 
 pub(super) fn resolve_retained_idempotency<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

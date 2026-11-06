@@ -102,7 +102,7 @@ where
             Source::Input,
             <Source::ScopeBinding as worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
-        idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        idempotency: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
         causality: crate::domain_computation::application_aftermath::ApplicationCommitCausality,
         payload: recovery::ProgramOutputSourcePayload,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,

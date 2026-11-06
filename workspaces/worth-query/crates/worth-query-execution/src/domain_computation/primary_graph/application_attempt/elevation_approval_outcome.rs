@@ -54,7 +54,7 @@ impl WorthQueryApprovedElevation {
 
     pub const fn approval_product_publication(
         &self,
-    ) -> &super::WorthQueryCommittedProductPublication {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication {
         self.approval_commit.committed_product_publication()
     }
 

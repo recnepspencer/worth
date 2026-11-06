@@ -1,12 +1,7 @@
 use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionOps;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{
-    reviewed_outcome, WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
-    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryMandatoryReview,
-    WorthQueryMandatoryReviewOutcome,
-};
+use {super::reviewed_outcome, super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitOutcome, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, super::WorthQueryApplicationIdempotencyResolution, super::WorthQueryApplicationIdempotencyResolutionDenial, super::WorthQueryMandatoryReview, super::WorthQueryMandatoryReviewOutcome};
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 
 pub trait MandatoryReviewReplayOps<Schema: ApplicationSchema>:

@@ -46,7 +46,7 @@ struct DemandDenialEvidence {
     commit_denial_kind:
         Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind>,
     commit_execution: Option<(
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
         Result<
             crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
             crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
@@ -254,7 +254,7 @@ impl WorthQueryOutputDemandDenial {
     pub fn commit_execution_denial(
         &self,
     ) -> Option<(
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
         Result<
             crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
             crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
@@ -268,7 +268,7 @@ impl WorthQueryOutputDemandDenial {
     pub(in crate::domain_computation::primary_graph) fn with_commit_execution_denial(
         mut self,
         evidence: Option<(
-            crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
             Result<
                 crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
                 crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,

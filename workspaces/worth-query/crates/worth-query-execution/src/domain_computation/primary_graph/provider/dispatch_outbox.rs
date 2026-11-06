@@ -8,7 +8,7 @@ use worth_query_installation::facade::InstalledExternalEffectContract;
 use worth_relational::facade::history::BranchId;
 
 use {crate::domain_computation::application_aftermath::derive_external_effect_correlation_identity, crate::domain_computation::application_aftermath::ExternalEffectCorrelationBasis, crate::domain_computation::application_aftermath::WorthQueryAftermathDerivationFailure, crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord};
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding};
 
 /// The operation-side facts that bind one dispatch correlation.
 pub(in crate::domain_computation::primary_graph) struct WorthQueryDispatchOutboxBasis<'a> {

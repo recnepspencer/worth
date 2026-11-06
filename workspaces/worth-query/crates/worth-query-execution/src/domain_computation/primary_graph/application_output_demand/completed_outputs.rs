@@ -3,10 +3,7 @@ use super::{
     WorthQueryFulfilledRequiredRoot, WorthQueryOutputDemandSettlement,
     WorthQueryOutputSettlementPosture,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationReadObservation, WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 use crate::publication_boundary::{
     discovery_currentness::{
         WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,

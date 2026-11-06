@@ -4,11 +4,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-use {
-    super::RecordedOutput, super::RecordedOutputMutable, super::RecordedSourceIdentity,
-    super::WorthQueryApplicationOutputCorrespondence, super::WorthQueryApplicationOutputLineage,
-    crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource,
-};
+use {super::RecordedOutput, super::RecordedOutputMutable, super::RecordedSourceIdentity, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence, super::WorthQueryApplicationOutputLineage, crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource};
 
 pub(crate) mod republication;
 

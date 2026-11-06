@@ -1,5 +1,6 @@
 //! Pre-publication application denial categories and owner evidence.
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage;
 
 mod advancement;
 mod authored_retirement;
@@ -47,26 +48,6 @@ impl WorthQueryProgramActivationUnresolved {
     }
 }
 
-/// The commit stage at which a denial was decided, for diagnostics.
-///
-/// The stage locates the refusal; the denial kind says what it was.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationCommitDenialStage {
-    ProposalBinding,
-    BridgePlanning,
-    BasisAdmission,
-    ResourceAdmission,
-    ManagedRunAdmission,
-    ProviderPlan,
-    Idempotency,
-    DecisionReadSet,
-    EffectLowering,
-    ElevationTransition,
-    DelegationTransition,
-    ProvisionalState,
-    InvariantExecution,
-    ProviderCommit,
-}
 
 /// A typed refusal of a commit before publication, carried by the `Denied`
 /// commit outcome.

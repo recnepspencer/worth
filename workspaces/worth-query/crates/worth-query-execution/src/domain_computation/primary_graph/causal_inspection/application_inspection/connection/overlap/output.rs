@@ -1,4 +1,5 @@
 //! Classify only admitted output candidates while preserving the exact join.
+use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::committed_field_effect::CommittedFieldEffect;
 use super::*;
 use crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
 use worth_relational::facade::{

@@ -9,7 +9,7 @@ use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 use worth_query_installation::facade::WorthQueryInstalledAftermathContract;
 
-use super::WorthQueryApplicationIdempotencyBinding;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::vocabulary::primary_graph::commit_authority_binding::WorthQueryRetainedGovernedInput;
 
 /// Installed operation, admitted principal scope, and idempotency binding

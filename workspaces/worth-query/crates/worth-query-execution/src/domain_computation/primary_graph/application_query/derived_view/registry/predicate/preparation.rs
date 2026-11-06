@@ -58,7 +58,7 @@ impl PredicatePreparationOwner {
     pub(in crate::domain_computation::primary_graph) fn publication_for(
         &self,
         before: &worth_runtime_world::facade::ProductBranchObservation,
-        publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        publication: &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
     ) -> PreparedPredicatePublication {
         let descriptor = &self.round.value().descriptor;
         if publication.follows_observation(before)

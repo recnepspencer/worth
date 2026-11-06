@@ -1,13 +1,6 @@
 //! Every progression posture owns its actual created branch or World continuation.
 use super::*;
-use crate::{
-    basis::WorthQueryProductObservationLease,
-    domain_computation::{
-        execution_runtime::product_world::WorthQueryPreparedProductPublication,
-        primary_graph::{WorthQueryApplicationIdempotencyBinding, WorthQueryExpectedProductBranch},
-        WorthQueryProductUnpublishedRecovery,
-    },
-};
+use {crate::basis::WorthQueryProductObservationLease, crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch, crate::domain_computation::WorthQueryProductUnpublishedRecovery};
 use std::sync::{Mutex, MutexGuard};
 use worth_execution::ExecutionMemoryReservation;
 

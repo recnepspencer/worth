@@ -1,5 +1,5 @@
 //! Lookup affinity follows command meaning; it is not a second evidence owner.
-use super::{WorthQueryApplicationIdempotencyBinding, WorthQueryProductIdempotencyAffinity};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, super::WorthQueryProductIdempotencyAffinity};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryIdempotencyLookupKey {

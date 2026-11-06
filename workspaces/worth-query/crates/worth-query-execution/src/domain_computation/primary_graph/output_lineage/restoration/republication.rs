@@ -13,7 +13,7 @@ use super::super::PreparedInputReuseKey;
 use super::super::RecordedOutput;
 use super::super::RecordedSourceIdentity;
 use super::super::SealedNativeOutputWitness;
-use super::super::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 use super::super::WorthQueryApplicationOutputLineage;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;

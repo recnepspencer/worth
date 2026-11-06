@@ -13,11 +13,7 @@ pub use historical_commit::WorthQueryHistoricalApplicationCommit;
 
 pub use denial::WorthQueryApplicationIdempotencyResolutionDenial;
 
-use super::{
-    provider_recomparison::recover_equivalent_commit_evidence,
-    WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryCommittedReceiptProjection,
-};
+use {super::provider_recomparison::recover_equivalent_commit_evidence, super::WorthQueryApplicationCommitAuthorityBinding, super::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, super::WorthQueryCommittedReceiptProjection};
 
 pub(super) struct WorthQueryIdempotencyReadCommitReceiptPermit {
     _owner_mint: (),

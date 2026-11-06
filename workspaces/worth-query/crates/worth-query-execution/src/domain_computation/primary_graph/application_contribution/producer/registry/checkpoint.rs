@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_checkpoint::OutputCorrespondenceRestoration;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
@@ -52,7 +53,7 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         std::sync::Arc<
-            crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
         >,
         crate::domain_computation::primary_graph::application_checkpoint::CheckpointDecodeDenial,
     > {
@@ -61,7 +62,7 @@ where
         )?;
         let installed = installed_checkpoint_producer(&self.entries, &checkpoint.producer)?;
         validate_checkpoint_output_meaning(&installed.declaration, checkpoint)?;
-        crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
             installed.declaration.operation_binding_type,
             installed.declaration.output_contract_type,
             installed

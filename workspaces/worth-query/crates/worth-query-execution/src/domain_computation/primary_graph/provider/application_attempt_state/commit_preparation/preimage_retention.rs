@@ -10,7 +10,7 @@ use {
     crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial,
 };
 
-use super::super::WorthQueryPrimaryGraphApplicationAttempt;
+use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 use crate::domain_computation::primary_graph::provider::session_commit::provider_failure;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]

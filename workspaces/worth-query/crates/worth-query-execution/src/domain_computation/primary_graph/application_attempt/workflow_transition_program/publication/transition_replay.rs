@@ -1,10 +1,6 @@
 use crate::domain_computation::primary_graph::application_attempt::ApplicationAttemptIdempotencyResolutionScopedOps;
 use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionScopedOps;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryApplicationUncommitted,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolution, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted};
 use worth_query_installation::facade::ApplicationSchema;
 use {
     super::PreparedWorkflowAdvance, super::RequiredWorkflowOperation,

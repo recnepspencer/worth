@@ -97,7 +97,7 @@ pub mod recorded_correction {
 }
 
 pub mod capability_workflow {
-    pub use crate::domain_computation::primary_graph::application_attempt::WorthQueryCapabilityWorkflowIdempotency;
+    pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryCapabilityWorkflowIdempotency;
 }
 
 pub mod signed_creation {

@@ -1,8 +1,6 @@
 //! One immutable publication carried by an original own-publication continuation.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_checkpoint::facts::FactPayload, WorthQueryApplicationCommittedChanges,
-};
+use {crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges};
 
 /// Descriptive original evidence only: no receipt authority, Ready cell or reader.
 /// No link to another publication is retained.

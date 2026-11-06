@@ -8,7 +8,7 @@ use super::{
     WorthQueryProductIdempotencyAffinity, WorthQueryProviderIdempotencyResolution,
     WorthQueryProviderIdempotencyResolutionDenial,
 };
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::vocabulary::application_attempt::recorded_intent::WorthQueryRecordedIntentMatch};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::vocabulary::application_attempt::recorded_intent::WorthQueryRecordedIntentMatch};
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::graph_layout::WorthQueryProviderIdempotencyLayout;
 

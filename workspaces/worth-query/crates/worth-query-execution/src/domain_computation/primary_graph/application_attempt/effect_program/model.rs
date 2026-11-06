@@ -82,7 +82,7 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
     pub(in crate::domain_computation::primary_graph::application_attempt) effect_posture:
         crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture,
     pub(in crate::domain_computation::primary_graph::application_attempt) output_correspondence:
-        super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+        crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate,
     pub(in crate::domain_computation::primary_graph::application_attempt) retain_output_demand_observation: bool,
     pub(in crate::domain_computation::primary_graph::application_attempt) retain_client_observation: bool,
     pub(in crate::domain_computation::primary_graph::application_attempt) producer_required_invariants:
@@ -138,7 +138,7 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
     pub(super) output_correspondence:
-        super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+        crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate,
     pub(super) creation_partition: Option<WorthQueryApplicationCreationPartition>,
     pub(super) content_attachments: worth_relational::facade::content::RelationalContentAttachments,
     pub(super) content_denial: Option<crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial>,

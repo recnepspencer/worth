@@ -1,6 +1,6 @@
 use super::managed_views;
 use super::WorthQueryPreImageRetentionWork;
-use super::WorthQueryPrimaryGraphApplicationAttempt;
+use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 use super::WorthQueryPrimaryMutationWorkCounters;
 
 /// All Query evidence whose owner effects crossed World's partial boundary.
@@ -56,7 +56,7 @@ impl ManagedUnpublishedAttempt {
     }
     pub(in crate::domain_computation::primary_graph::provider) fn matches_fresh_binding(
         &self,
-        idempotency: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+        idempotency: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
         scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
         product: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> bool {

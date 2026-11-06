@@ -6,9 +6,7 @@
 //! answer for a different handle.
 
 use crate::domain_computation::application_aftermath::WorthQueryExternalDispatchPostureKind;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolution};
 
 use super::super::recovery_handle::{
     RelinquishOnDenial, WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial,

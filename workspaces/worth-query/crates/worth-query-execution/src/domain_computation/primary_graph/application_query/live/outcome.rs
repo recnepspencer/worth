@@ -85,7 +85,7 @@ impl WorthQueryApplicationLiveOpenDenial {
 /// result, and its access receipt.
 pub struct WorthQueryApplicationLiveUpdate<Query, QueryResult> {
     product_publication:
-        crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
     result: QueryResult,
     receipt: WorthQueryApplicationQueryAccessReceipt,
     _query: PhantomData<fn() -> Query>,
@@ -93,7 +93,7 @@ pub struct WorthQueryApplicationLiveUpdate<Query, QueryResult> {
 
 impl<Query, QueryResult> WorthQueryApplicationLiveUpdate<Query, QueryResult> {
     pub(super) fn new(
-        product_publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        product_publication: crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
         result: QueryResult,
         receipt: WorthQueryApplicationQueryAccessReceipt,
     ) -> Self {
@@ -107,7 +107,7 @@ impl<Query, QueryResult> WorthQueryApplicationLiveUpdate<Query, QueryResult> {
 
     pub const fn product_publication(
         &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication {
         &self.product_publication
     }
 
@@ -122,7 +122,7 @@ impl<Query, QueryResult> WorthQueryApplicationLiveUpdate<Query, QueryResult> {
     pub fn into_parts(
         self,
     ) -> (
-        crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
         QueryResult,
         WorthQueryApplicationQueryAccessReceipt,
     ) {
@@ -132,7 +132,7 @@ impl<Query, QueryResult> WorthQueryApplicationLiveUpdate<Query, QueryResult> {
     pub fn into_admitted_disclosed(
         self,
     ) -> (
-        crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
         super::super::WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult>,
     ) {
         (

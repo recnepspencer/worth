@@ -45,7 +45,7 @@ impl WorthQueryOutputCheckpoint {
 
     fn publication(
         &self,
-    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication>
+    ) -> Option<&crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication>
     {
         match self {
             Self::PublicationPending { owner, .. } => owner.publication(),

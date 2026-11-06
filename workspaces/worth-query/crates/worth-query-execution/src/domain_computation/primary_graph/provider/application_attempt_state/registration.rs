@@ -6,9 +6,7 @@ use super::{
     WorthQueryApplicationAttemptReservation, WorthQueryApplicationAttemptState,
     WorthQueryPrimaryGraphApplicationAttemptStore,
 };
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAttemptAffinity, WorthQueryPrimaryGraphApplicationAttempt,
-};
+use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptAffinity, crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt};
 
 pub struct WorthQueryApplicationAttemptReservationOwner<'provider> {
     provider: &'provider WorthQueryPrimaryGraphProvider,
@@ -138,3 +136,4 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
 }
 
 mod court_doors_for_test;
+pub(crate) mod registered_attempt;

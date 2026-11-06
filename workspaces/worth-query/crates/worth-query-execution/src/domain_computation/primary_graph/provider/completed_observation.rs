@@ -55,7 +55,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn resolve_completed_application_idempotency(
         &self,
         product: &WorthQueryProductIdempotencyAffinity,
-        binding: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+        binding: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     ) -> Option<WorthQueryProviderIdempotencyResolution> {
         let (committed_binding, committed) = self
             .completed_commit_evidence

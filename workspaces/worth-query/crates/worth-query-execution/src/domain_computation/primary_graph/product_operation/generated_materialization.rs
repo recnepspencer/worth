@@ -39,10 +39,7 @@ pub use {
 };
 
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationProducerBinding,
-    WorthQueryApplicationProducerProvider,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence, crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding, crate::domain_computation::primary_graph::WorthQueryApplicationProducerProvider};
 
 pub struct ProducerQualification {
 

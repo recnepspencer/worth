@@ -1,5 +1,5 @@
 //! Correction commands serialize across product branches through the existing coordinator.
-use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 

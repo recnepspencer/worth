@@ -17,7 +17,7 @@ pub struct WorthQueryRestoredAcceptedOutput {
     pub(in crate::domain_computation::primary_graph) checkpoint:
         super::WorthQueryAcceptedOutputCheckpointIdentity,
     pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<
-        crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
     >,
     pub(in crate::domain_computation::primary_graph) observation:
         worth_runtime_world::facade::ProductBranchObservation,

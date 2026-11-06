@@ -6,10 +6,7 @@ use super::{
     WorthQueryDocumentHistoryDenial as Denial,
 };
 use crate::basis::WorthQueryProductBranchReadIdentity;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationReadObservation,
-    WorthQueryOwnedProductHead,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation, crate::domain_computation::primary_graph::WorthQueryOwnedProductHead};
 use std::{
     collections::{BTreeMap, VecDeque},
     sync::Arc,

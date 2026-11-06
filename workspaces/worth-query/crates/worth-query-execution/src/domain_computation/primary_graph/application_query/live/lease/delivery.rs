@@ -35,7 +35,7 @@ where
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        publication: crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
         product: crate::basis::WorthQueryProductObservationLease,
         target_identity: AspectValue,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {

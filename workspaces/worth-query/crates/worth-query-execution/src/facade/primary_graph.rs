@@ -87,14 +87,12 @@ pub use crate::domain_computation::primary_graph::WorthQueryApplicationCommitAut
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferred;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferredKind;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial;
-pub use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationCommitPublicationSource;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationCommitRecoveryKind;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationCommitTerminalEvidence;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationCommitTerminalKind;
-pub use crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationContinuationDenial;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationContinuationDenialKind;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationContinuationPageResult;
@@ -118,7 +116,6 @@ pub use crate::domain_computation::primary_graph::WorthQueryApplicationHistoryCu
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationHistoryEntry;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationHistoryPage;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationHistoryPageLimits;
-pub use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolution;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProjectionAuthority;
@@ -141,8 +138,6 @@ pub use crate::domain_computation::primary_graph::WorthQueryApplicationOperation
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionSnapshot;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandDisclosure;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
-pub use crate::domain_computation::primary_graph::WorthQueryApplicationOutputEntity;
-pub use crate::domain_computation::primary_graph::WorthQueryApplicationOutputFamilyEntry;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationPrincipalIdentity;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationPrincipalKey;
@@ -173,7 +168,6 @@ pub use crate::domain_computation::primary_graph::WorthQueryApplicationRelationS
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationRequiredOutputConnection;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationRequiredOutputSource;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationRetainedCommitOutcome;
-pub use crate::domain_computation::primary_graph::WorthQueryApplicationTypedOutputCorrespondence;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationUnresolvedCommitEvidence;
 pub use crate::domain_computation::primary_graph::WorthQueryApprovedElevation;
@@ -207,7 +201,6 @@ pub use crate::domain_computation::primary_graph::WorthQueryCheckpointRecordClas
 pub use crate::domain_computation::primary_graph::WorthQueryClosedBranchSetAdoption;
 pub use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 pub use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadWork;
-pub use crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication;
 pub use crate::domain_computation::primary_graph::WorthQueryCompleteApplicationReadSet;
 pub use crate::domain_computation::primary_graph::WorthQueryCompletedGeneratedOutputReconstruction;
 pub use crate::domain_computation::primary_graph::WorthQueryCompletedInvariantProjection;
@@ -455,10 +448,17 @@ pub use crate::domain_computation::primary_graph::application_inbound::inbound_o
 pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt;
 pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity;
+pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges;
+pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication;
 pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind;
+pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage;
+pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency_resolution_denial::WorthQueryApplicationIdempotencyResolutionDenialKind;
 pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationCreatedRelation;
 pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
+pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputEntity;
+pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputFamilyEntry;
+pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationTypedOutputCorrespondence;
 pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial;
 pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;
 pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::unobserved_write::WorthQueryApplicationUnobservedWrite;

@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use worth_runtime_world::facade::ProductBranchIncarnation;
 
 use super::WorthQueryPendingApplicationPublication;
-use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 
 pub(in crate::domain_computation::primary_graph) type WorthQueryPendingApplicationPublicationRegistryOwner =
     Arc<Mutex<WorthQueryPendingApplicationPublicationRegistry>>;
@@ -56,7 +56,7 @@ impl super::WorthQueryPrimaryGraphProvider {
 pub enum WorthQueryPendingApplicationIdempotency {
     Reserved,
     Pending(
-        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     ),
 }
 

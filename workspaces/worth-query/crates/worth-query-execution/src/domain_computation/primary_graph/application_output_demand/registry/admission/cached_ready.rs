@@ -16,7 +16,7 @@ impl super::super::WorthQueryOutputDemandRegistry {
         requested: &WorthQueryOutputDemandKey,
         scope: WorthQueryOperationScopeEntityBinding,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+        correspondence: &crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
         idempotency_key: &[u8; 32],
     ) -> bool {
         let state = self
@@ -41,7 +41,7 @@ impl super::super::WorthQueryOutputDemandRegistry {
         requested: &WorthQueryOutputDemandKey,
         scope: WorthQueryOperationScopeEntityBinding,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+        correspondence: &crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
         idempotency_key: &[u8; 32],
     ) -> Option<super::super::ReadyCompletion> {
         let state = self
@@ -75,7 +75,7 @@ fn committed_ready<'a>(
     requested: &WorthQueryOutputDemandKey,
     scope: WorthQueryOperationScopeEntityBinding,
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+    correspondence: &crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
     idempotency_key: &[u8; 32],
 ) -> Option<&'a super::super::ReadyCompletion> {
     // A later stopped/in-flight row cannot expose an older cached Ready.

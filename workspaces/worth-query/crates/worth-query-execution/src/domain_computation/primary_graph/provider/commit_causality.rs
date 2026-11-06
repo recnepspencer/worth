@@ -36,7 +36,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn publish_application_commit_causality(
         &self,
         reservation: crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
-        publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        publication: crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
         emissions: WorthQueryAdmittedApplicationEmissionBatch,
         predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PreparedPredicatePublication>,
     ) -> usize {
@@ -46,7 +46,7 @@ impl WorthQueryPrimaryGraphProvider {
 
     pub(in crate::domain_computation::primary_graph) fn committed_application_emissions(
         &self,
-        publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        publication: &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
     ) -> Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission>
 {
         self.live_delivery.emissions(publication)

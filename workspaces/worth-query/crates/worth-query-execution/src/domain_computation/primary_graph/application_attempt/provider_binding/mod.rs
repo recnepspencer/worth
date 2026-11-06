@@ -4,7 +4,8 @@ pub(crate) mod effect_accumulator;
 mod effect_lowering;
 mod registration;
 
-pub(in crate::domain_computation::primary_graph) use registration::WorthQueryPrimaryGraphApplicationAttempt;
+
+pub(in crate::domain_computation::primary_graph) use registration::WorthQueryProviderEffectRegistrationSeal;
 pub(in crate::domain_computation::primary_graph::application_attempt) use registration::WorthQueryProviderRegistrationInspectionPermit;
 pub(in crate::domain_computation::primary_graph::application_attempt) use registration::WorthQueryRegisteredProviderAttemptSeal;
 
@@ -150,7 +151,7 @@ pub fn prepare_provider_attempt<'layout>(
     conditional_definition: Option<
         crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition,
     >,
-    output_correspondence: super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    output_correspondence: crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
@@ -217,7 +218,7 @@ pub(super) fn prepare_program_migration_batch<'layout>(
     }
     accumulator
         .finish(
-            super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::default(),
+            crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate::default(),
         )?
         .into_migration_batch()
         .map_err(|_| progression_denial())

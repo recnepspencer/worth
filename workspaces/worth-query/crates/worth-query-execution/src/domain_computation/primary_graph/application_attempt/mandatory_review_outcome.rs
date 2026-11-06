@@ -170,7 +170,7 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
                 )),
                 None => WorthQueryMandatoryReviewOutcome::Denied(
                     WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
-                        super::WorthQueryApplicationCommitDenialStage::Idempotency,
+                        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage::Idempotency,
                         "committed review field is unavailable",
                     ),
                     binding.into_mandatory(),

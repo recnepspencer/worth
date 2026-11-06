@@ -1,8 +1,6 @@
 //! Root admission is a pre-effect refusal at resource admission.
 
-use super::{
-    WorthQueryApplicationCommitDenial as Denial, WorthQueryApplicationCommitDenialStage as Stage,
-};
+use {super::WorthQueryApplicationCommitDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as Stage};
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome as Outcome,
     crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted as Uncommitted,

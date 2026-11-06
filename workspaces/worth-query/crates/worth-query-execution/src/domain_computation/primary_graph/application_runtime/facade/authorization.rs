@@ -4,7 +4,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDe
 use crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
-use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial;
 use crate::domain_computation::primary_graph::WorthQueryApprovedElevation;
 use crate::domain_computation::primary_graph::WorthQueryElevationApprovalAuthorizationDenial;

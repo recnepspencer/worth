@@ -64,7 +64,7 @@ fn workflow_actor_contract_reused_principal_slot_is_not_the_original_generation(
     let original = match propose_instance(&application, instance.clone(), 74_012).unwrap() {
         WorkflowProposalOutcome::Published(replay) => {
             assert!(replay.replayed());
-            replay.receipt().committed_changes().workflow_actor_fields_for_test(proposal.entity_id(),
+            replay.receipt().workflow_actor_fields_for_test(proposal.entity_id(),
                 worth_query_decl::facade::application_capability::ApplicationWorkflowRecordedRole::Proposer)
                 .unwrap().unwrap()
         }

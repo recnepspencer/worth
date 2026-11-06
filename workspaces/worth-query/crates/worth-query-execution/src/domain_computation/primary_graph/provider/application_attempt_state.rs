@@ -37,7 +37,7 @@ pub(super) use retained_basis::{
 };
 pub use {commit_preparation::FactlessCurrentness, commit_preparation::OwnEffectOnReads};
 
-use super::WorthQueryPrimaryGraphApplicationAttempt;
+use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct WorthQueryApplicationAttemptLookupKey(WorthQueryProviderSessionAffinityIdentity);

@@ -26,16 +26,16 @@ pub enum WorthQueryInboundPendingReason {
     OwnerRetryRequired,
     /// Accepted custody remains pending; the execution owner refused preparation.
     ExecutionDenied {
-        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        stage: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
         kind: crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
     },
     /// Accepted custody remains pending after a preparation control stop.
     ExecutionControlStopped {
-        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        stage: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
         kind: crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     },
     AllocationDenied {
-        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        stage: crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
         kind: worth_execution::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },

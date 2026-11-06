@@ -17,10 +17,7 @@ use worth_relational::facade::branch::RelationalMaterializationSuspensionComplet
 
 use super::super::{ProducerQualification, WorthQuerySuspendedGeneratedOutput};
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationProducerBinding,
-    WorthQueryApplicationProducerProvider,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence, crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding, crate::domain_computation::primary_graph::WorthQueryApplicationProducerProvider};
 use crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 
 #[path = "recovery/settlement.rs"]

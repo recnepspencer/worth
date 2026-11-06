@@ -1,5 +1,5 @@
 //! The runtime's consumer methods over `domain_computation::primary_graph::product_operation`; each only calls its subsystem.
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::product_operation::WorthQueryApplicationProductBranches;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection;
 use crate::domain_computation::primary_graph::product_operation::WorthQueryBranchSetAdoptionPreparationDenial;

@@ -2,39 +2,13 @@ use super::super::provider_execution::{
     progression_denied, WorthQueryProviderAttemptRegistrationContext,
     WorthQueryProviderProgressionOutcome, WorthQueryRegisteredProviderAttempt,
 };
-use super::super::WorthQueryApplicationCommitDenialStage as DenialStage;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as DenialStage;
 use super::WorthQueryPreparedApplicationProviderAttempt;
 
-mod provider_registration;
-use provider_registration::ApplicationAttemptRegistrationStop as RegistrationStop;
-pub(in crate::domain_computation::primary_graph) use provider_registration::WorthQueryPrimaryGraphApplicationAttempt;
-
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptRegistration<'a>
-{
-    workflow_origin: Option<crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin>,
-    required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
-    effect_owner: WorthQueryProviderEffectRegistrationSeal,
-    affinity: super::super::provider_execution::WorthQueryApplicationAttemptAffinity,
-    decision_facts: crate::domain_computation::authorization::WorthQueryProviderDecisionFactBinding,
-    effects: super::effect_accumulator::WorthQueryRegisteredProviderEffects,
-    idempotency: super::super::WorthQueryApplicationIdempotencyBinding,
-    original_authority: std::sync::Arc<super::super::WorthQueryApplicationCommitAuthorityBinding>,
-    outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
-    retained_authorization_fact_count: usize,
-    external_effect: &'a worth_query_installation::facade::InstalledExternalEffectContract,
-    preimage_demand: Option<&'a worth_query_installation::facade::InstalledPreImageDemand>,
-    aftermath_causality: Option<
-        crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
-    >,
-    conditional_definition:
-        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    retain_output_demand_observation: bool,
-    retain_client_observation: bool,
-    producer_required_invariants:
-        &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement],
-    source_fact_rebase: crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase,
-    consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
-}
+use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::ApplicationAttemptRegistrationStop as RegistrationStop;
+use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::{
+    WorthQueryApplicationAttemptRegistration, WorthQueryRetainedSuccessorObservations,
+};
 
 /// Proves that the effect owner consumed a completed provider attempt before
 /// handing its associations to Primary Graph registration.
@@ -221,35 +195,38 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         Err(detail) => return abort_registration_with_detail(staged, detail.into()),
     };
     let dispatch_outbox = context.provider(&inspection).register_application_attempt(
-        WorthQueryApplicationAttemptRegistration {
+        WorthQueryApplicationAttemptRegistration::new(
             workflow_origin,
             required_output_demand,
-            effect_owner: WorthQueryProviderEffectRegistrationSeal::mint(),
+            WorthQueryProviderEffectRegistrationSeal::mint(),
             affinity,
             decision_facts,
             effects,
-            idempotency: context.idempotency(&inspection),
-            original_authority: context.original_authority(&inspection),
-            outcome_identity: context.outcome_identity(&inspection),
-            retained_authorization_fact_count: context
+            context.idempotency(&inspection),
+            context.original_authority(&inspection),
+            context.outcome_identity(&inspection),
+            context
                 .admission(&inspection)
                 .graph_work_decision_fact_count(),
             external_effect,
-            preimage_demand: preimage_demand.as_ref(),
-            aftermath_causality: context.aftermath_causality(&inspection).cloned(),
+            preimage_demand.as_ref(),
+            context.aftermath_causality(&inspection).cloned(),
             conditional_definition,
-            retain_output_demand_observation,
-            retain_client_observation,
+            WorthQueryRetainedSuccessorObservations {
+                output_demand: retain_output_demand_observation,
+                client: retain_client_observation,
+            },
             producer_required_invariants,
             source_fact_rebase,
             consumed_outputs,
-        },
+        ),
     );
     match dispatch_outbox {
-        Ok(completion) => Ok(completion.finish(
+        Ok(completion) => Ok(WorthQueryRegisteredProviderAttempt::from_registration(
             WorthQueryRegisteredProviderAttemptSeal { _owner_mint: () },
             staged,
             expected_steps,
+            completion.into_dispatch_outbox(),
         )),
         Err(RegistrationStop::Rejected(cause)) => abort_registration_with_detail(
             staged,

@@ -45,7 +45,7 @@ struct OutstandingDispatchEntry {
     /// The performed World publication also keeps its commit in history until
     /// the dispatch's terminal is released.
     performed_world:
-        Option<crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication>,
+        Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication>,
     in_flight: u64,
     terminal_world: Option<CompositeCommitIdentity>,
 }
@@ -278,7 +278,7 @@ impl OutstandingDispatchReservation {
     pub(in crate::domain_computation::primary_graph) fn commit(
         mut self,
         commit: CommitId,
-        publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        publication: &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
     ) {
         let mut entries = self
             .owner

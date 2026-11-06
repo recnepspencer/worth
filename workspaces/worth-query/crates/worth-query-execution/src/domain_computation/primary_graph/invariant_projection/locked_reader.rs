@@ -73,7 +73,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) selected_product_generation: Option<u64>,
     pub(super) selected_source_partition_identity: Option<[u8; 32]>,
     pub(super) prior_output_bindings:
-        HashMap<TypeId, Arc<super::super::WorthQueryApplicationOutputCorrespondence>>,
+        HashMap<TypeId, Arc<crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence>>,
     pub(super) current_output_families: HashMap<
         (TypeId, worth_relational::facade::identity::EntityId),
         Vec<super::operation_reader::CertifiedOutputCorrespondence>,

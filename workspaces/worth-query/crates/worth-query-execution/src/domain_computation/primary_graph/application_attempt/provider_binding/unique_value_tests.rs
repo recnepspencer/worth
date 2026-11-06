@@ -18,10 +18,10 @@ use crate::domain_computation::primary_graph::application_attempt::effect_progra
 };
 use crate::domain_computation::graph_layout::WorthQueryUniqueFieldFixture;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialStage;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind;
 
 const KIND: KindId = KindId(7);

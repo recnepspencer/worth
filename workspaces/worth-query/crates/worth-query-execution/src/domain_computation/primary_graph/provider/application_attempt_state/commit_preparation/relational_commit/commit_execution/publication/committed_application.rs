@@ -12,7 +12,7 @@ pub struct WorthQueryPrimaryGraphCommittedApplication {
     emitted_effect_count: usize,
     basis_descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
     commit_evidence: super::super::super::WorthQueryPrimaryGraphCommitEvidence,
-    committed_product_publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+    committed_product_publication: crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
     exact_output_settlement: Option<std::sync::Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>>,
     /// The co-committed aftermath relation, sealed at publication so replay
     /// answers it after the commit's history retires.
@@ -32,7 +32,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
             evidence,
             product_publication,
         } = seal;
-        let committed_product_publication = crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication::from_receipt(product_publication);
+        let committed_product_publication = crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication::from_receipt(product_publication);
         Self {
             application_outcome_identity: Some(outcome_identity),
             runtime_instance_id,
@@ -109,7 +109,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
 
     pub(in crate::domain_computation::primary_graph) const fn committed_product_publication(
         &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication {
         &self.committed_product_publication
     }
 

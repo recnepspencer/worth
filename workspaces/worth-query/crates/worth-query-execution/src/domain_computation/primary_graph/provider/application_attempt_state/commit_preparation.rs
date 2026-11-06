@@ -5,10 +5,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
 };
 
-use super::super::{
-    mutation_work::WorthQueryPrimaryMutationWorkCounters, WorthQueryPrimaryGraphApplicationAttempt,
-    WorthQueryPrimaryGraphProvider,
-};
+use {super::super::mutation_work::WorthQueryPrimaryMutationWorkCounters, crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt, super::super::WorthQueryPrimaryGraphProvider};
 
 pub(crate) mod preimage_retention;
 pub(crate) mod relational_commit;

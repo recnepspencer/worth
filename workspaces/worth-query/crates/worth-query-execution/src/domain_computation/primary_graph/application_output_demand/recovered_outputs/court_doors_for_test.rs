@@ -11,7 +11,7 @@ impl WorthQueryRecoveredOutputs {
             &super::super::WorthQueryAcceptedOutputCheckpointIdentity,
         ) -> Result<
             std::sync::Arc<
-                crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
             >,
             CheckpointDecodeDenial,
         >,

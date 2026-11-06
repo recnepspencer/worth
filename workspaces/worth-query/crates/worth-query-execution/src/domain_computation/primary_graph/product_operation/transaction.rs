@@ -5,10 +5,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQueryProductEntry;
 use crate::domain_computation::primary_graph::application_installation::WorthQueryAdmittedProgramOperation;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationIdempotencyBinding,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome, crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding};
 
 /// An admitted effect program paired with its stable idempotency meaning.
 pub struct WorthQueryAdmittedChange<Schema, Operation, Input, Scope> {
@@ -169,7 +166,7 @@ fn program_request_stop(
         Err(Control::TimedOut) => WorthQueryApplicationCommitOutcome::TimedOut,
         Ok(kind) => WorthQueryApplicationCommitOutcome::Denied(
             crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::provider_execution_denied(
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ProviderPlan,
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage::ProviderPlan,
                 Ok(kind), "program commit request stopped")),
     }
 }

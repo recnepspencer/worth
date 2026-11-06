@@ -41,7 +41,7 @@ pub struct WorthQueryRegisteredProviderEffects {
     expected_steps: WorthQueryExpectedEffectSteps,
     batch: WorkerIntentBatch,
     emissions: WorthQueryAdmittedApplicationEmissionBatch,
-    output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    output_correspondence: crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate,
     mutation_partition: worth_relational::facade::identity::PartitionId,
 }
 
@@ -111,7 +111,7 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
 
     pub(super) fn finish(
         self,
-        output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+        output_correspondence: crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate,
     ) -> Result<WorthQueryRegisteredProviderEffects, WorthQueryApplicationAttemptDenial> {
         let (intents, emissions, expected_steps) = materialize_commit_projections(self.lowered)?;
         let batch = intents.into_iter().fold(
@@ -140,7 +140,7 @@ impl WorthQueryRegisteredProviderEffects {
     ) {
         self.content_attachments = attachments;
     }
-    pub(super) fn content_attachments(
+    pub(in crate::domain_computation::primary_graph) fn content_attachments(
         &self,
     ) -> &worth_relational::facade::content::RelationalContentAttachments {
         &self.content_attachments
@@ -193,11 +193,11 @@ impl WorthQueryRegisteredProviderEffects {
         self.output_correspondence.native_witness_roles()
     }
 
-    pub(super) const fn output_binding_type(&self) -> Option<TypeId> {
+    pub(in crate::domain_computation::primary_graph) const fn output_binding_type(&self) -> Option<TypeId> {
         self.output_correspondence.binding_type()
     }
 
-    pub(super) fn expected_steps(&self) -> &[WorthQueryProvisionalEffectStep] {
+    pub(in crate::domain_computation::primary_graph) fn expected_steps(&self) -> &[WorthQueryProvisionalEffectStep] {
         self.expected_steps.steps()
     }
 
@@ -205,13 +205,13 @@ impl WorthQueryRegisteredProviderEffects {
         self.expected_steps.shared_steps()
     }
 
-    pub(super) const fn expected_step_preparation_work(
+    pub(in crate::domain_computation::primary_graph) const fn expected_step_preparation_work(
         &self,
     ) -> WorthQueryExpectedEffectStepPreparationWork {
         self.expected_steps.preparation_work()
     }
 
-    pub(super) const fn batch(&self) -> &WorkerIntentBatch {
+    pub(in crate::domain_computation::primary_graph) const fn batch(&self) -> &WorkerIntentBatch {
         &self.batch
     }
 
@@ -222,13 +222,13 @@ impl WorthQueryRegisteredProviderEffects {
         Ok(self.batch)
     }
 
-    pub(super) const fn emissions(&self) -> &WorthQueryAdmittedApplicationEmissionBatch {
+    pub(in crate::domain_computation::primary_graph) const fn emissions(&self) -> &WorthQueryAdmittedApplicationEmissionBatch {
         &self.emissions
     }
 
     /// Appends the Primary Graph registration records without releasing or
     /// replacing the sealed provider-effect batch.
-    pub(super) fn bind_registration_intents(
+    pub(in crate::domain_computation::primary_graph) fn bind_registration_intents(
         self,
         provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
         emitted_effect_count: u64,
@@ -279,14 +279,14 @@ impl WorthQueryRegisteredProviderEffects {
         ))
     }
 
-    pub(super) fn into_emissions(self) -> WorthQueryAdmittedApplicationEmissionBatch {
+    pub(in crate::domain_computation::primary_graph) fn into_emissions(self) -> WorthQueryAdmittedApplicationEmissionBatch {
         self.emissions
     }
 
-    pub(super) fn seal_output_correspondence(
+    pub(in crate::domain_computation::primary_graph) fn seal_output_correspondence(
         &self,
         commit: &worth_relational::facade::transactions::CommitResult,
-    ) -> super::super::effect_program::WorthQueryApplicationOutputCorrespondence {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence {
         self.output_correspondence.clone().seal(commit)
     }
 }

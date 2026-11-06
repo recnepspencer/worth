@@ -1,9 +1,6 @@
 //! The typed owner evidence a denial carries beside its kind.
 
-use {
-    super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitDenialStage,
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
-};
+use {super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind};
 use {
     crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
     crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,

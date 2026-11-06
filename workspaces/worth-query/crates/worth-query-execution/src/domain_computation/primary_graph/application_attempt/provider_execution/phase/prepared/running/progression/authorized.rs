@@ -5,15 +5,10 @@ use graph::application_attempt::provider_execution::aftermath_resolution::resolv
 use graph::application_attempt::provider_execution::outcome::{
     progression_denied, progression_from_authorization_denial, WorthQueryProviderProgressionOutcome,
 };
-use graph::application_attempt::{
-    provider_recomparison::recover_equivalent_commit_evidence,
-    WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDenial,
-    WorthQueryApplicationCommitDenialStage as DenialStage, WorthQueryApplicationCommitReceipt,
-    WorthQueryCommittedReceiptProjection,
-};
+use {graph::application_attempt::provider_recomparison::recover_equivalent_commit_evidence, graph::application_attempt::WorthQueryApplicationCommitAuthorityBinding, graph::application_attempt::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as DenialStage, graph::application_attempt::WorthQueryApplicationCommitReceipt, graph::application_attempt::WorthQueryCommittedReceiptProjection};
 use graph::provider::WorthQueryProviderIdempotencyResolution;
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
-use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryManagedEquivalentCommitReceiptPermit
 {

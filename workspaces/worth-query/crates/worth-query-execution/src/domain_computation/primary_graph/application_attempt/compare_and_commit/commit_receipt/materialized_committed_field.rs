@@ -1,0 +1,91 @@
+//! An immutable original envelope and full-generation patch seal a Native value position.
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges;
+use worth_foundational::facade::AspectValue;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::publication::RecordStructuralChange;
+use worth_relational::facade::transactions::RecordRef;
+use worth_execution::{MapKernelContext, MapKernelStop};
+use worth_relational::facade::publication::{
+    PublishedAuthoritativeFieldEffect as Effect, PublishedAuthoritativeFieldValueLocation,
+};
+use {crate::domain_computation::graph_layout::InstalledFieldCoordinate, crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint};
+
+pub(in crate::domain_computation::primary_graph) struct MaterializedCommittedField {
+    original: WorthQueryApplicationCommittedChanges,
+    patch: Option<usize>,
+    effect: Effect,
+    value: Option<PublishedAuthoritativeFieldValueLocation>,
+}
+impl MaterializedCommittedField {
+    pub(in crate::domain_computation::primary_graph) fn effect(&self) -> Effect {
+        self.effect
+    }
+    pub(in crate::domain_computation::primary_graph) fn value(&self) -> Option<&AspectValue> {
+        self.original
+            .record_patches()
+            .get(self.patch?)?
+            .authoritative_patch
+            .field_value_at(self.value?)
+    }
+}
+/// The attempt's sealing of one committed Native value position for diagnostic
+/// comparison.
+pub(in crate::domain_computation::primary_graph) trait CommittedFieldMaterialization {
+    fn materialize_field(
+        &self,
+        context: &mut MapKernelContext<'_, '_>,
+        entity: EntityId,
+        coordinate: InstalledFieldCoordinate<'_>,
+    ) -> Result<MaterializedCommittedField, MapKernelStop>;
+}
+
+impl CommittedFieldMaterialization for WorthQueryApplicationCommittedChanges {
+    fn materialize_field(
+        &self,
+        context: &mut MapKernelContext<'_, '_>,
+        entity: EntityId,
+        coordinate: InstalledFieldCoordinate<'_>,
+    ) -> Result<MaterializedCommittedField, MapKernelStop> {
+        let mut selected = None;
+        for (index, patch) in self.record_patches().iter().enumerate()
+        {
+            checkpoint(context, 1)?;
+            if patch.target != RecordRef::Entity(entity) {
+                continue;
+            }
+            if selected.replace(index).is_some() {
+                return Ok(MaterializedCommittedField {
+                    original: self.clone(),
+                    patch: None,
+                    effect: Effect::Ambiguous,
+                    value: None,
+                });
+            }
+        }
+        let (effect, value) = match selected {
+            None => (Effect::Unchanged, None),
+            Some(index) => {
+                let patch = &self.record_patches()[index];
+                if !matches!(
+                    patch.structural_change,
+                    RecordStructuralChange::Created | RecordStructuralChange::Updated
+                ) {
+                    (Effect::Unsupported, None)
+                } else {
+                    patch.authoritative_patch.field_effect_with_value_location(
+                        coordinate.native().contract(),
+                        coordinate.native().binding(),
+                        coordinate.field(),
+                        |work| checkpoint(context, work),
+                    )?
+                }
+            }
+        };
+        Ok(MaterializedCommittedField {
+            original: self.clone(),
+            patch: selected,
+            effect,
+            value,
+        })
+    }
+}

@@ -62,7 +62,7 @@ impl<Payload> WorthQueryLiveCauseQueue<Payload> {
         &self,
         effect: &ApplicationEffectRef<Schema, Effect, Payload>,
     ) -> Option<(
-        &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
         &crate::basis::WorthQueryProductObservationLease,
         &Payload,
     )>

@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use super::ManagedUnpublishedAttempt;
 use super::{WorthQueryProductIdempotencyAffinity, WorthQueryProviderIdempotencyResolution};
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
 
 mod managed_recovery;

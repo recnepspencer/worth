@@ -281,9 +281,9 @@ impl WorthQueryCompletedCommitEvidenceStore {
     pub(in crate::domain_computation::primary_graph) fn observe_idempotency(
         &self,
         product: &super::super::WorthQueryProductIdempotencyAffinity,
-        binding: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+        binding: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     ) -> Option<(
-        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
         WorthQueryPrimaryGraphCommittedApplication,
     )>{
         self.observe_lookup_key(&WorthQueryIdempotencyLookupKey::for_binding(
@@ -295,7 +295,7 @@ impl WorthQueryCompletedCommitEvidenceStore {
         &self,
         key: &WorthQueryIdempotencyLookupKey,
     ) -> Option<(
-        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
         WorthQueryPrimaryGraphCommittedApplication,
     )>{
         let commit = self.by_idempotency.get(key)?;

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::CapturedWorkflowIdempotency;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::read_set::{
     MutationHandlerBindingProof, WorkflowOperationBindingProof,
@@ -66,7 +67,7 @@ impl<Schema, Operation, Input, Scope>
         Binding,
     >(
         &self,
-        idempotency: &crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        idempotency: &crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
     ) -> bool
     where
         Schema: ApplicationSchema,
