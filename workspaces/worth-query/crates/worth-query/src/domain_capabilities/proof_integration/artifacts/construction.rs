@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::{Artifact, ProofSet, ProofSetAuthorizedBy};
 
 use super::super::proofs::{
@@ -15,17 +16,19 @@ use crate::domain_capabilities::targets::WorthQueryDomainCapabilityTargetBinding
 pub(crate) fn create_requested_domain_capability_contribution<P, T>(
     target: T,
     payload: P,
-) -> WorthQueryRequestedDomainCapabilityContribution<P, T>
+) -> Result<WorthQueryRequestedDomainCapabilityContribution<P, T>, IdentityDerivationDenial>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
     (P, T): AllowedContributionBinding<P, T>,
 {
     let binding_basis = target.binding_identity().as_str().to_string();
-    WorthQueryRequestedDomainCapabilityContribution(remint_with_phase(
-        WorthQueryDomainCapabilityContribution::new(target, payload),
-        binding_basis,
-        requested_contribution_proof(),
+    Ok(WorthQueryRequestedDomainCapabilityContribution(
+        remint_with_phase(
+            WorthQueryDomainCapabilityContribution::new(target, payload)?,
+            binding_basis,
+            requested_contribution_proof(),
+        ),
     ))
 }
 

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -274,8 +275,8 @@ fn unsupported_preview_binding_denial(
     payload: &WorthQueryWorkflowContributionPayload,
     target_kind: crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind,
     request_identity: crate::WorthQueryEvidenceIdentity,
-) -> WorthQueryDomainCapabilityProgressionDenial {
-    WorthQueryDomainCapabilityProgressionDenial::new(
+) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
+    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
         "workflow-preview",
         target_kind,
@@ -284,5 +285,5 @@ fn unsupported_preview_binding_denial(
             "preview workflow artifact materialization only supports preview-bound workflow semantics; got `{}`",
             payload.posture().as_str()
         ),
-    )
+    )?)
 }

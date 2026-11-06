@@ -12,15 +12,17 @@ use super::{
     WorthQueryInvariantCapabilityContributionAuthoring, WorthQuerySupportContributionAuthoring,
     WorthQueryWorkflowContributionAuthoring,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[test]
-fn every_contribution_family_materializes_under_one_installed_authority() {
+fn every_contribution_family_materializes_under_one_installed_authority(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let declaration = intent_declaration();
     let admitted_plan = admitted_basis_observation_plan();
-    let lower_runtime = lower_runtime_envelope("installed-authority-family-matrix");
+    let lower_runtime = lower_runtime_envelope("installed-authority-family-matrix")?;
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
     let declaration_target = domain
@@ -101,4 +103,6 @@ fn every_contribution_family_materializes_under_one_installed_authority() {
         )
         .bind_to_installed_target(lower_runtime_target),
     )));
+
+    Ok(())
 }

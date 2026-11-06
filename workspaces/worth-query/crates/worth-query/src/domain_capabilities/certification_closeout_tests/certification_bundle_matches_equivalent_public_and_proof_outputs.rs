@@ -9,7 +9,7 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs(
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let declaration = intent_declaration();
-    let lower_runtime = lower_runtime_envelope("domain-capability-closeout");
+    let lower_runtime = lower_runtime_envelope("domain-capability-closeout")?;
     let (reference_set, target) = replay_gap_inputs();
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
@@ -35,7 +35,7 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs(
                 "declaration-scoped support remains declaration scoped",
             )
             .bind_to_installed_target(declaration_target.clone()),
-        )),
+        )?)?,
     );
     assert_eq!(support, support_proof);
     assert_eq!(
@@ -64,7 +64,7 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs(
             ),
         )?
         .bind_to_installed_target(declaration_target.clone()),
-    )));
+    )?)?);
     assert_eq!(workflow.workflow_declaration(), &workflow_proof);
     assert_eq!(
         bundle.output_digest("workflow_artifact_digest"),
@@ -104,8 +104,8 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs(
                 CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
             )?
             .bind_to_installed_target(lower_runtime_target),
-        ),
-    ));
+        )?,
+    )?);
     assert_eq!(explanation, explanation_proof);
     assert_eq!(
         bundle.output_digest("explanation_artifact_digest"),
@@ -127,8 +127,8 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs(
                 "geometry kernel must reject invalid edge splits",
             )?
             .bind_to_installed_target(declaration_target),
-        ),
-    ));
+        )?,
+    )?);
     assert_eq!(invariant, invariant_proof);
 
     Ok(())

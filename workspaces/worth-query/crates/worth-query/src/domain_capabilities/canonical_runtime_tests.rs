@@ -34,7 +34,7 @@ fn equivalent_admission_meaning_canonicalizes_to_same_digest(
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
         )?,
-    ));
+    )?);
     let right = materialize_canonical_admission_artifact(declaration_ready_contribution(
         "intent-a",
         WorthQueryAdmissionContributionPayload::new(
@@ -42,7 +42,7 @@ fn equivalent_admission_meaning_canonicalizes_to_same_digest(
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
         )?,
-    ));
+    )?);
 
     assert_eq!(
         left.materialization_digest(),
@@ -76,7 +76,7 @@ fn different_target_or_semantic_posture_changes_canonical_digest(
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
         )?,
-    ));
+    )?);
     let violation = materialize_canonical_admission_artifact(declaration_ready_contribution(
         "intent-a",
         WorthQueryAdmissionContributionPayload::new(
@@ -84,7 +84,7 @@ fn different_target_or_semantic_posture_changes_canonical_digest(
             "spatial.arbitration.invalid_target",
             "requested target violates domain law",
         )?,
-    ));
+    )?);
     let other_target = materialize_canonical_admission_artifact(declaration_ready_contribution(
         "intent-b",
         WorthQueryAdmissionContributionPayload::new(
@@ -92,7 +92,7 @@ fn different_target_or_semantic_posture_changes_canonical_digest(
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
         )?,
-    ));
+    )?);
 
     assert_ne!(
         advisory.materialization_digest(),
@@ -117,7 +117,7 @@ fn all_categories_materialize_profile_independent_canonical_artifacts(
                 "runtime.boundary.traceability",
                 "reconstructed boundary evidence stays attributable",
             ),
-        ));
+        )?);
     let invariant =
         materialize_canonical_invariant_capability_artifact(declaration_ready_contribution(
             "intent-c",
@@ -126,7 +126,7 @@ fn all_categories_materialize_profile_independent_canonical_artifacts(
                 "graph.face_inner_loop_insertion",
                 "topology substrate is unavailable",
             )?,
-        ));
+        )?);
     let workflow = materialize_canonical_workflow_artifact(admitted_plan_ready_contribution(
         "plan-a",
         WorthQueryWorkflowContributionPayload::new(
@@ -134,7 +134,7 @@ fn all_categories_materialize_profile_independent_canonical_artifacts(
             "preview.confirmation.required",
             "destructive promotion requires confirmation",
         )?,
-    ));
+    )?);
     let continuity = materialize_canonical_continuity_artifact(admitted_plan_ready_contribution(
         "plan-b",
         WorthQueryContinuityContributionPayload::new(
@@ -142,7 +142,7 @@ fn all_categories_materialize_profile_independent_canonical_artifacts(
             "continuity.identity.split",
             "edge split produces two descendant identities",
         )?,
-    ));
+    )?);
     let aftermath = materialize_canonical_aftermath_artifact(lower_runtime_ready_contribution(
         "boundary-b",
         WorthQueryAftermathContributionPayload::new(
@@ -150,7 +150,7 @@ fn all_categories_materialize_profile_independent_canonical_artifacts(
             "aftermath.projection.fact_established",
             "projection establishes relation aftermath",
         )?,
-    ));
+    )?);
     let explanation = materialize_canonical_explanation_artifact(declaration_ready_contribution(
         "intent-d",
         WorthQueryExplanationContributionPayload::new(
@@ -158,7 +158,7 @@ fn all_categories_materialize_profile_independent_canonical_artifacts(
             "spatial.reorient.fallback",
             "used canonical perpendicular fallback",
         )?,
-    ));
+    )?);
 
     assert_eq!(support.canonical_family(), "declaration-support");
     assert_eq!(invariant.canonical_family(), "capability-invariant");
@@ -196,9 +196,12 @@ fn all_categories_materialize_profile_independent_canonical_artifacts(
 fn declaration_ready_contribution<P>(
     target_digest: &str,
     payload: P,
-) -> super::WorthQueryMaterializationReadyDomainCapabilityContribution<
-    P,
-    WorthQueryDeclarationBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyDomainCapabilityContribution<
+        P,
+        WorthQueryDeclarationBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 >
 where
     P: WorthQueryDomainCapabilityPayload,
@@ -208,15 +211,18 @@ where
             WorthQueryDeclarationBoundContributionTarget,
         >,
 {
-    ready_payload(declaration_target(target_digest), payload)
+    Ok(ready_payload(declaration_target(target_digest), payload)?)
 }
 
 fn admitted_plan_ready_contribution<P>(
     target_digest: &str,
     payload: P,
-) -> super::WorthQueryMaterializationReadyDomainCapabilityContribution<
-    P,
-    WorthQueryAdmittedPlanBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyDomainCapabilityContribution<
+        P,
+        WorthQueryAdmittedPlanBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 >
 where
     P: WorthQueryDomainCapabilityPayload,
@@ -226,15 +232,18 @@ where
             WorthQueryAdmittedPlanBoundContributionTarget,
         >,
 {
-    ready_payload(admitted_plan_target(target_digest), payload)
+    Ok(ready_payload(admitted_plan_target(target_digest), payload)?)
 }
 
 fn lower_runtime_ready_contribution<P>(
     target_digest: &str,
     payload: P,
-) -> super::WorthQueryMaterializationReadyDomainCapabilityContribution<
-    P,
-    WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyDomainCapabilityContribution<
+        P,
+        WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 >
 where
     P: WorthQueryDomainCapabilityPayload,
@@ -244,5 +253,8 @@ where
             WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
         >,
 {
-    ready_payload(lower_runtime_target(target_digest), payload)
+    Ok(ready_payload(
+        lower_runtime_target(target_digest)?,
+        payload,
+    )?)
 }

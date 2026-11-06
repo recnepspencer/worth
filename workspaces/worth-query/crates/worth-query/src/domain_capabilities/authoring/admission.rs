@@ -78,37 +78,45 @@ impl WorthQueryAdmissionContributionAuthoring {
     pub fn for_intent_declaration(
         self,
         declaration: &WorthQueryIntentDeclaration,
-    ) -> WorthQueryRequestedAdmissionContribution<WorthQueryDeclarationBoundContributionTarget>
-    {
-        self.bind_to_declaration_target(
+    ) -> Result<
+        WorthQueryRequestedAdmissionContribution<WorthQueryDeclarationBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.bind_to_declaration_target(
             WorthQueryDeclarationBoundContributionTarget::for_intent_declaration(declaration),
-        )
+        )?)
     }
 
     pub fn for_admitted_intent_plan(
         self,
         plan: &WorthQueryAdmittedIntentPlan,
-    ) -> WorthQueryRequestedAdmissionContribution<WorthQueryAdmittedPlanBoundContributionTarget>
-    {
-        self.bind_to_admitted_plan_target(
+    ) -> Result<
+        WorthQueryRequestedAdmissionContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.bind_to_admitted_plan_target(
             WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(plan),
-        )
+        )?)
     }
 
     pub fn bind_to_declaration_target(
         self,
         target: WorthQueryDeclarationBoundContributionTarget,
-    ) -> WorthQueryRequestedAdmissionContribution<WorthQueryDeclarationBoundContributionTarget>
-    {
-        bind_requested(self.payload, target)
+    ) -> Result<
+        WorthQueryRequestedAdmissionContribution<WorthQueryDeclarationBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(bind_requested(self.payload, target)?)
     }
 
     pub fn bind_to_admitted_plan_target(
         self,
         target: WorthQueryAdmittedPlanBoundContributionTarget,
-    ) -> WorthQueryRequestedAdmissionContribution<WorthQueryAdmittedPlanBoundContributionTarget>
-    {
-        bind_requested(self.payload, target)
+    ) -> Result<
+        WorthQueryRequestedAdmissionContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(bind_requested(self.payload, target)?)
     }
 
     pub(crate) fn bind_to_installed_target<T>(

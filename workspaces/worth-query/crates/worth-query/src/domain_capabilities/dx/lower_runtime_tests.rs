@@ -11,6 +11,7 @@ use crate::domain_capabilities::{
     WorthQueryLowerRuntimeExplanationRequest, WorthQuerySupportContributionAuthoring,
 };
 use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
+
 use crate::lower_runtime_routing::{
     WorthQueryLowerRuntimeAuthorityOwner, WorthQueryLowerRuntimeBoundaryEnvelope,
     WorthQueryLowerRuntimeBoundaryExecutionReceipt, WorthQueryLowerRuntimeCapabilityEligibility,
@@ -27,11 +28,12 @@ use crate::runtime::{
 };
 
 #[test]
-fn common_lower_runtime_support_lane_matches_proof_lane_materialization() {
+fn common_lower_runtime_support_lane_matches_proof_lane_materialization(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let envelope = lower_runtime_envelope("boundary-support");
+    let envelope = lower_runtime_envelope("boundary-support")?;
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
     let target = domain
@@ -52,7 +54,7 @@ fn common_lower_runtime_support_lane_matches_proof_lane_materialization() {
     )
     .bind_to_installed_target(target);
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
-        evaluate_requested_domain_capability_contribution(proof_requested),
+        evaluate_requested_domain_capability_contribution(proof_requested)?,
     )));
     let proof_target = proof_admitted.payload().target().clone();
     let proof = materialize_lower_runtime_support_traceability_artifact(success(
@@ -60,9 +62,11 @@ fn common_lower_runtime_support_lane_matches_proof_lane_materialization() {
             proof_admitted,
             proof_target,
         ),
-    ));
+    ))?;
 
     assert_eq!(common, success(proof));
+
+    Ok(())
 }
 
 #[path = "lower_runtime_tests/common_lower_runtime_explanation_review_matches_proof_lane_revie.rs"]
@@ -74,7 +78,7 @@ fn common_lower_runtime_explanation_artifact_matches_proof_lane_materialization(
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let envelope = lower_runtime_envelope("boundary-explanation-artifact");
+    let envelope = lower_runtime_envelope("boundary-explanation-artifact")?;
     let (reference_set, inspection_target) = replay_gap_inputs();
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
@@ -111,7 +115,7 @@ fn common_lower_runtime_explanation_artifact_matches_proof_lane_materialization(
         )?
         .bind_to_installed_target(target);
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
-        evaluate_requested_domain_capability_contribution(proof_requested),
+        evaluate_requested_domain_capability_contribution(proof_requested)?,
     )));
     let proof_target = proof_admitted.payload().target().clone();
     let proof = materialize_query_causal_inspection_artifact(success(
@@ -119,7 +123,7 @@ fn common_lower_runtime_explanation_artifact_matches_proof_lane_materialization(
             proof_admitted,
             proof_target,
         ),
-    ));
+    ))?;
 
     assert_eq!(common, success(proof));
 
@@ -127,11 +131,12 @@ fn common_lower_runtime_explanation_artifact_matches_proof_lane_materialization(
 }
 
 #[test]
-fn checked_lower_runtime_review_lane_preserves_denied_metadata() {
+fn checked_lower_runtime_review_lane_preserves_denied_metadata(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let envelope = lower_runtime_envelope("boundary-explanation-denial");
+    let envelope = lower_runtime_envelope("boundary-explanation-denial")?;
     let (reference_set, inspection_target) = replay_gap_inputs();
 
     let checked = install_domain_capability_certification(request_execution)
@@ -162,14 +167,17 @@ fn checked_lower_runtime_review_lane_preserves_denied_metadata() {
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope
     );
     assert!(checked.denial().is_some());
+
+    Ok(())
 }
 
 #[test]
-fn lower_runtime_source_support_binding_matches_envelope_binding() {
+fn lower_runtime_source_support_binding_matches_envelope_binding(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let source = write_authority_boundary_source("boundary-source-support");
+    let source = write_authority_boundary_source("boundary-source-support")?;
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
     let source_artifact = domain
@@ -188,12 +196,14 @@ fn lower_runtime_source_support_binding_matches_envelope_binding() {
         .expect("envelope-bound support should materialize");
 
     assert_eq!(source_artifact, envelope_artifact);
+
+    Ok(())
 }
 
 #[test]
 fn lower_runtime_source_invariant_denial_matches_envelope_binding(
 ) -> Result<(), IdentityDerivationDenial> {
-    let source = write_authority_boundary_source("boundary-source-invariant");
+    let source = write_authority_boundary_source("boundary-source-invariant")?;
     let source_denial = materialize_invariant_denial_from_source(&source)?;
     let envelope_denial = materialize_invariant_denial_from_envelope(source.boundary_envelope())?;
 
@@ -202,7 +212,9 @@ fn lower_runtime_source_invariant_denial_matches_envelope_binding(
     Ok(())
 }
 
-fn lower_runtime_envelope(target_digest: &str) -> WorthQueryLowerRuntimeBoundaryEnvelope {
+fn lower_runtime_envelope(
+    target_digest: &str,
+) -> Result<WorthQueryLowerRuntimeBoundaryEnvelope, IdentityDerivationDenial> {
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
         WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -215,7 +227,7 @@ fn lower_runtime_envelope(target_digest: &str) -> WorthQueryLowerRuntimeBoundary
             crate::evidence_identity::WorthQueryEvidenceTag::new("test_target"),
             target_digest,
         )
-        .seal(),
+        .seal()?,
     );
     let detail_identity = crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
         crate::evidence_identity::WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
@@ -224,7 +236,7 @@ fn lower_runtime_envelope(target_digest: &str) -> WorthQueryLowerRuntimeBoundary
         crate::evidence_identity::WorthQueryEvidenceTag::new("test_detail"),
         "detail",
     )
-    .seal();
+    .seal()?;
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request,
         &detail_identity,
@@ -246,22 +258,22 @@ fn lower_runtime_envelope(target_digest: &str) -> WorthQueryLowerRuntimeBoundary
                 crate::evidence_identity::WorthQueryEvidenceTag::new("test_retained"),
                 target_digest,
             )
-            .seal(),
+            .seal()?,
         );
     let boundary =
         WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(&route, &retained_evidence);
 
-    WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
+    Ok(WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
         &route,
         &boundary,
         &retained_evidence,
-    )
+    ))
 }
 
 fn write_authority_boundary_source(
     target_digest: &str,
-) -> crate::runtime::WriteAuthorityExecutionReceipt {
+) -> Result<crate::runtime::WriteAuthorityExecutionReceipt, IdentityDerivationDenial> {
     use worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts;
 
     let command = WorthQueryWriteCommand::Delete {
@@ -274,14 +286,14 @@ fn write_authority_boundary_source(
                     crate::WorthQueryEvidenceScope::WriteReceiptCommitIdentity,
                 )
                 .field_value(crate::WorthQueryEvidenceTag::new("target"), target_digest)
-                .seal(),
+                .seal()?,
             ),
             crate::memory_workspace::WorthQuerySnapshotIdentity::from_relational_snapshot(
                 RelationalBridgeSnapshotIdentityParts::new(1, 1),
             ),
             Vec::new(),
         );
-    crate::runtime::WriteAuthorityExecutionReceipt::from_command(&command, mutation_receipt)
+    Ok(crate::runtime::WriteAuthorityExecutionReceipt::from_command(&command, mutation_receipt))
 }
 
 fn materialize_invariant_denial_from_source<S>(
@@ -291,7 +303,7 @@ where
     S: crate::runtime::WorthQueryLowerRuntimeBoundaryEnvelopeSource + ?Sized,
 {
     let requested = graph_invariant_denial_authoring()?.for_lower_runtime_boundary_source(source);
-    Ok(materialize_invariant_denial(requested))
+    Ok(materialize_invariant_denial(requested)?)
 }
 
 fn materialize_invariant_denial_from_envelope(
@@ -299,7 +311,7 @@ fn materialize_invariant_denial_from_envelope(
 ) -> Result<WorthQueryGraphCompositionDomainInvariantDenial, IdentityDerivationDenial> {
     let requested =
         graph_invariant_denial_authoring()?.for_lower_runtime_boundary_envelope(envelope);
-    Ok(materialize_invariant_denial(requested))
+    Ok(materialize_invariant_denial(requested)?)
 }
 
 fn graph_invariant_denial_authoring(
@@ -324,14 +336,16 @@ fn materialize_invariant_denial(
     requested: crate::domain_capabilities::WorthQueryRequestedInvariantCapabilityContribution<
         crate::domain_capabilities::WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
     >,
-) -> WorthQueryGraphCompositionDomainInvariantDenial {
-    let eligible = success(evaluate_requested_domain_capability_contribution(requested));
+) -> Result<WorthQueryGraphCompositionDomainInvariantDenial, IdentityDerivationDenial> {
+    let eligible = success(evaluate_requested_domain_capability_contribution(
+        requested,
+    )?);
     let admitted = success(admit_eligible_domain_capability_contribution(eligible));
     let target = admitted.payload().target().clone();
-    success(materialize_graph_composition_domain_invariant_denial(
-        success(
+    Ok(success(
+        materialize_graph_composition_domain_invariant_denial(success(
             prepare_admitted_domain_capability_contribution_for_materialization(admitted, target),
-        ),
+        ))?,
     ))
 }
 

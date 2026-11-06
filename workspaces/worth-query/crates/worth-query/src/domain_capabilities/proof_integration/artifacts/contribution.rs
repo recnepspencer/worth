@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::{Artifact, AssumptionBasis, CurrentValidity, FreshnessScopedBasis};
 
 use super::super::phases::{
@@ -58,20 +59,20 @@ where
         self.target.installed_authority()
     }
 
-    pub(super) fn new(target: T, payload: P) -> Self {
-        let request_identity = compose_domain_capability_request_identity(&target, &payload);
-        Self {
+    pub(super) fn new(target: T, payload: P) -> Result<Self, IdentityDerivationDenial> {
+        let request_identity = compose_domain_capability_request_identity(&target, &payload)?;
+        Ok(Self {
             target,
             payload,
             request_identity,
-        }
+        })
     }
 }
 
 fn compose_domain_capability_request_identity<P, T>(
     target: &T,
     payload: &P,
-) -> WorthQueryEvidenceIdentity
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
@@ -106,7 +107,7 @@ where
                 authority.installation_generation().ordinal() as usize,
             );
     }
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 pub(crate) fn contribution_basis_identity<Phase, P, T, S>(
@@ -116,17 +117,19 @@ pub(crate) fn contribution_basis_identity<Phase, P, T, S>(
         S,
         DomainCapabilityBasis,
     >,
-) -> WorthQueryEvidenceIdentity
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    domain_capability_scope_encoder("worth_query_domain_capability_basis_v1")
-        .field_shape(
-            WorthQueryEvidenceTag::new("assumption"),
-            contribution_basis(artifact).as_str(),
-        )
-        .seal()
+    Ok(
+        domain_capability_scope_encoder("worth_query_domain_capability_basis_v1")
+            .field_shape(
+                WorthQueryEvidenceTag::new("assumption"),
+                contribution_basis(artifact).as_str(),
+            )
+            .seal()?,
+    )
 }
 
 pub(crate) fn contribution_basis<Phase, P, T, S>(

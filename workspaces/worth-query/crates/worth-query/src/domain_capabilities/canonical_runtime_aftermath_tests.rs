@@ -34,8 +34,8 @@ fn aftermath_runtime_materializer_builds_projection_consumption(
                         ]),
                     ),
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     let contract = success(materialize_projection_consumption_contract(
         ready_aftermath(
@@ -54,8 +54,8 @@ fn aftermath_runtime_materializer_builds_projection_consumption(
                         ]),
                     ),
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     assert!(!admitted.eligibility_digest().is_empty());
     assert_eq!(
@@ -76,7 +76,7 @@ fn aftermath_runtime_materializer_denies_missing_semantics() -> Result<(), Ident
             "aftermath.support.only",
             "support-only aftermath cannot mint projection consumption",
         )?,
-    ));
+    )?)?;
 
     assert!(matches!(
         outcome,
@@ -106,7 +106,7 @@ fn aftermath_runtime_materializer_denies_invalid_projection_declaration(
                 ]),
             ),
         )?,
-    ));
+    )?)?;
 
     assert!(matches!(
         outcome,
@@ -138,8 +138,8 @@ fn aftermath_runtime_materializer_preserves_warning_bearing_eligibility(
                         ]),
                     ),
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     match eligibility {
         ProjectionConsumptionEligibility::AdmittedWithWarnings(_, warnings) => {
@@ -167,8 +167,8 @@ fn aftermath_runtime_materializer_preserves_deferred_eligibility(
                 crate::projection_consumption::ProjectMaterializedFacts::declare()
                     .target_identity(),
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     assert!(matches!(
         eligibility,
@@ -190,8 +190,8 @@ fn aftermath_runtime_materializer_preserves_source_mismatch_eligibility(
                 admitted_projection_binding(),
                 crate::projection_consumption::ProjectMaterializedFacts::declare().memberships(),
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     match eligibility {
         ProjectionConsumptionEligibility::SourceMismatch(mismatch) => {
@@ -221,7 +221,7 @@ fn aftermath_runtime_review_and_support_hook_preserve_deferred_truth(
             deferred_projection_binding(),
             crate::projection_consumption::ProjectMaterializedFacts::declare().target_identity(),
         )?,
-    );
+    )?;
     let support_contribution = ready_aftermath(
         WorthQueryAftermathContributionAuthoring::establishes_projection_contract(
             "aftermath.projection.deferred",
@@ -230,14 +230,14 @@ fn aftermath_runtime_review_and_support_hook_preserve_deferred_truth(
             deferred_projection_binding(),
             crate::projection_consumption::ProjectMaterializedFacts::declare().target_identity(),
         )?,
-    );
+    )?;
 
     let review = success(materialize_projection_consumption_review(
         review_contribution,
-    ));
+    )?);
     let support = success(materialize_projection_consumption_support_report(
         support_contribution,
-    ));
+    )?);
 
     assert_eq!(review.semantic_code(), "aftermath.projection.deferred");
     assert_eq!(
@@ -265,10 +265,15 @@ fn aftermath_runtime_review_and_support_hook_preserve_deferred_truth(
 
 fn ready_aftermath(
     authoring: WorthQueryAftermathContributionAuthoring,
-) -> super::WorthQueryMaterializationReadyAftermathContribution<
-    WorthQueryAdmittedPlanBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyAftermathContribution<
+        WorthQueryAdmittedPlanBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(authoring.bind_to_admitted_plan_target(admitted_plan_target("plan-aftermath")))
+    Ok(ready(authoring.bind_to_admitted_plan_target(
+        admitted_plan_target("plan-aftermath"),
+    ))?)
 }
 
 fn admitted_projection_source() -> ProjectionConsumptionSource {

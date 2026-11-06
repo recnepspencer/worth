@@ -25,14 +25,14 @@ fn admission_runtime_materializer_builds_query_decisions() -> Result<(), Identit
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
         )?,
-    )));
+    )?)?);
     let violation = success(materialize_runtime_admission_decision(ready_admission(
         WorthQueryAdmissionContributionAuthoring::violation_at_stage(
             "spatial_arbitration",
             "spatial.arbitration.invalid_target",
             "requested target violates spatial law",
         )?,
-    )));
+    )?)?);
 
     match advisory {
         crate::intent_admission::WorthQueryIntentAdmissionDecision::Advisory(advisory) => {
@@ -68,14 +68,14 @@ fn admission_support_only_runtime_materializer_builds_support_traceability(
         ready_admission(WorthQueryAdmissionContributionAuthoring::support_only(
             "spatial.arbitration.support_only",
             "declaration remains support-scoped only",
-        )?),
-    ));
+        )?)?,
+    )?);
     let report = success(materialize_runtime_admission_support_traceability_report(
         ready_admission(WorthQueryAdmissionContributionAuthoring::support_only(
             "spatial.arbitration.support_only",
             "declaration remains support-scoped only",
-        )?),
-    ));
+        )?)?,
+    )?);
 
     assert_eq!(row.family(), "authoritative-user-intent");
     assert_eq!(row.entrypoint(), "WorthQueryRuntime::execute_intent");
@@ -98,13 +98,13 @@ fn admission_support_traceability_materializer_denies_non_support_postures(
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
         )?,
-    ));
+    )?)?;
     let violation = materialize_runtime_admission_support_traceability_report(ready_admission(
         WorthQueryAdmissionContributionAuthoring::violation(
             "spatial.arbitration.invalid_target",
             "requested target violates spatial law",
         )?,
-    ));
+    )?)?;
 
     assert!(matches!(
         advisory,
@@ -129,13 +129,13 @@ fn admission_local_support_and_support_traceability_rows_stay_distinct(
         ready_admission(WorthQueryAdmissionContributionAuthoring::support_only(
             "spatial.shared.support",
             "same support detail through shared runtime family",
-        )?),
-    ));
+        )?)?,
+    )?);
     let support_row = success(materialize_intent_admission_support_traceability_row(
         ready_support(WorthQuerySupportContributionAuthoring::declaration_support(
             "spatial.shared.support",
             "same support detail through shared runtime family",
-        )),
+        ))?,
     ));
 
     assert_eq!(admission_row.support_detail(), support_row.support_detail());
@@ -157,7 +157,7 @@ fn continuity_runtime_materializer_builds_continuity_evidence(
             "continuity.identity.preserved",
             "edge retarget keeps a single successor identity",
         )?,
-    )));
+    )?)?);
     let split = success(materialize_runtime_continuity_evidence(ready_continuity(
         WorthQueryContinuityContributionAuthoring::split_successors(
             "edge:12",
@@ -165,7 +165,7 @@ fn continuity_runtime_materializer_builds_continuity_evidence(
             "continuity.identity.split",
             "edge split produces two descendant identities",
         )?,
-    )));
+    )?)?);
 
     assert_eq!(
         preserved.outcome_class(),
@@ -183,7 +183,7 @@ fn continuity_runtime_materializer_builds_continuity_evidence(
                 WorthQueryEvidenceTag::new("binding"),
                 &WorthQueryBindingTargetWitness::binding_identity(&expected_binding_target),
             )
-            .seal();
+            .seal()?;
     let expected_basis_binding_digest = WorthQueryMutationEvidenceDigest::source_identity(
         "continuity-basis-binding",
         &expected_binding_identity,
@@ -225,7 +225,7 @@ fn continuity_runtime_materializer_denies_correspondence_only(
             "continuity.correspondence_only",
             "semantic correspondence exists without authoritative continuity",
         )?,
-    ));
+    )?)?;
 
     assert!(matches!(
         outcome,
@@ -252,7 +252,7 @@ fn continuity_runtime_materializer_denies_inconsistent_runtime_semantics(
                 ["edge:14", "edge:15"],
             )),
         )?,
-    ));
+    )?)?;
 
     assert!(matches!(
         outcome,
@@ -266,43 +266,59 @@ fn continuity_runtime_materializer_denies_inconsistent_runtime_semantics(
 
 fn ready_admission(
     authoring: WorthQueryAdmissionContributionAuthoring,
-) -> super::WorthQueryMaterializationReadyAdmissionContribution<
-    WorthQueryAdmittedPlanBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyAdmissionContribution<
+        WorthQueryAdmittedPlanBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(authoring.bind_to_admitted_plan_target(admitted_plan_target("plan-admission")))
+    Ok(ready(authoring.bind_to_admitted_plan_target(
+        admitted_plan_target("plan-admission"),
+    ))?)
 }
 
 fn ready_support(
     authoring: WorthQuerySupportContributionAuthoring,
-) -> super::WorthQueryMaterializationReadySupportContribution<
-    WorthQueryAdmittedPlanBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadySupportContribution<
+        WorthQueryAdmittedPlanBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(authoring.bind_to_admitted_plan_target(admitted_plan_target("plan-admission")))
+    Ok(ready(authoring.bind_to_admitted_plan_target(
+        admitted_plan_target("plan-admission"),
+    ))?)
 }
 
 fn ready_continuity(
     authoring: WorthQueryContinuityContributionAuthoring,
-) -> super::WorthQueryMaterializationReadyContinuityContribution<
-    WorthQueryAdmittedPlanBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyContinuityContribution<
+        WorthQueryAdmittedPlanBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready_continuity_payload(
+    Ok(ready_continuity_payload(
         authoring
             .bind_to_admitted_plan_target(admitted_plan_target("plan-continuity"))
             .payload()
             .payload()
             .clone(),
-    )
+    )?)
 }
 
 fn ready_continuity_payload(
     payload: super::WorthQueryContinuityContributionPayload,
-) -> super::WorthQueryMaterializationReadyContinuityContribution<
-    WorthQueryAdmittedPlanBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyContinuityContribution<
+        WorthQueryAdmittedPlanBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(
+    Ok(ready(
         super::proof_integration::create_requested_domain_capability_contribution(
             admitted_plan_target("plan-continuity"),
             payload,
-        ),
-    )
+        )?,
+    )?)
 }

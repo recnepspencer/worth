@@ -22,14 +22,14 @@ fn workflow_materializer_builds_preview_and_runtime_declarations(
                 "preview-session:42",
             ),
         )?,
-    )));
+    )?)?);
     let confirmation = success(materialize_query_workflow_declaration(ready_workflow(
         WorthQueryWorkflowContributionAuthoring::confirmation_required_query_inspection(
             "spatial.confirmation.required",
             "authoritative confirmation is required before writeback",
             crate::memory_workspace::admit_external_snapshot_label("runtime-snapshot:42"),
         )?,
-    )));
+    )?)?);
 
     assert_eq!(
         preview.request().declaration_family(),
@@ -64,34 +64,38 @@ fn workflow_materializer_builds_preview_and_runtime_declarations(
 
 #[test]
 fn workflow_materializer_accepts_admitted_plan_targets() -> Result<(), IdentityDerivationDenial> {
-    let preview = success(materialize_query_workflow_declaration(ready_workflow_plan(
-        WorthQueryWorkflowContributionAuthoring::promotion_eligible_mutation_lowering(
-            "spatial.preview.lowering",
-            "promotion-eligible preview can lower a bounded mutation workflow",
-            crate::facade::runtime::BridgePreviewSessionIdentity::from_stable_name(
-                "preview-session:77",
-            ),
+    let preview = success(materialize_query_workflow_declaration(
+        ready_workflow_plan(
+            WorthQueryWorkflowContributionAuthoring::promotion_eligible_mutation_lowering(
+                "spatial.preview.lowering",
+                "promotion-eligible preview can lower a bounded mutation workflow",
+                crate::facade::runtime::BridgePreviewSessionIdentity::from_stable_name(
+                    "preview-session:77",
+                ),
+            )?,
+            admitted_plan_target_parts(
+                "plan-workflow-preview",
+                "request-preview",
+                "eligibility-preview",
+                "decision-preview",
+            )?,
         )?,
-        admitted_plan_target_parts(
-            "plan-workflow-preview",
-            "request-preview",
-            "eligibility-preview",
-            "decision-preview",
+    )?);
+    let confirmation = success(materialize_query_workflow_declaration(
+        ready_workflow_plan(
+            WorthQueryWorkflowContributionAuthoring::confirmation_required_query_inspection(
+                "spatial.confirmation.runtime",
+                "authoritative confirmation requires runtime preflight context",
+                crate::memory_workspace::admit_external_snapshot_label("runtime-snapshot:77"),
+            )?,
+            admitted_plan_target_parts(
+                "plan-workflow-runtime",
+                "request-runtime",
+                "eligibility-runtime",
+                "decision-runtime",
+            )?,
         )?,
-    )));
-    let confirmation = success(materialize_query_workflow_declaration(ready_workflow_plan(
-        WorthQueryWorkflowContributionAuthoring::confirmation_required_query_inspection(
-            "spatial.confirmation.runtime",
-            "authoritative confirmation requires runtime preflight context",
-            crate::memory_workspace::admit_external_snapshot_label("runtime-snapshot:77"),
-        )?,
-        admitted_plan_target_parts(
-            "plan-workflow-runtime",
-            "request-runtime",
-            "eligibility-runtime",
-            "decision-runtime",
-        )?,
-    )));
+    )?);
 
     assert_eq!(
         preview.binding().basis_family(),
@@ -134,7 +138,7 @@ fn discard_required_workflow_materializer_uses_promotion_eligible_preview_bindin
                 "preview-session:discard",
             ),
         )?,
-    )));
+    )?)?);
 
     assert_eq!(
         discard.binding().basis_family(),
@@ -180,8 +184,8 @@ fn workflow_materialization_digest_changes_when_declaration_scope_changes(
                     crate::workflow::WorkflowFreshnessPolicy::ExactBasis,
                 )),
             )?,
-        ),
-    )));
+        )?,
+    )?)?);
     let right = success(materialize_query_workflow_declaration(ready(
         super::super::proof_integration::create_requested_domain_capability_contribution(
             declaration_target("intent-workflow-right"),
@@ -203,8 +207,8 @@ fn workflow_materialization_digest_changes_when_declaration_scope_changes(
                     crate::workflow::WorkflowFreshnessPolicy::ExactBasis,
                 )),
             )?,
-        ),
-    )));
+        )?,
+    )?)?);
 
     assert_ne!(
         left.report().declaration_digest(),
@@ -221,36 +225,40 @@ fn workflow_materialization_digest_changes_when_declaration_scope_changes(
 #[test]
 fn workflow_materialization_digest_changes_when_admitted_plan_scope_changes(
 ) -> Result<(), IdentityDerivationDenial> {
-    let left = success(materialize_query_workflow_declaration(ready_workflow_plan(
-        WorthQueryWorkflowContributionAuthoring::preview_only_query_inspection(
-            "spatial.preview.only",
-            "preview remains read-only",
-            crate::facade::runtime::BridgePreviewSessionIdentity::from_stable_name(
-                "preview-session:42",
-            ),
+    let left = success(materialize_query_workflow_declaration(
+        ready_workflow_plan(
+            WorthQueryWorkflowContributionAuthoring::preview_only_query_inspection(
+                "spatial.preview.only",
+                "preview remains read-only",
+                crate::facade::runtime::BridgePreviewSessionIdentity::from_stable_name(
+                    "preview-session:42",
+                ),
+            )?,
+            admitted_plan_target_parts(
+                "plan-workflow-left",
+                "request-left",
+                "eligibility-left",
+                "decision-left",
+            )?,
         )?,
-        admitted_plan_target_parts(
-            "plan-workflow-left",
-            "request-left",
-            "eligibility-left",
-            "decision-left",
+    )?);
+    let right = success(materialize_query_workflow_declaration(
+        ready_workflow_plan(
+            WorthQueryWorkflowContributionAuthoring::preview_only_query_inspection(
+                "spatial.preview.only",
+                "preview remains read-only",
+                crate::facade::runtime::BridgePreviewSessionIdentity::from_stable_name(
+                    "preview-session:42",
+                ),
+            )?,
+            admitted_plan_target_parts(
+                "plan-workflow-right",
+                "request-right",
+                "eligibility-right",
+                "decision-right",
+            )?,
         )?,
-    )));
-    let right = success(materialize_query_workflow_declaration(ready_workflow_plan(
-        WorthQueryWorkflowContributionAuthoring::preview_only_query_inspection(
-            "spatial.preview.only",
-            "preview remains read-only",
-            crate::facade::runtime::BridgePreviewSessionIdentity::from_stable_name(
-                "preview-session:42",
-            ),
-        )?,
-        admitted_plan_target_parts(
-            "plan-workflow-right",
-            "request-right",
-            "eligibility-right",
-            "decision-right",
-        )?,
-    )));
+    )?);
 
     assert_ne!(
         left.report().declaration_digest(),
@@ -275,8 +283,8 @@ fn workflow_materializer_denies_missing_or_inconsistent_runtime_semantics(
                 "spatial.preview.only",
                 "preview remains read-only",
             )?,
-        ),
-    ));
+        )?,
+    )?)?;
     let inconsistent = materialize_query_workflow_declaration(ready(
         super::super::proof_integration::create_requested_domain_capability_contribution(
             declaration_target("intent-workflow"),
@@ -298,8 +306,8 @@ fn workflow_materializer_denies_missing_or_inconsistent_runtime_semantics(
                     crate::workflow::WorkflowFreshnessPolicy::AllowExplicitRebind,
                 )),
             )?,
-        ),
-    ));
+        )?,
+    )?)?;
 
     assert!(matches!(
         missing,
@@ -319,17 +327,25 @@ fn workflow_materializer_denies_missing_or_inconsistent_runtime_semantics(
 
 fn ready_workflow(
     authoring: WorthQueryWorkflowContributionAuthoring,
-) -> super::super::WorthQueryMaterializationReadyWorkflowContribution<
-    WorthQueryDeclarationBoundContributionTarget,
+) -> Result<
+    super::super::WorthQueryMaterializationReadyWorkflowContribution<
+        WorthQueryDeclarationBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(authoring.bind_to_declaration_target(declaration_target("intent-workflow")))
+    Ok(ready(authoring.bind_to_declaration_target(
+        declaration_target("intent-workflow"),
+    ))?)
 }
 
 fn ready_workflow_plan(
     authoring: WorthQueryWorkflowContributionAuthoring,
     target: WorthQueryAdmittedPlanBoundContributionTarget,
-) -> super::super::WorthQueryMaterializationReadyWorkflowContribution<
-    WorthQueryAdmittedPlanBoundContributionTarget,
+) -> Result<
+    super::super::WorthQueryMaterializationReadyWorkflowContribution<
+        WorthQueryAdmittedPlanBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(authoring.bind_to_admitted_plan_target(target))
+    Ok(ready(authoring.bind_to_admitted_plan_target(target))?)
 }

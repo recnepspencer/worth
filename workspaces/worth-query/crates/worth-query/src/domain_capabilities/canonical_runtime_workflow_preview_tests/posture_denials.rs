@@ -15,7 +15,7 @@ fn preview_workflow_artifact_materializer_denies_runtime_only_workflow_postures(
             "eligibility-runtime",
             "decision-runtime",
         )?,
-    ));
+    )?);
 
     assert!(matches!(
         denied,
@@ -51,8 +51,8 @@ fn preview_workflow_materializer_denies_read_only_discard_required_runtime_seman
                     crate::workflow::WorkflowFreshnessPolicy::ExactBasis,
                 )),
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     assert!(matches!(
         denied,

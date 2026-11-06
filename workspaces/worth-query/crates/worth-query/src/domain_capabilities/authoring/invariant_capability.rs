@@ -143,55 +143,70 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
     pub fn for_intent_declaration(
         self,
         declaration: &WorthQueryIntentDeclaration,
-    ) -> WorthQueryRequestedInvariantCapabilityContribution<
-        WorthQueryDeclarationBoundContributionTarget,
+    ) -> Result<
+        WorthQueryRequestedInvariantCapabilityContribution<
+            WorthQueryDeclarationBoundContributionTarget,
+        >,
+        IdentityDerivationDenial,
     > {
-        self.bind_to_declaration_target(
+        Ok(self.bind_to_declaration_target(
             WorthQueryDeclarationBoundContributionTarget::for_intent_declaration(declaration),
-        )
+        )?)
     }
 
     pub fn for_lower_runtime_boundary_envelope(
         self,
         envelope: &WorthQueryLowerRuntimeBoundaryEnvelope,
-    ) -> WorthQueryRequestedInvariantCapabilityContribution<
-        WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+    ) -> Result<
+        WorthQueryRequestedInvariantCapabilityContribution<
+            WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+        >,
+        IdentityDerivationDenial,
     > {
-        self.bind_to_lower_runtime_boundary_target(
+        Ok(self.bind_to_lower_runtime_boundary_target(
             WorthQueryLowerRuntimeBoundaryBoundContributionTarget::for_lower_runtime_boundary_envelope(
                 envelope,
             ),
-        )
+        )?)
     }
 
     pub fn for_lower_runtime_boundary_source<S>(
         self,
         source: &S,
-    ) -> WorthQueryRequestedInvariantCapabilityContribution<
-        WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+    ) -> Result<
+        WorthQueryRequestedInvariantCapabilityContribution<
+            WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+        >,
+        IdentityDerivationDenial,
     >
     where
         S: WorthQueryLowerRuntimeBoundaryEnvelopeSource + ?Sized,
     {
-        self.for_lower_runtime_boundary_envelope(source.lower_runtime_boundary_envelope())
+        Ok(self.for_lower_runtime_boundary_envelope(source.lower_runtime_boundary_envelope())?)
     }
 
     pub fn bind_to_declaration_target(
         self,
         target: WorthQueryDeclarationBoundContributionTarget,
-    ) -> WorthQueryRequestedInvariantCapabilityContribution<
-        WorthQueryDeclarationBoundContributionTarget,
+    ) -> Result<
+        WorthQueryRequestedInvariantCapabilityContribution<
+            WorthQueryDeclarationBoundContributionTarget,
+        >,
+        IdentityDerivationDenial,
     > {
-        bind_requested(self.payload, target)
+        Ok(bind_requested(self.payload, target)?)
     }
 
     pub fn bind_to_lower_runtime_boundary_target(
         self,
         target: WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
-    ) -> WorthQueryRequestedInvariantCapabilityContribution<
-        WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+    ) -> Result<
+        WorthQueryRequestedInvariantCapabilityContribution<
+            WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+        >,
+        IdentityDerivationDenial,
     > {
-        bind_requested(self.payload, target)
+        Ok(bind_requested(self.payload, target)?)
     }
 
     pub(crate) fn bind_to_installed_target<T>(

@@ -1,7 +1,7 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod replay_gap;
 pub(super) use replay_gap::{store_backed_replay_gap_parts, store_backed_replay_gap_request};
 
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::{AspectKey, FieldKey};
 use worth_proof::TransitionOutcome;
 use worth_relational::facade::runtime::InvariantCatalog;
@@ -114,7 +114,7 @@ pub(super) fn projection_contract_parts() -> (
 
 pub(super) fn lower_runtime_envelope(
     target_digest: &str,
-) -> WorthQueryLowerRuntimeBoundaryEnvelope {
+) -> Result<WorthQueryLowerRuntimeBoundaryEnvelope, IdentityDerivationDenial> {
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
         WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -124,12 +124,12 @@ pub(super) fn lower_runtime_envelope(
             "certification-report-target",
         )
         .field_value(WorthQueryEvidenceTag::new("test_target"), target_digest)
-        .seal(),
+        .seal()?,
     );
     let detail_identity =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_value(WorthQueryEvidenceTag::new("test_detail"), "detail")
-            .seal();
+            .seal()?;
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request,
         &detail_identity,
@@ -151,17 +151,17 @@ pub(super) fn lower_runtime_envelope(
                 WorthQueryEvidenceTag::new("certification_report_target"),
                 target_digest,
             )
-            .seal(),
+            .seal()?,
         );
     let boundary =
         WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(&route, &retained_evidence);
 
-    WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
+    Ok(WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
         &route,
         &boundary,
         &retained_evidence,
-    )
+    ))
 }
 
 fn admitted_projection_source() -> ProjectionConsumptionSource {
@@ -363,15 +363,22 @@ pub(super) fn invariant_denial_requested(
 
 pub(super) fn admitted_ready<P, T>(
     requested: WorthQueryRequestedDomainCapabilityContribution<P, T>,
-) -> crate::domain_capabilities::WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>
+) -> Result<
+    crate::domain_capabilities::WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>,
+    IdentityDerivationDenial,
+>
 where
     P: crate::domain_capabilities::payloads::WorthQueryDomainCapabilityPayload,
     T: crate::domain_capabilities::targets::WorthQueryDomainCapabilityTargetBinding,
 {
-    let eligible = success(evaluate_requested_domain_capability_contribution(requested));
+    let eligible = success(evaluate_requested_domain_capability_contribution(
+        requested,
+    )?);
     let admitted = success(admit_eligible_domain_capability_contribution(eligible));
     let target = admitted.payload().target().clone();
-    success(prepare_admitted_domain_capability_contribution_for_materialization(admitted, target))
+    Ok(success(
+        prepare_admitted_domain_capability_contribution_for_materialization(admitted, target),
+    ))
 }
 
 pub(super) fn success<T>(

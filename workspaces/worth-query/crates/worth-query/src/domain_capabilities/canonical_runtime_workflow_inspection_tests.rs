@@ -41,7 +41,7 @@ fn workflow_conflict_inspection_materializer_builds_query_conflict_artifact(
             source_addition_inspection_artifact(request_execution),
         )?
         .bind_to_declaration_target(declaration_target("intent-workflow-conflict-inspection")),
-    )));
+    )?));
 
     assert_eq!(artifact.family().as_str(), "merge_workflow_narrow");
     assert!(!artifact.rows().is_empty());
@@ -66,7 +66,7 @@ fn workflow_post_merge_inspection_materializer_builds_query_post_merge_artifact(
             "eligibility-post-merge",
             "decision-post-merge",
         )?),
-    )));
+    )?));
 
     assert_eq!(artifact.family().as_str(), "authoritative_outcome_narrow");
     assert_eq!(artifact.rows().len(), 1);
@@ -95,7 +95,7 @@ fn workflow_conflict_inspection_materializer_builds_preview_promotion_artifact(
         .bind_to_declaration_target(declaration_target(
             "intent-workflow-preview-conflict-inspection",
         )),
-    )));
+    )?));
 
     assert_eq!(artifact.family().as_str(), "merge_workflow_narrow");
     assert_eq!(artifact.counters().workflow_conflict_inspection_count(), 1);
@@ -116,7 +116,7 @@ fn workflow_post_merge_inspection_materializer_builds_writeback_artifact(
         .bind_to_declaration_target(declaration_target(
             "intent-workflow-post-merge-writeback-inspection",
         )),
-    )));
+    )?));
 
     assert_eq!(artifact.family().as_str(), "authoritative_outcome_narrow");
     assert_eq!(artifact.rows().len(), 1);
@@ -151,8 +151,8 @@ fn workflow_inspection_materializer_denies_missing_inspection_semantics(
                     WorkflowFreshnessPolicy::ExactBasis,
                 )),
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     assert!(matches!(
         denied,
@@ -190,8 +190,8 @@ fn workflow_post_merge_inspection_denies_preview_bound_outcomes(
                 )),
                 Some(WorthQueryWorkflowInspectionSemantics::post_merge_from_merge(lowered_merge)),
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     let denied = match denied {
         TransitionOutcome::Denied(denial) => denial,

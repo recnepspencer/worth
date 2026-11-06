@@ -76,7 +76,7 @@ fn scaled_evidence(
     let declaration = intent_declaration(&format!("domain-capability-scale-{scale}"));
     let admitted_plan = admitted_basis_observation_plan();
     let projection_plan = admitted_projection_consumption_plan();
-    let lower_runtime = lower_runtime_envelope(&format!("domain-capability-scale-{scale}"));
+    let lower_runtime = lower_runtime_envelope(&format!("domain-capability-scale-{scale}"))?;
     let categories = category_set_for_scale(scale);
     let admitted_plan_target = domain
         .admitted_plan_target(&admitted_plan)
@@ -111,7 +111,7 @@ fn scaled_evidence(
 
         for _ in 0..scale {
             let report = success(materialize_intent_admission_support_traceability_report(
-                admitted_ready(plan_support_requested(admitted_plan_target.clone())),
+                admitted_ready(plan_support_requested(admitted_plan_target.clone()))?,
             ));
             support_width += report.rows().len();
             support_digests.push(report.decision_support_traceability_digest().to_string());

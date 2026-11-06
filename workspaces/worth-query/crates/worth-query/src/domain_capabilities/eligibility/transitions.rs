@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -19,13 +20,18 @@ use crate::domain_capabilities::targets::{
 
 pub fn evaluate_requested_domain_capability_contribution<P, T>(
     requested: WorthQueryRequestedDomainCapabilityContribution<P, T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryEligibleDomainCapabilityContribution<P, T>>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<
+        WorthQueryEligibleDomainCapabilityContribution<P, T>,
+    >,
+    IdentityDerivationDenial,
+>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
     if let Some(denial) = stale_installation_generation_denial(requested.payload()) {
-        return TransitionOutcome::Denied(denial);
+        return Ok(TransitionOutcome::Denied(denial));
     }
     if requested
         .payload()
@@ -34,11 +40,11 @@ where
             !authority.permits_domain_capability_category(requested.payload().category())
         })
     {
-        return TransitionOutcome::Denied(denial_for(
+        return Ok(TransitionOutcome::Denied(denial_for(
             requested.payload(),
             WorthQueryDomainCapabilityProgressionDenialKind::ContributionCategoryNotInstalled,
             "the installed domain package does not admit this contribution category",
-        ));
+        )?));
     }
     if requested
         .payload()
@@ -47,23 +53,27 @@ where
         .trim()
         .is_empty()
     {
-        return TransitionOutcome::Denied(denial_for(
+        return Ok(TransitionOutcome::Denied(denial_for(
             requested.payload(),
             WorthQueryDomainCapabilityProgressionDenialKind::EmptySemanticCode,
             "domain capability contributions require a non-empty semantic code",
-        ));
+        )?));
     }
     if requested.payload().payload().detail().trim().is_empty() {
-        return TransitionOutcome::Denied(denial_for(
+        return Ok(TransitionOutcome::Denied(denial_for(
             requested.payload(),
             WorthQueryDomainCapabilityProgressionDenialKind::EmptyDetail,
             "domain capability contributions require non-empty detail text",
-        ));
+        )?));
     }
     let basis = contribution_basis(&requested.0);
     let payload = requested.into_inner().into_parts().into_parts().0;
-    TransitionOutcome::Success(WorthQueryEligibleDomainCapabilityContribution(
-        remint_with_phase(payload, basis, eligible_proof()),
+    Ok(TransitionOutcome::Success(
+        WorthQueryEligibleDomainCapabilityContribution(remint_with_phase(
+            payload,
+            basis,
+            eligible_proof(),
+        )),
     ))
 }
 
@@ -146,16 +156,16 @@ fn denial_for<P, T>(
     contribution: &WorthQueryDomainCapabilityContribution<P, T>,
     kind: WorthQueryDomainCapabilityProgressionDenialKind,
     message: &str,
-) -> WorthQueryDomainCapabilityProgressionDenial
+) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    WorthQueryDomainCapabilityProgressionDenial::new(
+    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
         kind,
         contribution.category().as_str(),
         contribution.target().kind(),
         contribution.request_identity().clone(),
         message,
-    )
+    )?)
 }

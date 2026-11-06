@@ -63,7 +63,7 @@ fn certification_bundle_preserves_support_scope_and_posture_distinction(
                 "declaration-scoped support remains declaration scoped",
             )
             .bind_to_installed_target(declaration_target),
-        )),
+        )?)?,
     );
     let admitted_plan_support = success(materialize_intent_admission_support_traceability_report(
         admitted_ready(
@@ -72,7 +72,7 @@ fn certification_bundle_preserves_support_scope_and_posture_distinction(
                 "runtime floor remains explicitly supported",
             )
             .bind_to_installed_target(admitted_plan_target),
-        ),
+        )?,
     ));
 
     assert_eq!(traceability.intent_name(), declaration.name());
@@ -127,7 +127,7 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs(
             "runtime routing still needs clarification",
         )?
         .bind_to_installed_target(admitted_plan_target.clone()),
-    )));
+    )?)?);
     assert_eq!(admission, admission_proof);
     assert_eq!(
         bundle.output_digest("admission_artifact_digest"),
@@ -149,7 +149,7 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs(
             "edge split preserves one authoritative successor",
         )?
         .bind_to_installed_target(admitted_plan_target),
-    )));
+    )?)?);
     assert_eq!(continuity, continuity_proof);
     assert_eq!(
         bundle.output_digest("continuity_artifact_digest"),
@@ -188,7 +188,7 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs(
                 .display_field_path(crate::projection_consumption::projection_fact_field_path_from_segments([worth_foundational::facade::FieldKey::new("field").expect("projection fact field segment should admit"), worth_foundational::facade::FieldKey::new("visible").expect("projection fact field segment should admit")])),
         )?
         .bind_to_installed_target(projection_plan_target),
-    )));
+    )?)?);
     assert_eq!(aftermath, aftermath_proof);
     assert_eq!(
         bundle.output_digest("aftermath_artifact_digest"),
@@ -217,7 +217,7 @@ fn certification_bundle_boundary_and_failure_outputs_track_live_surfaces(
             "",
         )
         .bind_to_installed_target(target),
-    ) {
+    )? {
         TransitionOutcome::Denied(denial) => denial,
         _ => panic!("expected typed denial"),
     };

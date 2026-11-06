@@ -21,8 +21,8 @@ fn invariant_registration_materializer_builds_query_registration_artifact(
                 "runtime.invariant.catalog_registration",
                 "register merged-intent invariant at declaration scope",
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     assert_eq!(artifact.lane(), "query_invariant_catalog_registration");
     assert_eq!(
@@ -64,8 +64,8 @@ fn invariant_registration_materializer_denies_wrong_posture() -> Result<(), Iden
                     )?,
                 ),
             )?,
-        ),
-    );
+        )?,
+    )?;
 
     assert!(matches!(
         wrong_posture,
@@ -86,7 +86,7 @@ fn invariant_registration_materializer_denies_missing_runtime_semantics(
                 "runtime.invariant.catalog_registration",
                 "registration semantics are absent here",
             )?,
-        ));
+        )?)?;
 
     assert!(matches!(
         missing,
@@ -110,8 +110,8 @@ fn invariant_registration_materializer_accepts_empty_native_catalog(
                 "runtime.invariant.catalog_registration",
                 "empty catalog still carries explicit registration semantics",
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     assert!(artifact.invariant_catalog().registrations.is_empty());
 
@@ -135,8 +135,8 @@ fn invariant_registration_materializer_preserves_parity_across_catalog_ordering(
                 "runtime.invariant.catalog_registration",
                 "register two native invariants",
             )?,
-        ),
-    ));
+        )?,
+    )?);
     let right = success(materialize_query_invariant_catalog_registration_artifact(
         ready_invariant_registration(
             WorthQueryInvariantCapabilityContributionAuthoring::invariant_registration(
@@ -151,8 +151,8 @@ fn invariant_registration_materializer_preserves_parity_across_catalog_ordering(
                 "runtime.invariant.catalog_registration",
                 "register two native invariants",
             )?,
-        ),
-    ));
+        )?,
+    )?);
     let different = success(materialize_query_invariant_catalog_registration_artifact(
         ready_invariant_registration(
             WorthQueryInvariantCapabilityContributionAuthoring::invariant_registration(
@@ -167,8 +167,8 @@ fn invariant_registration_materializer_preserves_parity_across_catalog_ordering(
                 "runtime.invariant.catalog_registration",
                 "register two native invariants",
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     assert_eq!(
         left.materialization_digest(),
@@ -194,16 +194,27 @@ fn registration_catalog(
 
 fn ready_invariant_registration(
     authoring: WorthQueryInvariantCapabilityContributionAuthoring,
-) -> super::super::WorthQueryMaterializationReadyInvariantCapabilityContribution<
-    super::super::WorthQueryDeclarationBoundContributionTarget,
+) -> Result<
+    super::super::WorthQueryMaterializationReadyInvariantCapabilityContribution<
+        super::super::WorthQueryDeclarationBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(authoring.bind_to_declaration_target(declaration_target("intent-invariant")))
+    Ok(ready(authoring.bind_to_declaration_target(
+        declaration_target("intent-invariant"),
+    ))?)
 }
 
 fn ready_invariant_registration_payload(
     payload: WorthQueryInvariantCapabilityContributionPayload,
-) -> super::super::WorthQueryMaterializationReadyInvariantCapabilityContribution<
-    super::super::WorthQueryDeclarationBoundContributionTarget,
+) -> Result<
+    super::super::WorthQueryMaterializationReadyInvariantCapabilityContribution<
+        super::super::WorthQueryDeclarationBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready_payload(declaration_target("intent-invariant"), payload)
+    Ok(ready_payload(
+        declaration_target("intent-invariant"),
+        payload,
+    )?)
 }

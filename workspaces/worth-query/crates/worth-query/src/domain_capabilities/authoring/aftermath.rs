@@ -105,53 +105,66 @@ impl WorthQueryAftermathContributionAuthoring {
     pub fn for_admitted_intent_plan(
         self,
         plan: &WorthQueryAdmittedIntentPlan,
-    ) -> WorthQueryRequestedAftermathContribution<WorthQueryAdmittedPlanBoundContributionTarget>
-    {
-        self.bind_to_admitted_plan_target(
+    ) -> Result<
+        WorthQueryRequestedAftermathContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.bind_to_admitted_plan_target(
             WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(plan),
-        )
+        )?)
     }
 
     pub fn for_lower_runtime_boundary_envelope(
         self,
         envelope: &WorthQueryLowerRuntimeBoundaryEnvelope,
-    ) -> WorthQueryRequestedAftermathContribution<
-        WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+    ) -> Result<
+        WorthQueryRequestedAftermathContribution<
+            WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+        >,
+        IdentityDerivationDenial,
     > {
-        self.bind_to_lower_runtime_boundary_target(
+        Ok(self.bind_to_lower_runtime_boundary_target(
             WorthQueryLowerRuntimeBoundaryBoundContributionTarget::for_lower_runtime_boundary_envelope(
                 envelope,
             ),
-        )
+        )?)
     }
 
     pub fn for_lower_runtime_boundary_source<S>(
         self,
         source: &S,
-    ) -> WorthQueryRequestedAftermathContribution<
-        WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+    ) -> Result<
+        WorthQueryRequestedAftermathContribution<
+            WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+        >,
+        IdentityDerivationDenial,
     >
     where
         S: WorthQueryLowerRuntimeBoundaryEnvelopeSource + ?Sized,
     {
-        self.for_lower_runtime_boundary_envelope(source.lower_runtime_boundary_envelope())
+        Ok(self.for_lower_runtime_boundary_envelope(source.lower_runtime_boundary_envelope())?)
     }
 
     pub fn bind_to_admitted_plan_target(
         self,
         target: WorthQueryAdmittedPlanBoundContributionTarget,
-    ) -> WorthQueryRequestedAftermathContribution<WorthQueryAdmittedPlanBoundContributionTarget>
-    {
-        bind_requested(self.payload, target)
+    ) -> Result<
+        WorthQueryRequestedAftermathContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(bind_requested(self.payload, target)?)
     }
 
     pub fn bind_to_lower_runtime_boundary_target(
         self,
         target: WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
-    ) -> WorthQueryRequestedAftermathContribution<
-        WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+    ) -> Result<
+        WorthQueryRequestedAftermathContribution<
+            WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+        >,
+        IdentityDerivationDenial,
     > {
-        bind_requested(self.payload, target)
+        Ok(bind_requested(self.payload, target)?)
     }
 
     pub(crate) fn bind_to_installed_target<T>(

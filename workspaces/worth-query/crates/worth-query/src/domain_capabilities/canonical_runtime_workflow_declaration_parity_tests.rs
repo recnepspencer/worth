@@ -18,14 +18,14 @@ fn workflow_materializer_reuses_admitted_preview_foundation_identity(
             "workflow declarations should bind through the same admitted preview foundation identity",
             crate::facade::runtime::BridgePreviewSessionIdentity::from_stable_name("preview-session:identity"),
         )?,
-    )));
+    )?)?);
     let foundation = success(materialize_admitted_preview_workflow_foundation(ready_workflow(
         WorthQueryWorkflowContributionAuthoring::preview_only_query_inspection(
             "spatial.preview.identity",
             "workflow declarations should bind through the same admitted preview foundation identity",
             crate::facade::runtime::BridgePreviewSessionIdentity::from_stable_name("preview-session:identity"),
         )?,
-    )));
+    )?));
 
     let expected_binding =
         bind_workflow_context(WorkflowBindingSource::PreviewFoundation(&foundation))
@@ -74,7 +74,7 @@ fn workflow_materializer_denies_runtime_only_postures_at_preview_foundation_boun
                 crate::workflow::WorkflowFreshnessPolicy::ExactBasis,
             )),
         )?,
-    )));
+    )?)?)?;
 
     assert!(matches!(
         denied,
@@ -88,8 +88,13 @@ fn workflow_materializer_denies_runtime_only_postures_at_preview_foundation_boun
 
 fn ready_workflow(
     authoring: WorthQueryWorkflowContributionAuthoring,
-) -> super::WorthQueryMaterializationReadyWorkflowContribution<
-    WorthQueryDeclarationBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyWorkflowContribution<
+        WorthQueryDeclarationBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(authoring.bind_to_declaration_target(declaration_target("intent-workflow")))
+    Ok(ready(authoring.bind_to_declaration_target(
+        declaration_target("intent-workflow"),
+    ))?)
 }

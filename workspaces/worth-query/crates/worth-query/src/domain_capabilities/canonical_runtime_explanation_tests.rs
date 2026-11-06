@@ -57,8 +57,8 @@ fn explanation_runtime_materializer_builds_denied_causal_artifact(
                 crate::runtime::CausalInspectionRedactionPolicy::PreserveDetail,
                 crate::runtime::CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     assert_eq!(
         artifact.kind(),
@@ -79,7 +79,7 @@ fn explanation_runtime_materializer_denies_missing_semantics(
             "explanation.support.only",
             "support-only explanation cannot mint a causal inspection artifact",
         )?,
-    ));
+    )?)?;
 
     assert!(matches!(
         outcome,
@@ -133,7 +133,7 @@ fn explanation_runtime_review_preserves_denied_plan_identity(
             crate::runtime::CausalInspectionRedactionPolicy::PreserveDetail,
             crate::runtime::CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
         )?,
-    );
+    )?;
     let artifact_contribution = ready_explanation(
         WorthQueryExplanationContributionAuthoring::store_backed_replay_gap_explanation(
             "explanation.store_backed_replay",
@@ -144,14 +144,14 @@ fn explanation_runtime_review_preserves_denied_plan_identity(
             crate::runtime::CausalInspectionRedactionPolicy::PreserveDetail,
             crate::runtime::CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
         )?,
-    );
+    )?;
 
     let review = success(materialize_query_causal_inspection_review(
         review_contribution,
-    ));
+    )?);
     let artifact = success(materialize_query_causal_inspection_artifact(
         artifact_contribution,
-    ));
+    )?);
 
     assert_eq!(
         review.plan().support_posture(),
@@ -173,11 +173,13 @@ fn explanation_runtime_review_preserves_denied_plan_identity(
 
 fn ready_explanation(
     authoring: WorthQueryExplanationContributionAuthoring,
-) -> super::WorthQueryMaterializationReadyExplanationContribution<
-    WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyExplanationContribution<
+        WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(
-        authoring
-            .bind_to_lower_runtime_boundary_target(lower_runtime_target("boundary-explanation")),
-    )
+    Ok(ready(authoring.bind_to_lower_runtime_boundary_target(
+        lower_runtime_target("boundary-explanation")?,
+    ))?)
 }

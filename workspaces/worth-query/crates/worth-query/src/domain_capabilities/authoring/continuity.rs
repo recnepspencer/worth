@@ -125,37 +125,45 @@ impl WorthQueryContinuityContributionAuthoring {
     pub fn for_admitted_intent_plan(
         self,
         plan: &WorthQueryAdmittedIntentPlan,
-    ) -> WorthQueryRequestedContinuityContribution<WorthQueryAdmittedPlanBoundContributionTarget>
-    {
-        self.bind_to_admitted_plan_target(
+    ) -> Result<
+        WorthQueryRequestedContinuityContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.bind_to_admitted_plan_target(
             WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(plan),
-        )
+        )?)
     }
 
     pub fn for_intent_declaration(
         self,
         declaration: &WorthQueryIntentDeclaration,
-    ) -> WorthQueryRequestedContinuityContribution<WorthQueryDeclarationBoundContributionTarget>
-    {
-        self.bind_to_declaration_target(
+    ) -> Result<
+        WorthQueryRequestedContinuityContribution<WorthQueryDeclarationBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.bind_to_declaration_target(
             WorthQueryDeclarationBoundContributionTarget::for_intent_declaration(declaration),
-        )
+        )?)
     }
 
     pub fn bind_to_admitted_plan_target(
         self,
         target: WorthQueryAdmittedPlanBoundContributionTarget,
-    ) -> WorthQueryRequestedContinuityContribution<WorthQueryAdmittedPlanBoundContributionTarget>
-    {
-        bind_requested(self.payload, target)
+    ) -> Result<
+        WorthQueryRequestedContinuityContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(bind_requested(self.payload, target)?)
     }
 
     pub fn bind_to_declaration_target(
         self,
         target: WorthQueryDeclarationBoundContributionTarget,
-    ) -> WorthQueryRequestedContinuityContribution<WorthQueryDeclarationBoundContributionTarget>
-    {
-        bind_requested(self.payload, target)
+    ) -> Result<
+        WorthQueryRequestedContinuityContribution<WorthQueryDeclarationBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(bind_requested(self.payload, target)?)
     }
 
     pub(crate) fn bind_to_installed_target<T>(

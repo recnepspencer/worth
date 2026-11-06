@@ -1,6 +1,6 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod posture_denials;
 
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::targets::{
@@ -35,7 +35,7 @@ fn preview_workflow_artifact_materializer_builds_preview_artifacts(
                 "preview-session:42",
             ),
         )?,
-    )));
+    )?));
     let promotion = success(materialize_query_preview_workflow_artifact(
         ready_workflow_plan(
             WorthQueryWorkflowContributionAuthoring::promotion_eligible_mutation_lowering(
@@ -51,7 +51,7 @@ fn preview_workflow_artifact_materializer_builds_preview_artifacts(
                 "eligibility-preview",
                 "decision-preview",
             )?,
-        ),
+        )?,
     ));
     let discard = success(materialize_query_preview_workflow_artifact(ready_workflow(
         WorthQueryWorkflowContributionAuthoring::discard_required_query_inspection(
@@ -61,7 +61,7 @@ fn preview_workflow_artifact_materializer_builds_preview_artifacts(
                 "preview-session:99",
             ),
         )?,
-    )));
+    )?));
 
     assert_eq!(
         read_only.request_family(),
@@ -130,7 +130,7 @@ fn preview_workflow_artifact_digest_changes_when_scope_changes(
                 "eligibility-left",
                 "decision-left",
             )?,
-        ),
+        )?,
     ));
     let right = success(materialize_query_preview_workflow_artifact(
         ready_workflow_plan(
@@ -147,7 +147,7 @@ fn preview_workflow_artifact_digest_changes_when_scope_changes(
                 "eligibility-right",
                 "decision-right",
             )?,
-        ),
+        )?,
     ));
 
     assert_ne!(
@@ -190,8 +190,8 @@ fn preview_workflow_artifact_separates_request_family_in_identity_basis(
                     crate::workflow::WorkflowFreshnessPolicy::ExactBasis,
                 )),
             )?,
-        ),
-    )));
+        )?,
+    )?));
     let discard = success(materialize_query_preview_workflow_artifact(ready(
         super::proof_integration::create_requested_domain_capability_contribution(
             declaration_target("intent-workflow-preview-request-family"),
@@ -213,8 +213,8 @@ fn preview_workflow_artifact_separates_request_family_in_identity_basis(
                     crate::workflow::WorkflowFreshnessPolicy::ExactBasis,
                 )),
             )?,
-        ),
-    )));
+        )?,
+    )?));
 
     assert_ne!(
         promotion
@@ -250,7 +250,7 @@ fn admitted_preview_workflow_foundation_materializer_builds_real_foundations(
                     "preview-session:42",
                 ),
             )?,
-        ),
+        )?,
     ));
     let promotion = success(materialize_admitted_preview_workflow_foundation(
         ready_workflow_plan(
@@ -267,7 +267,7 @@ fn admitted_preview_workflow_foundation_materializer_builds_real_foundations(
                 "eligibility-preview",
                 "decision-preview",
             )?,
-        ),
+        )?,
     ));
 
     assert_eq!(
@@ -310,7 +310,7 @@ fn admitted_preview_workflow_foundation_admits_discard_required_requests(
                     "preview-session:66",
                 ),
             )?,
-        ),
+        )?,
     ));
 
     assert_eq!(
@@ -339,17 +339,25 @@ fn admitted_preview_workflow_foundation_admits_discard_required_requests(
 
 fn ready_workflow(
     authoring: WorthQueryWorkflowContributionAuthoring,
-) -> super::WorthQueryMaterializationReadyWorkflowContribution<
-    WorthQueryDeclarationBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyWorkflowContribution<
+        WorthQueryDeclarationBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(authoring.bind_to_declaration_target(declaration_target("intent-workflow")))
+    Ok(ready(authoring.bind_to_declaration_target(
+        declaration_target("intent-workflow"),
+    ))?)
 }
 
 fn ready_workflow_plan(
     authoring: WorthQueryWorkflowContributionAuthoring,
     target: WorthQueryAdmittedPlanBoundContributionTarget,
-) -> super::WorthQueryMaterializationReadyWorkflowContribution<
-    WorthQueryAdmittedPlanBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyWorkflowContribution<
+        WorthQueryAdmittedPlanBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(authoring.bind_to_admitted_plan_target(target))
+    Ok(ready(authoring.bind_to_admitted_plan_target(target))?)
 }

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -34,7 +35,10 @@ where
 
 pub fn materialize_query_workflow_declaration<T>(
     contribution: WorthQueryMaterializationReadyWorkflowContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<QueryWorkflowDeclaration>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<QueryWorkflowDeclaration>,
+    IdentityDerivationDenial,
+>
 where
     T: WorthQueryWorkflowDeclarationMaterializationTarget,
 {
@@ -42,20 +46,24 @@ where
     let payload = domain_contribution.payload();
     let target = domain_contribution.target();
     let Some(runtime_semantics) = payload.runtime_semantics() else {
-        return TransitionOutcome::Denied(missing_workflow_runtime_semantics_denial(
-            "workflow declaration materialization",
-            payload,
-            target.kind(),
-            domain_contribution.request_identity().clone(),
+        return Ok(TransitionOutcome::Denied(
+            missing_workflow_runtime_semantics_denial(
+                "workflow declaration materialization",
+                payload,
+                target.kind(),
+                domain_contribution.request_identity().clone(),
+            )?,
         ));
     };
     if !workflow_runtime_semantics_match_posture(payload.posture(), runtime_semantics) {
-        return TransitionOutcome::Denied(inconsistent_workflow_runtime_semantics_denial(
-            "workflow declaration materialization",
-            payload,
-            runtime_semantics,
-            target.kind(),
-            domain_contribution.request_identity().clone(),
+        return Ok(TransitionOutcome::Denied(
+            inconsistent_workflow_runtime_semantics_denial(
+                "workflow declaration materialization",
+                payload,
+                runtime_semantics,
+                target.kind(),
+                domain_contribution.request_identity().clone(),
+            )?,
         ));
     }
 
@@ -79,7 +87,7 @@ where
             ) {
                 Ok(binding) => binding,
                 Err(error) => {
-                    return TransitionOutcome::Denied(
+                    return Ok(TransitionOutcome::Denied(
                         WorthQueryDomainCapabilityProgressionDenial::new(
                             WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
                             "workflow-preview",
@@ -90,8 +98,8 @@ where
                                 error.failure_class(),
                                 error.message()
                             ),
-                        ),
-                    )
+                        )?,
+                    ))
                 }
             },
         WorthQueryWorkflowRuntimeBindingSemantics::PreviewFoundation { .. } => {
@@ -100,12 +108,12 @@ where
                 runtime_semantics,
             ) {
                 Ok(foundation) => foundation,
-                Err(denial) => return TransitionOutcome::Denied(denial),
+                Err(denial) => return Ok(TransitionOutcome::Denied(denial)),
             };
             match bind_workflow_context(WorkflowBindingSource::PreviewFoundation(&foundation)) {
                 Ok(binding) => binding,
                 Err(error) => {
-                    return TransitionOutcome::Denied(
+                    return Ok(TransitionOutcome::Denied(
                         WorthQueryDomainCapabilityProgressionDenial::new(
                             WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
                             "workflow-preview",
@@ -116,8 +124,8 @@ where
                                 error.failure_class(),
                                 error.message()
                             ),
-                        ),
-                    )
+                        )?,
+                    ))
                 }
             }
         }
@@ -142,8 +150,10 @@ where
                 error.failure_class(),
                 error.message()
             ),
-        )),
+        )?),
     }
+
+    Ok(())
 }
 
 pub trait WorthQueryWorkflowDeclarationMaterializationTarget:

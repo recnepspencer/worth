@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -71,11 +72,14 @@ where
 
 pub(crate) fn materialize_projection_consumption_eligibility<T>(
     contribution: WorthQueryMaterializationReadyAftermathContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<ProjectionConsumptionEligibility>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<ProjectionConsumptionEligibility>,
+    IdentityDerivationDenial,
+>
 where
     T: WorthQueryAftermathProjectionTarget,
 {
-    match materialize_projection_consumption_review(contribution) {
+    match materialize_projection_consumption_review(contribution)? {
         TransitionOutcome::Success(review) => {
             TransitionOutcome::Success(review.eligibility().clone())
         }
@@ -85,15 +89,20 @@ where
         TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
         TransitionOutcome::Deferred(never) => match never {},
     }
+
+    Ok(())
 }
 
 pub(crate) fn materialize_projection_consumption_support_report<T>(
     contribution: WorthQueryMaterializationReadyAftermathContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<ProjectionConsumptionSupportReport>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<ProjectionConsumptionSupportReport>,
+    IdentityDerivationDenial,
+>
 where
     T: WorthQueryAftermathProjectionTarget,
 {
-    match materialize_projection_consumption_review(contribution) {
+    match materialize_projection_consumption_review(contribution)? {
         TransitionOutcome::Success(review) => {
             TransitionOutcome::Success(review.support_report().clone())
         }
@@ -103,21 +112,26 @@ where
         TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
         TransitionOutcome::Deferred(never) => match never {},
     }
+
+    Ok(())
 }
 
 pub(crate) fn materialize_projection_consumption_review<T>(
     contribution: WorthQueryMaterializationReadyAftermathContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryAftermathProjectionConsumptionReview>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryAftermathProjectionConsumptionReview>,
+    IdentityDerivationDenial,
+>
 where
     T: WorthQueryAftermathProjectionTarget,
 {
     let domain_contribution = contribution.payload();
     let payload = domain_contribution.payload();
     let Some(runtime_semantics) = payload.runtime_semantics() else {
-        return TransitionOutcome::Denied(missing_runtime_semantics_denial(
+        return Ok(TransitionOutcome::Denied(missing_runtime_semantics_denial(
             payload.semantic_code(),
             domain_contribution.request_identity().clone(),
-        ));
+        )?));
     };
 
     let declaration = match declare_projection_consumption(
@@ -127,7 +141,7 @@ where
     ) {
         Ok(declaration) => declaration,
         Err(error) => {
-            return TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
+            return Ok(TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
                 WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
                 "consequence-aftermath",
                 domain_contribution.target().kind(),
@@ -137,30 +151,35 @@ where
                     payload.semantic_code(),
                     declaration_error_label(&error),
                 ),
-            ));
+            )?));
         }
     };
 
     let support_report = discover_projection_consumption_support(runtime_semantics.source());
     let eligibility = evaluate_projection_consumption_eligibility(&declaration);
 
-    TransitionOutcome::Success(WorthQueryAftermathProjectionConsumptionReview {
-        semantic_code: payload.semantic_code().to_string(),
-        request_identity: domain_contribution.request_identity().clone(),
-        target_kind: domain_contribution.target().kind(),
-        declaration,
-        support_report,
-        eligibility,
-    })
+    Ok(TransitionOutcome::Success(
+        WorthQueryAftermathProjectionConsumptionReview {
+            semantic_code: payload.semantic_code().to_string(),
+            request_identity: domain_contribution.request_identity().clone(),
+            target_kind: domain_contribution.target().kind(),
+            declaration,
+            support_report,
+            eligibility,
+        },
+    ))
 }
 
 pub(crate) fn materialize_admitted_projection_consumption<T>(
     contribution: WorthQueryMaterializationReadyAftermathContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<AdmittedProjectionConsumption>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<AdmittedProjectionConsumption>,
+    IdentityDerivationDenial,
+>
 where
     T: WorthQueryAftermathProjectionTarget,
 {
-    match materialize_projection_consumption_review(contribution) {
+    match materialize_projection_consumption_review(contribution)? {
         TransitionOutcome::Success(review) => match review.eligibility() {
             ProjectionConsumptionEligibility::Admitted(admitted) => {
                 TransitionOutcome::Success(admitted.clone())
@@ -179,7 +198,7 @@ where
                         review.semantic_code(),
                         denial_reason_label(denied.reason()),
                     ),
-                ))
+                )?)
             }
             ProjectionConsumptionEligibility::Deferred(deferred) => {
                 TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
@@ -192,7 +211,7 @@ where
                         review.semantic_code(),
                         deferred_reason_label(deferred.reason()),
                     ),
-                ))
+                )?)
             }
             ProjectionConsumptionEligibility::SourceMismatch(mismatch) => {
                 TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
@@ -206,7 +225,7 @@ where
                         mismatch.source_family().as_str(),
                         mismatch.requested_fact_kind().as_str(),
                     ),
-                ))
+                )?)
             }
         },
         TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(denial),
@@ -215,15 +234,20 @@ where
         TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
         TransitionOutcome::Deferred(never) => match never {},
     }
+
+    Ok(())
 }
 
 pub(crate) fn materialize_projection_consumption_contract<T>(
     contribution: WorthQueryMaterializationReadyAftermathContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<MaterializedProjectionContract>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<MaterializedProjectionContract>,
+    IdentityDerivationDenial,
+>
 where
     T: WorthQueryAftermathProjectionTarget,
 {
-    match materialize_admitted_projection_consumption(contribution) {
+    match materialize_admitted_projection_consumption(contribution)? {
         TransitionOutcome::Success(admitted) => {
             TransitionOutcome::Success(admitted.bind_contract())
         }
@@ -233,6 +257,8 @@ where
         TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
         TransitionOutcome::Deferred(never) => match never {},
     }
+
+    Ok(())
 }
 
 pub(crate) trait WorthQueryAftermathProjectionTarget:
@@ -250,8 +276,8 @@ impl WorthQueryAftermathProjectionTarget
 fn missing_runtime_semantics_denial(
     semantic_code: &str,
     request_identity: WorthQueryEvidenceIdentity,
-) -> WorthQueryDomainCapabilityProgressionDenial {
-    WorthQueryDomainCapabilityProgressionDenial::new(
+) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
+    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics,
         "consequence-aftermath",
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
@@ -259,7 +285,7 @@ fn missing_runtime_semantics_denial(
         format!(
             "projection consumption materialization requires runtime aftermath semantics for `{semantic_code}`"
         ),
-    )
+    )?)
 }
 
 fn declaration_error_label(error: &ProjectionConsumptionDeclarationError) -> &'static str {

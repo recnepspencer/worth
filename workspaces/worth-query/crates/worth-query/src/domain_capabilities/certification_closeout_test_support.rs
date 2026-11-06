@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::eligibility::{
@@ -76,7 +77,7 @@ pub(super) fn admitted_projection_consumption_plan() -> WorthQueryAdmittedIntent
 
 pub(super) fn lower_runtime_envelope(
     target_digest: &str,
-) -> WorthQueryLowerRuntimeBoundaryEnvelope {
+) -> Result<WorthQueryLowerRuntimeBoundaryEnvelope, IdentityDerivationDenial> {
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
         WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -89,7 +90,7 @@ pub(super) fn lower_runtime_envelope(
             crate::evidence_identity::WorthQueryEvidenceTag::new("test_target"),
             target_digest,
         )
-        .seal(),
+        .seal()?,
     );
     let detail_identity = crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
         crate::evidence_identity::WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
@@ -98,7 +99,7 @@ pub(super) fn lower_runtime_envelope(
         crate::evidence_identity::WorthQueryEvidenceTag::new("test_detail"),
         "detail",
     )
-    .seal();
+    .seal()?;
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request,
         &detail_identity,
@@ -120,17 +121,17 @@ pub(super) fn lower_runtime_envelope(
                 crate::evidence_identity::WorthQueryEvidenceTag::new("test_retained_target"),
                 target_digest,
             )
-            .seal(),
+            .seal()?,
         );
     let boundary =
         WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(&route, &retained_evidence);
 
-    WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
+    Ok(WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
         &route,
         &boundary,
         &retained_evidence,
-    )
+    ))
 }
 
 pub(super) fn replay_gap_inputs() -> (
@@ -194,15 +195,22 @@ pub(super) fn admission_digest(
 
 pub(super) fn admitted_ready<P, T>(
     requested: WorthQueryRequestedDomainCapabilityContribution<P, T>,
-) -> crate::domain_capabilities::WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>
+) -> Result<
+    crate::domain_capabilities::WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>,
+    IdentityDerivationDenial,
+>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    let eligible = success(evaluate_requested_domain_capability_contribution(requested));
+    let eligible = success(evaluate_requested_domain_capability_contribution(
+        requested,
+    )?);
     let admitted = success(admit_eligible_domain_capability_contribution(eligible));
     let target = admitted.payload().target().clone();
-    success(prepare_admitted_domain_capability_contribution_for_materialization(admitted, target))
+    Ok(success(
+        prepare_admitted_domain_capability_contribution_for_materialization(admitted, target),
+    ))
 }
 
 pub(super) fn success<T>(

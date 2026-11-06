@@ -16,10 +16,12 @@ use super::{
     standard_profile,
 };
 use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
+
 use worth_foundational::{FoundationalDiagnosticDeliveryClass, FoundationalDiagnosticOutcomeKind};
 
 #[test]
-fn lower_runtime_support_report_preserves_requested_richness_and_current_provenance() {
+fn lower_runtime_support_report_preserves_requested_richness_and_current_provenance(
+) -> Result<(), IdentityDerivationDenial> {
     let ready = lower_runtime_ready_contribution(
         "boundary-a",
         WorthQuerySupportContributionPayload::new(
@@ -27,7 +29,7 @@ fn lower_runtime_support_report_preserves_requested_richness_and_current_provena
             "runtime.boundary.traceability",
             "lower runtime support derives from reconstructed boundary evidence",
         ),
-    );
+    )?;
 
     let report = materialize_support_traceability_support_report(
         ready,
@@ -73,7 +75,7 @@ fn lower_runtime_support_report_preserves_requested_richness_and_current_provena
                 "runtime.boundary.traceability",
                 "lower runtime support derives from reconstructed boundary evidence",
             ),
-        ),
+        )?,
         forensic_support_profile(),
     )
     .expect("trace artifact should materialize");
@@ -81,6 +83,8 @@ fn lower_runtime_support_report_preserves_requested_richness_and_current_provena
         trace.provenance().freshness_posture(),
         worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture::ReconstructedFromReplay
     );
+
+    Ok(())
 }
 
 #[test]
@@ -93,7 +97,7 @@ fn remaining_categories_materialize_real_descriptive_outputs(
             "graph.face_inner_loop_insertion",
             "topology substrate is not available",
         )?,
-    );
+    )?;
     let workflow_ready = admitted_plan_ready_contribution(
         "plan-a",
         WorthQueryWorkflowContributionPayload::new(
@@ -101,7 +105,7 @@ fn remaining_categories_materialize_real_descriptive_outputs(
             "preview.confirmation.required",
             "destructive promotion requires confirmation",
         )?,
-    );
+    )?;
     let continuity_bundle_ready = admitted_plan_ready_contribution(
         "plan-b",
         WorthQueryContinuityContributionPayload::new(
@@ -109,7 +113,7 @@ fn remaining_categories_materialize_real_descriptive_outputs(
             "continuity.identity.split",
             "edge split produces two descendant identities",
         )?,
-    );
+    )?;
 
     let invariant_report = materialize_invariant_capability_support_report(
         invariant_ready,
@@ -136,7 +140,7 @@ fn remaining_categories_materialize_real_descriptive_outputs(
             "continuity.identity.split",
             "edge split produces two descendant identities",
         )?,
-    );
+    )?;
     let continuity_summary =
         materialize_continuity_summary(continuity_summary_ready, standard_profile())
             .expect("continuity summary");

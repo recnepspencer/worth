@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 use worth_relational::facade::runtime::InvariantCatalog;
 
@@ -117,30 +118,33 @@ impl WorthQueryInvariantCatalogRegistrationArtifact {
 
 pub(crate) fn materialize_query_invariant_catalog_registration_artifact<T>(
     contribution: WorthQueryMaterializationReadyInvariantCapabilityContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryInvariantCatalogRegistrationArtifact>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryInvariantCatalogRegistrationArtifact>,
+    IdentityDerivationDenial,
+>
 where
     T: crate::domain_capabilities::WorthQueryDeclarationContributionTargetBinding,
 {
     let domain_contribution = contribution.payload();
     let payload = domain_contribution.payload();
     let Some(invariant_registration) = payload.invariant_registration() else {
-        return TransitionOutcome::Denied(missing_runtime_semantics_denial(
+        return Ok(TransitionOutcome::Denied(missing_runtime_semantics_denial(
             payload,
             domain_contribution.request_identity().clone(),
             domain_contribution.target().kind(),
             "invariant registration",
-        ));
+        )?));
     };
 
     if payload.posture() != WorthQueryInvariantCapabilityContributionPosture::InvariantRegistration
     {
-        return TransitionOutcome::Denied(unsupported_posture_denial(
+        return Ok(TransitionOutcome::Denied(unsupported_posture_denial(
             payload,
             domain_contribution.request_identity().clone(),
             domain_contribution.target().kind(),
             "invariant registration",
             "invariant-registration",
-        ));
+        )?));
     }
 
     let Some((name, strategy_name, strategy_version, input_contract, source_lane, target_lane)) =
@@ -153,77 +157,82 @@ where
     };
     let invariant_catalog = invariant_registration.canonical_invariant_catalog();
 
-    TransitionOutcome::Success(WorthQueryInvariantCatalogRegistrationArtifact {
-        lane: "query_invariant_catalog_registration",
-        semantic_code: payload.semantic_code().to_string(),
-        detail: payload.detail().to_string(),
-        invariant_catalog: invariant_catalog.clone(),
-        intent_name: name.to_string(),
-        strategy_name: strategy_name.to_string(),
-        strategy_version: strategy_version.to_string(),
-        input_contract: input_contract.to_string(),
-        source_lane,
-        target_lane,
-        target_binding_identity: domain_contribution.target().binding_identity(),
-        request_identity: domain_contribution.request_identity().clone(),
-        materialization_identity: domain_capability_scope_encoder(
-            "worth_query_invariant_catalog_registration_artifact_v1",
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("lane"),
-            "query_invariant_catalog_registration",
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("semantic_code"),
-            payload.semantic_code(),
-        )
-        .field_shape(WorthQueryEvidenceTag::new("detail"), payload.detail())
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("catalog"),
-            &compose_invariant_registration_identity(invariant_registration),
-        )
-        .field_shape(WorthQueryEvidenceTag::new("intent"), name)
-        .field_shape(WorthQueryEvidenceTag::new("strategy"), strategy_name)
-        .field_shape(
-            WorthQueryEvidenceTag::new("strategy_version"),
-            strategy_version,
-        )
-        .field_shape(WorthQueryEvidenceTag::new("input_contract"), input_contract)
-        .field_shape(
-            WorthQueryEvidenceTag::new("source_lane"),
-            source_lane.as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("target_lane"),
-            target_lane.as_str(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("binding"),
-            &domain_contribution.target().binding_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("request"),
-            domain_contribution.request_identity(),
-        )
-        .seal(),
-    })
+    Ok(TransitionOutcome::Success(
+        WorthQueryInvariantCatalogRegistrationArtifact {
+            lane: "query_invariant_catalog_registration",
+            semantic_code: payload.semantic_code().to_string(),
+            detail: payload.detail().to_string(),
+            invariant_catalog: invariant_catalog.clone(),
+            intent_name: name.to_string(),
+            strategy_name: strategy_name.to_string(),
+            strategy_version: strategy_version.to_string(),
+            input_contract: input_contract.to_string(),
+            source_lane,
+            target_lane,
+            target_binding_identity: domain_contribution.target().binding_identity(),
+            request_identity: domain_contribution.request_identity().clone(),
+            materialization_identity: domain_capability_scope_encoder(
+                "worth_query_invariant_catalog_registration_artifact_v1",
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("lane"),
+                "query_invariant_catalog_registration",
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("semantic_code"),
+                payload.semantic_code(),
+            )
+            .field_shape(WorthQueryEvidenceTag::new("detail"), payload.detail())
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("catalog"),
+                &compose_invariant_registration_identity(invariant_registration),
+            )
+            .field_shape(WorthQueryEvidenceTag::new("intent"), name)
+            .field_shape(WorthQueryEvidenceTag::new("strategy"), strategy_name)
+            .field_shape(
+                WorthQueryEvidenceTag::new("strategy_version"),
+                strategy_version,
+            )
+            .field_shape(WorthQueryEvidenceTag::new("input_contract"), input_contract)
+            .field_shape(
+                WorthQueryEvidenceTag::new("source_lane"),
+                source_lane.as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("target_lane"),
+                target_lane.as_str(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("binding"),
+                &domain_contribution.target().binding_identity(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("request"),
+                domain_contribution.request_identity(),
+            )
+            .seal()?,
+        },
+    ))
 }
 
 pub fn materialize_graph_composition_capability_support_row<T>(
     contribution: WorthQueryMaterializationReadyInvariantCapabilityContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryGraphCompositionCapabilitySupportRow>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryGraphCompositionCapabilitySupportRow>,
+    IdentityDerivationDenial,
+>
 where
     T: crate::domain_capabilities::WorthQueryLowerRuntimeContributionTargetBinding,
 {
     let domain_contribution = contribution.payload();
     let payload = domain_contribution.payload();
     let Some(graph_capability) = payload.graph_capability() else {
-        return TransitionOutcome::Denied(missing_runtime_semantics_denial(
+        return Ok(TransitionOutcome::Denied(missing_runtime_semantics_denial(
             payload,
             domain_contribution.request_identity().clone(),
             domain_contribution.target().kind(),
             "graph capability",
-        ));
+        )?));
     };
 
     match payload.posture() {
@@ -242,26 +251,31 @@ where
                 domain_contribution.target().kind(),
                 "graph capability",
                 "capability-gap and support-summary",
-            ))
+            )?)
         }
     }
+
+    Ok(())
 }
 
 pub(crate) fn materialize_graph_composition_domain_invariant_denial<T>(
     contribution: WorthQueryMaterializationReadyInvariantCapabilityContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryGraphCompositionDomainInvariantDenial>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryGraphCompositionDomainInvariantDenial>,
+    IdentityDerivationDenial,
+>
 where
     T: crate::domain_capabilities::WorthQueryLowerRuntimeContributionTargetBinding,
 {
     let domain_contribution = contribution.payload();
     let payload = domain_contribution.payload();
     let Some(graph_invariant_denial) = payload.graph_invariant_denial() else {
-        return TransitionOutcome::Denied(missing_runtime_semantics_denial(
+        return Ok(TransitionOutcome::Denied(missing_runtime_semantics_denial(
             payload,
             domain_contribution.request_identity().clone(),
             domain_contribution.target().kind(),
             "graph invariant denial",
-        ));
+        )?));
     };
 
     match payload.posture() {
@@ -283,9 +297,11 @@ where
                 domain_contribution.target().kind(),
                 "graph invariant denial",
                 "invariant-denial",
-            ))
+            )?)
         }
     }
+
+    Ok(())
 }
 
 fn graph_invariant_summary(
@@ -307,8 +323,8 @@ fn missing_runtime_semantics_denial(
     request_identity: WorthQueryEvidenceIdentity,
     target_kind: crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind,
     runtime_family: &str,
-) -> WorthQueryDomainCapabilityProgressionDenial {
-    WorthQueryDomainCapabilityProgressionDenial::new(
+) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
+    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics,
         "invariant-capability",
         target_kind,
@@ -317,7 +333,7 @@ fn missing_runtime_semantics_denial(
             "{runtime_family} runtime materialization requires matching runtime semantics for `{}`",
             payload.semantic_code()
         ),
-    )
+    )?)
 }
 
 fn unsupported_posture_denial(
@@ -326,8 +342,8 @@ fn unsupported_posture_denial(
     target_kind: crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind,
     runtime_family: &str,
     supported_postures: &str,
-) -> WorthQueryDomainCapabilityProgressionDenial {
-    WorthQueryDomainCapabilityProgressionDenial::new(
+) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
+    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
         "invariant-capability",
         target_kind,
@@ -336,5 +352,5 @@ fn unsupported_posture_denial(
             "{runtime_family} runtime materialization only supports {supported_postures} postures; got `{}`",
             payload.posture().as_str()
         ),
-    )
+    )?)
 }

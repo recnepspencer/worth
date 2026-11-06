@@ -5,9 +5,11 @@ use super::{
     WorthQuerySupportContributionAuthoring, WorthQuerySupportContributionPayload,
     WorthQuerySupportContributionPosture,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[test]
-fn declaration_support_traceability_materializer_builds_real_declaration_artifact() {
+fn declaration_support_traceability_materializer_builds_real_declaration_artifact(
+) -> Result<(), IdentityDerivationDenial> {
     let artifact = success(
         materialize_intent_declaration_support_traceability_artifact(ready(
             WorthQuerySupportContributionAuthoring::declaration_traceability(
@@ -15,7 +17,7 @@ fn declaration_support_traceability_materializer_builds_real_declaration_artifac
                 "support stays attached to the authored declaration",
             )
             .bind_to_declaration_target(declaration_target("intent-support")),
-        )),
+        )?)?,
     );
 
     assert_eq!(artifact.lane(), "domain_traceability");
@@ -41,19 +43,22 @@ fn declaration_support_traceability_materializer_builds_real_declaration_artifac
     assert!(!artifact.target_binding_for_reporting().is_empty());
     assert!(!artifact.request_for_reporting().is_empty());
     assert!(!artifact.materialization_digest().is_empty());
+
+    Ok(())
 }
 
 #[test]
-fn lower_runtime_support_traceability_materializer_builds_real_boundary_artifact() {
+fn lower_runtime_support_traceability_materializer_builds_real_boundary_artifact(
+) -> Result<(), IdentityDerivationDenial> {
     let artifact = success(materialize_lower_runtime_support_traceability_artifact(
         ready(
             WorthQuerySupportContributionAuthoring::narrowed_support(
                 "boundary.scope.support",
                 "support stays attached to the lower runtime seam",
             )
-            .bind_to_lower_runtime_boundary_target(lower_runtime_target("boundary-support")),
-        ),
-    ));
+            .bind_to_lower_runtime_boundary_target(lower_runtime_target("boundary-support")?),
+        )?,
+    )?);
 
     assert_eq!(artifact.lane(), "domain_narrowed_support");
     assert_eq!(
@@ -81,10 +86,13 @@ fn lower_runtime_support_traceability_materializer_builds_real_boundary_artifact
     assert!(!artifact.target_binding_for_reporting().is_empty());
     assert!(!artifact.request_for_reporting().is_empty());
     assert!(!artifact.materialization_digest().is_empty());
+
+    Ok(())
 }
 
 #[test]
-fn declaration_support_traceability_digest_changes_when_scope_changes() {
+fn declaration_support_traceability_digest_changes_when_scope_changes(
+) -> Result<(), IdentityDerivationDenial> {
     let left = success(
         materialize_intent_declaration_support_traceability_artifact(ready(
             super::proof_integration::create_requested_domain_capability_contribution(
@@ -94,8 +102,8 @@ fn declaration_support_traceability_digest_changes_when_scope_changes() {
                     "intent.scope.support",
                     "support stays scoped to a declaration binding",
                 ),
-            ),
-        )),
+            )?,
+        )?)?,
     );
     let right = success(
         materialize_intent_declaration_support_traceability_artifact(ready(
@@ -106,8 +114,8 @@ fn declaration_support_traceability_digest_changes_when_scope_changes() {
                     "intent.scope.support",
                     "support stays scoped to a declaration binding",
                 ),
-            ),
-        )),
+            )?,
+        )?)?,
     );
 
     assert_ne!(
@@ -118,10 +126,13 @@ fn declaration_support_traceability_digest_changes_when_scope_changes() {
         left.materialization_digest(),
         right.materialization_digest()
     );
+
+    Ok(())
 }
 
 #[test]
-fn equivalent_declaration_support_meaning_materializes_same_artifact_digest() {
+fn equivalent_declaration_support_meaning_materializes_same_artifact_digest(
+) -> Result<(), IdentityDerivationDenial> {
     let authored = success(
         materialize_intent_declaration_support_traceability_artifact(ready(
             WorthQuerySupportContributionAuthoring::declaration_support(
@@ -129,7 +140,7 @@ fn equivalent_declaration_support_meaning_materializes_same_artifact_digest() {
                 "support stays scoped to a declaration binding",
             )
             .bind_to_declaration_target(declaration_target("intent-support")),
-        )),
+        )?)?,
     );
     let direct = success(
         materialize_intent_declaration_support_traceability_artifact(ready(
@@ -140,42 +151,45 @@ fn equivalent_declaration_support_meaning_materializes_same_artifact_digest() {
                     "intent.scope.support",
                     "support stays scoped to a declaration binding",
                 ),
-            ),
-        )),
+            )?,
+        )?)?,
     );
 
     assert_eq!(
         authored.materialization_digest(),
         direct.materialization_digest()
     );
+
+    Ok(())
 }
 
 #[test]
-fn lower_runtime_support_traceability_digest_changes_when_scope_changes() {
+fn lower_runtime_support_traceability_digest_changes_when_scope_changes(
+) -> Result<(), IdentityDerivationDenial> {
     let left = success(materialize_lower_runtime_support_traceability_artifact(
         ready(
             super::proof_integration::create_requested_domain_capability_contribution(
-                lower_runtime_target("boundary-support-left"),
+                lower_runtime_target("boundary-support-left")?,
                 WorthQuerySupportContributionPayload::new(
                     WorthQuerySupportContributionPosture::DeclarationTraceability,
                     "boundary.scope.traceability",
                     "support stays scoped to a lower-runtime binding",
                 ),
-            ),
-        ),
-    ));
+            )?,
+        )?,
+    )?);
     let right = success(materialize_lower_runtime_support_traceability_artifact(
         ready(
             super::proof_integration::create_requested_domain_capability_contribution(
-                lower_runtime_target("boundary-support-right"),
+                lower_runtime_target("boundary-support-right")?,
                 WorthQuerySupportContributionPayload::new(
                     WorthQuerySupportContributionPosture::DeclarationTraceability,
                     "boundary.scope.traceability",
                     "support stays scoped to a lower-runtime binding",
                 ),
-            ),
-        ),
-    ));
+            )?,
+        )?,
+    )?);
 
     assert_ne!(
         left.target_binding_for_reporting(),
@@ -185,34 +199,39 @@ fn lower_runtime_support_traceability_digest_changes_when_scope_changes() {
         left.materialization_digest(),
         right.materialization_digest()
     );
+
+    Ok(())
 }
 
 #[test]
-fn equivalent_lower_runtime_support_meaning_materializes_same_artifact_digest() {
+fn equivalent_lower_runtime_support_meaning_materializes_same_artifact_digest(
+) -> Result<(), IdentityDerivationDenial> {
     let authored = success(materialize_lower_runtime_support_traceability_artifact(
         ready(
             WorthQuerySupportContributionAuthoring::declaration_traceability(
                 "boundary.scope.traceability",
                 "support stays scoped to a lower-runtime binding",
             )
-            .bind_to_lower_runtime_boundary_target(lower_runtime_target("boundary-support")),
-        ),
-    ));
+            .bind_to_lower_runtime_boundary_target(lower_runtime_target("boundary-support")?),
+        )?,
+    )?);
     let direct = success(materialize_lower_runtime_support_traceability_artifact(
         ready(
             super::proof_integration::create_requested_domain_capability_contribution(
-                lower_runtime_target("boundary-support"),
+                lower_runtime_target("boundary-support")?,
                 WorthQuerySupportContributionPayload::new(
                     WorthQuerySupportContributionPosture::DeclarationTraceability,
                     "boundary.scope.traceability",
                     "support stays scoped to a lower-runtime binding",
                 ),
-            ),
-        ),
-    ));
+            )?,
+        )?,
+    )?);
 
     assert_eq!(
         authored.materialization_digest(),
         direct.materialization_digest()
     );
+
+    Ok(())
 }

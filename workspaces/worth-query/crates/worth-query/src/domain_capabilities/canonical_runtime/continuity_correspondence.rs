@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::correspondence::{
@@ -22,21 +23,26 @@ pub fn materialize_correspondence_evidence_resolved(
     contribution: WorthQueryMaterializationReadyContinuityContribution<
         WorthQueryAdmittedPlanBoundContributionTarget,
     >,
-) -> WorthQueryDomainCapabilityTransitionOutcome<CorrespondenceEvidenceResolved> {
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<CorrespondenceEvidenceResolved>,
+    IdentityDerivationDenial,
+> {
     let domain_contribution = contribution.payload();
     let payload = domain_contribution.payload();
 
     if payload.posture() != WorthQueryContinuityContributionPosture::CorrespondenceOnly {
-        return TransitionOutcome::Denied(unsupported_posture_denial(
+        return Ok(TransitionOutcome::Denied(unsupported_posture_denial(
             payload,
             domain_contribution.request_identity().clone(),
-        ));
+        )?));
     }
 
     let Some(correspondence_semantics) = payload.correspondence_semantics() else {
-        return TransitionOutcome::Denied(missing_correspondence_semantics_denial(
-            payload,
-            domain_contribution.request_identity().clone(),
+        return Ok(TransitionOutcome::Denied(
+            missing_correspondence_semantics_denial(
+                payload,
+                domain_contribution.request_identity().clone(),
+            )?,
         ));
     };
 
@@ -46,16 +52,18 @@ pub fn materialize_correspondence_evidence_resolved(
             payload,
             domain_contribution.request_identity().clone(),
             error.failure_class(),
-        )),
+        )?),
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
 fn missing_correspondence_semantics_denial(
     payload: &WorthQueryContinuityContributionPayload,
     request_identity: WorthQueryEvidenceIdentity,
-) -> WorthQueryDomainCapabilityProgressionDenial {
-    WorthQueryDomainCapabilityProgressionDenial::new(
+) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
+    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics,
         "continuity-lineage",
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
@@ -64,15 +72,15 @@ fn missing_correspondence_semantics_denial(
             "continuity correspondence materialization requires correspondence semantics for `{}`",
             payload.semantic_code()
         ),
-    )
+    )?)
 }
 
 #[cfg(test)]
 fn unsupported_posture_denial(
     payload: &WorthQueryContinuityContributionPayload,
     request_identity: WorthQueryEvidenceIdentity,
-) -> WorthQueryDomainCapabilityProgressionDenial {
-    WorthQueryDomainCapabilityProgressionDenial::new(
+) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
+    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
         "continuity-lineage",
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
@@ -81,7 +89,7 @@ fn unsupported_posture_denial(
             "continuity correspondence materialization only supports `correspondence-only`; got `{}`",
             payload.posture().as_str()
         ),
-    )
+    )?)
 }
 
 #[cfg(test)]
@@ -89,7 +97,7 @@ fn correspondence_error_denial(
     payload: &WorthQueryContinuityContributionPayload,
     request_identity: WorthQueryEvidenceIdentity,
     failure_class: CorrespondenceEvaluationFailureClass,
-) -> WorthQueryDomainCapabilityProgressionDenial {
+) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
     let denial_kind = match failure_class {
         CorrespondenceEvaluationFailureClass::InvalidRequest => {
             WorthQueryDomainCapabilityProgressionDenialKind::InconsistentCanonicalMaterializationSemantics
@@ -103,7 +111,7 @@ fn correspondence_error_denial(
         }
     };
 
-    WorthQueryDomainCapabilityProgressionDenial::new(
+    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
         denial_kind,
         "continuity-lineage",
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
@@ -113,7 +121,7 @@ fn correspondence_error_denial(
             payload.semantic_code(),
             failure_class_label(failure_class),
         ),
-    )
+    )?)
 }
 
 #[cfg(test)]

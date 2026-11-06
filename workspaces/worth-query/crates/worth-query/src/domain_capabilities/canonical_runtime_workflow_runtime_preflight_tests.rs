@@ -23,7 +23,7 @@ fn workflow_runtime_preflight_materializer_preserves_real_preflight_query_and_ba
             preflight.clone(),
         )?
         .bind_to_declaration_target(declaration_target("intent-workflow-runtime-preflight")),
-    )));
+    )?)?);
 
     assert_ne!(
         declaration.binding().binding_digest(),
@@ -72,7 +72,7 @@ fn workflow_runtime_preflight_materializer_is_stronger_than_snapshot_only_surrog
             preflight.clone(),
         )?
         .bind_to_declaration_target(declaration_target("intent-workflow-runtime-real")),
-    )));
+    )?)?);
     let surrogate = success(materialize_query_workflow_declaration(ready(
         WorthQueryWorkflowContributionAuthoring::confirmation_required_query_inspection(
             "spatial.runtime.preflight.synthetic",
@@ -80,7 +80,7 @@ fn workflow_runtime_preflight_materializer_is_stronger_than_snapshot_only_surrog
             crate::memory_workspace::WorthQuerySnapshotIdentity::preview(snapshot_evidence),
         )?
         .bind_to_declaration_target(declaration_target("intent-workflow-runtime-synthetic")),
-    )));
+    )?)?);
 
     assert_ne!(
         real.binding().binding_digest(),
@@ -118,7 +118,7 @@ fn workflow_runtime_preflight_lowering_from_bundle_preserves_real_runtime_author
         crate::WorthQueryEvidenceTag::new("binding"),
         "authority-binding:preflight",
     )
-    .seal();
+    .seal()?;
 
     let lowered = success(materialize_lowered_mutation_intent_declaration(ready(
         WorthQueryWorkflowContributionAuthoring::confirmation_required_mutation_reconciliation_from_preflight(
@@ -133,7 +133,7 @@ fn workflow_runtime_preflight_lowering_from_bundle_preserves_real_runtime_author
             .expect("name patch should build"),
         )?
         .bind_to_declaration_target(declaration_target("intent-workflow-runtime-lowering")),
-    )));
+    )?));
 
     assert_eq!(
         lowered
@@ -168,7 +168,7 @@ fn workflow_runtime_preflight_materializer_keeps_scope_distinct_across_targets(
             preflight.clone(),
         )?
         .bind_to_declaration_target(declaration_target("intent-workflow-runtime-left")),
-    )));
+    )?)?);
     let right = success(materialize_query_workflow_declaration(ready(
         WorthQueryWorkflowContributionAuthoring::confirmation_required_query_inspection_from_preflight(
             "spatial.runtime.preflight.scope",
@@ -176,7 +176,7 @@ fn workflow_runtime_preflight_materializer_keeps_scope_distinct_across_targets(
             preflight.clone(),
         )?
         .bind_to_declaration_target(declaration_target("intent-workflow-runtime-right")),
-    )));
+    )?)?);
 
     assert_eq!(
         left.binding().query_for_reporting(),

@@ -24,7 +24,7 @@ fn admission_support_report_materializes_foundational_rows_and_fresh_provenance(
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
         )?,
-    );
+    )?;
 
     let report = materialize_admission_support_report(
         report_ready,
@@ -62,7 +62,7 @@ fn admission_support_report_materializes_foundational_rows_and_fresh_provenance(
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
         )?,
-    );
+    )?;
     let summary = materialize_admission_summary(summary_ready, forensic_support_profile())
         .expect("summary should materialize");
     assert_eq!(
@@ -93,7 +93,7 @@ fn admission_support_report_materializes_foundational_rows_and_fresh_provenance(
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
         )?,
-    );
+    )?;
     let trace = materialize_admission_trace_artifact(trace_ready, forensic_support_profile())
         .expect("trace artifact should materialize");
     assert_eq!(
@@ -121,7 +121,7 @@ fn explanation_bundle_narrows_support_posture_to_internal_only(
             "spatial.reorient.fallback",
             "used canonical perpendicular fallback",
         )?,
-    );
+    )?;
 
     let bundle = materialize_explanation_explanation_bundle(
         bundle_ready,
@@ -156,7 +156,7 @@ fn explanation_bundle_narrows_support_posture_to_internal_only(
             "spatial.reorient.fallback",
             "used canonical perpendicular fallback",
         )?,
-    );
+    )?;
     let trace = materialize_explanation_trace_artifact(trace_ready, forensic_support_profile())
         .expect("trace artifact should materialize");
     assert_eq!(

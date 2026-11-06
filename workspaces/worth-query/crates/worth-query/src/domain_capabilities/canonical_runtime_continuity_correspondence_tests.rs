@@ -24,8 +24,8 @@ fn continuity_correspondence_materializer_builds_lineage_continuity(
                 "continuity.correspondence.lineage_only",
                 "lineage evidence supplies the authoritative counterpart",
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     assert_eq!(resolved.outcome().family_name(), "lineage_continuity");
     let lineage = resolved
@@ -51,8 +51,8 @@ fn continuity_correspondence_materializer_builds_structural_ambiguity(
                 "continuity.correspondence.structural_only",
                 "structural evidence yields two bounded candidates",
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     assert_eq!(
         resolved.outcome().family_name(),
@@ -90,8 +90,8 @@ fn continuity_correspondence_materializer_builds_mixed_disagreement(
                 "continuity.correspondence.mixed",
                 "structural evidence disagrees with lineage continuity",
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     assert_eq!(
         resolved.outcome().family_name(),
@@ -116,7 +116,7 @@ fn continuity_correspondence_materializer_denies_missing_semantics(
             "continuity.correspondence.missing",
             "correspondence posture without correspondence evidence",
         )?,
-    ));
+    )?)?;
 
     assert!(matches!(
         outcome,
@@ -138,7 +138,7 @@ fn continuity_correspondence_materializer_denies_mutation_posture(
             "continuity.identity.preserved",
             "authoritative continuity evidence should stay on the mutation lane",
         )?,
-    ));
+    )?)?;
 
     assert!(matches!(
         outcome,
@@ -152,25 +152,31 @@ fn continuity_correspondence_materializer_denies_mutation_posture(
 
 fn ready_continuity(
     authoring: WorthQueryContinuityContributionAuthoring,
-) -> super::WorthQueryMaterializationReadyContinuityContribution<
-    super::WorthQueryAdmittedPlanBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyContinuityContribution<
+        super::WorthQueryAdmittedPlanBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready_continuity_payload(
+    Ok(ready_continuity_payload(
         authoring
             .bind_to_admitted_plan_target(admitted_plan_target("plan-continuity-correspondence"))
             .payload()
             .payload()
             .clone(),
-    )
+    )?)
 }
 
 fn ready_continuity_payload(
     payload: WorthQueryContinuityContributionPayload,
-) -> super::WorthQueryMaterializationReadyContinuityContribution<
-    super::WorthQueryAdmittedPlanBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyContinuityContribution<
+        super::WorthQueryAdmittedPlanBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready_payload(
+    Ok(ready_payload(
         admitted_plan_target("plan-continuity-correspondence"),
         payload,
-    )
+    )?)
 }

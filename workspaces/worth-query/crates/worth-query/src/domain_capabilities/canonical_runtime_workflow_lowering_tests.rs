@@ -31,7 +31,7 @@ fn mutation_lowering_materializer_builds_runtime_lowered_declaration(
         crate::WorthQueryEvidenceTag::new("binding"),
         "authority-binding:42",
     )
-    .seal();
+    .seal()?;
     let lowered = success(materialize_lowered_mutation_intent_declaration(ready(
         WorthQueryWorkflowContributionAuthoring::confirmation_required_mutation_reconciliation(
             "spatial.workflow.mutation",
@@ -45,7 +45,7 @@ fn mutation_lowering_materializer_builds_runtime_lowered_declaration(
             .expect("name patch should build"),
         )?
         .bind_to_declaration_target(declaration_target("intent-workflow-mutation")),
-    )));
+    )?));
 
     assert_eq!(
         lowered.strategy_request().strategy_name().as_str(),
@@ -89,7 +89,7 @@ fn merge_lowering_materializer_builds_preview_bound_lowering(
             "eligibility-merge",
             "decision-merge",
         )?),
-    )));
+    )?));
 
     assert_eq!(
         lowered.merge_request().target_branch(),
@@ -123,7 +123,7 @@ fn writeback_lowering_materializer_builds_bridge_writeback_declaration(
             ),
         )?
         .bind_to_declaration_target(declaration_target("intent-workflow-writeback")),
-    )));
+    )?));
 
     assert_eq!(
         lowered.causality_binding().request_kind(),
@@ -161,8 +161,8 @@ fn workflow_lowering_materializer_denies_missing_lowering_semantics(
                     crate::workflow::WorkflowFreshnessPolicy::ExactBasis,
                 )),
             )?,
-        ),
-    ));
+        )?,
+    )?);
 
     assert!(matches!(
         denied,
@@ -201,7 +201,7 @@ fn workflow_lowering_materializer_preserves_runtime_stale_posture(
                 crate::workflow::WritebackLoweringInput::projected_state_diff(),
             )),
         )?,
-    ));
+    )?);
 
     match stale {
         TransitionOutcome::Stale(stale) => {
@@ -230,7 +230,7 @@ fn discard_required_writeback_lowering_preserves_preview_stale_posture(
             ),
         )?
         .bind_to_declaration_target(target.clone()),
-    ));
+    )?);
 
     match stale {
         TransitionOutcome::Stale(stale) => {
@@ -273,7 +273,7 @@ fn workflow_lowering_materializer_preserves_runtime_rebind_posture(
                 crate::workflow::WritebackLoweringInput::projected_state_diff(),
             )),
         )?,
-    ));
+    )?);
 
     match rebind {
         TransitionOutcome::RebindRequired(rebind) => {

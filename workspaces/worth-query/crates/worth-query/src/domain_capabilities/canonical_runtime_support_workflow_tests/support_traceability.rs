@@ -12,13 +12,14 @@ use super::super::{
 use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[test]
-fn support_traceability_materializer_builds_domain_scoped_report() {
+fn support_traceability_materializer_builds_domain_scoped_report(
+) -> Result<(), IdentityDerivationDenial> {
     let plan_target = admitted_plan_target("plan-support");
     let report = success(materialize_intent_admission_support_traceability_report(
         ready_support(WorthQuerySupportContributionAuthoring::declaration_support(
             "spatial.arbitration.support",
             "multiple candidates remain admissible",
-        )),
+        ))?,
     ));
 
     assert_eq!(report.rows().len(), 1);
@@ -38,17 +39,20 @@ fn support_traceability_materializer_builds_domain_scoped_report() {
     assert_eq!(row.request_digest(), Some(request_digest));
     assert_eq!(row.eligibility_digest(), Some(eligibility_digest));
     assert_eq!(row.decision_digest(), Some(decision_digest));
+
+    Ok(())
 }
 
 #[test]
-fn equivalent_support_meaning_materializes_same_traceability_digest() {
+fn equivalent_support_meaning_materializes_same_traceability_digest(
+) -> Result<(), IdentityDerivationDenial> {
     let authored = success(materialize_intent_admission_support_traceability_report(
         ready_support(
             WorthQuerySupportContributionAuthoring::declaration_traceability(
                 "spatial.traceability",
                 "query admission support is declaration-scoped",
             ),
-        ),
+        )?,
     ));
     let direct = success(materialize_intent_admission_support_traceability_report(
         ready(
@@ -59,14 +63,16 @@ fn equivalent_support_meaning_materializes_same_traceability_digest() {
                     "spatial.traceability",
                     "query admission support is declaration-scoped",
                 ),
-            ),
-        ),
+            )?,
+        )?,
     ));
 
     assert_eq!(
         authored.decision_support_traceability_digest(),
         direct.decision_support_traceability_digest()
     );
+
+    Ok(())
 }
 
 #[test]
@@ -86,8 +92,8 @@ fn support_traceability_digest_changes_when_admitted_plan_scope_changes(
                     "spatial.traceability",
                     "support stays attached to the admitted plan",
                 ),
-            ),
-        ),
+            )?,
+        )?,
     ));
     let right = success(materialize_intent_admission_support_traceability_report(
         ready(
@@ -103,8 +109,8 @@ fn support_traceability_digest_changes_when_admitted_plan_scope_changes(
                     "spatial.traceability",
                     "support stays attached to the admitted plan",
                 ),
-            ),
-        ),
+            )?,
+        )?,
     ));
 
     assert_ne!(
@@ -117,8 +123,13 @@ fn support_traceability_digest_changes_when_admitted_plan_scope_changes(
 
 fn ready_support(
     authoring: WorthQuerySupportContributionAuthoring,
-) -> super::super::WorthQueryMaterializationReadySupportContribution<
-    WorthQueryAdmittedPlanBoundContributionTarget,
+) -> Result<
+    super::super::WorthQueryMaterializationReadySupportContribution<
+        WorthQueryAdmittedPlanBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(authoring.bind_to_admitted_plan_target(admitted_plan_target("plan-support")))
+    Ok(ready(authoring.bind_to_admitted_plan_target(
+        admitted_plan_target("plan-support"),
+    ))?)
 }

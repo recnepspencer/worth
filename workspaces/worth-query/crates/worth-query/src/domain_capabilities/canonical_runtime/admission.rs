@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -32,7 +33,10 @@ where
 
 pub(crate) fn materialize_runtime_admission_decision<T>(
     contribution: WorthQueryMaterializationReadyAdmissionContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionDecision>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionDecision>,
+    IdentityDerivationDenial,
+>
 where
     T: crate::domain_capabilities::WorthQueryAdmittedPlanContributionTargetBinding,
 {
@@ -70,9 +74,11 @@ where
             TransitionOutcome::Denied(unsupported_decision_posture_denial(
                 payload.posture(),
                 domain_contribution.request_identity().clone(),
-            ))
+            )?)
         }
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -80,9 +86,11 @@ pub fn materialize_runtime_admission_support_traceability_report(
     contribution: WorthQueryMaterializationReadyAdmissionContribution<
         WorthQueryAdmittedPlanBoundContributionTarget,
     >,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionSupportTraceabilityReport>
-{
-    match materialize_runtime_admission_support_traceability_row(contribution) {
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionSupportTraceabilityReport>,
+    IdentityDerivationDenial,
+> {
+    match materialize_runtime_admission_support_traceability_row(contribution)? {
         TransitionOutcome::Success(row) => TransitionOutcome::Success(
             WorthQueryIntentAdmissionSupportTraceabilityReport::from_rows(vec![row]),
         ),
@@ -92,6 +100,8 @@ pub fn materialize_runtime_admission_support_traceability_report(
         TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
         TransitionOutcome::Deferred(never) => match never {},
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -99,7 +109,10 @@ pub fn materialize_runtime_admission_support_traceability_row(
     contribution: WorthQueryMaterializationReadyAdmissionContribution<
         WorthQueryAdmittedPlanBoundContributionTarget,
     >,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionSupportTraceabilityRow> {
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionSupportTraceabilityRow>,
+    IdentityDerivationDenial,
+> {
     let domain_contribution = contribution.payload();
     let payload = domain_contribution.payload();
     let Some((family, entrypoint, request_digest, eligibility_digest, decision_digest)) =
@@ -112,13 +125,15 @@ pub fn materialize_runtime_admission_support_traceability_row(
     };
 
     if payload.posture() != WorthQueryAdmissionContributionPosture::SupportOnly {
-        return TransitionOutcome::Denied(unsupported_support_posture_denial(
-            payload.posture(),
-            domain_contribution.request_identity().clone(),
+        return Ok(TransitionOutcome::Denied(
+            unsupported_support_posture_denial(
+                payload.posture(),
+                domain_contribution.request_identity().clone(),
+            )?,
         ));
     }
 
-    TransitionOutcome::Success(
+    Ok(TransitionOutcome::Success(
         WorthQueryIntentAdmissionSupportTraceabilityRow::new_domain_scoped(
             "admission_local_support",
             family.as_str(),
@@ -135,7 +150,7 @@ pub fn materialize_runtime_admission_support_traceability_row(
             Some(eligibility_digest.to_string()),
             Some(decision_digest.to_string()),
         ),
-    )
+    ))
 }
 
 #[cfg(test)]
@@ -155,8 +170,8 @@ fn support_detail_label(semantic_code: &str, detail: &str) -> String {
 fn unsupported_decision_posture_denial(
     posture: WorthQueryAdmissionContributionPosture,
     request_identity: crate::evidence_identity::WorthQueryEvidenceIdentity,
-) -> WorthQueryDomainCapabilityProgressionDenial {
-    WorthQueryDomainCapabilityProgressionDenial::new(
+) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
+    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
         "admission",
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
@@ -165,15 +180,15 @@ fn unsupported_decision_posture_denial(
             "admission runtime decision materialization only supports advisory and violation postures; got `{}`",
             posture.as_str()
         ),
-    )
+    )?)
 }
 
 #[cfg(test)]
 fn unsupported_support_posture_denial(
     posture: WorthQueryAdmissionContributionPosture,
     request_identity: crate::evidence_identity::WorthQueryEvidenceIdentity,
-) -> WorthQueryDomainCapabilityProgressionDenial {
-    WorthQueryDomainCapabilityProgressionDenial::new(
+) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
+    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
         "admission",
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
@@ -182,5 +197,5 @@ fn unsupported_support_posture_denial(
             "admission support traceability materialization only supports support-only posture; got `{}`",
             posture.as_str()
         ),
-    )
+    )?)
 }

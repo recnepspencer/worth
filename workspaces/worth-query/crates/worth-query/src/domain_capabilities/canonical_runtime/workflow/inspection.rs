@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -225,14 +226,14 @@ fn missing_inspection_semantics_denial(
     target_kind: crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind,
     semantic_code: &str,
     request_identity: crate::evidence_identity::WorthQueryEvidenceIdentity,
-) -> WorthQueryDomainCapabilityProgressionDenial {
-    WorthQueryDomainCapabilityProgressionDenial::new(
+) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
+    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics,
         "workflow-preview",
         target_kind,
         request_identity,
         format!("workflow inspection materialization requires inspection semantics for `{semantic_code}`"),
-    )
+    )?)
 }
 
 #[cfg(test)]
@@ -241,12 +242,12 @@ fn inconsistent_inspection_semantics_denial(
     semantic_code: &str,
     request_identity: crate::evidence_identity::WorthQueryEvidenceIdentity,
     message: &str,
-) -> WorthQueryDomainCapabilityProgressionDenial {
-    WorthQueryDomainCapabilityProgressionDenial::new(
+) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
+    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::InconsistentCanonicalMaterializationSemantics,
         "workflow-preview",
         target_kind,
         request_identity,
         format!("{message} for `{semantic_code}`"),
-    )
+    )?)
 }
