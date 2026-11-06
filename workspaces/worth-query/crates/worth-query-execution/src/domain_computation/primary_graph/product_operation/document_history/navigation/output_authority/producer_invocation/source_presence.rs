@@ -1,4 +1,4 @@
-//! Historical identity evidence belongs to this navigation's original D.
+//! Historical identity evidence belongs to the exact private navigation candidate.
 use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryApplicationQueryAdmissionDenial as Denial,
@@ -46,17 +46,47 @@ impl HistoryProducerInvocation<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         native: &worth_relational::facade::runtime::RelationalRuntime,
         scope: &WorthQueryApplicationEntityIdentity<S, E>,
+        truth: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
         subject: &str,
     ) -> Result<(), Denial> {
         use worth_relational::facade::runtime::{
-            RelationalHistoricalSelectionReadDenial as Stop,
+            RelationalHistoricalSelectionReadDenial as Selection,
             RelationalHistoricalSourcePresence as Presence,
+            RelationalHistoricalSourceReadDenial as Stop,
         };
         let answer = self
             .restored_basis
             .native(execution, native)
+            .map_err(Stop::Selection)
             .and_then(|evidence| {
-                evidence.source_presence(execution, scope.entity_id(), scope.entity_kind())
+                if truth.descriptor()
+                    == self
+                        .restored_basis
+                        .observation()
+                        .product_observation()
+                        .basis()
+                        .relational_basis()
+                        .descriptor()
+                {
+                    evidence
+                        .source_presence(execution, scope.entity_id(), scope.entity_kind())
+                        .map_err(Stop::Selection)
+                } else {
+                    evidence.source_presence_at(
+                        execution,
+                        native,
+                        truth,
+                        runtime
+                            .runtime
+                            .primary_provider
+                            .graph
+                            .layout
+                            .installed_history_ownership(),
+                        scope.entity_id(),
+                        scope.entity_kind(),
+                    )
+                }
             });
         match answer {
             Ok(Presence::LiveInDomain) => Ok(()),
@@ -79,13 +109,42 @@ impl HistoryProducerInvocation<'_> {
                 },
                 subject,
             )),
-            Err(
-                Stop::ForeignOwner
-                | Stop::NotGraphSelection { .. }
-                | Stop::SelectedBasisMismatch { .. },
-            ) => Err(Denial::new(Kind::StaleScope, subject)),
-            Err(Stop::Execution(cause)) => Err(Denial::new(execution_kind(cause), subject)),
-            Err(Stop::Request(cause)) => Err(Denial::new(execution_kind(cause.into()), subject)),
+            Err(Stop::Selection(
+                Selection::ForeignOwner
+                | Selection::NotGraphSelection { .. }
+                | Selection::SelectedBasisMismatch { .. },
+            )) => Err(Denial::new(Kind::StaleScope, subject)),
+            Err(Stop::Ownership(cause)) => {
+                use worth_relational::facade::branch::RelationalModelOwnershipDenial as Owner;
+                let kind = match *cause {
+                    Owner::Request(cause) => execution_kind(cause.into()),
+                    Owner::Native(cause) => execution_kind(cause),
+                    Owner::Custody(
+                        worth_relational::facade::transactions::TransactionCommitError::Execution {
+                            denial,
+                            ..
+                        },
+                    ) => {
+                        let worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) = denial.kind;
+                        execution_kind(cause)
+                    }
+                    other => {
+                        return Err(Denial::new(
+                            Kind::HistoricalSourceOwnershipUnavailable {
+                                source: scope.entity_id(),
+                            },
+                            format!("{subject}: {other:?}"),
+                        ))
+                    }
+                };
+                Err(Denial::new(kind, subject))
+            }
+            Err(Stop::Selection(Selection::Execution(cause))) => {
+                Err(Denial::new(execution_kind(cause), subject))
+            }
+            Err(Stop::Selection(Selection::Request(cause))) => {
+                Err(Denial::new(execution_kind(cause.into()), subject))
+            }
         }
     }
 }

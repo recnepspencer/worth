@@ -21,7 +21,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 mod admitted;
 mod current_control;
 mod permission;
-use permission::SourceScopePosture;
+use permission::{CurrentSourceRefusal, SourceScopePosture};
 mod read_closure;
 mod same_scope;
 mod single;
@@ -178,6 +178,19 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             native,
         );
         let (scope, posture) = match scope {
+            Ok(scope) if self.history.as_ref().is_some_and(|history| history.invocation.historical_branch().is_some()) => {
+                // Resolve D privately. A C business key can name a different
+                // generation; its grant never authorizes the D entity. Failure
+                // here keeps the old C path, including its authorization order.
+                let truth = self.shared.selected().resolve_query_scope_selector_issued_with_native_access(
+                    execution, field, &value, self.request, native,
+                );
+                match truth {
+                    Ok(truth) if truth.scope().entity_id() != scope.scope().entity_id() =>
+                        (truth, SourceScopePosture::Historical(CurrentSourceRefusal::DifferentGeneration)),
+                    _ => (scope, SourceScopePosture::Current),
+                }
+            }
             Ok(scope) => (scope, SourceScopePosture::Current),
             Err(absent) if self.history.is_some() && matches!(absent.kind(),
                 crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
@@ -187,7 +200,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 let scope = self.shared.selected().resolve_query_scope_selector_issued_with_native_access(
                     execution, field, &value, self.request, native,
                 ).map_err(|_| self.record_history_refusal(Stop::Scope(absent.clone())))?;
-                (scope, SourceScopePosture::Historical(absent))
+                (scope, SourceScopePosture::Historical(CurrentSourceRefusal::Absent(absent)))
             }
             Err(stop) => return Err(self.record_history_refusal(Stop::Scope(stop)).into()),
         };

@@ -21,7 +21,13 @@ impl ApplicationFeature<Schema> for Derived {
                             DownstreamInput,
                             ApplicationFeatureInputList<
                                 RestrictedOwnedInput,
-                                ApplicationFeatureInputLeaf,
+                                ApplicationFeatureInputList<
+                                    FromFirstInput,
+                                    ApplicationFeatureInputList<
+                                        RestrictedFromFirstInput,
+                                        ApplicationFeatureInputLeaf,
+                                    >,
+                                >,
                             >,
                         >,
                     >,
@@ -127,6 +133,24 @@ root!(
     restricted_owned,
     "owned-outputs.start-restricted-owned"
 );
+root!(
+    FromFirstInput,
+    "from-first-input",
+    StartFromFirst,
+    FromFirstConnection,
+    FromFirstTree,
+    from_first,
+    "owned-outputs.start-from-first"
+);
+root!(
+    RestrictedFromFirstInput,
+    "restricted-from-first-input",
+    StartRestrictedFromFirst,
+    RestrictedFromFirstConnection,
+    RestrictedFromFirstTree,
+    restricted_from_first,
+    "owned-outputs.start-restricted-from-first"
+);
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
@@ -138,7 +162,16 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 ChildTree,
                 (
                     RestrictedTree,
-                    (UpstreamTree, (DownstreamTree, RestrictedOwnedTree)),
+                    (
+                        UpstreamTree,
+                        (
+                            DownstreamTree,
+                            (
+                                RestrictedOwnedTree,
+                                (FromFirstTree, RestrictedFromFirstTree),
+                            ),
+                        ),
+                    ),
                 ),
             ),
         ),
@@ -162,6 +195,10 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .finish_action()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, Derived>()
+                .conditional_operation::<from_first::initial::Operation>()
+                .conditional_operation::<from_first::preserve::Operation>()
+                .conditional_operation::<restricted_from_first::initial::Operation>()
+                .conditional_operation::<restricted_from_first::preserve::Operation>()
                 .conditional_operation::<first::initial::Operation>()
                 .conditional_operation::<first::preserve::Operation>()
                 .conditional_operation::<second::initial::Operation>()

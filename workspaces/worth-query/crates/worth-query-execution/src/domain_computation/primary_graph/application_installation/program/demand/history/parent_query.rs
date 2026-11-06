@@ -15,15 +15,13 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryIntent, ApplicationQueryScopeResolution,
 };
 
-// Only this owner dispatches admission; neither variant can become the other.
-enum Parent<
-    'a,
-    S: ApplicationSchema,
-    P: ApplicationProgramDefinition<S>,
-    D: WorthQueryApplicationOutputDemand<S>,
-> {
-    Settled(&'a WorthQuerySettledHistoryProgramOutput<S, P, D>),
-    Verified(&'a WorthQueryVerifiedHistoryParent<S, P, D>),
+mod parent;
+use parent::Parent;
+mod discovery;
+#[derive(Clone, Copy)]
+enum ParentQueryPurpose {
+    ChildSource,
+    Discovery,
 }
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
     WorthQueryProgramApplicationRuntime<S, P>
@@ -55,6 +53,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         self.execute_parent_query::<D, C, B>(
             phase,
             Parent::Settled(parent),
+            ParentQueryPurpose::ChildSource,
             authority,
             basis,
             minimum,
@@ -90,6 +89,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         self.execute_parent_query::<D, C, B>(
             phase,
             Parent::Verified(parent),
+            ParentQueryPurpose::ChildSource,
             authority,
             basis,
             minimum,
@@ -102,6 +102,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         parent: Parent<'_, S, P, D>,
+        purpose: ParentQueryPurpose,
         authority: &'authority WorthQueryHistoryOutputAuthority<'phase, 'scope>,
         basis: &'authority std::sync::Arc<WorthQueryApplicationReadObservation>,
         minimum: &'authority WorthQueryApplicationReadObservation,
@@ -124,6 +125,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         let (result, meaning, query) = self.with_parent_query_admission::<D, C, B, _>(
             phase,
             &parent,
+            purpose,
             authority,
             basis,
             minimum,
@@ -163,6 +165,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         parent: &Parent<'_, S, P, D>,
+        purpose: ParentQueryPurpose,
         authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
         basis: &std::sync::Arc<WorthQueryApplicationReadObservation>,
         minimum: &WorthQueryApplicationReadObservation,
@@ -204,7 +207,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         let binding = schema
             .installed_query_binding::<B>()
             .map_err(|cause| Denial::Demand(installation(cause.kind())))?;
-        let meaning = self.parent_query_meaning::<D, C, B>(&binding)?;
+        let meaning = self.parent_query_meaning::<D, C, B>(&binding, purpose)?;
         let selected = runtime.select_application_read_observation(phase, basis)
             .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ProductAdmission(cause)))?
             .prepare_shared_query_basis().map_err(|(_, cause)| Denial::Resource(cause))?;
@@ -241,6 +244,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             S,
             B,
         >,
+        purpose: ParentQueryPurpose,
     ) -> Result<ParentQueryMeaning, Denial>
     where
         D: WorthQueryApplicationOutputDemand<S>,
@@ -261,11 +265,13 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                 .into_external();
         let discovery_binding =
             crate::equality_type_id::EqualityTypeId::of::<DiscoveryBinding<S, C>>().into_external();
-        let family = if executed_binding == output_binding
+        let family = if matches!(purpose, ParentQueryPurpose::ChildSource)
+            && executed_binding == output_binding
             && binding.query().identity() == output.query().identity()
         {
             <Family<S, ConnectionDemand<S, C>> as WorthQueryProducerOutputFamily<S>>::IDENTITY
-        } else if executed_binding == discovery_binding
+        } else if matches!(purpose, ParentQueryPurpose::Discovery)
+            && executed_binding == discovery_binding
             && binding.query().identity() == discovery.query().identity()
         {
             <Family<S, D> as WorthQueryProducerOutputFamily<S>>::IDENTITY
@@ -278,61 +284,6 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             discovery_binding,
             executed_binding,
         })
-    }
-}
-
-impl<
-        S: ApplicationSchema + 'static,
-        P: ApplicationProgramDefinition<S>,
-        D: WorthQueryApplicationOutputDemand<S>,
-    > Parent<'_, S, P, D>
-{
-    fn validate<C>(
-        &self,
-        application: &WorthQueryProgramApplicationRuntime<S, P>,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
-        basis: &WorthQueryApplicationReadObservation,
-        minimum: &WorthQueryApplicationReadObservation,
-    ) -> Result<Option<Artifact>, Denial>
-    where
-        C: ApplicationConnectionShape<S>,
-        ConnectionBinding<S, C>: WorthQueryApplicationDependentOutputConnection<S, RootDemand = D>,
-    {
-        match self {
-            Parent::Settled(parent) => {
-                if !parent.profile.same_custody(authority.profile())
-                    || !parent.profile.matches_program(application)
-                    || !std::sync::Arc::ptr_eq(&parent.original, authority.original())
-                {
-                    return Err(foreign());
-                }
-                let artifact = application
-                    .validate_dependent_output_parent::<D, C>(&parent.settled)
-                    .map_err(Denial::Demand)?;
-                application
-                    .select_dependent_output_basis(execution, &parent.settled, basis, minimum)
-                    .map_err(Denial::Demand)?;
-                Ok(artifact)
-            }
-            Parent::Verified(parent) => {
-                let artifact = application
-                    .validate_verified_history_parent::<D, C>(parent, authority)
-                    .map_err(Denial::Demand)?;
-                let original = parent.custody().original();
-                if basis.branch_incarnation() != original.branch_incarnation()
-                    || minimum.branch_incarnation() != original.branch_incarnation()
-                    || basis.branch_identity() != original.branch_identity()
-                    || minimum.branch_identity() != original.branch_identity()
-                    || basis.selected_commit().ordinal()
-                        < parent.observation().selected_commit().ordinal()
-                    || basis.selected_commit().ordinal() < minimum.selected_commit().ordinal()
-                {
-                    return Err(foreign());
-                }
-                Ok(artifact)
-            }
-        }
     }
 }
 

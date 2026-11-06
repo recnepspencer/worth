@@ -97,7 +97,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         SourceValue<S, ConnectionDemand<S, C>>: WorthQueryApplicationProjection<S, SourceQuery<S, ConnectionDemand<S, C>>>,
 {
         let (verified, _, _) = self.with_parent_query_admission::<D, C, Source<S, ConnectionDemand<S, C>>, _>(
-            phase, &parent, authority, basis, minimum, external, request, demand.source_intent(),
+            phase, &parent, ParentQueryPurpose::ChildSource, authority, basis, minimum, external, request, demand.source_intent(),
             |_, execution, plan, native, artifact| {
                 let source = plan.scope().entity_id();
                 let partition = *plan.parameter_binding_identity().bytes();

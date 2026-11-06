@@ -26,7 +26,7 @@ mod historical_basis_reads;
 mod historical_selection;
 pub use historical_selection::{
     RelationalHistoricalSelectionRead, RelationalHistoricalSelectionReadDenial,
-    RelationalHistoricalSourcePresence,
+    RelationalHistoricalSourcePresence, RelationalHistoricalSourceReadDenial,
 };
 mod kind_scans;
 mod pinned;

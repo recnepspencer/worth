@@ -166,6 +166,13 @@ fn changed_targets(
 
 struct CandidateRead<'a, 'runtime>(&'a StructuralRelationView<'runtime>);
 impl Read for CandidateRead<'_, '_> {
+    fn charge_work(&mut self, units: u64) -> Result<(), RelationalModelOwnershipDenial> {
+        self.0
+            .read_budget()
+            .checkpoint(units)
+            .map_err(RelationalModelOwnershipDenial::Traversal)
+    }
+
     fn kind(&mut self, entity: EntityId) -> Result<Option<KindId>, RelationalModelOwnershipDenial> {
         self.0
             .live_entity_kind(entity)

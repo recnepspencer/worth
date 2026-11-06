@@ -73,7 +73,13 @@ impl<'a, S: ApplicationSchema, P, I, E> SelectedIssuedAccessRoot<'a, S, P, I, E>
                 )
             },
             |relational| {
-                history.require_historical_source(execution, relational, self.scope, subject)?;
+                let truth = self
+                    .truth
+                    .as_ref()
+                    .expect("historical admission binds its exact D");
+                history.require_historical_source(
+                    execution, relational, self.scope, truth.root, runtime, subject,
+                )?;
                 // D may have progressed while another family settled. Its exact
                 // data basis must still contain this generation and identity.
                 let truth = self

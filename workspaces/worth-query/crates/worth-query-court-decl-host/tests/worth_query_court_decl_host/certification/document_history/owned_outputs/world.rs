@@ -19,6 +19,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        from_first::contracts(contracts)?;
+        restricted_from_first::contracts(contracts)?;
         first::contracts(contracts)?;
         second::contracts(contracts)?;
         child::contracts(contracts)?;
@@ -36,6 +38,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<edit::Binding, _>(edit::Handler)?;
         setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
         setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;
+        from_first::install(setup)?;
+        restricted_from_first::install(setup)?;
         first::install(setup)?;
         match configuration.second_derivation {
             Some(derive) => second::install_with_derivation(setup, derive)?,

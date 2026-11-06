@@ -10,7 +10,11 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding
 
 pub(super) enum SourceScopePosture {
     Current,
-    Historical(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
+    Historical(CurrentSourceRefusal),
+}
+pub(super) enum CurrentSourceRefusal {
+    Absent(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
+    DifferentGeneration,
 }
 
 impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
@@ -137,9 +141,37 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     cause.kind(),
                     WorthQueryApplicationQueryAdmissionDenialKind::Authorization(_)
                 ) {
-                    return self.record_history_refusal(Stop::Scope(absent.clone()));
+                    return self.record_history_refusal(match absent {
+                        CurrentSourceRefusal::Absent(absent) => Stop::Scope(absent.clone()),
+                        CurrentSourceRefusal::DifferentGeneration => Stop::Preparation {
+                            phase: SourceQueryPreparationPhase::Permission,
+                            cause: WorthQueryApplicationQueryAdmissionDenial::new(
+                                WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
+                                format!(
+                                    "{}: {}",
+                                    self.history
+                                        .as_ref()
+                                        .expect("historical source")
+                                        .invocation
+                                        .family(),
+                                    query.name()
+                                ),
+                            ),
+                        },
+                    });
                 }
             }
+            // Only these identity causes are issued after C authorization.
+            // A stopped permission observation must not disclose a privately
+            // resolved generation through its diagnostic attachment.
+            let cause = if matches!(posture, SourceScopePosture::Historical(_))
+                && !matches!(cause.kind(),
+                    WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceNotLive { .. }
+                    | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceKindMismatch { .. }
+                    | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceOutsideDomain { .. }
+                    | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceOwnershipUnavailable { .. }) {
+                cause.without_historical_source()
+            } else { cause };
             self.record_history_refusal(Stop::Preparation {
                 phase: SourceQueryPreparationPhase::Permission,
                 cause,

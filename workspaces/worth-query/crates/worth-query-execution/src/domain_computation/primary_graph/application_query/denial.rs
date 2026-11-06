@@ -41,6 +41,10 @@ pub enum WorthQueryApplicationQueryAdmissionDenialKind {
     HistoricalSourceOutsideDomain {
         source: worth_relational::facade::identity::EntityId,
     },
+    /// Current recorded ownership could not be proved for this exact source.
+    HistoricalSourceOwnershipUnavailable {
+        source: worth_relational::facade::identity::EntityId,
+    },
     /// The request scope is not the kind the query binding expects.
     ScopeTypeMismatch,
     /// Authorization refused the read; the full denial is attached.
@@ -155,6 +159,12 @@ impl WorthQueryApplicationQueryAdmissionDenial {
         family: &'static str,
     ) -> Self {
         self.historical_source = Some((source, family));
+        self
+    }
+    pub(in crate::domain_computation::primary_graph) fn without_historical_source(
+        mut self,
+    ) -> Self {
+        self.historical_source = None;
         self
     }
     pub fn historical_source(

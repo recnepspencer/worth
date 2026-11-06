@@ -68,11 +68,11 @@ where
                 .execute_in_advancement(phase).map(|result| EdgeDiscoveryCustody::Ordinary(result.into_output_demand_source()))
                 .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery),
             (ParentAuthorityKind::History(parent), Some(history)) if history.authority.uses_owned_model_graph() => application
-                .execute_owned_history_dependent_output_query::<ParentDemand, Connection, DiscoveryBinding<Schema, Connection>>(
+                .execute_owned_history_discovery::<ParentDemand, Connection>(
                     phase, &worth_query_execution::publication_boundary::program_publication_access(),
                     parent, history.authority, &self.basis.retained, &self.minimum_observation.retained,
                     request.principal, request.scope, intent,
-                ).and_then(|read| read.into_discovery()).map(EdgeDiscoveryCustody::History).map_err(history_query_denial),
+                ).map(EdgeDiscoveryCustody::History).map_err(history_query_denial),
             (ParentAuthorityKind::History(parent), Some(history)) => request.query(intent)
                 .with_admitted_query(phase, |_, binding, external, control| {
                     let read = application.execute_history_dependent_output_query::<ParentDemand, Connection, DiscoveryBinding<Schema, Connection>>(

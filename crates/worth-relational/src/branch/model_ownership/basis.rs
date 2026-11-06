@@ -11,6 +11,29 @@ mod custody_read;
 mod graph_read;
 
 impl RelationalRuntime {
+    pub(crate) fn observe_model_source_boundary(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+        ownership: &RelationalModelOwnership,
+        subject: EntityId,
+        expected_kind: KindId,
+        boundary_work: u64,
+        contains: &mut dyn FnMut(EntityId, KindId) -> bool,
+    ) -> Result<Option<(KindId, Option<EntityId>, bool)>, RelationalModelOwnershipDenial> {
+        let (observed, _memory) = observe(self, execution, basis, |read| {
+            let Some(kind) = read.kind(subject)? else {
+                return Ok(None);
+            };
+            if kind != expected_kind {
+                return Ok(Some((kind, None, false)));
+            }
+            let (owner, within) =
+                ownership.owner_with_boundary(read, subject, Some((boundary_work, contains)))?;
+            Ok(Some((kind, owner, within)))
+        })?;
+        Ok(observed)
+    }
     pub fn observe_model_owner(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -102,6 +125,14 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
 }
 
 impl Read for BasisRead<'_, '_, '_, '_, '_, '_> {
+    fn charge_work(&mut self, units: u64) -> Result<(), RelationalModelOwnershipDenial> {
+        crate::execution::request_stage::checkpoint(self.context, units).map_err(|stop| {
+            RelationalModelOwnershipDenial::Request(worth_execution::WorkCeilingDenial::Stopped(
+                stop,
+            ))
+        })
+    }
+
     fn kind(&mut self, entity: EntityId) -> Result<Option<KindId>, RelationalModelOwnershipDenial> {
         self.charge(1)?;
         self.demand(entity.partition_id)?;

@@ -6,7 +6,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHistoryOutputDiscovery, WorthQueryHistoryOutputReadDenial as Denial,
     WorthQueryVerifiedHistoryParent,
 };
-use worth_query_declaration::facade::application_query::ApplicationQueryScopeResolution;
 
 type Query<S, C> = <DiscoveryBinding<S, C> as ApplicationQueryBinding<S>>::Query;
 type Rows<S, C> = QueryRows<S, DiscoveryBinding<S, C>>;
@@ -14,34 +13,6 @@ type Rows<S, C> = QueryRows<S, DiscoveryBinding<S, C>>;
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
     WorthQueryProgramApplicationRuntime<S, P>
 {
-    pub fn execute_verified_history_discovery<D, C>(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        parent: &WorthQueryVerifiedHistoryParent<S, P, D>,
-        authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
-        external: &WorthQueryAuthenticatedExternalPrincipal<S>,
-        request: &WorthQueryRequestScope,
-        intent: <ConnectionBinding<S, C> as WorthQueryApplicationDependentOutputConnection<S>>::Discovery,
-    ) -> Result<WorthQueryHistoryOutputDiscovery<Query<S, C>, Rows<S, C>>, Denial>
-    where
-        D: WorthQueryApplicationOutputDemand<S>,
-        C: ApplicationConnectionShape<S>,
-        ConnectionBinding<S, C>: WorthQueryApplicationDependentOutputConnection<S, RootDemand = D>,
-        <DiscoveryBinding<S, C> as ApplicationQueryBinding<S>>::ScopeBinding:
-            ApplicationQueryScopeResolution<
-                S,
-                <DiscoveryBinding<S, C> as ApplicationQueryBinding<S>>::PrincipalIdentity,
-            >,
-        Rows<S, C>: WorthQueryApplicationProjection<S, Query<S, C>>,
-    {
-        let basis = parent.observation();
-        self.execute_verified_history_dependent_output_query::<D, C, DiscoveryBinding<S, C>>(
-            phase, access, parent, authority, basis, basis, external, request, intent,
-        )?
-        .into_discovery()
-    }
-
     pub fn authorize_verified_history_discovery<D, C>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

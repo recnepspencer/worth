@@ -316,3 +316,48 @@ family!(
     RestrictedOwnedTree,
     |value: u64| value * 100
 );
+
+family!(
+    from_first,
+    SourceScopeCascade,
+    source,
+    FirstOutput,
+    FirstFacts,
+    FirstKey,
+    FirstValue,
+    first_output,
+    "from-first",
+    "owned-outputs.from-first.initial",
+    "owned-outputs.from-first.preserve",
+    FromFirstInitial,
+    FromFirstPreserve,
+    ChildOutput,
+    ChildFacts,
+    ChildKey,
+    ChildValue,
+    ChildOfFirst,
+    FromFirstTree,
+    |value: u64| value * 100
+);
+family!(
+    restricted_from_first,
+    SourceScopeCascade,
+    source,
+    FirstOutput,
+    FirstFacts,
+    FirstKey,
+    FirstValue,
+    first_discovery,
+    "restricted-from-first",
+    "owned-outputs.restricted-from-first.initial",
+    "owned-outputs.restricted-from-first.preserve",
+    RestrictedFromFirstInitial,
+    RestrictedFromFirstPreserve,
+    ChildOutput,
+    ChildFacts,
+    ChildKey,
+    ChildValue,
+    ChildOfFirst,
+    RestrictedFromFirstTree,
+    |value: u64| value * 100
+);

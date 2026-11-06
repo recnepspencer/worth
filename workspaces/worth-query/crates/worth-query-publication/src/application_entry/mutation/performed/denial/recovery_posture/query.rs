@@ -213,6 +213,7 @@ fn admission_posture(kind: AdmissionKind) -> WorthQueryRequiredOutputRecoveryPos
         | AdmissionKind::HistoricalSourceNotLive { .. }
         | AdmissionKind::HistoricalSourceKindMismatch { .. }
         | AdmissionKind::HistoricalSourceOutsideDomain { .. }
+        | AdmissionKind::HistoricalSourceOwnershipUnavailable { .. }
         | AdmissionKind::ScopeTypeMismatch
         | AdmissionKind::BasisUnsupported
         | AdmissionKind::ForeignBasis

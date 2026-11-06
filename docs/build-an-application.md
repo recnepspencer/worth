@@ -2080,8 +2080,14 @@ before producer work. A healthy discovered child also verifies without projectin
 source, whether its parent was verified or genuinely regenerated. It keeps
 read-only parent custody for further discovery, with no synthetic settlement;
 closed traversal reauthorizes each source at C. The final currentness pass
-checks all restored routes at the one endpoint. Sources newly created by
-fallback and all-tree recording remain under qualification.
+checks all restored routes at the one endpoint. A fallback can create a child
+source at a later private candidate. Its identity and liveness are checked at
+that exact candidate, and declared ownership or current publication custody must
+connect it to the selected domain. A matching business key at C can name a
+different generation; that older entity cannot supply its permission. Every
+grant still comes from C. A transferred member authorizes its selected subset,
+including new publication children, without authorizing the outside owner's
+unrelated members. All-tree edit recording remains under qualification.
 
 To bound selectable history across all futures, declare separate
 `ApplicationHistoryWindowBinding` and `ApplicationHistoryBookmarkBinding`
@@ -2258,8 +2264,10 @@ never supplies the child list. A parent matches its family, full-generation scop
 and admitted parameter partition. Discovery can read an output scope restored
 only at the exact private candidate D: current C still supplies every principal,
 permission and request fact. A denied audience receives no additional historical
-existence information. Corrupt evidence, changed discovery meaning, later child
-source scopes and multi-tree edit recording remain under qualification. See the
+existence information. The same rule covers sources created by a real fallback
+at a progressed private candidate, including a new generation of C's business
+key. Corrupt lineage refuses typed; changed discovery meaning takes the real
+parent fallback. Multi-tree edit recording remains under qualification. See the
 [owned-model plan](../plans/WORTH-query/history-owned-models.md).
 
 To record an isolated edit, consume the attached document with

@@ -198,6 +198,20 @@ where
         .into_field_parts(principal.principal().principal_identity());
     let scope = selected.resolve_mutation_scope_issued(execution, field, value, request);
     let scope = match scope {
+        Ok(scope) if history.is_some_and(|history| history.admits_historical_truth(shared.selected())) => {
+            let (truth_field, truth_value) = <_ as ApplicationMutationInputScope<Schema, Mutation<Schema, Binding>>>::scope_for_binding(input)
+                .into_field_parts(principal.principal().principal_identity());
+            if let Ok(truth_scope) = shared.selected().resolve_mutation_scope_issued(execution, truth_field, truth_value, request)
+                && truth_scope.scope().entity_id() != scope.scope().entity_id() {
+                require_selected_heads::<Schema, Binding>(runtime, shared, control, recovery)?;
+                let operation = authorize_historical_control_mutation_on_selected::<Schema, Mutation<Schema, Binding>, MutationScope<Schema, Binding>>(
+                    execution, runtime, shared, control.ok_or(Stop::ForeignSelectedRuntime)?, &current, &installed.prepared_graph,
+                    &principal, &truth_scope, history.expect("historical source"), request,
+                ).map_err(Stop::CurrentOperation)?;
+                return Ok(PreparedSelectedPublicMutation { principal, operation });
+            }
+            scope
+        }
         Ok(scope) => scope,
         Err(cause) if history.is_some_and(|history| history.admits_historical_truth(shared.selected()))
             && cause.kind() == crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(

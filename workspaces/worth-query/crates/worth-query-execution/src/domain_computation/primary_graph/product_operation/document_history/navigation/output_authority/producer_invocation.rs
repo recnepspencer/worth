@@ -30,6 +30,10 @@ pub(in crate::domain_computation::primary_graph) struct HistoryProducerCutover<'
 }
 
 impl HistoryProducerCutover<'_> {
+    pub(in crate::domain_computation::primary_graph) fn uses_owned_model_graph(&self) -> bool {
+        self.invocation.restored_basis.selected().is_some()
+    }
+
     pub(in crate::domain_computation) fn current(&self) -> &ProductBranchObservation {
         self.invocation.current.observation()
     }

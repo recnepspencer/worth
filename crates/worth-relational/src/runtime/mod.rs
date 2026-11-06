@@ -39,10 +39,10 @@ pub use crate::visibility::materialization::read_records::{
     RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
     RelationalFieldSupportComparisonDenial, RelationalHistoricalSelectionRead,
     RelationalHistoricalSelectionReadDenial, RelationalHistoricalSourcePresence,
-    RelationalPinnedEntityMetadata, RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
-    RelationalProjectedFieldObservation, RelationalRelationMetadata,
-    RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial, VisibilityProjectionView,
-    VisibilityReadContext,
+    RelationalHistoricalSourceReadDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
+    RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
+    RelationalRelationMetadata, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
+    VisibilityProjectionView, VisibilityReadContext,
 };
 pub use crate::visibility::retention::{
     RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalStoppedRetentionPass,

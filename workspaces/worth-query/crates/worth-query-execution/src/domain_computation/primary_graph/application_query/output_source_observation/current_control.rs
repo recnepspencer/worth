@@ -33,6 +33,7 @@ impl SourceQueryObservationStop {
                     | Admission::HistoricalSourceNotLive { .. }
                     | Admission::HistoricalSourceKindMismatch { .. }
                     | Admission::HistoricalSourceOutsideDomain { .. }
+                    | Admission::HistoricalSourceOwnershipUnavailable { .. }
                     | Admission::ForeignPrincipal
                     | Admission::ForeignScope
                     | Admission::StaleBasis

@@ -29,6 +29,7 @@ worth_query_field!(pub SecondValue for Schema, SecondOutput, SecondFacts: u64 =>
 worth_query_field!(pub ChildKey for Schema, ChildOutput, ChildFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_field!(pub ChildValue for Schema, ChildOutput, ChildFacts: u64 => U64ApplicationValueBinding, read_write, equality);
 worth_query_relation!(pub ChildOf in Schema, Member => ChildOutput; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub ChildOfFirst in Schema, FirstOutput => ChildOutput; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub MappingTarget in Schema, Mapping => Principal; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub ModelMember in Schema, Model => Member; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub UpstreamOf in Schema, Member => Model; integrity = same_context_unbounded_retain_dangling);
@@ -75,6 +76,11 @@ fn declare(
             Member::reference(),
             ChildOutput::reference(),
         )
+        .relation(
+            ChildOfFirst::reference(),
+            FirstOutput::reference(),
+            ChildOutput::reference(),
+        )
         .principal_binding(Actor::reference())
         .relation(
             MappingTarget::reference(),
@@ -105,9 +111,11 @@ fn declare(
     let schema = query::declare(member_delete::declare(member_edit::declare(edit::declare(
         navigation::declare(schema),
     ))));
-    restricted_owned::declare(downstream::declare(upstream::declare(restricted::declare(
-        child::declare(second::declare(first::declare(permission::declare(schema)))),
-    ))))
+    from_first::declare(restricted_from_first::declare(restricted_owned::declare(
+        downstream::declare(upstream::declare(restricted::declare(child::declare(
+            second::declare(first::declare(permission::declare(schema))),
+        )))),
+    )))
     .application_history(
         ApplicationHistoryDefinition::<Schema, History>::for_binding(
             ApplicationQueryDisclosureContract::public(),

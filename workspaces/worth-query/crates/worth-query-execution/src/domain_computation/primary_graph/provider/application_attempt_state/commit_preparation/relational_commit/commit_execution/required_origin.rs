@@ -18,6 +18,7 @@ pub(super) fn bind(
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     required: Option<&PreparedPrerequisiteClaims>,
+    owned_history: bool,
 ) -> Result<
     ValidatedRelationalProposal,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -108,7 +109,10 @@ pub(super) fn bind(
         })
         .map_err(transaction_commit_stop)?;
     let warm = retired.or_else(|| head.as_ref().and_then(|head| head.warm_publication()));
-    let absence = if warm.is_some() {
+    // An owned selection can explicitly remove this route while Query still
+    // retains the future's warm lineage. Only Native's exact absence custody
+    // can authorize Birth at this image; that warm row cannot select succession.
+    let absence = if warm.is_some() && !owned_history {
         None
     } else {
         provider
@@ -123,6 +127,7 @@ pub(super) fn bind(
             })
             .map_err(transaction_commit_stop)?
     };
+    let warm = if absence.is_some() { None } else { warm };
     if absence.is_some() && !all_created {
         // An ordinary producer may preserve an authored carrier without ever
         // owning its birth. Native has established that this route has no

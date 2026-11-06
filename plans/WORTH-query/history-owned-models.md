@@ -1619,3 +1619,110 @@ formatting,36 dirty Rust line caps and whitespace pass. The primary structural
 pass accepts explicit authority inputs and real court journeys; no independent
 review is claimed. This completes healthy-child source avoidance, not #57 as a
 whole. Progressed producer-created source scopes and recording remain next.
+
+### Progressed producer-created source: boundary and implementation plan
+
+The healthy-child checkpoint is b81bf6f683. The next adversarial case is a real
+recorded edit whose outputs did not exist at the preceding step. Selecting the
+preceding step retires those outputs; the root's actual Initial fallback creates
+a new full-generation output with the same business key. That output becomes a
+child producer's source. C's same key may still resolve to the retired future's
+different generation. Resolving only at C is insufficient; checking presence
+only in the original restored D0 is also insufficient for the actual progressed
+private D1. Neither condition permits taking a grant from D.
+
+Native already owns exact-basis declared-relation and current-publication custody
+traversal in branch/model_ownership. Its read and candidate paths share the same
+owner algorithm. Historical source presence currently checks only the sealed
+restoration capsule's D0. Query's admitted historical access retains the actual
+truth product/root/snapshot and performs an exact truth freshness check after C
+authorization. Extend that existing handoff rather than inventing an ownership
+reader or treating matching business keys / branch incarnation as identity.
+Transferred selected members must remain anchors to their own selected subset;
+a transferred member must not authorize all other records of its B document.
+
+First create a generic public fixture using the actual fixed-action history
+recorder, with a root Model producer and a child whose source is FirstOutput.
+Attach before any outputs exist, record a Model3-to5 edit with its real tree,
+then select the pre-edit step. Assert the root's fresh identity differs from the
+future's source, the child derives from value30 rather than50, and redo restores
+the future's original identities without contacts. Run serial and worker. A
+protected child source must keep C permission and no unauthorized projection or
+selection effect. Establish the real refusal before changing production.
+
+Then repair the exact owners exposed by that court. Source scope admission must
+use the candidate's actual full generation when C's selector finds a different
+one, while preserving the existing C path for the same generation and retaining
+nondisclosing C refusals. Native must validate liveness and declared/custody
+membership at the exact progressed basis through its ownership traversal and
+sealed selected boundary. Query may pass only the candidate selected inside
+this atomic qualification; it never adopts D first. Add retired-at-progressed-D,
+foreign-boundary and worker evidence and mutation of C-only identity, D grants
+and omitted progressed liveness. Requalify public history, Native ownership,
+facades, formatting and scoped structural laws. No new format, alternate
+producer engine, CAD type or saved discovery artifact is involved.
+
+The real fixed edit now records both outputs successfully. The first valid red
+run (d1214-generated-source-red-3.log) stops earlier than source admission:
+First Initial is given the future's warm Query publication as predecessor,
+although Native's selected route is HistoricalAbsence. Native correctly refuses
+`predecessor is not the publication selected at the native before image`.
+The existing Native readmit_required_output_route_absence already issues exact
+absence custody for HistoricalAbsence and the existing Birth posture consumes
+it. Query required_origin::bind currently skips that owner whenever a warm head
+exists. For owned-history producer cutover, consult the actual Native absence
+owner even with a warm Query head and let its proof select Birth. A positive
+Native route keeps ordinary succession. ScopeEntityRecord and ordinary producer
+entrances retain their existing ordering. This is a prerequisite owner repair,
+not a new origin or relaxation of predecessor validation. The same public
+serial/worker court will qualify it before exposing the next admission refusal.
+
+The actual public journey exposed both generation-collision owners: Query source
+intent admission and the producer's mutation-scope resolution. Each now resolves
+the private truth generation only under the actual owned-navigation posture.
+The same full generation at C uses its old path. C supplies all permissions; D
+only supplies the exact source and liveness. Source presence now consumes that
+actual progressed candidate through Native's existing ownership traversal and
+the sealed selection boundary. The selected transferred member is an anchor;
+other members of its outside owner are not. Retiring a selected member at D2
+does not inherit D0 liveness, and retaining D1 never reads today's D2 instead.
+Native's source-read denial is separate from general selection/currentness, so
+this posture does not broaden unrelated reuse. Nested custody execution stops
+retain their actual control cause when Query translates source admission.
+
+The public fixture records a genuine fixed edit with root and child output
+publications, selects its pre-output step, derives3000 from a newly created
+First30 rather than C's First50 generation, and redoes to the original recorded
+First50 and child5000 identities with zero contacts. Its protected version
+refuses before protected projection or new-generation diagnostics and leaves
+the document selected at C. Both run in serial and worker-only modes. Native
+serial/worker courts prove selected transferred-subset membership, exact D1/D2
+liveness, a wrong kind, an older basis and bounded request refusal. The initial
+pristine runs pass183 public history and58 Native ownership courts.
+
+Seven compiled mutations fail their courts and restore every edited byte to
+the same SHA-256: prefer a warm Query head over Native absence, resolve Query
+identity only at C, resolve producer mutation identity only at C, actually read
+grants at D, reuse selected D0 liveness at retired D2, admit every other B member,
+and admit a basis older than the atomic restoration. The JSON ledger is
+`build-cache/history53-d1207/d1214-progressed-source-mutations-results.json`.
+An additional purpose court distinguishes parent discovery from child source
+when both use the identical installed query binding. Final pristine reruns and
+scoped checks remain pending for this checkpoint.
+
+The shared-binding purpose courts pass in serial and worker-only modes. Removing
+the explicit purpose guard compiles and fails both by misnaming discovery as the
+child family (`restricted-from-first` instead of `first`). The source is restored
+to SHA-256 `82d7983404242dc1a4720f0a551a73dede5b9bc75987755c69d241807dfdb4bf`.
+
+The checkpoint's final pristine run passes192 history-related public courts
+(185 certification plus7 cost courts), with2 intentionally ignored cost cases;
+Native ownership passes58. Boundary/context, rustfmt,45 dirty Rust line caps and
+whitespace pass. Primary structural review keeps the Native traversal owner,
+separate source denial, explicit query purpose and authentic continuation
+custody; no independent review is claimed. The D-grants mutant is caught at
+the required early C admission boundary; a later stale-authorization fence still
+refuses the mutated read, so it does not demonstrate an unauthorized success.
+The precise JSON and logs retain that distinction. The private-source stopped
+permission diagnostic scrub remains a targeted follow-up court before overall
+handoff; no completed issue or final workspace qualification is claimed here.

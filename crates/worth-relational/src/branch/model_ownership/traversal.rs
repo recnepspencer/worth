@@ -2,6 +2,7 @@
 use super::*;
 
 pub(super) trait Read {
+    fn charge_work(&mut self, units: u64) -> Result<(), RelationalModelOwnershipDenial>;
     fn kind(&mut self, entity: EntityId) -> Result<Option<KindId>, RelationalModelOwnershipDenial>;
     fn adjacent(
         &mut self,
@@ -20,13 +21,28 @@ impl RelationalModelOwnership {
         read: &mut (impl Read + ?Sized),
         subject: EntityId,
     ) -> Result<Option<EntityId>, RelationalModelOwnershipDenial> {
+        self.owner_with_boundary(read, subject, None)
+            .map(|(owner, _)| owner)
+    }
+    pub(super) fn owner_with_boundary(
+        &self,
+        read: &mut (impl Read + ?Sized),
+        subject: EntityId,
+        mut boundary: Option<(u64, &mut dyn FnMut(EntityId, KindId) -> bool)>,
+    ) -> Result<(Option<EntityId>, bool), RelationalModelOwnershipDenial> {
         if read.kind(subject)?.is_none() {
             return Err(RelationalModelOwnershipDenial::EntityUnavailable(subject));
         }
         let mut owner = None;
+        let mut within = false;
         for domain in &self.domains {
             for entity in walk(read, subject, false, &domain.relations)? {
-                if read.kind(entity)? == Some(domain.root) {
+                let kind = read.kind(entity)?;
+                if let (Some((work, contains)), Some(kind)) = (boundary.as_mut(), kind) {
+                    read.charge_work(*work)?;
+                    within |= contains(entity, kind);
+                }
+                if kind == Some(domain.root) {
                     if let Some(first_owner) = owner {
                         if first_owner != entity {
                             return Err(RelationalModelOwnershipDenial::Conflict(
@@ -39,7 +55,7 @@ impl RelationalModelOwnership {
                 }
             }
         }
-        Ok(owner)
+        Ok((owner, within))
     }
 }
 

@@ -210,6 +210,7 @@ where
             runtime,
             history,
             scope.scope(),
+            products.mutation.selected().product().relational_basis(),
             operation.operation(),
         )?;
     }

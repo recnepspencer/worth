@@ -92,6 +92,7 @@ where
             | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceNotLive { .. }
             | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceKindMismatch { .. }
             | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceOutsideDomain { .. }
+            | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceOwnershipUnavailable { .. }
             | WorthQueryApplicationQueryAdmissionDenialKind::ForeignScope
             | WorthQueryApplicationQueryAdmissionDenialKind::ScopeTypeMismatch => {
                 self.acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::StaleScope)

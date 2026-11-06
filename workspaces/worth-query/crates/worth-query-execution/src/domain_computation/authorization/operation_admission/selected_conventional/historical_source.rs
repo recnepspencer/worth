@@ -10,6 +10,7 @@ pub(super) fn require_source<S: ApplicationSchema, E>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     history: HistoryProducerInvocation<'_>,
     scope: &WorthQueryApplicationEntityIdentity<S, E>,
+    truth: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     subject: &str,
 ) -> Result<(), SelectedConventionalAdmissionStop> {
     use crate::domain_computation::authorization::{
@@ -18,7 +19,7 @@ pub(super) fn require_source<S: ApplicationSchema, E>(
         WorthQueryOperationAuthorizationRefusalKind as Refusal,
     };
     runtime.runtime.primary_provider.graph.with_runtime(execution, |native| {
-        history.require_historical_source(execution, native, scope, subject).map_err(|cause| {
+        history.require_historical_source(execution, native, scope, truth, runtime, subject).map_err(|cause| {
             let kind = match cause.kind() {
                 Query::ExecutionRequest(kind) => Kind::Stopped(Ok(kind)),
                 Query::Cancelled => Kind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)),

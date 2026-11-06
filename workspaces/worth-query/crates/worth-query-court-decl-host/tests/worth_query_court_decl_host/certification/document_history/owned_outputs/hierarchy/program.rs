@@ -138,6 +138,10 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<first::preserve::Operation>()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, Child>()
+                .conditional_operation::<from_first::initial::Operation>()
+                .conditional_operation::<from_first::preserve::Operation>()
+                .conditional_operation::<restricted_from_first::initial::Operation>()
+                .conditional_operation::<restricted_from_first::preserve::Operation>()
                 .conditional_operation::<second::initial::Operation>()
                 .conditional_operation::<second::preserve::Operation>()
                 .conditional_operation::<child::initial::Operation>()

@@ -13,7 +13,9 @@ mod chain;
 mod output_routes;
 mod revisions;
 mod source_presence;
-pub use source_presence::RelationalHistoricalSourcePresence;
+pub use source_presence::{
+    RelationalHistoricalSourcePresence, RelationalHistoricalSourceReadDenial,
+};
 
 #[derive(Debug)]
 pub enum RelationalHistoricalSelectionReadDenial {
