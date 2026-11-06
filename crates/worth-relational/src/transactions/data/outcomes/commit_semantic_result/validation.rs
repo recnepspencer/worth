@@ -38,7 +38,6 @@ pub struct RelationalInvariantMetadataMeaning {
     pub current_version: VersionId,
     pub consumed_groups: InvariantGroupSet,
     pub applicable_groups: InvariantGroupSet,
-    pub declared_cost: InvariantCostClass,
     pub disposition: InvariantExecutionDisposition,
     pub plan_contract: Option<InvariantPlanContract>,
     pub has_merged_plan: bool,
@@ -88,3 +87,6 @@ pub struct RelationalInvariantDecisionMeaning {
     pub declared_cost: InvariantCostClass,
     pub custom_provenance_present: bool,
 }
+
+#[cfg(test)]
+mod tests;

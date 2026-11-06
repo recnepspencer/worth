@@ -36,24 +36,7 @@ impl RelationalInvariantExecutionMeaning {
             });
         }
         let result = Self {
-            metadata: RelationalInvariantMetadataMeaning {
-                execution_point: metadata.execution_point(),
-                observation_kind: metadata.observation_kind(),
-                version: metadata.version_id(),
-                current_version: metadata.current_version_id(),
-                consumed_groups: metadata.consumed_groups(),
-                applicable_groups: metadata.applicable_groups(),
-                declared_cost: metadata.max_cost(),
-                disposition: metadata.disposition(),
-                plan_contract: metadata.plan_contract(),
-                has_merged_plan: metadata.has_merged_plan(),
-                proof_scope: metadata.proof_boundary().map(|scope| {
-                    RelationalInvariantProofScopeMeaning {
-                        scope: scope.scope_class(),
-                        widened_causes: scope.widened_causes().to_vec(),
-                    }
-                }),
-            },
+            metadata: RelationalInvariantMetadataMeaning::from_original(metadata),
             checks,
             decisions: original
                 .decision_log()
@@ -74,5 +57,29 @@ impl RelationalInvariantExecutionMeaning {
             return Err(Refusal::ValidationMismatch);
         }
         Ok(result)
+    }
+}
+
+impl RelationalInvariantMetadataMeaning {
+    pub(super) fn from_original(
+        metadata: &crate::validation::engine::InvariantExecutionMetadata,
+    ) -> Self {
+        Self {
+            execution_point: metadata.execution_point(),
+            observation_kind: metadata.observation_kind(),
+            version: metadata.version_id(),
+            current_version: metadata.current_version_id(),
+            consumed_groups: metadata.consumed_groups(),
+            applicable_groups: metadata.applicable_groups(),
+            disposition: metadata.disposition(),
+            plan_contract: metadata.plan_contract(),
+            has_merged_plan: metadata.has_merged_plan(),
+            proof_scope: metadata.proof_boundary().map(|scope| {
+                RelationalInvariantProofScopeMeaning {
+                    scope: scope.scope_class(),
+                    widened_causes: scope.widened_causes().to_vec(),
+                }
+            }),
+        }
     }
 }
