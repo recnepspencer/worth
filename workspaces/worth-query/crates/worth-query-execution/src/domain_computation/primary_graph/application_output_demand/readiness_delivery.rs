@@ -17,18 +17,18 @@ pub struct WorthQueryOutputReadinessDeliveryEvidence {
     // The native owner issued this handle during the actual readiness evaluation.
     // Counters and test fixtures cannot construct it or grant inspection access.
     causal_observation: Option<worth_runtime_bridge::facade::BridgeConditionalCausalObservation>,
-    output_evaluation: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>,
+    output_evaluation: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ProducerOutputEvaluation>>,
 }
 
 impl WorthQueryOutputReadinessDeliveryEvidence {
     pub(in crate::domain_computation::primary_graph) fn with_output_evaluation(
         mut self,
-        value: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>,
+        value: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ProducerOutputEvaluation>>,
     ) -> Self {
         self.output_evaluation = value;
         self
     }
-    pub(in crate::domain_computation::primary_graph) fn output_evaluation(&self) -> Option<&std::sync::Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>{
+    pub(in crate::domain_computation::primary_graph) fn output_evaluation(&self) -> Option<&std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ProducerOutputEvaluation>>{
         self.output_evaluation.as_ref()
     }
 

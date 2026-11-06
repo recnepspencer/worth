@@ -73,7 +73,6 @@ pub use {
     producer::WorthQueryInstalledApplicationProducerRegistry,
     producer::WorthQueryOutputDemandAdvance, producer::WorthQueryProducerDenialDeclaration,
     producer::WorthQueryProducerDenialProjection,
-    producer::WorthQueryProducerEvaluationIneligibility,
     producer::WorthQueryProducerOutputEquivalence, producer::WorthQueryProducerOutputFamily,
     producer::WorthQueryProjectedProducerDenial, producer::WorthQuerySelectedApplicationProducer,
     producer::WorthQueryUndeclaredProducerDenial,
@@ -98,7 +97,4 @@ pub(in crate::domain_computation::primary_graph) use producer::SourceCustodyScop
 pub(in crate::domain_computation::primary_graph) use producer::SourceQualificationScopedOps;
 pub(in crate::domain_computation::primary_graph) use producer::SourceRecoveryScopedOps;
 pub(in crate::domain_computation::primary_graph) use producer::UnavailableScopedOps;
-pub(in crate::domain_computation::primary_graph) use producer::{
-    ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
-};
 pub(crate) mod host;

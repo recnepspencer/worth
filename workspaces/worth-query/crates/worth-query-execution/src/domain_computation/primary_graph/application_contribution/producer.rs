@@ -31,10 +31,6 @@ pub(in crate::domain_computation::primary_graph) use invocation::ProducerInvocat
 pub(crate) mod output_equivalence_contract;
 pub(crate) mod output_evaluation;
 pub use output_equivalence_contract::WorthQueryProducerOutputEquivalence;
-pub use output_evaluation::WorthQueryProducerEvaluationIneligibility;
-pub(in crate::domain_computation::primary_graph) use output_evaluation::{
-    ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
-};
 mod input_reuse_contract;
 use crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryProducerInputReuseContract;
 

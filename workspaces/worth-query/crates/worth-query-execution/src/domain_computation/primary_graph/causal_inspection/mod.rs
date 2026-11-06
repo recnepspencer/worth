@@ -158,7 +158,7 @@ pub mod integration {
     }
 }
 
-pub use super::application_contribution::WorthQueryProducerEvaluationIneligibility;
+pub use crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::WorthQueryProducerEvaluationIneligibility;
 
 pub use application_inspection::RequestOps;
 pub use application_inspection::SourceOps;

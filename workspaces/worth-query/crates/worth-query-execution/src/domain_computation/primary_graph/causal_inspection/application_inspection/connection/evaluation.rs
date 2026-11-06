@@ -1,6 +1,6 @@
 //! A performed evaluation joins the observed revision without claiming to create it.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::{
+use crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::{
     ProducerOutputEvaluation, ProducerOutputEvaluationState,
 };
 use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
@@ -12,7 +12,7 @@ use worth_execution::MapKernelContext;
 pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn require_compared(
     state: &ProducerOutputEvaluationState,
 ) -> Result<
-    &crate::domain_computation::primary_graph::application_contribution::ComparedProducerOutput,
+    &crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ComparedProducerOutput,
     ConnectionRefusal,
 > {
     match state {
@@ -35,7 +35,7 @@ pub enum WorthQueryProducerEvaluationDenial {
     EvaluationUnavailable,
     NotPerformed,
     OriginalCaptureUnavailable,
-    Ineligible(crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerEvaluationIneligibility),
+    Ineligible(crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::WorthQueryProducerEvaluationIneligibility),
     ObservedFieldUnconnected,
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -56,7 +56,7 @@ pub struct WorthQueryApplicationProducerEvaluation {
 impl WorthQueryApplicationProducerEvaluation {
     fn compared(
         &self,
-    ) -> &crate::domain_computation::primary_graph::application_contribution::ComparedProducerOutput
+    ) -> &crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ComparedProducerOutput
     {
         let ProducerOutputEvaluationState::Compared(compared) = &self.evaluation.state else {
             unreachable!("only an actual comparison can issue an admitted evaluation report")
@@ -262,7 +262,7 @@ fn refuse(cause: WorthQueryProducerEvaluationDenial) -> MapKernelFailure<Connect
 fn observed_field(
     observed: &overlap::ObservationConnection<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
-    compared: &crate::domain_computation::primary_graph::application_contribution::ComparedProducerOutput,
+    compared: &crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ComparedProducerOutput,
 ) -> Result<bool, MapKernelFailure<ConnectionRefusal>> {
     let locus = compared.field();
     for row in observed.original.source.original_row_footprints() {

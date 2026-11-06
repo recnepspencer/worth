@@ -17,7 +17,7 @@ type ProducerMode =
 
 struct ReadyCell {
     completion: OnceLock<WorthQueryCompletedOutputDemand>,
-    output_evaluation: OnceLock<Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>,
+    output_evaluation: OnceLock<Arc<crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ProducerOutputEvaluation>>,
     producer_mode: OnceLock<ProducerMode>,
     original_publication: OnceLock<Arc<super::super::OriginalProducingPublication>>,
 }
@@ -77,12 +77,12 @@ impl PreparedReadyBacking {
         Self::new()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn output_evaluation(&self) -> Option<&Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>{
+    pub(in crate::domain_computation::primary_graph) fn output_evaluation(&self) -> Option<&Arc<crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ProducerOutputEvaluation>>{
         self.cell.output_evaluation.get()
     }
     pub(in crate::domain_computation::primary_graph) fn retain_output_evaluation(
         &self,
-        evaluation: Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>,
+        evaluation: Arc<crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ProducerOutputEvaluation>,
     ) {
         assert!(
             self.cell.output_evaluation.set(evaluation).is_ok(),

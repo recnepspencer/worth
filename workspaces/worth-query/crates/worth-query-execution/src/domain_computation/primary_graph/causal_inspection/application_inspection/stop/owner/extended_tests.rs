@@ -81,7 +81,7 @@ fn inspection_preserves_session_start_cause() {
 
 #[test]
 fn inspection_preserves_original_capture_state_cause() {
-    use crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluationState;
+    use crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ProducerOutputEvaluationState;
     for original in [StoreDenial::ConflictingBody, StoreDenial::Representability] {
         let expected = OutputFieldCaptureFailure::Retention(original);
         let state = ProducerOutputEvaluationState::CaptureUnavailable(expected.clone());

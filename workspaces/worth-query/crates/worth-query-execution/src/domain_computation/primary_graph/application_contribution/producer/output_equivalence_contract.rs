@@ -8,7 +8,9 @@ use worth_query_declaration::facade::application_schema as schema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
 use super::super::native_field_contract::{FieldExpectation, NativeFieldBindingExpectation};
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ProducerOutputFieldScope;
 
 /// Exact comparison of one required standard u64 field on this exactly-one Preserve role.
 /// This declares scope only. Missing pre-evaluation field presence, reuse and
@@ -90,6 +92,19 @@ impl<Schema, Role> WorthQueryProducerOutputEquivalence<Schema, Role> {
 pub struct InstalledProducerOutputEquivalence {
     pub(in super::super) field: FieldExpectation,
     pub(in super::super) meaning: [u8; 32],
+}
+
+/// Retained evaluation evidence reads the sealed field through output demand's scope port.
+impl ProducerOutputFieldScope for InstalledProducerOutputEquivalence {
+    fn locus(&self) -> &schema::ApplicationFieldBindingLocus {
+        &self.field.binding.locus
+    }
+    fn contract_revision(&self) -> worth_foundational::facade::AspectContractRevision {
+        self.field.aspect.revision()
+    }
+    fn meaning(&self) -> [u8; 32] {
+        self.meaning
+    }
 }
 
 pub fn seal<Schema: schema::ApplicationSchema>(
