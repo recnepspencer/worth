@@ -381,7 +381,7 @@ impl WorthQueryApplicationCommitReceipt {
 
 mod court_doors_for_test;
 mod committed_actor_observation;
-mod committed_field_effect;
+pub(crate) mod committed_field_effect;
 mod materialized_committed_field;
 pub(in crate::domain_computation::primary_graph) use materialized_committed_field::{
     CommittedFieldMaterialization, MaterializedCommittedField,

@@ -1,4 +1,6 @@
 //! Doors under `domain_computation::primary_graph::application_attempt`.
+#[path = "compare_and_commit/mod.rs"]
+pub mod compare_and_commit;
 #[path = "dependency_identity/mod.rs"]
 pub mod dependency_identity;
 #[path = "effect_program/mod.rs"]

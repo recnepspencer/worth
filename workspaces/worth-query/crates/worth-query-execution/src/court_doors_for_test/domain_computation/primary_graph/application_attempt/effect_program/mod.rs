@@ -3,3 +3,5 @@
 pub mod model;
 #[path = "output_correspondence_candidate/mod.rs"]
 pub mod output_correspondence_candidate;
+#[path = "output_correspondence_checkpoint/mod.rs"]
+pub mod output_correspondence_checkpoint;

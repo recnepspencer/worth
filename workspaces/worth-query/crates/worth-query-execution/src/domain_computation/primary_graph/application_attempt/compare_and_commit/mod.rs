@@ -6,7 +6,7 @@ pub use cleanup_required::{
 
 mod commit_deferred;
 pub(crate) mod commit_outcome;
-mod commit_receipt;
+pub(crate) mod commit_receipt;
 
 pub use commit_deferred::{
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,

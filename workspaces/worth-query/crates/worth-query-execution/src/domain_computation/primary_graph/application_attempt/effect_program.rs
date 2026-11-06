@@ -28,7 +28,7 @@ mod external_payload_tests;
 #[cfg(test)]
 mod outbox_persistence_tests;
 pub(crate) mod output_correspondence_candidate;
-pub(in crate::domain_computation::primary_graph::application_attempt::effect_program) mod output_correspondence_checkpoint;
+pub(crate) mod output_correspondence_checkpoint;
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
