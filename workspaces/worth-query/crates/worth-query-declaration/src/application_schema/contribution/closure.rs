@@ -22,6 +22,15 @@ impl AuthoredApplicationSchemaContribution {
             access,
         }
     }
+    pub(in crate::application_schema) fn extend_closure(
+        &mut self,
+        identity: &ApplicationSchemaContributionIdentity,
+        members: &[ApplicationSchemaMember],
+    ) {
+        if &self.identity == identity {
+            self.retain_derived(members);
+        }
+    }
     pub(in crate::application_schema) fn expand_record(
         &mut self,
         source: &crate::application_schema::fragment::RecordAccess,

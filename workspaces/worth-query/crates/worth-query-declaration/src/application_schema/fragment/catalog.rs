@@ -18,6 +18,8 @@ pub(in crate::application_schema) use record_access::{expand_record_access, Reco
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct FragmentCatalog {
     definitions: BTreeMap<TypeId, FragmentDefinition>,
+    extension_paths: std::collections::BTreeSet<String>,
+    aspect_names: BTreeMap<(String, String), String>,
     native_aspects: BTreeMap<u64, String>,
 }
 
@@ -124,6 +126,25 @@ impl FragmentCatalog {
         Ok(())
     }
 
+    pub(crate) fn extension<E: Entity>(&mut self, path: &str, owner: &str) -> Result<(), Denial> {
+        if self
+            .owner(owner)?
+            .entities
+            .get(&TypeId::of::<E>())
+            .map(String::as_str)
+            != Some(E::NAME)
+        {
+            return Err(Denial::UndeclaredExtensionEntity {
+                path: path.to_owned(),
+            });
+        }
+        self.extension_paths.insert(path.to_owned());
+        self.owner(path)?
+            .entities
+            .insert(TypeId::of::<E>(), E::NAME.to_owned());
+        Ok(())
+    }
+
     pub(crate) fn aspect<Set: Record<A::Row>, A: Aspect>(
         &mut self,
         entity_path: &str,
@@ -140,6 +161,20 @@ impl FragmentCatalog {
             .ok_or(Denial::MissingEntity)?;
         super::super::identifier_validation::validate_simple_identifier(A::NAME)?;
         let path = format!("{entity_path}.{}", A::NAME);
+        let key = (entity.to_owned(), A::NAME.to_owned());
+        if let Some(first) = self.aspect_names.get(&key) {
+            return Err(
+                if first == &path && !self.extension_paths.contains(entity_path) {
+                    Denial::DuplicateFragmentMember { path }
+                } else {
+                    Denial::DuplicateExtensionAspect {
+                        first: first.clone(),
+                        path,
+                    }
+                },
+            );
+        }
+        self.aspect_names.insert(key, path.clone());
         let native_identity = super::identity::native_aspect_identity(entity, A::NAME);
         if let Some(first) = self.native_aspects.get(&native_identity) {
             return Err(if first == &path {

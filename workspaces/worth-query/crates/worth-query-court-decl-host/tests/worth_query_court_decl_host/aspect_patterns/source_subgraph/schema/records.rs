@@ -6,6 +6,12 @@ impl Fragment for SourceModel {
     type Bindings = SourceModelBindings;
     type Members = (Mapping, Principal, Source, Generated);
 }
+pub struct SourceFeature;
+impl Fragment for SourceFeature {
+    const NAME: &'static str = "source_feature";
+    type Bindings = SourceModelBindings;
+    type Members = (Extend<Source, (Option<SourceFacts>,)>,);
+}
 pub struct SourceModelBindings;
 impl BindingSet for SourceModelBindings {
     type Work<'a> = ValueDecodeAdmission<'a>;
@@ -56,7 +62,7 @@ impl Entity for Principal {
 pub struct Source;
 impl Entity for Source {
     const NAME: &'static str = "Source";
-    type Aspects = (SourceFacts,);
+    type Aspects = ();
     type Relations = (SourceMember,);
 }
 impl Source {
@@ -177,8 +183,8 @@ pub type ExternalId =
 pub type Status =
     FieldSelection<SourceModel, Mapping, MappingFacts, WorthQueryPrincipalMappingStatus>;
 pub type PrincipalId = FieldSelection<SourceModel, Principal, PrincipalFacts, u64>;
-pub type SourceKey = FieldSelection<SourceModel, Source, SourceFacts, String>;
-pub type SourceValue = FieldSelection<SourceModel, Source, SourceFacts, u64>;
+pub type SourceKey = FieldSelection<SourceFeature, Source, SourceFacts, String>;
+pub type SourceValue = FieldSelection<SourceFeature, Source, SourceFacts, u64>;
 pub type GeneratedKey = FieldSelection<SourceModel, Generated, GeneratedFacts, String>;
 pub type GeneratedValue = FieldSelection<SourceModel, Generated, GeneratedFacts, u64>;
 pub struct MappingTarget;

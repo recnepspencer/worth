@@ -11,8 +11,8 @@ impl<F, E, A> Clone for AspectSelection<F, E, A> {
 pub fn aspect<F, E, A, EP, AP>(_: F, _: E, _: A) -> AspectSelection<F, E, A>
 where
     F: Fragment,
-    E: Entity + In<F::Members, EP, F>,
-    A: Aspect + In<E::Aspects, AP, E>,
+    E: Entity,
+    A: Aspect + In<F::Members, (EP, AP), (F, E)>,
 {
     AspectSelection(PhantomData)
 }

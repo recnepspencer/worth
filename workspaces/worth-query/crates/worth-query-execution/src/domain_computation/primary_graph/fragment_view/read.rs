@@ -8,7 +8,7 @@ use worth_query_declaration::facade::application_schema::fragment::{
 };
 
 #[doc(hidden)]
-pub trait Readable<Set: BindingSet, Members, Witness, E: Entity>: In<Members, Witness, E> {
+pub trait Readable<Set: BindingSet, Kind, E: Entity> {
     type Output;
     fn read(
         access: &mut Reading<'_>,
@@ -27,10 +27,10 @@ impl<F: Fragment> View<'_, F, Reading<'_>> {
         work: &mut <F::Bindings as BindingSet>::Work<'_>,
     ) -> Result<Marker::Output, FragmentDenial>
     where
-        E: Entity + In<F::Members, EntityWitness, F>,
+        E: Entity,
         F::Bindings: BindingSet,
-        Marker:
-            In<E::Aspects, MemberWitness, E> + Readable<F::Bindings, E::Aspects, MemberWitness, E>,
+        Marker: In<F::Members, (EntityWitness, MemberWitness), (F, E)>
+            + Readable<F::Bindings, MemberWitness, E>,
     {
         Marker::read(&mut self.access, self.definition, target, work)
     }
@@ -41,8 +41,8 @@ impl<F: Fragment> View<'_, F, Reading<'_>> {
         value: T,
     ) -> Result<ObservedEntity<E>, FragmentDenial>
     where
-        E: Entity + In<F::Members, EntityWitness, F>,
-        A: Aspect + In<E::Aspects, AspectWitness, E>,
+        E: Entity,
+        A: Aspect + In<F::Members, (EntityWitness, AspectWitness), (F, E)>,
         T: 'static,
         F::Bindings: BindingSet,
     {
@@ -61,12 +61,9 @@ impl<F: Fragment> View<'_, F, Reading<'_>> {
         })
     }
 
-    pub fn target<E, Witness>(
-        &self,
-        target: &ObservedEntity<E>,
-    ) -> Result<ObservedTarget<E>, FragmentDenial>
+    pub fn target<E>(&self, target: &ObservedEntity<E>) -> Result<ObservedTarget<E>, FragmentDenial>
     where
-        E: Entity + In<F::Members, Witness, F>,
+        E: Entity,
     {
         Ok(ObservedTarget {
             erased: self.access.port.target(&target.erased)?,
@@ -75,10 +72,10 @@ impl<F: Fragment> View<'_, F, Reading<'_>> {
     }
 }
 
-impl<A, Set, Members, P, E> Readable<Set, Members, (P, RequiredWitness), E> for A
+impl<A, Set, E> Readable<Set, RequiredWitness, E> for A
 where
     E: Entity,
-    A: Aspect + In<Members, (P, RequiredWitness), E>,
+    A: Aspect,
     Set: Record<A::Row>,
 {
     type Output = A::Row;
@@ -106,10 +103,10 @@ where
     }
 }
 
-impl<A, Set, Members, P, E> Readable<Set, Members, (P, OptionalWitness), E> for A
+impl<A, Set, E> Readable<Set, OptionalWitness, E> for A
 where
     E: Entity,
-    A: Aspect + In<Members, (P, OptionalWitness), E>,
+    A: Aspect,
     Set: Record<A::Row>,
 {
     type Output = Option<A::Row>;

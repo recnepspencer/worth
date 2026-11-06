@@ -240,6 +240,17 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             ));
     }
 
+    pub(super) fn extend_contribution_closure(
+        &mut self,
+        identity: &ApplicationSchemaContributionIdentity,
+        first_member: usize,
+    ) {
+        let members = &self.members[first_member..];
+        for contribution in &mut self.contributions {
+            contribution.extend_closure(identity, members);
+        }
+    }
+
     pub fn for_schema() -> Self
     where
         Schema: ApplicationSchema,

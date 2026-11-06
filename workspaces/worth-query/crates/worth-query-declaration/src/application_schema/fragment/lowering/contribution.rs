@@ -31,6 +31,17 @@ where
         builder.retain_contribution_closure(identity, first_member, first_access);
         Ok(builder)
     }
+    fn lower_extensions(
+        builder: Builder<S>,
+        prefix: &str,
+        state: &mut Lowering,
+    ) -> Result<Builder<S>, Denial> {
+        let first_member = builder.contribution_member_count();
+        let mut builder =
+            <C::Members as FragmentMembers<S, Set, W>>::lower_extensions(builder, prefix, state)?;
+        builder.extend_contribution_closure(&C::IDENTITY, first_member);
+        Ok(builder)
+    }
     fn visit_correction<Visitor>(
         source: std::any::TypeId,
         visitor: Visitor,

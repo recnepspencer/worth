@@ -4,6 +4,7 @@ mod aspect_selection;
 mod catalog;
 mod column_identity;
 mod declaration;
+mod extension;
 mod field_encode_refusal;
 mod field_handle;
 mod field_selection;
@@ -36,6 +37,9 @@ pub use declaration::{
     declaration_builder, declare, relation_integrity, visit_correction, Aspect, Entity, Fragment,
     NoBindings, Registration, Relation,
 };
+pub use extension::Extend;
+#[doc(hidden)]
+pub use extension::OptionalExtensionMembers;
 pub use field_encode_refusal::FieldEncodeRefusal;
 pub use field_handle::{record_field, RecordField};
 pub use field_selection::{select_field, FieldSelection, RecordSelection};

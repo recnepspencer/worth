@@ -31,8 +31,8 @@ impl<S> Builder<S> {
     ) -> Self
     where
         F: Fragment,
-        E: Entity + In<F::Members, EP, F>,
-        A: 'static + In<E::Aspects, AP, E>,
+        E: Entity,
+        A: 'static + In<F::Members, (EP, AP), (F, E)>,
     {
         self.member_provenance
             .fragments
@@ -51,8 +51,8 @@ impl<S> Builder<S> {
     ) -> Self
     where
         F: Fragment,
-        E: Entity + In<F::Members, EP, F>,
-        A: Aspect + In<E::Aspects, AP, E>,
+        E: Entity,
+        A: Aspect + In<F::Members, (EP, AP), (F, E)>,
         F::Bindings: Record<A::Row>,
     {
         self.member_provenance

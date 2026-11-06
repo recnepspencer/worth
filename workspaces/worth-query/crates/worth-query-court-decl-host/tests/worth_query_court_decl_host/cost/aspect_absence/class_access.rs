@@ -12,9 +12,10 @@ trait Actions<W> {
         count: &mut u64,
     ) -> Result<(), HandlerExecutionDenial>;
 }
-impl<A, P> Actions<P> for Option<A>
+impl<A, EP, AP> Actions<(EP, AP)> for Option<A>
 where
-    A: fragment::Aspect<Row = u64> + In<<Record as Entity>::Aspects, P, Record>,
+    A: fragment::Aspect<Row = u64>
+        + In<<ClassModel as fragment::Fragment>::Members, (EP, AP), (ClassModel, Record)>,
 {
     fn grant(
         schema: ApplicationSchemaDeclarationBuilder<Schema>,

@@ -9,3 +9,5 @@ pub mod fragment_contribution_fixture;
 pub mod fragment_relation_fixture;
 
 pub mod fragment_revision_fixture;
+
+pub mod fragment_extension_fixture;

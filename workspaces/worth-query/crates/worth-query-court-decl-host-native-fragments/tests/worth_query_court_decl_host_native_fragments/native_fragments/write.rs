@@ -1,6 +1,6 @@
 use super::*;
 
-fn committed<O: ApplicationOperationMarkerIdentity<Fixture> + 'static>(
+pub(super) fn committed<O: ApplicationOperationMarkerIdentity<Fixture> + 'static>(
     world: &World,
     candidate: world::Program<O>,
     key: u8,

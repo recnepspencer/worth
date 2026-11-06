@@ -106,7 +106,8 @@ impl<Schema: ApplicationSchema> ApplicationSchemaDeclarationBuilder<Schema> {
             .fragments
             .catalog
             .register::<F>(prefix)?;
-        F::Members::lower(builder, prefix, &mut lowering)
+        let builder = F::Members::lower(builder, prefix, &mut lowering)?;
+        F::Members::lower_extensions(builder, prefix, &mut lowering)
     }
 }
 
