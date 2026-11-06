@@ -7,6 +7,8 @@ use worth_query_execution::publication_boundary::document_history::{
 mod binding;
 mod driver;
 mod funding;
+mod recording;
+pub(in crate::application_entry::history) use recording::RecordingForest;
 mod progression;
 
 /// Graph-document output custody for multiple original source demands and roots.
@@ -14,6 +16,7 @@ mod progression;
 pub struct WorthQueryHistoryWithOutputTrees<S: ApplicationSchema> {
     profile: WorthQueryHistoryOutputProfile,
     trees: Vec<TreeEntry<S>>,
+    recording: std::sync::Mutex<Option<RecordingForest<S>>>,
 }
 
 struct TreeEntry<S: ApplicationSchema> {
@@ -25,6 +28,10 @@ struct TreeEntry<S: ApplicationSchema> {
 /// Type erasure is confined to SDK continuation mechanics. Query still issues
 /// every per-tree frame from the immutable registered profile collection.
 trait OriginalTree<S: ApplicationSchema> {
+    fn prepare_recording(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+    ) -> Result<recording::RecordingEntry<S>, WorthQueryHistoryOutputDenial>;
     fn has_original_attempt(&self, key: &[u8; 32]) -> Result<bool, WorthQueryHistoryOutputDenial>;
     fn profile(&self) -> &WorthQueryHistoryOutputProfile;
     fn runtime(

@@ -19,6 +19,12 @@ where
     >,
     R::Dependents: ProgramOutputContinuationFactory<S, P, Demand<S, R>>,
 {
+    fn prepare_recording(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+    ) -> Result<recording::RecordingEntry<S>, WorthQueryHistoryOutputDenial> {
+        recording::prepare_tree::<S, P, R>(self, phase)
+    }
     fn has_original_attempt(&self, key: &[u8; 32]) -> Result<bool, WorthQueryHistoryOutputDenial> {
         match self.existing_slot(key)? {
             Some(slot) => Ok(slot.try_state()?.original.is_some()),

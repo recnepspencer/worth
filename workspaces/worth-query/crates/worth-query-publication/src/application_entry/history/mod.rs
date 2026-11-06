@@ -111,7 +111,7 @@ pub use outputs::{
     WorthQueryHistoryNoOutputs, WorthQueryHistoryOutputDenial,
     WorthQueryHistoryOutputQualificationDenial, WorthQueryHistoryOutputsMode,
     WorthQueryHistoryWithOutputTrees, WorthQueryHistoryWithOutputs,
-    WorthQueryOriginalReadOutputDenial,
+    WorthQueryOriginalReadOutputDenial, WorthQueryRecordingOutputQualificationDenial,
 };
 pub use outputs::{
     WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputReadDenial,

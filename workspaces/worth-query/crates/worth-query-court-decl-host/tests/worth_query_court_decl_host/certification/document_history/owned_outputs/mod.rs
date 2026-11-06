@@ -60,3 +60,11 @@ mod cold_selection;
 mod hierarchy;
 
 mod authored_member;
+
+mod forest_recording;
+
+mod fixed_forest_recording;
+
+mod forest_recording_dependency;
+
+mod recording_intent;

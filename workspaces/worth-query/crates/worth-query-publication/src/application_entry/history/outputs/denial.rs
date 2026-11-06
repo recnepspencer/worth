@@ -10,6 +10,7 @@ pub enum WorthQueryHistoryOutputDenial {
     Source(worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputReadDenial),
     Root(worth_query_execution::publication_boundary::document_history::WorthQueryHistoryRootOutputAdmissionDenial),
     Preparation(crate::application_entry::WorthQueryRequiredOutputPreparationDenial),
+    RecordingQualification(worth_query_execution::publication_boundary::document_history::WorthQueryRecordingOutputQualificationDenial),
     Qualification(worth_query_execution::publication_boundary::original_read_outputs::WorthQueryOriginalReadOutputDenial),
     Close(worth_query_execution::facade::primary_graph::WorthQueryOutputReadCloseDenial),
     GraphQualification(worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputQualificationDenial),

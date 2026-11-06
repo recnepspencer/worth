@@ -1726,3 +1726,201 @@ refuses the mutated read, so it does not demonstrate an unauthorized success.
 The precise JSON and logs retain that distinction. The private-source stopped
 permission diagnostic scrub remains a targeted follow-up court before overall
 handoff; no completed issue or final workspace qualification is claimed here.
+
+### #57 multi-tree edit recording: boundary review
+
+Progressed-source checkpoint01dc5afe96 is merged with master8a04cd1349 at
+0021982c4d. The next incomplete obligation is recording all configured trees,
+not only verifying their restored versions on navigation. SDK edit sealing
+currently accepts one source receipt or one actual fixed-action complete-set
+proof. The configured runtime-length forest participates only in navigation.
+A source-only edit can therefore be recorded while its other configured trees
+are stale. Settling them afterwards moves the head outside history, which is
+correctly refused. Repeating the edit solely to run another root is not a
+solution.
+
+The existing owners suffice: SDK request/program_outputs starts real original
+read trees at an explicitly retained source observation; ProgramOutputHandle
+owns demand progression, dependent discovery and original cleanup. Query's
+OriginalOutputTree and qualify_output_collection derive one endpoint from
+actual publication movements and qualify every whole tree there. Neither a
+roster, a latest-head read nor an ordinal can substitute for that endpoint.
+History reservation/sealing owns the source receipt, original candidate and
+single atomic adoption. These owners must compose without manufacturing a
+navigation authority, a settlement, a root fulfillment or a second producer
+engine.
+
+The configured collection is explicit opt-in for OwnedModelGraph. NoOutputs and
+single-tree ScopeEntityRecord edits retain their existing behavior. Each new
+recording tree keeps its original source, genuine settlements, computed
+discovery and disposal custody. Failure after one family runs keeps the whole
+candidate private. A later tree can invalidate an earlier one; final
+qualification must expose that, rather than accepting per-tree intermediate
+completions. Grouping retains one atomic adoption and the current redo policy.
+
+### #57 multi-tree edit recording: implementation plan
+
+1. Add a sealed read-only recording origin at the existing Query history
+   reservation/sealing owner. It validates the actual receipt (and original
+   required-output completion for a fixed action), candidate and installed
+   collection, retaining the exact origin observation before extra tree work.
+   It grants no read, producer, mutation or navigation permission.
+2. Extend the SDK forest's compiled typed dispatch to start ordinary original
+   program trees from that same origin, retaining their real handles inside the
+   move-only edit. Reuse ordinary program output progression and cleanup; keep
+   recording custody distinct from navigation slots and verified parents.
+3. Retain each complete original tree through Query's existing collection
+   owner. Derive one endpoint from actual movements and freshly qualify every
+   tree there. Fixed actions additionally requalify their original declared
+   complete set at that endpoint. The source receipt remains the source action,
+   never an extra root producer receipt.
+4. Add a recording completion accepted by the existing atomic history seal only
+   for that reservation, candidate, installed profile and original receipt. It
+   must prove the candidate's exact final endpoint. Adoption records one step.
+   Every refusal keeps original tree/operation/candidate disposal custody.
+5. Prove source-only and fixed edits with two distinct configured roots, serial
+   and worker-only; undo/redo must select the recorded outputs with zero
+   contacts. Prove partial refusal/disposal, a later tree invalidating an earlier
+   tree, missing-tree completion and a wrong source/candidate. Mutate omission
+   of one tree, intermediate-only qualification and endpoint/source checks;
+   restore every mutation by SHA-256. Extend the same composition to grouped
+   recording before declaring #57 complete.
+
+Use the existing court layout and caller script, <=400 lines per code file,
+request-aware checkpoints, public generic Model/Member fixtures, focused and
+full history/Native tests, boundary/context, formatting and primary structural
+review. No persistence format, new test framework or application-supplied
+completion callback is introduced. Codec-retired disposition selection remains
+next; #55/#53 acceptance and #56 correction history follow.
+
+The source-only two-root red court now fails in serial and worker-only modes:
+the recorded step still contains10/1001 after Model changes to5, rather than
+50/1005. This is a valid behavioral red, not a fixture installation failure.
+
+Recording completeness also needs Native's independent current obligations.
+The configured collection alone cannot prove that a model has no other stale
+published family. Native's branch/model_ownership owner already derives the
+exact closure and reads current publication custody from touched records; add a
+readonly publication-obligation projection there, using that same traversal and
+publication roster reader, at the final candidate. Preserve the distinction
+between published origins and typed codec-retired closures. Query checks every
+live route through the existing selected_route_is_current/require_current_read
+owner, including unconfigured families. A still codec-retired obligation cannot
+pretend to be a live role; it must be rebuilt by its actual configured producer
+or refuse precisely. Add an omitted-family recording court and mutation of this
+complete Native obligation pass. No alternate ownership or currentness reader
+is permitted.
+
+The implementation now keeps a distinct recording qualification denial, rather
+than adding recording-only cases to ordinary read-output qualification. Roots
+start sequentially. Their common initial origin is provenance for deriving the
+final endpoint; it is not a frozen data snapshot for every later root. Each
+root reads the then-current private candidate. The recording owner checks that
+exact data observation against the same candidate before admitting producer
+work, and compares the original full source description and canonical parameter
+artifact. Its actual query, native source facts and cleanup remain ordinary SDK
+custody. All publication movements must still connect to the shared origin,
+and all complete sets are checked at their one derived endpoint. No private
+candidate is adopted before that qualification.
+
+A compile qualification caught a causal regression: storing an erased forest
+inside every Selecting edit made existing NoOutputs edits lose Send, failing
+three existing threaded courts. It is not master debt. The actual mutable
+recording forest now lives on its opted-in WithOutputTrees receiver, alongside
+that receiver's existing original navigation owners. The edit borrows it only
+inside the sealed SDK callback. NoOutputs and the single-tree mode create no
+recording state or extra cleanup advancement. Successful adoption drops the
+already drained readonly recording frame; refusal and disposal retain the same
+receiver's original owners. This preserves ordinary edit auto-traits rather
+than imposing Send on program continuations or weakening the threaded courts.
+
+The first integrated recording run reached the independent obligation pass and
+refused ordinary fresh publications: the selected-route reader deliberately
+accepts only HistoricalSelection. Preserve that restriction. Add a distinct
+current-route entry at the same lineage/currentness owner, accepting only a
+sealed borrowed Native roster coordinate from the exact final candidate. Both
+entries share the existing canonical lineage lookup and require_current_read;
+no settlement fabrication, duplicated verifier or roster-as-discovery shortcut.
+The recording court must pass through this ordinary currentness verification,
+including a missing-family negative and a skip-verification mutation.
+
+### #57 grouped recording: boundary review (next slice)
+
+Native's group owner already authenticates each ordinary member's full intent,
+operation scope, candidate and exact movement from its predecessor. It retains
+the actual captured endpoint and completion posture per member. Final adoption
+currently selects the last captured endpoint; it has no output-forest endpoint.
+SDK group storage retains each concrete ordinary source/fixed completion behind
+its closed driver. The last member's driver freshly admits the adoption at C.
+Additional original trees and cleanup remain on the opted-in document receiver.
+No group member may be relabelled as an output receipt or synthetic settlement.
+
+The collection's original receipt for this extension is the last real member's
+completion, after Native has authenticated the entire captured member chain.
+Earlier members can intentionally supersede each other's output publications;
+the final Native obligation inventory and original configured trees must prove
+the final current graph. A group reservation must not masquerade as an ordinary
+single-operation reservation: their intent and scope correspondence differ.
+Native's group owner must mint the recording origin from its own completed
+chain and consume the final completion at that same owner. Single-record and
+NoOutputs group transitions retain their existing behavior.
+
+### #57 grouped recording: implementation plan (next slice)
+
+1. Add origin capture at Native's existing group owner after exact complete-chain,
+   last receipt, captured endpoint and candidate validation. Share the immutable
+   recording origin constructor; do not call the single-operation intent gate
+   with a fabricated reservation. Retain the same Node/expected/candidate/source
+   provenance used by the isolated edit's completed forest proof.
+2. Let the SDK closed member driver supply its actual final source completion
+   and freshly requalify fixed delivery at the forest's derived final endpoint.
+   Extend Native group adoption to consume that proof and select its exact E;
+   keep group journal, redo and idempotency ownership unchanged.
+3. Before ReadyToComplete, opted-in grouped documents progress the same original
+   recording trees. Pending work has an explicit qualifying posture. NoOutputs
+   and single-tree groups keep their existing transition path. Complete adopts
+   once only after the original owners are drained and qualification is sealed.
+4. Abort closes the actual additional forest owners before retiring the private
+   candidate, preserving failed cleanup custody on retry. A refusal or stop
+   cannot publish a partial group or release its reserved journal edge early.
+5. Public serial/worker courts: homogeneous and heterogeneous gestures record
+   both families at final E in one step; contact-free selection of those versions;
+   a later output invalidating an earlier result refuses atomically; partial
+   extra-tree cleanup preserves the selected document. Mutate omitted final
+   qualification and group/receipt/candidate correspondence; exact SHA restores.
+
+The isolated-edit slice is first qualified and committed before this cutover.
+Codec-retired disposition restoration follows it; remaining issue qualification
+and #56 are not declared complete by either recording slice.
+
+### Recording qualification follow-up: retained and removed roots
+
+The first pristine204-court run found8 causal failures (196pass): two genuine
+forked historical-demand index collisions, two attempts to open a root whose
+source the same recorded cascade retired, and four changed redo contact premises
+because recording now refreshes its configured non-leaf root. These are not
+master debt. Hold the isolated recording checkpoint until they are resolved.
+
+A configured tree is immutable correspondence, not an instruction to recreate
+an entity retired by the action. The recording owner must use Native's existing
+exact-basis ownership reader before opening a root. A source no longer owned by
+this document has a distinct retained omission posture; a current healthy leaf
+has a distinct verified-current posture. Neither is an OriginalOutputTree or a
+settlement. Complete forests may consist entirely of these postures. Derive E
+from the original action endpoint and only authentic original-tree movements,
+then verify every actual original tree and every Native current obligation atE.
+Recheck omitted-domain evidence there. Non-leaf live roots still run real
+installed discovery through their original owners; the roster cannot discover
+children. A stale or missing publication on an owned live source runs its real
+producer. No source scope is recreated by configuration.
+
+Implement these distinct recording postures at recording_outputs, retaining the
+existing original endpoint derivation and currentness owners. The SDK asks for a
+verified/omitted entry before opening an original root. Add worker/public
+retirement and all-verified recording evidence. Preserve the previous historical
+scope navigation courts by retaining their original pre-delete source/profile;
+for model-root navigation-only courts, configure after deletion so their stale
+pre-delete and redo snapshots remain the actual subject. Do not alter expected
+contacts without preserving the producer-fallback premise. Investigate the
+historical fork posting owner as needed for live non-leaf roots; never weaken
+exact address or occurrence checks to work around its collision.

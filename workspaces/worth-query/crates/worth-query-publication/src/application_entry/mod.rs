@@ -77,7 +77,7 @@ pub use history::{
     WorthQueryHistoryRetentionStatus, WorthQueryHistoryRootOutputAdmissionDenial,
     WorthQueryHistorySelection, WorthQueryHistoryStep, WorthQueryHistoryTypedMembers,
     WorthQueryHistoryWindowChange, WorthQueryHistoryWithOutputTrees, WorthQueryHistoryWithOutputs,
-    WorthQueryOriginalReadOutputDenial,
+    WorthQueryOriginalReadOutputDenial, WorthQueryRecordingOutputQualificationDenial,
 };
 #[doc(hidden)]
 pub use history::{

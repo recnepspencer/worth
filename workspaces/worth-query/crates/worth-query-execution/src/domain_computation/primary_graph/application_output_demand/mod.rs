@@ -8,7 +8,7 @@ mod completed_set;
 pub(in crate::domain_computation::primary_graph) mod original_endpoint;
 mod original_outputs;
 pub(in crate::domain_computation::primary_graph) use original_outputs::{
-    qualify_output_collection, OriginalOutputTree,
+    qualify_output_collection, qualify_recording_output_collection, OriginalOutputTree,
 };
 pub use original_outputs::{
     WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial,

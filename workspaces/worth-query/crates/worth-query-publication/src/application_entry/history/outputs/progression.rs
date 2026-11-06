@@ -42,6 +42,20 @@ where
     >,
     R::Dependents: ProgramOutputContinuationFactory<S, P, Demand<S, R>>,
 {
+    fn with_recording<T>(
+        &self,
+        _: &WorthQueryAdvancementPhase<'_>,
+        consume: impl FnOnce(Option<&mut RecordingForest<S>>) -> (T, bool),
+    ) -> Result<T, WorthQueryHistoryOutputDenial> {
+        Ok(consume(None).0)
+    }
+    fn discard_recording(
+        &self,
+        _: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        _: WorthQueryProductBranch,
+    ) -> Result<(), WorthQueryHistoryOutputDenial> {
+        Ok(())
+    }
     fn release_for_branch(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

@@ -53,12 +53,15 @@ fn $exercise(worker: bool, stale_root: bool, stale_child: bool) {
         record!(document, edit::Intent { key: "a".into(), value: 3 }, super::super::super::program::EditAction, "member-child-root-edit")
     } else { document };
     let before_delete = document.current_step(&request).unwrap().id();
+    let document = record!(document, authored_member::retire::Intent, super::super::super::program::AuthoredRetireAction, "member-child-retire");
+    let deleted = document.current_step(&request).unwrap().id();
+    // This court qualifies navigation of deliberately stale recorded outputs.
+    // Retain the fallback tree after the source-only retirement so recording
+    // does not pre-emptively refresh the stale Model publication under test.
     let document = host.with_host_advancement(|phase| document
         .with_output_trees::<program::$program::Program, program::$program::Tree>(
             &phase, &request, &host, first::Demand("a".into()), WorthQueryOutputDemandControls::default())
         .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))).unwrap();
-    let document = record!(document, authored_member::retire::Intent, super::super::super::program::AuthoredRetireAction, "member-child-retire");
-    let deleted = document.current_step(&request).unwrap().id();
     let current = document.selection(&request).unwrap();
     let at_c = host.request(&principal, &scope).on_branch(current.physical_endpoint().product_branch());
     assert!(at_c.query(query::member_public::Read("m".into())).execute().is_err());

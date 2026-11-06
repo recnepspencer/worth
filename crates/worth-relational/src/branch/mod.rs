@@ -27,7 +27,8 @@ pub use model_ownership::{
     RelationalModelOwnership, RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
     RelationalModelOwnershipDomain, RelationalOwnedModelEntityBoundary,
     RelationalOwnedModelForeignRelation, RelationalOwnedModelGraphSelection,
-    RelationalOwnedModelSelectionDenial,
+    RelationalOwnedModelOutputRoute, RelationalOwnedModelPublicationRead,
+    RelationalOwnedModelPublishedRoute, RelationalOwnedModelSelectionDenial,
 };
 mod record_advance;
 mod reference;

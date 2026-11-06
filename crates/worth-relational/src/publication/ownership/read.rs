@@ -69,6 +69,13 @@ impl CurrentPublicationRoster {
 
     /// A retired closure is not a published role grant. This coordinate only
     /// names the custody owner that must prepare its historical material.
+    pub(crate) fn codec_retired_origins(
+        &self,
+    ) -> impl Iterator<Item = &std::sync::Arc<crate::history::data::CanonicalRequiredOutputOrigin>>
+    {
+        self.codec_retired.iter().map(|row| &row.value.origin)
+    }
+
     pub(crate) fn codec_retirement_subject(
         &self,
     ) -> Option<(

@@ -59,17 +59,24 @@ pub(super) struct PreparedBinding {
     pub(super) returned: WorthQueryHistoryStep,
 }
 
-enum RecordingCompletion<'a> {
+pub(super) enum RecordingCompletion<'a> {
     Source(&'a WorthQueryApplicationCommitReceipt),
     RequiredOutputs {
         source: &'a WorthQueryApplicationCommitReceipt,
         completed: &'a WorthQueryCompletedRequiredOutputs,
     },
+    Forest {
+        source: &'a WorthQueryApplicationCommitReceipt,
+        required: Option<&'a WorthQueryCompletedRequiredOutputs>,
+        completed: &'a super::WorthQueryCompletedRecordingOutputs,
+    },
 }
 impl RecordingCompletion<'_> {
     fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         match self {
-            Self::Source(source) | Self::RequiredOutputs { source, .. } => source,
+            Self::Source(source)
+            | Self::RequiredOutputs { source, .. }
+            | Self::Forest { source, .. } => source,
         }
     }
 }
@@ -144,6 +151,36 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             reserved,
             candidate,
             RecordingCompletion::RequiredOutputs { source, completed },
+        )
+    }
+
+    pub fn adopt_recording_output_forest<M>(
+        &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        access: &WorthQueryProgramPublicationAccess,
+        installed: &WorthQueryInstalledDocumentHistory<S, H>,
+        operation: WorthQueryDocumentHistoryOperation<'_, '_, S, M>,
+        reserved: WorthQueryDocumentHistoryReservation,
+        candidate: WorthQueryExpectedProductBranch<'runtime, S>,
+        source: &WorthQueryApplicationCommitReceipt,
+        required: Option<&WorthQueryCompletedRequiredOutputs>,
+        completed: &super::WorthQueryCompletedRecordingOutputs,
+    ) -> Result<WorthQueryHistoryStep, WorthQueryDocumentHistoryAdoptionFailure<'runtime, S>>
+    where
+        M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
+    {
+        self.adopt_recording::<M>(
+            phase,
+            access,
+            installed,
+            operation,
+            reserved,
+            candidate,
+            RecordingCompletion::Forest {
+                source,
+                required,
+                completed,
+            },
         )
     }
 
@@ -233,7 +270,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         Ok(prepared.returned)
     }
 
-    fn prepare_binding(
+    pub(super) fn prepare_binding(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         reserved: &WorthQueryDocumentHistoryReservation,
@@ -258,6 +295,23 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::ReceiptMismatch);
         }
         let (selected, retained, root_posture) = match &completion {
+            RecordingCompletion::Forest {
+                source,
+                required,
+                completed,
+            } => {
+                completed.require_source(reserved, candidate, source, *required)?;
+                let retained = completed.endpoint();
+                let selected = runtime
+                    .select_application_read_observation(phase, retained)
+                    .map_err(Denial::CandidateSelection)?;
+                (
+                    selected,
+                    Some(std::sync::Arc::clone(retained)),
+                    completed.root_posture(),
+                )
+            }
+
             RecordingCompletion::Source(receipt) => {
                 let selected = runtime
                     .on_branch(candidate.branch())

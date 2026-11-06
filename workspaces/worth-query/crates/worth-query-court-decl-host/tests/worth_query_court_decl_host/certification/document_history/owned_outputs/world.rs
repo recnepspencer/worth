@@ -103,6 +103,18 @@ where
     P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
     P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
 {
+    install_program_with_other_model::<P>(limits, initial_value, None)
+}
+/// Seed an independent model for cross-document demand-correspondence courts.
+pub(super) fn install_program_with_other_model<P>(
+    limits: WorthQueryInMemoryApplicationLimits,
+    initial_value: u64,
+    other_value: Option<u64>,
+) -> WorthQueryProgramApplicationRuntime<Schema, P>
+where
+    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
+    P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
+{
     let schema = Schema::declaration().unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<Schema, P>::begin()
@@ -143,6 +155,16 @@ where
                 WorthQueryApplicationEntityKey::new("a").unwrap(),
                 WorthQueryApplicationEntityKey::new("m").unwrap(),
             ))?;
+            if let Some(value) = other_value {
+                graph.bind_entity(
+                    WorthQueryApplicationEntitySeed::new(
+                        Model::reference(),
+                        WorthQueryApplicationEntityKey::new("b").unwrap(),
+                    )
+                    .field(ModelKey::reference(), "b".to_owned())
+                    .field(ModelValue::reference(), value),
+                )?;
+            }
             navigation::seed(graph)
         },
     )

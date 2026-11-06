@@ -15,6 +15,51 @@ impl WorthQueryApplicationOutputLineage {
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         route: &RequiredOutputPublicationMeaning,
     ) -> Result<Option<RetainedOutputCurrentnessRead>, Stop> {
+        self.source_facts_for_route(
+            execution,
+            runtime_authority,
+            schema,
+            observation,
+            route,
+            |publication| {
+                Ok(publication.is_historical_selection() && publication.meaning() == route)
+            },
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn source_facts_for_current_route(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        route: &worth_relational::facade::branch::RelationalOwnedModelPublishedRoute<'_>,
+    ) -> Result<Option<RetainedOutputCurrentnessRead>, Stop> {
+        self.source_facts_for_route(
+            execution,
+            runtime_authority,
+            schema,
+            observation,
+            route.meaning(),
+            |publication| {
+                route
+                    .matches_publication(execution, publication)
+                    .map_err(|cause| Stop::Execution(cause.into()))
+            },
+        )
+    }
+
+    fn source_facts_for_route(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        route: &RequiredOutputPublicationMeaning,
+        matches: impl Fn(
+            &worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
+        ) -> Result<bool, Stop>,
+    ) -> Result<Option<RetainedOutputCurrentnessRead>, Stop> {
         let Some(bindings) = self.output_families.get(route.family.as_str()) else {
             return Ok(None);
         };
@@ -32,13 +77,10 @@ impl WorthQueryApplicationOutputLineage {
                 route.source_partition,
                 execution,
             )? {
-                if !candidate
-                    .required_publication
-                    .as_ref()
-                    .is_some_and(|publication| {
-                        publication.is_historical_selection() && publication.meaning() == route
-                    })
-                {
+                let Some(publication) = candidate.required_publication.as_ref() else {
+                    continue;
+                };
+                if !matches(publication)? {
                     continue;
                 }
                 if matched {

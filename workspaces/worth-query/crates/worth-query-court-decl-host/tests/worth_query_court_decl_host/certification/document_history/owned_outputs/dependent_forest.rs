@@ -60,7 +60,7 @@ fn edited(
     (document, step, selection)
 }
 
-fn configured<'a>(
+pub(super) fn configured<'a>(
     host: &'a world::Host,
     document: world::Document<'a>,
     upstream_first: bool,
@@ -110,7 +110,7 @@ fn configured<'a>(
     .unwrap()
 }
 
-fn values(
+pub(super) fn values(
     host: &world::Host,
     branch: worth_query_host::facade::product::WorthQueryProductBranch,
 ) -> (query::Row, query::Row) {
@@ -215,7 +215,10 @@ fn worker_only_later_fallback_cannot_adopt_an_earlier_now_stale_family() {
     exercise(&world::install_worker_only(), false);
 }
 
-fn advance_model_before_attachment(host: &world::Host, request: &family::Request<'_, '_, '_>) {
+pub(super) fn advance_model_before_attachment(
+    host: &world::Host,
+    request: &family::Request<'_, '_, '_>,
+) {
     let mut operation = request
         .mutate(edit::Intent {
             key: "a".into(),

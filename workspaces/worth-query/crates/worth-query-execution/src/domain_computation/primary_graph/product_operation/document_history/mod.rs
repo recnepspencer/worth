@@ -65,8 +65,13 @@ mod retention;
 pub use redo::{WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices};
 pub(in crate::domain_computation::primary_graph) use retention::HistoryRetentionChange;
 pub use retention::{WorthQueryHistoryReleaseOutcome, WorthQueryHistoryRetentionStatus};
+mod recording_outputs;
 mod reservation;
 mod sealing;
+pub use recording_outputs::{
+    WorthQueryCompletedRecordingOutputs, WorthQueryHistoryRecordingOutputOrigin,
+    WorthQueryRecordingOutputQualificationDenial, WorthQueryRetainedRecordingOutputTree,
+};
 mod selection;
 mod step;
 pub use candidate::WorthQueryDocumentHistoryCandidateDenial;

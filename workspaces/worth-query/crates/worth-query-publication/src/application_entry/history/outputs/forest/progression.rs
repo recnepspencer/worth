@@ -12,6 +12,20 @@ impl<S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>>
 impl<S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>> OutputDriver<S, H>
     for WorthQueryHistoryWithOutputTrees<S>
 {
+    fn with_recording<T>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        consume: impl FnOnce(Option<&mut RecordingForest<S>>) -> (T, bool),
+    ) -> Result<T, WorthQueryHistoryOutputDenial> {
+        self.with_recording_owner(phase, consume)
+    }
+    fn discard_recording(
+        &self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        branch: WorthQueryProductBranch,
+    ) -> Result<(), WorthQueryHistoryOutputDenial> {
+        self.discard_recording_owner(request, branch)
+    }
     fn release_for_branch(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -27,6 +41,7 @@ impl<S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>> OutputDriv
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<(), WorthQueryHistoryOutputDenial> {
+        self.close_recording_owner(phase)?;
         for entry in &mut self.trees {
             funding::checkpoint(phase, entry.tree.runtime())?;
             entry.tree.close(phase)?;

@@ -2267,7 +2267,7 @@ permission and request fact. A denied audience receives no additional historical
 existence information. The same rule covers sources created by a real fallback
 at a progressed private candidate, including a new generation of C's business
 key. Corrupt lineage refuses typed; changed discovery meaning takes the real
-parent fallback. Multi-tree edit recording remains under qualification. See the
+parent fallback. For isolated source or fixed edits, the configured trees also complete on the private candidate before adoption of the single recorded step. Healthy leaves verify before opening their original roots. A configured source that the edit retired or moved outside the document has a distinct Native-backed completion. Final qualification checks every whole tree, rechecks these completions and verifies Native’s independent current obligations. An omitted stale family or a later tree invalidating an earlier result refuses before adoption. Configure the exact declared fixed root when retaining a fixed action, alongside its other families. Group recording and codec-retired selection remain under qualification. See the
 [owned-model plan](../plans/WORTH-query/history-owned-models.md).
 
 To record an isolated edit, consume the attached document with

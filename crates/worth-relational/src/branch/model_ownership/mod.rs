@@ -3,6 +3,11 @@ use crate::identity::data::{EntityId, KindId};
 use std::collections::BTreeSet;
 
 mod basis;
+mod current_publications;
+pub use current_publications::{
+    RelationalOwnedModelOutputRoute, RelationalOwnedModelPublicationRead,
+    RelationalOwnedModelPublishedRoute,
+};
 mod graph_admission;
 mod graph_denial;
 mod graph_selection;

@@ -16,6 +16,7 @@ where
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
     Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+    Outputs: WorthQueryHistoryOutputsMode<S, H>,
     I::Binding: crate::application_entry::WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,

@@ -160,6 +160,55 @@ pub(in crate::domain_computation::primary_graph) fn qualify_output_collection<
     })
 }
 
+/// Recording may verify healthy or removed roots without ever opening an SDK
+/// root. Only the original trees that ran contribute publication movements.
+pub(in crate::domain_computation::primary_graph) fn qualify_recording_output_collection<
+    'a,
+    S: ApplicationSchema,
+>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    access: &WorthQueryProgramPublicationAccess,
+    scope: &WorthQueryRequestScope,
+    source: &Arc<Read>,
+    trees: impl Iterator<Item = &'a OriginalOutputTree> + Clone,
+) -> Result<Arc<Read>, Denial> {
+    let execution = phase
+        .checked_execution_request_for(&runtime.runtime.product_runtime)
+        .map_err(|cause| {
+            Denial::Output(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
+                "recording output forest",
+            ))
+        })?;
+    for tree in trees.clone() {
+        checkpoint(&execution)?;
+        if !Arc::ptr_eq(source, &tree.source) {
+            return Err(foreign("recording output forest source"));
+        }
+    }
+    let settlements = trees.clone().flat_map(OriginalOutputTree::settlements);
+    let endpoint = super::super::original_endpoint::derive(
+        &execution,
+        source,
+        &mut settlements.clone(),
+        &mut settlements.clone(),
+    )
+    .map_err(Denial::Output)?;
+    for tree in trees {
+        checkpoint(&execution)?;
+        tree.require_current_at(
+            runtime
+                .select_application_read_observation(phase, &endpoint)
+                .map_err(Denial::Observation)?,
+            phase,
+            access,
+            scope,
+        )?;
+    }
+    Ok(endpoint)
+}
+
 fn foreign(subject: &'static str) -> Denial {
     Denial::Output(WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::ForeignSettlement,

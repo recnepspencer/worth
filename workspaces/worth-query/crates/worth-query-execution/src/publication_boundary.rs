@@ -55,8 +55,10 @@ pub mod document_history {
         WorthQueryVerifiedHistoryParent,
     };
     pub use crate::domain_computation::primary_graph::{
-        WorthQueryCompletedHistoryOutputs, WorthQueryHistoryOutputQualificationDenial,
-        WorthQueryRetainedHistoryOutputTree,
+        WorthQueryCompletedHistoryOutputs, WorthQueryCompletedRecordingOutputs,
+        WorthQueryHistoryOutputQualificationDenial, WorthQueryHistoryRecordingOutputOrigin,
+        WorthQueryRecordingOutputQualificationDenial, WorthQueryRetainedHistoryOutputTree,
+        WorthQueryRetainedRecordingOutputTree,
     };
     pub use crate::domain_computation::primary_graph::{
         WorthQueryDocumentHistory, WorthQueryDocumentHistoryAdoptionFailure,

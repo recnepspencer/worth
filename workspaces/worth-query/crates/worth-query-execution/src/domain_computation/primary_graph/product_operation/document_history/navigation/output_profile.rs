@@ -50,6 +50,41 @@ impl WorthQueryHistoryOutputProfile {
         self.registration == HistoryOutputRegistration::OwnedProgramRoot
     }
 
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn matches_recording_model(
+        &self,
+        model: &HistoryModelIdentity,
+    ) -> bool {
+        self.uses_owned_model_graph() && &self.model == model
+    }
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn matches_recording_root<
+        S: ApplicationSchema,
+        P: ApplicationProgramDefinition<S>,
+        R: ApplicationOutputGraphShape<S>,
+    >(
+        &self,
+        program: &WorthQueryProgramApplicationRuntime<S, P>,
+    ) -> bool {
+        self.matches_program(program)
+            && self.root == crate::equality_type_id::EqualityTypeId::of::<R>().into_external()
+    }
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn recording_is_leaf(
+        &self,
+    ) -> bool {
+        self.leaf
+    }
+
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn recording_family(
+        &self,
+    ) -> &'static str {
+        self.family
+    }
+
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn recording_model(
+        &self,
+    ) -> HistoryModelIdentity {
+        self.model.clone()
+    }
+
     fn same_header(&self, other: &Self) -> bool {
         self.model == other.model
             && self.program == other.program

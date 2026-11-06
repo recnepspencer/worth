@@ -124,6 +124,32 @@ fn selected_publication_keeps_original_ids_under_fresh_commit_and_cold_current_c
             .unwrap(),
         "equal output identities and values cannot keep a displaced publication current"
     );
+    let obligations = world
+        .runtime
+        .observe_owned_model_publications(
+            execution,
+            &world.installed,
+            &after,
+            &ownership(),
+            world.model,
+        )
+        .unwrap();
+    let mut routes = obligations.routes();
+    let Some(worth_relational::facade::branch::RelationalOwnedModelOutputRoute::Published(route)) =
+        routes.next()
+    else {
+        panic!("selected live obligation");
+    };
+    assert!(routes.next().is_none());
+    assert!(route
+        .matches_publication(execution, &publications[0])
+        .unwrap());
+    assert!(
+        !route
+            .matches_publication(execution, &old_publication)
+            .unwrap(),
+        "equal meaning is insufficient after a different publication commit"
+    );
     let antecedent = world
         .runtime
         .readmit_restored_producer_prior(execution, &world.installed, &after, &world.meaning)

@@ -124,7 +124,7 @@ fn require_same_schema(
 }
 
 impl RelationalModelOwnership {
-    fn owned_entities(
+    pub(super) fn owned_entities(
         &self,
         read: &mut dyn traversal::Read,
         model: EntityId,

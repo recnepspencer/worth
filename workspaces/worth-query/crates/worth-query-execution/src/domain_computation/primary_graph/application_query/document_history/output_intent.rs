@@ -1,5 +1,6 @@
 //! Complete source intent captured from a real plan, without its grant or session.
 mod owned_scope;
+mod recording;
 mod source_read;
 use super::output_read::{control_denial, HistoryOutputControlPlan};
 use super::*;

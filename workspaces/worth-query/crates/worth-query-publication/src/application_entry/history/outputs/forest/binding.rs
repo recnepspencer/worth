@@ -157,6 +157,7 @@ where
         .map_err(Denial::Navigation)?;
     Ok(WorthQueryHistoryWithOutputTrees {
         profile,
+        recording: std::sync::Mutex::new(None),
         trees: vec![TreeEntry {
             tree: Box::new(tree),
             _memory: memory,

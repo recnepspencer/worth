@@ -1,6 +1,7 @@
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 mod advance;
 mod continuation;
+mod program_root;
 mod selected_program;
 mod types;
 mod workflow;
@@ -75,50 +76,6 @@ where
                 self.start_ordinary(&phase, source_result.into_output_demand_source())
             })
             .map_err(WorthQueryApplicationOutputDemandDenial::advancement)?
-    }
-
-    pub(in crate::application_entry) fn start_for_program<Program, Root>(
-        self,
-        phase: &AdvancementPhase<'_>,
-        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-    ) -> Result<
-        (
-            super::WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>,
-            std::sync::Arc<
-                worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
-            >,
-        ),
-        WorthQueryApplicationOutputDemandDenial,
-    >
-    where
-        Program: ApplicationProgramDefinition<Schema>,
-        Root: ApplicationOutputGraphShape<Schema>
-            + worth_query_declaration::facade::application_program::ApplicationFixedOutputRoot,
-        RootConnection<Schema, Root>:
-            WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
-    {
-        if !std::ptr::eq(self.application, application.runtime()) {
-            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
-        }
-        let observation = self
-            .observation
-            .as_ref()
-            .cloned()
-            .ok_or(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch)?;
-        let source_result = self.query_source(phase)?;
-        let limits = self.resolved_limits();
-        let admitted = application
-            .admit_program_root_output::<Root>(
-                phase,
-                &worth_query_execution::publication_boundary::program_publication_access(),
-                source_result.into_output_demand_source(),
-                limits,
-            )
-            .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
-        Ok((
-            super::WorthQueryApplicationProgramDemandHandle::new(admitted, self.demand, None),
-            observation,
-        ))
     }
 
     pub(in crate::application_entry) fn start_recovery<Program, Root>(
