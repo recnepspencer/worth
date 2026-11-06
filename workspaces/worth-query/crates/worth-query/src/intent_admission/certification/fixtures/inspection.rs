@@ -35,7 +35,7 @@ pub(in crate::intent_admission::certification) fn certified_inspection_advisory_
         .execute(execution)
         .expect("inspection certification intent should execute through lattice");
     let review = runtime
-        .inspect_intent(&receipt)
+        .inspect_intent(&receipt)?
         .review()
         .expect("inspection certification review should succeed");
     let request_digest = review.request().request_digest().to_string();

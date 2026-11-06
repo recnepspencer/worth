@@ -82,7 +82,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveContinuation<D> {
                     WorthQueryInstalledDomainLiveResumeCompletion {
                         handle: WorthQueryInstalledDomainLiveHandle {
                             handle: completion.into_handle(),
-                            receipt: execution_receipt.clone()?,
+                            receipt: execution_receipt.clone(),
                             marker: PhantomData,
                         },
                         resume_receipt,

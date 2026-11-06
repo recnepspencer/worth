@@ -85,7 +85,14 @@ pub(crate) fn lower_merge_workflow_declaration(
         MergeIntent::ReconcileIntoTarget,
     );
     let lowering_identity =
-        merge_lowering_identity(declaration, &input, &freshness_binding, &staleness_class);
+        merge_lowering_identity(declaration, &input, &freshness_binding, &staleness_class)
+            .map_err(|cause| {
+                WorkflowLoweringError::identity_derivation_denied(
+                    cause,
+                    staleness_class.clone(),
+                    lowering_denial_counters(1, LoweringDenialClass::MergeDenied),
+                )
+            })?;
 
     Ok(LoweredMergeWorkflowDeclaration {
         declaration: declaration.clone(),

@@ -218,7 +218,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             &self.basis_admission,
             admission,
         )?;
-        self.intent_receipts.push(receipt.clone()?);
+        self.intent_receipts.push(receipt.clone());
         self.execution_evidence
             .push(WorthQueryPreviewExecutionEvidence::for_intent_strategy(
                 &self.basis_admission,

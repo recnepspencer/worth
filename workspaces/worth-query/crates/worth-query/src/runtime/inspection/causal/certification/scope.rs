@@ -150,7 +150,7 @@ pub fn build_causal_inspection_certification_scope(
         &representative_matrix,
         &performance_certification,
         &proof_shape,
-    );
+    )?;
     let row_counts = certification_row_counts(&representative_matrix);
     let scope_digest = build_certification_scope_digest(
         &hostile_rows,
@@ -158,7 +158,7 @@ pub fn build_causal_inspection_certification_scope(
         &performance_certification,
         &proof_shape,
         &row_counts,
-    );
+    )?;
     Ok(CausalInspectionCertificationScope::from_parts(
         boundary_audit.audit_digest(),
         representative_matrix.matrix_digest(),

@@ -112,7 +112,7 @@ impl CausalInspectionCertificationFailureEvidence {
                 &[format!("kind:{}", representative_kind.as_str())],
             ));
         };
-        Ok(Self::from_kind(kind))
+        Ok(Self::from_kind(kind)?)
     }
 
     pub fn from_kind(

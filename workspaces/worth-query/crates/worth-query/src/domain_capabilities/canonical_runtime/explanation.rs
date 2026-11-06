@@ -105,14 +105,16 @@ where
                 Ok(artifact) => TransitionOutcome::Success(artifact),
                 Err(error) => TransitionOutcome::Denied(
                     WorthQueryDomainCapabilityProgressionDenial::new(
-                        WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
+                        causal_stop_progression_kind(
+                            &error,
+                            WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
+                        ),
                         "explanation-inspection",
                         domain_target_kind,
                         request_identity.clone(),
                         format!(
-                            "admitted causal inspection materialization denied for `{}` with `{}`",
+                            "admitted causal inspection materialization denied for `{}` with `{error:?}`",
                             domain_contribution_semantic_code,
-                            error.kind().as_str(),
                         ),
                     ),
                 ),
@@ -134,26 +136,40 @@ where
                 Ok(artifact) => TransitionOutcome::Success(artifact),
                 Err(error) => TransitionOutcome::Denied(
                     WorthQueryDomainCapabilityProgressionDenial::new(
-                        WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
+                        causal_stop_progression_kind(
+                            &error,
+                            WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
+                        ),
                         "explanation-inspection",
                         domain_target_kind,
                         request_identity.clone(),
                         format!(
-                            "advisory causal inspection materialization denied for `{}` with `{}`",
+                            "advisory causal inspection materialization denied for `{}` with `{error:?}`",
                             domain_contribution_semantic_code,
-                            error.kind().as_str(),
                         ),
                     ),
                 ),
             }
         }
         CausalInspectionProofFlow::Denied(inspection) => {
-            TransitionOutcome::Success(materialize_denied_causal_inspection(
+            match materialize_denied_causal_inspection(
                 inspection,
                 None,
                 redaction_policy,
                 materialization_policy,
-            )?)
+            ) {
+                Ok(artifact) => TransitionOutcome::Success(artifact),
+                Err(error) => TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
+                    causal_stop_progression_kind(
+                        &error,
+                        WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
+                    ),
+                    "explanation-inspection",
+                    domain_target_kind,
+                    request_identity.clone(),
+                    format!("denied causal inspection materialization refused: {error:?}"),
+                )),
+            }
         }
     })
 }
@@ -186,15 +202,16 @@ where
         Ok(request) => request,
         Err(error) => {
             return Ok(TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
-                WorthQueryDomainCapabilityProgressionDenialKind::InconsistentCanonicalMaterializationSemantics,
+                causal_stop_progression_kind(
+                    &error,
+                    WorthQueryDomainCapabilityProgressionDenialKind::InconsistentCanonicalMaterializationSemantics,
+                ),
                 "explanation-inspection",
                 domain_contribution.target().kind(),
                 domain_contribution.request_identity().clone(),
                 format!(
-                    "causal inspection request denied for `{}` with `{}`: {}",
+                    "causal inspection request denied for `{}`: {error:?}",
                     payload.semantic_code(),
-                    error.kind().as_str(),
-                    error.message(),
                 ),
             )));
         }
@@ -213,7 +230,7 @@ where
                 runtime_semantics.materialization_policy(),
             )?,
         },
-    )?)
+    ))
 }
 
 fn missing_runtime_semantics_denial(
@@ -244,4 +261,26 @@ fn missing_bridge_envelope_denial(
             "bridge-backed causal inspection materialization requires a bridge envelope for `{semantic_code}`"
         ),
     )
+}
+
+fn causal_stop_progression_kind(
+    error: &crate::runtime::CausalInspectionConstructionStop,
+    ordinary: WorthQueryDomainCapabilityProgressionDenialKind,
+) -> WorthQueryDomainCapabilityProgressionDenialKind {
+    use crate::runtime::CausalInspectionConstructionStop as Stop;
+    match error {
+        Stop::Digest(cause) => {
+            WorthQueryDomainCapabilityProgressionDenialKind::EvidenceIdentityDerivationDenied(
+                *cause,
+            )
+        }
+        Stop::Bridge(
+            worth_runtime_bridge::facade::BridgeCausalEnvelopeConstructionStop::Digest(cause),
+        ) => WorthQueryDomainCapabilityProgressionDenialKind::BridgeDigestRefused(*cause),
+        Stop::Bridge(_)
+        | Stop::Anchor(_)
+        | Stop::Request(_)
+        | Stop::ReferenceIndex(_)
+        | Stop::Materialization(_) => ordinary,
+    }
 }

@@ -46,13 +46,13 @@ pub(super) fn preview_certification_evidence(
                     &[validation_shape_role_evidence_identity(
                         "closeout_kind",
                         lifecycle_closeout.closeout_kind().as_str(),
-                    )],
+                    )?],
                 ));
             }
 
             Ok(PreviewCertificationEvidence {
-                preview_isolation_identity: lifecycle_absent_preview_isolation_identity(),
-                preview_residue_identity: lifecycle_absent_preview_residue_identity(),
+                preview_isolation_identity: lifecycle_absent_preview_isolation_identity()?,
+                preview_residue_identity: lifecycle_absent_preview_residue_identity()?,
                 counter_identities: Vec::new(),
                 support_identities: vec![WorthQueryEvidenceIdentity::compose(
                     crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
@@ -62,7 +62,7 @@ pub(super) fn preview_certification_evidence(
                     "subscription_preview_support_absent_v1",
                 )
                 .seal()],
-                performance_receipt_identity: lifecycle_absent_performance_receipt_identity(),
+                performance_receipt_identity: lifecycle_absent_performance_receipt_identity()?,
             })
         }
         SubscriptionLifecyclePreviewCertification::Discard {
@@ -111,27 +111,27 @@ pub(super) fn preview_certification_evidence(
                         validation_shape_role_evidence_identity(
                             "closeout_kind",
                             lifecycle_closeout.closeout_kind().as_str(),
-                        ),
+                        )?,
                         validation_role_evidence_identity(
                             "lane",
                             active_lane_handle.lane_digest().evidence_identity(),
-                        ),
+                        )?,
                         validation_role_evidence_identity(
                             "attachment",
                             attachment.attachment_digest().evidence_identity(),
-                        ),
+                        )?,
                         validation_role_evidence_identity(
                             "preview_lane",
                             isolation.active_lane_digest().evidence_identity(),
-                        ),
+                        )?,
                         validation_role_evidence_identity(
                             "preview_attachment",
                             isolation.attachment_digest().evidence_identity(),
-                        ),
+                        )?,
                         validation_role_evidence_identity(
                             "discard_attachment",
                             discard_closeout.attachment_digest().evidence_identity(),
-                        ),
+                        )?,
                     ],
                 ));
             }
@@ -239,19 +239,19 @@ pub(super) fn preview_certification_evidence(
                         validation_shape_role_evidence_identity(
                             "closeout_kind",
                             lifecycle_closeout.closeout_kind().as_str(),
-                        ),
+                        )?,
                         validation_role_evidence_identity(
                             "lane",
                             active_lane_handle.lane_digest().evidence_identity(),
-                        ),
+                        )?,
                         validation_role_evidence_identity(
                             "attachment",
                             attachment.attachment_digest().evidence_identity(),
-                        ),
+                        )?,
                         validation_role_evidence_identity(
                             "promotion_lane",
                             promotion_handoff.preview_lane_digest().evidence_identity(),
-                        ),
+                        )?,
                     ],
                 ));
             }
@@ -264,7 +264,7 @@ pub(super) fn preview_certification_evidence(
                     promotion_handoff
                         .authoritative_active_lane_digest()
                         .evidence_identity(),
-                ),
+                )?,
                 counter_identities: vec![
                     lifecycle_labeled_counter_identity(
                         "preview_isolation",

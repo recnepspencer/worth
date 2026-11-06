@@ -54,7 +54,7 @@ pub(super) fn extract_retained_binding_facts(
         for index in 0..materialization.retained_row_count() {
             row_count += 1;
             let row_identity =
-                retained_binding_row_identity(binding.binding_for_reporting(), view_name, index);
+                retained_binding_row_identity(binding.binding_for_reporting(), view_name, index)?;
             for fact_family in contract.fact_families() {
                 match fact_family.kind() {
                     ProjectionFactKind::ViewLocalIdentity => {
@@ -159,7 +159,7 @@ pub(super) fn extract_retained_binding_facts(
             effect_continuity_facts: Vec::new(),
             relation_endpoints: Vec::new(),
         },
-    ))
+    )?)
 }
 
 fn retained_field_path(

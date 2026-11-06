@@ -3,6 +3,7 @@ use crate::application::{
     WorthQueryDomainEntryMarker, WorthQueryDomainOperatingContext,
     WorthQueryInstalledDomainDeclarationContext,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::grouped_authoring::{
     ordinary_outcome_from_grouped_orchestration_checked,
     worth_query_grouped_declaration_checked_on_handle,
@@ -292,12 +293,15 @@ pub(super) fn orchestrate_local_neighborhood_for_active_face_selection_checked<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-) -> WorthQueryGroupedOrchestrationChecked<D, I>
+) -> Result<WorthQueryGroupedOrchestrationChecked<D, I>, IdentityDerivationDenial>
 where
     I::Family: WorthQueryGeometryNeighborhoodHelperFamily<D>
         + WorthQueryDeclarationSupportsNeighborhoodGrouping<D>,
 {
-    worth_query_grouped_orchestration_checked_on_handle(handle, declaration)
+    Ok(worth_query_grouped_orchestration_checked_on_handle(
+        handle,
+        declaration,
+    )?)
 }
 
 pub(super) fn orchestrate_local_neighborhood_for_active_face_selection_proof<
@@ -307,10 +311,13 @@ pub(super) fn orchestrate_local_neighborhood_for_active_face_selection_proof<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-) -> WorthQueryGroupedOrchestrationTranscript<D, I>
+) -> Result<WorthQueryGroupedOrchestrationTranscript<D, I>, IdentityDerivationDenial>
 where
     I::Family: WorthQueryGeometryNeighborhoodHelperFamily<D>
         + WorthQueryDeclarationSupportsNeighborhoodGrouping<D>,
 {
-    worth_query_grouped_orchestration_proof_on_handle(handle, declaration)
+    Ok(worth_query_grouped_orchestration_proof_on_handle(
+        handle,
+        declaration,
+    )?)
 }

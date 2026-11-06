@@ -52,7 +52,7 @@ pub(super) fn batch_lane_denial_row(
                     )
                     .expect("name patch should be native"),
             },
-        })?
+        })
         .push(RawEffectIntent::Writeback {
             binding: runtime_workflow_binding()?,
             request: workflow_request(

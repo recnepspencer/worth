@@ -105,3 +105,36 @@ fn masked_detail_table_and_grouped_requests_deny_before_bridge_lowering() {
         );
     }
 }
+
+#[test]
+fn oversized_diagnostic_preserves_the_selection_failure() {
+    let live = LiveQueryAdmissionArtifact::for_test(
+        LiveQueryFamily::Detail,
+        Some(LiveViewShapeFamily::Table),
+        QuerySubscriptionConstructionSource::Direct,
+    );
+    let original = select_query_subscription_family(live, roomy_budget()).unwrap_err();
+    let source = original.diagnostic().unwrap().source_identity();
+    let counters = original.counters().clone();
+    let maximum =
+        worth_foundational::facade::CanonicalDigestWorkBudget::standard().maximum_encoded_bytes();
+    let reason = "x".repeat(maximum + 1);
+    let failure = QuerySubscriptionFamilySelectionError::new(
+        QuerySubscriptionFamilySelectionFailureClass::ViewFamilyLiveFamilyMismatch,
+        reason.clone(),
+        QuerySubscriptionDiagnosticStage::ViewMismatch,
+        source,
+        counters.clone(),
+    );
+    assert_eq!(
+        failure.failure_class(),
+        &QuerySubscriptionFamilySelectionFailureClass::ViewFamilyLiveFamilyMismatch
+    );
+    assert_eq!(failure.message(), reason);
+    assert_eq!(failure.counters(), &counters);
+    let refusal = failure.diagnostic().unwrap_err();
+    assert!(matches!(
+        refusal.cause,
+        worth_foundational::facade::CanonicalDigestDerivationDenial::EncodedByteLimitExceeded { .. }
+    ));
+}

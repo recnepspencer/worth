@@ -127,16 +127,26 @@ pub(crate) fn lower_query_writeback_declaration(
         declaration.request().freshness_policy(),
     )?;
     let binding_identity = declaration.binding().binding_identity().clone();
-    let causality_identity = writeback_causality_identity(declaration, request_kind);
-    let basis_identity = writeback_basis_identity(declaration);
+    let identity_denial = |cause| {
+        WorkflowLoweringError::identity_derivation_denied(
+            cause,
+            WorkflowStalenessClass::AuthorityValidationRequired,
+            lowering_denial_counters(1, LoweringDenialClass::WritebackDenied),
+        )
+    };
+    let causality_identity =
+        writeback_causality_identity(declaration, request_kind).map_err(identity_denial)?;
+    let basis_identity = writeback_basis_identity(declaration).map_err(identity_denial)?;
     let bridge_declaration =
-        writeback_bridge_declaration(declaration, input.family(), request_kind);
+        writeback_bridge_declaration(declaration, input.family(), request_kind)
+            .map_err(identity_denial)?;
     let lowering_identity = writeback_lowering_identity(
         declaration,
         input.family(),
         &bridge_declaration,
         &causality_identity,
-    );
+    )
+    .map_err(identity_denial)?;
 
     Ok(QueryWritebackDeclaration {
         declaration: declaration.clone(),

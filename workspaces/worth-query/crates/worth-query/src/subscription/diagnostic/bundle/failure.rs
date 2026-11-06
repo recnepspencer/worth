@@ -140,12 +140,12 @@ impl QuerySubscriptionDiagnosticFailure {
         error: &QuerySubscriptionFamilySelectionError,
     ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::new(
-            *error.diagnostic().stage(),
+            *error.diagnostic()?.stage(),
             error.message(),
-            error.diagnostic().source_identity().clone(),
+            error.diagnostic()?.source_identity().clone(),
             error.counters().evidence_identity()?,
             error.failure_class().as_str(),
-            error.diagnostic().evidence_identity(),
+            error.diagnostic()?.evidence_identity(),
         )?)
     }
 
@@ -153,12 +153,12 @@ impl QuerySubscriptionDiagnosticFailure {
         error: &QuerySubscriptionDeclarationDenial,
     ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::new(
-            *error.diagnostic().stage(),
+            *error.diagnostic()?.stage(),
             error.message(),
-            error.diagnostic().source_identity().clone(),
+            error.diagnostic()?.source_identity().clone(),
             error.counters().evidence_identity()?,
             error.denial_kind().as_str(),
-            error.diagnostic().evidence_identity(),
+            error.diagnostic()?.evidence_identity(),
         )?)
     }
 
@@ -166,12 +166,12 @@ impl QuerySubscriptionDiagnosticFailure {
         error: &QuerySubscriptionBridgeLoweringError,
     ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::new(
-            *error.diagnostic().stage(),
+            *error.diagnostic()?.stage(),
             error.message(),
-            error.diagnostic().source_identity().clone(),
+            error.diagnostic()?.source_identity().clone(),
             error.counters().evidence_identity()?,
             error.denial_kind().as_str(),
-            error.diagnostic().evidence_identity(),
+            error.diagnostic()?.evidence_identity(),
         )?)
     }
 

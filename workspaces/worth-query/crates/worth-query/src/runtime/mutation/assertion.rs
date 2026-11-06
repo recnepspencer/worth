@@ -234,7 +234,7 @@ impl WorthQueryVerifiedExistingTruthAssertion {
         let verified_assumption_set = crate::runtime::WorthQueryVerifiedAssumptionSet::new(
             binding.binding_evidence_identity().clone(),
             asserted_aspects,
-            aspect_evidence_rows.clone()?,
+            aspect_evidence_rows.clone(),
             cleared_assertion_count,
             snapshot_identity,
         )?;

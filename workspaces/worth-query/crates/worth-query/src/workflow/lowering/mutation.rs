@@ -140,7 +140,14 @@ pub(crate) fn lower_mutation_intent_declaration(
         authority_binding_identity,
         &freshness_binding,
         &request,
-    );
+    )
+    .map_err(|cause| {
+        WorkflowLoweringError::identity_derivation_denied(
+            cause,
+            WorkflowStalenessClass::ExactBasisPreserved,
+            lowering_denial_counters(1, LoweringDenialClass::General),
+        )
+    })?;
     Ok(LoweredMutationIntentDeclaration {
         declaration: declaration.clone(),
         mutation_family,

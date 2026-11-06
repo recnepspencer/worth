@@ -85,7 +85,7 @@ pub(crate) fn representative_write_authority_row(
             WorthQueryMutationKind::Deleted,
             vec![status_value_touch()],
         )],
-    )?;
+    );
     let execution = WriteAuthorityExecutionReceipt::from_command(&command, mutation_receipt)?;
     Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::WriteAuthorityBackendExecution,
@@ -154,7 +154,7 @@ pub(crate) fn representative_signal_invalidation_row(
             vec![status_value_touch(), priority_value_touch()],
         )],
         bridge_authority,
-    )?
+    )
     .admit_runtime_write_authority();
     let routing = SignalInvalidationRoutingReceipt::from_mutation_receipt(&mutation_receipt)
         .expect("representative signal routing fixture must carry bridge authority");

@@ -88,7 +88,7 @@ fn validate_whole_aspect_value(
                 source_identity: compose_scoped_row_source_identity(
                     materialized.source_identity(),
                     row_identity,
-                ),
+                )?,
                 field_path: native.field_path().clone(),
                 contract_key: native.contract().key().clone(),
                 contract_revision: native.contract().revision(),

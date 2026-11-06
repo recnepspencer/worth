@@ -146,7 +146,7 @@ impl WorthQueryDerivedPatch {
             format!("derived:{upstream_view}"),
             self.entity_identity.clone().unwrap_or_else(|| {
                 crate::memory_workspace::admit_authored_entity_label(upstream_view)
-            })?,
+            }),
             WorthQueryMutationKind::Updated,
             self.aspect_touches.clone(),
         )?)

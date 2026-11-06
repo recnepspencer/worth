@@ -7,6 +7,7 @@ use super::super::identity::CausalInspectionCertificationErrorIdentity;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CausalInspectionCertificationErrorKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     MissingRequiredHostileLane,
     MissingRepresentativeMatrixRow,
     RepresentativeMatrixMismatch,
@@ -19,6 +20,7 @@ pub enum CausalInspectionCertificationErrorKind {
 impl CausalInspectionCertificationErrorKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::MissingRequiredHostileLane => "missing_required_hostile_lane",
             Self::MissingRepresentativeMatrixRow => "missing_representative_matrix_row",
             Self::RepresentativeMatrixMismatch => "representative_matrix_mismatch",
@@ -77,5 +79,15 @@ impl CausalInspectionCertificationError {
             .as_ref()
             .map_err(|cause| *cause)?
             .as_str())
+    }
+}
+
+impl From<IdentityDerivationDenial> for CausalInspectionCertificationError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self {
+            kind: CausalInspectionCertificationErrorKind::EvidenceIdentityDerivationDenied(cause),
+            message: "causal inspection certification identity refused",
+            failure_identity: Err(cause),
+        }
     }
 }

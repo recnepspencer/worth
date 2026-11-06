@@ -67,7 +67,7 @@ impl WorthQuerySupportPinContract {
         &self,
     ) -> Result<WorthQuerySupportPinContractTerminalJsonDocument, WorthQuerySupportPinningError>
     {
-        self.to_document().to_canonical_terminal_json_document()
+        self.to_document()?.to_canonical_terminal_json_document()
     }
 
     pub fn to_stable_terminal_json_document(

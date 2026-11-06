@@ -12,6 +12,7 @@ use super::identity::subscription_certification_failure_identity;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum QuerySubscriptionCertificationDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ActivationAdmissionMismatch,
     ScaleSlopeDrift,
     ScaleSlopeSourceMismatch,
@@ -20,6 +21,7 @@ pub enum QuerySubscriptionCertificationDenialKind {
 impl QuerySubscriptionCertificationDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::ActivationAdmissionMismatch => "activation_admission_mismatch",
             Self::ScaleSlopeDrift => "scale_slope_drift",
             Self::ScaleSlopeSourceMismatch => "scale_slope_source_mismatch",
@@ -31,7 +33,7 @@ impl QuerySubscriptionCertificationDenialKind {
 pub struct QuerySubscriptionCertificationError {
     denial_kind: QuerySubscriptionCertificationDenialKind,
     message: &'static str,
-    failure_identity: WorthQueryEvidenceIdentity,
+    failure_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
 }
 
 impl QuerySubscriptionCertificationError {
@@ -39,17 +41,19 @@ impl QuerySubscriptionCertificationError {
         denial_kind: QuerySubscriptionCertificationDenialKind,
         message: &'static str,
         evidence: &[WorthQueryEvidenceIdentity],
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             denial_kind,
             message,
-            failure_identity: subscription_certification_failure_identity(
-                "query_subscription_certification_error_v1",
-                denial_kind.as_str(),
-                message,
-                evidence,
-            )?,
-        })
+            failure_identity: (|| {
+                Ok(subscription_certification_failure_identity(
+                    "query_subscription_certification_error_v1",
+                    denial_kind.as_str(),
+                    message,
+                    evidence,
+                )?)
+            })(),
+        }
     }
 
     pub fn denial_kind(&self) -> &QuerySubscriptionCertificationDenialKind {
@@ -60,8 +64,10 @@ impl QuerySubscriptionCertificationError {
         self.message
     }
 
-    pub fn failure_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.failure_identity
+    pub fn failure_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.failure_identity.as_ref().map_err(|cause| *cause)?)
     }
 }
 
@@ -108,19 +114,19 @@ pub fn certify_query_subscription_activation(
             QuerySubscriptionCertificationDenialKind::ActivationAdmissionMismatch,
             "subscription activation input does not match the admitted subscription artifact",
             &[
-                validation_role_evidence_identity("admission", admission.evidence_identity()),
+                validation_role_evidence_identity("admission", admission.evidence_identity())?,
                 validation_role_evidence_identity(
                     "activation_admission",
                     activation.admission_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "admission_query",
                     admission.query_declaration_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "activation_query",
                     activation.query_declaration_identity(),
-                ),
+                )?,
             ],
         ));
     }
@@ -136,19 +142,19 @@ pub fn certify_query_subscription_activation(
             QuerySubscriptionCertificationDenialKind::ScaleSlopeSourceMismatch,
             "subscription scale slope report does not certify this activation source",
             &[
-                validation_role_evidence_identity("activation", activation.evidence_identity()),
+                validation_role_evidence_identity("activation", activation.evidence_identity())?,
                 validation_role_evidence_identity(
                     "scale_activation",
                     scale_report.activation_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "activation_admission",
                     activation.admission_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "scale_admission",
                     scale_report.admission_identity(),
-                ),
+                )?,
             ],
         ));
     }
@@ -172,7 +178,7 @@ pub fn certify_query_subscription_activation(
         &admission.counters().evidence_identity(),
         &activation.counters().evidence_identity(),
         scale_report.evidence_identity_ref(),
-    );
+    )?;
     Ok(QuerySubscriptionCertificationBundle {
         certification_bundle_identity,
         admission_identity: admission.evidence_identity().clone(),
@@ -189,4 +195,16 @@ pub fn certify_query_subscription_activation(
         scale_activation_identity,
         scale_admission_identity,
     })
+}
+
+impl From<IdentityDerivationDenial> for QuerySubscriptionCertificationError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self {
+            denial_kind: QuerySubscriptionCertificationDenialKind::EvidenceIdentityDerivationDenied(
+                cause,
+            ),
+            message: "subscription activation certification identity refused",
+            failure_identity: Err(cause),
+        }
+    }
 }

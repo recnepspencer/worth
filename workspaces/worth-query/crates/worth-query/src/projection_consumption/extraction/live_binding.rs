@@ -102,7 +102,7 @@ impl ExtractedLiveBindingFacts {
     ) -> Result<(), ProjectionFactExtractionError> {
         for (index, row) in read.rows().iter().enumerate() {
             self.row_count += 1;
-            let row_identity = live_binding_row_identity(binding_digest, view_name, index);
+            let row_identity = live_binding_row_identity(binding_digest, view_name, index)?;
             let row_fields = query_read_result_row_fields(contract, row)?;
             for fact_family in contract.fact_families() {
                 match fact_family.kind() {

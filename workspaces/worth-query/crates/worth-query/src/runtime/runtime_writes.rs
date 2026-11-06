@@ -228,7 +228,7 @@ impl WorthQueryRuntime {
                     decision_trace_envelope,
                     execution_provenance,
                 },
-            )?,
+            ),
         )?;
         self.journal_replay.record_write_receipt(&receipt);
         Ok(receipt)

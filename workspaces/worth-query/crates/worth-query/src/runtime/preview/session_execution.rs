@@ -60,7 +60,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             if affected_aspects.is_empty() {
                 continue;
             }
-            live_affected.insert(target, affected_aspects.clone()?);
+            live_affected.insert(target, affected_aspects.clone());
             self.execution_evidence
                 .push(WorthQueryPreviewExecutionEvidence::for_aspect_touches(
                     &self.basis_admission,

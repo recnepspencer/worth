@@ -139,7 +139,7 @@ fn batch_mutation_oracle_digest(
     let executed = effect_batch()
         .using_basis(EffectAuthoringBasis::from(branch_mutation_basis(branch)))
         .push(raw_mutation_effect_with_binding(
-            binding.clone()?,
+            binding.clone(),
             left,
             "left-closeout-oracle".to_string(),
         ))

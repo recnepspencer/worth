@@ -6,6 +6,7 @@ use super::super::super::evidence_projection::subscription_evidence_projection;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum QuerySubscriptionSupportReportDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     DeclarationSourceMismatch,
     FamilySourceMismatch,
     AdmissionSourceMismatch,
@@ -15,6 +16,7 @@ pub enum QuerySubscriptionSupportReportDenialKind {
 impl QuerySubscriptionSupportReportDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::DeclarationSourceMismatch => "declaration_source_mismatch",
             Self::FamilySourceMismatch => "family_source_mismatch",
             Self::AdmissionSourceMismatch => "admission_source_mismatch",
@@ -88,5 +90,17 @@ impl QuerySubscriptionSupportReportError {
         &self,
     ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
         Ok(self.failure_identity.as_ref().map_err(|cause| *cause)?)
+    }
+}
+
+impl From<IdentityDerivationDenial> for QuerySubscriptionSupportReportError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self {
+            denial_kind: QuerySubscriptionSupportReportDenialKind::EvidenceIdentityDerivationDenied(
+                cause,
+            ),
+            message: "subscription support report identity refused",
+            failure_identity: Err(cause),
+        }
     }
 }

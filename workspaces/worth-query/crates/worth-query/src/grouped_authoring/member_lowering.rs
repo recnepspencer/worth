@@ -75,7 +75,7 @@ pub(crate) fn lower_grouped_members_on_handle<
     }
 
     let mut member_envelopes = Vec::with_capacity(declaration.members().len());
-    let mut member_transcripts = Vec::with_capacity(declaration.members().len())?;
+    let mut member_transcripts = Vec::with_capacity(declaration.members().len());
     for member in declaration.members() {
         if capture_proof {
             let transcript =

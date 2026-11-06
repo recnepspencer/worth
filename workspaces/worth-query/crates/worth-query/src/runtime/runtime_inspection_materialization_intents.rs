@@ -291,7 +291,7 @@ impl WorthQueryRuntime {
         let snapshot_identity = self.current_snapshot_identity_with_request(execution)?;
         let receipt = WorthQueryDerivedMaterializationReceipt::from_evidence(
             &evidence,
-            snapshot_identity.clone()?,
+            snapshot_identity.clone(),
         )?;
         let mut result = WorthQueryDerivedMaterializationResult::from_retained_rows(rows, receipt);
         let decision_trace_envelope =
@@ -333,7 +333,7 @@ impl WorthQueryRuntime {
         let snapshot_identity = self.current_snapshot_identity_with_request(execution)?;
         let receipt = WorthQueryDerivedInspectionReceipt::from_evidence(
             &evidence,
-            snapshot_identity.clone()?,
+            snapshot_identity.clone(),
         )?;
         let mut result = WorthQueryDerivedInspectionResult::new(evidence, receipt);
         let decision_trace_envelope =

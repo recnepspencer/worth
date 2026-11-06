@@ -8,7 +8,7 @@ use super::vocabulary::SubscriptionLifecycleCertificationDenialKind;
 pub struct SubscriptionLifecycleCertificationError {
     denial_kind: SubscriptionLifecycleCertificationDenialKind,
     message: &'static str,
-    failure_identity: WorthQueryEvidenceIdentity,
+    failure_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
 }
 
 impl SubscriptionLifecycleCertificationError {
@@ -16,17 +16,19 @@ impl SubscriptionLifecycleCertificationError {
         denial_kind: SubscriptionLifecycleCertificationDenialKind,
         message: &'static str,
         evidence: &[WorthQueryEvidenceIdentity],
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             denial_kind,
             message,
-            failure_identity: subscription_certification_failure_identity(
-                "subscription_lifecycle_certification_error_v1",
-                denial_kind.as_str(),
-                message,
-                evidence,
-            )?,
-        })
+            failure_identity: (|| {
+                Ok(subscription_certification_failure_identity(
+                    "subscription_lifecycle_certification_error_v1",
+                    denial_kind.as_str(),
+                    message,
+                    evidence,
+                )?)
+            })(),
+        }
     }
 
     pub fn denial_kind(&self) -> &SubscriptionLifecycleCertificationDenialKind {
@@ -37,7 +39,22 @@ impl SubscriptionLifecycleCertificationError {
         self.message
     }
 
-    pub fn failure_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.failure_identity
+    pub fn failure_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.failure_identity.as_ref().map_err(|cause| *cause)?)
+    }
+}
+
+impl From<IdentityDerivationDenial> for SubscriptionLifecycleCertificationError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self {
+            denial_kind:
+                SubscriptionLifecycleCertificationDenialKind::EvidenceIdentityDerivationDenied(
+                    cause,
+                ),
+            message: "subscription lifecycle certification identity refused",
+            failure_identity: Err(cause),
+        }
     }
 }

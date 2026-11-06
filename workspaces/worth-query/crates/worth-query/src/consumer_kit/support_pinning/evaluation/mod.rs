@@ -30,10 +30,10 @@ pub(crate) fn evaluate_support_pin_contract(
             Some(contract.schema_identity().to_string()),
             Some(snapshot.schema_identity().to_string()),
             true,
-        ));
+        )?);
     }
 
-    let expected_vocabulary = support_pin_vocabulary_identity()
+    let expected_vocabulary = support_pin_vocabulary_identity()?
         .terminal_projection_for_reporting()
         .to_string();
     if contract.pinned_vocabulary_identity() != expected_vocabulary {
@@ -44,7 +44,7 @@ pub(crate) fn evaluate_support_pin_contract(
             Some(expected_vocabulary),
             Some(contract.pinned_vocabulary_identity().to_string()),
             true,
-        ));
+        )?);
     }
 
     if contract.source_matrix_digest() != snapshot.source_matrix_digest() {
@@ -55,14 +55,14 @@ pub(crate) fn evaluate_support_pin_contract(
             Some(contract.source_matrix_digest().to_string()),
             Some(snapshot.source_matrix_digest().to_string()),
             false,
-        ));
+        )?);
     }
 
     for requirement in contract.requirements() {
         match index.optional_row(requirement.family()) {
             Some(row) => {
                 matched_required_count += 1;
-                findings.extend(evaluate_requirement(requirement, row));
+                findings.extend(evaluate_requirement(requirement, row)?);
             }
             None => findings.push(make_finding(
                 WorthQuerySupportPinFindingKind::RequiredRowMissing,
@@ -71,13 +71,13 @@ pub(crate) fn evaluate_support_pin_contract(
                 Some(requirement.family().as_str().to_string()),
                 None,
                 true,
-            )),
+            )?),
         }
     }
 
     for observed in contract.observed_rows() {
         match index.optional_row(observed.family()) {
-            Some(row) => findings.extend(evaluate_observed_row(observed, row)),
+            Some(row) => findings.extend(evaluate_observed_row(observed, row)?),
             None => findings.push(make_finding(
                 WorthQuerySupportPinFindingKind::ObservedRowMissing,
                 Some(observed.family()),
@@ -85,7 +85,7 @@ pub(crate) fn evaluate_support_pin_contract(
                 Some(observed.family().as_str().to_string()),
                 None,
                 false,
-            )),
+            )?),
         }
     }
 
@@ -104,7 +104,7 @@ pub(crate) fn evaluate_support_pin_contract(
         matched_required_count,
         snapshot.rows().len(),
         &finding_identities,
-    )
+    )?
     .terminal_projection_for_reporting()
     .to_string();
 

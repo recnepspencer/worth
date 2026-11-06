@@ -77,7 +77,7 @@ impl WorthQueryRuntime {
         let receipt = WorthQueryUnifiedInspectionReceipt::from_inspection(
             binding.seed().request_label().clone(),
             &inspection,
-            snapshot_identity.clone()?,
+            snapshot_identity.clone(),
         )?;
         let mut result = WorthQueryUnifiedInspectionResult::new(inspection, receipt);
         let decision_trace_envelope =

@@ -182,5 +182,5 @@ where
             effect_continuity_facts: Vec::new(),
             relation_endpoints,
         },
-    ))
+    )?)
 }

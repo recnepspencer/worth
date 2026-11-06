@@ -41,7 +41,7 @@ impl WorthQuerySupportPinDeclaration {
                 .identity()
                 .terminal_projection_for_reporting()
                 .to_string(),
-            pinned_vocabulary_identity: support_pin_vocabulary_identity()
+            pinned_vocabulary_identity: support_pin_vocabulary_identity()?
                 .terminal_projection_for_reporting()
                 .to_string(),
             support_snapshot_schema_identity: snapshot.schema_identity().to_string(),
@@ -122,7 +122,7 @@ impl WorthQuerySupportPinContractBuilder<'_> {
             &self.source_matrix_digest,
             &requirement_identities,
             &observed_identities,
-        )
+        )?
         .terminal_projection_for_reporting()
         .to_string();
         WorthQuerySupportPinContract::new(

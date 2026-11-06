@@ -17,7 +17,7 @@ pub(super) fn extract_query_context_facts(
 ) -> Result<ConsumedProjectionFactSet, ProjectionFactExtractionError> {
     admit_query_context_source(contract, execution)?;
     let requested_facts = RequestedQueryContextFacts::from_contract(contract);
-    let extracted_rows = extract_query_context_rows(contract, execution);
+    let extracted_rows = extract_query_context_rows(contract, execution)?;
     let source_references = extract_query_context_source_references(
         contract,
         execution,
@@ -32,7 +32,7 @@ pub(super) fn extract_query_context_facts(
             extracted: extracted_rows,
             source_references,
         },
-    ))
+    )?)
 }
 
 #[derive(Clone, Copy)]

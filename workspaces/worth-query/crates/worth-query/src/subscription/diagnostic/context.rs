@@ -58,7 +58,7 @@ impl QuerySubscriptionDiagnosticSelectionContext {
         };
         let declaration_family_label = format!("not_declared:{query_family_label}");
         let live_graph_access_posture_label = "selection_denied".to_string();
-        let source_identity = error.diagnostic().source_identity().clone();
+        let source_identity = error.diagnostic()?.source_identity().clone();
         let context_identity = diagnostic_selection_context_denied_identity(
             &source_identity,
             &query_family_label,

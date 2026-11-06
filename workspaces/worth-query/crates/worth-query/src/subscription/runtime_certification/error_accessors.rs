@@ -18,13 +18,19 @@ impl QuerySubscriptionRuntimeCertificationCounters {
 }
 
 impl QuerySubscriptionRuntimeCertificationError {
-    pub fn failure_identity(&self) -> &crate::evidence_identity::WorthQueryEvidenceIdentity {
-        &self.failure_identity
+    pub fn failure_identity(
+        &self,
+    ) -> Result<&crate::evidence_identity::WorthQueryEvidenceIdentity, IdentityDerivationDenial>
+    {
+        Ok(&self.failure_identity?)
     }
 
     pub fn failure_projection(
         &self,
-    ) -> QueryProjectionIdentity<String, QuerySubscriptionIdentityKind> {
-        subscription_evidence_projection(&self.failure_identity)
+    ) -> Result<
+        QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
+        IdentityDerivationDenial,
+    > {
+        Ok(subscription_evidence_projection(&self.failure_identity?))
     }
 }

@@ -1,6 +1,7 @@
 //! Consuming direct-execution phases before exact evidence completion.
 
 use crate::basis_lifecycle::BasisOperationLane;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::super::super::{
@@ -91,15 +92,18 @@ where
             '_,
         >,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
-    ) -> super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output> {
+    ) -> Result<
+        super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output>,
+        IdentityDerivationDenial,
+    > {
         let prepared = match WorthQueryPreparedDirectExecution::prepare(phase, self, workspace) {
             Ok(prepared) => prepared,
-            Err(outcome) => return outcome,
+            Err(outcome) => return Ok(outcome),
         };
-        match prepared.invoke_graphs(phase) {
-            Ok(completed) => completed.invoke_executor(phase, workspace),
+        Ok(match prepared.invoke_graphs(phase) {
+            Ok(completed) => completed.invoke_executor(phase, workspace)?,
             Err(outcome) => outcome,
-        }
+        })
     }
 }
 

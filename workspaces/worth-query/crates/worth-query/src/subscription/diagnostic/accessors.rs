@@ -118,8 +118,11 @@ impl QuerySubscriptionDiagnosticTrace {
 impl QuerySubscriptionDiagnosticBundleError {
     pub fn failure_projection(
         &self,
-    ) -> QueryProjectionIdentity<String, QuerySubscriptionIdentityKind> {
-        subscription_evidence_projection(self.failure_identity())
+    ) -> Result<
+        QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
+        IdentityDerivationDenial,
+    > {
+        Ok(subscription_evidence_projection(self.failure_identity()?))
     }
 }
 

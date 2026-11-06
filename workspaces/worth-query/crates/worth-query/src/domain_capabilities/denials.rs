@@ -7,6 +7,8 @@ use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDomainCapabilityProgressionDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
+    BridgeDigestRefused(worth_runtime_bridge::facade::BridgeCausalDigestRefusal),
     EmptySemanticCode,
     EmptyDetail,
     StaleInstallationGeneration,
@@ -19,6 +21,8 @@ pub enum WorthQueryDomainCapabilityProgressionDenialKind {
 impl WorthQueryDomainCapabilityProgressionDenialKind {
     pub fn as_str(self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence-identity-derivation-denied",
+            Self::BridgeDigestRefused(_) => "bridge-digest-refused",
             Self::EmptySemanticCode => "empty-semantic-code",
             Self::EmptyDetail => "empty-detail",
             Self::StaleInstallationGeneration => "stale-installation-generation",

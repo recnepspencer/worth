@@ -146,7 +146,7 @@ pub(super) fn batch_receipt_surface(
     let receipt = effect_batch()
         .using_basis(basis)
         .push(scenarios::raw_mutation_effect_with_binding(
-            binding.clone()?,
+            binding.clone(),
             left,
             "left-after".to_string(),
         ))

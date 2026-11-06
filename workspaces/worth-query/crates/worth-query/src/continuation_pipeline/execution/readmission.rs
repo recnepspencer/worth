@@ -229,7 +229,7 @@ fn basis_witness_from_binding(
             let commit_identity = bridge_commit_evidence_identity(request.commit_identity())?;
             WorthQueryPreparedContinuationBasisWitness::new(
                 WorthQueryPreparedContinuationBasisKind::Current,
-                commit_identity.clone()?,
+                commit_identity.clone(),
                 Some(commit_identity),
                 None,
             )

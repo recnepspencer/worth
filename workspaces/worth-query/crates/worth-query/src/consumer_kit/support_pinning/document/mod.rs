@@ -144,7 +144,7 @@ impl WorthQuerySupportPinContractDocument {
             &self.source_matrix_digest,
             &requirements,
             &observed_rows,
-        );
+        )?;
         if contract_digest != self.contract_digest {
             return Err(WorthQuerySupportPinningError::with_expected_found(
                 WorthQuerySupportPinningErrorKind::ContractDigestMismatch,
@@ -194,7 +194,7 @@ impl WorthQuerySupportPinContractDocument {
     }
 
     fn reject_vocabulary_mismatch(&self) -> Result<(), WorthQuerySupportPinningError> {
-        let expected = support_pin_vocabulary_identity()
+        let expected = support_pin_vocabulary_identity()?
             .terminal_projection_for_reporting()
             .to_string();
         if self.pinned_vocabulary_identity == expected {
@@ -210,7 +210,7 @@ impl WorthQuerySupportPinContractDocument {
     }
 
     fn reject_document_digest_mismatch(&self) -> Result<(), WorthQuerySupportPinningError> {
-        let expected = derive_support_pin_contract_document_identity(&self.contract_digest)
+        let expected = derive_support_pin_contract_document_identity(&self.contract_digest)?
             .terminal_projection_for_reporting()
             .to_string();
         if self.document_digest == expected {

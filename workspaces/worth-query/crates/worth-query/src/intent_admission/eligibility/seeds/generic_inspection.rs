@@ -215,7 +215,7 @@ impl WorthQueryGenericInspectionIntentSeed {
                 "inspect.intent_denial.{}",
                 evidence.intent_name()
             )),
-            receipt_seed_input_digest("intent_denial", evidence.denial_digest())?,
+            receipt_seed_input_digest("intent_denial", evidence.denial_digest()?)?,
         ))
     }
 

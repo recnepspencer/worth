@@ -268,5 +268,5 @@ fn verify_relational_subject(
         execution_subject_identity,
         oracle,
         component_count,
-    ))
+    )?)
 }

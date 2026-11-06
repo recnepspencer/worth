@@ -138,8 +138,8 @@ impl WorthQueryCollectionConsumerWindow {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admitted: &WorthQueryAdmittedConsumerInvalidation<'_>,
         workspace: &crate::runtime::WorthQueryWorkspace,
-    ) -> WorthQueryCollectionDeliveryOutcome {
-        super::planning::plan(execution, self, admitted, workspace)
+    ) -> Result<WorthQueryCollectionDeliveryOutcome, IdentityDerivationDenial> {
+        Ok(super::planning::plan(execution, self, admitted, workspace)?)
     }
 
     pub fn apply_patch(

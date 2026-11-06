@@ -166,3 +166,12 @@ impl QuerySubscriptionSupportEvidence {
         }
     }
 }
+
+impl From<IdentityDerivationDenial> for QuerySubscriptionSupportEvidenceError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self {
+            message: "subscription support evidence identity refused",
+            failure_identity: Err(cause),
+        }
+    }
+}

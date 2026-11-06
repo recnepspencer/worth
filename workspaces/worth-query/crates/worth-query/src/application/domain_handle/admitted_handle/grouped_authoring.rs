@@ -1,4 +1,5 @@
 use crate::application::{WorthQueryDeclarationInput, WorthQueryDomainEntryMarker};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::grouped_authoring::{
     ordinary_outcome_from_grouped_orchestration_checked,
     worth_query_grouped_contribution_checked_on_handle,
@@ -53,11 +54,14 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn orchestrate_grouped_checked<I>(
         &self,
         declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-    ) -> WorthQueryGroupedOrchestrationChecked<D, I>
+    ) -> Result<WorthQueryGroupedOrchestrationChecked<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D> + Clone,
     {
-        worth_query_grouped_orchestration_checked_on_handle(self, declaration)
+        Ok(worth_query_grouped_orchestration_checked_on_handle(
+            self,
+            declaration,
+        )?)
     }
 
     pub fn orchestrate_grouped<I>(
@@ -96,11 +100,14 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn orchestrate_grouped_proof<I>(
         &self,
         declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-    ) -> WorthQueryGroupedOrchestrationTranscript<D, I>
+    ) -> Result<WorthQueryGroupedOrchestrationTranscript<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D> + Clone,
     {
-        worth_query_grouped_orchestration_proof_on_handle(self, declaration)
+        Ok(worth_query_grouped_orchestration_proof_on_handle(
+            self,
+            declaration,
+        )?)
     }
 
     pub fn grouped_route_checked<I>(

@@ -247,7 +247,7 @@ pub(super) fn certified_violation_intent_fixture(
 
 pub(super) fn certified_failure_intent_fixture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> CertifiedFailureIntentFixture {
+) -> Result<CertifiedFailureIntentFixture, IdentityDerivationDenial> {
     let declaration = authoritative_declaration("certification-failure-intent");
     let request =
         WorthQueryRawIntentAdmissionRequest::authoritative_runtime_entrypoint(declaration.clone())
@@ -256,7 +256,7 @@ pub(super) fn certified_failure_intent_fixture(
     let error = runtime
         .execute_intent(execution, declaration)
         .expect_err("invariant violation should preserve denial evidence");
-    match error {
+    Ok(match error {
         crate::runtime::WorthQueryRuntimeError::IntentCommitDenied { evidence, .. } => {
             let trace = evidence
                 .decision_trace_envelope()
@@ -265,7 +265,7 @@ pub(super) fn certified_failure_intent_fixture(
             CertifiedFailureIntentFixture {
                 request,
                 failure_digest: evidence
-                    .denial_digest()
+                    .denial_digest()?
                     .terminal_projection_for_reporting()
                     .to_string(),
                 execution_provenance_chain_digest: evidence
@@ -277,7 +277,7 @@ pub(super) fn certified_failure_intent_fixture(
             }
         }
         other => panic!("expected execution-time denial evidence, got {other:?}"),
-    }
+    })
 }
 
 pub(super) fn legacy_delegation_parity_fixture(

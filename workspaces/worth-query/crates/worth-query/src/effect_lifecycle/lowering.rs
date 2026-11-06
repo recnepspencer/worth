@@ -21,6 +21,7 @@ use super::taxonomy::{EffectAuthorityLane, EffectFamily};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EffectLoweringDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     InvalidWorkflowDeclarationFamily,
     UnsupportedMergeFamily,
     UnsupportedRelationalStrategyTarget,
@@ -35,6 +36,7 @@ pub enum EffectLoweringDenialKind {
 impl EffectLoweringDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::InvalidWorkflowDeclarationFamily => "invalid_workflow_declaration_family",
             Self::UnsupportedMergeFamily => "unsupported_merge_family",
             Self::UnsupportedRelationalStrategyTarget => "unsupported_relational_strategy_target",
@@ -327,6 +329,9 @@ pub(crate) fn assemble_lowered_batch_mutation_component(
 
 fn lowering_denial_kind(failure_class: &WorkflowLoweringFailureClass) -> EffectLoweringDenialKind {
     match failure_class {
+        WorkflowLoweringFailureClass::EvidenceIdentityDerivationDenied(cause) => {
+            EffectLoweringDenialKind::EvidenceIdentityDerivationDenied(*cause)
+        }
         WorkflowLoweringFailureClass::InvalidWorkflowDeclarationFamily => {
             EffectLoweringDenialKind::InvalidWorkflowDeclarationFamily
         }

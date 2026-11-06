@@ -29,6 +29,15 @@ impl WorthQueryBranchMergeRequest {
             .validate_ordinary_merge_authority(request_execution, self.context.authority)
         {
             Ok(authority) => authority,
+            Err(WorthQueryMergeAuthorityValidationError::EvidenceIdentityDerivationDenied(
+                cause,
+            )) => {
+                return WorthQueryBranchMergeOutcome::Stopped(WorthQueryBranchMergeStop::denied(
+                    WorthQueryBranchMergeStopSource::EvidenceIdentityDerivationDenied(cause),
+                    "branch-merge basis identity exceeds its canonical digest limit",
+                    counters,
+                ));
+            }
             Err(WorthQueryMergeAuthorityValidationError::ForeignPhase(cause)) => {
                 return WorthQueryBranchMergeOutcome::Stopped(
                     WorthQueryBranchMergeStop::from_execution_denial(

@@ -43,7 +43,7 @@ pub(crate) fn worth_query_checked_declaration_relational_routing<
         WorthQueryDeclarationRelationalRoutingInput::EnvelopeChecked(checked) => {
             worth_query_checked_declaration_relational_routing(lower_checked_input(checked))?
         }
-        WorthQueryDeclarationRelationalRoutingInput::Enveloped(envelope) => route_enveloped(envelope)?,
+        WorthQueryDeclarationRelationalRoutingInput::Enveloped(envelope) => route_enveloped(envelope),
         WorthQueryDeclarationRelationalRoutingInput::Deferred(envelope) => {
             let reason = envelope.reason();
             WorthQueryDeclarationRelationalRoutingChecked::Deferred(
@@ -122,7 +122,7 @@ pub(crate) fn worth_query_checked_declaration_relational_routing_on_handle<
                     ),
                 ));
             }
-            route_enveloped(envelope)?
+            route_enveloped(envelope)
         }
         other => {
             if !subject_matches_handle(

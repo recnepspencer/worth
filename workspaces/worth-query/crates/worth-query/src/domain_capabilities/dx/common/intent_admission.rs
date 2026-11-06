@@ -118,7 +118,7 @@ impl WorthQueryIntentAdmissionContribution {
                     ready,
                 ))
             },
-        )?)
+        ))
     }
 
     pub fn materialize(

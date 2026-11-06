@@ -29,7 +29,7 @@ impl CausalInspectionRepresentativeEvidence {
     ) -> Result<Self, CausalInspectionCertificationError> {
         let artifact_digest = artifact.artifact_identity().as_str().to_string();
         let row_digest_set =
-            CausalInspectionRepresentativeRowDigestSet::from_query_artifact(kind, artifact);
+            CausalInspectionRepresentativeRowDigestSet::from_query_artifact(kind, artifact)?;
         validate_kind_matches_artifact(kind, artifact, &row_digest_set)?;
         let representative_digest = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
@@ -76,13 +76,13 @@ impl CausalInspectionRepresentativeEvidence {
             kind,
             family,
             failure_digest,
-        );
+        )?;
         Ok(Self::failure_row(
             kind,
             Some(family),
             failure_digest,
             row_digest_set,
-        ))
+        )?)
     }
 
     pub fn from_failure(
@@ -107,13 +107,13 @@ impl CausalInspectionRepresentativeEvidence {
             kind,
             expected.kind().as_str(),
             failure_digest,
-        );
+        )?;
         Ok(Self::failure_row(
             kind,
             None,
             failure_digest,
             row_digest_set,
-        ))
+        )?)
     }
 
     pub fn from_failure_evidence(
@@ -126,13 +126,13 @@ impl CausalInspectionRepresentativeEvidence {
             kind,
             evidence.kind().as_str(),
             evidence.failure_digest(),
-        );
+        )?;
         Ok(Self::failure_row(
             kind,
             None,
             evidence.failure_digest(),
             row_digest_set,
-        ))
+        )?)
     }
 
     fn failure_row(
@@ -244,7 +244,7 @@ impl CausalInspectionRepresentativeMatrix {
             representative_count,
             missing_evidence_row_count,
             query_only_consumer_row_count,
-        );
+        )?;
         Ok(Self {
             representative_count,
             missing_evidence_row_count,

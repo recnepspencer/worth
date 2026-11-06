@@ -223,7 +223,7 @@ pub(super) fn batch_execution_row(
     let executed = effect_batch()
         .using_basis(basis.clone())
         .push(raw_mutation_effect_with_binding(
-            binding.clone()?,
+            binding.clone(),
             left,
             "left-phase4-batch".to_string(),
         ))

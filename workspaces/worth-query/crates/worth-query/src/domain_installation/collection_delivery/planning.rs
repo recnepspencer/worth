@@ -141,7 +141,7 @@ pub(super) fn plan(
                 operation: reset,
                 counters,
             },
-        ));
+        )?);
     }
     Ok(plan_incremental(
         execution,
