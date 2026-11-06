@@ -69,10 +69,7 @@ fn an_uninstalled_policy_requires_operator_repair() {
 
 #[test]
 fn an_authorization_read_stop_keeps_its_http_disposition() {
-    use worth_query_host::facade::primary_graph::{
-        RelationalExecutionDenialCause as Cause,
-        WorthQueryOperationAuthorizationDenialKind as Query,
-    };
+    use worth_query_host::facade::primary_graph::RelationalExecutionDenialCause as Cause;
     for (cause, kind, next) in [
         (Cause::Cancelled, Kind::Cancelled, Next::Retry),
         (Cause::DeadlineElapsed, Kind::DeadlineExceeded, Next::Retry),
@@ -122,12 +119,7 @@ fn an_authorization_read_stop_keeps_its_http_disposition() {
         ),
     ] {
         assert_eq!(
-            authorization_denial(
-                Query::Stopped(
-                    worth_query_host::facade::primary_graph::relational_execution_kind(cause, None)
-                )
-                .into()
-            ),
+            authorization_denial(Authorization::RelationalExecution(cause)),
             super::BankHttpDenial::new(kind, next)
         );
     }
