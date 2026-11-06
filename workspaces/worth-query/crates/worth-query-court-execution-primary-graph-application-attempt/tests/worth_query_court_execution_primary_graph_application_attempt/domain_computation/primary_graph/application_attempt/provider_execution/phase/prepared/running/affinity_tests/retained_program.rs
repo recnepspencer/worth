@@ -6,17 +6,8 @@ pub fn retained_program(
     replacement: &str,
 ) -> RetainedProgram {
     let request = live_scope();
-    let principal = authenticated_principal(
-        phase_custody,
-        world,
-        &request,
-    );
-    let account = resolved_account(
-        phase_custody,
-        world,
-        "open",
-        &request,
-    );
+    let principal = authenticated_principal(phase_custody, world, &request);
+    let account = resolved_account(phase_custody, world, "open", &request);
     retained_status_program(
         phase_custody,
         world,

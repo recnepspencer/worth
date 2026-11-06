@@ -43,7 +43,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             let running = start(
                 phase,
                 &world,
-                retained_program( &(phase).test_host_request_for_test(), &world, "axis-owner"),
+                retained_program(&(phase).test_host_request_for_test(), &world, "axis-owner"),
                 idempotency(187, 188),
             );
             let (
@@ -195,13 +195,13 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
             let first = start(
                 phase,
                 &world,
-                retained_program( &(phase).test_host_request_for_test(), &world, "plan-owner"),
+                retained_program(&(phase).test_host_request_for_test(), &world, "plan-owner"),
                 idempotency(189, 190),
             );
             let second = start(
                 phase,
                 &world,
-                retained_program( &(phase).test_host_request_for_test(), &world, "plan-peer"),
+                retained_program(&(phase).test_host_request_for_test(), &world, "plan-peer"),
                 idempotency(191, 192),
             );
             let (
