@@ -26,16 +26,100 @@ pub(super) fn refresh(
     let mut allocation = UngroupedAllocation::new();
     let affected = affected_shared(execution, definition, changes, before, after, work)?;
     for shared in affected {
-        let old = rows_for_shared(execution, before, shared, definition, work)?;
-        let new = rows_for_shared(execution, Some(after), shared, definition, work)?;
-        for (key, row) in &old {
-            if new.get(key) != Some(row) {
-                edit(entries, *key, *row, false, Ord::cmp, &mut allocation, work)?;
+        let old_left = live_leg(
+            execution,
+            before,
+            shared,
+            definition,
+            definition.left(),
+            work,
+        )?;
+        let old_right = live_leg(
+            execution,
+            before,
+            shared,
+            definition,
+            definition.right(),
+            work,
+        )?;
+        let new_left = live_leg(
+            execution,
+            Some(after),
+            shared,
+            definition,
+            definition.left(),
+            work,
+        )?;
+        let new_right = live_leg(
+            execution,
+            Some(after),
+            shared,
+            definition,
+            definition.right(),
+            work,
+        )?;
+        let changed_left = changed_members(&old_left, &new_left, work)?;
+        let changed_right = changed_members(&old_right, &new_right, work)?;
+        for (left, left_relation) in &old_left {
+            if changed_left.contains(left) {
+                for (right, right_relation) in &old_right {
+                    remove_pair(
+                        entries,
+                        shared,
+                        *left,
+                        *left_relation,
+                        *right,
+                        *right_relation,
+                        &mut allocation,
+                        work,
+                    )?;
+                }
+            } else {
+                for right in &changed_right {
+                    if let Some(right_relation) = old_right.get(right) {
+                        remove_pair(
+                            entries,
+                            shared,
+                            *left,
+                            *left_relation,
+                            *right,
+                            *right_relation,
+                            &mut allocation,
+                            work,
+                        )?;
+                    }
+                }
             }
         }
-        for (key, row) in &new {
-            if old.get(key) != Some(row) {
-                edit(entries, *key, *row, true, Ord::cmp, &mut allocation, work)?;
+        for (left, left_relation) in &new_left {
+            if changed_left.contains(left) {
+                for (right, right_relation) in &new_right {
+                    insert_pair(
+                        entries,
+                        shared,
+                        *left,
+                        *left_relation,
+                        *right,
+                        *right_relation,
+                        &mut allocation,
+                        work,
+                    )?;
+                }
+            } else {
+                for right in &changed_right {
+                    if let Some(right_relation) = new_right.get(right) {
+                        insert_pair(
+                            entries,
+                            shared,
+                            *left,
+                            *left_relation,
+                            *right,
+                            *right_relation,
+                            &mut allocation,
+                            work,
+                        )?;
+                    }
+                }
             }
         }
     }
@@ -115,13 +199,31 @@ fn affected_shared(
     Ok(affected)
 }
 
-fn rows_for_shared(
+fn changed_members(
+    old: &BTreeMap<EntityId, RelationId>,
+    new: &BTreeMap<EntityId, RelationId>,
+    work: &mut MaintenanceWork,
+) -> Result<BTreeSet<EntityId>, Denial> {
+    let mut changed = BTreeSet::new();
+    for external in old.keys().chain(new.keys()) {
+        work.charge(1)?;
+        work.lookup(old.len().max(new.len()), 1)?;
+        if old.get(external) != new.get(external) {
+            work.ordered::<EntityId, ()>(changed.len(), 1, 0)?;
+            changed.insert(*external);
+        }
+    }
+    Ok(changed)
+}
+
+fn live_leg(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: Option<&VisibilityProjectionView>,
     shared: EntityId,
     definition: RelationJoinDefinition,
+    leg: RelationJoinLeg,
     work: &mut MaintenanceWork,
-) -> Result<BTreeMap<RelationJoinKey, RelationJoinEntry>, Denial> {
+) -> Result<BTreeMap<EntityId, RelationId>, Denial> {
     let Some(view) = view else {
         return Ok(BTreeMap::new());
     };
@@ -130,20 +232,51 @@ fn rows_for_shared(
     {
         return Ok(BTreeMap::new());
     }
-    let left = leg_relations(execution, view, shared, definition.left(), work)?;
-    let right = leg_relations(execution, view, shared, definition.right(), work)?;
-    let mut rows = BTreeMap::new();
-    for (left_id, left_relation) in left {
-        for (right_id, right_relation) in &right {
-            work.derive_row()?;
-            work.ordered::<RelationJoinKey, RelationJoinEntry>(rows.len(), 1, 0)?;
-            rows.insert(
-                RelationJoinKey::new(left_id, *right_id),
-                RelationJoinEntry::new(shared, left_relation, *right_relation),
-            );
-        }
-    }
-    Ok(rows)
+    leg_relations(execution, view, shared, leg, work)
+}
+
+fn remove_pair(
+    entries: &mut DerivedIndexEntryMap<RelationJoinKey, RelationJoinEntry>,
+    shared: EntityId,
+    left: EntityId,
+    left_relation: RelationId,
+    right: EntityId,
+    right_relation: RelationId,
+    allocation: &mut UngroupedAllocation<RelationJoinKey>,
+    work: &mut MaintenanceWork,
+) -> Result<(), Denial> {
+    work.derive_row()?;
+    edit(
+        entries,
+        RelationJoinKey::new(left, right),
+        RelationJoinEntry::new(shared, left_relation, right_relation),
+        false,
+        Ord::cmp,
+        allocation,
+        work,
+    )
+}
+
+fn insert_pair(
+    entries: &mut DerivedIndexEntryMap<RelationJoinKey, RelationJoinEntry>,
+    shared: EntityId,
+    left: EntityId,
+    left_relation: RelationId,
+    right: EntityId,
+    right_relation: RelationId,
+    allocation: &mut UngroupedAllocation<RelationJoinKey>,
+    work: &mut MaintenanceWork,
+) -> Result<(), Denial> {
+    work.derive_row()?;
+    edit(
+        entries,
+        RelationJoinKey::new(left, right),
+        RelationJoinEntry::new(shared, left_relation, right_relation),
+        true,
+        Ord::cmp,
+        allocation,
+        work,
+    )
 }
 
 fn leg_relations(

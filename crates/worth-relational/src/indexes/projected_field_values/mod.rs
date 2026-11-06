@@ -27,3 +27,6 @@ pub(super) use relation_field_index_values::{
 pub(super) use relation_join::{
     build_relation_join_index, build_relation_join_index_checked, join_endpoints,
 };
+
+mod scoped_parity;
+pub(super) use scoped_parity::{joined_rows_for_pair, ordered_children_for_parent};

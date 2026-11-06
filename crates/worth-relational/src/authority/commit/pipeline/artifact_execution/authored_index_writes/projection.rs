@@ -1,13 +1,10 @@
 //! Canonical authored targets, independent of semantic-delta equality.
 use super::*;
-use crate::capabilities::AspectPlanSource;
 use crate::identity::data::EntityId;
 use crate::indexes::data::DerivedIndexKind;
 use crate::storage::data::AuthoritativeFieldComparisonKey as Comparison;
 use crate::transactions::data::{EntityMutationIntent as Entity, MutationIntent};
-use worth_foundational::facade::{
-    AspectBinding, AspectShape, PortableAspectPatchOperation, PortableRecordAspectPatch,
-};
+use worth_foundational::facade::{PortableAspectPatchOperation, PortableRecordAspectPatch};
 
 pub(super) struct Projection<'a, 'kernel, 'controls, 'request, 'authority> {
     pub(super) execution: ExecutionRequest<'request, 'authority>,
@@ -105,50 +102,37 @@ impl Projection<'_, '_, '_, '_, '_> {
     fn record(&mut self, entity: EntityId, aspect: Option<&AspectKey>) -> Result<(), Denial> {
         let before = values::live(&self.execution, self.selected, entity)?;
         let after = values::live(&self.execution, self.working, entity)?;
-        let runtime = self.runtime;
-        for kind in before
-            .map(|(kind, _)| kind)
+        let schema = self
+            .runtime
+            .config
+            .schema
+            .registry
+            .primary_schema_version_id();
+        let Some(routing) = self.catalog.routing(schema) else {
+            self.unavailable = true;
+            return Ok(());
+        };
+        let old_kind = before.map(|(kind, _)| kind);
+        let new_kind = after.map(|(kind, _)| kind);
+        for kind in old_kind
             .into_iter()
-            .chain(after.map(|(kind, _)| kind))
+            .chain(new_kind.filter(|kind| Some(*kind) != old_kind))
         {
-            let plans = runtime.aspect_plan_catalog().entity_plans.len();
-            work(
-                self.context,
-                (plans as u64).checked_add(1).ok_or_else(overflow)?,
-            )?;
-            let Some(plan) = runtime.entity_aspect_plan(kind) else {
-                self.unavailable = true;
-                continue;
-            };
-            for binding in &plan.executable_bindings {
-                work(
-                    self.context,
-                    aspect.map_or(1, |aspect| aspect.as_str().len() as u64 + 1),
-                )?;
-                if aspect.is_some_and(|aspect| aspect != binding.aspect_key()) {
+            let levels = usize::BITS - routing.kind_count().leading_zeros();
+            work(self.context, u64::from(levels) * 11 + 1)?;
+            for locator in routing.entity_fields(kind) {
+                work(self.context, 1)?;
+                if aspect.is_some_and(|aspect| aspect != locator.aspect().aspect_key()) {
                     continue;
                 }
-                match (&binding.target, binding.contract.shape()) {
-                    (AspectBinding::EntityField { field }, AspectShape::Scalar(_)) => self.field(
+                if let [field] = locator.field_path().fields() {
+                    self.field(
                         entity,
                         &Locus {
-                            aspect: binding.aspect_key(),
+                            aspect: locator.aspect().aspect_key(),
                             field,
                         },
-                    )?,
-                    (AspectBinding::EntityField { .. }, AspectShape::Struct(shape)) => {
-                        for field in shape.fields() {
-                            work(self.context, 1)?;
-                            self.field(
-                                entity,
-                                &Locus {
-                                    aspect: binding.aspect_key(),
-                                    field: field.key(),
-                                },
-                            )?;
-                        }
-                    }
-                    _ => {}
+                    )?;
                 }
             }
         }

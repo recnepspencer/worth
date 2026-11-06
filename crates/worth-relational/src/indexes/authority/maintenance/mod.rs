@@ -9,6 +9,7 @@ mod entry_refresh;
 use entry_refresh::{empty_entries, update_entries};
 mod field;
 mod field_keys;
+mod field_routing;
 mod join;
 mod ordering;
 mod persistent_allocation;
@@ -72,6 +73,10 @@ impl IndexAuthority<'_> {
             {
                 return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
             }
+            self.runtime.indexes.install_routing(
+                root.schema_authority().schema_version(),
+                root.schema_authority().aspect_plans(),
+            );
             let prepared = self.prepare_refresh(execution, &request, None, &projection, work)?;
             prepared.publish_admitted(self.runtime, work)
         })?;
@@ -138,6 +143,17 @@ impl IndexAuthority<'_> {
             .transpose()?;
         work.prepare(branch.0.len().min(request.branch_id.0.len()) as u64 + 1, 0)?;
         basis::validate(request, &observation, before.as_ref(), &after)?;
+        if work.budget.maximum_cold_record_slots != Some(0)
+            && !work.prohibits_population_reconstruction()
+        {
+            if let Some(root) = after.selected_root() {
+                // cost-lane: explicit recovery/schema transition, never ordinary.
+                self.runtime.indexes.install_routing(
+                    root.schema_authority().schema_version(),
+                    root.schema_authority().aspect_plans(),
+                );
+            }
+        }
         self.prepare_refresh(execution, request, before.as_ref(), &after, work)
     }
 }

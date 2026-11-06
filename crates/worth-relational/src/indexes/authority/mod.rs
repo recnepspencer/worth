@@ -75,7 +75,13 @@ impl<'runtime> IndexAuthority<'runtime> {
         &self,
         definition: DerivedIndexDefinition,
     ) -> Result<DerivedIndexDefinition, crate::indexes::data::DerivedIndexRegistrationDenial> {
-        self.runtime.indexes.register_definition(definition)
+        use crate::capabilities::{AspectPlanSource, SchemaVersionSource};
+        let definition = self.runtime.indexes.register_definition(definition)?;
+        self.runtime.indexes.install_routing(
+            self.runtime.primary_schema_version_id(),
+            self.runtime.aspect_plan_catalog(),
+        );
+        Ok(definition)
     }
 
     pub(crate) fn refresh_unique_entity_aspect_field_index_for_records(

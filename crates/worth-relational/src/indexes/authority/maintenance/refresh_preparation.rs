@@ -193,15 +193,25 @@ impl IndexAuthority<'_> {
                 }
             }
         }
-        field::refresh(
-            execution,
-            &mut pending_fields,
-            patch_changes.as_ref(),
-            cold_changes.as_ref(),
-            before,
-            after,
-            work,
-        )?;
+        if !pending_fields.is_empty() {
+            let routing = self
+                .runtime
+                .indexes
+                .definition_read_binding()
+                .snapshot()
+                .routing(schema_version)
+                .ok_or(DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired)?;
+            field::refresh(
+                execution,
+                &mut pending_fields,
+                &routing,
+                patch_changes.as_ref(),
+                cold_changes.as_ref(),
+                before,
+                after,
+                work,
+            )?;
+        }
         for field in pending_fields {
             work.grow_vec(&mut prepared)?;
             work.prepare(1, 0)?;

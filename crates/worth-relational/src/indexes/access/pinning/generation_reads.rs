@@ -94,6 +94,23 @@ impl IndexAccess<'_> {
         ))
     }
 
+    /// Cost: one commit lookup plus the generations published by that commit.
+    pub(crate) fn read_artifacts_for_commit(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        commit: crate::history::data::CommitId,
+    ) -> Result<
+        crate::indexes::data::DerivedIndexArtifacts,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        crate::execution::check_request(execution)?;
+        self.runtime
+            .indexes
+            .definition_read_binding()
+            .demand_checkpoint_image(execution)?;
+        Ok(self.runtime.indexes.derived_artifacts_for_commit(commit))
+    }
+
     pub fn read_generations_for_version(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

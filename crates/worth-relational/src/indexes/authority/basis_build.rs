@@ -152,6 +152,9 @@ impl IndexAuthority<'_> {
                 };
             }
         };
+        if let Some(plans) = projection.aspect_plans() {
+            self.runtime.indexes.install_routing(schema_version, plans);
+        }
         let publication_basis = IndexGenerationPublicationBasis::new(
             &request,
             source_branch_id,

@@ -1,3 +1,5 @@
+mod installed_routing;
+pub(crate) use installed_routing::InstalledIndexRouting;
 mod registration_denial;
 pub use registration_denial::DerivedIndexRegistrationDenial;
 mod entity_field_page;
