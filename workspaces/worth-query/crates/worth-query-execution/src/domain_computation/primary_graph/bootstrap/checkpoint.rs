@@ -1,11 +1,8 @@
-#[cfg(test)]
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 use worth_relational::facade::replay::CanonicalCommitAuthorityKind;
-#[cfg(test)]
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::transactions::{CreateIntent, EntityReference, MutationIntent};
 
-#[cfg(test)]
 use crate::domain_computation::execution_runtime::{
     product_world::WorthQueryProductWorldResources, WorthQueryExecutionInstallationAuthority,
     WorthQueryExecutionRuntime,
@@ -15,7 +12,6 @@ use super::super::{
     application_checkpoint::DecodedApplicationCheckpoint, WorthQueryPrimaryGraphInstallationDenial,
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
-#[cfg(test)]
 use super::super::{WorthQueryApplicationInvariantFactories, WorthQueryPrimaryGraphBootstrap};
 use super::WorthQueryPrimaryGraphPublication;
 
@@ -186,11 +182,8 @@ pub(super) fn checkpoint_denial(
     )
 }
 
-#[cfg(test)]
 impl WorthQueryExecutionInstallationAuthority {
-    pub(in crate::domain_computation::primary_graph) fn prepare_primary_graph_from_native_checkpoint_with_invariants<
-        Schema,
-    >(
+    pub fn prepare_primary_graph_from_native_checkpoint_with_invariants<Schema>(
         &self,
         phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,

@@ -8,17 +8,17 @@ use worth_foundational::PartitionIdentity;
 
 // A member outcome cannot stop the map; only its request can.
 enum NoMemberFailure {}
-pub(in crate::domain_computation::primary_graph) struct PreparedMember {
+pub struct PreparedMember {
     pub requests: Vec<PreparedCompute>,
 }
-pub(in crate::domain_computation::primary_graph) struct ComputedMember {
+pub struct ComputedMember {
     slots: Vec<ComputedSlot>,
 }
 
 /// Interruption already present at dispatch has width-independent settlement.
 /// An interruption arriving during compute can be seen by an earlier running
 /// member: only the canonical-prefix safety law is promised across widths.
-pub(in crate::domain_computation::primary_graph) fn dispatch(
+pub fn dispatch(
     execution: &QueryRequestExecution<'_>,
     members: Vec<PreparedMember>,
 ) -> Vec<Result<ComputedMember, WorthQueryAdvancementDenial>> {
@@ -80,10 +80,7 @@ pub(in crate::domain_computation::primary_graph) fn dispatch(
                 Some(seed) => {
                     let (outcome, order) =
                         map.run_owned_native_perturbed_for_test(lease, seed, kernel);
-                    #[cfg(test)]
-                    tests::seeded_dispatch::record(order);
-                    #[cfg(not(test))]
-                    drop(order);
+                    seeded_dispatch_orders::record(order);
                     outcome
                 }
                 None => map.run_owned_native(lease, kernel),
@@ -136,7 +133,6 @@ impl ComputedMember {
     ) -> T {
         complete(self.slots)
     }
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn into_slots(self) -> Vec<ComputedSlot> {
         self.finish(|slots| slots)
     }
@@ -156,5 +152,6 @@ fn from_checkpoint(stop: worth_execution::MapKernelStop) -> WorthQueryAdvancemen
     }
 }
 
-#[cfg(test)]
-mod tests;
+pub(crate) mod seeded_dispatch_orders;
+
+mod court_doors_for_test;

@@ -173,15 +173,10 @@ fn closed_home_retirement_preserves_shared_root_history_on_busy_and_stop_then_re
     let weak = Arc::downgrade(&world.root);
     let report = world.root.close(&request).unwrap();
     let mut cleanup = world.result_snapshot_cleanup_after_close(&request).unwrap();
-    loop {
-        match cleanup
-            .advance(&request, fixture.relational_runtime())
-            .unwrap()
-        {
-            crate::lifecycle::RuntimeWorldResultSnapshotCleanupProgress::Advanced => {}
-            crate::lifecycle::RuntimeWorldResultSnapshotCleanupProgress::Complete(_) => break,
-        }
-    }
+    while let crate::lifecycle::RuntimeWorldResultSnapshotCleanupProgress::Advanced = cleanup
+        .advance(&request, fixture.relational_runtime())
+        .unwrap()
+    {}
     let counters = world.root.state.retention.cost_snapshot();
     assert!(
         world
@@ -241,15 +236,10 @@ fn closed_home_retirement_preserves_shared_root_history_on_busy_and_stop_then_re
         )
         .is_err());
     assert_eq!(retention.cost_snapshot(), counters);
-    loop {
-        match original
-            .advance(&request, fixture.relational_runtime())
-            .unwrap()
-        {
-            crate::lifecycle::RuntimeWorldHomeRetirementProgress::Advanced => {}
-            crate::lifecycle::RuntimeWorldHomeRetirementProgress::Complete => break,
-        }
-    }
+    while let crate::lifecycle::RuntimeWorldHomeRetirementProgress::Advanced = original
+        .advance(&request, fixture.relational_runtime())
+        .unwrap()
+    {}
     let retired = original.into_retired().unwrap();
     assert!(
         weak.upgrade().is_none(),

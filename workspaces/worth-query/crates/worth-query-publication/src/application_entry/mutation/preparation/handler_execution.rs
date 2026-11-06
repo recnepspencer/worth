@@ -65,6 +65,16 @@ where
         {
             return Ok(HandlerPreparation::Settled(outcome));
         }
+        if let Some(restriction) = self.history_constraint {
+            self.request
+                .application
+                .validate_history_execution_predecessor(
+                    &worth_query_execution::publication_boundary::program_publication_access(),
+                    restriction,
+                    &admission,
+                )
+                .map_err(WorthQueryApplicationRequestMutationDenial::DocumentHistory)?;
+        }
         if let Some(pending) = prepared.pending_source {
             pending
                 .consume_into(self.request.application, phase, &mut admission)

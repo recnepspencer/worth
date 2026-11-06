@@ -1,4 +1,5 @@
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 use super::super::{
     envelope::{canonical_frame_sha256, visit_canonical_frame, BLOB_RECORD_HEADER_BYTES},
@@ -10,8 +11,8 @@ const PAYLOAD_BYTES: usize = 216;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OriginalDropReservationRequestV1 {
-    idempotency: [u8; 32],
-    fingerprint: [u8; 32],
+    idempotency: CanonicalDigestId,
+    fingerprint: CanonicalDigestId,
     lease_issuance_generation: u64,
     lease_expiry_generation: u64,
 }
@@ -30,18 +31,18 @@ impl OriginalDropReservationRequestV1 {
             return Err(BlobRecordDenial::InvalidReclaimDescriptor);
         }
         Ok(Self {
-            idempotency,
-            fingerprint,
+            idempotency: CanonicalDigestId::new(idempotency),
+            fingerprint: CanonicalDigestId::new(fingerprint),
             lease_issuance_generation,
             lease_expiry_generation,
         })
     }
 
     pub const fn idempotency(self) -> [u8; 32] {
-        self.idempotency
+        *self.idempotency.bytes()
     }
     pub const fn fingerprint(self) -> [u8; 32] {
-        self.fingerprint
+        *self.fingerprint.bytes()
     }
     pub const fn lease_issuance_generation(self) -> u64 {
         self.lease_issuance_generation
@@ -58,8 +59,8 @@ pub struct OriginalDropReservedV1 {
     store: [u8; 16],
     reclaim_attempt: [u8; 16],
     manifest_record: PersistedRecordIdentity,
-    manifest_frame_sha256: [u8; 32],
-    source_basis_digest: [u8; 32],
+    manifest_frame_sha256: CanonicalDigestId,
+    source_basis_digest: CanonicalDigestId,
     manifest_selected_generation: u64,
     reserved_selected_generation: u64,
     request: OriginalDropReservationRequestV1,
@@ -94,8 +95,8 @@ impl OriginalDropReservedV1 {
             store,
             reclaim_attempt,
             manifest_record,
-            manifest_frame_sha256,
-            source_basis_digest,
+            manifest_frame_sha256: CanonicalDigestId::new(manifest_frame_sha256),
+            source_basis_digest: CanonicalDigestId::new(source_basis_digest),
             manifest_selected_generation,
             reserved_selected_generation,
             request,
@@ -127,12 +128,12 @@ impl OriginalDropReservedV1 {
         emit(&self.reclaim_attempt);
         emit(&self.manifest_record.allocation_epoch());
         emit(&self.manifest_record.ordinal().to_le_bytes());
-        emit(&self.manifest_frame_sha256);
-        emit(&self.source_basis_digest);
+        emit(self.manifest_frame_sha256.bytes());
+        emit(self.source_basis_digest.bytes());
         emit(&self.manifest_selected_generation.to_le_bytes());
         emit(&self.reserved_selected_generation.to_le_bytes());
-        emit(&self.request.idempotency);
-        emit(&self.request.fingerprint);
+        emit(self.request.idempotency.bytes());
+        emit(self.request.fingerprint.bytes());
         emit(&self.request.lease_issuance_generation.to_le_bytes());
         emit(&self.request.lease_expiry_generation.to_le_bytes());
     }
@@ -176,10 +177,10 @@ impl OriginalDropReservedV1 {
         self.manifest_record
     }
     pub const fn manifest_frame_sha256(self) -> [u8; 32] {
-        self.manifest_frame_sha256
+        *self.manifest_frame_sha256.bytes()
     }
     pub const fn source_basis_digest(self) -> [u8; 32] {
-        self.source_basis_digest
+        *self.source_basis_digest.bytes()
     }
     pub const fn manifest_selected_generation(self) -> u64 {
         self.manifest_selected_generation

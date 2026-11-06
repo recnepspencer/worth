@@ -23,12 +23,12 @@ use crate::domain_computation::primary_graph::{
 use crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum InstalledTransportCustodyDenial {
+pub enum InstalledTransportCustodyDenial {
     AlreadyRetained,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum InstalledTransportPendingReason {
+pub enum InstalledTransportPendingReason {
     ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     UnknownCompletion,
     ConcurrentContinuation,
@@ -58,7 +58,7 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportPendingR
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum InstalledTransportResumeOutcome {
+pub enum InstalledTransportResumeOutcome {
     Performed,
     Pending(InstalledTransportPendingReason),
 }
@@ -167,7 +167,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         evidence: InstalledTransportCompletion,
         in_flight: OutstandingDispatchInFlightLease,
     ) -> Result<(), InstalledTransportCustodyDenial> {
-        self.transport_completion_custody
+        self.runtime
+            .transport_completion_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .retain(evidence, in_flight)
@@ -178,10 +179,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         correlation: &ExternalEffectCorrelationIdentity,
     ) -> bool {
-        self.transport_completion_custody
+        self.runtime
+            .transport_completion_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .entries
             .contains_key(correlation)
     }
 }
+
+mod court_doors_for_test;

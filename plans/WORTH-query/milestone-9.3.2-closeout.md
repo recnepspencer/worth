@@ -34,7 +34,7 @@ This closeout covers:
 This closeout does not claim durable basis reload, restart-stable basis
 envelopes, store-restored snapshot-plus-tail reconstruction, store-backed
 historical replay parity, portable basis capability import/export, or persisted
-basis use receipt archives. Those remain Milestone 10, Milestone 11, or later
+basis use receipt archives. Those remain Store execution/historical integration, Store Milestone 11, or later
 scope exactly as the 9.3.2 spec declared.
 
 ## Governing Source Summary
@@ -218,5 +218,5 @@ The following are not part of Milestone 9.3.2 closeout:
 - portable basis capability import/export
 - persisted basis use receipt archives
 
-These remain Milestone 10, Milestone 11, or later lifecycle/certification
+These remain Store execution/historical integration, Store Milestone 11, or later lifecycle/certification
 scope exactly as the milestone spec declared.

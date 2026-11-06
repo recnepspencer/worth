@@ -28,7 +28,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryBoundMutationP
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryBoundMutationPreconditions {
+pub struct WorthQueryBoundMutationPreconditions {
     entries: Vec<WorthQueryBoundMutationPrecondition>,
     canonical_digest: Option<CanonicalDigestId>,
     canonical_work: WorthQueryCanonicalWorkEvidence,
@@ -181,3 +181,5 @@ impl WorthQueryBoundMutationPreconditions {
         self.expected_fact_count
     }
 }
+
+mod court_doors_for_test;

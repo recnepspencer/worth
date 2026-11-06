@@ -43,8 +43,8 @@ pub struct RelationalBranchBasisDescriptor {
     truth_version: RelationalBranchVersion,
     root_identity: u64,
     #[serde(default)]
-    schema_commitment: [u8; 32],
-    visibility_commitment: [u8; 32],
+    schema_commitment: worth_foundational::CanonicalDigestId,
+    visibility_commitment: worth_foundational::CanonicalDigestId,
     posture: RelationalBranchBasisPosture,
 }
 
@@ -70,8 +70,10 @@ impl RelationalBranchBasisDescriptor {
             reference: axes.reference,
             truth_version: axes.truth_version,
             root_identity: axes.root_identity,
-            schema_commitment: axes.schema_commitment,
-            visibility_commitment: axes.visibility_commitment,
+            schema_commitment: worth_foundational::CanonicalDigestId::new(axes.schema_commitment),
+            visibility_commitment: worth_foundational::CanonicalDigestId::new(
+                axes.visibility_commitment,
+            ),
             posture,
         }
     }
@@ -101,11 +103,11 @@ impl RelationalBranchBasisDescriptor {
     }
 
     pub const fn schema_commitment(&self) -> [u8; 32] {
-        self.schema_commitment
+        *self.schema_commitment.bytes()
     }
 
     pub const fn visibility_commitment(&self) -> [u8; 32] {
-        self.visibility_commitment
+        *self.visibility_commitment.bytes()
     }
 
     pub const fn posture(&self) -> RelationalBranchBasisPosture {
@@ -172,6 +174,14 @@ pub(crate) struct AdmittedRelationalBranchBasisInner {
 }
 
 impl AdmittedRelationalBranchBasis {
+    /// Observe only the exact original cell's lock posture. This grants no
+    /// currentness or publication authority and never waits for that cell.
+    #[doc(hidden)]
+    pub fn publication_state_locked_for_test(&self) -> bool {
+        self.inner
+            .publication_cell
+            .publication_state_locked_for_test()
+    }
     pub fn materialization_is_complete(&self) -> bool {
         !self.inner.root.has_materialization_unavailable()
     }

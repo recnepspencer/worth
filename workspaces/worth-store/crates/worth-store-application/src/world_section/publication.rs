@@ -3,7 +3,7 @@ use super::publication_task::{Endpoint, WorldPublicationTask};
 use super::ApplicationWorldMedium;
 use sha2::{Digest, Sha256};
 use worth_execution::{ExecutionRequest, ExecutionResourceLease};
-use worth_foundational::facade::DurablePublicationFate;
+use worth_runtime_world::facade::WorldPublicationCompletion;
 use worth_runtime_world::facade::{
     WorldDurableArtifact, WorldDurableMediumDenial as Denial, WorldPublicationObservation,
 };
@@ -187,5 +187,5 @@ fn matches_source(
         && source.payload_sha256() == digest
 }
 fn no_effect(detail: Denial) -> WorldPublicationObservation {
-    WorldPublicationObservation::Finished(DurablePublicationFate::ProvenNoEffect { detail })
+    WorldPublicationObservation::Finished(WorldPublicationCompletion::proven_no_effect(detail))
 }

@@ -32,10 +32,10 @@ pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
     caller_storage: &'a mut PreparedContinuationWave<'_, Schema>,
     caller_installed: &InstalledProducerProvider<Schema>,
     caller_contacts: usize,
-    authority: &WorthQueryProducerCommitAuthority,
+    authority: &ProducerInvocationAuthority<'_>,
     performed: &std::cell::RefCell<super::super::performed::PerformedMembers>,
 ) -> Result<FrozenRequiredWave<'a, Schema>, WorthQueryOutputDemandDenial> {
-    if let Some(delivery) = caller_storage.awaited_delivery(&runtime.output_demands)? {
+    if let Some(delivery) = caller_storage.awaited_delivery(&runtime.runtime.output_demands)? {
         return Ok(FrozenRequiredWave::Delivery(SuccessorCustody::Caller(
             delivery,
         )));
@@ -44,7 +44,11 @@ pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
         && matches!(frontier.members[0].state, MemberState::Inspect)
     {
         let member = &frontier.members[0];
-        member.ready.selected().completion().advanced_in(authority);
+        member
+            .ready
+            .selected()
+            .completion()
+            .advanced_in(authority.mode());
 
         let mut inspected = super::super::performed::certification::certify_frozen_ready(
             execution,
@@ -57,6 +61,7 @@ pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
                 installed: caller_installed,
                 contacts: caller_contacts,
             },
+            authority,
             performed,
         )?;
         loop {
@@ -92,6 +97,7 @@ pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
                             installed,
                             contacts: 0,
                         },
+                        authority,
                         performed,
                     )?;
                     // An upstream Current is not a proof of the caller's row.

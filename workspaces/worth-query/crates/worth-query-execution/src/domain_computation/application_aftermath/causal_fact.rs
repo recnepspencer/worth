@@ -23,7 +23,7 @@ impl WorthQueryAftermathCausalRole {
 
 /// Query-owned semantic fact awaiting an ordinary Relational commit.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct WorthQueryPendingAftermathCausality {
+pub struct WorthQueryPendingAftermathCausality {
     role: WorthQueryAftermathCausalRole,
     parent: RelationalCommitReceipt,
     target_branch: worth_relational::facade::history::BranchId,
@@ -181,3 +181,5 @@ fn receipt_backing_bytes(receipt: &RelationalCommitReceipt) -> Option<u64> {
         .checked_mul(std::mem::size_of::<CommitId>() as u64)?
         .checked_add(receipt.branch_id.0.capacity() as u64)
 }
+
+mod court_doors_for_test;

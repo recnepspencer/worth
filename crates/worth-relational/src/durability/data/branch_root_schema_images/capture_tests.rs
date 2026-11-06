@@ -89,6 +89,10 @@ fn full_schema_capture_keeps_unused_constraints_wire_and_last_alias_admission() 
     let mut digest = Sha256::new();
     digest.update(b"worth.relational.branch-root-schema-image.v1\0");
     digest.update(legacy);
+    digest.update(b"worth.native.content-schema-carrier.v1\0");
+    digest.update(
+        rmp_serde::to_vec(&crate::content::RelationalContentSchemaSnapshot::default()).unwrap(),
+    );
     assert_eq!(image.carrier_digest(), <[u8; 32]>::from(digest.finalize()));
     let alias = image.clone();
     assert!(Arc::ptr_eq(&image.0, &alias.0));

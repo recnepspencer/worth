@@ -10,17 +10,17 @@ use worth_runtime_world::facade::ProductBranchObservation;
 mod contention;
 mod correction;
 pub use contention::WorthQueryApplicationBranchCommitContentionForTest;
-pub(super) struct WorthQueryApplicationBranchCommitCoordinator {
+pub struct WorthQueryApplicationBranchCommitCoordinator {
     corrections: correction::CorrectionCommitLanes,
     contention: Arc<contention::ContentionControl>,
     lanes: Mutex<BTreeMap<ProductBranchIncarnation, Weak<WorthQueryApplicationBranchCommitLane>>>,
 }
-pub(crate) struct WorthQueryApplicationBranchCommitLane {
+pub struct WorthQueryApplicationBranchCommitLane {
     contention: Arc<contention::ContentionControl>,
     occurrence: ProductBranchIncarnation,
     transition: Mutex<()>,
 }
-pub(crate) struct WorthQueryApplicationBranchCommitCoordination<'lane> {
+pub struct WorthQueryApplicationBranchCommitCoordination<'lane> {
     occurrence: ProductBranchIncarnation,
     _guard: MutexGuard<'lane, ()>,
 }
@@ -68,7 +68,6 @@ impl WorthQueryApplicationBranchCommitCoordinator {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .remove(&occurrence);
     }
-    #[cfg(test)]
     fn entry_count(&self) -> usize {
         self.lanes
             .lock()
@@ -77,6 +76,21 @@ impl WorthQueryApplicationBranchCommitCoordinator {
     }
 }
 impl WorthQueryApplicationBranchCommitLane {
+    /// A reader already borrowing Native must never wait for an earlier lane.
+    pub(crate) fn try_enter(&self) -> Option<WorthQueryApplicationBranchCommitCoordination<'_>> {
+        let guard = match self.transition.try_lock() {
+            Ok(guard) => guard,
+            Err(TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(TryLockError::WouldBlock) => {
+                return None;
+            }
+        };
+        Some(WorthQueryApplicationBranchCommitCoordination {
+            occurrence: self.occurrence,
+            _guard: guard,
+        })
+    }
+
     pub(crate) fn enter(&self) -> WorthQueryApplicationBranchCommitCoordination<'_> {
         // Ordinary entry is the same blocking mutex. The receiver's armed
         // certification recorder only reports an actual native contention.
@@ -112,5 +126,4 @@ impl WorthQueryApplicationBranchCommitCoordination<'_> {
     }
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

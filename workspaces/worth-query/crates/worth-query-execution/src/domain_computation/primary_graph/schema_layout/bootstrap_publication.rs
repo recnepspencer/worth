@@ -1,4 +1,4 @@
-//! Directory bootstrap completion is ordinary Query-owned Native data.
+//! Bootstrap completion is ordinary Query-owned Native data at every location.
 use super::*;
 use worth_foundational::facade::{aspects, AspectIdentity, ScalarAspectType};
 use worth_relational::facade::schema::{AspectBinding, SchemaId, SchemaVersionId};
@@ -63,7 +63,7 @@ pub(super) fn lower(
         .contract()
         .for_key(valid_aspect_key("bootstrap-publication")?)
         .identified_by(identity)
-        .at_revision(aspects().vocabulary().revision(1))
+        .at_revision(aspects().vocabulary().revision(2))
         .struct_aspect(
             shape
                 .finish()

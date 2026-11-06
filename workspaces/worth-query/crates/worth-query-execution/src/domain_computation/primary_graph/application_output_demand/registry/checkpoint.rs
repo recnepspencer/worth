@@ -6,12 +6,16 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::ReadyCompletion;
 
-pub(in crate::domain_computation::primary_graph) enum WorthQueryPendingOutputDelivery {
+pub enum WorthQueryPendingOutputDelivery {
     Change(WorthQueryPerformedRelationalProductChange),
     NoChange,
 }
 
-pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputCheckpoint {
+pub enum WorthQueryOutputCheckpoint {
+    PublicationPending {
+        owner: crate::domain_computation::primary_graph::application_contribution::PendingProducerPublication,
+        ready_backing: super::PreparedReadyBacking,
+    },
     Published {
         receipt: WorthQueryApplicationCommitReceipt,
         delivery: WorthQueryPendingOutputDelivery,
@@ -22,22 +26,75 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputCheckpoint
         delivery: Option<worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
         ready_backing: super::PreparedReadyBacking,
     },
+    RecoveredPublished {
+        publication: super::super::WorthQueryRecoveredProducerPublication,
+        delivery: WorthQueryPendingOutputDelivery,
+        ready_backing: super::PreparedReadyBacking,
+    },
+    RecoveredDelivered {
+        publication: super::super::WorthQueryRecoveredProducerPublication,
+        delivery: Option<worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
+        ready_backing: super::PreparedReadyBacking,
+    },
     Ready(ReadyCompletion),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputClaimIdentity(
-    pub(super) u64,
-);
+pub struct WorthQueryOutputClaimIdentity(pub u64);
 
 impl WorthQueryOutputCheckpoint {
-    pub(in crate::domain_computation::primary_graph) fn receipt(
-        &self,
-    ) -> Option<&WorthQueryApplicationCommitReceipt> {
+    fn generation(&self) -> super::ready_backing::OutputCheckpointGeneration {
         match self {
+            Self::PublicationPending { ready_backing, .. }
+            | Self::Published { ready_backing, .. }
+            | Self::Delivered { ready_backing, .. }
+            | Self::RecoveredPublished { ready_backing, .. }
+            | Self::RecoveredDelivered { ready_backing, .. } => ready_backing.generation(),
+            Self::Ready(completion) => completion.generation(),
+        }
+    }
+
+    fn publication(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication>
+    {
+        match self {
+            Self::PublicationPending { owner, .. } => owner.publication(),
+            Self::RecoveredPublished { publication, .. }
+            | Self::RecoveredDelivered { publication, .. } => {
+                Some(publication.view().committed_product_publication())
+            }
+            Self::Published { receipt, .. } | Self::Delivered { receipt, .. } => {
+                Some(receipt.committed_product_publication())
+            }
+            Self::Ready(completion) => match &completion.authority {
+                super::WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
+                    Some(receipt.committed_product_publication())
+                }
+                super::WorthQueryAcceptedOutputAuthority::Recovered(publication) => {
+                    Some(publication.view().committed_product_publication())
+                }
+                super::WorthQueryAcceptedOutputAuthority::Stable(_)
+                | super::WorthQueryAcceptedOutputAuthority::Restored(_) => None,
+            },
+        }
+    }
+    fn owes_delivery(&self) -> bool {
+        matches!(
+            self,
+            Self::Published { .. } | Self::RecoveredPublished { .. }
+        ) || matches!(self, Self::PublicationPending { owner, .. }
+                if !owner.is_closed() && owner.publication().is_some())
+    }
+    pub fn receipt(&self) -> Option<&WorthQueryApplicationCommitReceipt> {
+        match self {
+            Self::PublicationPending { .. }
+            | Self::RecoveredPublished { .. }
+            | Self::RecoveredDelivered { .. } => None,
             Self::Published { receipt, .. } | Self::Delivered { receipt, .. } => Some(receipt),
             Self::Ready(completion) => match &completion.authority {
                 super::WorthQueryAcceptedOutputAuthority::Committed(receipt) => Some(receipt),
+                super::WorthQueryAcceptedOutputAuthority::Recovered(_) => None,
                 super::WorthQueryAcceptedOutputAuthority::Stable(_) => None,
                 super::WorthQueryAcceptedOutputAuthority::Restored(_) => None,
             },
@@ -45,7 +102,7 @@ impl WorthQueryOutputCheckpoint {
     }
 }
 
-pub(super) enum WorthQueryOutputAdvancement {
+pub enum WorthQueryOutputAdvancement {
     Idle,
     Claimed(WorthQueryOutputClaimIdentity),
     Stopped {
@@ -54,8 +111,10 @@ pub(super) enum WorthQueryOutputAdvancement {
     },
 }
 
-pub(super) struct WorthQueryOutputProgress {
+pub struct WorthQueryOutputProgress {
+    generation: Option<super::ready_backing::OutputCheckpointGeneration>,
     undelivered: Option<super::publication_head::UndeliveredPublication>,
+    publication_head: Option<std::sync::Arc<std::sync::atomic::AtomicUsize>>,
     /// Exact owner-issued commit retained while the sole full checkpoint is
     /// temporarily claimed for delivery. This fixed identity replaces a deep
     /// descriptive receipt clone after producer effects.
@@ -66,7 +125,6 @@ pub(super) struct WorthQueryOutputProgress {
 }
 
 impl WorthQueryOutputProgress {
-    #[cfg(test)]
     pub(super) fn new(checkpoint: WorthQueryOutputCheckpoint) -> Self {
         let (output, retired_observation) = Self::new_with_detached_observation(checkpoint);
         drop(retired_observation);
@@ -81,12 +139,9 @@ impl WorthQueryOutputProgress {
         Self,
         Option<worth_runtime_world::facade::ProductBranchObservation>,
     ) {
-        let published_commit = checkpoint.receipt().map(|receipt| {
-            receipt
-                .committed_product_publication()
-                .composite_commit()
-                .clone()
-        });
+        let published_commit = checkpoint
+            .publication()
+            .map(|publication| publication.composite_commit().clone());
         let retired_observation = checkpoint.receipt().and_then(|receipt| {
             receipt
                 .committed_product_publication()
@@ -94,8 +149,10 @@ impl WorthQueryOutputProgress {
         });
         (
             Self {
+                generation: Some(checkpoint.generation()),
                 published_commit,
                 undelivered: None,
+                publication_head: None,
                 checkpoint: Some(checkpoint),
                 advancement: WorthQueryOutputAdvancement::Idle,
                 next_claim: 0,
@@ -106,18 +163,21 @@ impl WorthQueryOutputProgress {
 
     pub(super) fn restored(completion: ReadyCompletion) -> Self {
         Self {
+            generation: Some(completion.generation()),
             published_commit: None,
             undelivered: None,
+            publication_head: None,
             checkpoint: Some(WorthQueryOutputCheckpoint::Ready(completion)),
             advancement: WorthQueryOutputAdvancement::Idle,
             next_claim: 0,
         }
     }
 
-    #[cfg(test)]
     pub(super) fn stopped_without_checkpoint(denial: WorthQueryOutputDemandDenial) -> Self {
         let mut output = Self {
+            generation: None,
             undelivered: None,
+            publication_head: None,
             published_commit: None,
             checkpoint: None,
             advancement: WorthQueryOutputAdvancement::Idle,
@@ -125,6 +185,35 @@ impl WorthQueryOutputProgress {
         };
         output.finish_stopped(denial);
         output
+    }
+
+    pub(super) fn owns_checkpoint(&self, checkpoint: &WorthQueryOutputCheckpoint) -> bool {
+        self.generation
+            .as_ref()
+            .is_some_and(|generation| generation.same(&checkpoint.generation()))
+    }
+
+    /// Disposal borrows present custody without reopening stopped business work.
+    pub(super) fn claim_stopped_checkpoint_for_close(
+        &mut self,
+    ) -> Option<(WorthQueryOutputClaimIdentity, WorthQueryOutputCheckpoint)> {
+        let WorthQueryOutputAdvancement::Stopped {
+            interrupted_claim, ..
+        } = &mut self.advancement
+        else {
+            return None;
+        };
+        self.checkpoint.as_ref()?;
+        let next = self.next_claim.checked_add(1)?;
+        let claim = WorthQueryOutputClaimIdentity(next);
+        self.next_claim = next;
+        *interrupted_claim = Some(claim);
+        Some((
+            claim,
+            self.checkpoint
+                .take()
+                .expect("checked present cleanup custody"),
+        ))
     }
 
     pub(super) fn advancement(&self) -> &WorthQueryOutputAdvancement {
@@ -170,25 +259,42 @@ impl WorthQueryOutputProgress {
         if !matches!(
             self.advancement,
             WorthQueryOutputAdvancement::Stopped { .. }
-        ) && matches!(
-            &self.checkpoint,
-            Some(WorthQueryOutputCheckpoint::Published { .. })
-        ) {
+        ) && self
+            .checkpoint
+            .as_ref()
+            .is_some_and(WorthQueryOutputCheckpoint::owes_delivery)
+        {
             assert!(self.undelivered.is_none());
             self.undelivered = Some(super::publication_head::UndeliveredPublication::new(
-                counter,
+                std::sync::Arc::clone(&counter),
             ));
         }
+        self.publication_head = Some(counter);
     }
-    /// The row owns the hold while delivery claims its checkpoint. Only a
-    /// delivered/ready finish releases it; a restored Published keeps it.
+
+    /// World completion is recorded from its actual carrier, before optional
+    /// keyed receipt projection. Claims and transient restores keep its hold.
     pub(super) fn install_checkpoint(&mut self, checkpoint: WorthQueryOutputCheckpoint) {
-        match &checkpoint {
-            WorthQueryOutputCheckpoint::Published { .. } => {}
-            WorthQueryOutputCheckpoint::Delivered { .. } | WorthQueryOutputCheckpoint::Ready(_) => {
-                self.undelivered.take();
+        if let Some(publication) = checkpoint.publication() {
+            self.published_commit = Some(publication.composite_commit().clone());
+        }
+        if checkpoint.owes_delivery() && self.undelivered.is_none() {
+            if let Some(counter) = self.publication_head.as_ref() {
+                self.undelivered = Some(super::publication_head::UndeliveredPublication::new(
+                    std::sync::Arc::clone(counter),
+                ));
             }
+        } else if matches!(
+            &checkpoint,
+            WorthQueryOutputCheckpoint::Delivered { .. }
+                | WorthQueryOutputCheckpoint::RecoveredDelivered { .. }
+                | WorthQueryOutputCheckpoint::Ready(_)
+        ) || matches!(&checkpoint, WorthQueryOutputCheckpoint::PublicationPending { owner, .. } if owner.is_closed())
+        {
+            self.undelivered.take();
         }
         self.checkpoint = Some(checkpoint);
     }
 }
+
+mod court_doors_for_test;

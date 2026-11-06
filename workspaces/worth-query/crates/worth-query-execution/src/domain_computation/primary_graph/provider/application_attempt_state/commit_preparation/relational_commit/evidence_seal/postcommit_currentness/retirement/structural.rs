@@ -8,7 +8,7 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle, transactions::RelationalExecutionDenialCause as Cause,
 };
 
-pub(in super::super) fn prepare(
+pub fn prepare(
     runtime: &RelationalRuntime,
     execution: &ExecutionRequest<'_, '_>,
     snapshot: &SnapshotHandle,
@@ -99,6 +99,3 @@ fn all_retired(
     }
     Ok(true)
 }
-
-#[cfg(test)]
-mod tests;

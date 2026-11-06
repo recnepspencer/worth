@@ -11,6 +11,8 @@ pub struct ApplicationHomeRequest {
     pub(crate) relational: RelationalRuntimeDefinition,
     pub(crate) binding: AdmittedApplicationHomeBinding<WorthQueryHomeBindingAdmission>,
     pub(crate) build: worth_foundational::facade::ApplicationBuildIdentity,
+    pub(crate) opening_observation: crate::ApplicationHomeOpeningObservation,
+    pub(crate) predecessor: Option<HomeTransitionPredecessorInput>,
     #[cfg(feature = "certification-test-authority")]
     pub(crate) controls: crate::home_controls_for_test::HomeControlsForTest,
 }
@@ -27,6 +29,8 @@ impl ApplicationHomeRequest {
             relational,
             binding,
             build,
+            opening_observation: Default::default(),
+            predecessor: None,
             #[cfg(feature = "certification-test-authority")]
             controls: Default::default(),
         }
@@ -35,6 +39,25 @@ impl ApplicationHomeRequest {
     pub fn location(&self) -> &Path {
         &self.location
     }
+
+    /// Supply the compiled predecessor admitted by Query for transition planning.
+    /// This does not authorize a migration effect or change the recorded binding.
+    pub fn with_program_transition_predecessor(
+        mut self,
+        relational: RelationalRuntimeDefinition,
+        binding: AdmittedApplicationHomeBinding<WorthQueryHomeBindingAdmission>,
+    ) -> Self {
+        self.predecessor = Some(HomeTransitionPredecessorInput {
+            relational,
+            binding,
+        });
+        self
+    }
+}
+
+pub(crate) struct HomeTransitionPredecessorInput {
+    pub(crate) relational: RelationalRuntimeDefinition,
+    pub(crate) binding: AdmittedApplicationHomeBinding<WorthQueryHomeBindingAdmission>,
 }
 
 impl std::fmt::Debug for ApplicationHomeRequest {

@@ -59,7 +59,7 @@ mod admitted_lookup;
 #[path = "resolution/admitted_observations.rs"]
 mod admitted_observations;
 #[path = "resolution/selected_product.rs"]
-mod selected_product;
+pub(crate) mod selected_product;
 pub(in crate::domain_computation) use selected_product::WorthQueryIssuedSelectedPrincipal;
 
 fn principal_graph_binding<'a>(
@@ -344,4 +344,27 @@ fn admit_resolution_request(
         ));
     }
     Ok(())
+}
+
+fn validate_principal_clock(
+    runtime: &super::WorthQueryApplicationRuntimeCore,
+    principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+    request: &WorthQueryRequestScope,
+    binding: &str,
+) -> Result<(), WorthQueryPrincipalResolutionDenial> {
+    if runtime
+        .authorization_clock
+        .admission_clock
+        .same_clock(principal)
+        && principal.same_clock(request.clock())
+    {
+        Ok(())
+    } else {
+        Err(resolution_denial(
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                super::WorthQueryPrincipalResolutionRefusalKind::ForeignRuntime,
+            ),
+            binding,
+        ))
+    }
 }

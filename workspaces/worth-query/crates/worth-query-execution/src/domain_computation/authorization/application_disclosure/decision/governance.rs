@@ -19,6 +19,30 @@ use crate::domain_computation::provider_session::{
     WorthQueryGraphWorkSessionIdentity, WorthQueryManagedGraphWorkSession,
 };
 impl WorthQueryApplicationQueryGovernance {
+    /// Return the genuine capability request to admission. Session-bound
+    /// computation and disclosure decisions must be issued again by that owner.
+    pub(in crate::domain_computation) fn into_readmission(
+        self,
+    ) -> Option<WorthQueryPendingApplicationQueryGovernance> {
+        match self {
+            Self::Public => None,
+            Self::Governed {
+                capability_name,
+                capability_type,
+                disclosure_value,
+                authorization_canonical_work,
+                authorization,
+                ..
+            } => Some(WorthQueryPendingApplicationQueryGovernance::new(
+                capability_name,
+                capability_type,
+                disclosure_value,
+                authorization_canonical_work,
+                authorization,
+            )),
+        }
+    }
+
     pub(in crate::domain_computation) fn into_pending(
         self,
     ) -> Option<WorthQueryPendingApplicationQueryGovernance> {
@@ -212,3 +236,5 @@ impl WorthQueryApplicationQueryGovernance {
 fn field_tuple(field: &(String, String, String)) -> (&str, &str, &str) {
     (&field.0, &field.1, &field.2)
 }
+
+mod court_doors_for_test;

@@ -79,7 +79,7 @@ impl ActiveAttemptCustody {
                     .durable_movement
                     .as_mut()
                     .expect("same cell movement installed before I/O")
-                    .acknowledge(committed);
+                    .acknowledge(committed.into_witness());
                 let origin = resources
                     .durable_occurrence
                     .as_mut()

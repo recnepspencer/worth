@@ -17,12 +17,23 @@ pub(super) fn validate_succession(
     prior: &CanonicalRequiredOutputOrigin,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
-    let current = envelope.validate_output_membership_header()?;
+    super::producer_retirement::validate(runtime, envelope, context)?;
+    validate_route(runtime, envelope, prior, context)
+}
+
+pub(super) fn validate_route(
+    runtime: &RelationalRuntime,
+    envelope: &CanonicalCommitEnvelope,
+    prior: &CanonicalRequiredOutputOrigin,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<(), Stop> {
+    let current = envelope.output_origin_for_route(&prior.meaning, context)?;
     charge(
         context,
         current.members.len().saturating_add(prior.members.len()),
     )?;
-    if current.birth != prior.birth
+    if current.source_scope_owned != prior.source_scope_owned
+        || current.birth != prior.birth
         || current.birth_producer != prior.birth_producer
         || current.birth_dependency != prior.birth_dependency
         || current.meaning.family != prior.meaning.family
@@ -35,6 +46,7 @@ pub(super) fn validate_succession(
     if matches!(
         current.publication,
         CanonicalOutputPublication::AuthoredRetirement { .. }
+            | CanonicalOutputPublication::ProducerRetirement { .. }
     ) && (current.producer != prior.producer
         || current.dependency_identity != prior.dependency_identity
         || current.meaning != prior.meaning
@@ -186,7 +198,7 @@ pub(super) fn validate_gap(
             .canonical_envelope(commit)
             .ok_or("publication gap lost native history")?;
         require_linear_history(&envelope)?;
-        if let Some(publication) = &envelope.required_output_origin {
+        for publication in envelope.output_origins() {
             charge(
                 context,
                 publication.meaning.family.len() + origin.meaning.family.len() + 64,

@@ -9,7 +9,9 @@ use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::data::CustomInvariantAccessContract;
 
 mod bindings;
+mod catalog_commitment;
 pub(crate) use bindings::SourceBindingCache;
+pub(crate) use catalog_commitment::SourceProgramCommitmentDenial;
 mod projection_routes;
 pub use projection_routes::ManagedIndexSourceProjectionRoute;
 
@@ -20,8 +22,9 @@ pub struct ManagedIndexSourceField {
     pub locator: AspectFieldLocator,
 }
 
-#[derive(Debug)]
 pub(crate) struct SourceProgram {
+    // In-memory bind order only; never persist, content-hash, or include in evidence.
+    order: u64,
     pub(crate) path: DerivedRelationHandle,
     pub(crate) fields: Arc<[ManagedIndexSourceField]>,
     pub(crate) routes: Arc<[ManagedIndexSourceProjectionRoute]>,
@@ -35,17 +38,36 @@ pub struct ManagedIndexSourceProgram(pub(crate) Arc<SourceProgram>);
 
 impl PartialEq for ManagedIndexSourceProgram {
     fn eq(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.0, &other.0)
+        self.0.order == other.0.order
     }
 }
 impl Eq for ManagedIndexSourceProgram {}
 impl std::hash::Hash for ManagedIndexSourceProgram {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        #[expect(
-            clippy::disallowed_methods,
-            reason = "Fixed allocation identity deduplicates custody; canonical order never uses this address"
-        )]
-        std::ptr::hash(Arc::as_ptr(&self.0), state);
+        std::hash::Hash::hash(&self.0.order, state);
+    }
+}
+impl Ord for ManagedIndexSourceProgram {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.0.order.cmp(&other.0.order)
+    }
+}
+impl PartialOrd for ManagedIndexSourceProgram {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl std::fmt::Debug for SourceProgram {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("SourceProgram")
+            .field("path", &self.path)
+            .field("fields", &self.fields)
+            .field("routes", &self.routes)
+            .field("issuer", &self.issuer)
+            .field("authority", &self.authority)
+            .finish_non_exhaustive()
     }
 }
 
@@ -115,15 +137,27 @@ impl ManagedIndexSourceProgram {
     pub(crate) fn require_registry(
         &self,
         registry: &RelationalSchemaRegistry,
-    ) -> Result<(), Denial> {
-        if self
-            .paths()
-            .any(|path| !registry.admits_derived_relation(path))
-        {
-            return Err(Denial::ForeignDefinition);
+        control: crate::schema::SchemaCompilationControl<'_, '_>,
+    ) -> Result<(), crate::validation::CustomInvariantCompilationDenial> {
+        use crate::validation::CustomInvariantCompilationDenial as CompilationDenial;
+        for path in self.paths() {
+            control.checkpoint().map_err(CompilationDenial::Execution)?;
+            if !registry.admits_derived_relation(path) {
+                return Err(CompilationDenial::Source(Denial::ForeignDefinition));
+            }
         }
-        projection_routes::validate_fields(registry, self.row_kind(), self.fields())?;
-        projection_routes::validate_routes(registry, self.row_kind(), self.projection_routes())
+        projection_routes::validate_fields_for_compilation(
+            registry,
+            self.row_kind(),
+            self.fields(),
+            control,
+        )?;
+        projection_routes::validate_routes_for_compilation(
+            registry,
+            self.row_kind(),
+            self.projection_routes(),
+            control,
+        )
     }
 
     pub(crate) fn require_access(

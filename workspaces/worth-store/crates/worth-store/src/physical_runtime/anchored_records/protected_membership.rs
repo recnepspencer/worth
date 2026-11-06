@@ -62,7 +62,7 @@ impl AnchoredRecords<'_> {
                 name,
                 generation: anchor.generation(),
                 record: crate::physical_runtime::PhysicalRecordId::from_persisted(anchor.record()),
-                payload_sha256: verified.header.payload_sha256,
+                payload_sha256: *verified.header.payload_sha256.bytes(),
                 payload_bytes: verified.header.payload_bytes,
             },
             members,

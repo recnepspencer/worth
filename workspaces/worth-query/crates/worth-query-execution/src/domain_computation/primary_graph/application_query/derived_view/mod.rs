@@ -1,10 +1,10 @@
 mod change_summary;
 mod dependency;
-mod publication;
+pub(crate) mod publication;
 pub(in crate::domain_computation::primary_graph::application_query) use dependency::ViewDependency;
-pub(in crate::domain_computation::primary_graph::application_query) mod reconstruction_denial;
-mod registration;
-mod registry;
+pub(crate) mod reconstruction_denial;
+pub(crate) mod registration;
+pub(crate) mod registry;
 pub(in crate::domain_computation::primary_graph) use registry::PredicateNoticeDisposition;
 mod retention;
 

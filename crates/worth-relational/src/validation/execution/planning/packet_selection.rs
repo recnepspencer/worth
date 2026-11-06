@@ -76,7 +76,8 @@ pub(super) fn eligible_registrations<'state>(
             let access = registration.access_contract();
             let has_declared_applicability = !access.affected_entity_kinds.is_empty()
                 || !access.affected_relation_kinds.is_empty();
-            let unrelated = registration.managed_sources.is_empty()
+            let unrelated = runtime.home_target.is_none()
+                && registration.managed_sources.is_empty()
                 && has_declared_applicability
                 && touched_kinds
                     .get_or_init(|| {
@@ -105,7 +106,7 @@ pub(super) fn eligible_registrations<'state>(
                 crate::validation::data::PreparedCustomInvariantScope::capture_with_shared_inputs(
                     request.observation(),
                     request.version_id(),
-                    request.merged_plan(),
+                    request.semantic_plan(),
                     registration.access_contract(),
                     &work,
                     runtime.shared_candidate_inputs(),
@@ -143,7 +144,7 @@ pub(super) fn eligible_registrations<'state>(
                     basis: CustomInvariantNonApplicability::NoApplicableTouch,
                 });
             }
-            if request.merged_plan().is_some()
+            if request.semantic_plan().is_some()
                 && registration.managed_sources.is_empty()
                 && has_declared_applicability
                 && !planner.has_applicable_touches()

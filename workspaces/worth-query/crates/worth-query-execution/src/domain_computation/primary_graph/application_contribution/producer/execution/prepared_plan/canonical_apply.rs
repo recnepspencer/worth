@@ -4,7 +4,7 @@ use worth_proof::CanonicalUniqueVec;
 
 use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct CanonicalApplyCursor<
+pub struct CanonicalApplyCursor<
     'owner,
     Key,
     Value,
@@ -113,5 +113,4 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Ok(outcome.expect("the singleton cursor applied its one slot"))
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

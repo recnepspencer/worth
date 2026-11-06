@@ -5,6 +5,7 @@ mod preparation_denial;
 pub use application_publication::RelationalInstalledApplicationPublicationAuthority;
 pub(crate) use application_publication::{origin_denial, RequiredOutputPublicationAdmission};
 pub use application_publication::{
+    RelationalAuthoredRestoration, RelationalAuthoredRetirement,
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
     RequiredOutputProducingImplementation, RequiredOutputPublication,
     RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
@@ -14,6 +15,8 @@ mod candidate;
 mod candidate_consumption;
 mod candidate_preparation;
 mod companion;
+mod current_read;
+pub use current_read::RelationalPublicationReadDependencyDenial;
 mod outcome;
 mod port;
 mod validation;
@@ -49,6 +52,7 @@ pub use outcome::{
 };
 pub(crate) use port::PreparedCanonicalBranchMovement;
 pub use port::RelationalPublicationPort;
+pub use port::{PreparedMemoryRelationalCutover, ScopedRelationalPublication};
 
 #[cfg(test)]
 pub(crate) use application_publication::{native_birth_fixture, native_meaning_fixture};

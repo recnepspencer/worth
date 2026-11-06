@@ -67,6 +67,8 @@ pub struct ReadmittedApplicationHome {
 impl AuthorityMarker for ReadmittedApplicationHome {}
 
 pub(crate) struct HomeContext {
+    pub(crate) opening_observation: crate::ApplicationHomeOpeningObservation,
+    pub(crate) transition: crate::open::readmission::transition::HomeTransitionOwner,
     pub(crate) selected_home_source: Option<crate::checkpoint::SelectedHomeSource>,
     pub(crate) initialization: crate::relational_preparation::HomeInitializationOrigin,
     pub(crate) world_publications: Arc<crate::world_section::WorldPublications>,

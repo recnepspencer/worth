@@ -76,7 +76,7 @@ mod tests {
     #[test]
     fn cancellation_after_kernel_entry_remains_a_typed_signing_execution_stop() {
         let cancellation = WorthQueryCancellationSource::new();
-        let scope = WorthQueryRequestScope::new(None, cancellation.token());
+        let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let policy = worth_foundational::ExecutionRequestPolicy::new(
             worth_foundational::ExecutionPosture::Serial,
             worth_foundational::DeterminismContract::CanonicalBitwise,

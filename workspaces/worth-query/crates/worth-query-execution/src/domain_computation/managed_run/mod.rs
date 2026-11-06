@@ -1,4 +1,4 @@
-mod admission;
+pub(crate) mod admission;
 mod bridge_read_stop;
 mod counters;
 mod denial;
@@ -16,7 +16,7 @@ mod direct_yield_eligibility;
 mod direct_yield_recovery;
 mod direct_yield_transition;
 mod interruption_classification;
-mod lower_admission;
+pub(crate) mod lower_admission;
 mod managed_graph_execution;
 mod managed_graph_suspension;
 mod provider_execution_release;
@@ -25,16 +25,15 @@ mod provider_restore;
 mod provider_start;
 mod provider_step_admission;
 mod provider_work;
-mod readmission;
-mod recovery_registry;
-mod relational_observation;
+pub(crate) mod readmission;
+pub(crate) mod recovery_registry;
+pub(crate) mod relational_observation;
 mod retained_graph_execution;
 mod run_affinity;
 pub(in crate::domain_computation) use direct_graph_execution::WorthQueryCompletedDirectEvidenceOwner;
 pub(in crate::domain_computation) use readmission::WorthQueryDirectReadmissionTransitionPermit;
-pub(in crate::domain_computation) use relational_observation::{
-    WorthQueryManagedRelationalObservation, WorthQueryManagedRelationalObservationReleaseReceipt,
-};
+pub(in crate::domain_computation) use relational_observation::WorthQueryManagedRelationalObservation;
+pub use relational_observation::WorthQueryManagedRelationalObservationReleaseReceipt;
 
 mod safe_point_observation;
 mod semantic_basis;
@@ -187,8 +186,4 @@ pub use yield_recovery::WorthQueryYieldRecoveryKind;
 pub use yield_recovery_evidence::WorthQueryYieldRecoveryResourceEvidence;
 pub use yield_transition_counters::WorthQueryYieldTransitionCounters;
 
-#[cfg(test)]
-pub(crate) mod tests;
-
-#[cfg(test)]
 mod test_phase_custody;

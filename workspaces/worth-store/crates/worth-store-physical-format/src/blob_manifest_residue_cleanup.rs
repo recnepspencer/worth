@@ -3,6 +3,7 @@
 //! descriptor: it never authorizes removal of the manifest's payload IDs.
 
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 pub const BLOB_MANIFEST_RESIDUE_CLEANUP_DOMAIN: &[u8] =
     b"store.physical.blob-manifest-residue-cleanup.v1";
@@ -27,13 +28,13 @@ pub struct BlobManifestResidueCleanupV1 {
     store: [u8; 16],
     reclaim_attempt: [u8; 16],
     manifest_record: PersistedRecordIdentity,
-    manifest_frame_sha256: [u8; 32],
-    source_basis_digest: [u8; 32],
-    drop_idempotency_identity: [u8; 32],
-    drop_request_fingerprint: [u8; 32],
+    manifest_frame_sha256: CanonicalDigestId,
+    source_basis_digest: CanonicalDigestId,
+    drop_idempotency_identity: CanonicalDigestId,
+    drop_request_fingerprint: CanonicalDigestId,
     source_root_generation: u64,
     candidate_root_generation: u64,
-    candidate_root_sha256: [u8; 32],
+    candidate_root_sha256: CanonicalDigestId,
     retained_metadata_bytes: u64,
     publication: u64,
 }
@@ -73,13 +74,13 @@ impl BlobManifestResidueCleanupV1 {
             store,
             reclaim_attempt,
             manifest_record,
-            manifest_frame_sha256,
-            source_basis_digest,
-            drop_idempotency_identity,
-            drop_request_fingerprint,
+            manifest_frame_sha256: CanonicalDigestId::new(manifest_frame_sha256),
+            source_basis_digest: CanonicalDigestId::new(source_basis_digest),
+            drop_idempotency_identity: CanonicalDigestId::new(drop_idempotency_identity),
+            drop_request_fingerprint: CanonicalDigestId::new(drop_request_fingerprint),
             source_root_generation,
             candidate_root_generation,
-            candidate_root_sha256,
+            candidate_root_sha256: CanonicalDigestId::new(candidate_root_sha256),
             retained_metadata_bytes,
             publication,
         })
@@ -102,13 +103,13 @@ impl BlobManifestResidueCleanupV1 {
         bytes.extend_from_slice(&self.reclaim_attempt);
         bytes.extend_from_slice(&self.manifest_record.allocation_epoch());
         bytes.extend_from_slice(&self.manifest_record.ordinal().to_le_bytes());
-        bytes.extend_from_slice(&self.manifest_frame_sha256);
-        bytes.extend_from_slice(&self.source_basis_digest);
-        bytes.extend_from_slice(&self.drop_idempotency_identity);
-        bytes.extend_from_slice(&self.drop_request_fingerprint);
+        bytes.extend_from_slice(self.manifest_frame_sha256.bytes());
+        bytes.extend_from_slice(self.source_basis_digest.bytes());
+        bytes.extend_from_slice(self.drop_idempotency_identity.bytes());
+        bytes.extend_from_slice(self.drop_request_fingerprint.bytes());
         bytes.extend_from_slice(&self.source_root_generation.to_le_bytes());
         bytes.extend_from_slice(&self.candidate_root_generation.to_le_bytes());
-        bytes.extend_from_slice(&self.candidate_root_sha256);
+        bytes.extend_from_slice(self.candidate_root_sha256.bytes());
         bytes.extend_from_slice(&self.retained_metadata_bytes.to_le_bytes());
         bytes.extend_from_slice(&self.publication.to_le_bytes());
         debug_assert_eq!(bytes.len(), WIRE_BYTES);
@@ -175,16 +176,16 @@ impl BlobManifestResidueCleanupV1 {
         self.manifest_record
     }
     pub const fn manifest_frame_sha256(self) -> [u8; 32] {
-        self.manifest_frame_sha256
+        *self.manifest_frame_sha256.bytes()
     }
     pub const fn source_basis_digest(self) -> [u8; 32] {
-        self.source_basis_digest
+        *self.source_basis_digest.bytes()
     }
     pub const fn drop_idempotency_identity(self) -> [u8; 32] {
-        self.drop_idempotency_identity
+        *self.drop_idempotency_identity.bytes()
     }
     pub const fn drop_request_fingerprint(self) -> [u8; 32] {
-        self.drop_request_fingerprint
+        *self.drop_request_fingerprint.bytes()
     }
     pub const fn source_root_generation(self) -> u64 {
         self.source_root_generation
@@ -193,7 +194,7 @@ impl BlobManifestResidueCleanupV1 {
         self.candidate_root_generation
     }
     pub const fn candidate_root_sha256(self) -> [u8; 32] {
-        self.candidate_root_sha256
+        *self.candidate_root_sha256.bytes()
     }
     pub const fn retained_metadata_bytes(self) -> u64 {
         self.retained_metadata_bytes

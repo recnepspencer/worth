@@ -62,7 +62,7 @@ where
         .admit_clock(handle.binding_identity(), handle.lease())
         .ok_or(WorthQueryConditionalDefinitionPublicationDenial::ForeignConditionalOperation)?;
     let operation_anchor = operation.operation_anchor();
-    let bridge_root = application.bridge.conditional_operations();
+    let bridge_root = application.runtime.bridge.conditional_operations();
     let bridge = bridge_root
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner);

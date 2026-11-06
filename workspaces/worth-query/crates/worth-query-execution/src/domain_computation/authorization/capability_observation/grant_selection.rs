@@ -68,7 +68,6 @@ fn lookup_candidate_grants(
         MAX_BOUNDED_INDEX_CANDIDATES,
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
-    #[cfg(test)]
     late_cancellation::cancel_at_join();
     let lookup = relational
         .index_access()
@@ -159,7 +158,6 @@ fn observe_candidate_paths(
         [],
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
-    #[cfg(test)]
     late_cancellation::cancel_at_observation();
     relational
         .observe_authorization(plan, execution)
@@ -308,9 +306,8 @@ fn denial(
     WorthQueryOperationAuthorizationDenial::new(kind, subject)
 }
 
-#[cfg(test)]
 #[path = "grant_selection/late_cancellation.rs"]
-pub(in crate::domain_computation) mod late_cancellation;
+pub(crate) mod late_cancellation;
 
 fn grant_lookup_denial_kind(
     refusal: worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind,

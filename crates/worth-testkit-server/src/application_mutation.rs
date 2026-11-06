@@ -46,8 +46,7 @@ pub fn open_at(
 pub fn scope() -> WorthQueryRequestScope {
     WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
-        WorthQueryCancellationSource::new().token(),
-    )
+        WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 pub fn server(runtime: &Runtime) -> WorthServer {
     let binding = WorthServerQueryApplicationMutationBinding::for_program(

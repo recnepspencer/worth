@@ -51,7 +51,16 @@ impl DurabilitySubsystem {
     }
 
     pub(crate) fn attach_medium(&mut self, medium: Box<dyn RelationalDurableMedium>) {
-        let binding = Arc::new(RelationalDurableMediumBinding::new(medium));
+        self.attach_recovered_medium(
+            crate::durability::medium::RelationalDurableMediumTransfer::fresh(medium),
+        );
+    }
+
+    pub(crate) fn attach_recovered_medium(
+        &mut self,
+        transfer: crate::durability::medium::RelationalDurableMediumTransfer,
+    ) {
+        let binding = Arc::new(RelationalDurableMediumBinding::new(transfer));
         let source = binding.cold_source();
         let mut state = self.state.write();
         state.cold_source = Some(source);
@@ -61,7 +70,9 @@ impl DurabilitySubsystem {
     /// Move the medium out so it can move into the runtime recovery rebuilt.
     /// This runtime, and every port that holds its attachment, then refuses
     /// to publish. `None` when it has no medium or the medium already moved.
-    pub(crate) fn detach_medium(&self) -> Option<Box<dyn RelationalDurableMedium>> {
+    pub(crate) fn detach_medium(
+        &self,
+    ) -> Option<crate::durability::medium::RelationalDurableMediumTransfer> {
         self.medium().as_ref().and_then(|binding| binding.detach())
     }
 

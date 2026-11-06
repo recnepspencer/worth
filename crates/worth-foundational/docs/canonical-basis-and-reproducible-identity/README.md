@@ -52,3 +52,9 @@ The grouped public surface for this milestone is part of what shipped:
 These docs are capability-first on purpose. They are not milestone notes,
 closeout notes, or test tours. If a canonicalization capability shipped, it
 should have one stable home in this folder.
+
+`CanonicalDigestId` is the descriptive 32-byte digest value. Its binary Serde
+form is an exact byte string (MessagePack `bin`); its human-readable form is
+64 hexadecimal digits. Both readers reject the retired integer-array form.
+Wire length is independent of digest contents. These bytes grant no execution,
+publication, currentness or recovery authority.

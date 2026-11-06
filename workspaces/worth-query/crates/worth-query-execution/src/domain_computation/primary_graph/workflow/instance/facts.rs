@@ -15,14 +15,14 @@ use crate::domain_computation::primary_graph::application_attempt::{
 /// assessment evidence bytes they retain and the earliest total deadline any
 /// definition it ran declared.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowLineageCarry {
+pub struct WorkflowLineageCarry {
     pub(in crate::domain_computation::primary_graph) inherited_steps: u64,
     pub(in crate::domain_computation::primary_graph) inherited_evidence_bytes: u64,
     /// Unix-epoch milliseconds.
     pub(in crate::domain_computation::primary_graph) deadline: Option<u64>,
 }
 
-pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<Error>(
+pub fn visit_instance_start_facts<Error>(
     layout: &WorthQueryWorkflowLayout,
     compiled: &CompiledWorkflowDefinition,
     instance_identity: &str,
@@ -46,7 +46,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
     )
 }
 
-pub(in crate::domain_computation::primary_graph) fn visit_instance_birth_facts<Error>(
+pub fn visit_instance_birth_facts<Error>(
     layout: &WorthQueryWorkflowLayout,
     compiled: &CompiledWorkflowDefinition,
     instance_identity: &str,
@@ -81,6 +81,40 @@ fn visit_start_facts<Error>(
     advancer: crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
     mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
 ) -> Result<CreatedEntityRef, Error> {
+    let instance = visit_instance_record_facts(
+        layout,
+        compiled,
+        instance_identity,
+        started_program_revision,
+        branch_occurrence,
+        &subject,
+        carry,
+        advancer,
+        &mut emit,
+    )?;
+    if matches!(&subject, EntityReference::Created(_)) {
+        emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
+            kind: layout.instance_subject_relation,
+            key: "instance-subject".to_owned(),
+            from: EntityReference::Created(instance.clone()),
+            to: subject,
+        })?;
+    }
+    Ok(instance)
+}
+
+fn visit_instance_record_facts<Error>(
+    layout: &WorthQueryWorkflowLayout,
+    compiled: &CompiledWorkflowDefinition,
+    instance_identity: &str,
+    started_program_revision: &AspectValue,
+    branch_occurrence: u64,
+    subject: &EntityReference,
+    carry: WorkflowLineageCarry,
+    advancer: crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
+    emit: &mut dyn FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
+) -> Result<CreatedEntityRef, Error> {
     let partition = compiled.definition().partition_id;
     let instance = CreatedEntityRef {
         partition_id: partition,
@@ -95,7 +129,7 @@ fn visit_start_facts<Error>(
         ),
         (
             layout.instance.protocol_version.clone(),
-            AspectValue::UInt64(match &subject {
+            AspectValue::UInt64(match subject {
                 EntityReference::Existing(_) => {
                     super::super::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION
                 }
@@ -121,7 +155,7 @@ fn visit_start_facts<Error>(
             AspectValue::UInt64(super::state::WorkflowInstanceState::Ready.persisted_tag()),
         ),
     ]);
-    if let EntityReference::Existing(subject) = &subject {
+    if let EntityReference::Existing(subject) = subject {
         fields.extend([
             (
                 layout.instance.subject_partition.clone(),
@@ -186,15 +220,6 @@ fn visit_start_facts<Error>(
         from: EntityReference::Created(instance.clone()),
         to: EntityReference::Existing(compiled.definition()),
     })?;
-    if matches!(&subject, EntityReference::Created(_)) {
-        emit(WorthQueryApplicationRealizedEffect::CreateRelation {
-            fields: Default::default(),
-            kind: layout.instance_subject_relation,
-            key: "instance-subject".to_owned(),
-            from: EntityReference::Created(instance.clone()),
-            to: subject,
-        })?;
-    }
     Ok(instance)
 }
 

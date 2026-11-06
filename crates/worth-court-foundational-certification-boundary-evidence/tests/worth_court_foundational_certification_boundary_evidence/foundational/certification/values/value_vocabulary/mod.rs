@@ -31,7 +31,6 @@ fn canonical_value_families_preserve_width_precision_and_reference_kind() {
         )),
         worth_foundational::AspectValue::Rational(rational),
         worth_foundational::AspectValue::String(worth_foundational::CanonicalString::from("name")),
-        worth_foundational::AspectValue::Bytes(ContentRefId(7)),
         worth_foundational::AspectValue::Uuid([1; 16]),
         worth_foundational::AspectValue::Date(CanonicalDate {
             days_from_unix_epoch: 20_000,
@@ -51,7 +50,10 @@ fn canonical_value_families_preserve_width_precision_and_reference_kind() {
             9,
             0,
         )),
-        worth_foundational::AspectValue::ContentRef(ContentRefId(9)),
+        worth_foundational::AspectValue::ContentRef(ContentRefId([
+            9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ])),
     ];
 
     let families: Vec<_> = values
@@ -59,14 +61,14 @@ fn canonical_value_families_preserve_width_precision_and_reference_kind() {
         .map(worth_foundational::AspectValue::value_family)
         .collect();
 
-    assert_eq!(families.len(), 24);
+    assert_eq!(families.len(), 23);
     assert!(families.contains(&worth_foundational::ScalarAspectType::Int8));
     assert!(families.contains(&worth_foundational::ScalarAspectType::UInt8));
     assert!(families.contains(&worth_foundational::ScalarAspectType::EntityRef));
     assert!(families.contains(&worth_foundational::ScalarAspectType::ContentRef));
     assert_ne!(
-        worth_foundational::AspectValue::Bytes(ContentRefId(9)),
-        worth_foundational::AspectValue::ContentRef(ContentRefId(9))
+        worth_foundational::AspectValue::ContentRef(ContentRefId([9; 32])),
+        worth_foundational::AspectValue::ContentRef(ContentRefId([10; 32]))
     );
     assert_eq!(
         families,
@@ -87,7 +89,6 @@ fn canonical_value_families_preserve_width_precision_and_reference_kind() {
             worth_foundational::ScalarAspectType::BigInt,
             worth_foundational::ScalarAspectType::Rational,
             worth_foundational::ScalarAspectType::String,
-            worth_foundational::ScalarAspectType::Bytes,
             worth_foundational::ScalarAspectType::Uuid,
             worth_foundational::ScalarAspectType::Date,
             worth_foundational::ScalarAspectType::Time,

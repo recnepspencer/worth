@@ -16,8 +16,7 @@ use prior::SchemaContinuityPrior;
 
 #[derive(Debug, Clone)]
 pub(crate) struct SchemaContinuityPlan {
-    pub(crate) target_schema_registry:
-        Option<std::sync::Arc<crate::schema::data::RelationalSchemaRegistry>>,
+    pub(crate) target_schema_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
     pub(crate) target_schema_version: crate::schema::data::SchemaVersionId,
     pub(crate) target_schema_authority: crate::schema::data::SchemaAuthoritySnapshot,
     pub(crate) descriptor_semantics_version: DescriptorSemanticsVersion,
@@ -60,7 +59,9 @@ pub(crate) fn resolve_schema_continuity(
     ) {
         (Some(input), _) => input.clone(),
         (None, Some(_)) => crate::schema::SchemaContinuityAuthorityInput::from_shared_registry(
-            std::sync::Arc::new(runtime.config.schema.registry.clone()),
+            crate::branch::RetainedRelationalSchemaRegistry::from_configuration(
+                std::sync::Arc::new(runtime.config.schema.registry.clone()),
+            ),
             runtime
                 .config
                 .schema

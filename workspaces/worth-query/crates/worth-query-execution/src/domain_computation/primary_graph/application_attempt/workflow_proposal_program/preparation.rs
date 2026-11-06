@@ -132,7 +132,7 @@ where
                 input_identity,
                 source_identity,
                 captured,
-                &self.application().authorization_clock,
+                &self.application().runtime.authorization_clock,
             )
             .map_err(WorkflowProposalPreparationDenial::Attempt)
     }
@@ -178,7 +178,7 @@ impl WorthQueryWorkflowProposalAdapter {
         Input: Clone + Send + Sync + 'static,
     {
         let idempotency = idempotency.bind_workflow_captured_inputs(captured.identity);
-        let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "workflow-phase"))),
         };
@@ -233,7 +233,7 @@ impl WorthQueryWorkflowProposalAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let phase_request = match phase.execution_request_for(&selected.application().product_runtime) {
+        let phase_request = match phase.execution_request_for(&selected.application().runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(WorkflowProposalPreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
         };
@@ -263,7 +263,7 @@ impl WorthQueryWorkflowProposalAdapter {
         Input: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&runtime.product_runtime) {
+            match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return WorkflowProposalOutcome::Application(
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(

@@ -24,6 +24,7 @@ where
         .try_into()
         .expect("one native settlement key");
     let locator = runtime
+        .runtime
         .primary_provider
         .graph
         .layout
@@ -33,17 +34,20 @@ where
         .clone();
     let receipt = match resolution.into_resolution() {
         WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => return Ok(Some(WorkflowProgressOutcome::RecoveredCommitted(receipt))),
-        WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::ProductPreparationPending(owner)))),
+        WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::ProductUnpublished(owner)))),
+            WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::ProductPreparationPending(owner)))),
         WorthQueryApplicationIdempotencyResolution::IntentDrift => return Ok(Some(
             WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::idempotency_intent_drift())))),
-        WorthQueryApplicationIdempotencyResolution::Unseen => {
+        WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
+            WorthQueryApplicationIdempotencyResolution::Unseen => {
             super::super::super::publication::transition_entity_in_receipt(original, required.transition_identity(), &locator)
                 .map(|_| original.clone())
         }
     };
     Ok(receipt.map(|receipt| {
         runtime
+            .runtime
             .primary_provider
             .graph
             .with_runtime(execution, |relational| {

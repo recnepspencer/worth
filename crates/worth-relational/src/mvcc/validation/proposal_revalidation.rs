@@ -12,6 +12,17 @@ impl RelationalPreparationRuntime {
         #[cfg(test)]
         crate::mvcc::transaction::split_contacts::revalidation();
         self.ensure_validated_proposal_branch_is_current(&candidate)?;
+        if let Some(step) = candidate.state.validation_input.home_step()
+            && !candidate
+                .state
+                .caller_association
+                .as_ref()
+                .is_some_and(|association| step.admits_association(association.as_bytes()))
+        {
+            return Err(stale_validated_proposal(
+                "Home target has no exact original World association",
+            ));
+        }
         if candidate.state.custom_invariant_generation
             != self.schema_contract_runtime.custom_invariant_generation
         {

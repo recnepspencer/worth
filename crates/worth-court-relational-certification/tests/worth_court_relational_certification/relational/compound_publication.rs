@@ -148,7 +148,7 @@ fn assert_image(
 fn compound_managed_source_publication_is_atomic_and_releases_failed_staging() {
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let mut runtime = RelationalRuntimeApi::builder()
+    let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(support::demo_schema_registry())
         .build()

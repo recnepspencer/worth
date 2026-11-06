@@ -239,6 +239,7 @@ impl CapturedCheckpointBasis {
             aspect_contracts: runtime
                 .schema_contract_runtime
                 .aspect_contract_plans
+                .as_ref()
                 .clone(),
             lineage_nodes: runtime.lineage_access().resident_nodes_snapshot(),
             lineage_event_pages_resident,

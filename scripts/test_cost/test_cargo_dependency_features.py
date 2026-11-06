@@ -9,12 +9,15 @@ from test_compiler_units import event, graph, unit
 
 
 class CargoDependencyFeaturesTests(unittest.TestCase):
-    def fixture(self, root, mode='build'):
+    def fixture(self, root, mode='build', distinct_package=False):
         owner = unit('owner', mode=mode, dependencies=[3])
         other = unit('owner', mode=mode, dependencies=[4])
+        other_dependency = unit('digest', features=['mac', 'std'])
+        if distinct_package:
+            other_dependency['pkg_id'] = 'registry+https://example.invalid#index#digest@0.2.0'
         rows = declarations(graph(unit('root', dependencies=[1, 2]), owner, other,
                                   unit('digest', features=['std']),
-                                  unit('digest', features=['mac', 'std'])))
+                                  other_dependency))
         declaration = {'units': rows, 'compiler_inputs': 'flags'}
         observed = dict(event(owner, linked=True), reason='compiler-artifact', fresh=False)
         observed['filenames'] = [str(root / 'debug/deps/libowner-first.rlib')]
@@ -65,6 +68,23 @@ class CargoDependencyFeaturesTests(unittest.TestCase):
             self.assertEqual(enriched['cargo_dependency_features'], [['digest', ['std']]])
             self.assertEqual(attribute(enriched, declaration)['dependency_units'],
                              declaration['units'][1]['dependency_units'])
+
+    def test_retained_dependency_features_do_not_choose_between_package_versions(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            observed, declaration, _ = self.fixture(Path(temporary), distinct_package=True)
+            observed['cargo_dependency_features'] = [['digest', ['std']]]
+            with self.assertRaises(CompilerUnitRefusal):
+                attribute(observed, declaration)
+
+    def test_incomplete_fingerprint_refuses_without_inventing_compiler_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            observed, declaration, _ = self.fixture(Path(temporary))
+            own = Path(temporary) / 'debug/.fingerprint/owner-first/lib-owner.json'
+            for record in ({'deps': []}, {'features': '{}'}, {'features': '[]'}):
+                with self.subTest(record=record):
+                    own.write_text(json.dumps(record))
+                    with self.assertRaises(CompilerUnitRefusal):
+                        attribute(observed, declaration)
 
 
 if __name__ == '__main__':

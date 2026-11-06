@@ -22,23 +22,22 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-mod currentness;
+pub(crate) mod entry_custody;
+pub(in crate::domain_computation::primary_graph) use entry_custody::{
+    CurrentCommitProgram, ReadmittedCommitProgram,
+};
+pub(crate) mod currentness;
 mod domain_value_write;
-mod local_workflow_settlement;
-mod native_reference_invariants;
+pub(crate) mod local_workflow_settlement;
+pub(crate) mod native_reference_invariants;
 use currentness::{
     readmit_current_basis, select_current_product, validate_elevation_currentness,
     validate_operation_currentness, validate_workflow_deadline,
 };
-pub(super) mod running;
+pub(crate) mod running;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use local_workflow_settlement::LocalWorkflowSettlementPublication;
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryPreparedApplicationCommit<
-    Schema,
-    Operation,
-    Input,
-    Scope,
-> {
+pub struct WorthQueryPreparedApplicationCommit<Schema, Operation, Input, Scope> {
     admission: crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
         Operation,
@@ -59,39 +58,57 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     >,
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) enum WorthQueryApplicationCommitPreparation<
-    Schema,
-    Operation,
-    Input,
-    Scope,
-> {
+pub enum WorthQueryApplicationCommitPreparation<Schema, Operation, Input, Scope> {
     Ready(WorthQueryPreparedApplicationCommit<Schema, Operation, Input, Scope>),
     Terminal(WorthQueryApplicationCommitOutcome),
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryApplicationCommitPreparationRequest<
+pub struct WorthQueryApplicationCommitPreparationRequest<
+    'a,
+    'phase,
+    'request,
     Schema,
     Operation,
     Input,
     Scope,
 > {
-    program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+    entry: CurrentCommitProgram<
+        'a,
+        'phase,
+        'request,
+        Schema,
+        WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+    >,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
     aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
 }
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryApplicationCommitPreparationRequest<Schema, Operation, Input, Scope>
+impl<'a, 'phase, 'request, Schema, Operation, Input, Scope>
+    WorthQueryApplicationCommitPreparationRequest<
+        'a,
+        'phase,
+        'request,
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >
 {
     pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn new(
-        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        entry: CurrentCommitProgram<
+            'a,
+            'phase,
+            'request,
+            Schema,
+            WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        >,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
         aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
     ) -> Self {
         Self {
-            program,
+            entry,
             idempotency,
             elevation_currentness,
             aftermath_causality,
@@ -110,6 +127,7 @@ struct WorthQueryProviderAttemptPreparation {
     original_read: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
+    content_attachments: worth_relational::facade::content::RelationalContentAttachments,
     application_effect_count: usize,
     preimage_demand: Option<worth_query_installation::facade::InstalledPreImageDemand>,
     conditional_definition:
@@ -137,9 +155,6 @@ struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
     workflow_approval_authority:
         Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
 }
-
-mod commit_preparation;
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use commit_preparation::prepare_application_commit;
 
 fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -180,7 +195,7 @@ where
     };
     let effect_posture = provider.effect_posture;
     let native_reference_invariants = match native_reference_invariants::derive(
-        &application.primary_provider.graph.layout,
+        &application.runtime.primary_provider.graph.layout,
         application.installed_schema.invariants(),
         &provider.effects,
     ) {
@@ -220,7 +235,7 @@ fn take_commit_authorization<Schema, Operation, Input, Scope>(
     admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
 ) -> Result<WorthQueryProviderCommitAuthorization, WorthQueryApplicationCommitOutcome> {
     admission
-        .take_authorization_dependencies(application.authorization.bridge())
+        .take_authorization_dependencies(application.runtime.authorization.bridge())
         .map_err(|denial| denied_with_detail(DenialStage::DecisionReadSet, denial.to_string()))
 }
 
@@ -232,11 +247,7 @@ fn bind_commit_idempotency<Schema, Operation, Input, Scope>(
     idempotency: WorthQueryApplicationIdempotencyBinding,
 ) -> WorthQueryApplicationIdempotencyBinding {
     idempotency
-        .bind_operation(admission.operation_definition_identity())
-        .bind_operation_scope(admission.operation_scope_binding())
-        .bind_preconditions(admission.mutation_preconditions().identity())
-        .bind_governed_input(admission.governed_input_identity())
-        .bind_governed_proposal(admission.governed_proposal_identity())
+        .bind_admission(admission)
         .bind_conditional_definition(
             conditional_definition.map(
                 crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition::identity,
@@ -252,3 +263,6 @@ const fn terminal<Schema, Operation, Input, Scope>(
 ) -> WorthQueryApplicationCommitPreparation<Schema, Operation, Input, Scope> {
     WorthQueryApplicationCommitPreparation::Terminal(outcome)
 }
+
+mod court_doors_for_test;
+pub use running::WorthQueryManagedPhaseStorageForTest;

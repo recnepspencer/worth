@@ -102,19 +102,20 @@ pub use super::application_contribution::{
     WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
     WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial,
     WorthQueryOutputReadinessContract, WorthQueryOutputReadinessContractBuilder,
-    WorthQueryOutputReadinessContractDenial, WorthQueryPartitionedComputationDenial,
-    WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationOwner,
-    WorthQueryPartitionedComputationRunForTest, WorthQueryPartitionedTreeAccounting,
-    WorthQueryPartitionedTreeMetrics, WorthQueryPartitionedTreeRebuildCause,
-    WorthQueryPartitionedTreeRun, WorthQueryPreparedManagedComputation,
-    WorthQueryPreparedPartitionedComputation, WorthQueryProducerApplicability,
-    WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,
-    WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialProjection,
-    WorthQueryProducerDenialValue, WorthQueryProducerInputReuseContract,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputEquivalence, WorthQueryProducerOutputFamily,
-    WorthQueryProjectedProducerDenial, WorthQueryPublishedComputationStateForTest,
-    WorthQueryReadinessFieldUse, WorthQueryReductionInputDenial, WorthQueryRequiredFeatureContract,
+    WorthQueryOutputReadinessContractDenial, WorthQueryOutputSettlementProvenanceDenial,
+    WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationFullCause,
+    WorthQueryPartitionedComputationOwner, WorthQueryPartitionedComputationRunForTest,
+    WorthQueryPartitionedTreeAccounting, WorthQueryPartitionedTreeMetrics,
+    WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
+    WorthQueryPreparedManagedComputation, WorthQueryPreparedPartitionedComputation,
+    WorthQueryProducerApplicability, WorthQueryProducerDenialDeclaration,
+    WorthQueryProducerDenialDecodeDenial, WorthQueryProducerDenialEncodingRefusal,
+    WorthQueryProducerDenialProjection, WorthQueryProducerDenialValue,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputEquivalence,
+    WorthQueryProducerOutputFamily, WorthQueryProjectedProducerDenial,
+    WorthQueryPublishedComputationStateForTest, WorthQueryReadinessFieldUse,
+    WorthQueryReductionInputDenial, WorthQueryRequiredFeatureContract,
     WorthQueryRequiredFeaturePair, WorthQuerySelectedApplicationProducer,
     WorthQueryUndeclaredProducerDenial, WorthQueryWorkflowAssessmentOutputFamily,
     WorthQueryWorkflowAssessmentPosture,
@@ -182,8 +183,8 @@ pub use super::application_query::{
     WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewDenial,
     WorthQueryManagedDerivedViewKey, WorthQueryManagedDerivedViewReconciliation,
     WorthQueryManagedDerivedViewSnapshot, WorthQueryManagedIndex,
-    WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexControl,
-    WorthQueryManagedIndexDenial, WorthQueryManagedIndexDenialCause,
+    WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexContentReadDenial,
+    WorthQueryManagedIndexControl, WorthQueryManagedIndexDenial, WorthQueryManagedIndexDenialCause,
     WorthQueryManagedIndexInvariantDenial, WorthQueryManagedIndexLifecycle,
     WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeRegion,
     WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
@@ -214,9 +215,10 @@ pub use super::application_runtime::{
     WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
     WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
     WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryRuleReadableCollectionLifecycleForTest,
-    WorthQueryStorageRetentionDenial, WorthQueryStorageRetentionProgress,
-    WorthQueryStorageRetentionStop,
+    WorthQueryOracleHistoryPageForTest, WorthQueryOracleOccurrenceForTest,
+    WorthQueryOracleSignalMovementForTest, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryRuleReadableCollectionLifecycleForTest, WorthQueryStorageRetentionDenial,
+    WorthQueryStorageRetentionProgress, WorthQueryStorageRetentionStop,
 };
 pub use super::authenticated_principal::{
     WorthQueryApplicationPrincipalIdentity, WorthQueryAuthenticatedPrincipal,
@@ -275,7 +277,7 @@ pub use super::invariant_installation::{
 };
 pub use super::provider::{
     WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
-    WorthQueryRecoveredDispatchOutbox,
+    WorthQueryRecoveredDispatchOutbox, WorthQueryReleasedApplicationEffect,
 };
 mod decision_read;
 pub use super::merge_unique_values::{
@@ -359,4 +361,5 @@ pub use authorization::*;
 pub use operation_body::*;
 
 mod checkpoint_inspection;
+pub use super::application_attempt::WorthQueryManagedPhaseStorageForTest;
 pub use checkpoint_inspection::*;

@@ -84,7 +84,7 @@ impl WorthServerTransportRequestCancellation {
         }
         WorthServerQueryRequestScope::new(
             identity,
-            WorthQueryRequestScope::new(Some(deadline), self.source.token()),
+            WorthQueryRequestScope::new(Some(deadline), self.source.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         )
     }
 

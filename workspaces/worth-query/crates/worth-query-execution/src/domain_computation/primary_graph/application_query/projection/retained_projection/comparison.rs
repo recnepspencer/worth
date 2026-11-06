@@ -9,7 +9,7 @@ use crate::domain_computation::{
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
 
-pub(in crate::domain_computation::primary_graph) enum ProjectionComparisonDenial {
+pub enum ProjectionComparisonDenial {
     DisclosureInterpretationChanged,
     OriginalDisclosureIncomplete,
     NestingExceedsDeclaredShape,

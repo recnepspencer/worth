@@ -105,7 +105,7 @@ where
                     execution,
                     relational,
                     snapshot,
-                    runtime.authorization.bridge(),
+                    runtime.runtime.authorization.bridge(),
                 )
                 .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
             if let Some(capability) = metadata.authorization_mut() {
@@ -114,7 +114,7 @@ where
                         execution,
                         relational,
                         snapshot,
-                        runtime.authorization.bridge(),
+                        runtime.runtime.authorization.bridge(),
                     )
                     .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
             }
@@ -176,7 +176,7 @@ where
                                 execution,
                                 relational,
                                 security.snapshot_handle(),
-                                runtime.authorization.bridge(),
+                                runtime.runtime.authorization.bridge(),
                             )
                             .map_err(InspectionAdmissionDenial::CurrentAuthorization)
                     })?;

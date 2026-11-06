@@ -64,7 +64,9 @@ impl RuntimeWorldLifecyclePort {
     {
         // Close alone may reach the SAME owner in Closing to resume its task.
         // All ordinary operations continue using service() and require Open.
-        if self.owner.as_ptr() as *const () != Arc::as_ptr(&owner.root) as *const () {
+        let expected = Arc::downgrade(&owner.root);
+        let expected: Weak<dyn RuntimeWorldLifecycleService + Send + Sync> = expected;
+        if !Weak::ptr_eq(&self.owner, &expected) {
             return Err(RuntimeWorldOwnerUnavailable::new().into());
         }
         RuntimeWorldLifecycleService::close(owner.root.as_ref(), request)

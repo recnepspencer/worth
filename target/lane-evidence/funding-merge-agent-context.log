@@ -1,0 +1,28 @@
+command: cargo run --manifest-path tools/agent-context/Cargo.toml -- check
+HEAD: 25619ac5d1ae6092ab5a91bc4b7123be6042475c
+git_status_short_empty: false
+start_utc: 2026-11-06T18:11:31.985876+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling unicode-ident v1.0.27
+   Compiling serde v1.0.229
+   Compiling winnow v1.0.4
+   Compiling toml_writer v1.1.3+spec-1.1.0
+   Compiling toml_parser v1.1.5+spec-1.1.0
+   Compiling serde_spanned v1.1.2
+   Compiling toml_datetime v1.1.2+spec-1.1.0
+   Compiling toml v1.1.8+spec-1.1.0
+   Compiling syn v2.0.119
+   Compiling syn v3.0.9
+   Compiling serde_derive v1.0.229
+   Compiling agent-context v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\tools\agent-context)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 1m 08s
+     Running `tools\agent-context\target\debug\agent-context.exe check`
+
+end_utc: 2026-11-06T18:12:40.421878+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

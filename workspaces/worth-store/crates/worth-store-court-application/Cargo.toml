@@ -8,9 +8,12 @@
 "license" = { "workspace" = true }
 
 [dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 worth-query-host = { path = "../../../worth-query/crates/worth-query-host" }
 worth-query-execution = { path = "../../../worth-query/crates/worth-query-execution" }
 worth-query-testkit-host = { path = "../../../worth-query/crates/worth-query-testkit-host" }
+worth-query-testkit-installation = { path = "../../../worth-query/crates/worth-query-testkit-installation" }
 worth-store-testkit-application-oracle = { path = "../worth-store-testkit-application-oracle" }
 worth-store-application = { path = "../worth-store-application", features = ["certification-test-authority"] }
 worth-store-testkit-sweep = { path = "../worth-store-testkit-sweep" }

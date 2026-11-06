@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use super::chunk_reuse_claim::BlobChunkReuseClaimV1;
 use super::envelope::{encode, BLOB_RECORD_HEADER_BYTES};
@@ -15,7 +16,7 @@ const PAYLOAD_BYTES: usize = V1_PAYLOAD_BYTES + 32 + GENERATION_PUBLICATION_FRAM
 pub struct BlobChunkReuseClaimV2 {
     claim: BlobChunkReuseClaimV1,
     source_publication: BlobGenerationPublicationV1,
-    source_publication_frame_sha256: [u8; 32],
+    source_publication_frame_sha256: CanonicalDigestId,
 }
 
 impl BlobChunkReuseClaimV2 {
@@ -44,7 +45,9 @@ impl BlobChunkReuseClaimV2 {
         Ok(Self {
             claim,
             source_publication,
-            source_publication_frame_sha256,
+            source_publication_frame_sha256: CanonicalDigestId::new(
+                source_publication_frame_sha256,
+            ),
         })
     }
 
@@ -53,7 +56,7 @@ impl BlobChunkReuseClaimV2 {
         let publication = self.source_publication.encode();
         let mut payload = Vec::with_capacity(PAYLOAD_BYTES);
         payload.extend_from_slice(&v1[BLOB_RECORD_HEADER_BYTES..]);
-        payload.extend_from_slice(&self.source_publication_frame_sha256);
+        payload.extend_from_slice(self.source_publication_frame_sha256.bytes());
         payload.extend_from_slice(&publication);
         encode(BlobRecordKind::ChunkReuseClaimV2, &payload)
             .expect("bounded reuse witness fits control frame")
@@ -89,7 +92,7 @@ impl BlobChunkReuseClaimV2 {
     }
 
     pub const fn source_publication_frame_sha256(self) -> [u8; 32] {
-        self.source_publication_frame_sha256
+        *self.source_publication_frame_sha256.bytes()
     }
 }
 

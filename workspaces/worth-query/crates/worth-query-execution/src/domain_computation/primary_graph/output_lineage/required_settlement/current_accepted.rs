@@ -15,8 +15,7 @@ use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 mod consumer_identity;
 mod consumption;
 mod decision_input;
-#[cfg(test)]
-mod own_write_recovery;
+
 mod recovery;
 
 use super::super::invalidation::FullVerificationReason;
@@ -24,7 +23,7 @@ use super::super::invalidation::SettlementRegistrationStop;
 use super::super::invalidation::VerifiedCurrentCleanup;
 use super::AcceptedCurrentCandidate;
 
-pub(in crate::domain_computation::primary_graph) enum CurrentAcceptedResult<'basis> {
+pub enum CurrentAcceptedResult<'basis> {
     Current(CurrentAcceptedOutput<'basis>),
     PendingExact(SelectedPendingConsumedOutput<'basis>),
     PendingUnresolved,
@@ -34,7 +33,7 @@ pub(in crate::domain_computation::primary_graph) enum CurrentAcceptedResult<'bas
 /// The exact accepted row, admitted source basis, and actor image inspected as
 /// one current output. Only the owner can mint it; the selected Query snapshot
 /// keeps it inside the admitted read callback.
-pub(in crate::domain_computation::primary_graph) struct CurrentAcceptedOutput<'basis> {
+pub struct CurrentAcceptedOutput<'basis> {
     _computation: super::super::CurrentComputation,
     candidate: &'basis AcceptedCurrentCandidate,
     product: &'basis WorthQueryProductObservationLease,
@@ -83,7 +82,7 @@ impl<'basis> CurrentAcceptedOutput<'basis> {
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum CurrentAcceptedStop {
+pub enum CurrentAcceptedStop {
     Closure(ConsumedOutputVerificationStop),
     Registration(SettlementRegistrationStop),
 }
@@ -345,3 +344,5 @@ impl AcceptedCurrentCandidate {
         }
     }
 }
+
+mod court_doors_for_test;

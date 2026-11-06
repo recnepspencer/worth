@@ -393,6 +393,14 @@ rendered strings or reconstruct an identity from a version number.
 
 ## Current Limits
 
+- Each obligation identity admits at most 4,096 canonical entries and 1 MiB of
+  digest material. Distinct aspect contracts are encoded once and referenced by
+  each projection/touch; masks, field paths, bindings and structural scopes still
+  count separately. Table framing and references use the same allowance. The
+  application resource profile does not raise this limit. Operation installation
+  denials expose `canonical_denial()` with requested and maximum counts; an entry
+  refusal reports the first over-limit append. See the
+  [installation budget contract](../../../worth-query-installation/README.md#canonicality).
 - Runtime-local receipt-bound recovery is supported. Durable restart recovery
   and store-backed checkpointing remain deferred.
 - It does not implement multiple branch heads, branch creation, merge, rebase,

@@ -20,7 +20,7 @@ use worth_query_declaration::facade::application_operation::ApplicationSharedInp
 /// input and its funded allocation through receipt and recovery custody.
 /// Correction preparation accesses the original binding's encoded carrier.
 #[derive(Clone)]
-pub(crate) struct WorthQueryRetainedGovernedInput {
+pub struct WorthQueryRetainedGovernedInput {
     encoded: Option<Arc<dyn Any + Send + Sync>>,
     _value: Arc<dyn Any + Send + Sync>,
     type_id: TypeId,
@@ -59,7 +59,6 @@ impl WorthQueryRetainedGovernedInput {
         }
     }
 
-    #[cfg(test)]
     fn downcast_ref<Input: 'static>(&self) -> Option<&Input> {
         (self.type_id == TypeId::of::<Input>())
             .then(|| {
@@ -98,7 +97,6 @@ impl WorthQueryRetainedGovernedInput {
         self.correction.as_deref()
     }
 
-    #[cfg(test)]
     #[expect(
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
@@ -158,12 +156,7 @@ pub struct WorthQueryApplicationCommitAuthorityBinding {
 
 impl WorthQueryApplicationCommitAuthorityBinding {
     /// Derive the binding from what admission actually authorized.
-    pub(in crate::domain_computation::primary_graph) fn from_admission<
-        Schema,
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn from_admission<Schema, Operation, Input, Scope>(
         admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
             Schema,
             Operation,
@@ -244,7 +237,6 @@ impl WorthQueryApplicationCommitAuthorityBinding {
     ///
     /// A mismatched type yields no value; the caller never supplies replacement
     /// bytes or a fallback value.
-    #[cfg(test)]
     pub(crate) fn retained_governed_input<Input: 'static>(&self) -> Option<&Input> {
         self.retained_governed_input.as_ref()?.downcast_ref()
     }
@@ -255,7 +247,6 @@ impl WorthQueryApplicationCommitAuthorityBinding {
         self.retained_governed_input.as_ref()
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn original_inspection_disclosure(
         &self,
     ) -> Option<&super::super::source_disclosure::OriginalSourceInspectionDisclosure> {
@@ -268,11 +259,19 @@ impl WorthQueryApplicationCommitAuthorityBinding {
         self.original_inspection_disclosure.clone()
     }
 
-    #[cfg(test)]
-    pub(crate) fn replace_idempotency_binding_for_test(
+    pub(in crate::domain_computation::primary_graph) fn corrupt_original_disclosure(
+        &mut self,
+        disclosure: Arc<super::super::source_disclosure::OriginalSourceInspectionDisclosure>,
+    ) {
+        self.original_inspection_disclosure = Some(disclosure);
+    }
+
+    pub fn replace_idempotency_binding_for_test(
         &mut self,
         binding: WorthQueryApplicationIdempotencyBinding,
     ) {
         self.idempotency_binding = binding;
     }
 }
+
+mod court_doors_for_test;

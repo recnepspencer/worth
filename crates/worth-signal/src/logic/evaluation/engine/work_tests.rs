@@ -45,14 +45,21 @@ fn absent_waiter_limit_preserves_original_request_cancel_and_deadline() {
         CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest,
     };
     for expired in [false, true] {
+        let time = worth_execution::MonotonicTimeController::new().unwrap();
+        let held = time.hold();
         let cancellation = CancellationSource::new();
         let serial = SerialRequest::from_memory(
             SerialMemoryBudget::new(None),
             cancellation.token(),
-            expired.then(std::time::Instant::now),
+            expired.then(|| {
+                time.clock()
+                    .deadline_at(held + std::time::Duration::from_secs(1))
+            }),
         );
         let request = ExecutionRequest::serial(&serial);
-        if !expired {
+        if expired {
+            time.advance(std::time::Duration::from_secs(1)).unwrap();
+        } else {
             cancellation.cancel();
         }
         let expected = request.check_live().unwrap_err();

@@ -89,12 +89,12 @@ impl<Schema, Role> WorthQueryProducerOutputEquivalence<Schema, Role> {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in super::super) struct InstalledProducerOutputEquivalence {
+pub struct InstalledProducerOutputEquivalence {
     pub(in super::super) field: FieldExpectation,
     pub(in super::super) meaning: [u8; 32],
 }
 
-pub(in super::super) fn seal<Schema: schema::ApplicationSchema>(
+pub fn seal<Schema: schema::ApplicationSchema>(
     identity: &str,
     role: &str,
     field: &NativeFieldBindingExpectation,
@@ -163,10 +163,9 @@ fn seal_contract(
 fn standard_u64_meaning(
     field: &NativeFieldBindingExpectation,
 ) -> Option<impl serde::Serialize + '_> {
-    (field.binding
-        == crate::equality_type_id::EqualityTypeId::of::<schema::U64ApplicationValueBinding>()
-            .into_external()
-        && field.value == crate::equality_type_id::EqualityTypeId::of::<u64>().into_external()
+    use crate::equality_type_id::EqualityTypeId as TypeId;
+    (field.binding == TypeId::of::<schema::U64ApplicationValueBinding>().into_external()
+        && field.value == TypeId::of::<u64>().into_external()
         && field.scalar == worth_foundational::facade::ScalarAspectType::UInt64
         && field.presence == schema::ApplicationFieldPresence::Required
         && field.canonical.is_none())
@@ -178,3 +177,5 @@ fn standard_u64_meaning(
         field.frame.map(|frame| frame.as_str()),
     ))
 }
+
+mod court_doors_for_test;

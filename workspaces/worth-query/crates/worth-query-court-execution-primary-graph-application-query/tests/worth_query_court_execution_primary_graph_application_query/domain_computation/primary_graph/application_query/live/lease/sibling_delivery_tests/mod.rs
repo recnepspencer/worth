@@ -1,0 +1,201 @@
+use std::time::Duration;
+
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationLiveControls;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationLiveOutcome;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::live_account_query::live_account_parameters;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountIdentity;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::application_queries::AccountSummaryParameters;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Activity;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::live_account_query::LiveAccountActivityCause;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::LiveAccountActivityQuery;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::live_account_query::LiveAccountActivityResult;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::live_delivery_support::commit_live_activity_on_product;
+use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
+
+#[test]
+fn sibling_commit_wakes_only_its_exact_product_partition() {
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let request = live_scope();
+    let external = world.authenticate("alice", Duration::from_secs(60), &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request_for_test())
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let source = world
+        .application
+        .product_runtime()
+        .admit_product_branch_for_test(
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
+        )
+        .unwrap();
+    let intent = worth_runtime_world::facade::ProductBranchCreationIntent::from_source(
+        "live-delivery-sibling",
+        worth_runtime_world::facade::ProductBranchCreationPlans::new(
+            worth_runtime_world::facade::RelationalBranchCreationPlan::ReuseExact,
+            worth_runtime_world::facade::SignalBranchCreationPlan::ReuseExact,
+        ),
+    )
+    .unwrap();
+    let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let created = world
+        .application
+        .product_runtime()
+        .create_product_branch_for_test(
+            execution,
+            &source,
+            None,
+            intent,
+            &worth_runtime_world::facade::RuntimeWorldCancellationSource::new().token(),
+        )
+        .unwrap();
+    let worth_runtime_world::facade::RuntimeWorldBranchCreationOutcome::Performed(created) =
+        created
+    else {
+        panic!("the exact sibling must be created")
+    };
+    let sibling = created.branch_identity().clone();
+
+    let source_account = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request_for_test())
+                .resolve_entity(
+                    &phase,
+                    AccountIdentity::reference(),
+                    "account-1".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let source_query = world
+        .application
+        .installed_schema()
+        .certification_query(LiveAccountActivityQuery::reference())
+        .unwrap();
+    let mut source_live = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+        .selected_product(&(phase).test_host_request_for_test(), )
+        .open_application_query_live::<
+            LiveAccountActivityQuery,
+            AccountSummaryParameters,
+            LiveAccountActivityResult,
+            _,
+            _,
+            Account,
+            Activity,
+            LiveAccountActivityCause,
+        >(&phase,
+            source_query,
+            &principal,
+            source_account,
+            live_account_parameters("account-1"),
+            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16).unwrap(),
+        )
+        .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+
+    let sibling_account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            world
+                .application
+                .select_product_branch_for_test(&host_custody.borrowed_request_for_test(), &sibling)
+                .unwrap()
+                .resolve_entity(
+                    &phase,
+                    AccountIdentity::reference(),
+                    "account-1".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let sibling_query = world
+        .application
+        .installed_schema()
+        .certification_query(LiveAccountActivityQuery::reference())
+        .unwrap();
+    let mut sibling_live = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            world
+        .application
+        .select_product_branch_for_test(&host_custody.borrowed_request_for_test(), &sibling)
+        .unwrap()
+        .open_application_query_live::<
+            LiveAccountActivityQuery,
+            AccountSummaryParameters,
+            LiveAccountActivityResult,
+            _,
+            _,
+            Account,
+            Activity,
+            LiveAccountActivityCause,
+        >(&phase,
+            sibling_query,
+            &principal,
+            sibling_account,
+            live_account_parameters("account-1"),
+            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16).unwrap(),
+        )
+        .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+
+    let committed =
+        commit_live_activity_on_product(&world, &sibling, &principal, &request, "sibling", 229, 93);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            assert!(matches!(
+                source_live.next(&phase, &principal, &request),
+                WorthQueryApplicationLiveOutcome::Pending
+            ))
+        })
+        .expect("the fixture read owns its installed host call");
+    let WorthQueryApplicationLiveOutcome::Delivered(update) = world
+        .application
+        .with_host_advancement(|phase| sibling_live.next(&phase, &principal, &request))
+        .expect("the fixture read owns its installed host call")
+    else {
+        panic!("the sibling live partition must receive its own commit")
+    };
+    assert_eq!(
+        update.product_publication(),
+        committed.committed_product_publication()
+    );
+    assert_eq!(update.product_publication().product_branch(), &sibling);
+    drop(update);
+    drop(source_live.close());
+    drop(sibling_live.close());
+}

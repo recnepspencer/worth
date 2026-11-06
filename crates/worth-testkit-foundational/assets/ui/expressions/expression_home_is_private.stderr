@@ -1,8 +1,10 @@
 error[E0603]: module `expressions` is private
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/expressions/expression_home_is_private.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/expressions/expression_home_is_private.rs:1:25
   |
-  | use worth_foundational::expressions::ExpressionDraft;
-  |                         ^^^^^^^^^^^ private module
+1 | use worth_foundational::expressions::ExpressionDraft;
+  |                         ^^^^^^^^^^^  --------------- struct `ExpressionDraft` is not publicly re-exported
+  |                         |
+  |                         private module
   |
 note: the module `expressions` is defined here
  --> $WORKSPACE/crates/worth-foundational/src/lib.rs

@@ -1,3 +1,4 @@
+mod current_read_publication;
 #[path = "denial_matrix/mod.rs"]
 pub(crate) mod denial_matrix;
 #[path = "equivalence/mod.rs"]
@@ -10,6 +11,9 @@ pub(crate) mod lifecycle_locality;
 pub(crate) mod owner_lifecycle_observation;
 #[path = "owner_loss/mod.rs"]
 pub(crate) mod owner_loss;
+pub(crate) mod retained_entity_selection;
+mod retained_fork;
 mod retained_storage;
 #[path = "service_properties/mod.rs"]
 pub(crate) mod service_properties;
+mod unaccessed_medium;

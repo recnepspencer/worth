@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::workflow::actor::encoding::{self, 
 struct Request<'a> {
     version: u8,
     recorded_actor: RecordedActor<'a>,
-    capability_identity: [u8; 32],
+    capability_identity: worth_foundational::CanonicalDigestId,
     principal: EntityId,
     resource: EntityId,
     resource_entity: &'a str,
@@ -89,7 +89,9 @@ impl WorthQueryRetainedCapabilityRequest {
                     .map_or(RecordedActor::NotApplicable, |actor| {
                         RecordedActor::Native(actor.as_str())
                     }),
-                capability_identity: self.capability_identity,
+                capability_identity: worth_foundational::CanonicalDigestId::new(
+                    self.capability_identity,
+                ),
                 principal: self.principal,
                 resource: self.resource,
                 resource_entity: &self.resource_entity,
@@ -113,3 +115,5 @@ impl WorthQueryRetainedCapabilityRequest {
         )
     }
 }
+
+mod court_doors_for_test;

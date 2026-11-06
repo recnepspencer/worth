@@ -244,6 +244,7 @@ impl WorthQueryCompletedCommitEvidenceStore {
     }
 
 
+
     pub(in crate::domain_computation::primary_graph) fn observe_lookup_key(
         &self,
         key: &WorthQueryIdempotencyLookupKey,

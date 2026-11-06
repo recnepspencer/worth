@@ -1,8 +1,8 @@
 error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/aspect_front_doors/raw_value_cannot_enter_front_door_patch.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/aspect_front_doors/raw_value_cannot_enter_front_door_patch.rs:7:14
   |
-  |         .set(AspectValue::Int64(1))
-  |          --- ^^^^^^^^^^^^^^^^^^^^^ expected `Artifact<ContractValidated, ...>`, found `AspectValue`
+7 |         .set(AspectValue::Int64(1))
+  |          --- ^^^^^^^^^^^^^^^^^^^^^ expected `Artifact<ContractValidated, _>`, found `AspectValue`
   |          |
   |          arguments to this method are incorrect
   |

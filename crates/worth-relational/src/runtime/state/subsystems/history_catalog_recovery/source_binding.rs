@@ -1,5 +1,5 @@
 //! Bind each reconstructed current root before its original source becomes history.
-use super::HistorySubsystem;
+use super::{HistorySubsystem, RelationalHistoryRecoveryDenial};
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
 use std::sync::Arc;
 
@@ -8,9 +8,10 @@ impl HistorySubsystem {
     /// classifier alone decides whether replay-issued private evidence survives.
     pub(crate) fn synchronize_recovered_source_commit(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &PositionedCanonicalCommit,
         symbols: &crate::symbols::data::StringInterner,
-    ) -> Result<Arc<CanonicalCommitEnvelope>, String> {
+    ) -> Result<Arc<CanonicalCommitEnvelope>, RelationalHistoryRecoveryDenial> {
         let (canonical, residency, roots) = self.with_ledger_mut(|ledger| {
             ledger
                 .commit_catalog
@@ -34,7 +35,7 @@ impl HistorySubsystem {
         })?;
         let mut cell = self
             .branch_cell(&source.branch_context)
-            .ok_or("recovered source branch is unavailable")?;
+            .ok_or_else(|| "recovered source branch is unavailable".to_owned())?;
         let Some(root) = cell.root() else {
             return Ok(canonical);
         };
@@ -48,11 +49,11 @@ impl HistorySubsystem {
             return Ok(canonical);
         }
         let next = if Arc::ptr_eq(&canonical, source.canonical_arc()) {
-            root.readmit_canonical_envelope(source, symbols)
+            root.readmit_canonical_envelope(execution, source, symbols)
         } else {
-            root.relink_canonical_envelope(canonical.clone(), symbols)
+            root.relink_canonical_envelope(execution, canonical.clone(), symbols)
         }
-        .map_err(|denial| format!("recovered source root binding denied: {denial:?}"))?;
+        .map_err(RelationalHistoryRecoveryDenial::Root)?;
         let retirement = self
             .reserve_branch_head_retirement(cell.identity(), &root, cell.head_retention())
             .map_err(|denial| format!("recovered source root retention denied: {denial:?}"))?;

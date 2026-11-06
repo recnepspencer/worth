@@ -53,7 +53,7 @@ fn resume_original_query_after_alias_refusal(
     .unwrap_or_else(|refused| panic!("genuine Directory opening: {refused:?}"));
     let retained = home.runtime().clone();
     let refused = home
-        .close(&execution)
+        .close(execution)
         .err()
         .expect("the original backing is shared");
     assert!(matches!(
@@ -71,8 +71,7 @@ fn execute_original_mutation_after_query_alias_release(home: &OrdinaryHome) {
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     {
         let runtime = home.runtime();
         let principal = identity::inspection_authentication::authenticate(
@@ -136,8 +135,7 @@ fn handler_declared_refusal_preserves_the_same_serving_query_until_supplier_rele
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     {
         let runtime = home.runtime();
         let principal = identity::inspection_authentication::authenticate(

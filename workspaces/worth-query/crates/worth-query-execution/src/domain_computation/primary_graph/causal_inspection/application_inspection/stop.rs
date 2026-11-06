@@ -6,14 +6,26 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionDenial,
 };
 use worth_execution::{ExecutionMemoryReservation, WorkCeilingDenial};
+mod captured_domain;
+mod kind;
 mod resource;
 pub use resource::WorthQueryApplicationInspectionResourceRefusal;
 mod canonical;
 pub use canonical::WorthQueryApplicationInspectionCanonicalRefusal;
+mod owner;
+pub use owner::{
+    DiagnosticComparisonDenial, FactlessCurrentness, IndexedSelectionReobserveDenial,
+    OutputFieldCaptureFailure, OwnEffectOnReads, RebaseVerificationReason, StoreDenial,
+    WorthQueryApplicationDisclosureContractDenial, WorthQueryApplicationInspectionOwnerRefusal,
+    WorthQueryApplicationInspectionStage, WorthQueryApplicationQueryGovernanceDenialKind,
+    WorthQueryApplicationQueryInstallationDenial, WorthQueryApplicationQueryInstallationDenialKind,
+    WorthQueryInspectionReadTerminalDenial, WorthQueryManagedGraphReadDenial,
+    WorthQueryManagedGraphWorkSessionStartDenial,
+};
 #[cfg(test)]
 mod output_tests;
 
-pub(super) enum InspectionCause {
+pub enum InspectionCause {
     Unavailable,
     Advancement(WorthQueryAdvancementDenial),
     #[allow(
@@ -43,6 +55,7 @@ pub(super) enum InspectionCause {
 /// A coarse projection that exposes no protected original observation metadata.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationInspectionStopKind {
+    StaleIncarnation,
     Unavailable,
     Request,
     Admission,
@@ -64,18 +77,55 @@ impl WorthQueryApplicationInspectionDenial {
     pub fn producer_evaluation_refusal(&self) -> Option<super::WorthQueryProducerEvaluationDenial> {
         match self.producer_connection_refusal()? {
             super::WorthQueryProducerConnectionDenial::Evaluation(cause) => Some(cause),
-            _ => None,
+            super::WorthQueryProducerConnectionDenial::ForeignSource
+            | super::WorthQueryProducerConnectionDenial::SourceDisclosureUnavailable
+            | super::WorthQueryProducerConnectionDenial::SourceDisclosureMismatch
+            | super::WorthQueryProducerConnectionDenial::ProducerUnavailable
+            | super::WorthQueryProducerConnectionDenial::PerformedInputsUnavailable
+            | super::WorthQueryProducerConnectionDenial::SourceInputUnconnected
+            | super::WorthQueryProducerConnectionDenial::OutputUnconnected => None,
         }
     }
 
     pub fn materialization_refusal(&self)->Option<crate::domain_computation::primary_graph::application_query::WorthQueryProjectionMaterializationRefusal>{
         match &self.cause {
-            InspectionCause::Admission(super::admission::InspectionAdmissionDenial::Rich(
-                CaptureStop::Kernel(worth_execution::ScopeStop::Failure(
-                    worth_execution::MapKernelFailure::Domain(cause),
-                )),
-            )) => Some(*cause),
-            _ => None,
+            InspectionCause::Admission(cause) => match cause {
+                InspectionAdmissionDenial::Rich(stop) => captured_domain::captured(stop).copied(),
+                InspectionAdmissionDenial::Request(_)
+                | InspectionAdmissionDenial::RequestControl(_)
+                | InspectionAdmissionDenial::ForeignIssuedAccess
+                | InspectionAdmissionDenial::MissingGraph
+                | InspectionAdmissionDenial::MissingInspection
+                | InspectionAdmissionDenial::Authorization(_)
+                | InspectionAdmissionDenial::CurrentAuthorization(_)
+                | InspectionAdmissionDenial::Capability(_)
+                | InspectionAdmissionDenial::Scope(_)
+                | InspectionAdmissionDenial::Security(_)
+                | InspectionAdmissionDenial::Governance(_)
+                | InspectionAdmissionDenial::FacetDenied
+                | InspectionAdmissionDenial::DiagnosticAdmission(_)
+                | InspectionAdmissionDenial::ComparisonParameters(_)
+                | InspectionAdmissionDenial::Connection(_)
+                | InspectionAdmissionDenial::MissingOriginalProjection
+                | InspectionAdmissionDenial::RichSource(_)
+                | InspectionAdmissionDenial::Comparison(_)
+                | InspectionAdmissionDenial::DiagnosticContract(_)
+                | InspectionAdmissionDenial::DiagnosticPreparation(_)
+                | InspectionAdmissionDenial::Target(_)
+                | InspectionAdmissionDenial::Storage(_)
+                | InspectionAdmissionDenial::Plan(_)
+                | InspectionAdmissionDenial::Session(_)
+                | InspectionAdmissionDenial::Read(_)
+                | InspectionAdmissionDenial::Terminal(_)
+                | InspectionAdmissionDenial::Report(_) => None,
+            },
+            InspectionCause::Unavailable
+            | InspectionCause::Advancement(_)
+            | InspectionCause::Selection(_)
+            | InspectionCause::Binding(_)
+            | InspectionCause::Principal(_)
+            | InspectionCause::Scope(_)
+            | InspectionCause::Query(_) => None,
         }
     }
 
@@ -87,18 +137,50 @@ impl WorthQueryApplicationInspectionDenial {
     ) -> Option<super::WorthQueryProducerOutputConnectionDenial> {
         match self.connection_refusal()? {
             super::connection::ConnectionRefusal::Output(cause) => Some(*cause),
-            _ => None,
+            super::connection::ConnectionRefusal::General(_)
+            | super::connection::ConnectionRefusal::Capture(_) => None,
         }
     }
 
     fn connection_refusal(&self) -> Option<&super::connection::ConnectionRefusal> {
         match &self.cause {
-            InspectionCause::Admission(InspectionAdmissionDenial::Connection(
-                CaptureStop::Kernel(worth_execution::ScopeStop::Failure(
-                    worth_execution::MapKernelFailure::Domain(cause),
-                )),
-            )) => Some(cause),
-            _ => None,
+            InspectionCause::Admission(cause) => match cause {
+                InspectionAdmissionDenial::Connection(stop) => captured_domain::captured(stop),
+                InspectionAdmissionDenial::Request(_)
+                | InspectionAdmissionDenial::RequestControl(_)
+                | InspectionAdmissionDenial::ForeignIssuedAccess
+                | InspectionAdmissionDenial::MissingGraph
+                | InspectionAdmissionDenial::MissingInspection
+                | InspectionAdmissionDenial::Authorization(_)
+                | InspectionAdmissionDenial::CurrentAuthorization(_)
+                | InspectionAdmissionDenial::Capability(_)
+                | InspectionAdmissionDenial::Scope(_)
+                | InspectionAdmissionDenial::Security(_)
+                | InspectionAdmissionDenial::Governance(_)
+                | InspectionAdmissionDenial::FacetDenied
+                | InspectionAdmissionDenial::DiagnosticAdmission(_)
+                | InspectionAdmissionDenial::ComparisonParameters(_)
+                | InspectionAdmissionDenial::MissingOriginalProjection
+                | InspectionAdmissionDenial::RichSource(_)
+                | InspectionAdmissionDenial::Rich(_)
+                | InspectionAdmissionDenial::Comparison(_)
+                | InspectionAdmissionDenial::DiagnosticContract(_)
+                | InspectionAdmissionDenial::DiagnosticPreparation(_)
+                | InspectionAdmissionDenial::Target(_)
+                | InspectionAdmissionDenial::Storage(_)
+                | InspectionAdmissionDenial::Plan(_)
+                | InspectionAdmissionDenial::Session(_)
+                | InspectionAdmissionDenial::Read(_)
+                | InspectionAdmissionDenial::Terminal(_)
+                | InspectionAdmissionDenial::Report(_) => None,
+            },
+            InspectionCause::Unavailable
+            | InspectionCause::Advancement(_)
+            | InspectionCause::Selection(_)
+            | InspectionCause::Binding(_)
+            | InspectionCause::Principal(_)
+            | InspectionCause::Scope(_)
+            | InspectionCause::Query(_) => None,
         }
     }
 
@@ -115,28 +197,40 @@ impl WorthQueryApplicationInspectionDenial {
             return Kind::Request;
         }
         match &self.cause {
-            InspectionCause::Unavailable
-            | InspectionCause::Admission(InspectionAdmissionDenial::MissingOriginalProjection)
-            | InspectionCause::Admission(InspectionAdmissionDenial::DiagnosticContract(
-                CaptureStop::Kernel(worth_execution::ScopeStop::Failure(worth_execution::MapKernelFailure::Domain(
-                    crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial::NotDeclared
-                    | crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial::UnsupportedShape,
-                ))),
-            )) => Kind::Unavailable,
-            InspectionCause::Advancement(_)
-            | InspectionCause::Binding(CaptureStop::Request(_))
-            | InspectionCause::Admission(
-                InspectionAdmissionDenial::Request(_)
-                | InspectionAdmissionDenial::RequestControl(_),
-            ) => Kind::Request,
-            _ => Kind::Admission,
+            InspectionCause::Admission(InspectionAdmissionDenial::Capability(denial))
+                if denial.kind() == crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation) => Kind::StaleIncarnation,
+            InspectionCause::Admission(InspectionAdmissionDenial::CurrentAuthorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation)))
+            | InspectionCause::Admission(InspectionAdmissionDenial::Security(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(crate::basis::WorthQueryProductBranchAdmissionRefusalKind::StaleIncarnation))) => Kind::StaleIncarnation,
+            InspectionCause::Admission(InspectionAdmissionDenial::Authorization(denial))
+                if denial.kind() == crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation)) => Kind::StaleIncarnation,
+            InspectionCause::Query(denial) if denial.kind() == crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation)) => Kind::StaleIncarnation,
+            InspectionCause::Selection(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(crate::basis::WorthQueryProductBranchAdmissionRefusalKind::StaleIncarnation)) => Kind::StaleIncarnation,
+            InspectionCause::Unavailable => Kind::Unavailable,
+            InspectionCause::Advancement(_) | InspectionCause::Binding(CaptureStop::Request(_)) => {
+                Kind::Request
+            }
+            InspectionCause::Admission(cause) => kind::admission(cause),
+            InspectionCause::Binding(CaptureStop::Kernel(_))
+            | InspectionCause::Selection(_)
+            | InspectionCause::Principal(_)
+            | InspectionCause::Scope(_)
+            | InspectionCause::Query(_) => Kind::Admission,
         }
     }
 
     pub fn execution_stop(&self) -> Option<&WorkCeilingDenial> {
         match self.resource_refusal() {
             Some(WorthQueryApplicationInspectionResourceRefusal::Request(cause)) => Some(cause),
-            _ => None,
+            None
+            | Some(
+                WorthQueryApplicationInspectionResourceRefusal::Advancement(_)
+                | WorthQueryApplicationInspectionResourceRefusal::Kernel(_)
+                | WorthQueryApplicationInspectionResourceRefusal::Native(_)
+                | WorthQueryApplicationInspectionResourceRefusal::Lease(_)
+                | WorthQueryApplicationInspectionResourceRefusal::Memory(_)
+                | WorthQueryApplicationInspectionResourceRefusal::Allocation(_)
+                | WorthQueryApplicationInspectionResourceRefusal::Array(_),
+            ) => None,
         }
     }
 
@@ -150,15 +244,53 @@ impl WorthQueryApplicationInspectionDenial {
         canonical::cause(&self.cause)
     }
 
+    /// The original owner's exact refusal, borrowed without replacing its cause.
+    pub fn owner_refusal(&self) -> Option<WorthQueryApplicationInspectionOwnerRefusal<'_>> {
+        owner::cause(&self.cause)
+    }
+
     pub fn request_interruption(
         &self,
     ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
     {
         match &self.cause {
-            InspectionCause::Admission(InspectionAdmissionDenial::RequestControl(cause)) => {
-                Some(*cause)
-            }
-            _ => None,
+            InspectionCause::Admission(cause) => match cause {
+                InspectionAdmissionDenial::RequestControl(cause) => Some(*cause),
+                InspectionAdmissionDenial::Request(_)
+                | InspectionAdmissionDenial::ForeignIssuedAccess
+                | InspectionAdmissionDenial::MissingGraph
+                | InspectionAdmissionDenial::MissingInspection
+                | InspectionAdmissionDenial::Authorization(_)
+                | InspectionAdmissionDenial::CurrentAuthorization(_)
+                | InspectionAdmissionDenial::Capability(_)
+                | InspectionAdmissionDenial::Scope(_)
+                | InspectionAdmissionDenial::Security(_)
+                | InspectionAdmissionDenial::Governance(_)
+                | InspectionAdmissionDenial::FacetDenied
+                | InspectionAdmissionDenial::DiagnosticAdmission(_)
+                | InspectionAdmissionDenial::ComparisonParameters(_)
+                | InspectionAdmissionDenial::Connection(_)
+                | InspectionAdmissionDenial::MissingOriginalProjection
+                | InspectionAdmissionDenial::RichSource(_)
+                | InspectionAdmissionDenial::Rich(_)
+                | InspectionAdmissionDenial::Comparison(_)
+                | InspectionAdmissionDenial::DiagnosticContract(_)
+                | InspectionAdmissionDenial::DiagnosticPreparation(_)
+                | InspectionAdmissionDenial::Target(_)
+                | InspectionAdmissionDenial::Storage(_)
+                | InspectionAdmissionDenial::Plan(_)
+                | InspectionAdmissionDenial::Session(_)
+                | InspectionAdmissionDenial::Read(_)
+                | InspectionAdmissionDenial::Terminal(_)
+                | InspectionAdmissionDenial::Report(_) => None,
+            },
+            InspectionCause::Unavailable
+            | InspectionCause::Advancement(_)
+            | InspectionCause::Selection(_)
+            | InspectionCause::Binding(_)
+            | InspectionCause::Principal(_)
+            | InspectionCause::Scope(_)
+            | InspectionCause::Query(_) => None,
         }
     }
 }
@@ -168,5 +300,42 @@ impl std::fmt::Debug for WorthQueryApplicationInspectionDenial {
         f.debug_struct("WorthQueryApplicationInspectionDenial")
             .field("kind", &self.kind())
             .finish_non_exhaustive()
+    }
+}
+
+#[cfg(test)]
+mod projection_tests;
+
+mod court_doors_for_test;
+#[cfg(test)]
+mod incarnation_projection_tests {
+    use super::*;
+    use crate::domain_computation::authorization::{
+        WorthQueryOperationAuthorizationDenial as Denial,
+        WorthQueryOperationAuthorizationDenialKind as Kind,
+        WorthQueryOperationAuthorizationRefusalKind as Refusal,
+    };
+    #[test]
+    fn stale_disclosure_is_distinct_from_foreign_runtime_in_public_inspection_stop_kind() {
+        // Error metadata only: no capability, runtime or Home is fabricated.
+        for (cause, expected) in [
+            (
+                Refusal::StaleIncarnation,
+                WorthQueryApplicationInspectionStopKind::StaleIncarnation,
+            ),
+            (
+                Refusal::ForeignRuntime,
+                WorthQueryApplicationInspectionStopKind::Admission,
+            ),
+        ] {
+            let denied = WorthQueryApplicationInspectionDenial::new(
+                InspectionCause::Admission(InspectionAdmissionDenial::Capability(Denial::new(
+                    Kind::Refused(cause),
+                    "disclosure",
+                ))),
+                None,
+            );
+            assert_eq!(denied.kind(), expected);
+        }
     }
 }

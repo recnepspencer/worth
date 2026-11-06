@@ -48,6 +48,10 @@ impl DeclaredProducerBinding {
             supported: Binding::OutputFamily::SUPPORTED.to_vec(),
             required_invariants: Binding::REQUIRED_INVARIANTS.to_vec(),
             reuse_policy: Binding::REUSE_POLICY.to_owned(),
+            ownership: Binding::OWNERSHIP,
+            owned_scope_entity: (Binding::OWNERSHIP
+                == worth_foundational::facade::ProducerPublicationOwnership::SourceScopeCascade)
+                .then(|| Binding::Operation::scope_field().entity().to_owned()),
             input_reuse: Binding::INPUT_REUSE,
             output_equivalence: Binding::output_equivalence().map(|contract| contract.into_field()),
             installed_output_equivalence: None,
@@ -80,7 +84,6 @@ impl DeclaredProducerBinding {
         self.same_binding_declaration(&expected)
     }
 
-    #[cfg(test)]
     pub(super) fn has_same_meaning_as(&self, expected: &Self) -> bool {
         self.same_binding_declaration(expected)
             && self.installed_output_equivalence == expected.installed_output_equivalence
@@ -100,6 +103,8 @@ impl DeclaredProducerBinding {
             && self.applicability == expected.applicability
             && self.supported == expected.supported
             && self.required_invariants == expected.required_invariants
+            && self.ownership == expected.ownership
+            && self.owned_scope_entity == expected.owned_scope_entity
             && self.reuse_policy == expected.reuse_policy
             && self.input_reuse == expected.input_reuse
             && self.output_equivalence == expected.output_equivalence
@@ -111,3 +116,5 @@ impl DeclaredProducerBinding {
             && self.provider_type == expected.provider_type
     }
 }
+
+mod court_doors_for_test;

@@ -30,9 +30,7 @@ pub struct WorthQueryRelationalSourceOwner {
     pub(in crate::domain_computation) invalidation_owner:
         Arc<crate::domain_computation::primary_graph::SourceInvalidationOwner>,
     canonical_subscription: RelationalBridgeCanonicalSubscription,
-    #[cfg(test)]
     read_acquisitions: Arc<std::sync::atomic::AtomicU64>,
-    #[cfg(test)]
     _bridge_lock_observations: Arc<
         Mutex<
             Vec<worth_relational::facade::change_source::RelationalRuntimeLockObservationForTest>,
@@ -83,24 +81,17 @@ impl WorthQueryRelationalSourceOwner {
         let subscription = pending
             .activate(invalidation_owner.clone())
             .map_err(WorthQueryRelationalSourceInstallationDenial::CompanionRegistration)?;
-        #[cfg(test)]
         let read_acquisitions = Arc::new(std::sync::atomic::AtomicU64::new(0));
-        #[cfg(test)]
         let bridge_lock_observations = {
             let count = Arc::clone(&read_acquisitions);
-            let query_count = Arc::clone(&read_acquisitions);
-            Arc::new(Mutex::new(vec![
-                runtime
-                    .observe_locks_for_test(move || {
-                        query_count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                    })
-                    .expect("the actual Query handle admits its passive observer"),
-                source
-                    .observe_runtime_locks_for_test(move || {
-                        count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                    })
-                    .expect("the new source admits its first passive observer"),
-            ]))
+            // Home attachment shares Bridge's handle, so this listener also
+            // observes Query acquisitions. Ordinary handles are immutable and
+            // acquire no runtime mutex. Register once per actual handle slot.
+            Arc::new(Mutex::new(vec![source
+                .observe_runtime_locks_for_test(move || {
+                    count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                })
+                .expect("the new source admits its first passive observer")]))
         };
         Ok(Self {
             runtime,
@@ -109,14 +100,14 @@ impl WorthQueryRelationalSourceOwner {
             bridge_head: Arc::new(Mutex::new(None)),
             invalidation_owner,
             canonical_subscription: subscription,
-            #[cfg(test)]
             read_acquisitions,
-            #[cfg(test)]
             _bridge_lock_observations: bridge_lock_observations,
         })
     }
 
-    #[cfg(test)]
+    pub(super) fn lock_is_held_for_test(&self) -> bool {
+        self.runtime.is_locked_for_test()
+    }
     pub(super) fn lock_acquisitions_for_test(&self) -> u64 {
         self.read_acquisitions
             .load(std::sync::atomic::Ordering::SeqCst)
@@ -200,3 +191,5 @@ impl WorthQueryRelationalSourceOwner {
         Ok(())
     }
 }
+
+mod court_doors_for_test;

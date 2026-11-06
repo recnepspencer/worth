@@ -2,7 +2,7 @@
 use super::super::{mutation as ordinary, schema::*};
 use super::query::exact::{Find as FindExact, Query as ExactQuery};
 use worth_query_decl::facade::{
-    application_operation::*, application_query::*, application_schema::*, *,
+    application_operation::*, application_query::*, application_schema::*,
 };
 
 pub struct Binding;

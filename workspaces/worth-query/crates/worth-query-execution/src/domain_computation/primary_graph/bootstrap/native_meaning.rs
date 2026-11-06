@@ -2,6 +2,17 @@
 use super::*;
 use worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt;
 
+pub(in crate::domain_computation::primary_graph) struct PreparedNativeSchemaMeaning {
+    pub(in crate::domain_computation::primary_graph) managed_sources:
+        super::super::application_query::managed_index::ManagedSourceInstallation,
+    pub(in crate::domain_computation::primary_graph) source_initializer:
+        Option<super::super::application_query::managed_index::SourceInitializationIssuer>,
+    pub(in crate::domain_computation::primary_graph) layout: WorthQueryPrimaryGraphLayout,
+    pub(in crate::domain_computation::primary_graph) receipt:
+        RelationalInitialSchemaInstallationReceipt,
+    pub(in crate::domain_computation::primary_graph) expected_invariant_inventory_digest: [u8; 32],
+}
+
 pub(in crate::domain_computation::primary_graph) struct InstalledNativeSchemaMeaning {
     pub(in crate::domain_computation::primary_graph) managed_views:
         Arc<super::super::application_query::derived_view::ManagedDerivedViewRegistry>,
@@ -23,7 +34,7 @@ impl WorthQueryExecutionInstallationAuthority {
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         relational_runtime: &mut RelationalRuntime,
         invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
-    ) -> Result<InstalledNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
+    ) -> Result<PreparedNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
         self.prepare_native_schema_with_initialization(
             _phase,
             runtime,
@@ -46,7 +57,7 @@ impl WorthQueryExecutionInstallationAuthority {
         initialization: worth_proof::FreshNativeInitialization<
             worth_relational::facade::durability::RelationalFreshInitialization,
         >,
-    ) -> Result<InstalledNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
+    ) -> Result<PreparedNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
         self.prepare_native_schema_with_initialization(
             phase,
             runtime,
@@ -69,7 +80,7 @@ impl WorthQueryExecutionInstallationAuthority {
                 worth_relational::facade::durability::RelationalFreshInitialization,
             >,
         >,
-    ) -> Result<InstalledNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
+    ) -> Result<PreparedNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
         if !self.belongs_to(runtime) {
             return Err(primary_graph_denial(
                 WorthQueryPrimaryGraphInstallationDenialKind::ForeignRuntime,
@@ -95,6 +106,7 @@ impl WorthQueryExecutionInstallationAuthority {
             installed_schema.installed_declaration(),
             installed_schema.native_contracts(),
             &relational_runtime.config().schema.registry,
+            installed_schema.value_bindings(),
         )?;
         let (registrations, managed_sources, source_initializer) = invariant_factories.lower(
             &_phase.execution_request(),
@@ -110,18 +122,31 @@ impl WorthQueryExecutionInstallationAuthority {
                 &_phase.execution_request(),
                 initialization,
             )?;
-        let managed_views = Arc::new(
-            super::super::application_query::derived_view::ManagedDerivedViewRegistry::with_sources(
-                managed_sources,
-                &relational_runtime.main_branch_identity(),
-            ),
-        );
-        Ok(InstalledNativeSchemaMeaning {
-            managed_views,
+        Ok(PreparedNativeSchemaMeaning {
+            managed_sources,
             source_initializer,
             layout,
             receipt: invariant_installation_receipt,
             expected_invariant_inventory_digest,
         })
+    }
+}
+
+impl PreparedNativeSchemaMeaning {
+    pub(in crate::domain_computation::primary_graph) fn bind_sources(
+        self,
+        owner: &worth_relational::facade::branch::RelationalBranchIdentity,
+    ) -> InstalledNativeSchemaMeaning {
+        InstalledNativeSchemaMeaning {
+            managed_views: Arc::new(
+                super::super::application_query::derived_view::ManagedDerivedViewRegistry::with_sources(
+                    self.managed_sources, owner,
+                ),
+            ),
+            source_initializer: self.source_initializer,
+            layout: self.layout,
+            receipt: self.receipt,
+            expected_invariant_inventory_digest: self.expected_invariant_inventory_digest,
+        }
     }
 }

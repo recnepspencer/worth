@@ -1,7 +1,10 @@
 mod caller_association;
 mod changed_records;
+mod current_read;
 mod managed_source;
+mod publication_parts;
 mod read_condition;
+mod retained_selection;
 use std::cell::Cell;
 use std::marker::PhantomData;
 
@@ -14,7 +17,7 @@ use crate::transactions::data::TransactionId;
 /// consume it, either through publication or explicit discard.
 pub struct PreparedRelationalCommitCandidate {
     runtime_instance_id: u64,
-    custom_invariant_generation: u64,
+    configuration_invariant_generation: u64,
     publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
     transaction_id: TransactionId,
     branch_id: BranchId,
@@ -28,6 +31,7 @@ pub struct PreparedRelationalCommitCandidate {
 }
 
 pub(crate) struct CandidatePayload {
+    current_read: Option<crate::branch::AdmittedRelationalBranchBasis>,
     managed_source_reads: Option<super::companion::ManagedSourceReadConditions>,
     companion_read: Option<super::companion::CompanionReadCondition>,
     expected_basis: crate::branch::RelationalBranchBasisDescriptor,
@@ -40,6 +44,7 @@ pub(crate) struct CandidatePayload {
 }
 
 pub(super) struct PreparedRelationalPublicationParts {
+    pub(super) current_read: Option<crate::branch::AdmittedRelationalBranchBasis>,
     pub(super) managed_source_reads: Option<super::companion::ManagedSourceReadConditions>,
     pub(super) companion_read: Option<super::companion::CompanionReadCondition>,
     pub(super) runtime_instance_id: u64,
@@ -65,7 +70,7 @@ pub(crate) enum PreparedRelationalCandidateAdmissionStop {
 impl PreparedRelationalCommitCandidate {
     pub(crate) fn new(
         runtime_instance_id: u64,
-        custom_invariant_generation: u64,
+        configuration_invariant_generation: u64,
         publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
         transaction_id: TransactionId,
         branch_id: BranchId,
@@ -84,6 +89,7 @@ impl PreparedRelationalCommitCandidate {
             .unwrap_or_else(std::time::Instant::now);
         let reservation_count = execution.reservation_count();
         let payload = std::sync::Arc::new(std::sync::Mutex::new(Some(CandidatePayload {
+            current_read: None,
             companion_read: None,
             managed_source_reads: None,
             expected_basis,
@@ -115,7 +121,7 @@ impl PreparedRelationalCommitCandidate {
             })?;
         Ok(Self {
             runtime_instance_id,
-            custom_invariant_generation,
+            configuration_invariant_generation,
             publication_binding,
             transaction_id,
             branch_id,
@@ -141,8 +147,8 @@ impl PreparedRelationalCommitCandidate {
         self.runtime_instance_id
     }
 
-    pub(crate) fn custom_invariant_generation(&self) -> u64 {
-        self.custom_invariant_generation
+    pub(crate) fn configuration_invariant_generation(&self) -> u64 {
+        self.configuration_invariant_generation
     }
 
     pub(crate) fn expected_basis(&self) -> Option<crate::branch::RelationalBranchBasisDescriptor> {
@@ -223,6 +229,16 @@ impl PreparedRelationalCommitCandidate {
             })
     }
 
+    pub(crate) fn home_step(
+        &self,
+    ) -> Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>> {
+        self._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+            .and_then(|payload| payload.execution.home_step().cloned())
+    }
+
     pub(crate) fn indexes_already_prepared(&self) -> bool {
         self._payload
             .lock()
@@ -247,37 +263,6 @@ impl PreparedRelationalCommitCandidate {
 
     pub(crate) fn lifetime_expired(&self) -> bool {
         std::time::Instant::now() >= self.expires_at
-    }
-
-    pub(super) fn into_publication_parts(
-        mut self,
-    ) -> Result<PreparedRelationalPublicationParts, super::RelationalPublicationDeferred> {
-        let payload = self
-            .publication_binding
-            .take_candidate(self.candidate_id)
-            .ok_or(
-                super::RelationalPublicationDeferred::CandidateLifetimeExpired {
-                    maximum_lifetime_millis: self.maximum_lifetime_millis,
-                },
-            )?;
-        self.consumed = true;
-        let (movement, completion) = payload.execution.split(payload.published_snapshot_slot);
-        Ok(PreparedRelationalPublicationParts {
-            companion_read: payload.companion_read,
-            managed_source_reads: payload.managed_source_reads,
-            runtime_instance_id: self.runtime_instance_id,
-            candidate_id: self.candidate_id,
-            publication_binding: self.publication_binding.clone(),
-            expected: payload.expected_basis,
-            expected_root: payload.expected_root,
-            publication_cell: payload.publication_cell,
-            movement,
-            completion,
-            candidate_retention: payload.retention,
-            control: payload.control,
-            expires_at: self.expires_at,
-            maximum_lifetime_millis: self.maximum_lifetime_millis,
-        })
     }
 
     #[cfg(test)]

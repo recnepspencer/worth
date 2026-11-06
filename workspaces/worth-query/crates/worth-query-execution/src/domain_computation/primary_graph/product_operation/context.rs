@@ -4,7 +4,6 @@ use crate::basis::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
-#[cfg(test)]
 use worth_runtime_world::facade::ProductBranchIdentity;
 
 /// How the live selected snapshot entered this operation. This is selection
@@ -56,10 +55,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
     ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime
     {
-        &self.product_runtime
+        &self.runtime.product_runtime
     }
 
-    #[cfg(test)]
     pub(crate) fn select_product_branch(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -70,7 +68,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         self.on_product(
             execution,
-            self.product_runtime.admit_product_branch(identity)?,
+            self.runtime
+                .product_runtime
+                .admit_product_branch(identity)?,
         )
     }
 
@@ -129,7 +129,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             &worth_runtime_world::facade::ProductBranchObservation,
         ) -> Result<(), Stop>,
     ) -> Result<WorthQuerySelectedProductOperation<'_, Schema>, Stop> {
-        if product.observation().owner_identity() != self.product_runtime.owner.owner_identity() {
+        if product.observation().owner_identity()
+            != self.runtime.product_runtime.owner.owner_identity()
+        {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             )
@@ -153,7 +155,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn on_product_for_adoption_recovery(
+    pub(in crate::domain_computation::primary_graph) fn on_product_for_owner_recovery(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: WorthQueryProductBranchLease,
@@ -161,7 +163,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQuerySelectedProductOperation<'_, Schema>,
         WorthQueryProductBranchAdmissionDenial,
     > {
-        if product.observation().owner_identity() != self.product_runtime.owner.owner_identity() {
+        if product.observation().owner_identity()
+            != self.runtime.product_runtime.owner.owner_identity()
+        {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             ));
@@ -201,6 +205,7 @@ where
         let application = self.application;
         let product = application.admit_with_observation_room(|| {
             application
+                .runtime
                 .product_runtime
                 .admit_product_occurrence(self.branch.occurrence())
         })?;
@@ -218,7 +223,7 @@ where
         WorthQueryProductBranchAdmissionDenial,
     > {
         let request = phase
-            .execution_request_for(&self.application.product_runtime)
+            .execution_request_for(&self.application.runtime.product_runtime)
             .map_err(|_| {
                 WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignPhase)
             })?;
@@ -237,6 +242,7 @@ where
             request,
             application.admit_with_observation_room(|| {
                 application
+                    .runtime
                     .product_runtime
                     .admit_product_occurrence(self.branch.occurrence())
             })?,
@@ -334,3 +340,5 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             })
     }
 }
+
+mod court_doors_for_test;

@@ -1,4 +1,5 @@
 use std::num::NonZeroU64;
+use worth_foundational::CanonicalDigestId;
 
 use crate::PersistedRecordIdentity;
 
@@ -22,7 +23,7 @@ pub struct BlobSessionAbandonedV1 {
     store: [u8; 16],
     session: [u8; 16],
     declaration_record: PersistedRecordIdentity,
-    declaration_digest: [u8; 32],
+    declaration_digest: CanonicalDigestId,
     reason: BlobAbandonmentReasonV1,
 }
 
@@ -38,7 +39,7 @@ impl BlobSessionAbandonedV1 {
             store: nonzero_16(store)?,
             session: nonzero_16(session)?,
             declaration_record,
-            declaration_digest: nonzero_32(declaration_digest)?,
+            declaration_digest: CanonicalDigestId::new(nonzero_32(declaration_digest)?),
             reason,
         })
     }
@@ -52,7 +53,7 @@ impl BlobSessionAbandonedV1 {
         payload.extend_from_slice(&self.session);
         payload.extend_from_slice(&self.declaration_record.allocation_epoch());
         payload.extend_from_slice(&self.declaration_record.ordinal().to_le_bytes());
-        payload.extend_from_slice(&self.declaration_digest);
+        payload.extend_from_slice(self.declaration_digest.bytes());
         match self.reason {
             BlobAbandonmentReasonV1::ExplicitAbort => payload.push(1),
             BlobAbandonmentReasonV1::CheckpointExpired {
@@ -115,7 +116,7 @@ impl BlobSessionAbandonedV1 {
         self.declaration_record
     }
     pub const fn declaration_digest(self) -> [u8; 32] {
-        self.declaration_digest
+        *self.declaration_digest.bytes()
     }
     pub const fn reason(self) -> BlobAbandonmentReasonV1 {
         self.reason

@@ -95,16 +95,16 @@ where
         progress.root_started = true;
         return Ok(false);
     }
-    if let Some(root) = &mut progress.root {
-        if !root.advance(request, native).map_err(|cause| {
+    if let Some(root) = &mut progress.root
+        && !root.advance(request, native).map_err(|cause| {
             Denial::Close(match cause {
                 NativeDenial::Busy => CloseDenial::Busy,
                 NativeDenial::Execution(cause) => CloseDenial::Execution(cause),
                 NativeDenial::ForeignOwner => CloseDenial::CloseProgressInvariant,
             })
-        })? {
-            return Ok(false);
-        }
+        })?
+    {
+        return Ok(false);
     }
     if progress.pending.is_none() {
         progress.pending = state
@@ -123,14 +123,13 @@ where
                 }
                 return Ok(false);
             }
-            if let Some(correspondence) = &mut progress.correspondence {
-                if correspondence
+            if let Some(correspondence) = &mut progress.correspondence
+                && correspondence
                     .advance(request, native)
                     .map_err(Denial::Bridge)?
                     != worth_runtime_bridge::facade::BridgeHomeRetirementProgress::Complete
-                {
-                    return Ok(false);
-                }
+            {
+                return Ok(false);
             }
             if let Some(services) = state.relational.take() {
                 match services.into_home_retirement(request, native) {

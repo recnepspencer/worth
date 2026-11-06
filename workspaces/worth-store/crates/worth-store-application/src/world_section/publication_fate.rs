@@ -1,12 +1,30 @@
 //! Only actual task terminals classify a submitted World journal publication.
-use worth_foundational::facade::DurablePublicationFate;
+use worth_foundational::facade::{CanonicalDigestId, WorldDurableJournal};
 use worth_runtime_world::facade::{
-    WorldDurableMediumDenial as Denial, WorldPublicationObservation,
+    WorldDurableMediumDenial as Denial, WorldPublicationCompletion, WorldPublicationObservation,
 };
 use worth_store::physical_runtime::*;
 
-pub(super) fn committed(_committed: &OrderedJournalCommitted) -> WorldPublicationObservation {
-    WorldPublicationObservation::Finished(DurablePublicationFate::Committed)
+pub(super) fn committed(committed: &OrderedJournalCommitted) -> WorldPublicationObservation {
+    let source = committed.source();
+    let journal = match source.journal().as_str() {
+        "world.branches" => WorldDurableJournal::Branches,
+        "world.occurrences" => WorldDurableJournal::Occurrences,
+        "world.custody" => WorldDurableJournal::Custody,
+        _ => {
+            return WorldPublicationObservation::Finished(
+                WorldPublicationCompletion::indeterminate(Denial::PublicationUnresolved),
+            )
+        }
+    };
+    let Some(position) = std::num::NonZeroU64::new(committed.entry().position()) else {
+        return WorldPublicationObservation::EvidenceRequired;
+    };
+    WorldPublicationObservation::Finished(WorldPublicationCompletion::committed(
+        journal,
+        position,
+        CanonicalDigestId::new(committed.entry().payload_sha256()),
+    ))
 }
 
 pub(super) fn terminal(
@@ -16,17 +34,23 @@ pub(super) fn terminal(
         return WorldPublicationObservation::EvidenceRequired;
     }
     let detail = Denial::Storage(format!("{terminal:?}"));
-    let fate = if terminal.failure().is_some() {
-        DurablePublicationFate::Indeterminate { detail }
+
+    if terminal.failure().is_some() {
+        WorldPublicationObservation::Finished(WorldPublicationCompletion::indeterminate(detail))
     } else {
         match terminal.physical_outcome() {
             Some(PhysicalMutationOutcome::ProvenNoEffect(_)) => {
-                DurablePublicationFate::ProvenNoEffect { detail }
+                WorldPublicationObservation::Finished(WorldPublicationCompletion::proven_no_effect(
+                    detail,
+                ))
             }
-            _ => DurablePublicationFate::Indeterminate { detail },
+            Some(PhysicalMutationOutcome::Completed(_))
+            | Some(PhysicalMutationOutcome::Indeterminate(_))
+            | None => WorldPublicationObservation::Finished(
+                WorldPublicationCompletion::indeterminate(detail),
+            ),
         }
-    };
-    WorldPublicationObservation::Finished(fate)
+    }
 }
 
 /// Start refusals precede submission. An unresolved or unrecognized owner
@@ -54,9 +78,9 @@ pub(super) fn start_failure(
                     | F::Read(_)
             )
     );
-    WorldPublicationObservation::Finished(if no_effect {
-        DurablePublicationFate::ProvenNoEffect { detail }
+    if no_effect {
+        WorldPublicationObservation::Finished(WorldPublicationCompletion::proven_no_effect(detail))
     } else {
-        DurablePublicationFate::Indeterminate { detail }
-    })
+        WorldPublicationObservation::Finished(WorldPublicationCompletion::indeterminate(detail))
+    }
 }

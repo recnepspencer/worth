@@ -2,6 +2,7 @@ use crate::{
     CheckpointInterlockObservation, ObservationDenial, PhysicalInterleavingSchedule,
     PhysicalScenarioActorRole, PhysicalSimulationPlan, RecoveryOutcomeObservation,
 };
+use worth_foundational::CanonicalDigestId;
 use worth_store_physical_isolation::{
     CheckpointInterlockEvidenceOrigin, CheckpointInterlockFoundationalEvidence,
 };
@@ -10,15 +11,15 @@ use super::checkpoint_recovery_lane::PhysicalIsolationCheckpointPublicationRecov
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalIsolationCheckpointPublicationLaneBinding {
-    pub(super) plan_identity: [u8; 32],
-    pub(super) schedule_identity: [u8; 32],
+    pub(super) plan_identity: CanonicalDigestId,
+    pub(super) schedule_identity: CanonicalDigestId,
     checkpoint_actor_step_index: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalIsolationCheckpointPublicationScheduledLaneOutput {
-    plan_identity: [u8; 32],
-    schedule_identity: [u8; 32],
+    plan_identity: CanonicalDigestId,
+    schedule_identity: CanonicalDigestId,
     checkpoint_actor_step_index: usize,
     observation: CheckpointInterlockObservation,
 }
@@ -29,14 +30,14 @@ pub struct CheckpointCrashReplayObservation {
     recovery_outcome: RecoveryOutcomeObservation,
     checkpoint_actor_step_index: usize,
     recovery_actor_step_index: usize,
-    recovery_plan_identity: [u8; 32],
-    recovery_schedule_identity: [u8; 32],
+    recovery_plan_identity: CanonicalDigestId,
+    recovery_schedule_identity: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalIsolationCheckpointPublicationCrashLaneOutput {
-    plan_identity: [u8; 32],
-    schedule_identity: [u8; 32],
+    plan_identity: CanonicalDigestId,
+    schedule_identity: CanonicalDigestId,
     checkpoint_actor_step_index: usize,
     recovery_actor_step_index: usize,
     observation: CheckpointCrashReplayObservation,
@@ -49,8 +50,8 @@ impl PhysicalIsolationCheckpointPublicationLaneBinding {
     ) -> Result<Self, ObservationDenial> {
         let checkpoint_actor_step_index = require_schedule_matches_checkpoint_plan(plan, schedule)?;
         Ok(Self {
-            plan_identity: *plan.identity().digest_bytes(),
-            schedule_identity: *schedule.identity().digest_bytes(),
+            plan_identity: CanonicalDigestId::new(*plan.identity().digest_bytes()),
+            schedule_identity: CanonicalDigestId::new(*schedule.identity().digest_bytes()),
             checkpoint_actor_step_index,
         })
     }
@@ -78,11 +79,11 @@ impl CheckpointCrashReplayObservation {
     }
 
     pub const fn recovery_plan_identity(&self) -> &[u8; 32] {
-        &self.recovery_plan_identity
+        self.recovery_plan_identity.bytes()
     }
 
     pub const fn recovery_schedule_identity(&self) -> &[u8; 32] {
-        &self.recovery_schedule_identity
+        self.recovery_schedule_identity.bytes()
     }
 }
 
@@ -121,11 +122,11 @@ impl PhysicalIsolationCheckpointPublicationScheduledLaneOutput {
     }
 
     pub const fn plan_identity(&self) -> &[u8; 32] {
-        &self.plan_identity
+        self.plan_identity.bytes()
     }
 
     pub const fn schedule_identity(&self) -> &[u8; 32] {
-        &self.schedule_identity
+        self.schedule_identity.bytes()
     }
 
     pub const fn checkpoint_actor_step_index(&self) -> usize {
@@ -172,11 +173,11 @@ impl PhysicalIsolationCheckpointPublicationCrashLaneOutput {
     }
 
     pub const fn plan_identity(&self) -> &[u8; 32] {
-        &self.plan_identity
+        self.plan_identity.bytes()
     }
 
     pub const fn schedule_identity(&self) -> &[u8; 32] {
-        &self.schedule_identity
+        self.schedule_identity.bytes()
     }
 
     pub const fn checkpoint_actor_step_index(&self) -> usize {
@@ -245,7 +246,7 @@ fn require_schedule_step_matches_binding(
     schedule: &PhysicalInterleavingSchedule,
     actor_step_index: usize,
 ) -> Result<(), ObservationDenial> {
-    if schedule.identity().digest_bytes() != &binding.schedule_identity
+    if schedule.identity().digest_bytes() != binding.schedule_identity.bytes()
         || actor_step_index != binding.checkpoint_actor_step_index
     {
         return Err(ObservationDenial::CheckpointPublicationLaneScheduleMismatch);

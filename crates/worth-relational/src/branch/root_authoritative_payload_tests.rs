@@ -6,6 +6,146 @@ use crate::history::data::BranchId;
 use crate::schema::data::SchemaVersionId;
 use crate::tests::support::*;
 
+#[path = "root_authoritative_payload_tests/word_codec.rs"]
+mod word_codec;
+
+#[test]
+fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_is_removed() {
+    use crate::{
+        content::*, mvcc::RelationalTransactionIntent, schema::data::*, transactions::data::*,
+    };
+    use worth_foundational::facade::*;
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let format = CanonicalDigestId::new([3; 32]);
+    let contract = AspectContract::struct_aspect(
+        AspectKey::new("word").unwrap(),
+        AspectIdentity(741),
+        AspectContractRevision(1),
+        StructAspectShape::new([FieldDeclaration::new(
+            FieldKey::new("value").unwrap(),
+            ScalarAspectType::ContentRef,
+            FieldRequirement::Required,
+            AbsenceLaw::Required,
+            AspectEvolutionPolicy::ExplicitBreakRequired,
+        )
+        .unwrap()
+        .with_codec(format)])
+        .unwrap(),
+    );
+    let schema = AspectSchemaFixture {
+        entity_aspects: vec![DeclaredAspectContractBinding {
+            binding: AspectBinding::EntityField {
+                field: FieldKey::new("word").unwrap(),
+            },
+            contract: contract.clone(),
+        }],
+        ..Default::default()
+    }
+    .build_registry()
+    .register_content_format(
+        format,
+        Arc::new(word_codec::WordCodec(
+            ContentFormat::new("word", 1).unwrap(),
+        )),
+    )
+    .unwrap()
+    .bind_content_field(format, format)
+    .unwrap();
+    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
+        .schema_registry(schema)
+        .build()
+        .unwrap();
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let mut transaction = runtime
+        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
+        .unwrap();
+    let identity = transaction
+        .admit_content(&execution, format, &17_i64)
+        .unwrap();
+    let patch = PortableRecordAspectPatch::new([PortableAspectPatchOperation::SetWhole {
+        basis: PortableAspectContractBasis::from_contract(&contract),
+        value: ContractValidationInput::Struct(
+            StructAspectValue::new([(
+                FieldKey::new("value").unwrap(),
+                AspectValue::ContentRef(identity),
+            )])
+            .unwrap(),
+        ),
+    }]);
+    transaction
+        .push_batch(
+            WorkerIntentBatch::new("word").push(MutationIntent::Create(
+                CreateIntent::EntityAspects(EntityAspectCreateIntent {
+                    partition_id: crate::identity::data::PartitionId::main(),
+                    kind_id: crate::identity::data::KindId(1),
+                    client_key: crate::symbols::data::ClientKey::raw("word"),
+                    aspect_patch: patch,
+                }),
+            )),
+            execution.allocation_policy(),
+        )
+        .unwrap();
+    let committed = transaction.commit(&execution, &runtime).unwrap();
+    let (root, mut envelope) =
+        committed_root_and_envelope(&execution, &runtime, committed.commit.commit_id);
+    let mut changed = root.schema_authority().registry().clone();
+    changed
+        .entity_kinds
+        .get_mut(&crate::identity::data::KindId(1))
+        .unwrap()
+        .aspect_contract_declarations = KindAspectContractDeclarations::default();
+    envelope.body_mut_for_test().schema_authority = changed.authority_snapshot();
+    let authority = super::RelationalBranchRootSchemaAuthority::readmit_exact(
+        2,
+        changed,
+        root.schema_authority().retained_aspect_contracts().to_vec(),
+        &envelope.schema_authority,
+        envelope.descriptor_semantics_version,
+    )
+    .unwrap();
+    let descriptor = super::RelationalBranchRootDescriptor::new(
+        *root.descriptor().unwrap().truth_root(),
+        authority.registry().authority_digest_bytes(),
+    );
+    let partitions = root
+        .partition_ids_iter()
+        .map(|id| {
+            (
+                id,
+                root.resident_full_region_witness(id)
+                    .unwrap()
+                    .unwrap()
+                    .full_view()
+                    .partition()
+                    .clone(),
+            )
+        })
+        .collect();
+    let refusal = RelationalBranchRoot::readmit(
+        &super::RelationalBranchRootIdentityIssuer::default(),
+        &execution,
+        &RelationalContentAttachments::default(),
+        partitions,
+        Arc::new(envelope),
+        descriptor,
+        authority,
+        &runtime.services.symbols.interner_snapshot(),
+    )
+    .unwrap_err();
+    assert!(
+        matches!(
+            refusal,
+            RelationalBranchRootCaptureDenial::Content(
+                RelationalContentDenial::FormatBindingMissing
+            )
+        ),
+        "{refusal:?}"
+    );
+}
+
 #[test]
 fn strategy_artifacts_are_bound_into_the_committed_root() {
     let host_request = crate::test_execution_policy::serial_request();
@@ -27,7 +167,7 @@ fn strategy_artifacts_are_bound_into_the_committed_root() {
         .take()
         .is_some());
 
-    assert_axis_mutation_rejected(&runtime, &root, envelope, "strategy artifacts");
+    assert_axis_mutation_rejected(execution, &runtime, &root, envelope, "strategy artifacts");
 }
 
 #[test]
@@ -72,7 +212,13 @@ fn merge_execution_authority_is_bound_into_the_committed_root() {
         .take()
         .is_some());
 
-    assert_axis_mutation_rejected(&runtime, &root, envelope, "merge execution authority");
+    assert_axis_mutation_rejected(
+        execution,
+        &runtime,
+        &root,
+        envelope,
+        "merge execution authority",
+    );
 }
 
 #[test]
@@ -116,21 +262,33 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
         .schema_transition
         .take()
         .is_some());
-    assert_axis_mutation_rejected(&runtime, &root, transition, "schema transition");
+    assert_axis_mutation_rejected(execution, &runtime, &root, transition, "schema transition");
     let mut continuation = envelope.copy_original_for_test(execution);
     assert!(continuation
         .body_mut_for_test()
         .schema_continuation_descriptor
         .take()
         .is_some());
-    assert_axis_mutation_rejected(&runtime, &root, continuation, "continuation descriptor");
+    assert_axis_mutation_rejected(
+        execution,
+        &runtime,
+        &root,
+        continuation,
+        "continuation descriptor",
+    );
     let mut reconciliation = envelope;
     assert!(reconciliation
         .body_mut_for_test()
         .schema_reconciliation_descriptor
         .take()
         .is_some());
-    assert_axis_mutation_rejected(&runtime, &root, reconciliation, "reconciliation descriptor");
+    assert_axis_mutation_rejected(
+        execution,
+        &runtime,
+        &root,
+        reconciliation,
+        "reconciliation descriptor",
+    );
 }
 
 fn committed_root_and_envelope(
@@ -157,6 +315,7 @@ fn committed_root_and_envelope(
 }
 
 fn assert_axis_mutation_rejected(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     root: &Arc<RelationalBranchRoot>,
     mutant: crate::history::data::CanonicalCommitEnvelope,
@@ -164,6 +323,7 @@ fn assert_axis_mutation_rejected(
 ) {
     let denial = root
         .relink_canonical_envelope(
+            execution,
             Arc::new(mutant),
             &runtime.services.symbols.interner_snapshot(),
         )

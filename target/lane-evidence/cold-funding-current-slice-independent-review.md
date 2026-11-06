@@ -18,5 +18,3 @@ Within loader-local scopes, the following lifetime corrections are structurally 
 The unchanged `lease_resident_full` backing guard is **not** a finding. Complete falls back to `demand_full(request, FULL_HISTORY_READ_LIMIT, None)`, which obtains the counted lease from the same cell and then invokes its DATA emitter. Retention’s separate use of `lease_resident_full` explains why relaxing that accessor would risk bypassing root serving admission. No root-authority widening was found in this extraction.
 
 The production Home O(S+T) argument is appropriately narrower than arbitrary acyclic history: Complete emits prefix-free REG6 rows and covered reuse accepts flat histories. General histories still need their actual dependency/hop/verification work funded, including finding 2. The ordered-navigation term is separate. The ten reviewed physical file lengths are 396, 392, 375, 124, 152, 203, 400, 400, 398 and 22; none exceeds 400. This read-only count does not claim that the required dirty line-cap, boundary, context or other final gates ran.
-
-

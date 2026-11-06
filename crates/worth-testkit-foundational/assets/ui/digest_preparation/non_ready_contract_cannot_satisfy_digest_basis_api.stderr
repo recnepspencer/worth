@@ -1,8 +1,8 @@
 error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/digest_preparation/non_ready_contract_cannot_satisfy_digest_basis_api.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/digest_preparation/non_ready_contract_cannot_satisfy_digest_basis_api.rs:9:66
   |
-  |     worth_foundational::aspect_contract_digest_preparation_basis(&contract);
-  |     ------------------------------------------------------------ ^^^^^^^^^ expected `&Artifact<DigestPreparationReady, ...>`, found `&AspectContract`
+9 |     worth_foundational::aspect_contract_digest_preparation_basis(&contract);
+  |     ------------------------------------------------------------ ^^^^^^^^^ expected `&Artifact<DigestPreparationReady, _>`, found `&AspectContract`
   |     |
   |     arguments to this function are incorrect
   |

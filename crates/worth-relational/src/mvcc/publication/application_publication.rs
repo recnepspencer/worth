@@ -1,9 +1,14 @@
 use crate::transactions::data::TransactionCommitError;
+mod authored_cascade;
+mod authored_restoration;
 mod authored_retirement;
+pub use authored_cascade::RelationalAuthoredRetirement;
+pub use authored_restoration::RelationalAuthoredRestoration;
 mod completion;
 mod custody;
 mod producing_implementation;
 mod route_absence;
+mod scope_ownership;
 pub use completion::{
     RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
     RequiredOutputRoleTarget,
@@ -26,6 +31,7 @@ pub struct RelationalInstalledApplicationPublicationAuthority {
     pub(crate) runtime_instance_id: u64,
     pub(crate) custom_invariant_generation: u64,
     pub(crate) schema_digest: [u8; 32],
+    pub(crate) source_scope_ownership: scope_ownership::InstalledSourceScopeOwnership,
     pub(crate) authority: worth_proof::InstalledApplicationPublicationAuthority,
 }
 
@@ -146,7 +152,7 @@ pub(crate) fn native_meaning_fixture(family: &str) -> RequiredOutputPublicationM
             0,
             1,
         ),
-        source_partition: [0; 32],
-        source_epoch: [0; 32],
+        source_partition: worth_foundational::CanonicalDigestId::new([0; 32]),
+        source_epoch: worth_foundational::CanonicalDigestId::new([0; 32]),
     }
 }

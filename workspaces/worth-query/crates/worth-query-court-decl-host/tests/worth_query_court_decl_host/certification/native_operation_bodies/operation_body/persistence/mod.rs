@@ -22,7 +22,7 @@ fn authored_body_checkpoint_keeps_the_original_program_and_destination() {
         schema,
         (program::Installation::Native,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
     .unwrap();
@@ -90,7 +90,7 @@ fn authored_body_input_survives_checkpoint_and_fresh_portable_readmission() {
         schema,
         (program::Installation::Native,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
     .unwrap();

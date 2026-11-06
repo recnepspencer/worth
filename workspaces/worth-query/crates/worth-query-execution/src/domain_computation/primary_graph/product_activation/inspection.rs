@@ -62,7 +62,7 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
         .activation()
         .published()
         .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable)?;
-    let graph = &application.primary_provider.graph;
+    let graph = &application.runtime.primary_provider.graph;
     let layout = graph.layout.program_activation().clone();
     let locator = &layout.program_revision_locator;
     // The activation record is read on the selected branch's own root: a

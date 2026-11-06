@@ -54,6 +54,12 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
 }
 
 impl WorthQueryPrimaryGraphApplicationAttempt {
+    pub(in crate::domain_computation::primary_graph) fn content_attachments(
+        &self,
+    ) -> &worth_relational::facade::content::RelationalContentAttachments {
+        self.effects.content_attachments()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn workflow_origin(
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>{

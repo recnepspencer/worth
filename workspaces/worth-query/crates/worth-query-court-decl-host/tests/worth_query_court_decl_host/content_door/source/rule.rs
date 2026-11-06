@@ -1,0 +1,123 @@
+use super::*;
+pub struct CheckSamples;
+impl ApplicationInvariantMarkerIdentity<Schema> for CheckSamples {
+    const IDENTIFIER: &'static str = "ObserveContentSamples";
+    const MAJOR: u16 = 1;
+    const MINOR: u16 = 0;
+}
+pub fn definition() -> ApplicationInvariantDefinition<Schema, CheckSamples> {
+    let closure = [
+        ApplicationInvariantScopeTarget::Entity("Record".into()),
+        ApplicationInvariantScopeTarget::Relation("ContainsSamples".into()),
+    ];
+    ApplicationInvariantDefinition::new(
+        CheckSamples::reference(),
+        ApplicationInvariantExecutionPoint::CommitBoundary,
+        RelationalInvariantWorkBudget::new(None),
+        ApplicationInvariantOperationalContract::new(
+            ApplicationInvariantEnforcement::BlockCommit,
+            [ApplicationInvariantGroup::SchemaCompliance],
+            closure.clone(),
+            closure,
+            "primary-relational-provider",
+            ApplicationInvariantCostPosture::Touched,
+        ),
+    )
+    .managed_index_source(Index::reference())
+    .managed_index_cold_sources(ApplicationManagedIndexColdSource::AdmitRebuild)
+}
+pub struct Rule {
+    index: WorthQueryApplicationInvariantManagedIndexBinding<Schema, Index>,
+    calls: Arc<Calls>,
+}
+pub fn resolve(
+    resolver: &WorthQueryApplicationInvariantSchemaResolver<'_, Schema>,
+    calls: Arc<Calls>,
+) -> Result<Rule, String> {
+    Ok(Rule {
+        index: resolver
+            .typed_managed_index(Index::reference())
+            .ok_or("missing content Source")?,
+        calls,
+    })
+}
+fn error(cause: impl std::fmt::Debug) -> WorthQueryApplicationInvariantExecutionError {
+    WorthQueryApplicationInvariantExecutionError::new(format!("{cause:?}"))
+}
+impl WorthQueryApplicationInvariantRule<Schema> for Rule {
+    type Scope = WorthQueryPreparedInvariantManagedIndex<Schema, Index>;
+    type Refusal = ();
+    type RefusalBinding = WorthQueryEmptyInvariantRefusal;
+    fn supports_checked_preparation(&self) -> bool {
+        true
+    }
+    fn prepare_scope(
+        &self,
+        planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
+        planner.retain_managed_index(&self.index).map_err(|cause| {
+            WorthQueryApplicationInvariantPreparationError::new(format!("{cause:?}"))
+        })
+    }
+    fn prepare_scope_checked(
+        &self,
+        planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+        Some(if budget.checkpoint(1) {
+            self.prepare_scope(planner)
+        } else {
+            Err(WorthQueryApplicationInvariantPreparationError::new(
+                "content Source preparation stopped",
+            ))
+        })
+    }
+    fn evaluate(
+        &self,
+        _: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
+        _: &Self::Scope,
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
+        Err(error("checked content Source budget required"))
+    }
+    fn evaluate_checked(
+        &self,
+        context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
+        scope: &Self::Scope,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<
+        Result<
+            WorthQueryApplicationInvariantVerdict<()>,
+            WorthQueryApplicationInvariantExecutionError,
+        >,
+    > {
+        Some((|| {
+            if !budget.checkpoint(1) {
+                return Err(error("content Source stopped"));
+            }
+            let pair = context.refined_managed_index(scope).map_err(error)?;
+            let after = pair.proposed().query(&10u64).map_err(error)?;
+            let before = match pair.committed().query(&10u64) {
+                Ok(rows) => Some(rows.into_iter().map(|row| row.key).collect::<Vec<_>>()),
+                Err(cause) if cause.source_unavailable() => None,
+                Err(cause) => return Err(error(cause)),
+            };
+            let after = after.into_iter().map(|row| row.key).collect::<Vec<_>>();
+            let bytes = before
+                .iter()
+                .chain(std::iter::once(&after))
+                .flat_map(|rows| rows.iter())
+                .fold(
+                    size_of::<(Option<Vec<String>>, Vec<String>)>(),
+                    |sum, key| sum + size_of::<String>() + key.capacity(),
+                );
+            if !budget.claim_result(bytes as u64) {
+                return Err(error("content Source observation storage stopped"));
+            }
+            self.calls.records.lock().unwrap().push((before, after));
+            Ok(WorthQueryApplicationInvariantVerdict::Pass)
+        })())
+    }
+}

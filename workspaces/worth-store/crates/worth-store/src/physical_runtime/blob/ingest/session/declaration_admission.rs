@@ -119,7 +119,7 @@ impl ServingPhysicalRuntime {
             store,
             session: session.bytes(),
             declaration_record,
-            declaration_digest,
+            declaration_digest: worth_foundational::CanonicalDigestId::new(declaration_digest),
             chunk_size: declaration.chunk_size().bytes() as u32,
             total_bytes: declaration.total_bytes(),
             max_checkpoint_sequence,

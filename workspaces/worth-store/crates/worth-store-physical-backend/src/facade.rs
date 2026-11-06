@@ -1,3 +1,7 @@
+pub use crate::filesystem_media::{
+    FilesystemHomeDiscard, FilesystemHomeDiscardDenial, FilesystemHomeDiscardStage,
+    HOME_DISCARD_TOMBSTONE,
+};
 pub use worth_store_physical_format::PhysicalReference;
 
 pub use crate::access_policy::{

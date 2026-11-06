@@ -5,9 +5,7 @@ use worth_query_declaration::facade::application_schema::RelationDirection;
 use worth_relational::facade::identity::{EntityId, KindId};
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct StructuralWalkKey(
-    pub(super) Arc<Parameters>,
-);
+pub struct StructuralWalkKey(pub(super) Arc<Parameters>);
 
 #[derive(Debug)]
 pub(super) struct Parameters {
@@ -94,3 +92,5 @@ impl PartialOrd for StructuralWalkKey {
 #[cfg(test)]
 #[path = "key_ordering_tests.rs"]
 mod key_ordering_tests;
+
+mod court_doors_for_test;

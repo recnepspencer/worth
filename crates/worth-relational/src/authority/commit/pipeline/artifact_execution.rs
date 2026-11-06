@@ -1,3 +1,4 @@
+use super::phase_backing::CommitPhaseBacking;
 use super::snapshot_validation::SnapshotValidatedCommitExecution;
 
 mod authored_index_writes;
@@ -24,7 +25,7 @@ pub(super) struct AssembledCommitExecution {
         crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
     merge_parent_branches: Vec<crate::history::data::BranchId>,
-    publication: PublicationPreparation,
+    publication: CommitPhaseBacking<PublicationPreparation>,
     publication_snapshot: crate::snapshots::data::SnapshotHandle,
     aspect_evaluation_traces: Vec<crate::transactions::data::AspectEvaluationTrace>,
     aspect_emission_traces: Vec<preparation::PreparedAspectEmissionTrace>,
@@ -46,7 +47,7 @@ impl AssembledCommitExecution {
         crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
         crate::authority::commit::phases::history::ResolvedCommitHistory,
         Vec<crate::history::data::BranchId>,
-        PublicationPreparation,
+        CommitPhaseBacking<PublicationPreparation>,
         crate::snapshots::data::SnapshotHandle,
         Vec<crate::transactions::data::AspectEvaluationTrace>,
         Vec<preparation::PreparedAspectEmissionTrace>,
@@ -76,72 +77,81 @@ impl AssembledCommitExecution {
 pub(super) fn assemble_commit_artifacts(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    validated: SnapshotValidatedCommitExecution,
-) -> Result<AssembledCommitExecution, crate::transactions::data::TransactionCommitError> {
-    super::consult_stage(execution, super::CommitStage::Artifact)?;
-    let (
-        mut admitted,
-        selected_branch_state,
-        public_structural_summary,
-        mut working_state,
-        invariant_executions,
-        version_id,
-        effect,
-        created_entities,
-        created_relations,
-        mutation_identities,
-        history,
-        merge_parent_branches,
-        additional_diagnostics_entries,
-        merge_execution_authority,
-        schema_continuity,
-        deferred_diagnostic_artifacts,
-        source_interpretation,
-    ) = validated.into_parts();
-    let strategy_artifacts = admitted.strategy_artifacts().cloned();
-    let (_, _, merged_plan, _, commit_log, phase_timing) = admitted.phase_view().into_parts();
-    let publication = assemble_authoritative_publication_phase(
-        runtime,
-        commit_log,
-        phase_timing,
-        ArtifactAssemblyInput {
-            working_state: &mut working_state,
-            selected_branch_state: &selected_branch_state,
-            effect,
-            commit_reference: &history.commit_reference,
-            branch_id: &history.branch_id,
+    validated: CommitPhaseBacking<SnapshotValidatedCommitExecution>,
+) -> Result<
+    CommitPhaseBacking<AssembledCommitExecution>,
+    crate::transactions::data::TransactionCommitError,
+> {
+    // Producer temporaries retire before funding the retained successor,
+    // matching the former caller-side allocation boundary.
+    let result = {
+        let validated = validated.into_inner();
+        super::consult_stage(execution, super::CommitStage::Artifact)?;
+        let (
+            mut admitted,
+            selected_branch_state,
+            public_structural_summary,
+            mut working_state,
+            invariant_executions,
             version_id,
-            merge_parent_branches: &merge_parent_branches,
-            merge_base_commits: &history.merge_base_commits,
-            merged_plan,
-            record_allocations: mutation_identities.records.canonical(),
-            strategy_commit_artifacts: strategy_artifacts,
-            merge_execution_authority,
-            schema_continuity: &schema_continuity,
+            effect,
+            created_entities,
+            created_relations,
+            mutation_identities,
+            history,
+            merge_parent_branches,
             additional_diagnostics_entries,
+            merge_execution_authority,
+            schema_continuity,
             deferred_diagnostic_artifacts,
-        },
-        execution,
-    )?;
-    let aspect_evaluation_traces = publication.aspect_evaluation_traces().to_vec();
-    let aspect_emission_traces = publication.aspect_emission_traces().to_vec();
-    let publication_snapshot = publication.snapshot().clone();
-    Ok(AssembledCommitExecution {
-        source_interpretation,
-        admitted,
-        selected_branch_state,
-        public_structural_summary,
-        working_state,
-        invariant_executions,
-        version_id,
-        created_entities,
-        created_relations,
-        mutation_identities,
-        history,
-        merge_parent_branches,
-        publication,
-        publication_snapshot,
-        aspect_evaluation_traces,
-        aspect_emission_traces,
-    })
+            source_interpretation,
+        ) = validated.into_parts();
+        let strategy_artifacts = admitted.strategy_artifacts().cloned();
+        let (_, _, merged_plan, _, commit_log, phase_timing) = admitted.phase_view().into_parts();
+        let publication = assemble_authoritative_publication_phase(
+            runtime,
+            commit_log,
+            phase_timing,
+            ArtifactAssemblyInput {
+                working_state: &mut working_state,
+                selected_branch_state: &selected_branch_state,
+                effect,
+                commit_reference: &history.commit_reference,
+                branch_id: &history.branch_id,
+                version_id,
+                merge_parent_branches: &merge_parent_branches,
+                merge_base_commits: &history.merge_base_commits,
+                merged_plan,
+                record_allocations: mutation_identities.records.canonical(),
+                strategy_commit_artifacts: strategy_artifacts,
+                merge_execution_authority,
+                schema_continuity: &schema_continuity,
+                additional_diagnostics_entries,
+                deferred_diagnostic_artifacts,
+            },
+            execution,
+        )?;
+        let aspect_evaluation_traces = publication.value().aspect_evaluation_traces().to_vec();
+        let aspect_emission_traces = publication.value().aspect_emission_traces().to_vec();
+        let publication_snapshot = publication.value().snapshot().clone();
+        AssembledCommitExecution {
+            source_interpretation,
+            admitted,
+            selected_branch_state,
+            public_structural_summary,
+            working_state,
+            invariant_executions,
+            version_id,
+            created_entities,
+            created_relations,
+            mutation_identities,
+            history,
+            merge_parent_branches,
+            publication,
+            publication_snapshot,
+            aspect_evaluation_traces,
+            aspect_emission_traces,
+        }
+    };
+    CommitPhaseBacking::new(execution, result)
 }

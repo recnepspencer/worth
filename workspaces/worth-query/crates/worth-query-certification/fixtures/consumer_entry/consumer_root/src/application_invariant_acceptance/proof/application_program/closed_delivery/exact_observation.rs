@@ -131,7 +131,7 @@ fn one_caller_observation(
 ) {
     let common = request.retain_current_read().unwrap();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let adapter = authentication::admit(world.application.installed_schema());
     let principal = authentication::block_on(adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),
@@ -159,6 +159,9 @@ fn one_caller_observation(
     assert!(cancelled(
         closed_tree.deliver_current_at(&stopped.at(&common))
     ));
+    assert!(cancelled(
+        closed_tree.qualify_at(&stopped.at(&common)).map(|_| ())
+    ));
     // An observation retained on another branch is refused before installed meaning.
     let foreign_branch = |denied: Result<(), WorthQueryOperationDeliveryDenial>| {
         matches!(
@@ -174,6 +177,9 @@ fn one_caller_observation(
     assert!(foreign_branch(
         closed_tree.deliver_current_at(&request.at(foreign))
     ));
+    assert!(foreign_branch(
+        closed_tree.qualify_at(&request.at(foreign)).map(|_| ())
+    ));
     // Refusal left both carriers intact: they deliver at the common observation.
     let pinned = request.at(&common);
     closed_fixed
@@ -183,6 +189,10 @@ fn one_caller_observation(
     closed_tree
         .deliver_current_at(&pinned)
         .expect("selected typed root and full tree at the common observation");
+    let qualified = closed_tree
+        .qualify_at(&pinned)
+        .expect("refusals preserve the same closed tree");
+    assert_eq!(qualified.output_commit(), common.selected_commit());
     let gate = worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test();
     assert_eq!(
         gate.source_currentness_visits, 0,

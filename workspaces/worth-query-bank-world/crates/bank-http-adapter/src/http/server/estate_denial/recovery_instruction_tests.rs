@@ -122,8 +122,10 @@ const ATTEMPTS: [(Attempt, Denial, Next); 9] = [
 /// table.
 fn every_kind() -> Vec<(Kind, Denial, Next)> {
     let listed = |kind: Kind| match kind {
-        Kind::CompletionExecutionRequest(_)
+        Kind::AdmissionAuthorization(_)
+        | Kind::CompletionExecutionRequest(_)
         | Kind::RecoveryNotAdmitted
+        | Kind::StaleIncarnation
         | Kind::RecoveryAlreadyMinted
         | Kind::SchemaMismatch
         | Kind::BranchMismatch
@@ -167,11 +169,17 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
     let settling = (Denial::Unavailable, Next::Retry);
     let server_fault = (Denial::InternalDenied, Next::ContactOperator);
     [
+        (Kind::AdmissionAuthorization(bank_server::BankAuthorizationDenialKind::InputNotAdmitted), server_fault),
+        (Kind::AdmissionAuthorization(bank_server::BankAuthorizationDenialKind::Cancelled), (Denial::Cancelled, Next::Retry)),
+        (Kind::AdmissionAuthorization(bank_server::BankAuthorizationDenialKind::DeadlineExceeded), (Denial::DeadlineExceeded, Next::Retry)),
+        (Kind::AdmissionAuthorization(bank_server::BankAuthorizationDenialKind::ExpiredAuthentication), (Denial::Unauthenticated, Next::Authenticate)),
+        (Kind::AdmissionAuthorization(bank_server::BankAuthorizationDenialKind::PermissionDenied), (Denial::PermissionDenied, Next::None)),
         (Kind::RecoveryNotAdmitted, refused),
         (Kind::CompensationNotAdmitted, refused),
         (Kind::ReconciliationNotAdmitted, refused),
         (Kind::ForeignPrincipal, refused),
         (Kind::RecoveryAlreadyMinted, moved_on),
+        (Kind::StaleIncarnation, moved_on),
         (Kind::AlreadyTerminal, moved_on),
         (Kind::Expired, unrecoverable),
         (Kind::SchemaMismatch, unrecoverable),
@@ -205,6 +213,8 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
             kind: worth_query_host::facade::runtime::ExecutionAllocationDenialClass::Physical(worth_query_host::facade::runtime::ExecutionPhysicalAllocationDenialKind::Allocator),
             requested_payload_bytes: Some(17),
         }, settling),
+        (Kind::CompletionExecutionDenied { stage: worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage::ProviderCommit, kind: worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::ContentInconsistency }, server_fault),
+        (Kind::CompletionExecutionDenied { stage: worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage::ProviderCommit, kind: worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::Content(worth_query_host::facade::primary_graph::RelationalContentRejection::SizeLimit { observed: 9, maximum: 3 }) }, (Denial::ResourceExhausted, Next::NarrowRequest)),
         (Kind::CompletionStagingCardinalityOverflow, settling),
         (Kind::CompletionInputDirectoryAllocationDenied { requested_batches: 3 }, settling),
         (Kind::TerminalIndexUnavailable, settling),

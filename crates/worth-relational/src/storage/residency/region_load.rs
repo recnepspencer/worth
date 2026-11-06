@@ -151,7 +151,7 @@ pub(super) fn load_full(
         partition_id: cold.partition_id,
         schema_carrier_digest: cold.schema_carrier_digest,
         row_index: 0,
-        kind_commitment: cold.kind_authority.history,
+        kind_commitment: *cold.kind_authority.history.bytes(),
     };
     let mut folder = super::history_fold::HistoryFolder::new(execution, cold.partition_id, limit);
     let history = folder.read(source.as_ref(), &cold.history_members, &reference)?;
@@ -283,7 +283,7 @@ fn install_history_prefixes<K: crate::storage::substrate::RecordKind>(
             history_opening: StorageAllocation::from_reserved(
                 RecordHistoryOpening {
                     frontier: opening,
-                    kind_commitment: cold.kind_authority.history,
+                    kind_commitment: *cold.kind_authority.history.bytes(),
                     historical_relations: claims,
                 },
                 memory.into_memory(),
@@ -347,6 +347,7 @@ fn verify_buckets(
 pub(in crate::storage::residency) fn at_region(cause: Failure, partition: PartitionId) -> Failure {
     match cause {
         Failure::Request(cause) => Failure::Request(cause),
+        Failure::Content(cause) => Failure::Content(cause),
         Failure::StorageUnavailable(mut cause) => {
             cause.subject = RelationalStorageSubject::Region(partition);
             cause.into()

@@ -44,8 +44,8 @@ where
         let operation = admission.operation().to_owned();
         let product = admission
             .graph_work()
-            .mutation_product()
-            .map(crate::basis::WorthQueryProductBranchLease::retained_clone)
+            .authorization_product()
+            .map(crate::basis::WorthQueryProductObservationLease::retained_clone)
             .ok_or_else(|| WorthQueryOperationAuthorizationDenial::inconsistent(&operation))?;
         let security = self
             .admit_product_security_basis(execution, &product)
@@ -70,7 +70,7 @@ where
                     authorization,
                     runtime,
                     snapshot,
-                    self.authorization.bridge(),
+                    self.runtime.authorization.bridge(),
                 )
             })
     }
@@ -202,7 +202,13 @@ where
         let product = admission.graph_work().mutation_product().ok_or_else(|| {
             WorthQueryOperationAuthorizationDenial::inconsistent(admission.operation())
         })?;
-        self.readmit_commit_basis(execution, basis, product)?;
+        let security_product = admission
+            .graph_work()
+            .authorization_product()
+            .ok_or_else(|| {
+                WorthQueryOperationAuthorizationDenial::inconsistent(admission.operation())
+            })?;
+        self.readmit_commit_basis(execution, basis, product, security_product)?;
         if !coordination.admits(product.observation()) {
             return Err(WorthQueryOperationAuthorizationDenial::inconsistent(
                 admission.operation(),
@@ -219,12 +225,13 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &WorthQueryCommitAuthorizationBasis,
         product: &crate::basis::WorthQueryProductBranchLease,
+        security_product: &crate::basis::WorthQueryProductObservationLease,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         match basis {
             WorthQueryCommitAuthorizationBasis::Observed {
                 authorization: observed,
                 ..
-            } => self.readmit_observed_commit_basis(execution, observed, product),
+            } => self.readmit_observed_commit_basis(execution, observed, security_product),
             WorthQueryCommitAuthorizationBasis::Capability {
                 authorization: capability,
                 ..
@@ -236,7 +243,7 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         observed: &WorthQueryObservedCommitBasis,
-        product: &crate::basis::WorthQueryProductBranchLease,
+        product: &crate::basis::WorthQueryProductObservationLease,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         let security = self
             .admit_product_security_basis(execution, product)
@@ -257,7 +264,7 @@ where
                     observed,
                     runtime,
                     snapshot,
-                    self.authorization.bridge(),
+                    self.runtime.authorization.bridge(),
                 )
             })
     }
@@ -296,7 +303,12 @@ where
                     })?;
                 let decision_current = capability
                     .decision()
-                    .remains_current_in(execution, runtime, snapshot, self.authorization.bridge())
+                    .remains_current_in(
+                        execution,
+                        runtime,
+                        snapshot,
+                        self.runtime.authorization.bridge(),
+                    )
                     .map_err(|cause| {
                         crate::domain_computation::authorization::denial::relational_read_denial(
                             cause,
@@ -313,7 +325,7 @@ where
                             session: capability.decision().session_identity(),
                             relational: runtime,
                             snapshot,
-                            bridge: self.authorization.bridge(),
+                            bridge: self.runtime.authorization.bridge(),
                             installed,
                             request: capability.request(),
                             sample: &sample,

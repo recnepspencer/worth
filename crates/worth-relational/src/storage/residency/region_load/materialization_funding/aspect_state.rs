@@ -100,7 +100,7 @@ fn scalar(raw: Raw<'_>, request: &ExecutionRequest<'_, '_>) -> Result<Quote> {
                 bytes = vector::<u8>(n).map_err(to_wire_stop)?;
             }
             "Null" | "Bool" | "Int8" | "Int16" | "Int32" | "Int64" | "UInt8" | "UInt16"
-            | "UInt32" | "UInt64" | "Float32" | "Float64" | "Bytes" | "Uuid" | "Date" | "Time"
+            | "UInt32" | "UInt64" | "Float32" | "Float64" | "Uuid" | "Date" | "Time"
             | "Timestamp" | "TimestampTz" | "EntityRef" | "ContentRef" => {}
             _ => {
                 return Err(

@@ -44,4 +44,3 @@ Canonical originals normalize runtime identity to their reserved canonical
 frame; the third review explicitly did not claim live-runtime nondeterminism.
 The corrected issue is the runtime-affine representation in the newly declared
 image, including nested occurrences. No landed canonical format was changed.
-

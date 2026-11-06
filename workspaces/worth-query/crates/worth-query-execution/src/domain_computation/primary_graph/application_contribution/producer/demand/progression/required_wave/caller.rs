@@ -7,8 +7,7 @@ use super::super::WorthQueryProducerOutputFamily;
 use super::drive::drive_required_wave;
 use super::queued::QueuedRequiredRoots;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
-use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
+use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 use crate::domain_computation::primary_graph::provider::FactlessCurrentness;
@@ -29,7 +28,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
-    commit_authority: &WorthQueryProducerCommitAuthority,
+    commit_authority: &ProducerInvocationAuthority<'_>,
     performed: &std::cell::RefCell<performed::PerformedMembers>,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -44,7 +43,9 @@ where
         return Ok(None);
     };
     // A restored output takes its mode here, before any wave can select it.
-    wave.anchor_ready.completion().advanced_in(commit_authority);
+    wave.anchor_ready
+        .completion()
+        .advanced_in(commit_authority.mode());
     // An Idle Ready is not itself a dirty required target. Genesis and full
     // verification cases retain the established output verifier once the
     // outputs they consumed are current. An authentic
@@ -52,6 +53,7 @@ where
     // only Dirty/Pending marks can extend the dependency closure.
 
     let candidate = runtime
+        .runtime
         .primary_provider
         .graph
         .output_lineage
@@ -73,6 +75,7 @@ where
     };
 
     let posture = runtime
+        .runtime
         .primary_provider
         .graph
         .source_owner
@@ -91,7 +94,7 @@ where
         // that changed refreshes on this wave first, whether or not anything
         // else demands it.
         let snapshot = wave.shared.selected().application_basis().snapshot_handle();
-        let graph = &runtime.primary_provider.graph;
+        let graph = &runtime.runtime.primary_provider.graph;
         let pending = graph.with_runtime(execution, |relational| {
             candidate.pending_consumed_output(
                 execution,
@@ -108,12 +111,15 @@ where
         // recompute would meet the same comparison, and its acceptance is
         // denied instead.
         let observation = wave.shared.selected().product().observation();
-        let superseded_without_facts = matches!(
-            &wave.anchor_ready.completion().authority,
-            Authority::Committed(receipt)
-                if receipt.currentness_without_facts_at(observation)
+        let superseded_without_facts = wave
+            .anchor_ready
+            .completion()
+            .authority
+            .publication_view()
+            .is_some_and(|publication| {
+                publication.currentness_without_facts_at(observation)
                     == Some(FactlessCurrentness::Superseded)
-        );
+            });
         match pending {
             Err(
                 stop @ (ConsumedOutputVerificationStop::SourceQueryAuthorization(_)
@@ -178,7 +184,7 @@ where
         &mut frame_custody,
         performed,
     );
-    frame_custody.hold_unfinished(&runtime.output_demands);
+    frame_custody.hold_unfinished(&runtime.runtime.output_demands);
     queue.conclude(result)
 }
 
@@ -219,7 +225,7 @@ where
     match demand
         .required_continuations
         .promote_caller_successor::<Family>(
-            &runtime.output_demands,
+            &runtime.runtime.output_demands,
             anchor_ready,
             selected,
             continues_caller,
@@ -248,6 +254,7 @@ where
         .as_ref()
         .expect("Current caller retains its Interest");
     runtime
+        .runtime
         .output_demands
         .finish_settlement_admitted(interest, selected)?;
     drop(demand.required_continuations.take_all());

@@ -1,4 +1,6 @@
 use std::{marker::PhantomData, sync::Arc};
+mod view;
+pub use view::InstalledQueryView;
 
 use super::{
     binding::WorthQueryCompiledApplicationQuery, WorthQueryApplicationCanonicalArtifact,
@@ -99,7 +101,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         Arc::ptr_eq(&self.compiled, actual)
     }
     pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
-        self.compiled.binding_identity()
+        self.installed_view().binding_identity()
     }
     pub fn identity(&self) -> &WorthQueryInstalledApplicationQueryIdentity {
         self.compiled.identity()
@@ -166,7 +168,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         self.compiled.authorization()
     }
     pub fn graph_obligations(&self) -> WorthQueryInstalledGraphObligationInspection<'_> {
-        self.compiled.graph_obligations()
+        self.installed_view().graph_obligations()
     }
     #[doc(hidden)]
     pub fn retain_graph_obligations_for_admission(&self) -> WorthQueryInstalledGraphObligationSet {

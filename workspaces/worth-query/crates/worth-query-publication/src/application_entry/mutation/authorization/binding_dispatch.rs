@@ -12,12 +12,12 @@ pub trait WorthQueryBindingAdmission<
     Binding: ApplicationMutationBinding<Schema>,
 >: ApplicationMutationAdmissionMode
 {
-    fn assess_selected<Intent, SourcePreparation>(
+    fn admit_for_assessment_selected<Intent, SourcePreparation>(
         phase: &AdvancementPhase<'_>,
         request: &Request<'_, '_, '_, '_, Schema, Intent, SourcePreparation>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-    ) -> Result<(), WorthQueryApplicationRequestMutationDenial>
+    ) -> Result<AdmittedMutation<Schema, Binding>, WorthQueryApplicationRequestMutationDenial>
     where
         Intent: ApplicationMutationIntent<Schema, Binding = Binding>,
         Binding::ScopeBinding:
@@ -38,12 +38,12 @@ pub trait WorthQueryBindingAdmission<
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     WorthQueryBindingAdmission<Schema, Binding> for ApplicationConventionalAdmission
 {
-    fn assess_selected<Intent, SourcePreparation>(
+    fn admit_for_assessment_selected<Intent, SourcePreparation>(
         phase: &AdvancementPhase<'_>,
         request: &Request<'_, '_, '_, '_, Schema, Intent, SourcePreparation>,
         _input: ApplicationEncodedInput<Binding::InputBinding>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-    ) -> Result<(), WorthQueryApplicationRequestMutationDenial>
+    ) -> Result<AdmittedMutation<Schema, Binding>, WorthQueryApplicationRequestMutationDenial>
     where
         Intent: ApplicationMutationIntent<Schema, Binding = Binding>,
         Binding::ScopeBinding:
@@ -57,7 +57,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 .unwrap_or(&request.request.preconditions),
             selected,
         )
-        .map(|_| ())
+        .map(|authorized| authorized.admission)
     }
 
     fn prepare_selected<Intent, SourcePreparation>(
@@ -84,12 +84,12 @@ where
     Binding::Input: Clone
         + ApplicationCapabilityRequest<Schema, Capability, Scope = MutationScope<Schema, Binding>>,
 {
-    fn assess_selected<Intent, SourcePreparation>(
+    fn admit_for_assessment_selected<Intent, SourcePreparation>(
         phase: &AdvancementPhase<'_>,
         request: &Request<'_, '_, '_, '_, Schema, Intent, SourcePreparation>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-    ) -> Result<(), WorthQueryApplicationRequestMutationDenial>
+    ) -> Result<AdmittedMutation<Schema, Binding>, WorthQueryApplicationRequestMutationDenial>
     where
         Intent: ApplicationMutationIntent<Schema, Binding = Binding>,
         Binding::ScopeBinding:
@@ -105,7 +105,7 @@ where
             selected,
             request.workflow_actor_context.as_ref(),
         )
-        .map(|_| ())
+        .map(|authorized| authorized.admission)
     }
 
     fn prepare_selected<Intent, SourcePreparation>(

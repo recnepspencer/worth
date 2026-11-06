@@ -11,7 +11,7 @@ use crate::schema::data::{
 /// the runtime's final schema.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct SchemaContinuityAuthorityInput {
-    target_schema_registry: Option<std::sync::Arc<crate::schema::data::RelationalSchemaRegistry>>,
+    target_schema_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
     target_schema_version: SchemaVersionId,
     target_schema_authority: SchemaAuthoritySnapshot,
     target_schema_basis: Option<(SchemaId, SchemaVersionId)>,
@@ -26,14 +26,16 @@ impl SchemaContinuityAuthorityInput {
         descriptor_canonical_basis_version: DescriptorCanonicalBasisVersion,
     ) -> Self {
         Self::from_shared_registry(
-            std::sync::Arc::new(target_schema_registry),
+            crate::branch::RetainedRelationalSchemaRegistry::from_configuration(
+                std::sync::Arc::new(target_schema_registry),
+            ),
             descriptor_semantics_version,
             descriptor_canonical_basis_version,
         )
     }
 
     pub(crate) fn from_shared_registry(
-        target_schema_registry: std::sync::Arc<crate::schema::data::RelationalSchemaRegistry>,
+        target_schema_registry: crate::branch::RetainedRelationalSchemaRegistry,
         descriptor_semantics_version: DescriptorSemanticsVersion,
         descriptor_canonical_basis_version: DescriptorCanonicalBasisVersion,
     ) -> Self {
@@ -73,7 +75,7 @@ impl SchemaContinuityAuthorityInput {
 
     pub(crate) fn target_schema_registry(
         &self,
-    ) -> Option<&std::sync::Arc<crate::schema::data::RelationalSchemaRegistry>> {
+    ) -> Option<&crate::branch::RetainedRelationalSchemaRegistry> {
         self.target_schema_registry.as_ref()
     }
 

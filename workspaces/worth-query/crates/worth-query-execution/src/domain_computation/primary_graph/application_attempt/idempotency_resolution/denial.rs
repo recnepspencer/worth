@@ -9,6 +9,8 @@ use crate::domain_computation::primary_graph::{
 /// nothing took effect.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
+    /// The original owner effect was released; this retry did not execute.
+    OriginalEffectReleased,
     /// The same subject is being prepared before an authentic World handle exists.
     PreparationBusy,
     /// Execution refused to finish the pending publication used by this read.
@@ -55,6 +57,13 @@ pub struct WorthQueryApplicationIdempotencyResolutionDenial {
 }
 
 impl WorthQueryApplicationIdempotencyResolutionDenial {
+    pub const fn original_effect_released() -> Self {
+        Self {
+            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::OriginalEffectReleased,
+            authorization: None,
+        }
+    }
+
     pub const fn kind(&self) -> WorthQueryApplicationIdempotencyResolutionDenialKind {
         self.kind
     }

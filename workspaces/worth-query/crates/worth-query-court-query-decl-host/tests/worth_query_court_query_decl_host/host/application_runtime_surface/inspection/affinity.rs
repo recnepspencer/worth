@@ -15,7 +15,7 @@ use worth_query_host::facade::{
 fn original_observation_refuses_another_genuine_binding_and_runtime() {
     let application = installed_application();
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate(application.installed_schema(), &scope);
     let request = application.request(&principal, &scope);
     let result = request

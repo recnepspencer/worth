@@ -21,7 +21,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationObservedFact as Fact,
 };
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFieldFixture;
+use crate::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFieldFixture;
 
 const KIND: KindId = KindId(7);
 const INDEX: DerivedIndexId = DerivedIndexId(8);

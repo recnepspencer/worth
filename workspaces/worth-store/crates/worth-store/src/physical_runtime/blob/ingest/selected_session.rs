@@ -70,7 +70,7 @@ pub(in crate::physical_runtime::blob) fn read_authenticated_declaration(
     }
     let digest: [u8; 32] = Sha256::digest(bytes).into();
     if declaration.session() != token.session
-        || digest != token.declaration_digest
+        || digest != *token.declaration_digest.bytes()
         || declaration.chunk_size() != token.chunk_size
         || declaration.declared_bytes() != token.total_bytes
         || declaration.max_checkpoint_sequence() != token.max_checkpoint_sequence
@@ -94,7 +94,7 @@ pub(in crate::physical_runtime::blob) fn selected_abandonment_matches(
     if abandoned.store() != token.store
         || abandoned.session() != token.session
         || abandoned.declaration_record() != token.declaration_record
-        || abandoned.declaration_digest() != token.declaration_digest
+        || abandoned.declaration_digest() != *token.declaration_digest.bytes()
     {
         return false;
     }

@@ -1,4 +1,14 @@
 //! Public API boundary for `worth-relational`.
+pub mod content {
+    pub use crate::content::{
+        RelationalContentAttachments, RelationalContentCodec, RelationalContentControl,
+        RelationalContentDenial, RelationalContentFieldBinding, RelationalContentFormat,
+        RelationalContentFormatDeclaration, RelationalContentFormatRegistry,
+        RelationalContentFrame, RelationalContentReadClosure, RelationalContentRejection,
+        RelationalContentSchemaSnapshot, RelationalContentSink, MAXIMUM_CONTENT_FRAME_BYTES,
+        MAXIMUM_STAGED_CONTENT_BYTES,
+    };
+}
 #[path = "facade/authorization.rs"]
 pub mod authorization;
 #[path = "facade/branch.rs"]
@@ -80,15 +90,15 @@ pub mod history {
         AspectHistoryCommitSpan, AspectHistoryDigest, AspectHistoryEntry,
         AspectHistoryLineageEventSpan, AspectHistoryOrigin, AspectHistoryQueryResult,
         AspectHistoryResolutionTrace, AspectResolutionContext, BranchCreateError,
-        BranchCreateErrorClass, BranchId, CanonicalCommitEnvelope, CommitId,
-        CommittedVersionSummary, HistoryAspectQueryTarget, HistoryDriftClass,
-        HistoryRetentionClass, HistoryShapeClassification, LineageAspectHistory,
-        LineageAspectHistoryQueryResult, LineageAspectResolutionDigest, MergeBasisAncestors,
-        MergeConflictRecord, MergeInspection, OrderedParentList, RelationalCommitReceipt,
-        RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
-        RelationalDescriptiveTouchPrecision, RelationalMergeBranchBasisDenial,
-        RelationalReplayRetentionDenial, RelationalTouchAdjacencyDirection,
-        SharedCanonicalCommitEnvelope, VersionGraphPolicy,
+        BranchCreateErrorClass, BranchId, CanonicalCommitEnvelope,
+        CanonicalRetainedEntitySelection, CommitId, CommittedVersionSummary,
+        HistoryAspectQueryTarget, HistoryDriftClass, HistoryRetentionClass,
+        HistoryShapeClassification, LineageAspectHistory, LineageAspectHistoryQueryResult,
+        LineageAspectResolutionDigest, MergeBasisAncestors, MergeConflictRecord, MergeInspection,
+        OrderedParentList, RelationalCommitReceipt, RelationalDescriptiveTouch,
+        RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision,
+        RelationalMergeBranchBasisDenial, RelationalReplayRetentionDenial,
+        RelationalTouchAdjacencyDirection, SharedCanonicalCommitEnvelope, VersionGraphPolicy,
     };
     pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{
@@ -110,6 +120,7 @@ pub mod history {
         RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,
         RelationalCommitCatalogEntry, RelationalCommitIdentity, RelationalCommitParentage,
         RelationalCommitParentageDenial, RelationalCommitRootDescriptor,
+        RelationalRetainedSelectionArtifactDenial,
     };
 }
 
@@ -209,24 +220,27 @@ pub mod runtime {
     #[cfg(test)]
     pub use crate::runtime::HarnessAuditMode;
     pub use crate::runtime::{
-        custom_invariant_inventory_digest, AdjacencyStructuralRevision,
-        AdjacencyStructuralRevisionDenial, BoundedFrontierReadStop,
+        custom_invariant_inventory_digest, home_program_transition_body_digest,
+        AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, BoundedFrontierReadStop,
         CompiledArtifactAuthorityStatus, CompiledArtifactError, CompiledExecutionArtifact,
         ComplexityContract, ComplexityStatus, EntityProjectionRecord, EntityRecordProjection,
         FreshRelationalInitialSchemaInstallation, InvariantAccess, PinnedStructuralWalk,
         PinnedStructuralWalkDenial, PinnedStructuralWalkDenialKind, PinnedStructuralWalkReads,
         PinnedStructuralWalkScope, PinnedStructuralWalkVisit, PositionedRelationalSnapshot,
-        QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial,
-        RecoveredCheckpointProgramActivationUpdate, RelationProjectionRecord,
-        RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencySupportDenial,
-        RelationalAdjacencyVisit, RelationalAspectPresenceSupportDenial,
-        RelationalBorrowedRecordReadDenial, RelationalCandidateInputCounters,
-        RelationalEntityMetadata, RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
-        RelationalFieldSupportComparisonDenial, RelationalInitialSchemaInstallation,
-        RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
-        RelationalInitialSchemaInstallationReceipt, RelationalPatchPositionReservationCounters,
-        RelationalPhase4ReferenceCostCounters, RelationalPinnedEntityMetadata,
-        RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
+        PreparedRelationalHomeProgramContracts, QueryLeasedReadOutcome, QueryReadExecutionStop,
+        QueryReadPacketDenial, RecoveredCheckpointProgramActivationUpdate,
+        RelationProjectionRecord, RelationRecordProjection, RelationalAdjacencyDirection,
+        RelationalAdjacencySupportDenial, RelationalAdjacencyVisit,
+        RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
+        RelationalCandidateInputCounters, RelationalEntityMetadata,
+        RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
+        RelationalFieldSupportComparisonDenial, RelationalHomeProgramBodyDenial,
+        RelationalHomeProgramCatalogReadmissionSource, RelationalHomeProgramCatalogReceipt,
+        RelationalHomeProgramContractDenial, RelationalHomeProgramStepContracts,
+        RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
+        RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
+        RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
+        RelationalPinnedEntityMetadata, RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
         RelationalProjectedFieldObservation, RelationalRelationMetadata, RelationalReplayRecord,
         RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalRuntime,
         RelationalRuntimeConfig, RelationalRuntimeConstructionDenial, RelationalRuntimeForkDenial,
@@ -285,8 +299,8 @@ pub mod publication {
         SubscriberStreamFailureClass,
     };
     pub use crate::publication::data::{
-        PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot, PublicationError,
-        PublicationObservationSnapshot, PublicationSettlementRepairError,
+        AuthoredRetirementRefusal, PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot,
+        PublicationError, PublicationObservationSnapshot, PublicationSettlementRepairError,
     };
     pub use crate::publication::patch::data::{
         PatchDetail, PatchFragmentBudget, PatchOrdering, PatchPublicationMode, PatchStreamBatch,
@@ -354,6 +368,7 @@ pub mod storage {
 }
 
 pub mod symbols {
+    pub use crate::runtime::RelationalSymbolTableForTest;
     pub use crate::symbols::data::RelationalSymbolExhausted;
     pub use crate::symbols::data::{
         ClientKey, ClientKeySymbolPolicy, InternedString, RelationalFieldText,

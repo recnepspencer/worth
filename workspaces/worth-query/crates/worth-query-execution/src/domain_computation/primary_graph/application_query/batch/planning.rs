@@ -48,15 +48,12 @@ struct PlannedSlots {
     roots: usize,
 }
 
-pub(in crate::domain_computation::primary_graph) struct PlannedBatchItem {
+pub struct PlannedBatchItem {
     plan: Arc<Mutex<InstalledBatchPlan>>,
 }
 
 impl PlannedBatchItem {
-    pub(in crate::domain_computation::primary_graph::application_query) fn belongs_to(
-        &self,
-        batch: &WorthQueryApplicationQueryBatchAdmission,
-    ) -> bool {
+    pub fn belongs_to(&self, batch: &WorthQueryApplicationQueryBatchAdmission) -> bool {
         Arc::ptr_eq(&self.plan, &batch.plan)
     }
 }
@@ -260,5 +257,4 @@ impl WorthQueryApplicationQueryBatchAdmission {
     }
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

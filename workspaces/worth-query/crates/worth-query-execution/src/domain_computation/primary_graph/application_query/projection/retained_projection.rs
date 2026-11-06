@@ -12,15 +12,13 @@ use super::super::{
     },
     read_execution::RawOneShotRows,
 };
-mod body;
+pub(crate) mod body;
 mod comparison;
 pub(in crate::domain_computation::primary_graph) use body::OriginalProjection;
-pub(in crate::domain_computation::primary_graph) use comparison::{
-    compare_original_projections, ProjectionComparisonDenial,
-};
+pub(in crate::domain_computation::primary_graph) use comparison::compare_original_projections;
 pub(in crate::domain_computation::primary_graph::application_query) mod storage;
 
-pub(in crate::domain_computation::primary_graph::application_query) fn retain(
+pub fn retain(
     execution: &ExecutionRequest<'_, '_>,
     raw: &mut RawOneShotRows,
     graph: &WorthQueryInstalledGraphReadContract,
@@ -90,9 +88,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn retain(
         })
 }
 
-#[cfg(test)]
-mod tests;
-
 mod materialization;
 pub(in crate::domain_computation::primary_graph) use materialization::materialize_original_projection;
 pub use materialization::{
@@ -100,3 +95,5 @@ pub use materialization::{
     WorthQueryMaterializedQueryProjection, WorthQueryMaterializedQueryRelation,
     WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
 };
+
+pub use comparison::ProjectionComparisonDenial;

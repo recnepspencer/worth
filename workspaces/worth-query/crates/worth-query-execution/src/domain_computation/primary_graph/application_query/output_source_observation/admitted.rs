@@ -14,7 +14,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         B: ApplicationQueryBinding<Schema>,
         SourceValue<Schema, B>: WorthQueryApplicationProjection<Schema, B::Query>,
     {
-        if plan.query.read_graph().managed_index_selection().is_some() {
+        let result = if plan.query.read_graph().managed_index_selection().is_some() {
             super::managed_index::read_source_admitted::<Schema, B>(execution, self, plan, native)
         } else {
             self.application
@@ -22,7 +22,10 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     execution, plan, native,
                 )
                 .map_err(SourceQueryObservationStop::Read)
-        }
+        };
+        let completed = result.map_err(|stop| self.record_history_refusal(stop))?;
+        self.confirm_control(execution, native, completed)
+            .map_err(|stop| self.record_history_refusal(stop))
     }
     /// Only the completed public read crosses into producer re-admission.
     pub(in crate::domain_computation::primary_graph) fn read_admitted_result<B>(

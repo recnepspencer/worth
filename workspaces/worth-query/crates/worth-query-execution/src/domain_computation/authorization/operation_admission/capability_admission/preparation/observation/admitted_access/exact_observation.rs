@@ -51,6 +51,23 @@ pub(super) fn with_exact_observation<Schema, Capability, Operation, Input, Outpu
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     observe: impl FnOnce(&WorthQueryExactCapabilityObservation<'_, Schema>) -> Output,
+) -> Result<Option<Output>, WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+    Input: worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<
+        Schema,
+        Capability,
+    >,
+{
+    access.refuse_stale_incarnation(runtime)?;
+    Ok(with_bound_observation(execution, access, runtime, observe))
+}
+
+fn with_bound_observation<Schema, Capability, Operation, Input, Output>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    observe: impl FnOnce(&WorthQueryExactCapabilityObservation<'_, Schema>) -> Output,
 ) -> Option<Output>
 where
     Schema: ApplicationSchema,
@@ -67,6 +84,7 @@ where
         return None;
     }
     let installed = runtime
+        .runtime
         .authorization
         .capability_plan_by_identity(&access.authorization.installed_capability_identity())?;
     if installed.capability_authority_identity().as_ref()
@@ -74,8 +92,17 @@ where
     {
         return None;
     }
-    let snapshot = access.graph_work.mutation_snapshot()?;
-    let handle = access.graph_work.mutation_handle()?;
+    let product = access.read_product(runtime)?;
+    let lease =
+        crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease::acquire(
+            execution,
+            graph.integration_handle(),
+            graph.retain_layout(),
+            product,
+        )
+        .ok()?;
+    let snapshot = lease.snapshot();
+    let handle = lease.handle();
     let resolution = graph.retain_entity_resolution_context();
     Some(handle.with_runtime(execution, |relational| {
         observe(&WorthQueryExactCapabilityObservation {
@@ -84,7 +111,7 @@ where
             snapshot,
             resolution,
             layout: graph.layout(),
-            session: access.graph_work.identity(),
+            session: access.graph_work_session,
             principal: access.principal_entity_id,
         })
     }))
@@ -106,6 +133,7 @@ where
         WorthQueryOperationAuthorizationDenial,
     > {
         let owned = self
+            .runtime
             .runtime
             .authorization
             .capability_plan_by_identity(&request.capability_identity())
@@ -197,7 +225,7 @@ impl<Schema> WorthQueryExactCapabilityObservationContext<'_, Schema> {
     pub(in crate::domain_computation::authorization) fn bridge(
         &self,
     ) -> &worth_runtime_bridge::facade::BridgeAuthorizationRuntime {
-        self.observation.runtime.authorization.bridge()
+        self.observation.runtime.runtime.authorization.bridge()
     }
     pub(in crate::domain_computation::authorization) const fn installed(&self) -> &crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan{
         self.installed

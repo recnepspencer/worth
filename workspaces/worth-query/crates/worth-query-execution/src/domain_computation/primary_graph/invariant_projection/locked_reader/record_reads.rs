@@ -3,9 +3,6 @@ use super::*;
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
-#[cfg(test)]
-mod tests;
-
 impl<Schema> WorthQueryApplicationInvariantProjectionReader<'_, Schema>
 where
     Schema: ApplicationSchema,

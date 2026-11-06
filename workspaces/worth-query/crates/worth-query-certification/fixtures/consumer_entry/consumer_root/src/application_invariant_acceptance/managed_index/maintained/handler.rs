@@ -1,6 +1,6 @@
 //! Both original decision work and candidate construction use ordinary public receivers.
 use super::{mutation, query, schema::*};
-use worth_query_host::facade::{application_entry::*, primary_graph::*};
+use worth_query_host::facade::primary_graph::*;
 #[derive(Clone, Copy)]
 pub(super) enum DecisionRead {
     Declared,

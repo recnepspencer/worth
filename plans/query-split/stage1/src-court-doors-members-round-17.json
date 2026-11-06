@@ -1,0 +1,27 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity.source_partition",
+  "domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint.aspects",
+  "domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider.graph"
+ ],
+ "method_doors": [
+  "basis::product_branch::observation::WorthQueryProductBranchLease::observation",
+  "basis::product_branch::observation::WorthQueryProductBranchLease::publication_binding",
+  "basis::product_branch::observation::WorthQueryProductBranchLease::relational_basis",
+  "domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::committed_changes::WorthQueryApplicationCommittedChanges::shares_original",
+  "domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::native_witness_roles",
+  "domain_computation::primary_graph::entity_resolution::retained_selector::WorthQueryObservedScopeSelector::subject",
+  "domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity::address",
+  "domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity::source",
+  "domain_computation::primary_graph::provider::completed_observation::WorthQueryPrimaryGraphProvider::observe_completed_application",
+  "domain_computation::primary_graph::schema_layout::field_coordinate::InstalledFieldCoordinate<'_>::entity_kind",
+  "domain_computation::primary_graph::schema_layout::field_coordinate::InstalledFieldCoordinate<'_>::same_field"
+ ],
+ "unplaced": [
+  "associated function `of` is private",
+  "method `admit_required_output_demand` is private",
+  "method `decision_field_with_predecode_admission` is private"
+ ]
+}

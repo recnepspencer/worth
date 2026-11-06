@@ -9,21 +9,18 @@ struct QueueState {
     len: usize,
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct RequiredWorkQueue
-{
+pub struct RequiredWorkQueue {
     state: Mutex<QueueState>,
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) enum RequiredWorkPop
-{
+pub enum RequiredWorkPop {
     Empty,
     Stale,
     Claimed(RequiredWorkClaim),
 }
 
 impl RequiredWorkQueue {
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn new(
-    ) -> Self {
+    pub fn new() -> Self {
         Self {
             state: Mutex::new(QueueState::default()),
         }
@@ -67,9 +64,7 @@ impl RequiredWorkQueue {
             .expect("funded required queue is finite");
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn pop(
-        &self,
-    ) -> RequiredWorkPop {
+    pub fn pop(&self) -> RequiredWorkPop {
         let mut queue = self
             .state
             .lock()
@@ -104,6 +99,12 @@ impl RequiredWorkQueue {
     }
 }
 
+impl Default for RequiredWorkQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drop for RequiredWorkQueue {
     fn drop(&mut self) {
         let (mut head, tail) = {
@@ -132,7 +133,8 @@ impl<Schema>
     /// subsequent readiness evaluation refuses the exhausted runtime counter.
     #[doc(hidden)]
     pub fn leave_one_readiness_attempt_for_test(&self) {
-        self.next_output_producer_attempt
+        self.runtime
+            .next_output_producer_attempt
             .store(u64::MAX - 1, std::sync::atomic::Ordering::Relaxed);
     }
 
@@ -146,6 +148,7 @@ impl<Schema>
         Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>,
     )> {
         let state = self
+            .runtime
             .output_demands
             .state
             .lock()
@@ -161,6 +164,7 @@ impl<Schema>
     #[doc(hidden)]
     pub fn queued_required_work_for_test(&self) -> usize {
         let queue = self
+            .runtime
             .output_demands
             .state
             .lock()
@@ -174,6 +178,7 @@ impl<Schema>
     #[doc(hidden)]
     pub fn published_required_rows_for_test(&self) -> Vec<(String, usize, bool, String)> {
         let state = self
+            .runtime
             .output_demands
             .state
             .lock()
@@ -187,7 +192,10 @@ impl<Schema>
                 };
                 matches!(
                     output.checkpoint,
-                    Some(super::super::WorthQueryOutputCheckpoint::Published { .. })
+                    Some(
+                        super::super::WorthQueryOutputCheckpoint::Published { .. }
+                            | super::super::WorthQueryOutputCheckpoint::RecoveredPublished { .. }
+                    )
                 )
                 .then(|| {
                     (
@@ -215,6 +223,7 @@ impl<Schema>
         root: worth_relational::facade::identity::EntityId,
     ) -> Vec<String> {
         let queue = self
+            .runtime
             .output_demands
             .state
             .lock()
@@ -247,7 +256,8 @@ impl<Schema>
     }
     #[doc(hidden)]
     pub fn entered_required_selection_is_frozen_for_test(&self) -> Option<bool> {
-        self.output_demands
+        self.runtime
+            .output_demands
             .state
             .lock()
             .unwrap()
@@ -255,8 +265,8 @@ impl<Schema>
     }
     #[doc(hidden)]
     pub fn undelivered_publication_counts_for_test(&self) -> (usize, usize) {
-        let state = self.output_demands.state.lock().unwrap();
+        let state = self.runtime.output_demands.state.lock().unwrap();
         (state.records.publication_count_for_test(), state.records.values().filter(|record|
-            matches!(&record.state, super::super::DemandState::Output(output) if !matches!(output.advancement(), super::super::WorthQueryOutputAdvancement::Stopped { .. }) && matches!(output.checkpoint, Some(super::super::WorthQueryOutputCheckpoint::Published { .. })))).count())
+            matches!(&record.state, super::super::DemandState::Output(output) if !matches!(output.advancement(), super::super::WorthQueryOutputAdvancement::Stopped { .. }) && matches!(output.checkpoint, Some(super::super::WorthQueryOutputCheckpoint::Published { .. } | super::super::WorthQueryOutputCheckpoint::RecoveredPublished { .. })))).count())
     }
 }

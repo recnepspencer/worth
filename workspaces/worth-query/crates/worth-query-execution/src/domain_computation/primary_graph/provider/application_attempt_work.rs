@@ -20,7 +20,7 @@ pub(super) struct WorthQueryApplicationAttemptWorkLedger {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(crate) struct WorthQueryApplicationAttemptWorkSnapshot {
+pub struct WorthQueryApplicationAttemptWorkSnapshot {
     pub(crate) retained_resolutions: u64,
     pub(crate) managed_bridge_plans: u64,
     pub(crate) provider_session_readmissions: u64,
@@ -137,3 +137,5 @@ impl WorthQueryApplicationAttemptWorkSnapshot {
 fn load(counter: &AtomicU64) -> u64 {
     counter.load(Ordering::Relaxed)
 }
+
+mod court_doors_for_test;

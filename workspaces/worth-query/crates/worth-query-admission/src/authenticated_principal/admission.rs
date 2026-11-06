@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use std::time::{Instant, SystemTime};
+use std::time::SystemTime;
 
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaBindingIdentity,
@@ -18,14 +18,20 @@ const MAX_CONFIGURATION_IDENTITY_BYTES: usize = 512;
 pub struct WorthQueryAuthenticationAdapterAdmission {
     audience: WorthQueryAuthenticationAudience,
     method: WorthQueryAuthenticationMethod,
+    clock: super::WorthQueryAdmissionClock,
 }
 
 impl WorthQueryAuthenticationAdapterAdmission {
     pub fn new(
         audience: WorthQueryAuthenticationAudience,
         method: WorthQueryAuthenticationMethod,
+        clock: super::WorthQueryAdmissionClock,
     ) -> Self {
-        Self { audience, method }
+        Self {
+            audience,
+            method,
+            clock,
+        }
     }
 }
 
@@ -86,6 +92,7 @@ where
     })?;
     Ok(WorthQueryAdmittedAuthenticationAdapter {
         adapter,
+        clock: admission.clock,
         audience: admission.audience,
         method: admission.method,
         adapter_identity,
@@ -98,6 +105,7 @@ pub struct WorthQueryAdmittedAuthenticationAdapter<Schema, Adapter> {
     adapter: Adapter,
     audience: WorthQueryAuthenticationAudience,
     method: WorthQueryAuthenticationMethod,
+    clock: super::WorthQueryAdmissionClock,
     adapter_identity: WorthQueryAuthenticationAdapterIdentity,
     binding_identity: ApplicationSchemaBindingIdentity,
     _schema: PhantomData<fn() -> Schema>,
@@ -118,6 +126,11 @@ where
         scope: &WorthQueryRequestScope,
     ) -> Result<WorthQueryAuthenticatedExternalPrincipal<Schema>, WorthQueryAuthenticationDenial>
     {
+        if !self.clock.same_clock(scope.clock()) {
+            return Err(WorthQueryAuthenticationDenial::new(
+                WorthQueryAuthenticationDenialKind::ForeignClock,
+            ));
+        }
         if let Some(interruption) = scope.interruption() {
             return Err(WorthQueryAuthenticationDenial::interrupted(interruption));
         }
@@ -152,7 +165,7 @@ where
             ));
         }
         let wall_now = SystemTime::now();
-        let monotonic_now = Instant::now();
+        let monotonic_now = self.clock.now();
         if candidate.validated_at() > wall_now {
             return Err(WorthQueryAuthenticationDenial::new(
                 WorthQueryAuthenticationDenialKind::ValidationTimeInFuture,
@@ -176,6 +189,7 @@ where
             validated_at,
             expires_at,
             valid_until,
+            self.clock.clone(),
             self.adapter_identity.clone(),
             self.binding_identity.clone(),
             attributes,

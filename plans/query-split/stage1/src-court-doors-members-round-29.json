@@ -1,0 +1,15 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::application_aftermath::recovery_handle::binding::WorthQueryRecoveryHandleBinding.commit (mut)"
+ ],
+ "field_into_doors": [
+  "domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryRegisteredProviderAttempt.staged",
+  "domain_computation::primary_graph::schema_layout::WorthQueryPrimaryFieldLayout.locator"
+ ],
+ "method_doors": [],
+ "unplaced": [
+  "cannot move out of a shared reference"
+ ]
+}

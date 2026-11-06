@@ -5,6 +5,8 @@ use super::source::assembly::HomeQueryPreparation;
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 use worth_runtime_world::facade::*;
+mod custody;
+pub use custody::{QueryHomeCustodyReadmissionDenial, QueryHomeCustodyReadmissionRefused};
 #[cfg(test)]
 #[path = "world/tests.rs"]
 mod tests;
@@ -113,18 +115,15 @@ where
         QueryHomeWorldAttachmentRefused<Schema, Program>,
     > {
         let prepared = (|| {
-            let (provider, participation, authorization, handlers) =
+            let (provider, participation, authorization, handlers, resources, mutation_partitions) =
                 home_attachment::preflight_home_application(
                     phase,
-                    &self.bootstrap,
+                    &mut self.bootstrap,
                     &self.state.runtime,
                     &self.state.authority,
                     &self.state.installed,
                     root.basis().relational_basis(),
                 )?;
-            self.bootstrap
-                .managed_indexes
-                .validate_complete(&self.state.installed)?;
             self.bootstrap.readmit_home_initial_program(
                 phase,
                 &root,
@@ -161,22 +160,32 @@ where
                 participation,
                 authorization,
                 handlers,
+                resources,
                 product,
+                mutation_partitions,
             ))
         })();
-        let (publication, provider, participation, authorization, handlers, product) =
-            match prepared {
-                Ok(prepared) => prepared,
-                Err(cause) => {
-                    return Err(QueryHomeWorldAttachmentRefused {
-                        custody: HomeWorldAttachmentCustody::Prepared {
-                            _prepared: self,
-                            _root: root,
-                            cause,
-                        },
-                    })
-                }
-            };
+        let (
+            publication,
+            provider,
+            participation,
+            authorization,
+            handlers,
+            resources,
+            product,
+            mutation_partitions,
+        ) = match prepared {
+            Ok(prepared) => prepared,
+            Err(cause) => {
+                return Err(QueryHomeWorldAttachmentRefused {
+                    custody: HomeWorldAttachmentCustody::Prepared {
+                        _prepared: self,
+                        _root: root,
+                        cause,
+                    },
+                })
+            }
+        };
         // The actual configured providers remain in the refused preparation
         // through every fallible attachment check. Success transfers them once.
         let managed_indexes = std::mem::take(&mut self.bootstrap.managed_indexes);
@@ -194,12 +203,21 @@ where
             provider,
             participation,
             authorization,
-            crate::domain_computation::authorization::WorthQueryRuntimeClock::system(),
+            match state.authorization_time_source {
+                Some(source) => {
+                    crate::domain_computation::authorization::WorthQueryRuntimeClock::from_source(
+                        source,
+                    )
+                }
+                None => crate::domain_computation::authorization::WorthQueryRuntimeClock::system(),
+            },
             handlers,
+            resources,
+            managed_indexes,
             bridge,
             product,
+            mutation_partitions,
         );
-        application.managed_indexes = managed_indexes;
         application.program_support = Some(
             super::super::super::program_occurrence::WorthQueryInstalledProgramSupport::installed(
                 state.support.roster,
@@ -207,6 +225,7 @@ where
             ),
         );
         application
+            .runtime
             .primary_provider
             .graph
             .output_lineage

@@ -1,8 +1,6 @@
 --- a/crates/worth-relational/src/durability/data/checkpoint_lineage_event_pages.rs
 +++ b/crates/worth-relational/src/durability/data/checkpoint_lineage_event_pages.rs
-@@ -141,6 +141,25 @@
- }
- 
+@@ -143,4 +143,23 @@
  impl CheckpointLineageEventPagesBuilder {
 +    /// Carry an already selected immutable page, funding this directory's copy.
 +    pub(crate) fn push_carried(

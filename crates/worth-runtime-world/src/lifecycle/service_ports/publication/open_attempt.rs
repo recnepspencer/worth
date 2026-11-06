@@ -25,6 +25,18 @@ where
             ))
         })?;
         let identity = owner.owner_identity();
+        match identity.admit_incarnation(expected.owner_identity()) {
+            Err(worth_proof::HomeIncarnationDenial::StaleIncarnation) => {
+                return Err(Refusal::Reservation(NoEffectCompositePublication::new(
+                    NoEffectCause::StaleIncarnation,
+                    Some(expected.clone()),
+                )));
+            }
+            Err(worth_proof::HomeIncarnationDenial::ForeignHome) => {
+                return Err(Refusal::IdentityScope)
+            }
+            Ok(()) => {}
+        }
         // Home scope equality alone does not establish this process admission.
         if expected.owner_identity() != identity
             || expected.owner_identity().get() != identity.get()
@@ -34,7 +46,7 @@ where
         match (identity.durable(), owner.state.durable.as_ref()) {
             (None, None) => Ok(None),
             (Some(home), Some(binding)) if binding.binding().owner() == home => Ok(Some(home)),
-            _ => Err(Refusal::IdentityScope),
+            (None, Some(_)) | (Some(_), None) | (Some(_), Some(_)) => Err(Refusal::IdentityScope),
         }
     }
 

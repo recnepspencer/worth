@@ -76,6 +76,9 @@ pub(super) fn fails_row(stop: &WorthQueryOutputDemandDenial) -> bool {
 pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
     use WorthQueryOutputDemandDenialKind as Kind;
     match kind {
+        Kind::WorldRecovery(_) | Kind::RecoveryPublication(_) | Kind::PublicationReceipt(_) => {
+            false
+        }
         Kind::ProductDelivery(_) => true,
         Kind::CorrespondenceDelivery(cause) => {
             WorthQueryOutputDemandDenial::new(Kind::CorrespondenceDelivery(cause), "")
@@ -97,9 +100,10 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
         | Kind::RequestAuthorization(_) => false,
         Kind::SourceQueryAdmission(kind) => source_query::admission_is_row(kind),
         Kind::SourceQueryExecution(kind) => source_query::execution_is_row(kind),
-        Kind::PublicationStale | Kind::SchedulingDeferred | Kind::PublicationCapacityExceeded => {
-            false
-        }
+        Kind::PublicationStale
+        | Kind::SchedulingDeferred
+        | Kind::PublicationCapacityExceeded
+        | Kind::CurrentControlBusy => false,
         Kind::ProductSelection(denial) => !denial.is_transient(),
         Kind::UnobservedWrite(_)
         | Kind::SourceQueryInstallation(_)
@@ -116,6 +120,8 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
         | Kind::ForeignDemand
         | Kind::RequiredSuccessorStateUnavailable
         | Kind::ForeignSettlement
+        | Kind::RetainedVerificationFactUnavailable(_)
+        | Kind::SettlementProvenance(_)
         | Kind::IncompleteDependencyCoverage
         | Kind::RetainedBasisUnavailable
         | Kind::Closed
@@ -143,7 +149,7 @@ pub(super) fn lineage_head(
 /// Why the head row of a refresh lineage can never become Ready: the row
 /// itself, or its refresh, met a stop intrinsic to it. Any other stop
 /// belonged to the advance that met it.
-pub(super) fn head_stop(
+pub fn head_stop(
     records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
 ) -> Option<WorthQueryOutputDemandDenial> {

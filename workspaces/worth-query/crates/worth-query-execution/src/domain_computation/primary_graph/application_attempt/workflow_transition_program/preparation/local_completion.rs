@@ -65,7 +65,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         .map_err(D::Attempt)?;
         let receipt_identity = performed.identity();
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|_| D::Attempt(local_mismatch("foreign local completion phase")))?;
         let binding = idempotency.bind_local_workflow_settlement(
             required.transition_identity_bytes(),

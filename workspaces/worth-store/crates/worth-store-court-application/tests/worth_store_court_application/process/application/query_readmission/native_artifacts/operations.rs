@@ -24,7 +24,7 @@ pub(super) fn fresh_closed(path: &std::path::Path, execution: ExecutionRequest<'
 
 fn scope() -> worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope {
     use worth_query_host::facade::admission::authenticated_principal::*;
-    WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token())
+    WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 pub(super) fn set(runtime: &Runtime, value: u64) -> WorthQueryApplicationMutationOutcome<(), u64> {
     set_key(runtime, 0x9911, value)

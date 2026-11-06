@@ -5,6 +5,7 @@ pub(super) struct DirectoryOpening<'authoring, Schema: ApplicationSchemaComposit
     pub(super) query: PreparedHomeNativeMeaning<Schema, Program>,
     pub(super) home: UnsharedReadmittedApplicationHome,
     pub(super) checkpoint_limits: ApplicationHomeCheckpointLimits,
+    pub(super) observation: ApplicationHomeOpeningObservation,
     pub(super) initial_state: Box<dyn FnOnce(
         &WorthQueryBootstrapAdvancementPhase<'_>,
         &mut worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphBootstrap<Schema>,
@@ -37,6 +38,8 @@ where
         request_inputs.configuration,
         request_inputs.build,
         request_inputs.limits,
+        request_inputs.authorization_time_source,
+        directory_requirement_refusal,
     )
     .map_err(Refused::Preparation)?;
     let binding = match query.admitted_home_binding() {
@@ -44,21 +47,38 @@ where
         Err(cause) => return Err(Refused::Binding { query, cause }),
     };
     let request = phase.execution_request();
-    let physical = ApplicationHomeRequest::new(
+    let mut physical = ApplicationHomeRequest::new(
         location,
         query.home_relational_definition(),
         binding,
         request_inputs.build,
     );
+    let observation = request_inputs
+        .opening_control
+        .as_ref()
+        .map(|control| control.observation())
+        .unwrap_or_default();
+    if let Some(control) = request_inputs.opening_control {
+        physical = physical.with_opening_control_for_test(control);
+    }
     let home = match recover_home(physical, &request).and_then(|home| admit_home(home, &request)) {
         Ok(home) => home,
         Err(cause) => return Err(Refused::Physical { query, cause }),
     };
+    observation.arrive_for_test(
+        ApplicationHomeOpeningStage::NativeReadmission,
+        ApplicationHomeOpeningEdge::Before,
+    );
     let (query, home) = readmit_native(phase, query, home)?;
+    observation.arrive_for_test(
+        ApplicationHomeOpeningStage::NativeReadmission,
+        ApplicationHomeOpeningEdge::After,
+    );
     Ok(DirectoryOpening {
         query,
         home,
         checkpoint_limits: request_inputs.checkpoint_limits,
+        observation,
         initial_state: request_inputs.initial_state,
     })
 }

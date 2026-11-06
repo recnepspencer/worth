@@ -34,7 +34,7 @@ fn completed_source_refused_close_preserves_original_performed_change_witness() 
     );
     let cancelled = WorthQueryCancellationSource::new();
     cancelled.cancel();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancelled.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancelled.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped = fixture.world.runtime.request(&specialist, &stopped_scope);
     let (done, _denial) = done
         .close_with_evidence(&stopped)

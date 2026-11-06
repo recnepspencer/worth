@@ -8,6 +8,33 @@ use crate::recovery::recovered_publication::RecoveredNativeCustody;
 use worth_execution::ExecutionRequest;
 
 impl ProductUnpublishedRecoveryCatalog {
+    /// Called only by the sealed close task. A forming original occurrence
+    /// cannot become serving history after admission closes; cancel its empty
+    /// reservation before the result-snapshot cursor captures that history.
+    pub(crate) fn cancel_uninstalled_for_close(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Denial> {
+        let state = self.state.try_lock().map_err(|_| Denial::Busy)?;
+        for position in 0..state.slots.span() {
+            checkpoint(request, 1)?;
+            let Some((_, entry)) = state.slots.at(position) else {
+                continue;
+            };
+            let RecoveryEntry::Recovered(record) = entry else {
+                return Err(Denial::CloseProgressInvariant);
+            };
+            if *record.claimed.try_lock().map_err(|_| Denial::Busy)? {
+                return Err(Denial::UnresolvedBusinessCustody);
+            }
+            let mut continuation = record.continuation.try_lock().map_err(|_| Denial::Busy)?;
+            if let Some(continuation) = continuation.as_mut() {
+                continuation.capacity.cancel_uninstalled_for_close()?;
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn try_close_recovered_count(
         &self,
         durable: bool,
@@ -83,7 +110,16 @@ impl ProductUnpublishedRecoveryCatalog {
                     let receipt = native.custody().effect().subject().receipt();
                     Some(RecoveredCloseReceipt::copy_for_request(request, receipt)?)
                 }
+                RecoveredNativeCustody::Prepared(record) => {
+                    Some(RecoveredCloseReceipt::copy_for_request(
+                        request,
+                        record.effect().subject().receipt(),
+                    )?)
+                }
                 RecoveredNativeCustody::Released => return Err(Denial::CloseProgressInvariant),
+                RecoveredNativeCustody::Continuing(_) | RecoveredNativeCustody::Working => {
+                    return Err(Denial::UnresolvedBusinessCustody)
+                }
             };
             rows.push(RuntimeWorldRecoveredCustodyReport {
                 identity: record.identity.clone(),
@@ -127,7 +163,13 @@ impl ProductUnpublishedRecoveryCatalog {
                 RecoveredNativeCustody::Relational(native) => {
                     Some(native.custody().effect().subject().receipt())
                 }
+                RecoveredNativeCustody::Prepared(record) => {
+                    Some(record.effect().subject().receipt())
+                }
                 RecoveredNativeCustody::Released => return Err(Denial::PublicationFrontierChanged),
+                RecoveredNativeCustody::Continuing(_) | RecoveredNativeCustody::Working => {
+                    return Err(Denial::UnresolvedBusinessCustody)
+                }
             };
             let matches = match (&row.native_receipt, receipt) {
                 (Some(row), Some(receipt)) => row.matches_for_request(request, receipt)?,

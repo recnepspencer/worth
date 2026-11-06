@@ -42,6 +42,15 @@ impl WorthQueryInstalledApplicationMutationCatalog {
         self.bindings.get(identity).map(Arc::clone)
     }
 
+    pub(crate) fn descriptor(
+        &self,
+        identity: &str,
+    ) -> Option<&ApplicationMutationBindingDescriptor> {
+        self.bindings
+            .get(identity)
+            .map(|binding| binding.descriptor())
+    }
+
     pub(crate) fn descriptors(
         &self,
     ) -> impl ExactSizeIterator<Item = &ApplicationMutationBindingDescriptor> {

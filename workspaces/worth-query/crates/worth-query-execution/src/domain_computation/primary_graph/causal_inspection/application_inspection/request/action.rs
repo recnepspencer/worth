@@ -188,19 +188,7 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
             &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         >,
         rich: Option<super::super::rich::WorthQueryApplicationMaterializationRequest>,
-        pending: &mut dyn FnMut(
-            &ExecutionRequest<'_, '_>,
-            &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
-            EntityId,
-            EntityId,
-            &mut Option<ExecutionMemoryReservation>,
-        ) -> Result<
-            (
-                Option<WorthQueryPendingApplicationQueryGovernance>,
-                Option<WorthQueryPendingApplicationQueryGovernance>,
-            ),
-            InspectionCause,
-        >,
+        pending: &mut PendingInspectionPolicy<'_, Schema, Binding>,
     ) -> Result<
         (PreparedInspection<'o>, Option<ExecutionMemoryReservation>),
         WorthQueryApplicationInspectionDenial,

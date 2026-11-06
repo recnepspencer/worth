@@ -197,13 +197,13 @@ fn validate_semantic_reports(
 ) -> Result<OperationalRecoveryCrashCutEvidence, OperationalRecoveryProcessCrashDenial> {
     let cut = read_report(&paths.cut)?;
     let reopened = read_report(&paths.reopen)?;
-    if cut.challenge != challenge || reopened.challenge != challenge {
+    if *cut.challenge.bytes() != challenge || *reopened.challenge.bytes() != challenge {
         return Err(OperationalRecoveryProcessCrashDenial::ChallengeMismatch);
     }
     if cut.yieldpoint != yieldpoint || reopened.yieldpoint != yieldpoint {
         return Err(OperationalRecoveryProcessCrashDenial::YieldpointMismatch);
     }
-    if cut.trace_identity == [0; 32]
+    if *cut.trace_identity.bytes() == [0; 32]
         || cut.operations.is_empty()
         || cut.operations.iter().any(|operation| {
             !uninterrupted_trace
@@ -215,7 +215,7 @@ fn validate_semantic_reports(
     }
     OperationalRecoveryCrashCutEvidence::from_external_process_reopen(
         yieldpoint,
-        cut.trace_identity,
+        *cut.trace_identity.bytes(),
         cut.operations,
         cut.observation,
         reopened.observation,

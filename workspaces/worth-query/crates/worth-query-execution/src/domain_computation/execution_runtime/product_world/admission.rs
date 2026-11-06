@@ -45,6 +45,7 @@ impl WorthQueryProductRuntime {
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        self.admit_owner_incarnation(occurrence.owner_identity())?;
         if occurrence.owner_identity() != self.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
@@ -59,6 +60,19 @@ impl WorthQueryProductRuntime {
         gate.with_admission(|| self.lease_from_observation(observation))
     }
 
+    /// Admit the original occurrence's lifecycle without treating its retained
+    /// data as current. The observed live head is not replacement source truth.
+    pub(crate) fn require_live_product_occurrence(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) -> Result<(), WorthQueryProductBranchAdmissionDenial> {
+        self.owner
+            .observation_port()
+            .observe_product_branch_occurrence(occurrence)
+            .map(|_| ())
+            .map_err(map_world_denial)
+    }
+
     #[doc(hidden)]
     pub fn integration_admit_product_branch(
         &self,
@@ -67,7 +81,6 @@ impl WorthQueryProductRuntime {
         self.admit_product_occurrence(branch.occurrence())
     }
 
-    #[cfg(test)]
     pub(crate) fn admit_product_branch(
         &self,
         identity: &worth_runtime_world::facade::ProductBranchIdentity,
@@ -104,6 +117,7 @@ impl WorthQueryProductRuntime {
             worth_runtime_world::facade::ProductBranchObservation,
         ) -> Result<Output, WorthQueryProductBranchAdmissionDenial>,
     ) -> Result<Output, WorthQueryProductBranchAdmissionDenial> {
+        self.admit_owner_incarnation(identity.owner_identity())?;
         if identity.owner_identity() != self.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
@@ -156,6 +170,9 @@ pub(super) fn map_world_denial(
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::ForeignOwner) => {
             WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignOwner)
         }
+        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::StaleIncarnation) => {
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::StaleIncarnation)
+        }
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::RetiredBranch) => {
             WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::RetiredBranch)
         }
@@ -192,8 +209,12 @@ pub(super) fn map_world_denial(
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::DuplicateName
             | RuntimeWorldBranchAdmissionDenial::PlansOmitted
+            | RuntimeWorldBranchAdmissionDenial::UnsupportedRetainedSourcePlan
+            | RuntimeWorldBranchAdmissionDenial::RetainedSourceDurabilityUnsupported
             | RuntimeWorldBranchAdmissionDenial::ForkSourceChanged
             | RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable,
         ) => WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationRejected),
     }
 }
+
+mod court_doors_for_test;

@@ -1,8 +1,8 @@
 //! Query-owned custody for a branch creation whose owner effects did not publish.
 
 use worth_runtime_world::facade::{
-    ProductUnpublishedCause, ProductUnpublishedNextAction, ProductUnpublishedOwnerEffects,
-    ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPort,
+    ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryDenial,
+    RuntimeWorldRecoveryPort,
 };
 
 pub use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupWork;
@@ -10,69 +10,24 @@ use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryProductBranchOwnerCleanup, WorthQueryProductBranchOwnerCleanupFailure,
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryProductBranchCreationRecoveryCause {
-    OpenAttemptRetained,
-    OriginalObservationStopped(
-        worth_relational::facade::transactions::RelationalExecutionDenialCause,
-    ),
-    OriginalObservationUnavailable,
-    WorldOccurrencePending,
-    WorldOccurrenceRefused,
-    WorldOccurrenceReadmissionRequired,
-    SiblingOwnerDenied,
-    CallerAbandoned,
-    SettlementPending,
-    CancellationAfterEffect,
-    DeadlineAfterEffect,
-    StaleProductHead,
-    OwnerLost,
-    CorrespondenceRebindRequired,
-    DestinationAdmissionDenied,
-    RetentionAdmissionDenied,
-    ProductPublicationLost,
-    /// The Relational owner could not establish whether its commit became
-    /// durable; only reopening it resolves the commit's fate.
-    RelationalDurabilityUnresolved,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryProductBranchCreationRecoveryNextAction {
-    SettleOwnerEffects,
-    ReleaseObligations,
-    Inspect,
-    ReopenRequired,
-    StartFreshCompositePublication,
-    CloseOwner,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryProductBranchCreationRecoveryInspection {
-    cause: WorthQueryProductBranchCreationRecoveryCause,
-    owner_effect_count: usize,
-    live_obligation_count: usize,
-    next_actions: Vec<WorthQueryProductBranchCreationRecoveryNextAction>,
-}
-
-impl WorthQueryProductBranchCreationRecoveryInspection {
-    pub const fn cause(&self) -> WorthQueryProductBranchCreationRecoveryCause {
-        self.cause
-    }
-    pub const fn owner_effect_count(&self) -> usize {
-        self.owner_effect_count
-    }
-    pub const fn live_obligation_count(&self) -> usize {
-        self.live_obligation_count
-    }
-    pub fn next_actions(&self) -> &[WorthQueryProductBranchCreationRecoveryNextAction] {
-        &self.next_actions
-    }
-}
+mod inspection;
+use inspection::inspection;
+pub use inspection::{
+    WorthQueryProductBranchCreationRecoveryCause,
+    WorthQueryProductBranchCreationRecoveryInspection,
+    WorthQueryProductBranchCreationRecoveryNextAction,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchRecoveryDenial {
+    ForeignPhase,
+    OriginalSourceUnavailable,
+    OriginalSourceMismatch,
+    HomeProgramTransitionRequired,
+    StaleIncarnation,
     ReopenRequired,
     RecoveredCustodyRequired,
+    Execution(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     OwnerUnavailable,
     ForeignRecovery,
     Missing,
@@ -138,13 +93,57 @@ impl WorthQueryProductBranchCreationRecovery {
             .map_err(map_recovery_denial)
     }
 
-    pub fn release_obligations(
-        mut self,
+    /// Release the original effects and cleanup within the admitted advancement.
+    pub fn release_obligations_in_advancement(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         minimum_age_ticks: u64,
     ) -> Result<
         WorthQueryProductBranchCreationRecoveryRelease,
         WorthQueryProductBranchCreationRecoveryReleaseFailure,
     > {
+        if let Err(denial) = phase.check_live_for(&self.runtime) {
+            return Err(
+                WorthQueryProductBranchCreationRecoveryReleaseFailure::Recovery(
+                    WorthQueryProductBranchCreationRecoveryFailure {
+                        denial: WorthQueryProductBranchRecoveryDenial::Execution(denial),
+                        recovery: self,
+                    },
+                ),
+            );
+        }
+        self.release_obligations_with(phase, minimum_age_ticks, |cleanup| {
+            cleanup.retry_in_advancement(phase)
+        })
+    }
+
+    fn release_obligations_with(
+        mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        minimum_age_ticks: u64,
+        finish_cleanup: impl FnOnce(
+            WorthQueryProductBranchOwnerCleanup,
+        ) -> Result<
+            crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,
+            WorthQueryProductBranchOwnerCleanupFailure,
+        >,
+    ) -> Result<
+        WorthQueryProductBranchCreationRecoveryRelease,
+        WorthQueryProductBranchCreationRecoveryReleaseFailure,
+    > {
+        let execution = match phase.execution_request_for(&self.runtime) {
+            Ok(execution) => execution,
+            Err(_) => {
+                return Err(
+                    WorthQueryProductBranchCreationRecoveryReleaseFailure::Recovery(
+                        WorthQueryProductBranchCreationRecoveryFailure {
+                            denial: WorthQueryProductBranchRecoveryDenial::ForeignPhase,
+                            recovery: self,
+                        },
+                    ),
+                )
+            }
+        };
         let cleanup_reservation = match self.runtime.reserve_owner_cleanup_for_creation() {
             Ok(reservation) => reservation,
             Err(_) => {
@@ -161,16 +160,19 @@ impl WorthQueryProductBranchCreationRecovery {
         drop(self.effects.take());
         match self
             .recovery
-            .release_effects(&self.handle, minimum_age_ticks)
+            .release_effects(&execution, &self.handle, minimum_age_ticks, None)
         {
-            Ok(cleanup) => {
+            Ok(released) => {
+                let (_original, cleanup) = released.into_parts();
                 let cleanup_identity = cleanup_reservation.install_unpublished(cleanup);
-                WorthQueryProductBranchOwnerCleanup::new(self.runtime.clone(), cleanup_identity)
-                    .retry()
-                    .map(|receipt| WorthQueryProductBranchCreationRecoveryRelease {
-                        retired_component_count: receipt.retired_component_count(),
-                    })
-                    .map_err(WorthQueryProductBranchCreationRecoveryReleaseFailure::OwnerCleanup)
+                finish_cleanup(WorthQueryProductBranchOwnerCleanup::new(
+                    self.runtime.clone(),
+                    cleanup_identity,
+                ))
+                .map(|receipt| WorthQueryProductBranchCreationRecoveryRelease {
+                    retired_component_count: receipt.retired_component_count(),
+                })
+                .map_err(WorthQueryProductBranchCreationRecoveryReleaseFailure::OwnerCleanup)
             }
             Err(denial) => Err(
                 WorthQueryProductBranchCreationRecoveryReleaseFailure::Recovery(
@@ -230,110 +232,35 @@ impl WorthQueryProductBranchCreationRecoveryFailure {
     }
 }
 
-fn inspection(
-    effects: &ProductUnpublishedOwnerEffects,
-) -> WorthQueryProductBranchCreationRecoveryInspection {
-    WorthQueryProductBranchCreationRecoveryInspection {
-        cause: map_cause(effects.cause()),
-        owner_effect_count: effects.owner_effect_count(),
-        live_obligation_count: effects.live_obligation_count(),
-        next_actions: effects
-            .next_actions()
-            .iter()
-            .copied()
-            .map(map_action)
-            .collect(),
-    }
-}
-
-fn map_cause(cause: ProductUnpublishedCause) -> WorthQueryProductBranchCreationRecoveryCause {
-    use ProductUnpublishedCause as Cause;
-    match cause {
-        Cause::OriginalObservationStopped(stop) => {
-            WorthQueryProductBranchCreationRecoveryCause::OriginalObservationStopped(stop)
-        }
-        Cause::OriginalObservationUnavailable => {
-            WorthQueryProductBranchCreationRecoveryCause::OriginalObservationUnavailable
-        }
-        Cause::WorldOccurrencePending => {
-            WorthQueryProductBranchCreationRecoveryCause::WorldOccurrencePending
-        }
-        Cause::WorldOccurrenceRefused => {
-            WorthQueryProductBranchCreationRecoveryCause::WorldOccurrenceRefused
-        }
-        Cause::WorldOccurrenceReadmissionRequired => {
-            WorthQueryProductBranchCreationRecoveryCause::WorldOccurrenceReadmissionRequired
-        }
-        Cause::OpenAttemptRetained => {
-            WorthQueryProductBranchCreationRecoveryCause::OpenAttemptRetained
-        }
-        Cause::SiblingOwnerDenied => {
-            WorthQueryProductBranchCreationRecoveryCause::SiblingOwnerDenied
-        }
-        Cause::CallerAbandoned => WorthQueryProductBranchCreationRecoveryCause::CallerAbandoned,
-        Cause::SettlementPending => WorthQueryProductBranchCreationRecoveryCause::SettlementPending,
-        Cause::CancellationAfterEffect => {
-            WorthQueryProductBranchCreationRecoveryCause::CancellationAfterEffect
-        }
-        Cause::DeadlineAfterEffect => {
-            WorthQueryProductBranchCreationRecoveryCause::DeadlineAfterEffect
-        }
-        Cause::StaleProductHead => WorthQueryProductBranchCreationRecoveryCause::StaleProductHead,
-        Cause::OwnerLost => WorthQueryProductBranchCreationRecoveryCause::OwnerLost,
-        Cause::CorrespondenceRebindRequired => {
-            WorthQueryProductBranchCreationRecoveryCause::CorrespondenceRebindRequired
-        }
-        Cause::DestinationAdmissionDenied => {
-            WorthQueryProductBranchCreationRecoveryCause::DestinationAdmissionDenied
-        }
-        Cause::RetentionAdmissionDenied => {
-            WorthQueryProductBranchCreationRecoveryCause::RetentionAdmissionDenied
-        }
-        Cause::ProductPublicationLost => {
-            WorthQueryProductBranchCreationRecoveryCause::ProductPublicationLost
-        }
-        Cause::RelationalDurabilityUnresolved => {
-            WorthQueryProductBranchCreationRecoveryCause::RelationalDurabilityUnresolved
-        }
-    }
-}
-
-fn map_action(
-    action: ProductUnpublishedNextAction,
-) -> WorthQueryProductBranchCreationRecoveryNextAction {
-    use ProductUnpublishedNextAction as Action;
-    match action {
-        Action::SettleOwnerEffects => {
-            WorthQueryProductBranchCreationRecoveryNextAction::SettleOwnerEffects
-        }
-        Action::ReleaseObligations => {
-            WorthQueryProductBranchCreationRecoveryNextAction::ReleaseObligations
-        }
-        Action::Inspect => WorthQueryProductBranchCreationRecoveryNextAction::Inspect,
-        Action::ReopenRequired => WorthQueryProductBranchCreationRecoveryNextAction::ReopenRequired,
-        Action::StartFreshCompositePublication => {
-            WorthQueryProductBranchCreationRecoveryNextAction::StartFreshCompositePublication
-        }
-        Action::CloseOwner => WorthQueryProductBranchCreationRecoveryNextAction::CloseOwner,
-    }
-}
-
 pub(crate) fn map_recovery_denial(
     denial: RuntimeWorldRecoveryDenial,
 ) -> WorthQueryProductBranchRecoveryDenial {
     use RuntimeWorldRecoveryDenial as Denial;
     match denial {
+        Denial::ContinuationAlreadyCommitted
+        | Denial::ContinuationAlreadyStarted
+        | Denial::ReleaseAlreadyStarted => WorthQueryProductBranchRecoveryDenial::NotBranchCreation,
+        Denial::HomeProgramTransitionRequired => {
+            WorthQueryProductBranchRecoveryDenial::HomeProgramTransitionRequired
+        }
         Denial::RecoveredCustodyRequired => {
             WorthQueryProductBranchRecoveryDenial::RecoveredCustodyRequired
         }
         Denial::ReopenRequired => WorthQueryProductBranchRecoveryDenial::ReopenRequired,
         Denial::OwnerUnavailable(_) => WorthQueryProductBranchRecoveryDenial::OwnerUnavailable,
         Denial::ForeignHandle => WorthQueryProductBranchRecoveryDenial::ForeignRecovery,
+        Denial::StaleIncarnation => WorthQueryProductBranchRecoveryDenial::StaleIncarnation,
         Denial::MissingRecord => WorthQueryProductBranchRecoveryDenial::Missing,
         Denial::Busy => WorthQueryProductBranchRecoveryDenial::Busy,
         Denial::TooYoung => WorthQueryProductBranchRecoveryDenial::TooYoung,
         Denial::ClockRegressed => WorthQueryProductBranchRecoveryDenial::ClockRegressed,
         Denial::CallerCapabilityLive => WorthQueryProductBranchRecoveryDenial::CallerCapabilityLive,
+        Denial::OriginalSourceUnavailable => {
+            WorthQueryProductBranchRecoveryDenial::OriginalSourceUnavailable
+        }
+        Denial::OriginalSourceMismatch => {
+            WorthQueryProductBranchRecoveryDenial::OriginalSourceMismatch
+        }
         Denial::SettlementRequired => WorthQueryProductBranchRecoveryDenial::SettlementRequired,
         Denial::SettlementEvidenceUnavailable => {
             WorthQueryProductBranchRecoveryDenial::SettlementEvidenceUnavailable

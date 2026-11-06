@@ -1,0 +1,98 @@
+//! Shared physical storage never substitutes one exact settlement for another.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::delivery::affected::posting_order::LogicalPostings;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FactPosting;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::settlement::postings::tests::*;
+
+pub fn projection(id: u64) -> Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_projection::PostingProjection>{
+    let entity = EntityId::new(PartitionId::main(), 1, 1);
+    let facts = [
+        Fact::SourceEntity { entity_id: entity },
+        Fact::SourceEntity { entity_id: entity },
+    ];
+    PreparedPostingOrdinals::prepare_for_test(&facts[..], None, &mut None)
+        .unwrap()
+        .into_projection_for_test(id, facts.len(), 0, None)
+}
+
+#[test]
+fn shared_bindings_detach_exactly_and_historical_storage_lives_until_final_drop() {
+    let (_, [first, second]) = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement_pair();
+    let projection = projection(0);
+    let mut state = MarkState::initial_for_test();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &first).unwrap();
+    let historical = state.clone();
+    let physical = (*state.postings_for_test()).clone();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &second).unwrap();
+    assert_eq!((*state.postings_for_test()), physical);
+    assert_eq!(
+        (*(*state.posting_bindings_for_test())[&0]
+            .settlements_for_test()
+            .unwrap()
+            .settlements_for_test())
+        .len(),
+        2
+    );
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_removal::remove(&mut state, &first, &projection).unwrap();
+    assert_eq!((*state.postings_for_test()), physical);
+    assert_eq!(
+        (*(*state.posting_bindings_for_test())[&0]
+            .settlements_for_test()
+            .unwrap()
+            .settlements_for_test())
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>(),
+        vec![second.clone()]
+    );
+    assert!((*(*historical.posting_bindings_for_test())[&0]
+        .settlements_for_test()
+        .unwrap()
+        .settlements_for_test())
+    .contains(&first));
+    assert!(!(*(*historical.posting_bindings_for_test())[&0]
+        .settlements_for_test()
+        .unwrap()
+        .settlements_for_test())
+    .contains(&second));
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_removal::remove(&mut state, &second, &projection).unwrap();
+    assert!((*state.postings_for_test()).is_empty());
+    assert!((*state.posting_bindings_for_test()).is_empty());
+    assert_eq!((*state.posting_count_for_test()), 0);
+    drop(state);
+    drop(projection);
+
+    drop(historical);
+}
+
+#[test]
+fn logical_delivery_orders_exact_settlements_and_duplicate_ordinals_not_projection_ids() {
+    let (_, [first, second]) = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement_pair();
+    let mut state = MarkState::initial_for_test();
+    let later = projection(0);
+    let earlier = projection(1);
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &later, &second).unwrap();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &earlier, &first).unwrap();
+    let key = FactPostingKey::EntityLifecycle(EntityId::new(PartitionId::main(), 1, 1));
+    let mut counts = Default::default();
+    let mut cursor = LogicalPostings::prepare_for_test(&state, &key, &mut counts)
+        .unwrap()
+        .unwrap();
+    let mut observed = Vec::new();
+    while let Some(posting) = cursor.next_for_test(&state, &key, &mut counts).unwrap() {
+        observed.push(posting);
+    }
+    assert_eq!(
+        observed,
+        vec![
+            FactPosting::new_for_test(first.clone(), 0),
+            FactPosting::new_for_test(first, 1),
+            FactPosting::new_for_test(second.clone(), 0),
+            FactPosting::new_for_test(second, 1)
+        ]
+    );
+    assert_eq!(
+        counts.matched_fact_postings as usize,
+        observed.len(),
+        "each actually discovered logical pair is counted once"
+    );
+}

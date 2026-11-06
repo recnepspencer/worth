@@ -5,7 +5,7 @@ pub(crate) use {
 };
 pub(crate) use {
     crate::leased_preparation::ordinary_context::authority,
-    crate::leased_preparation::ordinary_context::lease_request,
+    crate::leased_preparation::ordinary_context::lease_request_with_work,
     crate::leased_preparation::ordinary_context::serial, worth_execution::CancellationToken,
     worth_foundational::facade::AspectValue, worth_relational::facade::identity::KindId,
 };
@@ -128,7 +128,7 @@ pub(crate) fn journey(partitions: u32, slots: usize, dependencies: Dependencies)
     let lease = authority()
         .request_lease(
             crate::leased_preparation::ordinary_context::lease_request_with_work(
-                32 * 1024 * 1024,
+                64 * 1024 * 1024,
                 worth_execution::CancellationToken::new(),
                 work,
             ),

@@ -117,6 +117,7 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
         root.commit_id,
         root.partition_image_digest,
         root.schema_carrier_digest,
+        &root.content_records,
     );
 
     let mut recovered = RelationalRuntimeApi::builder()

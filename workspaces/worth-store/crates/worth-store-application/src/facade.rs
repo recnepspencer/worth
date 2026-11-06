@@ -13,6 +13,9 @@ pub use crate::close::{
 };
 pub use crate::deadline::ApplicationHomeDeadlineDenial;
 pub use crate::descriptor::ApplicationHomeDescriptorDenial;
+pub use crate::discard::{
+    discard_home, ApplicationHomeDiscard, ApplicationHomeDiscardDenial, ApplicationHomeDiscardStage,
+};
 pub use crate::home_context::{
     AdmittedApplicationHome, ReadmittedApplicationHome, RecoveredPhysicalHome,
 };
@@ -23,8 +26,19 @@ pub use crate::open::physical_admission::{
     ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind,
     ApplicationHomePhysicalStage,
 };
-pub use crate::open::readmission::transition::ApplicationHomeOwnerAdmissionDenial;
+pub use crate::open::readmission::transition::{
+    AdmittedApplicationHomeProgramStep, ApplicationHomeOwnerAdmissionDenial,
+    ApplicationHomeTransitionAdmissionObservation, ApplicationHomeTransitionIntentDenial,
+    ApplicationHomeTransitionIntentOutcome, ApplicationHomeTransitionPlanningDenial,
+    ApplicationHomeTransitionStartRefused, HomeProgramTransitionIntent,
+    ReservedApplicationHomeTransitionPlan,
+};
 pub use crate::open::{admit_home, readmit_relational, recover_home, ApplicationHomeOpenRefusal};
+pub use crate::opening_control::{
+    ApplicationHomeOpeningArrival, ApplicationHomeOpeningControlForTest,
+    ApplicationHomeOpeningEdge, ApplicationHomeOpeningObservation, ApplicationHomeOpeningStage,
+    ApplicationHomePhysicalControlDenial, ApplicationHomePhysicalControlForTest,
+};
 pub use crate::relational_preparation::{
     attach_relational, ApplicationHomeInitializationDenial, ApplicationHomeInitializationRefused,
     ApplicationHomeNativeSchemaPreparation, RelationalAttachmentFailedHome,

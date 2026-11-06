@@ -210,7 +210,7 @@ Forbidden in `worth-query`:
 - allowing one materialized source family to overclaim facts that only another
   source family can prove
 - claiming persisted consumed-fact reload, restart-stable fact receipts, or
-  store-backed reconstruction before Milestones 10 and 11 close
+  store-backed reconstruction before Store execution and durable-artifact integration close
 
 ## Existing Surfaces To Consolidate
 

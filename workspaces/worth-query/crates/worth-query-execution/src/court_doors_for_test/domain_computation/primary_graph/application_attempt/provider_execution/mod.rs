@@ -1,0 +1,13 @@
+//! Doors under `domain_computation::primary_graph::application_attempt::provider_execution`.
+#[path = "application_attempt_affinity/mod.rs"]
+pub mod application_attempt_affinity;
+#[path = "external_dispatch/mod.rs"]
+pub mod external_dispatch;
+#[path = "outcome/mod.rs"]
+pub mod outcome;
+#[path = "phase/mod.rs"]
+pub mod phase;
+#[path = "program_occurrence_gate/mod.rs"]
+pub mod program_occurrence_gate;
+#[path = "resource_request/mod.rs"]
+pub mod resource_request;

@@ -1,0 +1,181 @@
+//! A superseded interest owns the newest undelivered answer of its occurrence.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission as Admission;
+use crate::domain_computation::primary_graph::application_output_demand::registry::tests::published_retirement::admit;
+use crate::domain_computation::primary_graph::application_output_demand::registry::tests::published_retirement::publish;
+use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
+
+pub fn scenario(rejoin: bool, late_hold: bool) {
+    let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+    let _occurrence = occurrence();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+        let registry = WorthQueryOutputDemandRegistry::default();
+
+        let old_key = key("awaited", 1, 1);
+        let newest_key = key("awaited", 2, 1);
+        let stale = admit(&registry, &old_key);
+        let refreshing = admit(&registry, &newest_key);
+        // The registry transports this opaque installed readmission payload.
+        // Native Query certification is outside this row-lifetime proof.
+        let source = Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_readmission::RequiredOutputReadmission::new_for_test(Arc::new(()), std::sync::OnceLock::new(), worth_query_execution::facade::domain_computation::WorthQueryOutputDemandResourceProfile::standard().limits(), None));
+        (*(*(*registry
+            .state_for_test())
+            .lock()
+            .unwrap()
+            .records_mut_for_test())
+            .get_mut(&newest_key)
+            .unwrap()
+            .readmission_source_mut_for_test()) = Some(Arc::clone(&source));
+        publish(&registry, &refreshing, receipt);
+        if late_hold {
+            drop(stale);
+            let key = newest_key.clone();
+            let returned = registry.hold_required_successor_for_test(Box::new(refreshing), |successor| {
+                successor
+                    .downcast_ref::<WorthQueryOutputDemandInterest>()
+                    .map(|interest| interest.key_for_test())
+            });
+            assert!(
+                returned.is_some(),
+                "no stale owner awaits this late successor; the registry must give it back"
+            );
+            drop(returned);
+            assert!(!(*(*registry.state_for_test()).lock().unwrap().records_for_test()).contains_key_for_test(&key));
+
+            return;
+        }
+        drop(refreshing);
+        {
+            let state = (*registry.state_for_test()).lock().unwrap();
+            assert!(
+                (*state.records_for_test()).contains_key_for_test(&newest_key),
+                "the freshest Published answer still belongs to the stale owner"
+            );
+            assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner(
+                state.records_for_test(),
+                &newest_key
+            ));
+        }
+        if rejoin {
+            let (owner, joined_source) = registry
+                .rejoin_refreshed_for_test(&stale)
+                .unwrap()
+                .expect("the stale owner rejoins its exact latest answer");
+            assert_eq!((*owner.key_for_test()), newest_key);
+            assert!(Arc::ptr_eq(&joined_source, &source));
+            drop(joined_source);
+            drop(stale);
+            let Admission::AdvanceCheckpoint { claim, checkpoint } = registry.begin_for_test(&owner) else {
+                panic!("the rejoined owner alone claims the authentic Published checkpoint");
+            };
+            let WorthQueryOutputCheckpoint::Published {
+                receipt,
+                delivery: _,
+                ready_backing,
+            } = checkpoint
+            else {
+                panic!("one undelivered publication is owed");
+            };
+            registry
+                .finish_checkpoint_for_test(
+                    &owner,
+                    claim,
+                    WorthQueryOutputCheckpoint::Delivered {
+                        receipt,
+                        delivery: None,
+                        ready_backing,
+                    },
+                    None,
+                )
+                .unwrap();
+            let Admission::AdvanceCheckpoint { claim, checkpoint } = registry.begin_for_test(&owner) else {
+                panic!("the rejoined owner completes the delivered answer");
+            };
+            let WorthQueryOutputCheckpoint::Delivered {
+                receipt,
+                delivery: _,
+                ready_backing,
+            } = checkpoint
+            else {
+                panic!("the answer was delivered exactly once");
+            };
+            let ready = ready_backing.complete(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand::new_for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(receipt), worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::without_execution_for_test()));
+            registry
+                .finish_checkpoint_for_test(
+                    &owner,
+                    claim,
+                    WorthQueryOutputCheckpoint::Ready(ready),
+                    None,
+                )
+                .unwrap();
+            assert!(
+                matches!(registry.begin_for_test(&owner), Admission::Ready(_)),
+                "no second delivery"
+            );
+            drop(owner);
+            assert!(
+                (*(*registry.state_for_test()).lock().unwrap().records_for_test())[&newest_key].has_cached_ready_for_test(),
+                "closing the owner keeps its delivered Ready cache"
+            );
+
+            registry.release_product_occurrence_for_test(occurrence());
+        } else {
+            drop(stale);
+            assert!(
+                !(*(*registry
+                    .state_for_test())
+                    .lock()
+                    .unwrap()
+                    .records_for_test())
+                    .contains_key_for_test(&newest_key),
+                "closing the last stale owner retires its now idle Published answer"
+            );
+        }
+        drop(source);
+    });
+}
+#[test]
+fn a_stale_owner_rejoins_the_publication_after_the_refresher_closes() {
+    scenario(true, false);
+}
+#[test]
+fn closing_the_last_stale_owner_retires_its_undelivered_answer() {
+    scenario(false, false);
+}
+#[test]
+fn a_successor_held_after_its_last_awaiting_owner_closed_is_returned() {
+    scenario(false, true);
+}
+
+#[test]
+fn closing_the_last_stale_owner_releases_its_held_successor() {
+    let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+    let _occurrence = occurrence();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+        let registry = WorthQueryOutputDemandRegistry::default();
+
+        let stale_key = key("held-awaiting", 1, 1);
+        let newest_key = key("held-awaiting", 2, 1);
+        let stale = admit(&registry, &stale_key);
+        let successor = admit(&registry, &newest_key);
+        publish(&registry, &successor, receipt);
+        assert!(registry
+            .hold_required_successor_for_test(Box::new(successor), |successor| successor
+                .downcast_ref::<WorthQueryOutputDemandInterest>()
+                .map(|interest| interest.key_for_test()))
+            .is_none());
+        assert!((*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&newest_key]
+            .held_successor_for_test())
+            .is_some());
+        drop(stale);
+        assert!(
+            !(*(*registry
+                .state_for_test())
+                .lock()
+                .unwrap()
+                .records_for_test())
+                .contains_key_for_test(&newest_key),
+            "the last awaiting owner's release also closes its held successor"
+        );
+    });
+}

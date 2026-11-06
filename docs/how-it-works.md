@@ -636,6 +636,13 @@ The host composes contributions with a schema, compiles each operation
 contract, derives graph obligations, admits the package, and installs it into
 an execution runtime with bounded resources.
 
+Each graph-obligation identity admits at most 4,096 canonical entries and 1 MiB
+of digest material. Distinct aspect contracts are encoded once, with one
+reference per projection/touch; masks, field paths, bindings and structural
+scopes also count. An operation installation denial retains requested and
+maximum counts in `canonical_denial()`. See
+[installation limits](build-an-application.md#4-install-or-reopen).
+
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
@@ -676,7 +683,7 @@ let runtime = in_memory_program(
 
 - `*_from_checkpoint` variants restore from a `WorthQueryApplicationCheckpoint`.
 - Worked installs with real limits and a roster:
-  [Build an Application §4](build-an-application.md#4-install-the-application-graph).
+  [Build an Application §4](build-an-application.md#4-install-or-reopen).
 
 Contribution setup registers handlers (`setup.handler::<Binding, _>(..)`),
 invariants, producers, and conditional nodes.
@@ -1484,7 +1491,7 @@ denied with `TouchedRecordsRequired` if the commit sealed no touched records.
 
 ### 10.4 Executable example
 
-[`owner_validated_application_touch_outside_installed_ceiling_is_denied`](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/terminal_failures.rs)
+[`owner_validated_application_touch_outside_installed_ceiling_is_denied`](../workspaces/worth-query/crates/worth-query-court-execution-package-archive/tests/worth_query_court_execution_package_archive/domain_computation/primary_graph/tests/application_attempt/terminal_failures/mod.rs)
 adds an undeclared application touch after the owner validated the candidate.
 Commit is denied at invariant execution, and the account stays open. Validation
 cannot promote a proposed touch outside the installed ceiling into performed
@@ -1524,7 +1531,7 @@ their marks agree, whoever the writer was.
   establish currentness without recomputation. Equal declared input can avoid
   calling a producer. Stable republication of the retained output then clears
   pending marks below it without calling those consumers. The executable
-  [`equal_clean_successor_passes_the_cutoff_and_verifies_the_full_handler_prefix`](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/equality/pending_resolution.rs)
+  [`equal_clean_successor_passes_the_cutoff_and_verifies_the_full_handler_prefix`](../workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/equality/pending_resolution/mod.rs)
   requires the exact equal, clean successor and verifies the handler's full
   consumed prefix; an unrelated clean successor cannot clear the obligation.
 - **Full verification.** When marking cannot certify the selected basis,

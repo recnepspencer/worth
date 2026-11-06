@@ -8,7 +8,7 @@ pub mod data;
 
 pub(crate) use aspect_plans::{
     canonicalize_entity_registration, canonicalize_relation_registration, lower_aspect_plans,
-    lower_relation_integrity_plans,
+    lower_aspect_plans_for_compilation, lower_relation_integrity_plans_for_compilation,
 };
 pub(crate) use continuity::{classify_schema_transition, SchemaContinuityAuthorityInput};
 pub(crate) use continuity::{
@@ -17,3 +17,7 @@ pub(crate) use continuity::{
 };
 
 pub(crate) use continuity::validate_schema_continuity_body;
+
+mod compilation_control;
+pub(crate) use compilation_control::SchemaCompilationControl;
+mod snapshot_compilation;

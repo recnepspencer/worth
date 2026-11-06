@@ -65,7 +65,9 @@ fn an_attachment_the_medium_moved_out_of_publishes_nothing() {
     release_test_commit_snapshot(&source, &committed);
     let positioned = source.history.positioned_canonical_commits_snapshot()[0].clone();
     let contents = TestDurableMedium::new();
-    let binding = RelationalDurableMediumBinding::new(contents.attachment());
+    let binding = RelationalDurableMediumBinding::new(
+        crate::durability::medium::RelationalDurableMediumTransfer::fresh(contents.attachment()),
+    );
 
     assert!(binding.detach().is_some(), "the medium moves out once");
     assert!(binding.detach().is_none(), "and only once");
@@ -73,12 +75,7 @@ fn an_attachment_the_medium_moved_out_of_publishes_nothing() {
         .history
         .commit_artifact(positioned.commit.commit_id)
         .unwrap();
-    let refused = binding.publish(
-        positioned,
-        artifact.roots(),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        execution,
-    );
+    let refused = binding.publish(positioned, artifact.roots(), execution);
 
     assert!(matches!(
         refused,

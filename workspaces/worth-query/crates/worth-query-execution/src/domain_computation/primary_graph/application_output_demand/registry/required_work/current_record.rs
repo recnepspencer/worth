@@ -2,10 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::CurrentBasis;
 impl RequiredWorkMembership {
-    pub(in crate::domain_computation::primary_graph) fn certify_current_basis(
-        self: &Arc<Self>,
-        basis: CurrentBasis,
-    ) -> Arc<Self> {
+    pub fn certify_current_basis(self: &Arc<Self>, basis: CurrentBasis) -> Arc<Self> {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -77,3 +74,5 @@ impl WorthQueryOutputDemandRegistry {
         Ok(())
     }
 }
+
+mod court_doors_for_test;

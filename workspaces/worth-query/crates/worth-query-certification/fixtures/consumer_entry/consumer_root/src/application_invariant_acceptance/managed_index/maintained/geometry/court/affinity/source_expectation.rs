@@ -1,6 +1,7 @@
 //! A genuine prefix Source from the sibling cannot authorize this fork's mutation.
 use super::super::super::super::{authoring as catalog, mutation, query as names};
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 
 pub(super) fn seed(world: &host::Host, principal: &Principal, scope: &WorthQueryRequestScope) {
@@ -44,7 +45,7 @@ pub(super) fn exercise(
     principal: &Principal,
     scope: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
-    calls: &prefix::Calls,
+    calls: &prefix_observation::Calls,
 ) {
     let request = world
         .runtime()

@@ -6,6 +6,7 @@
 /// `ApplicationSchemaDeclaration`.
 pub mod application_schema {
     pub use crate::application_schema::*;
+    pub use worth_foundational::CanonicalDigestId;
 }
 
 /// Aftermath declaration: what may happen to an operation's committed change
@@ -29,6 +30,11 @@ pub mod application_capability {
 /// that tie an application request value to an installed query.
 pub mod application_query {
     pub use crate::application_query::*;
+}
+
+/// Model-history declarations, current READ bindings and ordinary operation membership.
+pub mod application_history {
+    pub use crate::application_history::*;
 }
 
 /// Typed managed-resource declarations, codec profiles and independent actions.

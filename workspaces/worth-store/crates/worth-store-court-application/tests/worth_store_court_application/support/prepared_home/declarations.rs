@@ -7,8 +7,8 @@ pub(crate) use {std::path::Path, std::path::PathBuf};
 
 pub(crate) use worth_execution::ExecutionRequest;
 
+pub(crate) use crate::durable_run::world;
 pub(crate) use crate::workload::Step;
-pub(crate) use {crate::durable_run::apply, crate::durable_run::open};
 
 /// A closed home after a prefix; removed when dropped.
 pub(crate) struct PreparedHome {
@@ -21,9 +21,10 @@ impl PreparedHome {
     pub(crate) fn prepare(steps: &[Step], execution: &ExecutionRequest<'_, '_>) -> Self {
         let directory = tempfile::tempdir().unwrap();
         let location = directory.path().join("home");
-        let home = open(&location, execution).expect("a new home opens");
-        apply(&home, execution, steps);
-        home.close(execution);
+        let home = world::open(&location, crate::schema_transition::SOURCE, true, execution)
+            .expect("a new World-composed Home opens");
+        world::apply(&home.home, execution, steps);
+        world::close(home, execution);
         Self {
             _directory: directory,
             location,

@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use crate::durability::data::{DurabilityError, RecoveryFailureClass};
+use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::history::data::{CanonicalCommitEnvelope, HistoryDriftClass};
 use crate::runtime::RelationalRuntime;
 
@@ -9,17 +9,18 @@ use super::super::recovered_counter_capacity::prepare_recovery_lineage_sequence;
 use super::super::root_inventory::RecoveredRootInventory;
 
 pub(super) fn prepare_replay_context(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
     position: crate::publication::patch::data::PatchStreamPosition,
     available_commit_ids: &BTreeSet<crate::history::data::CommitId>,
     recovered_roots: &mut RecoveredRootInventory,
-) -> Result<bool, DurabilityError> {
+) -> Result<bool, RelationalRecoveryStop> {
     let had_checkpoint_artifact = restored
         .history
         .has_recorded_commit_envelope(envelope.commit.commit_id);
     validate_parent_closure(restored, envelope, available_commit_ids)?;
-    admit_carried_branch_checkpoint(restored, envelope, recovered_roots)?;
+    admit_carried_branch_checkpoint(execution, restored, envelope, recovered_roots)?;
     restored
         .history
         .require_recovered_branch(&envelope.branch_context)
@@ -44,10 +45,11 @@ pub(super) fn prepare_replay_context(
 }
 
 fn admit_carried_branch_checkpoint(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
     recovered_roots: &RecoveredRootInventory,
-) -> Result<(), DurabilityError> {
+) -> Result<(), RelationalRecoveryStop> {
     // A fork is the only source of a branch's existence (D8): a commit may
     // carry its branch's prior cell, but never create the branch.
     if !restored.history.has_branch(&envelope.branch_context) {
@@ -57,7 +59,7 @@ fn admit_carried_branch_checkpoint(
                 "commit {} is on branch `{}`, which no checkpoint or durable branch transition created",
                 envelope.commit.commit_id.0, envelope.branch_context.0
             ),
-        ));
+        ).into());
     }
     let Some(checkpoint) = envelope.branch_cell_checkpoint.clone() else {
         return Ok(());
@@ -80,6 +82,7 @@ fn admit_carried_branch_checkpoint(
     restored
         .history
         .admit_recovered_branch_cell(
+            execution,
             checkpoint,
             &envelope.branch_context,
             recovered_root,
@@ -87,7 +90,7 @@ fn admit_carried_branch_checkpoint(
             &restored.config.schema.registry,
             &restored.services.symbols.interner_snapshot(),
         )
-        .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail))
+        .map_err(RelationalRecoveryStop::from)
 }
 
 fn validate_parent_closure(

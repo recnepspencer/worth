@@ -15,6 +15,8 @@ use super::OrdinaryParent;
 
 #[path = "commit/component_evidence.rs"]
 mod component_evidence;
+mod readmission;
+pub(crate) use readmission::ReadmittedWorldCommitDenial;
 
 /// Explicit change posture derived from owner-issued component evidence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -141,6 +143,7 @@ pub struct CompositeRuntimeWorldCommit {
     lineage: CompositeCommitLineage,
     component_evidence: CompositeComponentEvidence,
     caller_correlation: Option<CompositeCallerCorrelation>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl CompositeRuntimeWorldCommit {
@@ -162,6 +165,7 @@ impl CompositeRuntimeWorldCommit {
             },
             component_evidence,
             caller_correlation,
+            _memory: None,
         })
     }
 
@@ -173,6 +177,32 @@ impl CompositeRuntimeWorldCommit {
         owner_results: &CompositeOwnerExecutionResults,
         caller_correlation: Option<CompositeCallerCorrelation>,
     ) -> Result<Self, CompositeCommitConstructionDenial> {
+        Self::from_ordinary_components(
+            identity,
+            predecessor,
+            basis,
+            publication,
+            caller_correlation,
+            None,
+            |before, after| {
+                CompositeComponentEvidence::from_owner_results(owner_results, before, after)
+            },
+        )
+    }
+
+    fn from_ordinary_components(
+        identity: CompositeCommitIdentity,
+        predecessor: &CompositeRuntimeWorldCommit,
+        basis: AdmittedCompositeRuntimeWorldBasis,
+        publication: CompositePublicationAttemptIdentity,
+        caller_correlation: Option<CompositeCallerCorrelation>,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+        components: impl FnOnce(
+            &AdmittedCompositeRuntimeWorldBasis,
+            &AdmittedCompositeRuntimeWorldBasis,
+        )
+            -> Result<CompositeComponentEvidence, CompositeCommitConstructionDenial>,
+    ) -> Result<Self, CompositeCommitConstructionDenial> {
         require_owner(identity.owner_identity(), basis.owner_identity())?;
         require_owner(
             identity.owner_identity(),
@@ -183,11 +213,7 @@ impl CompositeRuntimeWorldCommit {
             identity.owner_identity(),
             predecessor.basis().owner_identity(),
         )?;
-        let component_evidence = CompositeComponentEvidence::from_owner_results(
-            owner_results,
-            predecessor.basis(),
-            &basis,
-        )?;
+        let component_evidence = components(predecessor.basis(), &basis)?;
         Ok(Self {
             identity,
             basis: Some(basis),
@@ -199,6 +225,7 @@ impl CompositeRuntimeWorldCommit {
             },
             component_evidence,
             caller_correlation,
+            _memory: memory,
         })
     }
 

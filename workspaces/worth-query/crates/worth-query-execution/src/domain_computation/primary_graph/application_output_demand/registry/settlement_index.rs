@@ -31,13 +31,13 @@ type SourcePostings = BTreeMap<Address, Posting>;
 
 /// Prepared before the product effect. Cancellation only links this node;
 /// ordered-index removal runs at the next admitted registry entry.
-pub(super) struct PendingVacancyCleanup {
+pub struct PendingVacancyCleanup {
     identity: Arc<RecordedSettlementIdentity>,
     next: Option<Box<Self>>,
 }
 
 #[derive(Default)]
-pub(super) struct SettlementIndex {
+pub struct SettlementIndex {
     sources: BTreeMap<SemanticSource, SourcePostings>,
     cancelled_head: Option<Box<PendingVacancyCleanup>>,
 }
@@ -163,3 +163,5 @@ impl DemandRegistryState {
         reservation::reserve(self, identity)
     }
 }
+
+mod court_doors_for_test;

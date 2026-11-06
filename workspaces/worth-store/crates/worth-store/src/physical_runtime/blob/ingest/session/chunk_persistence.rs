@@ -108,7 +108,7 @@ impl BlobIngestSession<'_> {
             self.declaration.deadline(),
             encoded,
             token.declaration_record,
-            token.declaration_digest,
+            *token.declaration_digest.bytes(),
         )
         .map_err(|cause| BlobIngestFailure::Append {
             session: self.session,
@@ -156,7 +156,7 @@ impl BlobIngestSession<'_> {
             self.declaration.deadline(),
             encoded,
             token.declaration_record,
-            token.declaration_digest,
+            *token.declaration_digest.bytes(),
         )
         .map_err(|cause| BlobIngestFailure::Append {
             session: self.session,

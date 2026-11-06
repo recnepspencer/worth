@@ -14,6 +14,7 @@ rmp-serde = "1.3"
 "sha2" = { "version" = "^0.10" }
 "worth-execution" = { "path" = "../worth-execution" }
 "worth-foundational" = { "path" = "../worth-foundational" }
+"worth-proof" = { "path" = "../worth-proof" }
 "worth-relational" = { "path" = "../worth-relational" }
 "worth-testkit-relational" = { "path" = "../worth-testkit-relational" }
 

@@ -40,6 +40,10 @@ pub(crate) struct RelationalPreparationRuntime {
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) config: Arc<RelationalRuntimeConfig>,
     pub(crate) schema_contract_runtime: Arc<SchemaContractRuntimeSubsystem>,
+    pub(crate) configuration_generation: u64,
+    pub(crate) execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
+    pub(crate) execution_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
+    pub(crate) home_target: Option<Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
     pub(crate) diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
     pub(crate) index_definitions: crate::runtime::state::IndexDefinitionReadBinding,
     pub(crate) mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
@@ -102,6 +106,12 @@ impl RelationalPreparationOwnerBinding {
             commit_work_budget: None,
             config: Arc::clone(&configuration.config),
             schema_contract_runtime: Arc::clone(&configuration.schema_contract_runtime),
+            configuration_generation: configuration
+                .schema_contract_runtime
+                .custom_invariant_generation,
+            execution_contracts: None,
+            execution_registry: None,
+            home_target: None,
             diagnostics: self.diagnostics.clone(),
             index_definitions: self.index_definitions.clone(),
             mirror_residency: self.mirror_residency.clone(),
@@ -320,7 +330,9 @@ impl crate::capabilities::PublicationPolicySource for RelationalPreparationRunti
 
 impl crate::capabilities::SchemaSource for RelationalPreparationRuntime {
     fn schema_registry(&self) -> &crate::schema::data::RelationalSchemaRegistry {
-        &self.config.schema.registry
+        self.execution_registry
+            .as_ref()
+            .map_or(&self.config.schema.registry, |registry| registry.as_ref())
     }
 }
 

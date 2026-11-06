@@ -1,7 +1,7 @@
 //! Closed Host integration stages; Store keeps physical and Native ownership.
 use super::super::{
     application_contribution::PreparedApplicationRuntimeContributions,
-    bootstrap::native_meaning::InstalledNativeSchemaMeaning,
+    bootstrap::native_meaning::{InstalledNativeSchemaMeaning, PreparedNativeSchemaMeaning},
     program_occurrence::WorthQueryProgramActivationCell,
 };
 use super::*;
@@ -18,7 +18,10 @@ use worth_relational::facade::runtime::{
 };
 mod binding;
 mod world;
-pub use world::{QueryHomeWorldAttachmentRefused, ReadmittedHomeQueryService};
+pub use world::{
+    QueryHomeCustodyReadmissionDenial, QueryHomeCustodyReadmissionRefused,
+    QueryHomeWorldAttachmentRefused, ReadmittedHomeQueryService,
+};
 mod existing;
 mod native;
 pub use existing::{
@@ -39,7 +42,7 @@ pub struct PreparedHomeApplication<Schema: ApplicationSchemaComposition, Program
 
 pub struct PreparedHomeNativeMeaning<Schema: ApplicationSchemaComposition, Program> {
     state: HomeApplicationState<Schema, Program>,
-    schema: InstalledNativeSchemaMeaning,
+    schema: PreparedNativeSchemaMeaning,
 }
 
 pub struct ReadmittedHomeNativeMeaning<Schema: ApplicationSchemaComposition, Program> {
@@ -60,6 +63,8 @@ struct HomeApplicationState<Schema: ApplicationSchemaComposition, Program> {
     activation: WorthQueryProgramActivationCell,
     limits: WorthQueryInMemoryApplicationLimits,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
+    authorization_time_source:
+        Option<Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>>,
 }
 
 /// Installs actual schema/program meaning before Store construction starts.
@@ -71,6 +76,10 @@ pub fn prepare_home_program<Schema, Program>(
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
+    authorization_time_source: Option<
+        Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
+    >,
+    directory_support: fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>,
 ) -> Result<PreparedHomeApplication<Schema, Program>, WorthQueryInMemoryApplicationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -96,6 +105,7 @@ where
             admitted = Some((installed, supported));
             Ok(support)
         })),
+        Some(directory_support),
     )?;
     let (invariants, pending, activation) = contribution_preparation::prepare(
         configured,
@@ -119,6 +129,7 @@ where
             activation,
             limits,
             build_identity,
+            authorization_time_source,
         },
         invariants,
     })

@@ -24,6 +24,7 @@ where
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         attempt: &mut crate::publication::ReservedCompositePublicationAttempt,
+        handoff: Option<&mut super::super::RelationalCutoverHandoff<'_>>,
     ) -> Result<RelationalAttemptProgress, RelationalExecutionFailure> {
         match attempt.plan().relational().posture() {
             crate::publication::RelationalComponentPlanPosture::RetainExact => {
@@ -38,7 +39,7 @@ where
                     .take_relational_candidate()
                     .ok_or_else(|| pre_effect_failure(NoEffectCause::PreEffectFailure))?;
                 attempt.counters_mut().record_relational_owner_contact();
-                self.publish_relational_candidate(&execution, attempt, candidate)
+                self.publish_relational_candidate(&execution, attempt, candidate, handoff)
             }
             crate::publication::RelationalComponentPlanPosture::AdoptSettled => attempt
                 .take_settled_relational_adoption()
@@ -52,29 +53,21 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         attempt: &mut crate::publication::ReservedCompositePublicationAttempt,
         candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
+        handoff: Option<&mut super::super::RelationalCutoverHandoff<'_>>,
     ) -> Result<RelationalAttemptProgress, RelationalExecutionFailure> {
         match self
-            .state
-            .relational_services()
-            .publication_port()
-            .compare_and_publish(execution, candidate)
+            .publish_relational_with_current_read(execution, attempt, candidate, handoff)
+            .map_err(|denial| pre_effect_failure(NoEffectCause::CurrentReadDependency(denial)))?
         {
             RelationalPublicationOutcome::RequestStopped(stop) => {
                 Err(pre_effect_failure(NoEffectCause::ExecutionRequest(stop)))
             }
             RelationalPublicationOutcome::Performed(performed) => {
-                let commit_identity = performed.commit_identity();
-                let successor_basis = performed.next_basis().clone();
                 // Persist the owner-issued identity before the settlement
                 // service consumes the linear performed capability. An unwind
                 // can then repair this exact occurrence without repeating it.
-                attempt.record_progress(&crate::publication::CompositeAttemptProgress::new(
-                    RelationalAttemptProgress::settlement_required(
-                        commit_identity.clone(),
-                        successor_basis.clone(),
-                    ),
-                    crate::publication::SignalAttemptProgress::untouched(),
-                ));
+                let (commit_identity, successor_basis) =
+                    attempt.record_relational_performed(&performed);
                 match self
                     .state
                     .relational_services()
@@ -98,9 +91,22 @@ where
                 Err(pre_effect_failure(NoEffectCause::StaleExpectedProductHead))
             }
             RelationalPublicationOutcome::Denied(denial) => {
-                let cause = match denial {
+                let cause = match &denial {
                     worth_relational::facade::mvcc::RelationalPublicationDenial::OwnerUnavailable { .. } => NoEffectCause::OwnerUnavailable,
-                    _ => NoEffectCause::OwnerDeniedBeforeEffect,
+                    worth_relational::facade::mvcc::RelationalPublicationDenial::CurrentReadDependency(denial) => NoEffectCause::CurrentReadDependency(crate::publication::CurrentProductReadDependencyDenial::Native(*denial)),
+                    worth_relational::facade::mvcc::RelationalPublicationDenial::ScopedCutoverDurabilityUnsupported => NoEffectCause::CurrentReadDependency(crate::publication::CurrentProductReadDependencyDenial::DurabilityUnsupported),
+                    worth_relational::facade::mvcc::RelationalPublicationDenial::CutoverDeadlineElapsed => NoEffectCause::CurrentReadDependency(crate::publication::CurrentProductReadDependencyDenial::CutoverDeadlineElapsed),
+                    worth_relational::facade::mvcc::RelationalPublicationDenial::CanonicalArtifactEncoding(_)
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::RetainedEntitySelectionDurabilityUnsupported
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::RecoveredCodecTransitionRequired
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramContractsRequired
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramTransition(_)
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::StaleInvariantGeneration { .. }
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::ForeignRuntime { .. }
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::OwnerMismatch
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::Archived
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::Deleting
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::DurablePublicationRefused(_) => NoEffectCause::OwnerDeniedBeforeEffect,
                 };
                 Err(pre_effect_failure(cause))
             }

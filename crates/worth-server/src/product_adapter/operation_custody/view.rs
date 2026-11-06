@@ -71,6 +71,8 @@ pub enum Conclusion {
 #[derive(Serialize, schemars::JsonSchema)]
 pub enum KeyedResolution {
     RecoveredCommitted,
+    ReleasedOriginal,
+    ProductUnpublished,
     ProductPreparationPending,
     Unseen,
     IntentDrift,
@@ -125,6 +127,8 @@ pub(super) fn describe<C: SourceCommand>(
         Custody::Terminal(done) => View::Terminal {
             outcome: done.native_outcome().map(conclusion::<C>),
             keyed:done.native_keyed_resolution().map(|keyed|match keyed {
+                worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_)=>KeyedResolution::ReleasedOriginal,
+                worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::ProductUnpublished(_)=>KeyedResolution::ProductUnpublished,
                 worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(_)=>KeyedResolution::ProductPreparationPending,
                 worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::Unseen=>KeyedResolution::Unseen,
                 worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(_)=>KeyedResolution::RecoveredCommitted,

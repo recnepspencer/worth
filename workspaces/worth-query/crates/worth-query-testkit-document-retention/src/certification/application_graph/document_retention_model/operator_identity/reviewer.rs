@@ -52,7 +52,7 @@ pub fn authenticate<S: ApplicationSchema>(
 ) -> WorthQueryAuthenticatedExternalPrincipal<S> {
     let adapter = admit_authentication_adapter(
         schema,
-        WorthQueryAuthenticationAdapterAdmission::new(audience(), method()),
+        WorthQueryAuthenticationAdapterAdmission::new(audience(), method(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         ReviewAdapter,
     )
     .unwrap();

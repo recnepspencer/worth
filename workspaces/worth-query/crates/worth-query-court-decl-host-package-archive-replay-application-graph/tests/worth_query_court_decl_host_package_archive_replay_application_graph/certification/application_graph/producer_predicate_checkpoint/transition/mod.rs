@@ -43,7 +43,7 @@ fn checkpoint_transition_refuses_real_accepted_output_before_authoring() {
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         source.clone(),
         predecessor,
         installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 8192).unwrap(),

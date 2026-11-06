@@ -6,7 +6,6 @@ pub(super) struct Batch<'pages, 'control, 'call, 'request, Node> {
     pub(super) pages: &'pages [(usize, &'pages WorkingPage<'request, Node>)],
     pub(super) execution: ExecutionRequest<'request, 'request>,
     pub(super) control: &'control WorthQueryManagedIndexControl<'call>,
-    #[cfg(test)]
     pub(super) allocations: &'control Cell<usize>,
 }
 impl<Node: Copy> Batch<'_, '_, '_, '_, Node> {
@@ -55,10 +54,8 @@ impl<Node: Copy> Batch<'_, '_, '_, '_, Node> {
         }
         let left = self.subtree(left, window.start..lower)?;
         let right = self.subtree(right, lower..window.end)?;
-        #[cfg(test)]
         let allocated = left.is_some() && right.is_some();
         let result = branch(&self.execution, left, right, self.control)?;
-        #[cfg(test)]
         if allocated && result.is_some() {
             self.allocations.set(self.allocations.get() + 1);
         }

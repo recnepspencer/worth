@@ -8,7 +8,7 @@ mod results;
 mod rule_id;
 mod rules;
 
-pub(crate) use catalog::relation_integrity_registrations_for_plan;
+pub(crate) use catalog::append_relation_integrity_registrations;
 pub use catalog::{InvariantCatalog, InvariantRegistration};
 pub use contracts::InvariantPlanContract;
 pub use custom_rule::{

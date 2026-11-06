@@ -17,6 +17,13 @@ impl TrackedAuthorizationTime {
 }
 
 impl WorthQueryRuntimeTimeSource for TrackedAuthorizationTime {
+    fn admission_clock(
+        &self,
+    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
+    {
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()
+    }
+
     fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
         Ok(SystemTime::now())
     }

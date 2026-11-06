@@ -54,7 +54,7 @@ where
             self.runtime.authority_identity(),
             receipt.runtime_authority(),
         )?;
-        mint_recovery_handle_in_registry(receipt, Arc::clone(&self.recovery_handles))
+        mint_recovery_handle_in_registry(receipt, Arc::clone(&self.runtime.recovery_handles))
     }
 
     /// Mint only from the original operation retained through actual failed
@@ -85,7 +85,7 @@ where
             self.runtime.authority_identity(),
             original.original_authority().runtime_authority(),
         )?;
-        let registry = Arc::clone(&self.recovery_handles);
+        let registry = Arc::clone(&self.runtime.recovery_handles);
         let binding = WorthQueryRecoveryHandleBinding::from_pending_original(
             original,
             cleanup.dispatch.as_ref(),
@@ -107,7 +107,10 @@ where
             self.runtime.authority_identity(),
             receipt.runtime_authority(),
         )?;
-        let (claimed, terminal) = self.recovery_handles.claim_state(&claim_for(receipt));
+        let (claimed, terminal) = self
+            .runtime
+            .recovery_handles
+            .claim_state(&claim_for(receipt));
         Ok(status_from_claim_state(claimed, terminal))
     }
 

@@ -6,6 +6,10 @@ pub struct HomeIncarnation(std::num::NonZeroU64);
 pub struct HomeIncarnationExhausted;
 
 impl HomeIncarnation {
+    /// Live authority carriage is distinct from this recorded incarnation data.
+    pub fn fence(self) -> worth_proof::HomeIncarnationFence {
+        worth_proof::HomeIncarnationFence::from_owner(self.0)
+    }
     pub const fn initial() -> Self {
         Self(std::num::NonZeroU64::MIN)
     }

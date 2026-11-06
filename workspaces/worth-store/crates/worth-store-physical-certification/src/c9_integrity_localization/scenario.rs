@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
+use worth_foundational::CanonicalDigestId;
 
 use sha2::{Digest, Sha256};
 
@@ -23,7 +24,7 @@ pub(crate) enum FreshRootArtifactRowDenial {
 #[derive(Debug)]
 pub(crate) struct FreshRootArtifactRow {
     root: PathBuf,
-    baseline_identity: [u8; 32],
+    baseline_identity: CanonicalDigestId,
 }
 
 impl RootSliceScenario {
@@ -98,7 +99,7 @@ impl FreshRootArtifactRow {
         counters.record_world_copy(copied_paths.len() as u64, copied_bytes);
         Ok(Self {
             root: destination,
-            baseline_identity: observed_identity,
+            baseline_identity: CanonicalDigestId::new(observed_identity),
         })
     }
 
@@ -106,7 +107,7 @@ impl FreshRootArtifactRow {
         &self.root
     }
     pub(crate) const fn baseline_identity(&self) -> [u8; 32] {
-        self.baseline_identity
+        *self.baseline_identity.bytes()
     }
 }
 

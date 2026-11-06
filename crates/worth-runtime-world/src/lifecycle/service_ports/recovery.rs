@@ -9,6 +9,11 @@ pub struct RuntimeWorldRecoveryPort {
     owner: Weak<dyn RuntimeWorldRecoveryService + Send + Sync>,
 }
 impl RuntimeWorldRecoveryPort {
+    pub fn owner_identity(
+        &self,
+    ) -> Result<crate::identity::RuntimeWorldOwnerIdentity, RuntimeWorldOwnerUnavailable> {
+        Ok(self.service()?.owner_identity())
+    }
     pub fn retained_commits(
         &self,
         candidates: &[crate::identity::CompositeCommitIdentity],
@@ -45,6 +50,19 @@ impl RuntimeWorldRecoveryPort {
         self.service()?.inspect_recovered_effects(handle)
     }
 
+    pub fn continue_recovered_effects(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effects: crate::recovery::WorldRecoveredUnpublishedEffects,
+    ) -> crate::recovery::WorldRecoveredContinuationOutcome {
+        match self.service() {
+            Ok(owner) => owner.continue_recovered_effects(execution, effects),
+            Err(cause) => crate::recovery::WorldRecoveredContinuationOutcome::Refused {
+                cause: crate::recovery::WorldRecoveredContinuationDenial::Admission(cause.into()),
+                custody: effects,
+            },
+        }
+    }
     pub fn release_recovered_effects(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -105,13 +123,27 @@ impl RuntimeWorldRecoveryPort {
     }
     pub fn release_effects(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
         minimum_age_ticks: u64,
+        native: Option<worth_relational::facade::durability::ObservedRelationalMemoryCommit>,
+    ) -> Result<crate::recovery::WorldReleasedEffects, crate::recovery::RuntimeWorldRecoveryDenial>
+    {
+        self.service()?
+            .release_effects(execution, handle, minimum_age_ticks, native)
+    }
+    pub fn released_original_page(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        after: Option<&crate::identity::ProductUnpublishedOwnerEffectsIdentity>,
+        maximum: std::num::NonZeroUsize,
     ) -> Result<
-        crate::recovery::ProductUnpublishedCleanup,
-        crate::recovery::RuntimeWorldRecoveryDenial,
+        crate::recovery::WorldReleasedOriginalPage,
+        crate::durability::WorldDurableMediumDenial,
     > {
-        self.service()?.release_effects(handle, minimum_age_ticks)
+        self.service()
+            .map_err(|_| crate::durability::WorldDurableMediumDenial::Unavailable)?
+            .released_original_page(execution, after, maximum)
     }
     pub fn continue_effects(
         &self,

@@ -4,6 +4,7 @@ pub(super) fn publish(
     execution: worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     query: durable_custody::QueryPreparingApplicationCommit,
+    history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
 ) -> Result<
     WorthQueryCommittedApplicationSession,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -38,6 +39,7 @@ pub(super) fn publish(
         &mut attempt,
         candidate,
         &mut required_prerequisites,
+        history,
     )?;
     let performed = match performed {
         product_publication::WorthQueryApplicationProductPublicationOutcome::Performed(

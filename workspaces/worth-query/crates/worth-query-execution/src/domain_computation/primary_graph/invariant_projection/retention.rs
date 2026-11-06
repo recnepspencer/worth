@@ -9,6 +9,7 @@ where
         &self,
     ) -> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
         WorthQueryApplicationInvariantProjectionAuthority {
+            installed_operations: Arc::clone(&self.installed_operations),
             value_bindings: self.value_bindings.clone(),
             graph: self.graph.integration_handle(),
             layout: Arc::clone(&self.graph.layout),
@@ -28,6 +29,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
     /// runtime identity. Each reader still gets a distinct selector namespace.
     pub(in crate::domain_computation::primary_graph) fn retain_for_installation(&self) -> Self {
         Self {
+            installed_operations: Arc::clone(&self.installed_operations),
             graph: self.graph.clone(),
             layout: Arc::clone(&self.layout),
             runtime_authority: self.runtime_authority,

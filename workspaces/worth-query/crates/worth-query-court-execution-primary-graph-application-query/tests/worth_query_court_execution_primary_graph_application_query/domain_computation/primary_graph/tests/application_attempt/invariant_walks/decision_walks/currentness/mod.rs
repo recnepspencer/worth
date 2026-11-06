@@ -1,0 +1,155 @@
+//! Retain one real handler candidate across actual commits, including an unrelated twin.
+use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::*;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world::World;
+use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::decision_walks::binding::*;
+use worth_query_execution::facade::domain_computation::HandlerResult;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationEffectProgram;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding;
+use worth_query_execution::facade::domain_computation::WorthQueryMutationHandlerWork;
+use worth_execution::ExecutionAllocationPolicy as Allocation;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_operation::ApplicationMutationIdentities;
+pub type Program = WorthQueryApplicationEffectProgram<WalkSchema, CheckWalk, CheckWalkInput, Node>;
+
+pub fn prepare(
+    world: &World,
+    request: &WorthQueryRequestScope,
+    key: &str,
+) -> (Program, WorthQueryApplicationIdempotencyBinding) {
+    world
+        .application
+        .with_application_advancement(request, |phase| {
+            let host = phase.test_host_request_for_test();
+            let execution = host
+                .execution_request_for_for_test(world.application.product_runtime())
+                .unwrap();
+            let (admission, _) = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::program::authorization::authorize(
+                world,
+                &phase,
+                &execution,
+                request,
+                0,
+                CheckWalk::reference(),
+                None,
+            );
+            let key_text = key.to_owned();
+            let input = CheckWalkInput { root: 0 };
+            let identities = ApplicationMutationIdentities::<WalkSchema, CheckWalkBinding>::encode(
+                &key_text, &input,
+            )
+            .unwrap();
+            let idempotency =
+                WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities);
+            // The fixture's actual authenticated binding maps Alice to principal identity1.
+            let report = world
+                .application
+                .execute_mutation_handler_report::<CheckWalkBinding>(
+                    &phase,
+                    &identities,
+                    &1_u64,
+                    admission,
+                    Allocation::SystemAllocation,
+                );
+            let WorthQueryMutationHandlerWork::Captured(work) = report.decision_work() else {
+                panic!("the actual handler must execute")
+            };
+            assert!(work.handler_contacted());
+            assert_eq!(work.projection_work().adjacency_lists_read(), 12);
+            let HandlerResult::Completed(completed) = report.into_outcome().unwrap() else {
+                panic!("handler prepares its actual candidate")
+            };
+            let (program, outcome) = completed.into_parts();
+            assert_eq!(outcome, CheckWalkOutcome(4));
+            (program, idempotency)
+        })
+        .unwrap()
+}
+pub fn publish(
+    world: &World,
+    request: &WorthQueryRequestScope,
+    program: Program,
+    key: WorthQueryApplicationIdempotencyBinding,
+) -> WorthQueryApplicationCommitOutcome {
+    let mut result = None;
+    world
+        .application
+        .with_application_advancement(request, |phase| {
+            result = Some(
+                world
+                    .application
+                    .compare_and_commit_application_in_advancement(
+                        &phase,
+                        program,
+                        key,
+                        Allocation::SystemAllocation,
+                    ),
+            );
+        })
+        .unwrap();
+    result.unwrap()
+}
+#[test]
+fn retained_walk_handler_candidate_refuses_deep_leaf_and_nondiscovery_changes() {
+    for edit in 0..3 {
+        let graph = if edit == 2 {
+            worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world::Graph {
+                nodes: 6,
+                active: false,
+                blocked: vec![],
+                edges: vec![(0, 1), (0, 2), (1, 3), (2, 3)],
+            }
+        } else {
+            worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world::Graph::three_hops(false, vec![])
+        };
+        let world = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world::install(graph);
+        let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+        let (candidate, key) = prepare(&world, &request, "retained-walk");
+        let change = match edit {
+            0 => worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::program::edge::replace_next(&world, &request, 4),
+            1 => worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::program::link(&world, &request, 3, 4),
+            _ => worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::program::edge::replace_next(&world, &request, 3),
+        };
+        assert!(matches!(
+            worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::commit(&world, &request, change, 70 + edit),
+            WorthQueryApplicationCommitOutcome::Committed(_)
+        ));
+        let outcome = publish(&world, &request, candidate, key);
+        let WorthQueryApplicationCommitOutcome::Stale(stale) = outcome else {
+            panic!("the complete dependency must be stale after edit{edit}: {outcome:?}")
+        };
+        assert_eq!(
+            stale.stale_fact_count(),
+            1,
+            "three repeated logical walks retained one complete dependency"
+        );
+    }
+}
+#[test]
+fn the_same_retained_walk_candidate_commits_after_an_unrelated_field_edit() {
+    let world = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world::install(worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world::Graph::three_hops(false, vec![]));
+    let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+    let (candidate, key) = prepare(&world, &request, "unchanged-walk");
+    let version = world
+        .application
+        .with_host_advancement(|phase| world.invariant.snapshot(&phase).unwrap().version())
+        .unwrap();
+    let unrelated = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::program::activation::set_node_active(&world, &request, 5, true);
+    assert!(matches!(
+        worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::commit(&world, &request, unrelated, 80),
+        WorthQueryApplicationCommitOutcome::Committed(_)
+    ));
+    let changed = world
+        .application
+        .with_host_advancement(|phase| world.invariant.snapshot(&phase).unwrap().version())
+        .unwrap();
+    assert_ne!(
+        version, changed,
+        "the ordinary unrelated write actually moved the graph head"
+    );
+    let outcome = publish(&world, &request, candidate, key);
+    assert!(
+        matches!(&outcome, WorthQueryApplicationCommitOutcome::Committed(_)),
+        "the same retained candidate stays current after the unrelated write: {outcome:?}"
+    );
+}

@@ -1,0 +1,158 @@
+use std::num::NonZeroUsize;
+use std::time::Duration;
+use std::time::UNIX_EPOCH;
+
+use worth_query_execution::facade::domain_computation::WorthQueryGovernedTemporalOperationAuthorization;
+use worth_query_execution::facade::domain_computation::WorthQueryGovernedTemporalQueryAuthorization;
+use worth_query_execution::facade::domain_computation::WorthQueryTemporalOperationAuthorization;
+use worth_query_execution::facade::domain_computation::WorthQueryTemporalQueryAuthorization;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityAction;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityDisclosure;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityPurpose;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityTouchInput;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::CapabilityTouchOperation;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::TouchAccountCapability;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_world_installation::installed_capability_authorization_world;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::GovernedAccountOmissionQuery;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::controls::WorthQueryApplicationQueryControls;
+
+#[test]
+fn governed_temporal_operation_uses_real_capability_progression() {
+    let world = installed_capability_authorization_world();
+    world.authorization_time.script([
+        UNIX_EPOCH + Duration::from_secs(100),
+        UNIX_EPOCH + Duration::from_secs(100),
+    ]);
+    let request = live_scope();
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            let borrowed_execution = host_custody.borrowed_request_for_test();
+            let execution = &borrowed_execution;
+            let principal = authenticated_principal(
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
+                &world,
+                &request,
+            );
+            let account = resolved_account(
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            );
+            let operation = world
+                .application
+                .installed_schema()
+                .installed_operation(CapabilityTouchOperation::reference())
+                .unwrap();
+            let capability = world
+                .application
+                .installed_schema()
+                .capability(
+                    TouchAccountCapability::reference(),
+                    CapabilityTouchOperation::reference(),
+                )
+                .unwrap();
+            let input = admitted_input();
+            let authorization = WorthQueryGovernedTemporalOperationAuthorization::new(capability);
+            let selected = world.selected_product(
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
+            );
+            let admission = authorization
+                .authorize(
+                    execution,
+                    &selected,
+                    &principal,
+                    &account,
+                    &operation,
+                    &input,
+                    Default::default(),
+                    &request,
+                )
+                .expect("current capability must admit the temporal operation");
+            assert_eq!(admission.operation(), "CapabilityTouchOperation");
+            assert!(admission.authorization_requirement_count() > 0);
+        })
+        .expect("the fixture block owns its installed host call")
+}
+
+#[test]
+fn governed_temporal_reconstruction_uses_real_capability_progression() {
+    let world = installed_capability_authorization_world();
+    world.authorization_time.script([
+        UNIX_EPOCH + Duration::from_secs(100),
+        UNIX_EPOCH + Duration::from_secs(100),
+    ]);
+    let request = live_scope();
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            let borrowed_execution = host_custody.borrowed_request_for_test();
+            let execution = &borrowed_execution;
+            let principal = authenticated_principal(
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &world,
+                &request,
+            );
+            let account = resolved_account(
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            );
+            let query = world
+                .application
+                .installed_schema()
+                .certification_query(GovernedAccountOmissionQuery::reference())
+                .unwrap();
+            let capability = world
+                .application
+                .installed_schema()
+                .capability(
+                    TouchAccountCapability::reference(),
+                    CapabilityTouchOperation::reference(),
+                )
+                .unwrap();
+            let authorization =
+                WorthQueryGovernedTemporalQueryAuthorization::new(capability, admitted_input());
+            let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
+            let selected = world.selected_product(
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+            );
+            let (_, product, application_basis) = selected.into_parts_for_test();
+            let plan = authorization
+        .admit(execution,
+            &world.application,
+            &query,
+            &access,
+            worth_query_declaration::facade::application_query::ApplicationQueryParameterSet::new(),
+            WorthQueryApplicationQueryControls::product_one_shot_for_test(product, application_basis, NonZeroUsize::new(1).unwrap(), &request),
+        )
+        .expect("current capability must admit temporal reconstruction");
+            assert!(plan.graph_work_capability_identity().is_some());
+        })
+        .expect("the fixture block owns its installed host call")
+}
+
+pub fn admitted_input() -> CapabilityTouchInput {
+    CapabilityTouchInput {
+        account: "account-1".to_owned(),
+        action: CapabilityAction::Touch,
+        purpose: CapabilityPurpose::AccountMaintenance,
+        disclosure: CapabilityDisclosure::AccountActivity,
+        related_account: "account-2".to_owned(),
+        request_record: "selected-request".to_owned(),
+        prior_record: "selected-prior".to_owned(),
+        amount: 50,
+        caller_time: 100,
+    }
+}

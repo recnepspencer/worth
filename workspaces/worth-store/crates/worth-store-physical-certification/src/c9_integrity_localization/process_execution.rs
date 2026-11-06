@@ -7,6 +7,7 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::path::Path;
 use std::process::{Command, ExitStatus};
+use worth_foundational::CanonicalDigestId;
 
 pub(super) struct SubjectExecution {
     pub(super) process_id: u32,
@@ -49,7 +50,7 @@ pub(super) fn run_subject(
 
 pub(super) struct OfflineExecution {
     pub(super) process_id: u32,
-    pub(super) executable_sha256: [u8; 32],
+    pub(super) executable_sha256: CanonicalDigestId,
     pub(super) report: Value,
 }
 
@@ -105,7 +106,9 @@ pub(super) fn run_offline_observer(
             .expect("parse independent report wire");
     OfflineExecution {
         process_id,
-        executable_sha256: executable_sha256(executable).expect("observer digest"),
+        executable_sha256: CanonicalDigestId::new(
+            executable_sha256(executable).expect("observer digest"),
+        ),
         report,
     }
 }

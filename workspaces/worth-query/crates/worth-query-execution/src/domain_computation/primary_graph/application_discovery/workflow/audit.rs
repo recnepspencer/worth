@@ -72,6 +72,15 @@ where
     Subject: ApplicationWorkflowReadBinding<Schema>,
     Audit: ApplicationWorkflowReadBinding<Schema>,
 {
+    let receiver = current
+        .application()
+        .runtime
+        .product_runtime
+        .owner
+        .owner_identity();
+    let subject_runtime = subject
+        .runtime_authority_for(receiver)
+        .map_err(capability_owner_denial)?;
     if target.subject != subject.resource_entity_id()
         || target.data.product().branch_identity() != current.product().branch_identity()
         || !std::ptr::eq(target.data.application(), current.application())
@@ -89,8 +98,11 @@ where
         }
         Err(cause) => return Err(cause),
     };
+    let audit_runtime = audit
+        .runtime_authority_for(receiver)
+        .map_err(capability_owner_denial)?;
     if subject.resource_entity_id() != audit.resource_entity_id()
-        || subject.runtime_authority() != audit.runtime_authority()
+        || subject_runtime != audit_runtime
         || subject.graph_work_branch() != audit.graph_work_branch()
         || subject.principal_entity_id() != audit.principal_entity_id()
     {
@@ -143,7 +155,7 @@ where
         return Ok(WorthQueryWorkflowAudit::Withheld);
     };
     let execution = phase
-        .execution_request_for(&current.application().product_runtime)
+        .execution_request_for(&current.application().runtime.product_runtime)
         .map_err(WorkflowReadAdmissionDenial::Phase)?;
     let graph = current
         .application()
@@ -154,4 +166,20 @@ where
         crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::audit::observe(
             &execution,runtime,target.data.application_basis().snapshot_handle(),graph.layout().workflow(),target.instance,history)
     })
+}
+
+fn capability_owner_denial(
+    cause: worth_proof::HomeIncarnationDenial,
+) -> WorkflowReadAdmissionDenial {
+    match cause {
+        worth_proof::HomeIncarnationDenial::ForeignHome => {
+            WorkflowReadAdmissionDenial::PolicyMismatch
+        }
+        worth_proof::HomeIncarnationDenial::StaleIncarnation => {
+            WorkflowReadAdmissionDenial::Authorization(Denial::new(
+                Kind::Refused(Refusal::StaleIncarnation),
+                "workflow audit capability",
+            ))
+        }
+    }
 }

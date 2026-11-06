@@ -77,13 +77,15 @@ struct RecordedReceipt {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(super) struct RecordedOriginalBinding {
-    pub(super) key: [u8; 32],
-    pub(super) intent: String,
-    pub(super) affinity: String,
-    pub(super) outcome: WorthQueryApplicationCommitOutcomeIdentity,
-    pub(super) emitted: usize,
-    pub(super) settlement: DurableQueryOutputSettlement,
+pub(in crate::domain_computation::primary_graph::provider) struct RecordedOriginalBinding {
+    pub(in crate::domain_computation::primary_graph::provider) key: [u8; 32],
+    pub(in crate::domain_computation::primary_graph::provider) intent: String,
+    pub(in crate::domain_computation::primary_graph::provider) affinity: String,
+    pub(in crate::domain_computation::primary_graph::provider) outcome:
+        WorthQueryApplicationCommitOutcomeIdentity,
+    pub(in crate::domain_computation::primary_graph::provider) emitted: usize,
+    pub(in crate::domain_computation::primary_graph::provider) settlement:
+        DurableQueryOutputSettlement,
 }
 
 impl WorthQueryRecoveredApplicationCommitReceipt {

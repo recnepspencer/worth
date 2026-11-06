@@ -70,6 +70,7 @@ pub(crate) struct ProductBranchReferenceCell {
 /// Why a reference movement could not replace the selected product head.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ProductBranchReferenceCellDenial {
+    ControlledInterruption,
     MovementInFlight,
     RecoveryRequired,
     DurableSubjectMismatch,
@@ -359,7 +360,6 @@ impl ProductBranchReferenceCell {
 
     /// Whether a writer would block right now: true exactly while some guard
     /// on this cell is held. Non-blocking, so a guarded section may ask it.
-    #[cfg(test)]
     pub(crate) fn writers_are_locked_out_for_test(&self) -> bool {
         matches!(
             self.state.current.try_write(),

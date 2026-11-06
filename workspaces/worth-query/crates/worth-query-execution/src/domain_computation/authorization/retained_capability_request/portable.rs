@@ -2,8 +2,6 @@
 mod context_inventory;
 mod encoding;
 
-#[cfg(test)]
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
@@ -17,14 +15,14 @@ use worth_relational::facade::identity::EntityId;
 use super::{WorthQueryCapabilityContextKey, WorthQueryRetainedCapabilityRequest};
 
 const PORTABLE_VERSION: u8 = 2;
-pub(in crate::domain_computation) const MAXIMUM_PORTABLE_BYTES: usize = 64 * 1024;
+pub const MAXIMUM_PORTABLE_BYTES: usize = 64 * 1024;
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct PortableRequest<Entries = Vec<(WorthQueryCapabilityContextKey, EntityId)>> {
     version: u8,
     recorded_actor: RecordedActorRequest,
-    capability_identity: [u8; 32],
+    capability_identity: worth_foundational::CanonicalDigestId,
     principal: EntityId,
     resource: EntityId,
     resource_entity: String,
@@ -56,7 +54,7 @@ struct PortableRelation {
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation) enum WorkflowApprovalRequestEncodingDenial {
+pub enum WorkflowApprovalRequestEncodingDenial {
     TooLarge,
     NonPortableValue,
     InvalidRequest,
@@ -64,7 +62,7 @@ pub(in crate::domain_computation) enum WorkflowApprovalRequestEncodingDenial {
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation) enum WorkflowApprovalRequestDecodingDenial {
+pub enum WorkflowApprovalRequestDecodingDenial {
     InvalidRequest,
     Actor(Box<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>),
 }
@@ -147,7 +145,7 @@ impl WorthQueryRetainedCapabilityRequest {
                 RecordedActorRequest::Native(_) => return Err(WorkflowApprovalRequestDecodingDenial::InvalidRequest),
             },
             principal: portable.principal,
-            capability_identity: portable.capability_identity,
+            capability_identity: *portable.capability_identity.bytes(),
             resource: portable.resource,
             data: Arc::new(super::RetainedCapabilityRequestData {
             _codec_funding: Some((text_funding, context_funding)),
@@ -202,11 +200,8 @@ fn validate_portable(
 fn portable_value(value: &AspectValue) -> bool {
     !matches!(
         value,
-        AspectValue::String(InternedString::Symbol(_))
-            | AspectValue::Bytes(_)
-            | AspectValue::ContentRef(_)
+        AspectValue::String(InternedString::Symbol(_)) | AspectValue::ContentRef(_)
     )
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

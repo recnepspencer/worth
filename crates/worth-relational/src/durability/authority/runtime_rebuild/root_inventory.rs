@@ -12,7 +12,10 @@ mod checkpoint_images;
 enum RecoveredRootHold {
     Reconstructing(Arc<RelationalBranchRoot>),
     Owner(Weak<RelationalBranchRoot>),
-    Empty(Arc<crate::branch::RelationalBranchRootSchemaAuthority>),
+    Empty {
+        owner: Weak<RelationalBranchRoot>,
+        schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+    },
     Checkpoint(std::sync::Mutex<Weak<RelationalBranchRoot>>),
 }
 
@@ -25,9 +28,9 @@ impl RecoveredRootHold {
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .upgrade(),
-            Self::Empty(schema) => Some(RelationalBranchRoot::empty_with_schema_authority(
-                schema.clone(),
-            )),
+            Self::Empty { owner, schema } => Some(owner.upgrade().unwrap_or_else(|| {
+                RelationalBranchRoot::empty_with_schema_authority(schema.clone())
+            })),
         }
     }
 }
@@ -88,7 +91,14 @@ impl RecoveredRootInventory {
         }
         for image in &mut self.empty {
             if let RecoveredRootHold::Reconstructing(root) = &image.root {
-                image.root = RecoveredRootHold::Empty(root.retained_schema_authority());
+                // A current Empty subject must retain the actual installed
+                // head identity for later publication. Keep only a weak owner
+                // share; historical Empty DATA can outlive that head through
+                // its original immutable schema without retaining Home ports.
+                image.root = RecoveredRootHold::Empty {
+                    owner: Arc::downgrade(root),
+                    schema: root.retained_schema_authority(),
+                };
             }
         }
         let layout = std::alloc::Layout::new::<[usize; 2]>()
@@ -126,7 +136,10 @@ impl RecoveredRootInventory {
             RecoveredRootHold::Reconstructing(root) => Some(root.clone()),
             RecoveredRootHold::Owner(root) => root.upgrade(),
             RecoveredRootHold::Checkpoint(root) => root.try_lock().map_err(|_| ())?.upgrade(),
-            RecoveredRootHold::Empty(_) => None,
+            RecoveredRootHold::Empty {
+                owner: _,
+                schema: _,
+            } => None,
         };
         Ok(Some((commit, root)))
     }

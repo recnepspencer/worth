@@ -1,17 +1,13 @@
-#[cfg(test)]
-mod authority_affinity_tests;
-#[cfg(test)]
-pub(crate) use authority_affinity_tests::installed_artifact_contract_for_managed_run;
 mod authority_match;
 mod authority_validation;
 mod borrow;
 mod counters;
 mod denial;
 mod disposition;
-mod frozen_workflow_authority;
+pub(crate) mod frozen_workflow_authority;
 mod handle;
 mod handle_core;
-mod installed_binding;
+pub(crate) mod installed_binding;
 mod lifecycle;
 mod lifecycle_state;
 mod native_access;
@@ -19,9 +15,9 @@ mod occurrence_ledger;
 mod owner;
 mod production;
 mod production_admission;
-mod production_authority;
+pub(crate) mod production_authority;
 mod production_freeze;
-mod production_generation;
+pub(crate) mod production_generation;
 mod provider_release;
 mod provider_resource;
 #[cfg(test)]

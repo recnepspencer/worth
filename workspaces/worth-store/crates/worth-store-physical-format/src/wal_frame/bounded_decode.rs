@@ -3,6 +3,7 @@ use super::{
     WalFrameV1ChecksumCalculator, WalFrameV1Denial, WalFrameV1Header, WAL_FRAME_V1_FOOTER_BYTES,
     WAL_FRAME_V1_HEADER_BYTES,
 };
+use worth_foundational::CanonicalDigestId;
 
 /// One exact, checksum-admitted WAL v1 frame borrowed from bounded bytes.
 ///
@@ -12,7 +13,7 @@ use super::{
 pub struct BoundedWalFrameV1<'frame> {
     header: WalFrameV1Header,
     payload: &'frame [u8],
-    frame_digest: [u8; 32],
+    frame_digest: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,7 +80,7 @@ pub fn decode_bounded_wal_frame_v1(
     Ok(BoundedWalFrameV1 {
         header,
         payload,
-        frame_digest: calculated.frame(),
+        frame_digest: CanonicalDigestId::new(calculated.frame()),
     })
 }
 
@@ -93,7 +94,7 @@ impl<'frame> BoundedWalFrameV1<'frame> {
     }
 
     pub const fn frame_digest(self) -> [u8; 32] {
-        self.frame_digest
+        *self.frame_digest.bytes()
     }
 }
 

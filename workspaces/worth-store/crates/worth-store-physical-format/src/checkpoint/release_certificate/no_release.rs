@@ -5,6 +5,7 @@ use super::{
     read_checkpoint, write_checkpoint, write_prefix, Cursor, PhysicalCheckpointIdentity,
     ReleaseCheckpointCertificateDenial, NO_RELEASE_KIND, PREFIX_BYTES,
 };
+use worth_foundational::CanonicalDigestId;
 
 pub const RELEASE_CHECKPOINT_NO_RELEASE_WIRE_BYTES: usize =
     PREFIX_BYTES + 24 + 8 + 32 + 8 + 32 + 32;
@@ -13,10 +14,10 @@ pub const RELEASE_CHECKPOINT_NO_RELEASE_WIRE_BYTES: usize =
 pub struct ReleaseCheckpointNoReleaseV1 {
     checkpoint: PhysicalCheckpointIdentity,
     root_generation: u64,
-    root_sha256: [u8; 32],
+    root_sha256: CanonicalDigestId,
     prior_checkpoint_sequence: u64,
-    prior_root_sha256: [u8; 32],
-    prior_marker_payload_sha256: [u8; 32],
+    prior_root_sha256: CanonicalDigestId,
+    prior_marker_payload_sha256: CanonicalDigestId,
 }
 
 impl ReleaseCheckpointNoReleaseV1 {
@@ -40,10 +41,10 @@ impl ReleaseCheckpointNoReleaseV1 {
         Ok(Self {
             checkpoint,
             root_generation,
-            root_sha256,
+            root_sha256: CanonicalDigestId::new(root_sha256),
             prior_checkpoint_sequence,
-            prior_root_sha256,
-            prior_marker_payload_sha256,
+            prior_root_sha256: CanonicalDigestId::new(prior_root_sha256),
+            prior_marker_payload_sha256: CanonicalDigestId::new(prior_marker_payload_sha256),
         })
     }
 
@@ -61,10 +62,10 @@ impl ReleaseCheckpointNoReleaseV1 {
         write_prefix(&mut out, NO_RELEASE_KIND);
         write_checkpoint(&mut out, self.checkpoint);
         out.extend_from_slice(&self.root_generation.to_le_bytes());
-        out.extend_from_slice(&self.root_sha256);
+        out.extend_from_slice(self.root_sha256.bytes());
         out.extend_from_slice(&self.prior_checkpoint_sequence.to_le_bytes());
-        out.extend_from_slice(&self.prior_root_sha256);
-        out.extend_from_slice(&self.prior_marker_payload_sha256);
+        out.extend_from_slice(self.prior_root_sha256.bytes());
+        out.extend_from_slice(self.prior_marker_payload_sha256.bytes());
         debug_assert_eq!(out.len(), RELEASE_CHECKPOINT_NO_RELEASE_WIRE_BYTES);
         Some(out)
     }
@@ -89,15 +90,15 @@ impl ReleaseCheckpointNoReleaseV1 {
         self.root_generation
     }
     pub const fn root_sha256(self) -> [u8; 32] {
-        self.root_sha256
+        *self.root_sha256.bytes()
     }
     pub const fn prior_checkpoint_sequence(self) -> u64 {
         self.prior_checkpoint_sequence
     }
     pub const fn prior_root_sha256(self) -> [u8; 32] {
-        self.prior_root_sha256
+        *self.prior_root_sha256.bytes()
     }
     pub const fn prior_marker_payload_sha256(self) -> [u8; 32] {
-        self.prior_marker_payload_sha256
+        *self.prior_marker_payload_sha256.bytes()
     }
 }

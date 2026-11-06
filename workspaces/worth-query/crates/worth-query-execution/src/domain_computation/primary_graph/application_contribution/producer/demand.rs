@@ -15,12 +15,13 @@ type FamilySourceQuery<Schema, Family> =
 
 pub(in crate::domain_computation::primary_graph) use progression::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use progression::CurrentProof;
-pub(super) mod bridge_denial;
-mod checkpoint_delivery;
+pub(crate) mod bridge_denial;
+pub(crate) mod checkpoint_delivery;
 mod denial_diagnostic;
 mod denial_posture;
 pub(super) mod disclosure;
-mod progression;
+mod fulfillment;
+pub(crate) mod progression;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::DecisionInput;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::PerformedMembers;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::SelectedDecisionInput;
@@ -28,11 +29,11 @@ pub(in crate::domain_computation::primary_graph) use progression::MatchedRequire
 pub(in crate::domain_computation::primary_graph) use progression::ReboundConsumedOutput;
 pub(in crate::domain_computation::primary_graph) use progression::ResolvedRequiredPredecessors;
 mod readiness;
-mod required_continuations;
-mod required_provenance;
-mod scheduling_progression;
+pub(crate) mod required_continuations;
+pub(crate) mod required_provenance;
+pub(crate) mod scheduling_progression;
 mod selected_source;
-mod selection;
+pub(crate) mod selection;
 pub(in crate::domain_computation::primary_graph) use required_continuations::PreparedRequiredFreshSlot;
 use required_continuations::RequiredContinuations;
 pub(in crate::domain_computation::primary_graph) use required_continuations::RequiredFreshOutcome;
@@ -45,7 +46,9 @@ mod managed_cleanup;
 mod read_close;
 pub use denial::WorthQueryOutputDemandDenial;
 pub use denial::WorthQueryOutputDemandDenialKind;
-pub use denial::WorthQueryOutputDemandRecoveryPosture;
+pub use denial::{
+    WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputSettlementProvenanceDenial,
+};
 pub use read_close::WorthQueryOutputReadCleanup;
 pub use read_close::WorthQueryOutputReadCloseDenial;
 
@@ -239,7 +242,7 @@ where
 
 mod bridge_execution_denial;
 
-#[cfg(test)]
 mod own_effect_assertions;
-#[cfg(test)]
 mod own_effect_observation;
+
+mod court_doors_for_test;

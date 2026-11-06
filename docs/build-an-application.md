@@ -16,6 +16,11 @@ feature's schema members, actions, required lifecycle roles and runtime slots
 together; the SDK derives their projections. The lower-level builders later in
 this guide explain the underlying contracts and support specialized composition.
 
+Directory Homes currently support only the Relational-only lane in [§4](#4-install-or-reopen).
+Producer, resource, conditional, workflow and branch-adoption examples use
+MemoryOnly unless stated otherwise. They do not acquire durability by being
+part of the same program.
+
 | Your next task | Start here | What you supply |
 |---|---|---|
 | Choose durable facts, names and links | [Native representations](native-representations.md), then [source subgraphs](source-subgraphs.md) | Independently mutable fields, entities, typed relations and an explicit read closure; canonical atoms need a recorded reason |
@@ -43,18 +48,20 @@ use worth_query_decl::facade::{application_operation, application_query, applica
 use worth_query_host::facade::{
     admission::authenticated_principal,   // principals and request scopes
     application_entry,                    // requests, mutations, adoption, workflow lifecycle
-    application_installation,             // in_memory_program, rosters, limits
+    application_installation,             // build identity, rosters, limits
     domain,                               // installed schema, workflow vocabulary installation
     primary_graph,                        // handlers, seeding, inspection types
     runtime,                              // resource profiles
+    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
 ```
 
 | Module | Names you will look for there |
 |---|---|
+| `…host::facade` | `WorthQueryApplicationHomeRequest`, `WorthQueryApplicationHomeLocation`, `WorthQueryApplicationHome`, owning opening and close refusals |
 | `â€¦decl::facade::application_program` | `ApplicationFeature`, `ApplicationFeatureSpec`, `ApplicationProgramDefinition`, `ApplicationProgramAuthoring`, `ValidatedApplicationProgram`, ports and connections, `ApplicationWorkflowSpec`, `ApplicationWorkflowDefinitionBuilder` |
 | `â€¦decl::facade::application_operation` | `ApplicationMutationBinding`, `ApplicationMutationIntent`, `ApplicationCapabilityMutationBinding` |
-| `â€¦host::facade::application_installation` | `in_memory_program`, `in_memory_rostered_program`, `WorthQueryInMemoryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
+| `â€¦host::facade::application_installation` | `WorthQueryApplicationProgramRoster`, `WorthQueryInMemoryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
 | `â€¦host::facade::application_entry` | `WorthQueryApplicationRequestExt`, `WorthQueryOperationBuilder`, `WorthQueryOperationDescription`, `WorthQueryOperationAdvance`, `WorthQuerySettledFixedOperation`, `WorthQueryTerminalFixedOperation`, `WorthQueryWorkflowOperation`, `WorthQueryApplicationMutationOutcome`, `WorthQueryBranchAdoptionPublicationOutcome`, `Workflow*Outcome`, `Published*Ref` |
 | `â€¦host::facade::application_discovery` | `WorthQueryWorkflowDefinitionDiscovery`, `WorthQueryWorkflowInstanceRead`, `WorthQueryWorkflowInstancePage`, `WorthQueryWorkflowHistoryPage`, `WorthQueryWorkflowHistoryMark` |
 | `â€¦host::facade::domain` | `WorthQueryApplicationWorkflowSpecInstallation`, `WorthQueryApplicationWorkflowResourceCeiling`, `WorthQueryInstalledApplicationSchema` |
@@ -80,7 +87,7 @@ some declaration macros. `worth_query_mutation_binding!`,
 - [1. The model: six things, kept apart](#1-the-model-six-things-kept-apart)
 - [2. Declare the schema and its contributions](#2-declare-the-schema-and-its-contributions)
 - [3. Declare features and the program](#3-declare-features-and-the-program)
-- [4. Install the application graph](#4-install-the-application-graph)
+- [4. Install or reopen](#4-install-or-reopen)
 - [5. Run the program](#5-run-the-program)
 - [6. Author, publish, and run workflows](#6-author-publish-and-run-workflows)
 - [7. Adopt a new program on a branch](#7-adopt-a-new-program-on-a-branch)
@@ -97,7 +104,7 @@ some declaration macros. `worth_query_mutation_binding!`,
 | 1 | Declare the schema and its contributions | `worth_query_application!`, `worth_query_application_contribution!`, `impl WorthQueryApplicationContribution` | [Â§2](#2-declare-the-schema-and-its-contributions) |
 | 2 | Declare features and the program | `worth_query_application_contribution! { pub feature ... }`, its `ApplicationFeatureDefinition` projections, `impl ApplicationProgramDefinition` | [Complete definitions](#complete-feature-definitions), [Â§3](#3-declare-features-and-the-program) |
 | 3 | Validate the program | `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` | [Â§3.5](#35-validate) |
-| 4 | Install the application graph | `application_installation::in_memory_program(..)` or `in_memory_rostered_program(..)` | [Â§4](#4-install-the-application-graph) |
+| 4 | Install or reopen | `WorthQueryApplicationHomeRequest::open_in_advancement(&phase)` | [§4](#4-install-or-reopen) |
 | 5 | Run program-owned actions | `request.mutate(intent)â€¦idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)`, then `operation.advance(&fresh_request)` | [Â§5](#5-run-the-program) |
 | 6 | Install the workflow vocabulary | `WorthQueryApplicationWorkflowSpecInstallation::begin(..)â€¦finish()`, then `retain_workflow_spec(..)` | [Â§6.2](#62-install-the-workflow-vocabulary-once) |
 | 7 | Author and validate a workflow | `ApplicationWorkflowDefinitionBuilder::<Spec>::new(..)`, nodes, connections, `finish()?.validate()?` | [Â§6.3](#63-author-a-definition) |
@@ -282,7 +289,20 @@ includes a passing capability example and an undeclared-member compile refusal.
 
 ### Inline opaque values
 
-`ScalarAspectType::InlineBytes` carries one opaque inline atom. Its immutable
+`ScalarAspectType::InlineBytes` carries the complete canonical representation of
+one atomic domain value. It can be decoded by a pure observer receiving the
+scalar, without borrowing Native content custody. The generic certification
+counter's conditional predicate is an actual consumer of this contract; the
+ratio binding is a standalone atomic example and the broken binary binding is
+a refusal fixture. See the [full ownership review and inventory](inline-atomic-content-boundary.md).
+
+Use Native ContentRef for ordered identity-free numerical data, including
+splines at every size. Its digest requires the installed format and real Native
+resolver authority. The 16 MiB content frame limit refuses at admission before
+effects; it never redirects the value to InlineBytes. Representation follows
+meaning and authority, never a size threshold.
+
+The immutable
 `InlineBytes` carrier admits at most **4,294,967,290 payload bytes**
 (`u32::MAX - 5`). The existing native scalar frame uses a 32-bit body length;
 one tag byte and four payload-length bytes occupy the remaining five bytes.
@@ -305,7 +325,8 @@ Choose a representation by ownership and change granularity:
 | Independently named or editable object | Entity with stable semantic identity |
 | Link to another object | Typed relation to its actual entity |
 | Fact with an existing scalar meaning | Native scalar field |
-| Identity-free, reference-free leaf with owner-defined meaning | Versioned domain-value binding; one opaque native atom |
+| Complete canonical atomic value used by pure observations | Versioned domain-value binding; one native scalar atom |
+| Ordered identity-free numerical dataset | Format-bound Native ContentRef at every size |
 
 Declare a binary atom with `worth_query_value_binding!` and `binary: OwnerDelegate`,
 plus its intrinsic `unit:` and `frame:` when applicable. The delegate implements
@@ -535,7 +556,7 @@ Retain the generated contract during installation and use
 declared delivery field. It selects the genuine canonical ordinal and refuses
 eligibility-only fields or a different node. Consume it with
 `into_package_contract(binding.portable().clone())`. The
-[typed readiness examples](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/conditional/output_readiness_contract/typed/tests.rs)
+[typed readiness examples](../workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/domain_computation/primary_graph/application_contribution/conditional/output_readiness_contract/typed/tests/mod.rs)
 exercise full optional aspects, nested wire changes, concrete binding mismatch
 and reordered delivery/eligibility inputs.
 
@@ -1789,6 +1810,10 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         plan.and_then(move |()| decided)
     }
 
+    #[expect(
+        clippy::result_large_err,
+        reason = "The fixture preserves the original typed owner denial."
+    )]
     fn build_candidate(
         &self,
         input: &RegionTotalsDemand,
@@ -1811,16 +1836,33 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
 
 ---
 
-## 4. Install the application graph
+## 4. Install or reopen
+
+`WorthQueryApplicationHomeRequest` is the Host entry point for a new or existing
+application Home. Choose `WorthQueryApplicationHomeLocation::Directory(path)` for
+the supported durable Relational-only lane, or `MemoryOnly` for process-local
+installation. Keep the returned Home while borrowing `home.runtime()` to serve
+requests. Applications do not open Store or reconstruct lower owners themselves.
+
+Installation derives each operation's graph-obligation identity under a fixed
+4,096-entry / 1 MiB canonical-work limit. Each distinct aspect contract costs
+its full canonical fields once, plus table framing; each read projection or
+touch costs a contract reference. Projection masks, selected field paths,
+schema/entity bindings, relations and other scopes also count. Writing many
+fields in one aspect does not repeatedly charge its whole contract. This limit
+is separate from the program revision budget and application runtime resource
+profile. An operation refusal's `canonical_denial()` retains `maximum` and the
+requested `actual` entries or `attempted` bytes. Entry admission stops at the
+first excess append. See the
+[installation contract](../workspaces/worth-query/crates/worth-query-installation/README.md#canonicality).
 
 ### Application build identity
 
 Each complete build supplies a fresh UUID through `WORTH_IMPLEMENTATION_BUILD_ID`.
-The application embeds it with `env!`, parses it through
-`host::application_installation::ApplicationBuildIdentity::parse`, and passes
-it once after contribution configuration to every fresh/reopen installation
-entry point. Missing identity fails compilation; malformed or zero identity
-fails parsing before installation.
+Embed it with `env!`, parse it with
+`host::application_installation::ApplicationBuildIdentity::parse`, and supply it
+in the Home request. Missing identity fails compilation; malformed or zero
+identity fails parsing before opening.
 
 Build from the repository root with:
 
@@ -1828,42 +1870,30 @@ Build from the repository root with:
 python scripts/application_build.py cargo build --locked
 ```
 
-The wrapper supplies a fresh UUID for the invocation and forwards the Cargo
-arguments and other environment inputs. Use it for each complete build command.
-Applications outside this repository should issue and embed a fresh UUID in
-their own build entry point.
+The wrapper issues a fresh UUID for each complete build invocation, including a
+dirty, dependency/configuration or otherwise Cargo-fresh rebuild. Keep the embedded
+identity when launching the same artifact again. External application builds
+supply and embed their own fresh UUID. Tests use explicit fixture identities.
 
-The fresh environment value must be supplied for **every complete build
-invocation**, including a dirty checkout, dependency/configuration rebuild or
-an otherwise Cargo-fresh invocation. `env!` embeds that value and makes it a
-compiler input. Keep the embedded identity when launching or reopening with the
-same artifact. Runnable application examples use this same environment input;
-test worlds use explicit fixture identities.
-
-Query seals the same identity into every installed producer edition, including
-producers with `INPUT_REUSE=None`. A changed build makes old derived output
-stale even when its value is unchanged. Reopen preserves authored source and
-references, then regenerates derived output as required by the installed program.
-
-
-Installation turns a validated program, a schema declaration, the
-contributions' configuration, and resource limits into a running runtime. The
-`initial_state` closure seeds the primary graph before the first publication.
+A journal-only Directory Home with the same supported program/schema opens under
+a new build UUID. Authored binding and durable history remain intact; the
+initializer does not run and nothing regenerates eagerly. Producers are not
+supported in this Directory lane. Accepted-output reuse and regeneration on demand
+are Phase 6 behavior, not a promise of rebuild admission.
 
 ### One process execution service
 
 Construct the physical execution authority at the process composition root,
 after validating immutable startup inputs and before installing applications.
 Keep it in an `Arc` above application, document and session lifetimes. Every
-fresh installation and checkpoint reopen receives a clone of that same `Arc`
+Home open or journal-only reopen receives a clone of that same `Arc`
 through `limits.with_execution_authority(Arc::clone(&service))`. Retain the
 process handle while applications close and reopen.
 
 The runnable [shared execution example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/examples/shared_execution.rs)
-shows this complete sequence: two installed applications share one service,
-one closes and reopens from its original checkpoint, the reopened application
-edits its own source, and the other application retains its independent model
-state. Construct the authority once per process: later construction returns
+shows two MemoryOnly applications sharing one service. Its app-owned interim
+checkpoint is separate from the Directory contract documented here. Construct
+the authority once per process: later construction returns
 `ConstructionDenial::AlreadyConstructed`, including after the final handle drops.
 For an application installation retry, reuse the retained process service.
 
@@ -1872,7 +1902,7 @@ For an application installation retry, reuse the retained process service.
 | Physical worker service | `ExecutionAuthorityConfig::for_workers(workers)` and `ExecutionAuthority::try_construct(config)`; retain the resulting `Arc` at process scope. `ExecutionAuthorityConfig::available_worker_count()` supplies the machine's available width when that is the intended policy. |
 | Ordinary request policy | `ExecutionRequestPolicy::for_workers(ExecutionPosture::Serial, DeterminismContract::CanonicalBitwise, workers)` selects placement, determinism and worker width. |
 | Application installation | Pass that policy through the ordinary World resources and supply the same service with `with_execution_authority`. The application still supplies its own schema, configuration, build identity and model state. |
-| Reopen and overlapping applications | Retain the process service while applications close or install; pass another `Arc::clone` to each installation alongside its checkpoint or initial state. |
+| Reopen and overlapping applications | Retain the process service while applications close or install; pass another `Arc::clone` to each installation alongside its Home location and initial state. |
 | Operation execution | Use the application's authorized request. Handlers and retained computations borrow that request's execution authority. |
 
 Start with **Serial** placement. To use admitted workers for independent compute
@@ -1898,91 +1928,188 @@ lifetimes, failure types and measured-result handling.
 
 ### 4.1 One program
 
-<!-- illustrative -->
-```rust,ignore
-// Illustrative: not compiled.
-// workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/application.rs
-use worth_query_host::facade::{application_installation, primary_graph, runtime};
-
-let declaration = TemporalHostSchema::declaration().expect("the example schema is valid");
-let runtime = application_installation::in_memory_program(
-    program::validated_program(),                  // ValidatedApplicationProgram<S, P>
-    declaration,                                   // ApplicationSchemaDeclaration<S>
-    (TemporalContributionConfiguration { clock_source },), // one entry per contribution
-    application_installation::ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
-        .expect("the build pipeline embeds one nonzero UUID"),
-    example_limits(),                              // WorthQueryInMemoryApplicationLimits
-    |_phase, graph, installed| {                           // seed the primary graph
-        let principal_binding = installed
-            .principal_binding(TemporalPrincipalBinding::reference())
-            .expect("the temporal principal binding must install");
-        seed_graph(graph, &principal_binding, gate);
-        Ok(())
-    },
-)
-.expect("the validated temporal program must install");
-```
+Supply the validated program, roster, declaration, contribution configuration,
+build identity, ordinary limits and initializer in one Home request. For fresh
+setup, `with_bootstrap_advancement` opens the setup request from its policy. If
+setup already has an original execution request, borrow it with
+`with_bootstrap_advancement_from_request` instead of opening another allowance.
+The following
+shape is used by the real Directory Home court; `MySchema`, `MyProgram`,
+`seed_graph`, the configuration, limits and original execution request belong to
+the application. The program must satisfy the Relational-only restrictions below.
 
 <!-- illustrative -->
 ```rust,ignore
-// Illustrative: not compiled.
-// Same file: limits.
-application_installation::WorthQueryInMemoryApplicationLimits::new(
-    product_world_resources(),
-    runtime::WorthQueryApplicationQueryResourceProfile::new(
-        std::num::NonZeroUsize::new(128).expect("concurrent graph work is nonzero"),
-    ),
-    primary_graph::SignalConditionalEvaluationBudget::development(),
-)
+// Illustrative: not compiled; the application supplies the named inputs.
+use worth_query_host::facade::{
+    application_contribution::with_bootstrap_advancement_from_request,
+    application_installation::{ApplicationBuildIdentity, WorthQueryApplicationProgramRoster},
+    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
+};
+
+let request = WorthQueryApplicationHomeRequest::new(
+    WorthQueryApplicationHomeLocation::Directory(path),
+    validated_program,                 // ValidatedApplicationProgram<MySchema, MyProgram>
+    WorthQueryApplicationProgramRoster::new(),
+    declaration,                       // MySchema::declaration()
+    configuration,                     // one value per contribution
+    ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))?,
+    limits,                            // WorthQueryInMemoryApplicationLimits
+    |_phase, graph, installed| seed_graph(graph, installed),
+);
+let opening = with_bootstrap_advancement_from_request(original_request, |phase| {
+    request.open_in_advancement(&phase)
+})?;
+let home = opening.unwrap_or_else(|refused| panic!("Home opening: {refused:?}"));
+let runtime = home.runtime();           // borrow it; keep the owning Home
 ```
 
-The result is a `WorthQueryProgramApplicationRuntime<Schema, Program>`.
+For a real host, retain `WorthQueryApplicationHomeOpenRefused` instead of panicking:
+an opening refusal may own the physical Home and mutation lease. Its consuming
+`close(&request)` either closes that actual preparation or returns owning cleanup
+custody. A failed open is not permission to initialize or discard the directory.
+The outer bootstrap result and the inner opening result are separate failures.
+
+The limits type is currently named `WorthQueryInMemoryApplicationLimits` and is
+used by both locations. It carries World resources, the query resource profile,
+Signal conditional evaluation budget and the process execution service.
+Use `request.with_authorization_time_source(source)` to supply trusted capability
+time in either location. Reopening can supply a new trusted source. Opening does
+not sample it; an authorization decision that needs unavailable time returns
+`TrustedTimeUnavailable`.
+
+#### Initialize once, then reopen the same Directory
+
+Store decides whether the physical Home is genuinely new. Only that disposition
+calls `initial_state`; successful fresh opening records completed seeds and indexes
+before exposing the first published World root. Existing directories, including
+incomplete initialization, do not receive a new initializer opportunity.
+
+To reopen a journal-only Home, construct a new ordinary Home request for the same
+Directory and supported program/schema. Still provide the initializer argument;
+existing-Home admission does not call it or replay seed suppliers. Reopen admits
+the original program activation and published World basis. Reads remain on that
+World basis even if Native history is newer. Preserve typed opening refusals and
+close their actual custody before trying another open.
+
+Two real processes cannot both become writers for the same Directory. The writer
+holds Store Application's mutation lease; a competing Host opener receives
+`MutationOwnerContended`. If the writer dies without closing, another process can
+acquire the lease and reopen the journal-only Home. Process death releases the
+lease without certifying application cleanup.
+
+#### Supported Directory seeds and operations
+
+Phases 3 and 4 compose only an owner-proven InitialEmpty Signal root and Bridge
+baseline. Relational handlers, managed Native indexes, World resources and
+trusted authorization time use the shared installation path. A declaration that
+needs Signal node allocation or Bridge correspondence is unsupported. In
+particular, producers, conditionals and application resource pools return
+`WorthQueryApplicationHomeOpenRefused::Preparation` with
+`WorthQueryInMemoryApplicationDenial::UnsupportedSeed` before contribution
+configuration, physical Home creation, initialization or World bootstrap.
+Its `WorthQueryDurableStateAdmissionDenial::Unsupported` cause identifies the
+family (`SignalNodeDefinitions`, `BridgeConditionalDefinitions` or
+`BridgeOwnedAsyncDefinitions`) and `supported_from_phase: 5`.
+
+Directory operations requiring unsupported Signal/Bridge, managed/workflow,
+dispatch, correction or adoption state also refuse with typed durable-state
+admission outcomes. MemoryOnly supports its ordinary installation and execution
+contracts, but adds no restart guarantee. Keep the rich producer, resource,
+workflow and adoption examples in this guide in that lane; do not fall back to
+MemoryOnly when the application requires durable state.
+
+#### Reacquire authority after reopen
+
+Every open has a new incarnation. Prior-open selectors, retained capability
+access and provider-session grants cannot act on the new Home. Their receivers
+return typed `StaleIncarnation` before data disclosure or provider effects.
+Reacquire them from `home.runtime()` under fresh principal and request authority.
+A retained capability or session grant holds identity and its authority grant,
+not the old Home's live ports; the receiver supplies live resources at use.
+Recorded occurrences and receipts are data requiring new owner admission, so
+valid durable retry is separate from reusing a stale selector.
 
 ### 4.2 Several program revisions: the roster
 
-A host that must be able to adopt a successor program rosters it at install.
-Bank installs `BankApplication` and rosters `BankApplicationP1` beside it:
+Supply `WorthQueryApplicationProgramRoster::new().support(successor)` as the
+roster argument when a validated successor must be installed. Roster support is
+not permission to transition an existing Directory to different program/schema
+meaning. The development workflow for such changes remains pending below.
+MemoryOnly retains its ordinary roster and branch-adoption contracts in §7.
+
+### Commit, retry and close a Directory Home
+
+Use the same stable original key, typed intent and product affinity after response
+loss. The qualified Relational-only mutation path is the public program execution
+route shown in the Directory court:
 
 <!-- illustrative -->
 ```rust,ignore
-// Illustrative: not compiled.
-// bank-server/src/identity_runtime/installation.rs (abridged)
-let program = validated_bank_application()?;
-let successor = validated_bank_application_p1()?;
-let declaration = BankSchema::declaration()?;
-let runtime = in_memory_rostered_program(
-    program,
-    WorthQueryApplicationProgramRoster::new().support(successor),
-    declaration,
-    ((), (), ()),          // three contributions, none configured
-    application_installation::ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
-        .expect("the build pipeline embeds one nonzero UUID"),
-    limits,
-    initialize,            // |_phase, graph, installed| { ... Ok(()) }
-)?;
+// Illustrative: not compiled; runtime is borrowed from the open Directory Home.
+let outcome = runtime.request(&principal, &scope)
+    .advanced()
+    .mutate(intent)
+    .without_source()
+    .idempotency(&stable_key)
+    .execute_in_program(runtime, allocation_policy)?;
 ```
 
-Other constructors on `application_installation`:
-`in_memory_program_with_authorization_time_source`,
-`in_memory_rostered_program_with_authorization_time_source`, and the
-`*_from_checkpoint` variants.
+Match `WorthQueryApplicationMutationOutcome` rather than treating every return as
+completion:
 
-A reopened downstream demand may consume a checkpoint root before any separate
-root demand. Query first verifies the complete retained producer facts and native
-output witness, then retains bounded custody of that exact settlement through
-downstream publication. This static custody contains no executable source query:
-changing the root invalidates the old result and requires genuine typed source
-admission before it can refresh. Ordinary missing or retired managed settlements
-continue to refuse publication.
+| Outcome | Caller meaning |
+|---|---|
+| `Committed { receipt, result }` | A new published commit and its live Rust result. |
+| `AlreadyCommitted(receipt)` | An already-held live receipt; no new handler result. |
+| `RecoveredCommitted(receipt)` | Original recorded receipt data, with no recreated Rust result or live delivery capability. |
+| `Commit(...)` or a typed refusal | Inspect the actual native outcome and retain any returned pending, unpublished or indeterminate owner. A timeout or loss of observation does not prove no effect. |
+
+An exact same-key Directory retry can read the original receipt without replaying
+the handler. Changed intent refuses with `IdempotencyIntentDrift`; a stale or
+foreign selector refuses before effects, even if its key names a committed row.
+After process loss, first reopen and obtain fresh authority, then resolve the same
+original request. Never choose a new key solely because an answer was lost.
+
+`outcome.recovered_receipt()` exposes a
+`WorthQueryRecoveredApplicationCommitReceipt`: original Native semantics,
+old/new product references, publication attempt, intent, outcome and exact output
+settlement. It contains no live output capability, snapshot, `Performed` delivery
+or arbitrary application return value. Query current state separately.
+For a retained historical read, use `request.at_original_receipt(&phase, &receipt,
+maximum_history_work)` with fresh authority; unavailable history can refuse.
+`at_recorded_commit` admits a Home-scoped `DurableCompositeCommitIdentity`.
+Memory-scoped receipt coordinates are not durable evidence.
+
+For `ProductPreparationPending`, keep the original terminal and stable request
+data. Its explicit `try_into_recovery()` handoff returns original recovery custody
+or the same pending terminal when busy. A live persistent recovery can report
+`ReopenRequired`; inspect its `next_actions()`, end current Home ownership, then
+reopen the same location. Obtain recovery claims from that new owner rather than
+reusing an old handle. Opening can itself refuse while unsupported or unpublished
+custody remains. Neither zero observed effects nor a dropped carrier proves
+release, rollback or safe resubmission.
+
+Before shutdown, release request/read owners and runtime aliases. Consume the
+Directory Home with `home.close(&original_request)`. Keep
+`WorthQueryApplicationHomeCloseRefused`, inspect `query_denial()` or
+`directory_denial()`, and call its `try_close(&fresh_request)` after addressing the
+cause. `resume()` returns the serving Home only while the retained refusal is
+before seal. After seal, retry continues the same retirement task. Pending work,
+held receipts, aliases or supplier retirement refusal can prevent close; dropping
+those obligations is not a successful close. On success, inspect `is_closed()`
+and `outcome()`, then use `reclaim()` to release inert retired payloads outside the
+budgeted close. This Directory close contract does not complete MemoryOnly close.
 
 ### 4.3 What the runtime gives you
 
-`WorthQueryProgramApplicationRuntime` dereferences to the primary-graph
+Borrow `WorthQueryProgramApplicationRuntime` from `home.runtime()`. It dereferences to the primary-graph
 application runtime, so `request(..)`, `discovery()`, `current_world()`,
 `installed_schema()`, `branches()`, and `conditional::<T>()` are all available
 on it.
 
-For an isolated branch from a selection already admitted in a host advancement,
+The following branch, output and managed-resource capabilities use MemoryOnly.
+Durable branch creation remains pending. For an isolated branch from a selection already admitted in a host advancement,
 consume that selection with `runtime.branches().fork_expected(selected)` and
 create it with the same runtime's phase. The returned candidate retains its
 source; use `candidate.branch()` for ordinary requests and `candidate.close(&phase)`
@@ -1994,6 +2121,461 @@ denial; a later refused close of the previous branch does not undo adoption.
 Source movement also refuses creation, and a refused candidate close retains
 the candidate with its original denial. See
 [fork from an admitted selection](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#fork-from-an-admitted-selection).
+
+For a move-only application head, consume the initial candidate with
+`into_owned_head()`. Store the returned owner, target requests with
+`head.branch()`, and adopt subsequent candidates with `head.adopt(candidate,
+&phase)`. Success returns an owned previous head for explicit close. A close
+refusal returns either the live head (`Retained`) or its actual retired cleanup
+obligation (`Retired`). See
+[own an application branch head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#own-an-application-branch-head).
+
+To bind that head to one model, declare `ApplicationHistoryBinding` with the
+model's ordinary READ intent and register an `ApplicationHistoryDefinition` in
+its contribution. Pass an explicit metadata disclosure contract to
+`ApplicationHistoryDefinition::for_binding(..)`: use
+`ApplicationQueryDisclosureContract::public()` for public step metadata, or a
+governed contract covering the history's occurrence, ancestry and continuation
+facets. This policy is separate from payload READ and edit permission.
+On the head's branch call
+`request.attach_history::<Binding>(&phase, head, model_read)`. The returned
+document owns the slot; `document.read(&request)` freshly admits the original
+model READ. For an original retained no-output action,
+`document.assess_edit(&request, &operation)` observes current READ/action
+authorization, declared operation membership and exact model/head correspondence.
+It borrows both owners and grants no execution permission. An externally changed
+head or recreated model refuses. Close with
+`document.close(&phase)` and retain any live-document or retired-cleanup failure.
+See [attach a model and read its owned head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#attach-a-model-and-read-its-owned-head).
+
+To bound selectable history across all futures, declare separate
+`ApplicationHistoryWindowBinding` and `ApplicationHistoryBookmarkBinding`
+recipes and install them with `.window_policy::<Window>()` and
+`.bookmark_policy::<Bookmark>()`. The default unpinned window is 200 steps;
+current and bookmarked steps are protected separately. Set a positive
+`ApplicationHistoryRecentSteps` with `document.set_history_window(target)`,
+then call the returned borrow's `advance::<Window>(&request)` until
+`pending_window` is empty. Each call has fresh READ, metadata and window
+admission and excludes at most one entry. Resume a dropped borrow with the same
+target. Use `set_history_bookmark::<Bookmark>(&request, node, true/false)`
+for independently admitted pin/unpin, `history_retention_status` for counts
+and pending ownership, and `maintain_history` for one release attempt.
+For governed metadata, use `advance_governed`,
+`set_history_bookmark_governed` and `history_retention_status_governed` with
+the fresh metadata capability, operation and input. The policy roles remain
+separately admitted. Cancellation after a batch can leave a committed prefix;
+inspect status and resume the same document and target with a fresh request.
+Pages distinguish `Root`, `Retained(parent)` and `Truncated`; do not invent
+an edge through an excluded node. Existing previews and registered checkout
+retain their original observations, while new requests refuse excluded IDs.
+Release holders independently and explicitly close the session, retaining
+refused cleanup. See the
+[window, bookmark and disposal example](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#configure-a-navigation-window-and-bookmarks)
+and its linked compiled public journeys. This bounds availability, without
+promising storage reclamation or a byte limit.
+
+This compiled example uses the retention application's `Document`, `Request`
+and installed `Window`/`Bookmark` recipes. `Failure` is
+`WorthQueryApplicationHistoryDenial`. `protect_and_shrink` performs one bounded
+batch. If `pending_window` remains, resume `set_history_window(target)` with
+fresh requests until it clears; pinning succeeded even if the later window
+change refuses. Release independent previews, unpin unwanted bookmarks, and
+advance `maintain_history` before consuming the document for another edit.
+`dispose_document` returns the actual close failure owner: retain it and retry
+its cleanup after outstanding holders release.
+
+<!-- compiled: document_history_retention.rs -->
+```rust
+fn protect_and_shrink(
+    document: &mut Document<'_>,
+    request: &Request<'_, '_, '_>,
+    bookmark: WorthQueryHistoryNodeId,
+    target: ApplicationHistoryRecentSteps,
+) -> Result<WorthQueryHistoryRetentionStatus, Failure> {
+    document.maintain_history(request)?;
+    document.set_history_bookmark::<Bookmark>(request, bookmark, true)?;
+    document
+        .set_history_window(target)
+        .advance::<Window>(request)
+}
+
+fn dispose_document<'runtime>(
+    document: Document<'runtime>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+) -> Result<
+    WorthQueryDocumentHistoryCloseReceipt,
+    WorthQueryApplicationHistoryCloseFailure<'runtime, DocumentRetentionSchema, RetentionHistory>,
+> {
+    document.close(phase)
+}
+```
+
+The executable [document consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history.rs)
+uses [the ordinary installation and document setup](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/setup.rs)
+and bounded pages as a disposable view. Each page and redo child page carries
+`context()`: a format version, the actual installed schema binding and an opaque
+process-local document identity. `document.commands(&context)` rejects unsupported
+formats, foreign bindings and foreign documents before dispatch. Its borrowed
+adapter grants no permission; preview, navigation and bookmark/window commands
+still freshly enter their existing READ, metadata and role admission.
+
+Keep a queued navigation's original intent, expected selection and key together.
+`prepare` returns the genuine navigation owner with its original document borrow;
+retain it when directly advancing or discarding an attempt. The borrowed command
+adapter transfers that borrow into the navigation builder. `advance` uses the
+same preparation path for one transient request.
+This consumer's `Command` does that. On advancement refusal, `advance` returns
+the original typed denial and posture. Between requests it drops only the frontend handle:
+the same document retains the real Native attempt and SDK output custody.
+Reusing the command never refreshes its expectation to a later selection.
+Inspect the cause as well as the posture before retrying. A retryable refusal
+before adoption can continue the same command with fresh admission. To abandon
+an unselected attempt, retain the owner returned by `prepare` and call its
+`discard`, preserving any refused cleanup owner. If only the command was kept,
+fresh admitted preparation recovers that same registered attempt; consuming
+the owning document for close also preserves its actual pending cleanup.
+
+A refusal with `posture: WorthQueryHistoryNavigationPosture::Selected` means
+adoption already occurred. A freshly admitted retry of the same command returns
+the original completion, including when another command has since selected a
+different node. It does not reset that later selection. Read
+`document.selection(&fresh_request)` to display the current head.
+
+Executable handling examples show [restoring current authority](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/authority.rs),
+[competing gestures and original disposal](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/selection.rs),
+[recovering lost delivery](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/delivery.rs)
+and [aborting a partially completed group](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/group.rs).
+
+The `Failure` and `Progress` variants below are defined beside the
+[compiled adapter](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/navigation.rs).
+
+<!-- compiled: document_history_commands.rs -->
+```rust
+pub(super) fn prepare<'d, 'r>(
+    document: &'d mut Configured<'r>,
+    request: &Request<'_, '_, '_>,
+    command: &Command,
+) -> Result<Navigation<'d, 'r>, Failure> {
+    let navigation = document
+        .commands(&command.context)
+        .map_err(Failure::Context)?
+        .navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
+    let target = match command.intent {
+        WorthQueryHistoryNavigationIntent::Checkout(node) => navigation.checkout(node),
+        WorthQueryHistoryNavigationIntent::UndoStep => navigation.undo_step(),
+        WorthQueryHistoryNavigationIntent::RedoTo(child) => navigation.redo_to(child),
+    };
+    target
+        .expected_selection(command.expected.clone())
+        .idempotency(command.key)
+        .prepare(request)
+        .map_err(Failure::Preparation)
+}
+
+pub(super) fn advance(
+    document: &mut Configured<'_>,
+    request: &Request<'_, '_, '_>,
+    command: &Command,
+) -> Result<Progress, Failure> {
+    match prepare(document, request, command)?.advance(request) {
+        WorthQueryHistoryNavigationAdvance::Selected(done) => Ok(Progress::Selected(done)),
+        WorthQueryHistoryNavigationAdvance::Pending(owner) => {
+            Ok(Progress::Pending(owner.posture()))
+        }
+        WorthQueryHistoryNavigationAdvance::Refused { cause, owner } => Err(Failure::Advancement {
+            cause,
+            posture: owner.posture(),
+        }),
+    }
+}
+```
+
+For consuming edits and groups, check the same context with
+`check_history_command_context`, then transfer the original document into the
+ordinary typed builder or group. Preserve the returned owner on refusal. Run
+the complete example with
+`cargo run --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root -- --document-history`.
+Its renderer descriptions carry no historical payload lease and cannot reopen a
+document after process loss.
+
+To record an isolated edit, consume the attached document with
+`document.edit(intent).idempotency_owned(&request, key)?`, then
+`retain_in_program::<Program, Action>(host)`. Repeatedly call `advance(&request)`
+on the returned owner; retain that owner on every progress or refusal. The
+document's `read` continues to use its selected head until candidate adoption.
+When ready, `finish(&request)` returns the document and either its sealed step
+with the original action completion, the original step for an equivalent retry,
+or the original terminal action outcome. A refusal after adoption can still
+report `Selected`; preserve its completion and finish it with a fresh request.
+Use `discard(&request)` to explicitly abandon unselected candidate work, keeping
+the returned owner when cleanup refuses. This entry accepts declared
+source-completion actions and fixed required-output graphs with no mutation
+source, workflow control or external effects. A fixed graph returns
+`WorthQueryFixedHistoryEditOutcome::Recorded { step, delivery }`; `delivery` is
+the original `WorthQueryClosedFixedDelivery`, retaining its actual settlement
+and close evidence. A terminal fixed edit returns `NotRecorded { terminal }`;
+inspect `advance_denial()`, `source_outcome()`, `source_result()` and `close_evidence()` separately
+because a source can perform before its required output becomes unavailable.
+Unavailable completion keeps descriptive source-receipt evidence without
+retaining the discarded candidate's physical history.
+See [record an edit and retain its original outcome](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#record-an-edit-and-retain-its-original-outcome).
+
+This example uses the retention application's [installed history declaration](../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs),
+[ordinary program installer](../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/host.rs)
+and [head construction](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/mod.rs).
+`Action` names its declared `SetRetentionBinding` action with source-completion
+delivery. The original head and second document are retained here so the
+[complete executable journey](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/journeys.rs)
+can independently check isolation, advance the edit, inspect its exact result
+and dispose both documents.
+
+<!-- compiled: document_history_edit.rs -->
+```rust
+    let host = publish_on_first_program();
+    let owned = head(&host);
+    let original = owned.branch();
+    let untouched = attach(&host, head(&host), RELATED_DOCUMENT_IDENTITY);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
+    let document = host
+        .with_host_advancement(|phase| {
+            host.runtime()
+                .request(&principal, &scope)
+                .on_branch(owned.branch())
+                .attach_history::<RetentionHistory>(
+                    &phase,
+                    owned,
+                    DocumentRetentionRead {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                    },
+                )
+                .unwrap()
+        })
+        .unwrap();
+    let request = host.runtime().request(&principal, &scope);
+    let root = document.current_step(&request).unwrap();
+    let mut edit = document
+        .edit(SetRetentionIntent {
+            input: SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 3,
+            },
+        })
+        .idempotency_owned(&request, 0x9182_0400)
+        .unwrap()
+        .retain_in_program::<RetentionProgramP0, Action>(&host)
+        .unwrap_or_else(|(_, cause)| panic!("declared action constructs: {cause:?}"));
+```
+
+Closing a document releases its internal history pins and disposes all its
+owned heads. `Closing(owner)` retains unfinished disposal across multiple heads;
+retry `owner.retry(&phase)` after releasing blocking readers. A closing owner
+cannot read or edit the document. A successful close does not release history
+held independently by other consumers.
+
+Use `document.current_step(&request)` for public step metadata. For governed
+metadata, call `current_step_governed(&request, capability, operation, input)`
+with the declared metadata purpose. The ordinary model READ still executes its
+body and filters; payload permission alone cannot disclose a step. Each call
+checks the current metadata grant before looking up the journal.
+Fresh governed edit enrollment and attempt lookup use
+`edit.advance_with_metadata(&request, capability, operation, input)`; retain the
+returned edit on refusal. An authorized retry returns its original step without
+repeating the edit. See the [compiled metadata and retry journey](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/metadata.rs)
+and [metadata declarations](../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs).
+
+List completed steps with `document.history_page(&request, limits, after.as_ref())`.
+`WorthQueryHistoryPageLimits` requires positive `maximum_entries`,
+`maximum_examined_entries` and `maximum_owned_bytes`. Rows carry a sealed step
+with its parent, label and exact source description. `retained_source_at_read()`
+means the document held that source when this admitted page was assembled; the
+row does not hold a payload lease or promise later preview availability.
+
+Keep `page.continuation()` for the next fresh read. A cursor belongs to one
+document and completed view; a completed edit invalidates it with a typed
+`StaleCursor`, while a foreign cursor returns `ForeignCursor`. A refusal leaves
+the input cursor unchanged. Pending or discarded edits do not create page rows
+or change continuation hints. `edit.history_page(..)` lists the still-selected
+completed view during such work. Drop pages when finished to release their
+metadata backing; derived layout data can be rebuilt from fresh pages.
+Governed metadata uses `history_page_governed(&request, capability, operation,
+input, limits, after.as_ref())`. Both the original READ and current metadata
+permission run before cursor or storage diagnostics. See the
+[compiled bounded-page journeys](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/mod.rs).
+
+Open a historical holder with `document.preview(&request, node_id)?`. Read it
+with `preview.read(&document, &request)?`, supplying the actual current document
+on every call. Later edits can move that document while the holder keeps its
+original composite source. The result exposes admitted `rows()`, the exact
+descriptive `source()` and the actual Native `basis()` used by the query.
+For a recorded fixed graph, `required_root_posture()` carries the original
+qualified root settlement. The step's endpoint is separately qualified against
+every completed root and dependent output and the original discovery evidence.
+The source action, root output and common endpoint can have different commits.
+`None` means the step carries no required-root settlement; it does not
+mean an output is unavailable. Preview reads execute no source command or producer.
+The holder and result expose no retained-selection or mutation conversion.
+Call `result.close()` and `preview.close()` when finished; another independently
+opened holder remains usable. Governed metadata uses `preview_governed(..)` and
+`read_governed(..)` with its current capability purpose on each call. See the
+[compiled historical-read journey](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/preview/mod.rs).
+
+To edit from an old node, explicitly declare an entity-record history domain and
+an `ApplicationHistoryNavigationBinding` with its separate NAV capability.
+Start a new click with an actual current selection. This compiled callback uses
+the planar example's `ConsumerSchema` and `PlanarHistoryNavigation` declaration;
+use your own schema and navigation binding in an application. It returns the
+original expected selection and first advancement result:
+
+<!-- compiled: document_history_navigation.rs -->
+```rust
+    let expected = document.selection(request)?;
+    let navigation = document
+        .navigate::<PlanarHistoryNavigation<ConsumerSchema>>()
+        .checkout(node)
+        .expected_selection(expected.clone())
+        .idempotency(key)
+        .prepare(request)?;
+    Ok((expected, navigation.advance(request)))
+```
+
+Keep the original expected selection, node and key with the click. Advance a
+`Pending(owner)` or `Refused { cause, owner }` using that retained owner and a
+fresh request. After losing a handle, prepare the same original description;
+capturing a later selection under the old key changes the intent and refuses.
+Checkout creates a
+writable context and selects the existing node without adding an authored edit;
+the next edit becomes its child, preserving the original future. Current grants
+and other records outside the model remain current. Read the
+[checkout contract and supported component meaning](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#select-a-historical-step-for-editing)
+before enabling navigation. A retained preview or page supplies no NAV authority.
+
+Set `ApplicationHistoryBinding::NAVIGATION_RESOURCES.maximum_unfinished_attempts`
+to bound unfinished navigation attempts per attached document (default 8).
+At capacity a new key receives `UnfinishedAttemptLimitExceeded` before target
+lookup or candidate creation. Retrying an existing key shares its original slot.
+Selection or completed `discard(&request)` releases that slot; a dropped handle
+or refused disposal keeps the original attempt registered. Use a fresh request
+to finish or discard it. This limit does not bound completed history or its
+separately owned cleanup.
+
+For undo and redo buttons, capture the expected selection for each new click.
+Represent its command as `Button::Undo` or `Button::RedoTo(child)` and lower it
+through the same prepared navigation owner:
+
+<!-- compiled: document_history_buttons.rs -->
+```rust
+    let builder = document.navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
+    let target = match button {
+        Button::Undo => builder.undo_step(),
+        Button::RedoTo(child) => builder.redo_to(child),
+    };
+    let navigation = target
+        .expected_selection(expected.clone())
+        .idempotency(key)
+        .prepare(request)?;
+    Ok((button, expected, navigation.advance(request)))
+```
+
+Keep the returned command, expected selection and key for retries. Use
+`document.redo_choices(&request, limits, after)` to read a bounded child page and
+its `NoChild`, `Single(child)` or `ChoiceRequired` hint. Offer an explicit child
+choice when several futures exist; preparation revalidates even a remembered
+single-child preference. The application keeps the actual pending/refused owner
+and preserves the document's output mode. Navigation selects an existing state;
+[semantic correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md)
+publishes a new inverse, compensation or reapplication under its own contract.
+
+For a gesture containing several ordinary actions, use an
+owning group. It keeps the original model selected until all members complete,
+then records one history edge:
+
+<!-- compiled: document_history_group_open.rs -->
+```rust
+    document.group_edits::<_, RetentionProgramP0, Action, 2>(
+        host,
+        request,
+        key,
+        [
+            (
+                SetRetentionIntent {
+                    input: SetRetentionInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 3,
+                    },
+                },
+                0x9182_5001,
+            ),
+            (
+                SetRetentionIntent {
+                    input: SetRetentionInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: second,
+                    },
+                },
+                0x9182_5002,
+            ),
+        ],
+    )
+```
+
+Advance the original group with fresh requests; this example uses `Posture` as
+an alias for `WorthQueryHistoryGroupPosture`:
+
+<!-- compiled: document_history_group_advance.rs -->
+```rust
+    let (document, execution) = group.parts();
+    let posture = execution.advance(document, request)?;
+    if posture == Posture::ReadyToComplete {
+        execution.complete(document, request)?;
+    }
+    Ok(group.posture())
+```
+
+The caller keeps `group` after every refusal. On a terminal member, inspect its
+original native outcome and abort the group; earlier candidate publications
+remain real effects with their own cleanup. After selection, finish the group
+to obtain its document, one history step and original member completions. Keep
+any returned cleanup owner on refusal. A group accepts a homogeneous list of
+source-completion or fixed required-output actions and preserves the document's
+payload and output modes. Each fixed member completes its actual root and
+children before the next member starts. Its completion is an original
+`WorthQueryClosedFixedDelivery`; earlier deliveries keep their historical
+settlements even when a later member makes current delivery stale. The final
+step names the last complete tree's endpoint.
+
+The group also checks every installed producer that its declared root and child
+families can select. A workflow or external-effect contract in one of those
+families refuses the group before candidate creation or source effects.
+An unrelated producer family does not prevent grouping. Installed
+`GROUP_RESOURCES` bounds members/results (64 each by default, one unfinished
+group). See
+[group completion, retries and disposal](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#group-ordinary-edits-into-one-step)
+for cancellation, competing navigation and partial effects.
+
+For a fixed member, supply a fresh request on `delivery.branch()` and validate
+its original complete output set at the retained observation:
+
+<!-- compiled: document_history_group_fixed_delivery.rs -->
+```rust
+    let original = request.at(delivery.settlement().observation());
+    delivery.deliver_current_at(&original)
+```
+
+An ordinary retained query can then read that member's historical artifacts
+under its own READ contract. A later group member does not replace this
+delivery's original settlement.
+
+For a fixed required-output tree, configure the document with
+`document.with_outputs::<Program, Root>(&phase, &request, &application, demand, controls)`
+inside an advancement of its owning host. A refusal returns the original
+document with its cause. The successful document carries
+`WorthQueryHistoryWithOutputs<Schema, Program, Root>` as its fifth type argument;
+preserve that mode through application wrappers, edits and close results.
+Navigation then owns the original root, discovered children and pending recovery
+until all required outputs settle before adoption. See
+[configure required outputs](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#configure-required-outputs)
+for retry and explicit close.
 
 To store the selected basis as application data, serialize
 `selected.describe_basis()` before releasing the selection. After loading that
@@ -2049,25 +2631,18 @@ See [native source and cleanup custody](../crates/worth-runtime-world/README.md#
 
 ### 4.4 Checkpoint program transitions
 
-Ordinary `in_memory_rostered_program_from_checkpoint` requires the recovered
-activation to name a supported program. For an app-owned predecessor mapping,
-`in_memory_rostered_program_from_checkpoint_with_transition` checks an exact
-`WorthQueryCheckpointProgramPredecessor` rendering and admits the current target
-through the ordinary program/roster installation path. The predecessor rendering
-never becomes a program revision or a roster member.
+#### Development workflow — pending (owner P-C, D16)
 
-For fresh installation with a separately funded setup request, borrow that original
-request with `host::application_contribution::with_bootstrap_advancement_from_request`.
-Call `host::application_installation::in_memory_rostered_program_in_advancement` with
-the phase first, followed by the validated program, roster, declaration,
-configuration, build identity, World limits and ordinary seed callback. It uses the
-same construction and roster core as default installation. The phase's original
-work, memory, cancellation and deadline govern all setup; the installed World's
-request policy remains the one declared in its limits. A larger seed grant therefore
-cannot make a zero-work runtime query succeed. Default `in_memory_program` and
-`in_memory_rostered_program` still open their bootstrap from the World policy.
-The public-entry funding, cancellation and memory regressions live in
-`topology_entry/src/checkpoint_recovery/support/bootstrap_funding.rs`.
+### Checkpoint admission — pending (owner P-A, D12)
+
+Ordinary checkpoint restore has the same original-request option:
+`host::application_installation::in_memory_rostered_program_from_checkpoint_in_advancement`
+takes that bootstrap phase first, followed by the validated program, roster,
+declaration, configuration, build identity, unchanged World limits and checkpoint.
+It reconstructs through the ordinary restore core and accepts no seed or transition
+callback. Use a separately funded opening request for a large recovered population;
+its allowance does not increase later World business calls. Default ordinary
+checkpoint restoration continues to open from the World request policy.
 
 When installation belongs to an already admitted execution attempt, borrow its
 `ExecutionRequest` through `host::application_contribution::with_bootstrap_advancement_from_request`
@@ -2093,168 +2668,7 @@ transition: the bootstrap runs on that lease, as if borrowed through
 `with_bootstrap_advancement_from_request`, so the lease carries the transition's
 work as well as the captured frame.
 
-The bootstrap phase cannot escape its callback or stand in for an installed-runtime
-phase. `OpeningCustody` still refuses a second Query opening from a host advancement
-or managed computation. The opener preserves a callback result that ran: completion
-owners check the original request before success or domain failure, and a generic
-outer stop preserves a performed transition's recovery capsule.
-
-For that capsule, call `repair_to_checkpoint_with_request(original_request)`.
-It holds itself outside the opening callback until entry succeeds; refusal returns
-the same capsule, including on entry cancellation or exhausted work. Its typed
-`capture_denial()` may contain `Execution` with the original Query execution cause;
-the original `finalization_denial()` remains distinct. Fresh-request retry repairs
-the same successor without reauthoring. The existing phase/policy repair method
-remains available for its explicit contract; its `Execution(&lease)` must be the
-caller lease that funds the call or one of its ancestors, and any other lease
-refuses `UnrelatedNestedLease`. The runnable
-[original request fixture](../workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request.rs)
-uses the real nonempty native transition; its
-[capture repair companion](../workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
-retains the native capsule across stopped attempts.
-
-Its bounded `WorthQueryCheckpointMigrationWriter` authors new typed entity seeds
-and relations between entities created in that batch. It currently cannot read or
-rewrite recovered records, or link a new record to an existing endpoint. Query
-commits those effects, the target activation and complete supported entity and
-relation revalidation in one native candidate before exposing a World. Surviving
-relations are judged through native read demands that preserve their fields,
-endpoints and record versions. Rules overlapping retired relations still refuse;
-retained workflows remain unsupported. Native candidate/publication limits remain
-in force alongside explicit selection and authoring bounds.
-
-For a derived-only codec change, use that same entry point with the target schema
-and program and an empty author callback (`|_, _| Ok(())`). Native recovery must
-first establish each affected present field's actual producer publication and
-complete payload coverage. The target must install the actual birth and successor
-producers with their complete output-role meaning for the same native kinds;
-a Preserve producer may itself create dynamic members. Before any disposition, each accepted output must match the complete original
-native publication; an optional role cannot be omitted when its native output
-is present. Each accepted output must then either retire completely or survive
-completely.
-A survivor must match live exact native identities, kinds and present payload,
-its original performed producer association and the complete installed output
-role meaning. A mixed or incomplete correspondence refuses. Surviving output
-metadata retains historical locators with no producer facts; it cannot establish
-target readiness. The installed producer must genuinely publish before that
-output can become current.
-An empty callback, a role declaration, a revision advance, or a copied producer
-description grants no retirement permission.
-
-The supported cutover retires whole output records and rebuilds native
-entity-field equality indexes. Native producer-created internal relations may
-retire in that same candidate when both endpoints are independently proven in
-that same performed publication's complete output closure and the present
-relation payload still matches its
-native creation or authenticated producer succession. Retirement deletes the exact admitted relations before their
-entities. Related ordering indexes are prepared before publication and require
-unchanged ordering-key codecs. External or rewritten relations, ordinary or
-subsequently overwritten payload, affected custom invariants, changed ordering
-keys, join consequences and multiple current branch heads remain refused.
-Codec cutover cannot append authored rows. Unaffected surviving relations are
-rejudged by the target program's actual installed rules before publication.
-Transition capture and the acknowledged recovery capsule
-retain the same funded historical output roster. Capture refusal returns that
-same acknowledged capsule for funded repair; repair does not reauthor or copy
-predecessor currentness.
-
-Historical roots and the original checkpoint keep their old meaning. Demand
-output through the installed target producer after installation, then use
-ordinary edits and checkpoint capture/reopen. Keep the original runtime
-available for requests that resume its existing continuations. Each token owns
-its historical selection and ordered-index generation; a fresh authorised
-request on that original runtime can consume it after current values advance.
-The target installation is a foreign owner. A token, observation or catalogue
-comparison cannot grant target-current authority.
-
-Start a page on the current branch with `.page(...)`; public paging does not
-accept `.at(observation)`. Resume with the token itself and a fresh request:
-
-<!-- illustrative -->
-```rust,ignore
-// Illustrative: not compiled.
-// The application declares read_children and the query.
-let first = original_request.query(read_children.clone()).page(width)?;
-let (owned_rows, continuation, _) = first.into_parts();
-let token = continuation.expect("another child page");
-// Keep the original owner available while installing/regenerating the target.
-let second = fresh_original_request.query(read_children).resume(token, width)?;
-```
-
-### Protected continuation pages
-
-An ordinary continuation advances one ordered Many child collection below an
-ExactlyOne root with pinned basis support. Open a governed first page with
-`page_governed` and resume with `resume_governed`, supplying the actual capability,
-operation and purpose on every call. The `_approved` forms additionally require
-current approved elevation. `readmit_resume_governed` and its `_approved` twin
-lend the canonical admitted plan to an owning callback when needed.
-
-This compiled maintained-Catalog court uses real protected child rows:
-
-<!-- compiled: protected_continuation.rs -->
-```rust
-    let first = request
-        .query(input())
-        .page_governed(
-            access::ReadBoxes::reference(),
-            access::InspectBoxes::reference(),
-            purpose(),
-            width(),
-        )
-        .unwrap();
-    let (rows, continuation, _) = first.into_parts();
-    let second = request
-        .query(input())
-        .resume_governed(
-            access::ReadBoxes::reference(),
-            access::InspectBoxes::reference(),
-            purpose(),
-            continuation.expect("another child page"),
-            width(),
-        )
-        .unwrap();
-```
-
-Each page admits current capability and independent READ before rows, count,
-ordering, cursor or completion metadata. Hidden ordering fields need explicit
-Ordering and Pagination influence; permitted hidden values remain omitted.
-The cursor retains the exact old World, parameters and Native ordering generation.
-Regrant can authorize an independently issued old cursor while current data has
-changed; it does not replace the cursor's data with current values. A failed
-resume consumes its move-only token. Retain separate genuinely issued cursors
-when separate attempts are required. A requested page width cannot widen the
-installed binding limit.
-
-Managed-index root selection and related-collection continuation remain distinct
-declared shapes. Combining them refuses during declaration; a managed candidate
-hit supplies no child-page position or root-pagination authority.
-
-The [related-output journey](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/related/continuation.rs)
-publishes three output roles and two internal relations. An original token still
-reads the old child total `12` after Preserve advances all three original outputs
-to `37`; the genuine target producer emits child total `1012`, then Preserve
-advances it to `1037` before current-format reopen. Live delivery, paired
-reconstruction and retained snapshot reads also retain their original request
-and decode custody through completion. A swallowed seed refusal or late
-cancellation denies the final page, image or successful delivery. Closing a
-live consumer and closing its publisher are separate lifecycle operations.
-
-`CheckpointTransitionCaptureStopped` retains the acknowledged phase when its
-first checkpoint capture stops. Consuming `repair_to_checkpoint` returns a
-target checkpoint, or the same capsule if capture stops again. A later installation failure returns
-`CheckpointTransitionFinalizationStopped` if target finalization refused before
-capture; its capsule retains the acknowledged successor and exposes the original
-typed `finalization_denial()`. Capture retries preserve that original cause.
-A later installation failure after checkpoint capture returns
-`CheckpointTransitionAcknowledged`
-with the already acknowledged target checkpoint and the original phase denial;
-fix the installation configuration and ordinary-restore that checkpoint. An
-unknown durable fate for the native transition is a typed
-`RelationalDurabilityUnresolved` installation denial and issues no acknowledged
-successor.
-
----
+### Durable branch creation — pending (owner P-C, after D12)
 
 ### 4.5 Declaration failures
 
@@ -2299,6 +2713,7 @@ let adapter = admit_authentication_adapter(
     WorthQueryAuthenticationAdapterAdmission::new(
         WorthQueryAuthenticationAudience::new("host")?,
         WorthQueryAuthenticationMethod::new("example")?,
+        admission_clock.clone(), // the observer installed with the runtime time source
     ),
     IdentityAdapter,          // your impl of WorthQueryAuthenticationAdapter
 )?;
@@ -2384,7 +2799,11 @@ use worth_query_host::facade::admission::authenticated_principal::{
 };
 
 let cancellation = WorthQueryCancellationSource::new();
-let scope = WorthQueryRequestScope::new(Some(Instant::now() + Duration::from_secs(60)), cancellation.token());
+let scope = WorthQueryRequestScope::new(
+    Some(admission_clock.now() + Duration::from_secs(60)),
+    cancellation.token(),
+    admission_clock.clone(),
+);
 ```
 
 #### Read governed data at one observation
@@ -2421,6 +2840,56 @@ outside publication timing. It unions shared allocations across current, held
 and queued roots and reports catalog footprints separately. Keep requested-object
 allocation peaks, checkpoint readmission and complete first-answer costs as
 separate measurements.
+
+### Protected continuation pages
+
+An ordinary continuation advances one ordered Many child collection below an
+ExactlyOne root with pinned basis support. Open a governed first page with
+`page_governed` and resume with `resume_governed`, supplying the actual capability,
+operation and purpose on every call. The `_approved` forms additionally require
+current approved elevation. `readmit_resume_governed` and its `_approved` twin
+lend the canonical admitted plan to an owning callback when needed.
+
+This compiled maintained-Catalog court uses real protected child rows:
+
+<!-- compiled: protected_continuation.rs -->
+```rust
+    let first = request
+        .query(input())
+        .page_governed(
+            access::ReadBoxes::reference(),
+            access::InspectBoxes::reference(),
+            purpose(),
+            width(),
+        )
+        .unwrap();
+    let (rows, continuation, _) = first.into_parts();
+    let second = request
+        .query(input())
+        .resume_governed(
+            access::ReadBoxes::reference(),
+            access::InspectBoxes::reference(),
+            purpose(),
+            continuation.expect("another child page"),
+            width(),
+        )
+        .unwrap();
+```
+
+Each page admits current capability and independent READ before rows, count,
+ordering, cursor or completion metadata. Hidden ordering fields need explicit
+Ordering and Pagination influence; permitted hidden values remain omitted.
+The cursor retains the exact old World, parameters and Native ordering generation.
+Regrant can authorize an independently issued old cursor while current data has
+changed; it does not replace the cursor's data with current values. A failed
+resume consumes its move-only token. Retain separate genuinely issued cursors
+when separate attempts are required. A requested page width cannot widen the
+installed binding limit.
+
+Managed-index root selection and related-collection continuation remain distinct
+declared shapes. Combining them refuses during declaration; a managed candidate
+hit supplies no child-page position or root-pagination authority.
+
 
 The entity a mutation acts on is its intent's *scope binding*, shown next.
 
@@ -2660,8 +3129,8 @@ ordered:
 
 ## 5.3 Execute through the program
 
-Every ordinary application installs a program with `in_memory_program` or
-`in_memory_rostered_program`. Declare a no-output action with
+Open a program Home as described in [§4](#4-install-or-reopen), then borrow
+its installed runtime. The owning-action examples here use MemoryOnly. Declare a no-output action with
 `.action::<Binding, Delivery>() ... .finish_action()`; its delivery mode is
 `ApplicationSourceCompletion` or `ApplicationRetainedCommit`. Select the exact
 `ApplicationActionReference`, rather than a first matching binding.
@@ -2835,6 +3304,10 @@ stays inside the attempt and requires ordinary admission to inspect.
 If candidate close returns `OwnerCleanupPending`, retry the retained cleanup
 owner rather than closing the retired branch again. Release external readers
 and disposed evidence receipts before expecting their retained history to clear.
+Inside `with_application_advancement`, pass its phase to
+`cleanup.retry_in_advancement(&phase)`. This borrows the receiving runtime's
+admitted request. Standalone callers can use `cleanup.retry()` outside an active
+advancement.
 Disposing a registered attempt leaves its real Claim row committed; the same key
 with no result or continuation still refuses. After adoption, disposal retains
 the committed continuation. Use acceptance for result recording and normal
@@ -2849,7 +3322,8 @@ custody and unresolved panicked handoffs remain retained rather than being
 discarded as owner-free refusals.
 
 For a preparation's `ProductUnpublished` creation failure, `dispose_pending`
-uses the actual creation recovery's `release_obligations`. A recovery refusal
+passes its phase to the actual creation recovery's
+`release_obligations_in_advancement(&phase, minimum_age_ticks)`. A recovery refusal
 retains that owner. Once release transfers work to owner cleanup, further
 disposal retries that cleanup instead of releasing creation again. The
 [compiled creation cleanup](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/acceptance/disposal/preparation.rs)
@@ -3416,7 +3890,7 @@ mutation bindings supply the conventional association; the macro's explicit
 unpublished-recovery and keyed-read handoffs borrow the original intent, key,
 source and full preconditions. They store no principal or request scope.
 
-For fixed delivery, an idempotent `AlreadyCommitted` source advances through
+For fixed delivery, an idempotent `RecoveredCommitted` source advances through
 `SourceReplayObserved` and then `RegisteredOutputsRecovered`. Each attempt uses
 fresh binding-selected admission and the exact installed action. Query resolves
 the original key and rejoins the registered native output demand from the
@@ -3425,6 +3899,13 @@ result. Keep the returned owner on `Refused` and retry with a fresh request.
 Missing, retired or superseded registration returns terminal historical source
 evidence instead of output settlement. Terminal `close` releases actual cleanup
 obligations; it does not mean the declared outputs completed.
+
+An original producer that completes after an unpublished World effect retains its
+actual correspondence, settlement owner and one-use delivery. It passes through
+ordinary Bridge delivery and readiness before settlement; the handler does not
+run again. That recovered settlement exposes its typed output roles and original
+provenance. Its `application_commit_receipt()` is `None`: a recovered description
+does not recreate a live Query commit receipt.
 
 The executable [fixed reply-loss journey](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_replay.rs)
 checks registered recovery, real observation-pressure refusal and retry, and
@@ -3515,6 +3996,71 @@ prepares and writes the actual effects through the same typed mutation path.
 Source admission, output contracts, currentness and atomic publication remain
 enforced without a producer resource forecast.
 
+#### Source-owned producer publications
+
+A producer defaults to independent publications. Opt in to source-scope cascade
+retirement on its `WorthQueryApplicationProducerBinding`:
+
+```rust,ignore
+const OWNERSHIP: ProducerPublicationOwnership =
+    ProducerPublicationOwnership::SourceScopeCascade;
+```
+
+The declaration means that the producer's complete publications belong to its
+recorded source scope. Installation requires an entity-specific input-field
+scope and a source query rooted at that same entity, without a context traversal,
+component/orbit selection or managed-index root selection. Shared/context and
+principal scopes refuse with `ProducerOwnershipRequiresEntitySourceScope`, naming
+the producer. Initial and Preserve producers in one family must agree on ownership.
+The ownership rule participates in installed producer identity.
+
+An authored `retire_created` or `restore_retired` binding supplies the exact source
+identity. Native admits an ordinary authored Create as the distinguished anchor
+and independently computes every live opted-in publication scoped by that source,
+then publications scoped by their members. Submit exactly the anchor and every
+live member of those complete publications. Partial, repeated, extra and
+foreign-source rosters refuse with typed causes and affected native records;
+retirement publishes once. Inspect `commit_denial.authored_retirement_error()` for
+its original `authored_retirement_refusal()` and `context.affected_records`.
+`restore_retired` restores the source and every owned
+publication in one transaction, preserving each producer's provenance and route
+while allocating fresh native generations and remapping owned relation endpoints.
+A restoration supplies historical output association, not producer readiness.
+
+An owned publication cannot use the independent single-publication retirement
+path, including a warm publication capsule. It refuses with
+`OwnedPublicationRequiresCascade`, identifying the publication and its owner.
+Anchorless mixed Create/Retire candidates receive the same refusal.
+An intermediate source created by a producer is not a genuine authored anchor.
+When a producer succession deletes live members of its own predecessor publication,
+Native treats those exact deleted members as cascade anchors. It computes the
+complete transitive closure of opted-in publications they own from recorded
+history. The producer candidate must delete every live closure member and owned
+edge and declare exactly those retirements, in the same atomic commit as its
+ordinary Create/Preserve/Retire membership. Partial, missing, extra, repeated and
+foreign retirements refuse with typed causes and affected records. Borrow
+`demand_denial.authored_retirement_error()` for that original Native error.
+The surviving generator keeps its own Preserve origin; every retired publication
+retains its own provenance, route and predecessor. This also covers an independent
+generator whose removed members own opted-in children.
+
+Regrowth creates fresh source generations and fresh owned publications through
+the existing producer rules. Undo the authored size edit through its recorded
+correction, then demand outputs again; redo selects the recorded reversal
+alternative and uses reapplication. These size-edit inverses do not restore the
+old derived generations. Whole-source authored restoration retains its existing
+`restore_retired` rules. Every intermediate publication must opt
+in for a producer-created source to join the authored root's cascade.
+An owned publication cannot be
+restored or republished without its live source (`PublicationOwnerUnavailable`).
+These checks govern required-output publication custody; an unbound Native
+transaction remains governed by its ordinary schema and cascade-delete policy.
+
+An input dependency or a reference never implies ownership. Two independent
+producers may read the same source without entering its cascade. Opting in does
+not make an external endpoint of a producer-owned relation an owned entity.
+See the [custody contract](../plans/WORTH-query/authored-retirement-custody.md).
+
 #### Typed producer domain denial
 
 Every provider declares `type DenialValue` in one of three forms:
@@ -3565,6 +4111,24 @@ returns `Stale`; unrelated progress does not itself make settlement stale.
 basis with fresh query authorization. Neither history nor close advances outputs.
 For `ApplicationNoProjection`, `deliver_current` checks every settlement at one
 authentic observation and returns that observation without issuing a query.
+
+After a performed action's required tree settles, use
+`settled.settlement().performed_source()` to borrow its original source
+provenance. `source.receipt()` is the action's receipt before output production;
+`root_receipt()` describes the root producer and may name a later publication.
+The provenance holder retains the action's exact original read occurrence with
+the settled tree. `source.root_fulfillment()` borrows the actual required root's
+fulfillment of that action's output obligation. Its `source_commit()` names the
+action occurrence, `output_commit()` names the root's qualified output
+occurrence, and `posture()` preserves whether that output was performed, reused
+or recovered. Reuse and recovery do not imply that the producer ran again for
+this action. This fact describes the root; use ordinary settlement delivery to
+check the whole tree at the current observation.
+
+A tree started from a read returns `None` for
+`performed_source()`, including when its producer performs a new publication.
+The source receipt supplies descriptive evidence; inspecting it still requires
+fresh current access, and it grants no navigation or mutation permission.
 
 Use `WorthQueryOperationDeliveryPolicy::default()` for an attempt without an
 additional work ceiling. A caller may explicitly choose a finite attempt as below.
@@ -3930,7 +4494,8 @@ When final publication must follow cleanup, call the settled parent's
 complete settlement, original installed meaning and authentic runtime, beside
 actual native close evidence. Its immutable `settlement()` includes the genuine
 root correspondence even for `StableReused` with `root_receipt() == None`.
-No original demand, controls or extra source-basis lease survives no-source close.
+No original demand or controls survive no-source close. The closed read-tree
+carrier retains its original readonly source basis as provenance.
 
 Close validates original allocation/branch and fresh cleanup authority; stale
 sources or changed selected programs do not prevent disposal. Fixed refusal
@@ -3938,6 +4503,17 @@ returns the same settled parent and typed cause. No-source refusal owns the
 positive settlement and all remaining native custody, including any discharged
 prefix; `WorthQueryProgramOutputDeliveryCloseRefusal::retry_close` is close-only.
 It cannot deliver, advance, or convert back into a live tree.
+
+For a complete no-source tree, an already-open live phase from the owning runtime
+can dispose of native custody without an application request. Use
+`operation.close_in_advancement(&phase)` for cleanup only, or
+`settled.close_for_delivery_in_advancement(&phase)` to keep the original readonly
+delivery. Their close-only refusals expose `retry_close_in_advancement(&phase)`.
+The phase must belong to the original runtime and remain live; an identically
+typed runtime's phase is refused. These calls open no nested advancement and
+admit no payload read or new output demand. If the enclosing advancement stops,
+retain the returned owner in your owned state before leaving its closure.
+Closed delivery still retains readonly history pins until you drop it.
 
 Only after actual native close succeeds, use the carrier's fresh `deliver_current`
 or `read_current`. Fixed declared query/batch shapes retain their original
@@ -3954,6 +4530,11 @@ old frozen views and descriptive commit equality provide no substitute.
 Closed carriers and returned observations pin readonly lineage/history and the
 runtime; they do not certify whole-application shutdown or own uncleared cleanup.
 Drop them promptly after final publication, before whole-runtime close or OS join.
+Use `receipt.descriptive_copy()` when you need original commit, intent and
+terminal evidence without retaining the publication's physical history. The
+copy carries no performed-change witness or full product basis. Ordinary
+`Clone` still retains its original publication custody. Making a descriptive
+copy does not retire the source or release another holder.
 The neutral `application_program::closed_delivery` fixture exercises both owners,
 including a real native source perturbation for Stable/no-receipt reuse. Its
 rostered-successor court selects compatible meaning before capturing the original
@@ -3967,7 +4548,7 @@ terminally unavailable (`RetainedBasisUnavailable`). Matching action meaning
 does not repair that basis; the application must run a fresh operation.
 
 To present several closed carriers together, retain one observation and deliver
-every carrier at it with `deliver_current_at(&request.at(&observation), policy)`.
+every carrier at it with `deliver_current_at(&request.at(&observation))`.
 It exists on closed no-projection Fixed and closed no-source carriers. It runs
 the same native gate as `deliver_current` at that caller's observation:
 no-projection Fixed re-resolves its original installed action, no-source checks
@@ -3992,13 +4573,64 @@ observation. Read every displayed fact at that same observation.
 let observation = request.retain_current_read()?;
 let pinned = request.at(&observation);
 for carrier in &closed_no_projection_fixed {
-    carrier.deliver_current_at(&pinned, policy)?; // installed action + full lineage
+    carrier.deliver_current_at(&pinned)?; // installed action + full lineage
 }
 for carrier in &closed_trees {
-    carrier.deliver_current_at(&pinned, policy)?; // selected typed root + full lineage
+    carrier.deliver_current_at(&pinned)?; // selected typed root + full lineage
 }
 let membership = pinned.query(membership_read).execute()?; // facts at the same basis
 ```
+
+For a retained record of a closed read tree's complete qualification, use
+`closed_tree.qualify_at(&request.at(&observation))`. It checks the selected typed
+root, every original root and dependent settlement, and original discovery at
+that exact observation under a fresh request scope. The returned
+`WorthQueryCompletedReadOutputs` retains readonly source and output history.
+Its `source_commit()` identifies the original read admission, `root_output_commit()`
+describes the root's own settlement, and `output_commit()` identifies the exact
+common observation you supplied. Those commits can differ. A receiptless
+`StableReused` root is legal; the fact does not assert producer reexecution.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let observation = request.retain_current_read()?;
+let pinned = request.at(&observation);
+let qualified = closed_tree.qualify_at(&pinned)?;
+let rows = pinned.query(output_read).execute()?;
+assert_eq!(qualified.output_commit(), observation.selected_commit());
+```
+
+Qualification is retrospective. A later edit does not change an issued fact;
+qualifying at the later observation must check the original whole tree again.
+A still-current root cannot stand in for stale dependents or discovery. Retaining
+an older genuine observation lets you qualify at that historical basis explicitly.
+The fact grants no current permission and cannot select, query or publish.
+Qualification never advances a producer or reopens cleanup. Refusal preserves
+the same closed carrier. Drop the carrier, facts and observations when finished
+to release their readonly history before closing the runtime.
+
+To qualify the original tree's own endpoint, call
+`closed_tree.qualify_original(&request)`. It follows the genuine retained output
+publications from the original read source, using World's exact before/after
+references, then checks the selected typed root and complete tree there. It
+never chooses an endpoint from the largest commit ordinal or a later current
+head. If no output publication follows the source, the endpoint stays at that
+source; retained or receiptless output reuse remains legal.
+
+The returned `WorthQueryCompletedOriginalReadOutputs` retains the original
+source, the genuine root read and the qualified endpoint separately. The root's
+producer correspondence remains bound to its own read basis. Ordinary
+`WorthQueryCompletedReadOutputs` cannot be converted into this original-endpoint
+fact. Both types are retrospective evidence and grant no selection permission.
+
+Later unrelated work can leave the original endpoint fully qualified while
+moving the current head elsewhere. An unrelated publication between original
+outputs cannot be used to connect their publication chain. If the reachable
+prefix cannot qualify the complete tree, or no original read retains its exact
+endpoint, qualification refuses and preserves the carrier. Qualification at an
+explicitly supplied later observation can still be lawful; use `qualify_at` for
+that distinct question. Neither call reruns producer work.
 
 A refusal for one carrier leaves every carrier closed and unchanged. Only a
 typed native `Superseded` (Fixed `Stale`, no-source `Currentness(Output(..))`
@@ -4142,7 +4774,7 @@ keys; recovery persists the selected retained truth.
 
 The [temporal integrity rule](../workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/integrity.rs)
 returns `TemporalIntegrityRefusal::InvalidState` with the candidate revision and
-lifecycle. The [installed refusal courts](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/typed_invariant_refusal.rs)
+lifecycle. The [installed refusal courts](../workspaces/worth-query/crates/worth-query-court-execution-package-archive/tests/worth_query_court_execution_package_archive/domain_computation/primary_graph/tests/application_attempt/typed_invariant_refusal/mod.rs)
 exercise original-caller decoding, unchanged native checkpoints, cancellation,
 installed order, size refusal, decode mismatch, and reproducible payload bytes.
 
@@ -5655,8 +6287,8 @@ but did not publish is recovered with
   finish each builder before validation.
 - Validate programs with
   `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` and
-  install with `application_installation::in_memory_program` or
-  `in_memory_rostered_program`.
+  open with `WorthQueryApplicationHomeRequest::open_in_advancement`; keep its
+  owning Home and select a location that supports the declared state.
 - Run fixed, discovered and source-only actions through `idempotency_owned(key)` and
   `retain_operation::<Program, Action>(&runtime)`, then supply fresh ordinary
   requests for advancement, delivery and close. Native admission checks the
@@ -6759,10 +7391,13 @@ uses the same ordinary Home request and physical location. It admits the recorde
 portable schema/program meaning, completion and activation through the recovered
 World root without calling the initializer or replaying seed suppliers.
 
-Fresh Directory startup records completed bootstrap meaning after every seed
-batch and index build succeeds, before creating World genesis. A refused
-completion keeps the accepted seeds and original Home in opening custody; it
-does not rerun initialization. Memory startup adds no completion commit.
+Fresh Memory and Directory startup publish the same bootstrap completion commit
+after every seed batch and index build succeeds, before creating World genesis.
+The record describes installed package/schema meaning, the terminal seed receipt
+and counts; it grants no durable association to Memory. A refused Directory
+completion keeps the accepted seeds and original Home in opening custody without
+rerunning initialization. Development Homes with the retired completion format
+refuse with a typed Query recovery outcome; opening performs no migration.
 
 Ordinary reads after reopen use the selected published World basis, including
 when independent Native history is newer. Actual recovered index definitions
@@ -6807,10 +7442,23 @@ concurrent open. Old recovery handles are incarnation-fenced, so obtain claims
 from the newly readmitted Home. Do not loop live release, reconstruct the old
 proposal, or resubmit the handler.
 Zero observed effects are descriptive and do not issue a no-effect authority.
-Existing Query service requires zero actual retained World recovery custody.
-A performed Native effect beyond the published World head remains owned and
-refused before service until recovered Query custody is supported. Lower World
-recovery does not reconstruct an application's Rust return value. Persisted
+Reopen validates each recovered World open against its actual Native association
+and original Query key/intent/affinity before admitting service. Untypable or
+inconsistent original evidence still returns an owning typed opening refusal.
+Retrying the original key returns distinct recovered `ProductUnpublished`
+custody, with the original Native meaning and predecessor, and no reconstructed
+Rust return value. Its `ContinueOriginalPublication` action is executed through
+`continue_original_in_request` on the fresh recovery claim: it publishes the
+original occurrence without handler or effect replay. Release first commits its
+original durable disposition. Pending/refused outcomes retain the same owner.
+A released effect-bearing original keeps its idempotency binding. Explicit
+resolution returns `ReleasedOriginal` with the original Native meaning and
+release provenance. It carries no application receipt or adoption authority.
+An ordinary retry refuses with `OriginalEffectReleased` before the handler;
+changed intent still reports drift. Only an actual no-effect release permits
+fresh execution of that key. Memory release preserves the same terminal meaning
+without claiming a durable World association.
+A durable `Continued` disposition excludes release across every subsequent open. Persisted
 workflow, outbox, inbound-completion and aftermath rows refuse cold service;
 compiled workflow declarations alone remain allowed. Missing or incompatible
 completion artifacts keep their existing origin and never regain initialization.

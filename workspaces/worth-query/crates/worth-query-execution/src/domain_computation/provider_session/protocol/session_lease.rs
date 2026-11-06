@@ -59,16 +59,20 @@ impl<'scope> WorthQueryProviderSessionLease<'scope> {
         result
     }
 
-    pub(super) fn commit(
+    pub(super) fn commit_using(
         &mut self,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        physical: impl FnOnce(
+            &WorthQueryGraphProviderAnchor,
+            super::WorthQueryProviderSessionView<'_>,
+        ) -> Result<
+            super::WorthQueryProviderTerminalDescription,
+            super::WorthQueryProviderSessionCommitStop,
+        >,
     ) -> Result<
         super::WorthQueryProviderTerminalDescription,
         super::WorthQueryProviderSessionCommitStop,
     > {
-        let result = self
-            .provider
-            .commit_session(&self.token.view(self.request), allocation_policy);
+        let result = physical(&self.provider, self.token.view(self.request));
         if result.is_ok()
             || matches!(
                 &result,

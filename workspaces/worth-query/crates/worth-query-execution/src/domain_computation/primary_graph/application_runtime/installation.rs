@@ -4,6 +4,8 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 mod assembly;
 pub(in crate::domain_computation::primary_graph) mod home_attachment;
 mod input;
+mod owned_contributions;
+mod schema_admission;
 use super::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
@@ -15,35 +17,13 @@ use crate::domain_computation::execution_runtime::{
 };
 use assembly::assemble_application_runtime;
 pub(in crate::domain_computation::primary_graph) use input::ApplicationRuntimePublication;
+pub(super) use schema_admission::require_no_conditional_bindings;
+use schema_admission::validate_application_schema;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationSchema,
     WorthQueryInstalledGraphParticipationAuthority,
 };
-pub(super) fn require_no_conditional_bindings<Schema>(
-    runtime: &WorthQueryExecutionRuntime,
-    installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
-where
-    Schema: ApplicationSchema,
-{
-    let count = runtime
-        .installed_packages()
-        .installed_conditional_node_count_for_schema(
-            installed_schema.owner(),
-            installed_schema.schema_name(),
-        );
-    if count == 0 {
-        Ok(())
-    } else {
-        Err(WorthQueryPrimaryGraphInstallationDenial::new(
-            WorthQueryPrimaryGraphInstallationDenialKind::ConditionalBindingsRequired,
-            format!(
-                "{} declared conditional nodes require the conditional publication progression",
-                count
-            ),
-        ))
-    }
-}
+
 pub(super) fn publish_application_runtime_with_clock<Schema>(
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     input: ApplicationRuntimePublication<Schema>,
@@ -64,13 +44,10 @@ where
         conditional_evaluation_budget,
     } = input;
     validate_application_schema(&runtime, &installed_schema)?;
-    bootstrap.resources.validate_complete(&installed_schema)?;
+    let mutation_handlers = owned_contributions::preflight(&bootstrap, &installed_schema)?;
     let managed_indexes = bootstrap.managed_indexes.take_complete(&installed_schema)?;
     let resources = std::mem::take(&mut bootstrap.resources);
     let mutation_projection = bootstrap.retain_invariant_projection_authority();
-    let mutation_handlers = bootstrap
-        .mutation_handlers
-        .seal(&installed_schema, bootstrap.graph.binding_identity())?;
     let authorization = compile_authorization(&bootstrap, &installed_schema)?;
     let mut graph = publish_application_graph(
         phase,
@@ -83,7 +60,7 @@ where
     )?;
     let resources = resources.install(
         &phase.execution_request(),
-        graph.bridge.conditional_builder(),
+        Some(graph.bridge.conditional_builder()),
         graph.primary_provider.application_resource_support_ref(),
     )?;
     let graph = seal_application_graph(graph)?;
@@ -99,8 +76,7 @@ where
         Default::default(),
         Default::default(),
     )?;
-    application.conditional_cleanup.resources = resources;
-    application.managed_indexes = managed_indexes;
+    owned_contributions::transfer(&mut application, resources, managed_indexes);
     Ok(application)
 }
 pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_conditionals<
@@ -134,9 +110,7 @@ where
     } = input;
     validate_application_schema(&runtime, &installed_schema)
         .map_err(super::super::conditional_operation::publication_denial)?;
-    bootstrap
-        .resources
-        .validate_complete(&installed_schema)
+    let mutation_handlers = owned_contributions::preflight(&bootstrap, &installed_schema)
         .map_err(super::super::conditional_operation::publication_denial)?;
     let managed_indexes = bootstrap
         .managed_indexes
@@ -144,10 +118,6 @@ where
         .map_err(super::super::conditional_operation::publication_denial)?;
     let resources = std::mem::take(&mut bootstrap.resources);
     let mutation_projection = bootstrap.retain_invariant_projection_authority();
-    let mutation_handlers = bootstrap
-        .mutation_handlers
-        .seal(&installed_schema, bootstrap.graph.binding_identity())
-        .map_err(super::super::conditional_operation::publication_denial)?;
     super::super::conditional_operation::require_complete_binding_inventory(
         expected_conditional_bindings,
         &bindings,
@@ -206,7 +176,7 @@ where
     let resources = resources
         .install(
             &phase.execution_request(),
-            graph.bridge.conditional_builder(),
+            Some(graph.bridge.conditional_builder()),
             graph.primary_provider.application_resource_support_ref(),
         )
         .map_err(super::super::conditional_operation::publication_denial)?;
@@ -225,10 +195,10 @@ where
         output_readiness_routes,
     )
     .map_err(super::super::conditional_operation::publication_denial)?;
-    application.conditional_cleanup.resources = resources;
-    application.managed_indexes = managed_indexes;
+    owned_contributions::transfer(&mut application, resources, managed_indexes);
     conditional_operations.reconstruct_all(&application)?;
-    conditional_operations.reconcile_all(&mut application.bridge.conditional_lifecycle())?;
+    conditional_operations
+        .reconcile_all(&mut application.runtime.bridge.conditional_lifecycle())?;
     *application
         .conditional_cleanup
         .operations
@@ -248,23 +218,7 @@ pub(super) struct PublishedApplicationGraph<Bridge> {
         Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
     checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
 }
-fn validate_application_schema<Schema>(
-    runtime: &WorthQueryExecutionRuntime,
-    installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
-where
-    Schema: ApplicationSchema,
-{
-    runtime
-        .installed_packages()
-        .validate_application_schema(installed_schema)
-        .map_err(|denial| {
-            WorthQueryPrimaryGraphInstallationDenial::new(
-                WorthQueryPrimaryGraphInstallationDenialKind::StaleInstalledSchema,
-                denial.subject(),
-            )
-        })
-}
+
 fn compile_authorization<Schema>(
     bootstrap: &WorthQueryPrimaryGraphBootstrap<Schema>,
     installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,

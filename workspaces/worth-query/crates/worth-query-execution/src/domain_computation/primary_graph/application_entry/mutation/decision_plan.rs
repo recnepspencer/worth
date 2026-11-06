@@ -227,3 +227,5 @@ fn execution_failure<Value, Denial>(
         cause => HandlerResult::ExecutionDenied(super::HandlerExecutionDenial::new(cause)),
     }
 }
+
+mod court_doors_for_test;

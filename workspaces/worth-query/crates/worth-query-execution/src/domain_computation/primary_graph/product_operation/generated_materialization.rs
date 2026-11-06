@@ -20,7 +20,7 @@ pub use suspension::{
     WorthQueryGeneratedOutputSuspensionRecoveryStage,
 };
 mod preparation_execution;
-mod restoration;
+pub(crate) mod restoration;
 mod suspend;
 mod suspension_failure;
 pub(in crate::domain_computation::primary_graph) use restoration::admit_required_invariants;
@@ -42,7 +42,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationProducerProvider,
 };
 
-pub(super) struct ProducerQualification {
+pub struct ProducerQualification {
 
     binding_type: TypeId,
     output_binding_type: TypeId,
@@ -135,6 +135,7 @@ impl WorthQuerySuspendedGeneratedOutput {
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         runtime
+            .runtime
             .primary_provider
             .graph
             .output_lineage
@@ -217,3 +218,5 @@ impl std::fmt::Debug for WorthQueryGeneratedOutputSuspensionFailure {
         }
     }
 }
+
+mod court_doors_for_test;

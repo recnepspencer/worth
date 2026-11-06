@@ -169,7 +169,7 @@ fn definition_metadata_is_independent_principal_first_and_fresh_at_retained_data
         "old data never revives a revoked current metadata grant"
     );
     let cancellation=worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
-    let cancelled = WorthQueryRequestScope::new(None, cancellation.token());
+    let cancelled = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     cancellation.cancel();
     assert!(
         matches!(
@@ -186,7 +186,7 @@ fn definition_metadata_is_independent_principal_first_and_fresh_at_retained_data
         "technical stops are not metadata absence"
     );
     let expired=WorthQueryRequestScope::new(Some(std::time::Instant::now()),
-        worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new().token());
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     assert!(
         matches!(
             runtime

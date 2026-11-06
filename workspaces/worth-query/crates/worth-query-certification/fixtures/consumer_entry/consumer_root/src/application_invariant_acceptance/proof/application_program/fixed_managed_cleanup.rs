@@ -199,8 +199,7 @@ fn terminal_court(interference: Interference) {
     let stopped =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
             None,
-            stop.token(),
-        );
+            stop.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let (terminal, cause) = terminal
         .close(&world.application.request(&principal, &stopped))
         .err()
@@ -347,8 +346,7 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
     let stopped =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
             None,
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     assert!(matches!(
         terminal.release_cleanup(&world.application.request(&principal, &stopped)),
         Err(WorthQueryOperationCloseDenial::Execution(_))

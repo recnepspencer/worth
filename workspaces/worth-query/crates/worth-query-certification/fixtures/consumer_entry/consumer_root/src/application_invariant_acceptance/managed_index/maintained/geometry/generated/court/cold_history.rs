@@ -1,5 +1,6 @@
 //! Cold generated Source construction and current-security historical admission.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::atomic::AtomicBool;
 
 fn read_source(directory: &str) -> query::ReadSource {
@@ -24,7 +25,7 @@ fn journey() {
     let calls = Arc::new(provider::Calls::default());
     let config = Configuration::new(calls.clone());
     let rules = config.rules.clone();
-    let prefix = Arc::new(prefix::Calls::default());
+    let prefix = Arc::new(prefix_observation::Calls::default());
     let prefix_rules = Arc::new(prefix_rule::Calls::new(prefix.clone()));
     let world = host::install_geometry(prefix, prefix_rules.clone(), config);
     let scope = authentication::request_scope();
@@ -273,7 +274,7 @@ fn cancel_cold_build(
     source: WorthQueryObservedSource<source::Query>,
 ) {
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let reached = Arc::new(AtomicBool::new(false));
     let observed = reached.clone();
     *calls.after_build_node_write.lock().unwrap() = Some(Box::new(move || {

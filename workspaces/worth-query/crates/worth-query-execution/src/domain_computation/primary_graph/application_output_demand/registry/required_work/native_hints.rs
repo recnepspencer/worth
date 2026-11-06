@@ -7,7 +7,7 @@ use worth_relational::facade::mvcc::CompanionPublicationCompletionObserver;
 
 use super::RequiredWorkMembership;
 
-pub(in crate::domain_computation::primary_graph) struct NativeHint {
+pub struct NativeHint {
     pub(super) observer: CompanionPublicationCompletionObserver,
     pub(super) branch: Arc<NativeBranch>,
     // The selection version at which this publication was seen installed
@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph) struct NativeHint {
 
 /// The final selected Arc, not the hint node, owns branch text and control
 /// block capacity. A stale selected worker can outlive an acknowledged node.
-pub(in crate::domain_computation::primary_graph) struct NativeBranch {
+pub struct NativeBranch {
     branch: BranchId,
 }
 
@@ -65,3 +65,5 @@ impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
 }
+
+mod court_doors_for_test;

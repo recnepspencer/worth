@@ -1,0 +1,16 @@
+command: "C:/Program Files/Git/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty
+HEAD: 25619ac5d1ae6092ab5a91bc4b7123be6042475c
+git_status_short_empty: false
+start_utc: 2026-11-06T18:12:42.190322+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+[workspace-rust-line-caps] enforcing 400-line cap for dirty Rust files
+warning: exhaustive rename detection was skipped due to too many files.
+warning: you may want to set your diff.renameLimit variable to at least 4285 and retry the command.
+[workspace-rust-line-caps] allowlisted: crates/worth-foundational/src/facade.rs (743 lines)
+[workspace-rust-line-caps] PASS: checked 7677 Rust files
+
+end_utc: 2026-11-06T18:13:33.751213+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

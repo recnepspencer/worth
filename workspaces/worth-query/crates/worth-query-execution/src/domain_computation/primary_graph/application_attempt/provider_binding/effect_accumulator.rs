@@ -38,7 +38,8 @@ pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts: Fa
     composed_aspects: BTreeSet<worth_relational::facade::identity::EntityId>,
 }
 
-pub(super) struct WorthQueryRegisteredProviderEffects {
+pub struct WorthQueryRegisteredProviderEffects {
+    content_attachments: worth_relational::facade::content::RelationalContentAttachments,
     body_external_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
     expected_steps: WorthQueryExpectedEffectSteps,
     batch: WorkerIntentBatch,
@@ -123,6 +124,7 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
         let emissions = WorthQueryAdmittedApplicationEmissionBatch::admit(emissions)
             .map_err(|_| invalid_emission_denial())?;
         Ok(WorthQueryRegisteredProviderEffects {
+            content_attachments: Default::default(),
             body_external_emission: None,
             expected_steps,
             batch,
@@ -135,6 +137,18 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
 }
 
 impl WorthQueryRegisteredProviderEffects {
+    pub(super) fn bind_content_attachments(
+        &mut self,
+        attachments: worth_relational::facade::content::RelationalContentAttachments,
+    ) {
+        self.content_attachments = attachments;
+    }
+    pub(super) fn content_attachments(
+        &self,
+    ) -> &worth_relational::facade::content::RelationalContentAttachments {
+        &self.content_attachments
+    }
+
     pub(super) fn bind_body_external_emission(
         &mut self,
         selection: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
@@ -261,6 +275,7 @@ impl WorthQueryRegisteredProviderEffects {
         Ok((
             Self {
                 body_external_emission: self.body_external_emission,
+                content_attachments: self.content_attachments,
                 expected_steps: self.expected_steps,
                 batch,
                 emissions: self.emissions,
@@ -321,3 +336,5 @@ mod tests {
         assert_eq!(accumulator.mutation_partition, issued);
     }
 }
+
+mod court_doors_for_test;

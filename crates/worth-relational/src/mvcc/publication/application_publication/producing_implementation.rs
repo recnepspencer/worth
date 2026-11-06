@@ -7,7 +7,7 @@
 )]
 pub struct RequiredOutputProducingImplementation {
     build: [u8; 16],
-    edition: [u8; 32],
+    edition: worth_foundational::CanonicalDigestId,
 }
 
 impl RequiredOutputProducingImplementation {
@@ -17,7 +17,7 @@ impl RequiredOutputProducingImplementation {
     ) -> Self {
         Self {
             build: build.bytes(),
-            edition,
+            edition: worth_foundational::CanonicalDigestId::new(edition),
         }
     }
 
@@ -26,7 +26,10 @@ impl RequiredOutputProducingImplementation {
         if build == [0; 16] {
             return Err("required output has no producing build identity");
         }
-        Ok(Self { build, edition })
+        Ok(Self {
+            build,
+            edition: worth_foundational::CanonicalDigestId::new(edition),
+        })
     }
 
     pub const fn build_identity(self) -> [u8; 16] {
@@ -34,7 +37,7 @@ impl RequiredOutputProducingImplementation {
     }
 
     pub const fn edition(self) -> [u8; 32] {
-        self.edition
+        *self.edition.bytes()
     }
 
     pub(crate) fn valid(self) -> bool {

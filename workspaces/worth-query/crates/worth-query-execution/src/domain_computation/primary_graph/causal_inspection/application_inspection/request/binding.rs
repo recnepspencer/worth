@@ -9,12 +9,7 @@ use worth_query_installation::facade::{
     WorthQueryInstalledQueryBindingAdmissionStop,
 };
 
-pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) enum InspectionBindingDenial
-{
-    #[allow(
-        dead_code,
-        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
-    )]
+pub enum InspectionBindingDenial {
     Installation(WorthQueryApplicationQueryInstallationDenial),
     Storage(RetainedStorageDenial),
 }

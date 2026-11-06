@@ -31,6 +31,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         }
         let security = self
             .application()
+            .runtime
             .product_runtime
             .security_observation_for(execution, self.product())
             .map_err(|stop| super::selection_denial(stop, query_name))?;
@@ -106,7 +107,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
-        let request = match phase.execution_request_for(&self.application().product_runtime) {
+        let request = match phase.execution_request_for(&self.application().runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };
@@ -127,74 +128,4 @@ fn foreign_basis(query_name: &str) -> WorthQueryApplicationQueryAdmissionDenial 
     )
 }
 
-#[cfg(test)]
-mod tests {
-    use std::num::NonZeroUsize;
-
-    use super::*;
-    use crate::domain_computation::primary_graph::tests::fixture::{
-        installed_authorization_world, live_scope,
-    };
-
-    #[test]
-    fn retained_and_batch_selection_keep_original_interruption_causes() {
-        use crate::basis::WorthQueryProductBranchAdmissionDenial as Branch;
-        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Stop;
-        for (stop, expected) in [
-            (
-                Stop::Cancelled,
-                WorthQueryApplicationQueryAdmissionDenialKind::Cancelled,
-            ),
-            (
-                Stop::TimedOut,
-                WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded,
-            ),
-        ] {
-            let denial = super::super::selection_denial(Branch::Stopped(Err(stop)), "batch-stop");
-            assert_eq!(denial.kind(), expected);
-        }
-    }
-
-    #[test]
-    fn retained_query_rejects_security_from_a_sibling_branch() {
-        let world = installed_authorization_world(true);
-        let application = &world.application;
-        let root = application.current_world();
-        let sibling = world
-            .application
-            .with_host_advancement(|phase| {
-                application
-                    .branches()
-                    .fork(root)
-                    .components(|components| {
-                        components.reuse_exact_relational_basis().fork_signal()
-                    })
-                    .create(&phase)
-                    .expect("a distinct sibling branch should exist")
-            })
-            .expect("the fixture read owns its installed host call");
-        let security = world
-            .application
-            .with_host_advancement(|phase| application.on_branch(sibling).select(&phase).unwrap())
-            .expect("the fixture read owns its installed host call");
-        let retained = world
-            .application
-            .with_host_advancement(|phase| application.on_branch(root).select(&phase).unwrap())
-            .expect("the fixture read owns its installed host call");
-        let scope = live_scope();
-        let controls = WorthQueryProductQueryControls::new(NonZeroUsize::new(1).unwrap(), &scope);
-        let denied = application
-            .with_host_advancement(|phase| {
-                let execution = phase
-                    .execution_request_for(&application.product_runtime)
-                    .unwrap();
-                security.retained_query_controls(&execution, retained, "sibling", controls)
-            })
-            .expect("original fixture host call");
-        assert!(matches!(
-            denied,
-            Err(error)
-                if error.kind() == WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis
-        ));
-    }
-}
+mod court_doors_for_test;

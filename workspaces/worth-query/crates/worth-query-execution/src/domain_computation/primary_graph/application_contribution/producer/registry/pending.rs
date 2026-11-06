@@ -108,6 +108,8 @@ where
                 Binding::IDENTITY,
             ));
         }
+        declared.owned_scope_entity =
+            super::scope_ownership::validate::<Schema, Binding>(&mutation, &source_query)?;
         declared.installed_output_equivalence = declared
             .output_equivalence
             .as_ref()
@@ -144,6 +146,7 @@ where
         WorthQueryInstalledApplicationProducerRegistry<Schema>,
         WorthQueryPrimaryGraphInstallationDenial,
     > {
+        super::scope_ownership::require_family_agreement(&self.declared)?;
         if let Some((left, right)) = duplicate_operation_binding(&self.declared) {
             return Err(denial(
                 DenialKind::DuplicateProducerOperationBinding,

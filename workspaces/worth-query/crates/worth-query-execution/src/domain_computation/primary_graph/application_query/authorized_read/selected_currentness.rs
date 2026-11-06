@@ -60,6 +60,7 @@ where
             plan.scope,
             &plan.security_product,
             security,
+            plan.basis.selected_product(),
             plan.basis.snapshot_handle(),
             plan.controls.request_scope(),
         )
@@ -76,7 +77,7 @@ where
             execution,
             runtime,
             security,
-            application.authorization.bridge(),
+            application.runtime.authorization.bridge(),
         )
         .map_err(|stop| match stop {
             crate::domain_computation::authorization::AuthorizationCurrentnessStop::Admission(

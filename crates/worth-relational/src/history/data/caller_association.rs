@@ -2,8 +2,9 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::sync::Arc;
 
-/// Immutable caller-defined bytes. Native preserves them without interpreting
-/// them or granting publication, recovery, or completion authority.
+/// Immutable caller-defined bytes. Ordinary bytes grant no publication,
+/// recovery or completion authority. The reserved Home-step protocol additionally
+/// requires the attached Home owner's concrete step grant before preparation.
 ///
 /// ```compile_fail,E0423
 /// use worth_relational::facade::mvcc::RelationalCallerAssociation;

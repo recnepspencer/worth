@@ -88,6 +88,18 @@ class WorkerRuntimeBridge {
     return this.#request("applyTransaction", transactionOps);
   }
 
+  applyTransactionAcknowledged(request) {
+    return this.#request("applyTransactionAcknowledged", request);
+  }
+
+  readAcknowledgementState(request) {
+    return this.#request("readAcknowledgementState", request);
+  }
+
+  readImportState(request) {
+    return this.#request("readImportState", request);
+  }
+
   applyTransactionProjection(request) {
     return this.#request("applyTransactionProjection", request);
   }

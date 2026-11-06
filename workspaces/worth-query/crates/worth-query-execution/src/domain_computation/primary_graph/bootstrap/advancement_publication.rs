@@ -16,7 +16,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
         WorthQueryPrimaryGraphInstallationDenial,
     > {
         self.validate_publication_target(runtime, authority)?;
-        let publication = self.publish_home_bootstrap_rows(phase)?;
+        let publication = home_publication::publish(&mut self, phase)?;
         runtime.install_primary_graph(self.graph);
         Ok((publication, self.resource_support))
     }
@@ -105,7 +105,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
             policy_relation_count: relation_count,
             bootstrap_commit_id: commit_id,
         };
-        self.recovered_publication = Some(publication.clone());
         self.seed_batch_failed = false;
         Ok(publication)
     }

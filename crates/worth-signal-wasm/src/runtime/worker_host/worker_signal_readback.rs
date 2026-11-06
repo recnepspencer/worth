@@ -87,10 +87,14 @@ impl WorkerRuntimeShell {
         request: WorkerSignalReadbackRequest,
     ) -> Result<WorkerSignalReadbackPacket, WorthSignalJsError> {
         validate_signal_readback_request(&request)?;
-        let signals = request
-            .signal_ids
+        let ids = request.signal_ids;
+        // Keep the worker's bulk boundary bulk inside the runtime as well:
+        // scalar reads repeatedly plan overlapping dependency closures.
+        let values = self.core.read_values(ids.clone())?;
+        let signals = ids
             .into_iter()
-            .map(|id| self.read_signal_value(id))
+            .zip(values)
+            .map(|(id, value)| Self::encode_readback_signal(id, value))
             .collect::<Result<Vec<_>, _>>()?;
         WorkerSignalReadbackPacket::from_signals(
             signals,
@@ -98,11 +102,10 @@ impl WorkerRuntimeShell {
         )
     }
 
-    fn read_signal_value(
-        &mut self,
+    fn encode_readback_signal(
         id: String,
+        value: SignalValue,
     ) -> Result<WorkerReadbackSignal, WorthSignalJsError> {
-        let value = self.core.read_value(&id)?;
         let payload_byte_count = serde_json::to_vec(&value)
             .map_err(|error| {
                 WorthSignalJsError::internal(format!(

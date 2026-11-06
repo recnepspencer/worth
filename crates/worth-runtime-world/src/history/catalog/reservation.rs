@@ -1,4 +1,6 @@
 use std::sync::{Arc, Mutex};
+mod close;
+mod recovered;
 
 use super::denial::CompositeHistoryCatalogDenial;
 use super::entry::CompositeHistoryCatalogEntry;
@@ -7,6 +9,9 @@ use super::slots::ReservedHistorySlots;
 use super::support::{lock_state, release_reservation};
 use super::CompositeHistoryCatalogState;
 use super::CompositeRuntimeWorldCommit;
+mod publication_kind;
+pub(in crate::history::catalog) use publication_kind::ReservedHistoryPublication;
+mod readmitted;
 
 /// Rollback custody for the one root entry staged during bootstrap. The
 /// guard is armed only after installation and is disarmed after every root
@@ -73,7 +78,7 @@ pub(crate) struct ReservedCompositeCommitCapacity {
     identity: crate::identity::CompositeCommitIdentity,
     reservation: HistoryReservationMetadata,
     slots: Option<ReservedHistorySlots>,
-    publication: Option<Arc<crate::history::CanonicalPublicationEnvelope>>,
+    publication: ReservedHistoryPublication,
     armed: bool,
 }
 
@@ -100,30 +105,10 @@ impl Drop for ReservedCompositeCommitCapacity {
 }
 
 impl ReservedCompositeCommitCapacity {
-    pub(crate) fn install_readmitted(
-        &mut self,
-        commit: Arc<CompositeRuntimeWorldCommit>,
-        pins: crate::retention::HistoryRetentionObligation,
-        record: Arc<crate::history::ReadmittedPublicationRecord>,
-    ) -> Result<(), CompositeHistoryCatalogDenial> {
-        let mut state = lock_state(&self.state);
-        self.validate_installation(&state, &commit, &pins)?;
-        promote_reserved_commit(
-            &mut state,
-            &self.identity,
-            self.slots.as_ref().expect("live reserved slots"),
-            commit,
-            Some(crate::history::PublicationEvidence::Readmitted(record)),
-            pins,
-        );
-        self.armed = false;
-        self.slots = None;
-        Ok(())
-    }
     pub(crate) fn publication_envelope(
         &self,
     ) -> Option<&Arc<crate::history::CanonicalPublicationEnvelope>> {
-        self.publication.as_ref()
+        self.publication.live()
     }
 
     pub(super) fn new(
@@ -131,7 +116,7 @@ impl ReservedCompositeCommitCapacity {
         identity: crate::identity::CompositeCommitIdentity,
         reservation: HistoryReservationMetadata,
         slots: ReservedHistorySlots,
-        publication: Option<Arc<crate::history::CanonicalPublicationEnvelope>>,
+        publication: ReservedHistoryPublication,
     ) -> Self {
         Self {
             state,
@@ -155,9 +140,7 @@ impl ReservedCompositeCommitCapacity {
             &self.identity,
             self.slots.as_ref().expect("live reserved slots"),
             commit,
-            self.publication
-                .clone()
-                .map(crate::history::PublicationEvidence::Live),
+            self.publication.ordinary_evidence()?,
             pins,
         );
         self.armed = false;
@@ -187,9 +170,7 @@ impl ReservedCompositeCommitCapacity {
             &self.identity,
             self.slots.as_ref().expect("live reserved slots"),
             commit,
-            self.publication
-                .clone()
-                .map(crate::history::PublicationEvidence::Live),
+            self.publication.ordinary_evidence()?,
             pins,
         );
         super::lock_index(&reachability).protect_reserved_slot(
@@ -231,7 +212,7 @@ impl ReservedCompositeCommitCapacity {
         };
         let publication = self
             .publication
-            .as_ref()
+            .live()
             .ok_or(CompositeHistoryCatalogDenial::ReservationCommitMismatch)?;
         let mut state = lock_state(&self.state);
         self.validate_installation(&state, &commit, &pins)?;
@@ -255,9 +236,7 @@ impl ReservedCompositeCommitCapacity {
             &self.identity,
             self.slots.as_ref().expect("live reserved slots"),
             commit,
-            self.publication
-                .clone()
-                .map(crate::history::PublicationEvidence::Live),
+            self.publication.ordinary_evidence()?,
             pins,
         );
         {
@@ -337,7 +316,7 @@ impl ReservedCompositeCommitCapacity {
             return Err(CompositeHistoryCatalogDenial::ReservationMissing);
         }
         let actual_charge = HistoryMetadataCharge::for_commit(commit)
-            .and_then(|charge| charge.with_publication(self.publication.as_deref()))
+            .and_then(|charge| self.publication.charge(charge))
             .map_err(|_| CompositeHistoryCatalogDenial::ArithmeticOverflow)?;
         let Some(reservation) = state.reservations.get(&self.identity) else {
             return Err(CompositeHistoryCatalogDenial::ReservationMissing);

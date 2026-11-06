@@ -1,0 +1,23 @@
+//! A bounded standalone provider fixture gates its real checkpoint restore at both placements.
+//! The fixture has no product World, so it does not borrow an installed runtime's phase.
+
+use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test as bound;
+use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test as place;
+use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest as Placement;
+thread_local! { pub static RESTORES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) }; }
+pub fn record_restore() {
+    RESTORES.with(|n| n.set(n.get() + 1));
+}
+pub fn restores() -> usize {
+    RESTORES.with(std::cell::Cell::get)
+}
+pub struct Restore(
+    pub Placement,
+    pub Option<worth_foundational::ExecutionBudget>,
+);
+impl Drop for Restore {
+    fn drop(&mut self) {
+        place(self.0);
+        bound(self.1);
+    }
+}

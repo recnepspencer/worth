@@ -143,6 +143,8 @@ pub struct DurableAdjacencyEntry {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DurableBranchRootImage {
     #[serde(default)]
+    pub(crate) content_records: crate::content::RelationalContentAttachments,
+    #[serde(default)]
     pub(crate) format_version: u16,
     pub commit_id: CommitId,
     pub partition_images: Vec<PartitionCheckpointImage>,
@@ -241,6 +243,7 @@ pub(crate) fn branch_root_image_digest(
     commit_id: CommitId,
     partition_image_digest: [u8; 32],
     schema_carrier_digest: [u8; 32],
+    content_records: &crate::content::RelationalContentAttachments,
 ) -> [u8; 32] {
     use sha2::{Digest, Sha256};
 
@@ -250,6 +253,12 @@ pub(crate) fn branch_root_image_digest(
     digest.update(commit_id.0.to_be_bytes());
     digest.update(partition_image_digest);
     digest.update(schema_carrier_digest);
+    if !content_records.is_empty() {
+        digest.update(b"worth.native.content-root-closure.v1\0");
+        for record in content_records.records() {
+            digest.update(record.identity().0);
+        }
+    }
     digest.finalize().into()
 }
 

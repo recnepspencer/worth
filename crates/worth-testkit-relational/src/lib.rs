@@ -15,3 +15,6 @@ pub mod test_process;
 
 /// Genuine Native registry and transaction stimuli shared by derived-source courts.
 pub mod derived_relation;
+
+/// Exact numerical content stimulus shared by Native and physical-backing courts.
+pub mod content_grid;

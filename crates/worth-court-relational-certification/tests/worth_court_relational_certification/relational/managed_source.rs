@@ -21,6 +21,7 @@ use worth_relational::facade::{
 };
 
 mod authored_fields;
+mod content;
 mod context;
 mod derived_admission;
 mod events;

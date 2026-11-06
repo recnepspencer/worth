@@ -1,0 +1,714 @@
+[
+  {
+    "code": "clippy::disallowed_methods",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\topology_entry\\examples\\invariant_reads.rs",
+        48,
+        10
+      ]
+    ],
+    "message": "use of a disallowed method `std::thread::Builder::spawn`"
+  },
+  {
+    "code": "clippy::disallowed_methods",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\topology_entry\\examples\\invariant_reads.rs",
+        46,
+        5
+      ]
+    ],
+    "message": "use of a disallowed method `std::thread::Builder::new`"
+  },
+  {
+    "code": "clippy::disallowed_methods",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\topology_entry\\examples\\shared_execution.rs",
+        32,
+        10
+      ]
+    ],
+    "message": "use of a disallowed method `std::thread::Builder::spawn`"
+  },
+  {
+    "code": "clippy::disallowed_methods",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\topology_entry\\examples\\shared_execution.rs",
+        30,
+        5
+      ]
+    ],
+    "message": "use of a disallowed method `std::thread::Builder::new`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access.rs",
+        4,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access\\contract.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access.rs",
+        6,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access\\grants.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        2,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\protected.rs",
+        2,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\access.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        3,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\affinity.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        5,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\authority.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        6,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\candidate_allocation.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        8,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\bounds.rs",
+        2,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\coordinates.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        9,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\bounds.rs",
+        4,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\field.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        10,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\geometry.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        11,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\lifecycle.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        2,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        1,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\provider.rs",
+        12,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\provider\\storage.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        13,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\provider.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        14,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\query.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        15,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\seed.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        16,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\protected.rs",
+        10,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\status.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\mod.rs",
+        17,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\boxes\\summary.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        5,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\directory.rs",
+        1,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\directory.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        7,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\host.rs",
+        1,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\host.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\authoring.rs",
+        5,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\authoring\\handler.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\events.rs",
+        2,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\authoring.rs",
+        1,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\authoring.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\events.rs",
+        14,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\query.rs",
+        1,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\query.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\events.rs",
+        18,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\shape.rs",
+        1,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\nested\\shape.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\rule.rs",
+        37,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\refusing\\rule.rs",
+        35,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\rule\\evaluation.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation.rs",
+        7,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation\\handler.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        10,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\events.rs",
+        8,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation.rs",
+        1,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\mutation.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        15,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\definition.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        17,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\predicate.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        19,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\refinement.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        21,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\storage.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        23,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\structure.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        25,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\summary.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        27,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\text_read.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        12,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\events.rs",
+        12,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs",
+        1,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        14,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\query.rs",
+        1,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\query.rs`"
+  },
+  {
+    "code": "clippy::duplicate_mod",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\candidate_index.rs",
+        16,
+        1
+      ],
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\schema.rs",
+        1,
+        1
+      ]
+    ],
+    "message": "file is loaded as a module multiple times: `consumer_root\\src\\application_invariant_acceptance\\managed_index\\schema.rs`"
+  },
+  {
+    "code": "unused_imports",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\resources.rs",
+        2,
+        16
+      ]
+    ],
+    "message": "unused import: `runtime_time::RuntimeTime`"
+  },
+  {
+    "code": "clippy::disallowed_methods",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\topology_entry\\examples\\required_feature.rs",
+        30,
+        10
+      ]
+    ],
+    "message": "use of a disallowed method `std::thread::Builder::spawn`"
+  },
+  {
+    "code": "clippy::disallowed_methods",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\topology_entry\\examples\\required_feature.rs",
+        28,
+        5
+      ]
+    ],
+    "message": "use of a disallowed method `std::thread::Builder::new`"
+  },
+  {
+    "code": "dead_code",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\authentication.rs",
+        22,
+        19
+      ]
+    ],
+    "message": "associated function `issued_for_sibling_owner` is never used"
+  },
+  {
+    "code": "dead_code",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\installation.rs",
+        33,
+        16
+      ]
+    ],
+    "message": "field `producer_domain_denial` is never read"
+  },
+  {
+    "code": "dead_code",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\resources.rs",
+        95,
+        15
+      ]
+    ],
+    "message": "function `application_limits_with_clock` is never used"
+  },
+  {
+    "code": "dead_code",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\resources.rs",
+        107,
+        15
+      ]
+    ],
+    "message": "function `application_limits_with_observations` is never used"
+  },
+  {
+    "code": "dead_code",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\resources\\runtime_time.rs",
+        7,
+        19
+      ]
+    ],
+    "message": "struct `RuntimeTime` is never constructed"
+  },
+  {
+    "code": "dead_code",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\seed.rs",
+        12,
+        15
+      ]
+    ],
+    "message": "function `seed_cycles` is never used"
+  },
+  {
+    "code": "clippy::err_expect",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\proof\\application_program\\document_history\\aggregate\\group\\disposal.rs",
+        37,
+        6
+      ]
+    ],
+    "message": "called `.err().expect()` on a `Result` value"
+  },
+  {
+    "code": "clippy::clone_on_copy",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\proof\\application_program\\document_history\\aggregate\\group.rs",
+        137,
+        13
+      ]
+    ],
+    "message": "using `clone` on type `CommitId` which implements the `Copy` trait"
+  },
+  {
+    "code": "clippy::err_expect",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\proof\\application_program\\document_history\\navigation_outputs\\profile.rs",
+        48,
+        14
+      ]
+    ],
+    "message": "called `.err().expect()` on a `Result` value"
+  },
+  {
+    "code": "clippy::needless_return",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\prefix\\structure.rs",
+        15,
+        9
+      ]
+    ],
+    "message": "unneeded `return` statement"
+  },
+  {
+    "code": "clippy::collapsible_if",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\authoring\\handler.rs",
+        11,
+        9
+      ]
+    ],
+    "message": "this `if` statement can be collapsed"
+  },
+  {
+    "code": "clippy::redundant_pattern_matching",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court\\exact_refinement.rs",
+        53,
+        9
+      ]
+    ],
+    "message": "redundant pattern matching"
+  },
+  {
+    "code": "clippy::collapsible_if",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court\\prefix_growth\\work_attribution.rs",
+        25,
+        9
+      ]
+    ],
+    "message": "this `if` statement can be collapsed"
+  },
+  {
+    "code": "clippy::drop_non_drop",
+    "sites": [
+      [
+        "c:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root\\src\\application_invariant_acceptance\\managed_index\\maintained\\court.rs",
+        301,
+        5
+      ]
+    ],
+    "message": "call to `std::mem::drop` with a value that does not implement `Drop`. Dropping such a type only extends its contained lifetimes"
+  }
+]

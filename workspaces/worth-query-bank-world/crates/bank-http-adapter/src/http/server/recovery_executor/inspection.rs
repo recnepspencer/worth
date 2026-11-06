@@ -17,7 +17,7 @@ pub(in crate::http::server) async fn execute_inspection<A>(
 where
     A: BankHttpApplicationAuthenticator,
 {
-    let scope = WorthQueryRequestScope::new(Some(request.deadline), cancellation.token());
+    let scope = WorthQueryRequestScope::new(Some(request.deadline), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = match application.authenticate(request.credential, &scope).await {
         Ok(principal) => principal,
         Err(denial) => return inspection_denied(Some(request.request_id), denial),

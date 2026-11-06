@@ -3,9 +3,7 @@ use super::WorthQueryManagedDerivedView;
 pub(in crate::domain_computation::primary_graph) type RetentionObservation =
     (bool, usize, Vec<String>, Vec<String>);
 impl<Query, Key, Value> WorthQueryManagedDerivedView<Query, Key, Value> {
-    pub(in crate::domain_computation::primary_graph) fn reconstruction_retention_for_test(
-        &self,
-    ) -> RetentionObservation {
+    pub fn reconstruction_retention_for_test(&self) -> RetentionObservation {
         let retained = self
             .state
             .retained

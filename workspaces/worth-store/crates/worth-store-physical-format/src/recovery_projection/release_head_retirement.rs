@@ -8,6 +8,7 @@ use crate::{
     ReleaseCustodyHeadNodeWriteV1, ReleaseCustodyHeadPathNodeV1, ReleaseCustodyHeadTransitionV1,
     ReleasedGenerationReclaimBasisV1,
 };
+use worth_foundational::CanonicalDigestId;
 
 use super::{release_head_tree_claim, PhysicalRecoveryProjectionDenial};
 
@@ -19,7 +20,7 @@ use super::{release_head_tree_claim, PhysicalRecoveryProjectionDenial};
 pub struct PersistedTerminalReleaseHeadRetirementV1 {
     source_root_generation: u64,
     declaration_record: PersistedRecordIdentity,
-    declaration_frame_sha256: [u8; 32],
+    declaration_frame_sha256: CanonicalDigestId,
     tree_identity: u64,
     source_basis: ReleasedGenerationReclaimBasisV1,
     source_root: ReleaseCustodyHeadBlockReferenceV1,
@@ -70,7 +71,7 @@ impl PersistedTerminalReleaseHeadRetirementV1 {
         let retirement = Self {
             source_root_generation,
             declaration_record,
-            declaration_frame_sha256,
+            declaration_frame_sha256: CanonicalDigestId::new(declaration_frame_sha256),
             tree_identity,
             source_basis,
             source_root,
@@ -143,7 +144,7 @@ impl PersistedTerminalReleaseHeadRetirementV1 {
         self.declaration_record
     }
     pub const fn declaration_frame_sha256(&self) -> [u8; 32] {
-        self.declaration_frame_sha256
+        *self.declaration_frame_sha256.bytes()
     }
     pub const fn tree_identity(&self) -> u64 {
         self.tree_identity

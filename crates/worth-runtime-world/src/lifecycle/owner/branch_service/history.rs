@@ -193,9 +193,9 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    if occurrence.owner_identity() != owner.owner_identity() {
-        return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
-    }
+    owner
+        .owner_identity()
+        .admit_branch_authority(occurrence.owner_identity())?;
     if !owner.branch_service_is_available() {
         return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
     }

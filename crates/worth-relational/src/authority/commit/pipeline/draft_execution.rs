@@ -1,6 +1,7 @@
 use super::authority_context::PreparedAuthorityScope;
 use super::draft_preparation_phase::record_draft_preparation_phase;
 use super::execution_admission::{AdmittedCommitExecution, AdmittedCommitState};
+use super::phase_backing::CommitPhaseBacking;
 use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
 
 pub(super) struct PreparedCommitState {
@@ -58,48 +59,56 @@ pub(super) fn prepare_commit_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     admitted: AdmittedCommitExecution,
-) -> Result<PreparedCommitExecution, crate::transactions::data::TransactionCommitError> {
-    super::consult_stage(execution, super::CommitStage::Draft)?;
-    let (mut admitted, prepared_scope) = admitted.into_parts();
-    let PreparedAuthorityScope {
-        structural_summary,
-        working_state,
-        mutation_proposal: (proposal_identity, mutation),
-        phase_timing: prepared_timing,
-        ..
-    } = match prepared_scope {
-        Some(scope) => scope,
-        None => {
-            let draft = super::merge_draft::prepare_merge_draft(execution, runtime, &admitted)?;
-            admitted.accept_merge_draft(draft)
+) -> Result<
+    CommitPhaseBacking<PreparedCommitExecution>,
+    crate::transactions::data::TransactionCommitError,
+> {
+    // Producer temporaries retire before funding the retained successor,
+    // matching the former caller-side allocation boundary.
+    let result = {
+        super::consult_stage(execution, super::CommitStage::Draft)?;
+        let (mut admitted, prepared_scope) = admitted.into_parts();
+        let PreparedAuthorityScope {
+            structural_summary,
+            working_state,
+            mutation_proposal: (proposal_identity, mutation),
+            phase_timing: prepared_timing,
+            ..
+        } = match prepared_scope {
+            Some(scope) => scope,
+            None => {
+                let draft = super::merge_draft::prepare_merge_draft(execution, runtime, &admitted)?;
+                admitted.accept_merge_draft(draft)
+            }
+        };
+        admitted.phase_timing_mut().draft_structural_summary_micros =
+            prepared_timing.draft_structural_summary_micros;
+        admitted.phase_timing_mut().draft_working_state_clone_micros =
+            prepared_timing.draft_working_state_clone_micros;
+        let public_structural_summary = structural_summary.public_summary(
+            runtime
+                .config
+                .schema
+                .descriptor_semantics_policy
+                .current_write_version(),
+        );
+        let (commit_log, phase_timing) = admitted.commit_phase_state();
+        record_draft_preparation_phase(
+            runtime,
+            commit_log,
+            phase_timing,
+            &working_state,
+            &structural_summary,
+            &public_structural_summary,
+        );
+        PreparedCommitExecution {
+            state: PreparedCommitState {
+                admitted,
+                public_structural_summary,
+                proposal_identity,
+            },
+            mutation,
         }
     };
-    admitted.phase_timing_mut().draft_structural_summary_micros =
-        prepared_timing.draft_structural_summary_micros;
-    admitted.phase_timing_mut().draft_working_state_clone_micros =
-        prepared_timing.draft_working_state_clone_micros;
-    let public_structural_summary = structural_summary.public_summary(
-        runtime
-            .config
-            .schema
-            .descriptor_semantics_policy
-            .current_write_version(),
-    );
-    let (commit_log, phase_timing) = admitted.commit_phase_state();
-    record_draft_preparation_phase(
-        runtime,
-        commit_log,
-        phase_timing,
-        &working_state,
-        &structural_summary,
-        &public_structural_summary,
-    );
-    Ok(PreparedCommitExecution {
-        state: PreparedCommitState {
-            admitted,
-            public_structural_summary,
-            proposal_identity,
-        },
-        mutation,
-    })
+    CommitPhaseBacking::new(execution, result)
 }

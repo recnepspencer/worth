@@ -26,20 +26,16 @@ use crate::domain_computation::{
     WorthQueryManagedTruthReadRequest,
 };
 
-#[cfg(test)]
-#[path = "running/affinity_tests.rs"]
-mod affinity_tests;
-#[cfg(test)]
-#[path = "running/independent_axis_tests.rs"]
-mod independent_axis_tests;
-pub(in super::super) mod progression;
+pub(crate) mod completion_storage;
+pub(crate) mod progression;
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryRunningApplicationCommit<
+pub struct WorthQueryRunningApplicationCommit<
     Schema,
     Operation,
     Input,
     Scope,
 > {
+    completion_storage: completion_storage::ApplicationCommitCompletionStorage,
     admission: crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
         Operation,
@@ -60,12 +56,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     >,
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn start_managed_application_commit<
-    Schema,
-    Operation,
-    Input,
-    Scope,
->(
+pub fn start_managed_application_commit<Schema, Operation, Input, Scope>(
     phase: &WorthQueryAdvancementPhase<'_>,
 
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -91,11 +82,13 @@ where
     } = prepared;
     let snapshot = lease.snapshot();
     let execution = phase
-        .execution_request_for(&application.product_runtime)
+        .execution_request_for(&application.runtime.product_runtime)
         .map_err(|foreign| {
             crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(foreign)
                 .into_commit_outcome()
         })?;
+    let completion_storage =
+        completion_storage::ApplicationCommitCompletionStorage::prepare(&execution)?;
     let attempt_basis = WorthQueryApplicationAttemptBasis::capture(
         application,
         &admission,
@@ -117,16 +110,22 @@ where
         .ok_or_else(|| denied(DenialStage::ResourceAdmission))?;
     let attempt = application
         .runtime
+        .execution()
         .start_reserved_direct_resource_attempt(&operation, reserved)
         .map_err(|_| denied(DenialStage::ResourceAdmission))?;
     let read_request = WorthQueryManagedTruthReadRequest::for_product(
         lease.product(),
         SnapshotReadPacket::new(Vec::new()),
     );
-    let request_bridge = application.bridge.ordinary().fork_managed_request_lane();
-    let run_admission = application
+    let request_bridge = application
         .runtime
-        .managed_run_admission(&request_bridge, application.product_runtime.source());
+        .bridge
+        .ordinary()
+        .fork_managed_request_lane();
+    let run_admission = application.runtime.execution().managed_run_admission(
+        &request_bridge,
+        application.runtime.product_runtime.source(),
+    );
     let running = run_admission
         .admit_direct(&operation, attempt, read_request, execution)
         .map_err(|failure| {
@@ -146,6 +145,7 @@ where
         return Err(denied(DenialStage::ManagedRunAdmission));
     };
     Ok(WorthQueryRunningApplicationCommit {
+        completion_storage,
         admission,
         lease,
         provider_attempt,
@@ -173,6 +173,7 @@ where
 {
     let snapshot = lease.snapshot();
     application
+        .runtime
         .primary_provider
         .observe_managed_application_bridge_plan();
     let branch = admission.graph_work().branch().truth().clone();
@@ -182,6 +183,7 @@ where
         .snapshot_identity()
         .clone();
     application
+        .runtime
         .bridge
         .ordinary()
         .plan_truth_view_packet(
@@ -210,15 +212,18 @@ where
         .map_err(|_| denied(DenialStage::BasisAdmission))?;
     WorthQueryExecutionBoundOperationAuthority::bind_application(
         WorthQueryApplicationOperationBindingInput {
-            runtime: &application.runtime,
+            runtime: application.runtime.execution(),
             owner: application.installed_schema.owner(),
             installed_operation_fingerprint: admission.retain_installed_operation_fingerprint(),
             operation_slot: admission.operation().into(),
             resource_binding_identity: admission.retain_resource_binding_identity(),
             basis: &basis,
             contracts: admission.allowed_graph_contract(),
-            graph: &application.primary_graph_authority,
-            support: application.primary_provider.application_resource_support(),
+            graph: application.runtime.primary_graph_authority(),
+            support: application
+                .runtime
+                .primary_provider
+                .application_resource_support(),
             graph_work_session: admission.graph_work_session_identity(),
             graph_work_managed_run: admission.graph_work_managed_run_identity(),
             operation_attempt: admission.admission_identity(),
@@ -231,3 +236,6 @@ where
     )
     .map_err(|detail| denied_with_detail(DenialStage::InvariantExecution, detail))
 }
+
+mod court_doors_for_test;
+pub use completion_storage::WorthQueryManagedPhaseStorageForTest;

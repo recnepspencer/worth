@@ -67,9 +67,9 @@ fn plan_invariant_execution_inner<'state>(
         };
     }
     let partition_scope = if let Some(budget) = budget {
-        packet_partition_scope_checked(request.merged_plan(), budget)
+        packet_partition_scope_checked(request.semantic_plan(), budget)
     } else {
-        packet_partition_scope(request.merged_plan())
+        packet_partition_scope(request.semantic_plan())
     };
     let proof_kind = proof_kind_for_runtime(lease);
     let strategy = preparation_strategy_for_runtime(lease, registrations.len(), proof_kind);
@@ -95,15 +95,15 @@ fn planning_context(
     request: &InvariantExecutionRequest<'_>,
 ) -> PreparationPlanningContext {
     PreparationPlanningContext {
-        transaction_id: request.merged_plan().map(|plan| plan.transaction_id),
+        transaction_id: request.semantic_plan().map(|plan| plan.transaction_id()),
         execution_point: request.execution_point(),
         observation_kind: request.observation().kind(),
         version_id: request.version_id(),
         current_version_id: request.current_version_id(),
         structural_summary: None,
         plan_contract: request.plan_contract(),
-        schema_registry_entry_count: runtime.config.schema.registry.entity_kinds.len()
-            + runtime.config.schema.registry.relation_kinds.len(),
+        schema_registry_entry_count: runtime.selected_registry.registry().entity_kinds.len()
+            + runtime.selected_registry.registry().relation_kinds.len(),
         invariant_registration_count: runtime.config.schema.invariant_catalog.registrations.len()
             + runtime
                 .schema_contract_runtime
@@ -189,7 +189,7 @@ fn invariant_work_packets<'state>(
                 return None;
             }
             let invariant_group_scope = registration.groups();
-            let record_domain = if request.merged_plan().is_some() {
+            let record_domain = if request.semantic_plan().is_some() {
                 PreparationRecordDomain::Mixed
             } else {
                 PreparationRecordDomain::None
@@ -230,7 +230,7 @@ fn invariant_work_packets<'state>(
                 observation,
                 version_id: request.version_id(),
                 current_version_id: request.current_version_id(),
-                merged_plan: request.merged_plan(),
+                semantic_plan: request.semantic_plan(),
                 relation_integrity_scopes: relation_integrity_scopes.clone(),
                 current_version_minimum_index: Arc::clone(&current_version_minimum_index),
             })

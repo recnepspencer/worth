@@ -1,0 +1,31 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::output_lineage::current_output::RetainedOutputCurrentnessRead.facts",
+  "domain_computation::primary_graph::output_lineage::current_output::RetainedOutputCurrentnessRead.verification_requirement",
+  "domain_computation::primary_graph::output_lineage::current_output::RetainedOutputCurrentnessRead.verification_requirement (mut)",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.correspondence",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.native_output_witness",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.native_prior_checkpoint",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.producer_dependency_identity",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.producing_implementation",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.required_publication",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.settlement_identity",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.source_partition_identity",
+  "domain_computation::primary_graph::schema_layout::WorthQueryPrimaryRelationLayout.kind"
+ ],
+ "method_doors": [
+  "domain_computation::execution_runtime::product_world::request_control::WorthQueryPreparedProductPublication::execute",
+  "domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::iter",
+  "domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout::field_locator",
+  "domain_computation::primary_graph::schema_layout::field_coordinate::WorthQueryPrimaryGraphLayout::resolve_declared_field_coordinate",
+  "domain_computation::primary_graph::schema_layout::kind_lookup::super::WorthQueryPrimaryGraphLayout::entity_kind"
+ ],
+ "unplaced": [
+  "associated function `of` is private",
+  "field `performed_origin` of struct `worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput` is private",
+  "method `admit_required_output_demand` is private",
+  "method `decision_field_with_predecode_admission` is private"
+ ]
+}

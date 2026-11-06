@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
+use std::fmt;
 
-use serde::de::Deserializer;
+use serde::de::{self, Deserializer, MapAccess, SeqAccess, Unexpected, Visitor};
 use serde::ser::{SerializeMap, Serializer};
 use serde::{Deserialize, Serialize};
 
@@ -42,26 +43,102 @@ impl<'de> Deserialize<'de> for SignalValue {
     where
         D: Deserializer<'de>,
     {
-        #[derive(Deserialize)]
-        #[serde(untagged)]
-        enum SignalValueWire {
-            Null(()),
-            Bool(bool),
-            Number(f64),
-            String(String),
-            Array(Vec<SignalValue>),
-            Object(BTreeMap<String, SignalValue>),
-        }
+        // One self-describing pass. Trying alternatives builds a format error
+        // per rejected shape, and the JS boundary materializes every one as a
+        // JavaScript `Error` even when a later alternative succeeds.
+        deserializer.deserialize_any(SignalValueVisitor)
+    }
+}
 
-        let wire = SignalValueWire::deserialize(deserializer)?;
-        Ok(match wire {
-            SignalValueWire::Null(()) => SignalValue::Null,
-            SignalValueWire::Bool(value) => SignalValue::Bool(value),
-            SignalValueWire::Number(value) => SignalValue::Number(value),
-            SignalValueWire::String(value) => SignalValue::String(value),
-            SignalValueWire::Array(items) => SignalValue::Array(items),
-            SignalValueWire::Object(fields) => SignalValue::Object(fields.into_iter().collect()),
-        })
+struct SignalValueVisitor;
+
+impl<'de> Visitor<'de> for SignalValueVisitor {
+    type Value = SignalValue;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("a JSON value")
+    }
+
+    fn visit_unit<E: de::Error>(self) -> Result<SignalValue, E> {
+        Ok(SignalValue::Null)
+    }
+
+    fn visit_none<E: de::Error>(self) -> Result<SignalValue, E> {
+        Ok(SignalValue::Null)
+    }
+
+    fn visit_bool<E: de::Error>(self, value: bool) -> Result<SignalValue, E> {
+        Ok(SignalValue::Bool(value))
+    }
+
+    fn visit_i64<E: de::Error>(self, value: i64) -> Result<SignalValue, E> {
+        Ok(SignalValue::Number(value as f64))
+    }
+
+    fn visit_u64<E: de::Error>(self, value: u64) -> Result<SignalValue, E> {
+        Ok(SignalValue::Number(value as f64))
+    }
+
+    fn visit_f64<E: de::Error>(self, value: f64) -> Result<SignalValue, E> {
+        Ok(SignalValue::Number(value))
+    }
+
+    fn visit_char<E: de::Error>(self, value: char) -> Result<SignalValue, E> {
+        Ok(SignalValue::String(value.to_string()))
+    }
+
+    fn visit_str<E: de::Error>(self, value: &str) -> Result<SignalValue, E> {
+        Ok(SignalValue::String(value.to_owned()))
+    }
+
+    fn visit_string<E: de::Error>(self, value: String) -> Result<SignalValue, E> {
+        Ok(SignalValue::String(value))
+    }
+
+    fn visit_bytes<E: de::Error>(self, value: &[u8]) -> Result<SignalValue, E> {
+        std::str::from_utf8(value)
+            .map(|text| SignalValue::String(text.to_owned()))
+            .map_err(|_| E::invalid_value(Unexpected::Bytes(value), &self))
+    }
+
+    fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<SignalValue, A::Error> {
+        let mut items = Vec::with_capacity(seq.size_hint().unwrap_or(0));
+        while let Some(item) = seq.next_element()? {
+            items.push(item);
+        }
+        Ok(SignalValue::Array(items))
+    }
+
+    fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<SignalValue, A::Error> {
+        let Some(first_key) = map.next_key::<String>()? else {
+            return Ok(SignalValue::Object(Vec::new()));
+        };
+        if first_key == SERDE_JSON_NUMBER_TOKEN {
+            return decimal_number(map.next_value::<String>()?);
+        }
+        // Canonical key order; a repeated key keeps its last value.
+        let mut fields = BTreeMap::new();
+        fields.insert(first_key, map.next_value::<SignalValue>()?);
+        while let Some((key, value)) = map.next_entry::<String, SignalValue>()? {
+            fields.insert(key, value);
+        }
+        Ok(SignalValue::Object(fields.into_iter().collect()))
+    }
+}
+
+/// serde_json's `arbitrary_precision` presents every number as a one-entry map
+/// under this key, holding the number's decimal text. Feature unification can
+/// turn it on for any build that links serde_json, so the decoder reads it as
+/// the number it is rather than as an object.
+const SERDE_JSON_NUMBER_TOKEN: &str = "$serde_json::private::Number";
+
+fn decimal_number<E: de::Error>(digits: String) -> Result<SignalValue, E> {
+    match digits.parse::<f64>() {
+        Ok(value) if value.is_finite() => Ok(SignalValue::Number(value)),
+        _ => Err(E::invalid_value(
+            Unexpected::Str(&digits),
+            &"a finite JSON number",
+        )),
     }
 }
 

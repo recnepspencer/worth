@@ -9,9 +9,11 @@ pub(super) trait PublicationPreparationRuntime {
 
     fn prepare_publication_root(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         selected_branch_state: &SelectedRelationalBranchState,
         published_partition_delta: &crate::storage::RelationalPublishedPartitionDelta,
         envelope: &Arc<CanonicalCommitEnvelope>,
+        content: &crate::content::ContentPublication,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
     ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, PublicationPreparationDenial>;
 
@@ -29,21 +31,26 @@ impl PublicationPreparationRuntime for RelationalRuntime {
 
     fn prepare_publication_root(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         selected_branch_state: &SelectedRelationalBranchState,
         published_partition_delta: &crate::storage::RelationalPublishedPartitionDelta,
         envelope: &Arc<CanonicalCommitEnvelope>,
+        content: &crate::content::ContentPublication,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
     ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, PublicationPreparationDenial>
     {
         let previous_root = selected_branch_state.root().cloned();
         self.history
             .prepare_branch_root_capture(
+                execution,
                 selected_branch_state.state(),
                 published_partition_delta,
                 previous_root.as_ref(),
                 Arc::clone(envelope),
+                content,
                 schema_registry,
                 &self.services.symbols,
+                None,
             )
             .map_err(PublicationPreparationDenial::from)
     }
@@ -71,21 +78,26 @@ impl PublicationPreparationRuntime for crate::runtime::RelationalPreparationRunt
 
     fn prepare_publication_root(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         selected_branch_state: &SelectedRelationalBranchState,
         published_partition_delta: &crate::storage::RelationalPublishedPartitionDelta,
         envelope: &Arc<CanonicalCommitEnvelope>,
+        content: &crate::content::ContentPublication,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
     ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, PublicationPreparationDenial>
     {
         let previous_root = selected_branch_state.root().cloned();
         self.history
             .prepare_branch_root_capture(
+                execution,
                 selected_branch_state.state(),
                 published_partition_delta,
                 previous_root.as_ref(),
                 Arc::clone(envelope),
+                content,
                 schema_registry,
                 &self.services.symbols,
+                self.execution_contracts.clone(),
             )
             .map_err(PublicationPreparationDenial::from)
     }

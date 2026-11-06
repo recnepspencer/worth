@@ -1031,7 +1031,7 @@ Minimum rejection rows should include:
 - broader stream consumer shapes may remain `Debt` if the shipped stream
   contract matrix is closed, explicit, and certified
 - durable stream continuation and persisted checkpoints may remain blocked on
-  `Milestone 11`
+  `Store Milestone 11`
 - raw partition events, raw stream members, or broad aspect invalidation
   disguised as region-aware query delivery may not exist as debt
 - host-side locality classification or host-side stream lowering may not exist

@@ -1,7 +1,6 @@
 //! Fresh ordinary note disclosure and final-state observation in the same Catalog.
 use super::*;
-use worth_query_decl::facade::{application_query::*, application_schema::*, *};
-use worth_query_host::facade::primary_graph::*;
+use worth_query_decl::facade::{application_query::*, *};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Row {
     pub note: String,

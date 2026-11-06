@@ -1,5 +1,6 @@
 //! A real Native fork shares material while owning a fresh branch association.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 mod source_expectation;
 
 #[test]
@@ -25,7 +26,7 @@ fn run() {
 fn journey() {
     let calls = Arc::new(provider::Calls::default());
     let configuration = Configuration::new(Arc::clone(&calls));
-    let prefix_calls = Arc::new(prefix::Calls::default());
+    let prefix_calls = Arc::new(prefix_observation::Calls::default());
     let prefix_rules = Arc::new(prefix_rule::Calls::new(Arc::clone(&prefix_calls)));
     let world = host::install_geometry(Arc::clone(&prefix_calls), prefix_rules, configuration);
     let scope = authentication::request_scope();

@@ -88,13 +88,20 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 idempotency.bind_workflow_transition(&probe_identity),
             )?;
             match probe.into_resolution() {
-                WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
+                WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
+            WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
+                WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+                    )))
+                }
                 WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                     return Ok(Some(WorkflowProgressOutcome::Application(
                         WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
                     )))
                 }
-                _ => {}
+                WorthQueryApplicationIdempotencyResolution::IntentDrift
+                | WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(_) => {}
             }
         }
         let replays = replays.materialize();
@@ -116,7 +123,13 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             runtime.resolve_admitted_application_idempotencies(execution, admission, bindings)?;
         for resolution in resolutions {
             match resolution.into_resolution() {
-                WorthQueryApplicationIdempotencyResolution::Unseen => {}
+                WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
+            WorthQueryApplicationIdempotencyResolution::Unseen => {}
+                WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+                    )))
+                }
                 WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                     return Ok(Some(WorkflowProgressOutcome::Application(
                         WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
@@ -265,6 +278,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             .expect("one operation replay binding returns one resolution");
         let project_original = |receipt| {
             runtime
+                .runtime
                 .primary_provider
                 .graph
                 .with_runtime(execution, |relational| {
@@ -284,6 +298,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 })
         };
         Ok(match resolution.into_resolution() {
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
             WorthQueryApplicationIdempotencyResolution::Unseen => {
                 // Local effects settle this original transition atomically. A fresh
                 // confirmation key observes that settlement without recording a command.
@@ -301,6 +316,11 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 } else {
                     None
                 }
+            }
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                Some(WorkflowProgressOutcome::Application(
+                    WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+                ))
             }
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                 Some(WorkflowProgressOutcome::Application(

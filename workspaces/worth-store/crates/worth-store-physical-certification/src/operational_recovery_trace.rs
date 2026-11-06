@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use crate::OperationalRecoveryYieldpoint;
 
@@ -6,9 +7,9 @@ use crate::OperationalRecoveryYieldpoint;
 pub struct OperationalRecoveryDriverTrace {
     reached: Vec<OperationalRecoveryYieldpoint>,
     operation_identities: Vec<String>,
-    control_artifact_identities: Vec<[u8; 32]>,
-    inspection_evidence_identity: Option<[u8; 32]>,
-    truth_evidence_identity: Option<[u8; 32]>,
+    control_artifact_identities: Vec<CanonicalDigestId>,
+    inspection_evidence_identity: Option<CanonicalDigestId>,
+    truth_evidence_identity: Option<CanonicalDigestId>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -22,9 +23,9 @@ impl OperationalRecoveryDriverTrace {
     pub(super) fn from_observations(
         reached: Vec<OperationalRecoveryYieldpoint>,
         operation_identities: Vec<String>,
-        control_artifact_identities: Vec<[u8; 32]>,
-        inspection_evidence_identity: Option<[u8; 32]>,
-        truth_evidence_identity: Option<[u8; 32]>,
+        control_artifact_identities: Vec<CanonicalDigestId>,
+        inspection_evidence_identity: Option<CanonicalDigestId>,
+        truth_evidence_identity: Option<CanonicalDigestId>,
     ) -> Self {
         Self {
             reached,
@@ -43,16 +44,22 @@ impl OperationalRecoveryDriverTrace {
         &self.operation_identities
     }
 
-    pub fn control_artifact_identities(&self) -> &[[u8; 32]] {
+    pub fn control_artifact_identities(&self) -> &[CanonicalDigestId] {
         &self.control_artifact_identities
     }
 
     pub const fn inspection_evidence_identity(&self) -> Option<[u8; 32]> {
-        self.inspection_evidence_identity
+        match self.inspection_evidence_identity {
+            Some(digest) => Some(*digest.bytes()),
+            None => None,
+        }
     }
 
     pub const fn truth_evidence_identity(&self) -> Option<[u8; 32]> {
-        self.truth_evidence_identity
+        match self.truth_evidence_identity {
+            Some(digest) => Some(*digest.bytes()),
+            None => None,
+        }
     }
 
     pub fn evidence_identity(&self) -> [u8; 32] {
@@ -71,10 +78,17 @@ impl OperationalRecoveryDriverTrace {
         }
         digest.update((self.control_artifact_identities.len() as u64).to_be_bytes());
         for identity in &self.control_artifact_identities {
-            digest.update(identity);
+            digest.update(identity.bytes());
         }
-        update_optional_identity(&mut digest, self.inspection_evidence_identity);
-        update_optional_identity(&mut digest, self.truth_evidence_identity);
+        update_optional_identity(
+            &mut digest,
+            self.inspection_evidence_identity
+                .map(|digest| *digest.bytes()),
+        );
+        update_optional_identity(
+            &mut digest,
+            self.truth_evidence_identity.map(|digest| *digest.bytes()),
+        );
         digest.finalize().into()
     }
 
@@ -118,10 +132,10 @@ impl OperationalRecoveryDriverTrace {
 }
 
 fn join_optional_identity(
-    left: Option<[u8; 32]>,
-    right: Option<[u8; 32]>,
+    left: Option<CanonicalDigestId>,
+    right: Option<CanonicalDigestId>,
     conflict: OperationalRecoveryTraceJoinDenial,
-) -> Result<Option<[u8; 32]>, OperationalRecoveryTraceJoinDenial> {
+) -> Result<Option<CanonicalDigestId>, OperationalRecoveryTraceJoinDenial> {
     match (left, right) {
         (Some(left), Some(right)) if left != right => Err(conflict),
         (Some(identity), _) | (_, Some(identity)) => Ok(Some(identity)),
@@ -156,14 +170,14 @@ mod tests {
         let first = OperationalRecoveryDriverTrace::from_observations(
             vec![before, after],
             vec!["restore".to_owned()],
-            vec![[1; 32]],
+            vec![CanonicalDigestId::new([1; 32])],
             None,
             None,
         );
         let second = OperationalRecoveryDriverTrace::from_observations(
             vec![before, after],
             vec!["pitr".to_owned()],
-            vec![[2; 32]],
+            vec![CanonicalDigestId::new([2; 32])],
             None,
             None,
         );

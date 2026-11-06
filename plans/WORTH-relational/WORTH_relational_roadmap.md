@@ -14,6 +14,12 @@ The operating rule remains:
 
 parallelize disposable work, serialize authority.
 
+The separately planned [Relational iteration cutover](iteration-cutover.md)
+migrates production subsystems and courts under the
+[cross-runtime iteration architecture plan](../cross-runtime/iteration-speed.md).
+It follows global build/cache/loop setup and preserves the product milestones
+and authority requirements below. It is planned, not a completed runtime phase.
+
 That rule still governs every remaining milestone:
 
 1. immutable read, planning, validation, and preparation may scale out

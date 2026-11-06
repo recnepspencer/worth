@@ -90,7 +90,7 @@ impl WorthQueryRecoveryCurrentDecision {
 }
 
 /// Evaluate expiry from the runtime clock. Callers cannot supply the sample.
-pub(crate) fn evaluate_expiry(
+pub fn evaluate_expiry(
     handle: &WorthQueryRecoveryHandle,
     clock: &WorthQueryRuntimeClock,
 ) -> Result<WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandleDenial> {
@@ -146,6 +146,6 @@ where
         handle: &WorthQueryRecoveryHandle,
     ) -> Result<WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandleDenial> {
         handle.ensure_live()?;
-        evaluate_expiry(handle, &self.authorization_clock)
+        evaluate_expiry(handle, &self.runtime.authorization_clock)
     }
 }

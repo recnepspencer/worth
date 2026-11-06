@@ -119,7 +119,7 @@ async fn abandoned_http_close_handoff_preserves_original_dispatch_and_recovery()
         Outcome::Recorded { .. }
     ));
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = application.authenticate(&scope).await;
     let action = EstateAction::NotifyDeath {
         estate: EstateCaseId::new(3).unwrap(),

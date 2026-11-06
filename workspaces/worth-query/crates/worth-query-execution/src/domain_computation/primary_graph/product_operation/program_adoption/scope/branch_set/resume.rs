@@ -121,7 +121,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let mut retained = Some(adoption);
         let result = self.with_application_advancement(request, |phase| {
         let phase = &phase;
-            let phase_request = match phase.execution_request_for(&self.product_runtime) {
+            let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Err(resume_failure(WorthQueryBranchSetAdoptionResumeDenial::Preparation(WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause.into())), retained.take().expect("one admitted resume"))),
             };

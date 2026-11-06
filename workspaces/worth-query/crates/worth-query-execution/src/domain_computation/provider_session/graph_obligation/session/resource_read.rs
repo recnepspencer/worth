@@ -79,12 +79,6 @@ impl WorthQueryManagedGraphWorkSession {
             .plan
             .complete_application_resource()
             .ok_or(WorthQueryManagedGraphReadDenial::ForeignReadIntent)?;
-        if release.scope()
-            != worth_query_admission::integration::WorthQueryExecutionCapacityReservationScope::GraphWork
-            || release.released_reservation_count() != 1
-        {
-            return Err(WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch);
-        }
         Ok(WorthQueryResourceReadCompletion {
             session: self.identity,
             managed_run: self.managed_run,

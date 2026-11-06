@@ -1,7 +1,7 @@
 error[E0624]: associated function `new` is private
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/primitives/caller_cannot_mint_artifact_kind_definition.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/primitives/caller_cannot_mint_artifact_kind_definition.rs:6:69
   |
-  |       let _definition = FoundationalDiagnosticArtifactKindDefinition::new(
+6 |       let _definition = FoundationalDiagnosticArtifactKindDefinition::new(
   |                                                                       ^^^ private associated function
   |
  ::: $WORKSPACE/crates/worth-foundational/src/diagnostics/categories.rs

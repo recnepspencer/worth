@@ -318,7 +318,7 @@ pub fn read_on<P: ApplicationProgramDefinition<NumericSchema>>(
 
 pub(super) fn installation_limits() -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
-        world_resources::world_resources(256, 4 * 1024 * 1024, 256),
+        world_resources::world_resources(256, 4 * 1024 * 1024, 256, worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(128).unwrap(),
         ),

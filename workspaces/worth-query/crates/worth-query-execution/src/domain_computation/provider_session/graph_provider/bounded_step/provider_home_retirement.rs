@@ -66,6 +66,7 @@ impl WorthQueryGraphProviderAnchor {
             return Err((self, Denial::Execution(cause)));
         }
         let Self {
+            session_grant_control,
             provider,
             session_lifecycle,
             decision_fact_provider,
@@ -76,6 +77,7 @@ impl WorthQueryGraphProviderAnchor {
             provider_generation,
             resource_support,
         } = self;
+        drop(session_grant_control);
         // These exact concrete wrappers contain only their original provider
         // Arc and PhantomData. Preflight checked their pointee, not a label.
         drop((

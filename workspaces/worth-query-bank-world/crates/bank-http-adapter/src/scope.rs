@@ -44,7 +44,7 @@ mod tests {
     #[tokio::test]
     async fn unbounded_scope_allows_authentication_to_finish() {
         let cancellation = WorthQueryCancellationSource::new();
-        let scope = WorthQueryRequestScope::new(None, cancellation.token());
+        let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         assert_eq!(
             await_in_scope(&scope, async { "authenticated" }).await,
             Ok("authenticated")
@@ -56,8 +56,7 @@ mod tests {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
             Some(Instant::now() - Duration::from_secs(1)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         assert_eq!(
             await_in_scope(&scope, async {
                 panic!("elapsed authentication must not start");

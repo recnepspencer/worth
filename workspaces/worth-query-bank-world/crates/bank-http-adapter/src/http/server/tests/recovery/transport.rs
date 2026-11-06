@@ -25,6 +25,13 @@ impl ControlledTime {
 }
 
 impl WorthQueryRuntimeTimeSource for ControlledTime {
+    fn admission_clock(
+        &self,
+    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
+    {
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()
+    }
+
     fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
         Ok(UNIX_EPOCH + Duration::from_secs(self.0.load(Ordering::SeqCst)))
     }

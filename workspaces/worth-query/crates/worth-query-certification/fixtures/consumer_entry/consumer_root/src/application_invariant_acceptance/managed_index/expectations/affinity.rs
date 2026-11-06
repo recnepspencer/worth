@@ -1,5 +1,6 @@
 //! Foreign installation custody and wrong query parameters cannot become mutation input.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 #[test]
 fn managed_expectation_checks_actual_runtime_and_parameters_before_mutation() {
     run(affinity);
@@ -39,7 +40,7 @@ fn affinity(
         request.retain_current_read().unwrap().selected_commit(),
         &head
     );
-    let other = host::install(Arc::new(prefix::Calls::default()));
+    let other = host::install(Arc::new(prefix_observation::Calls::default()));
     let adapter = authentication::admit(other.installed_schema());
     let principal = authentication::block_on(adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),

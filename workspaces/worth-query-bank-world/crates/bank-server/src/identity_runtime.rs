@@ -209,6 +209,7 @@ impl BankIdentityRuntime {
             WorthQueryAuthenticationAdapterAdmission::new(
                 configuration.audience,
                 configuration.method,
+                worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
             ),
             adapter,
         )

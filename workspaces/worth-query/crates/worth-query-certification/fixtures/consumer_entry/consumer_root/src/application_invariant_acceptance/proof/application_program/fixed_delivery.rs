@@ -79,6 +79,36 @@ fn fixed_delivery_result_contract_retry_unrelated_progress_and_consumed_fact_his
         .unwrap()
         .selected_commit()
         .clone();
+    let source_receipt = settled
+        .settlement()
+        .performed_source()
+        .unwrap()
+        .receipt()
+        .clone();
+    let fulfillment = settled
+        .settlement()
+        .performed_source()
+        .unwrap()
+        .root_fulfillment();
+    assert!(fulfillment.matches_source(&source_receipt));
+    assert_eq!(
+        fulfillment.source_commit(),
+        source_receipt
+            .committed_product_publication()
+            .composite_commit()
+    );
+    assert_eq!(
+        fulfillment.output_commit(),
+        settled.settlement().root_observation().selected_commit()
+    );
+    assert_eq!(
+        fulfillment.posture(),
+        settled.settlement().root_settlement().posture()
+    );
+    assert!(
+        !source_receipt.is_same_authoritative_commit(settled.settlement().root_receipt().unwrap()),
+        "performed action and output producer have distinct real receipts"
+    );
     let policy = WorthQueryOperationDeliveryPolicy::default();
 
     assert!(matches!(settled.read_current_with_policy(&request, policy.query(NonZeroUsize::new(2).unwrap())), Err(WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Limit(_)))));
@@ -120,6 +150,15 @@ fn fixed_delivery_result_contract_retry_unrelated_progress_and_consumed_fact_his
         length(3)
     );
     assert_eq!(planar_source_adjustment_contacts(&original), (1, 1));
+    assert!(
+        settled
+            .settlement()
+            .performed_source()
+            .unwrap()
+            .receipt()
+            .is_same_authoritative_commit(&source_receipt),
+        "later output progress cannot replace original action provenance"
+    );
     let changed = settle!(
         request,
         world,

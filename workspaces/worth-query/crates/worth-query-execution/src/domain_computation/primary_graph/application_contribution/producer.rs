@@ -1,3 +1,4 @@
+pub use worth_foundational::facade::ProducerPublicationOwnership;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationInputScope, ApplicationMutationScopeResolution,
     ApplicationQueryMutationSource, WorthQueryApplicationOutputRole, WorthQueryExactlyOneOutput,
@@ -9,7 +10,7 @@ use worth_query_declaration::facade::application_schema::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-mod demand;
+pub(crate) mod demand;
 mod denial_value;
 pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use demand::{CurrentBasis, CurrentProof};
@@ -17,7 +18,7 @@ pub use demand::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
     WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial,
-    WorthQuerySelectedApplicationProducer,
+    WorthQueryOutputSettlementProvenanceDenial, WorthQuerySelectedApplicationProducer,
 };
 pub use denial_value::{
     WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,
@@ -25,23 +26,27 @@ pub use denial_value::{
     WorthQueryProducerDenialValue, WorthQueryProjectedProducerDenial,
     WorthQueryUndeclaredProducerDenial,
 };
-mod execution;
+pub(crate) mod execution;
+pub use execution::unpublished::PendingProducerPublication;
+pub(crate) mod invocation;
 pub(in crate::domain_computation::primary_graph) use execution::prepared_plan::OwnerPlan;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
-mod output_equivalence_contract;
-mod output_evaluation;
+pub(in crate::domain_computation::primary_graph) use invocation::ProducerInvocationAuthority;
+pub(crate) mod output_equivalence_contract;
+pub(crate) mod output_evaluation;
 pub use output_equivalence_contract::WorthQueryProducerOutputEquivalence;
+pub use output_evaluation::ProducerOutputEvaluation;
 pub use output_evaluation::WorthQueryProducerEvaluationIneligibility;
 pub(in crate::domain_computation::primary_graph) use output_evaluation::{
-    ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
+    ComparedProducerOutput, ProducerOutputEvaluationState,
 };
 mod input_reuse_contract;
 pub use input_reuse_contract::{
     WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,
 };
 
-#[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerCommitAuthority {
+#[derive(Clone, Eq, PartialEq)]
+pub enum WorthQueryProducerCommitAuthority {
     Ordinary,
     ProgramOutput,
     SelectedProgram {
@@ -54,15 +59,13 @@ pub(in crate::domain_computation::primary_graph) use readiness::{
     evaluate_output_readiness, install_output_readiness_routes, PendingOutputReadiness,
     TypedPendingOutputReadiness, WorthQueryInstalledOutputReadinessRoutes,
 };
-mod scheduling;
+pub(crate) mod scheduling;
 mod source_qualification;
 pub(in crate::domain_computation::primary_graph) use scheduling::{
     schedule_output_producer, schedule_output_producer_on_selected,
     WorthQueryInstalledOutputProducerRoutes,
 };
-pub(in crate::domain_computation::primary_graph) use source_qualification::{
-    OutputSourceAddress, QualifiedOutputSource,
-};
+pub(in crate::domain_computation::primary_graph) use source_qualification::QualifiedOutputSource;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum WorthQueryProducerLifecyclePosture {
@@ -262,6 +265,9 @@ where
     /// scoped out for any other reason, or missing, refuses the publication.
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement];
     const REUSE_POLICY: &'static str;
+    /// SourceScopeCascade opts complete publications into authored cascade
+    /// retirement. Installation requires an entity-specific source query scope.
+    const OWNERSHIP: ProducerPublicationOwnership = ProducerPublicationOwnership::Independent;
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
 
     /// Opt in to a bounded actual output-field evaluation. The field must belong
@@ -272,8 +278,10 @@ where
     }
 }
 
-mod registry;
+pub(crate) mod registry;
 pub(super) use registry::DeclaredProducerBinding;
 pub(in crate::domain_computation::primary_graph) use registry::InstalledProducerEdition;
 pub(in crate::domain_computation::primary_graph) use registry::PendingProducerRegistry;
 pub use registry::WorthQueryInstalledApplicationProducerRegistry;
+
+pub use source_qualification::OutputSourceAddress;

@@ -34,6 +34,10 @@ where
     pub(super) build: worth_foundational::facade::ApplicationBuildIdentity,
     pub(super) limits: WorthQueryInMemoryApplicationLimits,
     pub(super) checkpoint_limits: worth_store_application::ApplicationHomeCheckpointLimits,
+    pub(super) opening_control:
+        Option<worth_store_application::ApplicationHomeOpeningControlForTest>,
+    pub(super) authorization_time_source:
+        Option<Box<dyn worth_query_execution::facade::primary_graph::WorthQueryRuntimeTimeSource>>,
     pub(super) initial_state: Box<
         dyn FnOnce(
                 &WorthQueryBootstrapAdvancementPhase<'_>,
@@ -73,6 +77,8 @@ where
             build,
             limits,
             checkpoint_limits: Default::default(),
+            opening_control: None,
+            authorization_time_source: None,
             initial_state: Box::new(initial_state),
         }
     }
@@ -84,6 +90,24 @@ where
         limits: worth_store_application::ApplicationHomeCheckpointLimits,
     ) -> Self {
         self.checkpoint_limits = limits;
+        self
+    }
+    /// Carries sealed Store certification placement into this actual opening.
+    #[doc(hidden)]
+    pub fn with_opening_control_for_test(
+        mut self,
+        control: worth_store_application::ApplicationHomeOpeningControlForTest,
+    ) -> Self {
+        self.opening_control = Some(control);
+        self
+    }
+
+    /// Supplies the trusted clock used when admitting and checking capabilities.
+    pub fn with_authorization_time_source(
+        mut self,
+        source: impl worth_query_execution::facade::primary_graph::WorthQueryRuntimeTimeSource,
+    ) -> Self {
+        self.authorization_time_source = Some(Box::new(source));
         self
     }
 }

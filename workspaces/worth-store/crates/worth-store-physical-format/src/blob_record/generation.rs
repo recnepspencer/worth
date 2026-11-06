@@ -1,6 +1,7 @@
 use super::envelope::{admitted_chunk_size, nonzero_16, nonzero_32, visit_canonical_frame};
 use super::{BlobRecordDenial, BlobRecordKind};
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 const PAYLOAD_BYTES: usize = 188;
 pub(super) const GENERATION_PUBLICATION_FRAME_BYTES: usize =
@@ -13,11 +14,11 @@ pub struct BlobGenerationPublicationV1 {
     object: [u8; 16],
     generation: u64,
     root_record: PersistedRecordIdentity,
-    root_digest: [u8; 32],
+    root_digest: CanonicalDigestId,
     total_bytes: u64,
-    logical_digest: [u8; 32],
+    logical_digest: CanonicalDigestId,
     chunk_size: u32,
-    key_scope: [u8; 32],
+    key_scope: CanonicalDigestId,
 }
 
 impl BlobGenerationPublicationV1 {
@@ -43,11 +44,11 @@ impl BlobGenerationPublicationV1 {
             object: nonzero_16(object)?,
             generation,
             root_record,
-            root_digest: nonzero_32(root_digest)?,
+            root_digest: CanonicalDigestId::new(nonzero_32(root_digest)?),
             total_bytes,
-            logical_digest: nonzero_32(logical_digest)?,
+            logical_digest: CanonicalDigestId::new(nonzero_32(logical_digest)?),
             chunk_size: admitted_chunk_size(chunk_size)?,
-            key_scope: nonzero_32(key_scope)?,
+            key_scope: CanonicalDigestId::new(nonzero_32(key_scope)?),
         })
     }
 
@@ -74,11 +75,11 @@ impl BlobGenerationPublicationV1 {
         emit(&self.generation.to_le_bytes());
         emit(&self.root_record.allocation_epoch());
         emit(&self.root_record.ordinal().to_le_bytes());
-        emit(&self.root_digest);
+        emit(self.root_digest.bytes());
         emit(&self.total_bytes.to_le_bytes());
-        emit(&self.logical_digest);
+        emit(self.logical_digest.bytes());
         emit(&self.chunk_size.to_le_bytes());
-        emit(&self.key_scope);
+        emit(self.key_scope.bytes());
     }
 
     pub fn decode(bytes: &[u8]) -> Result<Self, BlobRecordDenial> {
@@ -128,18 +129,18 @@ impl BlobGenerationPublicationV1 {
         self.root_record
     }
     pub const fn root_digest(self) -> [u8; 32] {
-        self.root_digest
+        *self.root_digest.bytes()
     }
     pub const fn total_bytes(self) -> u64 {
         self.total_bytes
     }
     pub const fn logical_digest(self) -> [u8; 32] {
-        self.logical_digest
+        *self.logical_digest.bytes()
     }
     pub const fn chunk_size(self) -> u32 {
         self.chunk_size
     }
     pub const fn key_scope(self) -> [u8; 32] {
-        self.key_scope
+        *self.key_scope.bytes()
     }
 }

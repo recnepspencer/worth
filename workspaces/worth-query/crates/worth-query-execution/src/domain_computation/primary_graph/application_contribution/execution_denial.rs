@@ -152,6 +152,7 @@ pub(super) fn kernel_failure<Stopped>(
             | Resource::WorkLimit
             | Resource::NestedLeaseMisuse
             | Resource::NestedAdvancementOpening
+            | Resource::ForeignAdmissionClock
             | Resource::ForeignAdvancementPhase
             | Resource::NoActiveExecutionScope
             | Resource::EquivalenceContractUnavailable => {
@@ -339,3 +340,5 @@ pub(in crate::domain_computation) fn advancement_checkpoint_stop(
         }
     }
 }
+
+mod court_doors_for_test;

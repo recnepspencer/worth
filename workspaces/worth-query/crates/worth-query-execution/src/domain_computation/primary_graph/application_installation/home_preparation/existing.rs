@@ -46,31 +46,38 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
                     "existing Home retains an unresolved codec transition",
                 ));
             }
-            self.schema.receipt = native
-                .readmit_recovered_initial_schema_installation(self.schema.receipt.clone())
+            self.schema.receipt = recovered
+                .readmit_home_initial_schema_installation(
+                    &execution,
+                    native,
+                    self.schema.receipt.clone(),
+                )
                 .map_err(|cause| {
                     existing_denial(format!("Home recovered schema authority denied: {cause}"))
                 })?;
-            // A checkpoint of a zero-write partial Home cannot require the
-            // Query catalog that its failed initializer never published.
-            let has_recovered_index_installation =
-                native.history().latest_catalog_commit_identity().is_some()
-                    || native
-                        .index_access()
-                        .definition_lookup_snapshot()
-                        .definition_count()
-                        != 0;
-            if has_recovered_index_installation {
-                super::super::super::root::index_installation::register_primary_graph_indexes(&mut self.schema.layout, native,
-                    super::super::super::root::index_installation::IndexInstallationPosture::RequireRecovered)
-                    .map_err(existing_denial)?;
+            use super::super::super::bootstrap::home_publication::readmission::{
+                inspect_native_completion, RecoveredBootstrapPublication,
+            };
+            match inspect_native_completion(
+                native,
+                &self.schema.layout,
+                &self.state.installed,
+                &execution,
+            )? {
+                RecoveredBootstrapPublication::Incomplete => (),
+                RecoveredBootstrapPublication::Completed => {
+                    super::super::super::root::index_installation::register_primary_graph_indexes(
+                        &mut self.schema.layout, native,
+                        super::super::super::root::index_installation::IndexInstallationPosture::RequireRecovered,
+                    ).map_err(existing_denial)?;
+                }
             }
             native_families::readmit(native, &self.schema.layout, &execution)
         })();
         match result {
             Ok(()) => Ok(ReadmittedExistingHomeNativeMeaning {
                 state: self.state,
-                schema: self.schema,
+                schema: self.schema.bind_sources(&native.main_branch_identity()),
                 restore_work: outcome.checkpoint_restore_work,
             }),
             Err(cause) => Err(QueryExistingHomeNativeReadmissionRefused {

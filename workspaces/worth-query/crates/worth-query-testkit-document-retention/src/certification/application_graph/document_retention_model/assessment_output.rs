@@ -196,6 +196,12 @@ pub struct RetentionAssessmentHandler;
 impl OperationHandler<DocumentRetentionSchema, RetentionAssessmentBinding>
     for RetentionAssessmentHandler
 {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &RetentionAssessmentInput,

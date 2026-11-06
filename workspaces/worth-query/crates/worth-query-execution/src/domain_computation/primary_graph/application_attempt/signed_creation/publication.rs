@@ -90,14 +90,18 @@ fn publish_prepared<Schema>(
     }
     let parts = ApplicationSigningProvenanceParts {
         metadata: sealed.metadata,
-        operation_meaning: sealed.operation_meaning,
-        logical_request: sealed.logical_request,
-        input: sealed.input,
+        operation_meaning: worth_foundational::CanonicalDigestId::new(sealed.operation_meaning),
+        logical_request: worth_foundational::CanonicalDigestId::new(sealed.logical_request),
+        input: worth_foundational::CanonicalDigestId::new(sealed.input),
         subject: coordinates(sealed.subject),
         signer: coordinates(sealed.signer),
-        signing_intent: *sealed.intent.signing_intent().bytes(),
-        subject_coverage: *sealed.intent.subject_coverage().bytes(),
-        event_reference: *consumed.event_reference(),
+        signing_intent: worth_foundational::CanonicalDigestId::new(
+            *sealed.intent.signing_intent().bytes(),
+        ),
+        subject_coverage: worth_foundational::CanonicalDigestId::new(
+            *sealed.intent.subject_coverage().bytes(),
+        ),
+        event_reference: worth_foundational::CanonicalDigestId::new(*consumed.event_reference()),
         issued_at_nanoseconds: consumed.issued_at_nanoseconds(),
         observed_at_nanoseconds: consumed.observed_at_nanoseconds(),
     };

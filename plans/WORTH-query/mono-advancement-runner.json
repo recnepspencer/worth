@@ -1,0 +1,840 @@
+{
+  "slice": "Engine-once slice 1: advancement runner only",
+  "baseline_source": "8165d842ddda65c16fb35d2362cb28993b7d4ab0",
+  "implementation_parent": "d4a9f989fa591126abb2fa1645fa2543723b99b5",
+  "fixture": "worth-query-testkit-certification-canonical",
+  "instrument": "scripts/quality/query_monomorphization.py (unchanged)",
+  "slope_definition": "sum(bytes/copies) over normalized families with copies >= 7; a fixture proxy, not a measured multi-fixture derivative",
+  "before": {
+    "exported_symbols": 156909,
+    "rlib_bytes": 654806940,
+    "code_bytes": 46360124,
+    "archive": "C:\\worth-build-cache\\target-cut-pub-mono\\debug\\deps\\libworth_query_testkit_certification_canonical-15d7b7f23c793455.rlib",
+    "archive_sha256": "b601d3320681e37f6e9b525418aefe3225ebd85b84d70cc302fe55be68c3f598",
+    "raw_report": "target/pub-mono-logs/mono-workflow-facts.json",
+    "raw_report_sha256": "a162f42fc121092ecfad3722aa697180509b0a66604a9c2aae08c03210e4ed44",
+    "independent_nm_symbols": 156909,
+    "independent_size_code_bytes": 46360124,
+    "unattributed_code_bytes": 58481,
+    "shared_alias_code_bytes": 0,
+    "slope_all_owners": {
+      "family_count": 3679,
+      "bytes_per_copy": 1791280.888167,
+      "exact_numerator": 83145733061930163879619673617817892385002382846543474097231410002415375942030906158573309530770453,
+      "exact_denominator": 46416915186871684409390349829256940533058995453929988229603748631120861280927497397244259200
+    },
+    "slope_worth_query_execution": {
+      "family_count": 2236,
+      "bytes_per_copy": 1375652.027173,
+      "exact_numerator": 6310152903547022228526089768147,
+      "exact_denominator": 4587026936249684452125600
+    }
+  },
+  "after": {
+    "exported_symbols": 150562,
+    "rlib_bytes": 621368176,
+    "code_bytes": 44893095,
+    "archive": "C:\\worth-build-cache\\target-cut-pub-mono\\debug\\deps\\libworth_query_testkit_certification_canonical-15d7b7f23c793455.rlib",
+    "archive_sha256": "223bae87f565496e3fe0005213227737ba27c0b70a6bd46680c9be949b71573f",
+    "raw_report": "target/pub-mono-logs/mono-advancement-runner.json",
+    "raw_report_sha256": "3b3ed48af60ac85f51223c917022ced6e08bad96227ba3380b04f5f569c146ce",
+    "independent_nm_symbols": 150562,
+    "independent_size_code_bytes": 44893095,
+    "unattributed_code_bytes": 67886,
+    "shared_alias_code_bytes": 0,
+    "slope_all_owners": {
+      "family_count": 3674,
+      "bytes_per_copy": 1789349.764898,
+      "exact_numerator": 24247631833773902110665691810819375270427057080374792271840537626465592954727867115013356979,
+      "exact_denominator": 13551085600725781326792130327041904342221624317541013986952317189731672032305052752000
+    },
+    "slope_worth_query_execution": {
+      "family_count": 2228,
+      "bytes_per_copy": 1373643.581767,
+      "exact_numerator": 6300940110372440716340822346323,
+      "exact_denominator": 4587026936249684452125600
+    }
+  },
+  "delta_after_minus_before": {
+    "exported_symbols": -6347,
+    "rlib_bytes": -33438764,
+    "code_bytes": -1467029
+  },
+  "slope_delta_after_minus_before": {
+    "all_owners": -1931.123269,
+    "worth_query_execution": -2008.445405
+  },
+  "disappeared_family_count": 14,
+  "disappeared_top40_definition": "Old normalized names absent from new roster, ordered by old bytes descending, then name. Only 14 disappeared; no padding. Old family bytes are not net savings.",
+  "disappeared_top40": [
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_admitted_advancement::<>",
+      "bytes": 139955,
+      "copies": 100
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_admitted_advancement::<>::{closure#0}",
+      "bytes": 57870,
+      "copies": 100
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_admitted_advancement::<>::{closure#1}",
+      "bytes": 45979,
+      "copies": 100
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_admitted_advancement::<>::{closure#3}",
+      "bytes": 37254,
+      "copies": 100
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::record_result::<>",
+      "bytes": 26226,
+      "copies": 74
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_admitted_advancement::<>::{closure#0}::{closure#1}",
+      "bytes": 16843,
+      "copies": 100
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::record_result::<>::{closure#1}",
+      "bytes": 14060,
+      "copies": 74
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_admitted_advancement::<>::{closure#0}::{closure#0}",
+      "bytes": 5200,
+      "copies": 100
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_admitted_advancement::<>::{closure#2}",
+      "bytes": 3898,
+      "copies": 100
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::record_result::<>::{closure#0}",
+      "bytes": 1702,
+      "copies": 74
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::record_result::<>::{closure#1}::{closure#0}",
+      "bytes": 518,
+      "copies": 74
+    },
+    {
+      "name": "std::sync::poison::Flag::guard",
+      "bytes": 131,
+      "copies": 1
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::prior_output::succession::PriorPublicationSelectionStop::fmt",
+      "bytes": 64,
+      "copies": 1
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::ACTIVE::{K#0}::{closure#0}::call_once",
+      "bytes": 30,
+      "copies": 1
+    }
+  ],
+  "owner_symbol_counts": {
+    "!": {
+      "before": 1,
+      "after": 1
+    },
+    "&&[alloc": {
+      "before": 1,
+      "after": 1
+    },
+    "&&worth_foundational": {
+      "before": 1,
+      "after": 1
+    },
+    "&(&str, i64, &[alloc": {
+      "before": 1,
+      "after": 1
+    },
+    "&(alloc": {
+      "before": 1,
+      "after": 1
+    },
+    "&<>": {
+      "before": 55,
+      "after": 55
+    },
+    "&[&str; 2]": {
+      "before": 1,
+      "after": 1
+    },
+    "&[(alloc": {
+      "before": 1,
+      "after": 1
+    },
+    "&[alloc": {
+      "before": 1,
+      "after": 1
+    },
+    "&[worth_query_execution": {
+      "before": 9,
+      "after": 9
+    },
+    "&[worth_relational": {
+      "before": 1,
+      "after": 1
+    },
+    "&alloc": {
+      "before": 27,
+      "after": 27
+    },
+    "&core": {
+      "before": 3,
+      "after": 3
+    },
+    "&im": {
+      "before": 1,
+      "after": 1
+    },
+    "&mut &mut &mut core": {
+      "before": 52,
+      "after": 52
+    },
+    "&mut &mut core": {
+      "before": 104,
+      "after": 104
+    },
+    "&mut <>": {
+      "before": 156,
+      "after": 156
+    },
+    "&mut alloc": {
+      "before": 5,
+      "after": 5
+    },
+    "&mut core": {
+      "before": 578,
+      "after": 578
+    },
+    "&mut dyn core": {
+      "before": 1,
+      "after": 1
+    },
+    "&mut serde_json": {
+      "before": 88,
+      "after": 88
+    },
+    "&mut worth_query_execution": {
+      "before": 62,
+      "after": 62
+    },
+    "&mut worth_query_installation": {
+      "before": 54,
+      "after": 54
+    },
+    "&str": {
+      "before": 2,
+      "after": 2
+    },
+    "&worth_foundational": {
+      "before": 7,
+      "after": 7
+    },
+    "&worth_query_declaration": {
+      "before": 12,
+      "after": 12
+    },
+    "&worth_query_execution": {
+      "before": 28,
+      "after": 28
+    },
+    "&worth_query_testkit_certification_canonical": {
+      "before": 22,
+      "after": 22
+    },
+    "(&str, i64, &[alloc": {
+      "before": 2,
+      "after": 2
+    },
+    "((worth_relational": {
+      "before": 5,
+      "after": 5
+    },
+    "(alloc": {
+      "before": 36,
+      "after": 36
+    },
+    "(worth_foundational": {
+      "before": 1,
+      "after": 1
+    },
+    "(worth_query_declaration": {
+      "before": 8,
+      "after": 8
+    },
+    "(worth_query_execution": {
+      "before": 6,
+      "after": 6
+    },
+    "(worth_query_testkit_certification_canonical": {
+      "before": 14,
+      "after": 14
+    },
+    "(worth_relational": {
+      "before": 9,
+      "after": 9
+    },
+    "*const _": {
+      "before": 1,
+      "after": 1
+    },
+    "[&str; 2]": {
+      "before": 1,
+      "after": 1
+    },
+    "[&str; 3]": {
+      "before": 4,
+      "after": 4
+    },
+    "[&worth_query_declaration": {
+      "before": 48,
+      "after": 48
+    },
+    "[&worth_query_execution": {
+      "before": 4,
+      "after": 4
+    },
+    "[&worth_query_installation": {
+      "before": 1,
+      "after": 1
+    },
+    "[(&alloc": {
+      "before": 1,
+      "after": 1
+    },
+    "[(&str, worth_foundational": {
+      "before": 79,
+      "after": 79
+    },
+    "[(&worth_query_declaration": {
+      "before": 14,
+      "after": 14
+    },
+    "[(&worth_query_execution": {
+      "before": 4,
+      "after": 4
+    },
+    "[((alloc": {
+      "before": 14,
+      "after": 14
+    },
+    "[((worth_relational": {
+      "before": 2,
+      "after": 2
+    },
+    "[([u8; 32], alloc": {
+      "before": 46,
+      "after": 46
+    },
+    "[(alloc": {
+      "before": 93,
+      "after": 93
+    },
+    "[(worth_foundational": {
+      "before": 22,
+      "after": 22
+    },
+    "[(worth_query_declaration": {
+      "before": 14,
+      "after": 14
+    },
+    "[(worth_query_execution": {
+      "before": 38,
+      "after": 38
+    },
+    "[(worth_relational": {
+      "before": 16,
+      "after": 16
+    },
+    "[_]": {
+      "before": 15,
+      "after": 15
+    },
+    "[alloc": {
+      "before": 9,
+      "after": 9
+    },
+    "[core": {
+      "before": 12,
+      "after": 12
+    },
+    "[im": {
+      "before": 2,
+      "after": 2
+    },
+    "[worth_foundational": {
+      "before": 18,
+      "after": 18
+    },
+    "[worth_query_declaration": {
+      "before": 16,
+      "after": 16
+    },
+    "[worth_query_execution": {
+      "before": 56,
+      "after": 56
+    },
+    "[worth_query_publication": {
+      "before": 1,
+      "after": 1
+    },
+    "[worth_query_testkit_certification_canonical": {
+      "before": 5,
+      "after": 5
+    },
+    "[worth_relational": {
+      "before": 2,
+      "after": 2
+    },
+    "_": {
+      "before": 4,
+      "after": 4
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission14repeated_query8RETURNED0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission14repeated_query8RETURNED0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission4live23CANCEL_AFTER_PROJECTION0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission4live23CANCEL_AFTER_PROJECTION0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission4live8RETURNED0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission4live8RETURNED0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission6opaque16IGNORED_REFUSALS0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission6opaque16IGNORED_REFUSALS0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission9operation8OBSERVED0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission9operation8OBSERVED0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query23CANCEL_AFTER_PROJECTION0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query23CANCEL_AFTER_PROJECTION0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query23REJECT_AFTER_PROJECTION0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query23REJECT_AFTER_PROJECTION0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query8RETURNED0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query8RETURNED0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection5COUNT0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection5COUNT0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection6CANCEL0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection6CANCEL0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection6REJECT0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection6REJECT0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related6output7DECODES0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related6output7DECODES0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related6output7IGNORED0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related6output7IGNORED0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition9successor6output7DECODES0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition9successor6output7DECODES0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection5COUNT0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection5COUNT0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection6CANCEL0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection6CANCEL0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection6REJECT0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection6REJECT0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor6output7DECODES0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor6output7DECODES0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor6output7IGNORED0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor6output7IGNORED0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition9successor18unchanged_revision6output7DECODES0023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition9successor18unchanged_revision6output7DECODES0s_023___RUST_STD_INTERNAL_VAL": {
+      "before": 1,
+      "after": 1
+    },
+    "__rustc": {
+      "before": 2,
+      "after": 2
+    },
+    "__xmm@068c2d387bae19f257190dee944fadb1": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@0ad8958b9be588bbd5c4704d53b0c937": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@0ed0ef8681c64a9609bac2d3f74cf20e": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@10f3fb0758d4c85740cdc392436443ce": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@18525caf856daed23a2dfaa90d506b02": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@2788ae65886349e7e3846ca9125469bc": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@298904eb919ea9ea325f1eacebb6b312": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@310a5cbdbe4a29df48dc6548c65997f6": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@43bbd7a68aa589c6b9b95887be3da0b5": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@55fdd3f2e42f326b88c35f0809554f65": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@56ce5e494e4f0849c163ef3abbd72176": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@590ad905a09add3210a306d89d561f46": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@5bdba930b260f89a2275a3e2a6dbe64a": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@700ba0c3d3b16390fa051d2311d795a7": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@70a92fbce97dba617bca5251852ffc28": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@74328ac2420d9390ccfc984ec76b641f": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@868ffa933c31df99e709ca6a2a98bb4c": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@933c682c3f72896673405d9433e001bd": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@a95b25fba88f12347e299cc526bf4a61": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@afd454f46fb6079258694830221a9efc": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@bb9e4cb6002d5de40d04ac7f6bc8038f": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@c932947b0aba8dd304e7dffcf2fc1f78": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@cc6440d9e15bcf8c3692a1f099dde010": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@d2a1855b0c68729afbe5211743d93b18": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@d9924e02b236b089ac4e4d91612c06b9": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@dd86ed37a251f6fd6911e3c17ed0aba6": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@de81b0d0aa85d841c36a43a10f8719cd": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@e5b49972a2ef540b048391cbab479de9": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@f050cde6deb95da26a47bd4f97bb16a7": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@f7a24dcf4b9be017c1e151cada6872bd": {
+      "before": 1,
+      "after": 1
+    },
+    "__xmm@fe87e651f8330d71a2dd5b532625305f": {
+      "before": 1,
+      "after": 1
+    },
+    "alloc": {
+      "before": 13307,
+      "after": 13307
+    },
+    "bool": {
+      "before": 166,
+      "after": 166
+    },
+    "core": {
+      "before": 67881,
+      "after": 65772
+    },
+    "dyn core": {
+      "before": 125,
+      "after": 125
+    },
+    "for<> fn(&'a dyn core": {
+      "before": 2,
+      "after": 2
+    },
+    "for<> fn(&'a worth_query_execution": {
+      "before": 7,
+      "after": 7
+    },
+    "hashbrown": {
+      "before": 439,
+      "after": 439
+    },
+    "i32": {
+      "before": 8,
+      "after": 8
+    },
+    "i64": {
+      "before": 19,
+      "after": 19
+    },
+    "im": {
+      "before": 106,
+      "after": 106
+    },
+    "isize": {
+      "before": 2,
+      "after": 2
+    },
+    "rayon_core": {
+      "before": 23,
+      "after": 23
+    },
+    "serde_json": {
+      "before": 167,
+      "after": 167
+    },
+    "serde_stacker": {
+      "before": 434,
+      "after": 434
+    },
+    "sized_chunks": {
+      "before": 112,
+      "after": 112
+    },
+    "stacker": {
+      "before": 468,
+      "after": 468
+    },
+    "std": {
+      "before": 1310,
+      "after": 713
+    },
+    "str": {
+      "before": 10,
+      "after": 10
+    },
+    "u16": {
+      "before": 1,
+      "after": 1
+    },
+    "u32": {
+      "before": 3,
+      "after": 3
+    },
+    "u64": {
+      "before": 9,
+      "after": 9
+    },
+    "u8": {
+      "before": 1,
+      "after": 1
+    },
+    "usize": {
+      "before": 91,
+      "after": 91
+    },
+    "worth_execution": {
+      "before": 10550,
+      "after": 7606
+    },
+    "worth_foundational": {
+      "before": 447,
+      "after": 447
+    },
+    "worth_proof": {
+      "before": 3,
+      "after": 3
+    },
+    "worth_query_admission": {
+      "before": 370,
+      "after": 370
+    },
+    "worth_query_declaration": {
+      "before": 5769,
+      "after": 5769
+    },
+    "worth_query_execution": {
+      "before": 44102,
+      "after": 43405
+    },
+    "worth_query_installation": {
+      "before": 4052,
+      "after": 4052
+    },
+    "worth_query_publication": {
+      "before": 1088,
+      "after": 1088
+    },
+    "worth_query_testkit_certification_canonical": {
+      "before": 2327,
+      "after": 2327
+    },
+    "worth_query_testkit_document_retention": {
+      "before": 21,
+      "after": 21
+    },
+    "worth_relational": {
+      "before": 859,
+      "after": 859
+    },
+    "worth_runtime_bridge": {
+      "before": 83,
+      "after": 83
+    },
+    "worth_runtime_world": {
+      "before": 574,
+      "after": 574
+    },
+    "worth_signal": {
+      "before": 2,
+      "after": 2
+    }
+  },
+  "scope": "Physical code and defined external symbols in the canonical fixture archive only. Non-generic engine bodies live in their owning crate. Not total linked size, downstream build time, or a release measurement."
+}

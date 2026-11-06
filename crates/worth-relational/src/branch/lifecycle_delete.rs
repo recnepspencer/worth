@@ -37,6 +37,12 @@ impl crate::runtime::RelationalRuntime {
         RelationalBranchDeletionOutcome,
         RelationalBranchTransitionStop<RelationalBranchDeleteDenial>,
     > {
+        if let Some(medium) = self.durability.medium() {
+            medium.admit_home_program_write(None, None).map_err(|cause|
+                RelationalBranchTransitionStop::Denied(
+                    RelationalBranchDeleteDenial::DurablePublicationRefused(
+                        crate::durability::medium::RelationalDurablePublicationRefusal::HomeProgramTransition(cause))))?;
+        }
         let step = LiveBranchTransitionStep::new(self.durability.medium(), execution);
         self.delete_branch_with(
             execution,

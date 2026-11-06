@@ -98,7 +98,7 @@ fn runtime_supports(
     }
 }
 
-pub(in crate::domain_computation::primary_graph) fn primary_graph_support_inventory(
+pub fn primary_graph_support_inventory(
     contract: &WorthQueryInstalledGraphReadContract,
     layout: &WorthQueryPrimaryGraphLayout,
     continuation: Option<&WorthQueryInstalledApplicationContinuationContract>,

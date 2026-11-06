@@ -2073,7 +2073,7 @@ This milestone is done only when:
 ## Sequencing Notes
 
 - After Milestone `9.8` (consumer backend + bypass audit machinery).
-- Before Milestone `10` (store-backed execution inherits complete obligation
+- Before Store execution/historical integration (store-backed execution inherits complete obligation
   authority).
 - Phases 1–5: vocabulary, index, relational execution point.
 - Phase 6: canonical dispatch seam (authoritative mutation intent admission)

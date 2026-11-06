@@ -2,15 +2,12 @@ use super::{run::Run, StoreDenial};
 use std::cell::RefCell;
 use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 
-pub(in crate::domain_computation::primary_graph) struct RunDirectory<T> {
+pub struct RunDirectory<T> {
     // None only during replacement in a failed/owned attempt, never a fallback.
-    pub(in crate::domain_computation::primary_graph) slots:
-        Option<ExecutionArray<RefCell<Option<Run<T>>>>>,
+    pub slots: Option<ExecutionArray<RefCell<Option<Run<T>>>>>,
 }
 impl<T> RunDirectory<T> {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        policy: super::StorageControl<'_, '_>,
-    ) -> Result<Self, StoreDenial> {
+    pub fn new(policy: super::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
         policy.check_live()?;
         let mut slots = ExecutionArrayBuilder::allocate(1, policy.policy())?;
         slots.push(RefCell::new(None))?;
@@ -50,3 +47,5 @@ impl<T> RunDirectory<T> {
         Ok(())
     }
 }
+
+mod court_doors_for_test;

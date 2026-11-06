@@ -28,6 +28,7 @@ impl WorthQueryGraphProviderAnchor {
         let provider = Arc::new(provider);
         let resource_support = provider.execution_resource_support();
         Self {
+            session_grant_control: Default::default(),
             provider: Arc::new(WorthQueryTypedGraphParticipationProvider::<G, P> {
                 provider: Arc::clone(&provider),
                 _graph: PhantomData,
@@ -61,6 +62,7 @@ impl WorthQueryGraphProviderAnchor {
             dyn crate::domain_computation::WorthQueryConvergenceDomainProvider,
         > = provider.clone();
         Self {
+            session_grant_control: Default::default(),
             provider: typed_provider::<G, P>(provider),
             session_lifecycle: None,
             decision_fact_provider: None,
@@ -88,6 +90,7 @@ impl WorthQueryGraphProviderAnchor {
         let resource_support = provider.execution_resource_support();
         let session_lifecycle: Arc<dyn WorthQueryErasedProviderSessionLifecycle> = provider.clone();
         Self {
+            session_grant_control: Default::default(),
             provider: typed_provider::<G, P>(provider),
             session_lifecycle: Some(session_lifecycle),
             decision_fact_provider: None,
@@ -119,6 +122,7 @@ impl WorthQueryGraphProviderAnchor {
         let decision_fact_provider: Arc<dyn WorthQueryErasedDecisionFactProvider> =
             provider.clone();
         Self {
+            session_grant_control: Default::default(),
             provider: typed_provider::<G, P>(provider),
             session_lifecycle: Some(session_lifecycle),
             decision_fact_provider: Some(decision_fact_provider),
@@ -153,6 +157,7 @@ impl WorthQueryGraphProviderAnchor {
         let provisional_provider: Arc<dyn WorthQueryErasedProvisionalGraphProvider> =
             provider.clone();
         Self {
+            session_grant_control: Default::default(),
             provider: typed_provider::<G, P>(provider),
             session_lifecycle: Some(session_lifecycle),
             decision_fact_provider: Some(decision_fact_provider),
@@ -190,6 +195,7 @@ impl WorthQueryGraphProviderAnchor {
         let invariant_provider: Arc<dyn WorthQueryErasedInvariantExecutionProvider> =
             provider.clone();
         Self {
+            session_grant_control: Default::default(),
             provider: typed_provider::<G, P>(provider),
             session_lifecycle: Some(session_lifecycle),
             decision_fact_provider: Some(decision_fact_provider),
@@ -231,6 +237,7 @@ impl WorthQueryGraphProviderAnchor {
             dyn crate::domain_computation::WorthQueryConvergenceDomainProvider,
         > = provider.clone();
         Self {
+            session_grant_control: Default::default(),
             provider: typed_provider::<G, P>(provider),
             session_lifecycle: Some(session_lifecycle),
             decision_fact_provider: Some(decision_fact_provider),

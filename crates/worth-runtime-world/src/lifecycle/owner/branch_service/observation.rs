@@ -81,6 +81,23 @@ where
         cell.observe(&self.state.history, &self.state.retention)
             .map_err(super::map_observation_denial)
     }
+    fn product_branch_writers_are_locked_out_for_test(
+        &self,
+        expected: &ProductBranchObservation,
+    ) -> Result<bool, RuntimeWorldBranchAdmissionDenial> {
+        if expected.owner_identity() != self.owner_identity() {
+            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
+        }
+        if !self.branch_service_is_available() {
+            return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
+        }
+        let cell = self
+            .state
+            .branches
+            .branch_cell_by_lifecycle(expected.lifecycle_incarnation())
+            .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
+        Ok(cell.writers_are_locked_out_for_test())
+    }
 
     fn readmit_product_branch_reference(
         &self,
@@ -125,9 +142,8 @@ where
         RuntimeWorldBranchAdmissionDenial,
     > {
         crate::lifecycle::read_observation::record_read();
-        if expected.owner_identity() != self.owner_identity() {
-            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
-        }
+        self.owner_identity()
+            .admit_branch_authority(expected.owner_identity())?;
         if !self.branch_service_is_available() {
             return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
         }
@@ -154,9 +170,8 @@ where
         branch: &ProductBranchIdentity,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {
         crate::lifecycle::read_observation::record_read();
-        if branch.owner_identity() != self.owner_identity() {
-            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
-        }
+        self.owner_identity()
+            .admit_branch_authority(branch.owner_identity())?;
         if !self.branch_service_is_available() {
             return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
         }
@@ -177,9 +192,8 @@ where
         occurrence: ProductBranchIncarnation,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {
         crate::lifecycle::read_observation::record_read();
-        if occurrence.owner_identity() != self.owner_identity() {
-            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
-        }
+        self.owner_identity()
+            .admit_branch_authority(occurrence.owner_identity())?;
         if !self.branch_service_is_available() {
             return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
         }

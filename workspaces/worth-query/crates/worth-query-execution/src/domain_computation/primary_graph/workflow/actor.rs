@@ -1,7 +1,7 @@
 //! Native admission is the only author of canonical workflow actors.
 mod dependencies;
-pub(in crate::domain_computation) mod encoding;
-pub(in crate::domain_computation) mod record;
+pub(crate) mod encoding;
+pub(crate) mod record;
 mod revision_transport;
 pub(in crate::domain_computation) use dependencies::WorkflowActorDependencies;
 
@@ -15,7 +15,7 @@ pub(in crate::domain_computation) fn storage_denial(
 
 /// Native JSON transport admission, with no actor, permission or policy choice.
 #[derive(Debug)]
-pub(in crate::domain_computation) struct ActorCodecFunding {
+pub struct ActorCodecFunding {
     _payload: std::sync::Arc<crate::domain_computation::primary_graph::application_checkpoint::facts::CodecPayloadReservation>,
 }
 pub(in crate::domain_computation) fn fund_actor_codec(

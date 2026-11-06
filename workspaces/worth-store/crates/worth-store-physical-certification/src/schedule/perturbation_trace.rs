@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use super::{SchedulePerturbationSeed, ScheduleReplayDenial};
 
@@ -12,7 +13,7 @@ pub struct SchedulePerturbationDecision {
 pub struct SchedulePerturbationTrace {
     seed: SchedulePerturbationSeed,
     decisions: Box<[SchedulePerturbationDecision]>,
-    digest: [u8; 32],
+    digest: CanonicalDigestId,
 }
 
 impl SchedulePerturbationDecision {
@@ -62,7 +63,7 @@ impl SchedulePerturbationTrace {
         Ok(Self {
             seed,
             decisions: decisions.into_boxed_slice(),
-            digest,
+            digest: CanonicalDigestId::new(digest),
         })
     }
 
@@ -75,7 +76,7 @@ impl SchedulePerturbationTrace {
     }
 
     pub const fn digest(&self) -> [u8; 32] {
-        self.digest
+        *self.digest.bytes()
     }
 }
 

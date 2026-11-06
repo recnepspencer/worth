@@ -16,7 +16,7 @@ where
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, (Self, WorthQueryOutputDemandDenial)>
     where
         Family: WorthQueryProducerOutputFamily<Schema> + 'static,
-        WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
+        WorthQueryAdmittedOutputDemand<Schema, Family>: Send,
     {
         if let Err(stop) = prepare_typed_extraction::<Schema, Family>(&self) {
             return Err((self, stop));
@@ -66,7 +66,7 @@ where
     ) -> Result<Option<WorthQueryAdmittedOutputDemand<Schema, Family>>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema> + 'static,
-        WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
+        WorthQueryAdmittedOutputDemand<Schema, Family>: Send,
     {
         let Some(progress) = self.entries.last() else {
             return Ok(None);

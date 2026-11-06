@@ -1,4 +1,5 @@
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 use super::super::envelope::{encode, nonzero_16, nonzero_32};
 use super::super::{BlobRecordDenial, BlobRecordKind};
@@ -12,9 +13,9 @@ const PAYLOAD_BYTES: usize = 138;
 pub struct BlobReclaimDescriptorV1 {
     store: [u8; 16],
     reclaim_attempt: [u8; 16],
-    source_basis_digest: [u8; 32],
+    source_basis_digest: CanonicalDigestId,
     manifest_record: PersistedRecordIdentity,
-    manifest_frame_sha256: [u8; 32],
+    manifest_frame_sha256: CanonicalDigestId,
     manifest_count: u16,
     source_root_generation: u64,
     candidate_root_generation: u64,
@@ -42,9 +43,9 @@ impl BlobReclaimDescriptorV1 {
         Ok(Self {
             store: nonzero_16(store)?,
             reclaim_attempt: nonzero_16(reclaim_attempt)?,
-            source_basis_digest: nonzero_32(source_basis_digest)?,
+            source_basis_digest: CanonicalDigestId::new(nonzero_32(source_basis_digest)?),
             manifest_record,
-            manifest_frame_sha256: nonzero_32(manifest_frame_sha256)?,
+            manifest_frame_sha256: CanonicalDigestId::new(nonzero_32(manifest_frame_sha256)?),
             manifest_count,
             source_root_generation,
             candidate_root_generation,
@@ -55,9 +56,9 @@ impl BlobReclaimDescriptorV1 {
         let mut payload = Vec::with_capacity(PAYLOAD_BYTES);
         payload.extend_from_slice(&self.store);
         payload.extend_from_slice(&self.reclaim_attempt);
-        payload.extend_from_slice(&self.source_basis_digest);
+        payload.extend_from_slice(self.source_basis_digest.bytes());
         write_record(&mut payload, self.manifest_record);
-        payload.extend_from_slice(&self.manifest_frame_sha256);
+        payload.extend_from_slice(self.manifest_frame_sha256.bytes());
         payload.extend_from_slice(&self.manifest_count.to_le_bytes());
         payload.extend_from_slice(&self.source_root_generation.to_le_bytes());
         payload.extend_from_slice(&self.candidate_root_generation.to_le_bytes());
@@ -96,13 +97,13 @@ impl BlobReclaimDescriptorV1 {
         self.reclaim_attempt
     }
     pub const fn source_basis_digest(self) -> [u8; 32] {
-        self.source_basis_digest
+        *self.source_basis_digest.bytes()
     }
     pub const fn manifest_record(self) -> PersistedRecordIdentity {
         self.manifest_record
     }
     pub const fn manifest_frame_sha256(self) -> [u8; 32] {
-        self.manifest_frame_sha256
+        *self.manifest_frame_sha256.bytes()
     }
     pub const fn manifest_count(self) -> u16 {
         self.manifest_count

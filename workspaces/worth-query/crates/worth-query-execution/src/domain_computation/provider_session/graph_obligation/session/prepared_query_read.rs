@@ -9,14 +9,14 @@ use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIden
 
 /// A move-only operation on an exact admitted session's source. This excludes
 /// its Send-only capacity reservation and exposes no mutation capability.
-pub(in crate::domain_computation) struct WorthQueryPreparedSessionRead {
+pub struct WorthQueryPreparedSessionRead {
     pin: std::sync::Arc<WorthQueryPreparedQueryPin>,
     session: WorthQueryGraphWorkSessionIdentity,
     plan: WorthQueryGraphWorkPlanIdentity,
 }
 /// One immutable source pin per query side, shared with owner-held plans.
 /// Private fields prevent re-pairing its root, layout, binding or basis.
-pub(in crate::domain_computation) struct WorthQueryPreparedQueryPin {
+pub struct WorthQueryPreparedQueryPin {
     read: worth_relational::facade::runtime::RelationalPinnedRead,
     layout: std::sync::Arc<WorthQueryPrimaryGraphLayout>,
     basis: WorthQueryApplicationBasisIdentity,
@@ -107,9 +107,7 @@ impl WorthQueryManagedGraphWorkSession {
     }
 }
 impl WorthQueryPreparedSessionRead {
-    pub(in crate::domain_computation) fn retained_pin(
-        &self,
-    ) -> std::sync::Arc<WorthQueryPreparedQueryPin> {
+    pub fn retained_pin(&self) -> std::sync::Arc<WorthQueryPreparedQueryPin> {
         std::sync::Arc::clone(&self.pin)
     }
     pub(in crate::domain_computation) fn execute<T>(
@@ -136,7 +134,7 @@ impl WorthQueryPreparedSessionRead {
 
 /// Move-only evidence that the sealed capability executed its read. The owner
 /// supplies the retained basis when it seals this evidence, after the join.
-pub(in crate::domain_computation) struct WorthQueryPreparedReadCompletion {
+pub struct WorthQueryPreparedReadCompletion {
     session: WorthQueryGraphWorkSessionIdentity,
     plan: WorthQueryGraphWorkPlanIdentity,
 }
@@ -182,20 +180,16 @@ impl worth_execution::ChargedBytes for WorthQueryPreparedReadCompletion {
     }
 }
 
-#[cfg(test)]
 impl WorthQueryPreparedQueryPin {
     /// Unit-owner substitution isolates correlated cached-root guards.
     /// The uniquely owned pin is the entire lifetime of this hostile test state.
-    pub(in crate::domain_computation) fn replace_basis_for_test(
-        &mut self,
-        basis: WorthQueryApplicationBasisIdentity,
-    ) {
+    pub fn replace_basis_for_test(&mut self, basis: WorthQueryApplicationBasisIdentity) {
         assert!(crate::domain_computation::execution_observation::is_installed());
         self.basis = basis;
     }
-    pub(in crate::domain_computation) fn basis_for_test(
-        &self,
-    ) -> &WorthQueryApplicationBasisIdentity {
+    pub fn basis_for_test(&self) -> &WorthQueryApplicationBasisIdentity {
         &self.basis
     }
 }
+
+mod court_doors_for_test;

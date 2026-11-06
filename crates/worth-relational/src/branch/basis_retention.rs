@@ -45,8 +45,10 @@ impl RelationalRuntime {
         Ok(lease.admitted_basis())
     }
 
-    /// Extend an actual admitted immutable basis's retention, including after
-    /// its branch was deleted. This grants no fresh branch/current/write access.
+    /// Retain the same owner-issued immutable basis, including after its branch
+    /// retires. The original observation obligation establishes ownership;
+    /// a descriptor or a live branch name cannot substitute for it. This does
+    /// not establish currentness or admit a fork/publication.
     /// A replaced retention owner cannot accept the previous owner's obligation.
     pub fn retain_component_basis(
         &self,

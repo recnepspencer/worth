@@ -59,6 +59,27 @@ pub(crate) fn check_semantic_outcome(
     required: RequiredDiagnostic<'_>,
     symbols: &[&str],
 ) -> Result<(), CompilerFixtureRefusal> {
+    validate_requirement(required, symbols)?;
+    let errors = semantic_errors(source, outcome, RequiredEnvironment::Certification)?;
+    if !errors
+        .iter()
+        .any(|message| matches_error(message, source, required, symbols))
+    {
+        return Err(CompilerFixtureRefusal::WrongSemanticDenial {
+            path: source.to_path_buf(),
+            reason: format!(
+                "no fixture-attributed error satisfies {} with symbols {symbols:?}",
+                requirement_name(required)
+            ),
+        });
+    }
+    Ok(())
+}
+
+pub(crate) fn validate_requirement(
+    required: RequiredDiagnostic<'_>,
+    symbols: &[&str],
+) -> Result<(), CompilerFixtureRefusal> {
     let fragment = match required {
         RequiredDiagnostic::Code(code) => code,
         RequiredDiagnostic::ExplicitNullCause(cause) => cause,
@@ -79,15 +100,20 @@ pub(crate) fn check_semantic_outcome(
             .into(),
         ));
     }
-    let messages = denied_messages(source, outcome, RequiredEnvironment::Any)?;
-    validate_semantic_observation(outcome, messages)?;
-    let mut matched = false;
-    let mut errors = 0;
-    for message in messages
-        .iter()
-        .filter(|message| message["level"] == "error")
-    {
-        errors += 1;
+    Ok(())
+}
+
+pub(crate) fn semantic_errors<'a>(
+    source: &Path,
+    outcome: &'a serde_json::Value,
+    required: RequiredEnvironment,
+) -> Result<Vec<&'a serde_json::Value>, CompilerFixtureRefusal> {
+    let messages = denied_messages(source, outcome, required)?;
+    validate_semantic_observation(outcome, messages, required)?;
+    let mut errors = Vec::new();
+    for message in messages.iter().filter(|message| {
+        message["level"] == "error" && !crate::driver_summary::is_abort_summary(message)
+    }) {
         let semantic = diagnostics::semantic_text(message);
         let rendered = message["rendered"].as_str().unwrap_or_default();
         if SETUP_FAILURES
@@ -99,37 +125,47 @@ pub(crate) fn check_semantic_outcome(
                 reason: "a compiler error reports a setup failure".into(),
             });
         }
-        let expected = match required {
-            RequiredDiagnostic::Code(code) => message["code"]["code"] == code,
-            RequiredDiagnostic::ExplicitNullCause(cause) => {
-                message.get("code").is_some_and(serde_json::Value::is_null)
-                    && semantic.contains(cause)
-            }
-        };
-        matched |= expected
-            && symbols.iter().all(|symbol| semantic.contains(symbol))
-            && diagnostics::attributed(message, source);
+        errors.push(message);
     }
-    if errors == 0 {
+    if errors.is_empty() {
         return Err(CompilerFixtureRefusal::NoCompilerErrors(
             source.to_path_buf(),
         ));
     }
-    if !matched {
-        return Err(CompilerFixtureRefusal::WrongSemanticDenial {
-            path: source.to_path_buf(),
-            reason: match required {
-                RequiredDiagnostic::Code(code) => format!("no fixture-attributed error has code {code} and symbols {symbols:?}"),
-                RequiredDiagnostic::ExplicitNullCause(cause) => format!("no fixture-attributed error has explicit null code, cause {cause:?} and symbols {symbols:?}"),
-            },
-        });
+    Ok(errors)
+}
+
+pub(crate) fn matches_error(
+    message: &serde_json::Value,
+    source: &Path,
+    required: RequiredDiagnostic<'_>,
+    symbols: &[&str],
+) -> bool {
+    let semantic = diagnostics::semantic_text(message);
+    let expected = match required {
+        RequiredDiagnostic::Code(code) => message["code"]["code"] == code,
+        RequiredDiagnostic::ExplicitNullCause(cause) => {
+            message.get("code").is_some_and(serde_json::Value::is_null) && semantic.contains(cause)
+        }
+    };
+    expected
+        && symbols.iter().all(|symbol| semantic.contains(symbol))
+        && diagnostics::attributed(message, source)
+}
+
+fn requirement_name(required: RequiredDiagnostic<'_>) -> String {
+    match required {
+        RequiredDiagnostic::Code(code) => format!("code {code}"),
+        RequiredDiagnostic::ExplicitNullCause(cause) => {
+            format!("explicit null code and cause {cause:?}")
+        }
     }
-    Ok(())
 }
 
 fn validate_semantic_observation(
     outcome: &serde_json::Value,
     messages: &[serde_json::Value],
+    required: RequiredEnvironment,
 ) -> Result<(), CompilerFixtureRefusal> {
     let fields = [
         "environment",
@@ -151,10 +187,19 @@ fn validate_semantic_observation(
             "unknown semantic observation field".into(),
         ));
     }
-    if outcome["environment"] != "certification" || outcome["proof_stage"] != "check" {
-        return Err(CompilerFixtureRefusal::InvalidPrebuild(
-            "semantic denial requires certification/check evidence".into(),
-        ));
+    let environment = match required {
+        RequiredEnvironment::Certification => "certification",
+        RequiredEnvironment::Production => "production",
+        RequiredEnvironment::Any => {
+            return Err(CompilerFixtureRefusal::InvalidPrebuild(
+                "semantic denial requires an explicit compiler environment".into(),
+            ))
+        }
+    };
+    if outcome["environment"] != environment || outcome["proof_stage"] != "check" {
+        return Err(CompilerFixtureRefusal::InvalidPrebuild(format!(
+            "semantic denial requires {environment}/check evidence"
+        )));
     }
     for message in messages {
         validate_message(message).map_err(CompilerFixtureRefusal::InvalidPrebuild)?;

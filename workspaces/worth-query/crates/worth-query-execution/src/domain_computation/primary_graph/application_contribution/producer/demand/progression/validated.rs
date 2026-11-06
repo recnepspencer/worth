@@ -42,7 +42,7 @@ where
             FamilySourceValue<Schema, Family>,
         >,
         entry: &InstalledProducerProvider<Schema>,
-        commit_authority: WorthQueryProducerCommitAuthority,
+        commit_authority: ProducerInvocationAuthority<'_>,
 
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<

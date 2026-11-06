@@ -1,4 +1,5 @@
 //! Concrete Home custody cannot skip Native recovery or duplicate its World slot.
+mod transition_catalog;
 use worth_execution::ExecutionRequest;
 use worth_proof::{AuthorityMarker, RelationalReadmitted, WorldReconciled};
 use worth_runtime_world::facade::RuntimeWorldOwner;
@@ -110,7 +111,11 @@ where
             worth_runtime_world::facade::WorldReadmissionDenial::Medium(cause),
         )
     })?;
-    if let Some(admission) = home.relational.world_fresh_source_admission() {
+    use crate::{ApplicationHomeOpeningEdge as Edge, ApplicationHomeOpeningStage as Stage};
+    home.context
+        .opening_observation
+        .arrive_for_test(Stage::WorldReconciliation, Edge::Before);
+    let result = if let Some(admission) = home.relational.world_fresh_source_admission() {
         builder.admit_fresh_world_home(
             home.relational.runtime().owner_component_services(),
             bridge,
@@ -135,7 +140,13 @@ where
             worth_runtime_world::facade::WorldReadmissionDenial::NativeReadmissionRequired,
         ));
     }
-    .map_err(crate::ApplicationHomeOpenRefusal::World)
+    .map_err(crate::ApplicationHomeOpenRefusal::World);
+    if result.is_ok() {
+        home.context
+            .opening_observation
+            .arrive_for_test(Stage::WorldReconciliation, Edge::After);
+    }
+    result
 }
 fn finish_attachment<D, I, E, Ctx, T>(
     mut home: crate::ReadmittedApplicationHome,

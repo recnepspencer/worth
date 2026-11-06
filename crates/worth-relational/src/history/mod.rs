@@ -33,6 +33,7 @@ pub use commit::{
     RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,
     RelationalCommitCatalogEntry, RelationalCommitIdentity, RelationalCommitParentage,
     RelationalCommitParentageDenial, RelationalCommitRootDescriptor,
+    RelationalRetainedSelectionArtifactDenial,
 };
 
 pub(crate) use access::relevant_writes::posting_key::AuthoredWritePostingKey;

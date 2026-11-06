@@ -35,6 +35,14 @@ impl StoredValue for AdjacencySet {
 }
 fn same_entries(left: &AdjacencyEntries, right: &AdjacencyEntries) -> bool {
     left.current.same_storage(&right.current)
+        && left
+            .historical_kind_custody
+            .as_ref()
+            .map(|owner| owner.id())
+            == right
+                .historical_kind_custody
+                .as_ref()
+                .map(|owner| owner.id())
         && same_optional(&left.current_by_kind, &right.current_by_kind)
         && same_optional(&left.historical_by_kind, &right.historical_by_kind)
         && same_optional(

@@ -15,10 +15,7 @@ use crate::domain_computation::primary_graph::conditional_operation::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-pub(in crate::domain_computation::primary_graph) trait WorthQueryInstalledConditionalOperation<
-    Schema,
->: Send
-{
+pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
     fn binding_identity(&self) -> &str;
 
     fn pending_managed_cleanup(
@@ -107,8 +104,7 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryInstalledCondit
 }
 
 #[derive(Clone, Copy, Default)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalRetainedResourceCounts
-{
+pub struct WorthQueryConditionalRetainedResourceCounts {
     pub(in crate::domain_computation::primary_graph::conditional_operation) wakes: usize,
     pub(in crate::domain_computation::primary_graph::conditional_operation) intents: usize,
     pub(in crate::domain_computation::primary_graph::conditional_operation) attempts: usize,
@@ -125,8 +121,7 @@ impl WorthQueryConditionalRetainedResourceCounts {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPreparedConditionalRuntimeBinding
-{
+pub struct WorthQueryPreparedConditionalRuntimeBinding {
     pub(super) pending_invalidations:
         super::pending_invalidations::WorthQueryPendingGranularInvalidations,
     pub(super) lowering: Arc<BridgeInstalledConditionalLowering>,

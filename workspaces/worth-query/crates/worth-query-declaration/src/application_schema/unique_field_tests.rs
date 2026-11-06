@@ -31,6 +31,7 @@ fn members(unique: bool, equality_queryable: bool) -> Vec<ApplicationSchemaMembe
             revision: AspectContractRevision(1),
         },
         ApplicationSchemaMember::Field {
+            content_format: None,
             entity: "Record".to_owned(),
             aspect: "Facts".to_owned(),
             field: "Key".to_owned(),

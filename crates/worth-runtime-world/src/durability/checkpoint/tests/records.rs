@@ -12,7 +12,6 @@ const COMPONENTS: &[u8] = br#"{
       "descriptor_version": 2, "runtime_instance_id": 0, "branch_id": "primary",
       "reference": {"branch_id": "relational/0/primary", "target": "Empty", "generation": 0},
       "truth_version": 0, "root_identity": 0,
-      "visibility_commitment": [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
       "posture": "Live"
     }, "target": "Empty"
   },
@@ -30,7 +29,11 @@ const COMPONENTS: &[u8] = br#"{
 pub(super) fn descriptions(
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<RecordedWorldInitialComponents, crate::durability::WorldDurableMediumDenial> {
-    RecordedWorldInitialComponents::from_json_in(request, COMPONENTS)
+    let mut data: serde_json::Value = serde_json::from_slice(COMPONENTS).unwrap();
+    data["relational"]["descriptor"]["visibility_commitment"] =
+        serde_json::to_value(CanonicalDigestId::new([0; 32])).unwrap();
+    let data = serde_json::to_vec(&data).unwrap();
+    RecordedWorldInitialComponents::from_json_in(request, &data)
 }
 
 pub(super) fn origin(

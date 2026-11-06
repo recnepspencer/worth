@@ -332,6 +332,9 @@ fn install_topology_behavior<Schema: TopologySchemaBinding>(
     setup.handler::<worth_query_topology_entry::PlanarInitialAdjustmentBinding<Schema>, _>(
         worth_query_topology_entry::PlanarInitialAdjustmentHandler,
     )?;
+    setup.handler::<worth_query_topology_entry::SetPlanarHistoryStatusBinding<Schema>, _>(
+        worth_query_topology_entry::SetPlanarHistoryStatusHandler,
+    )?;
     setup.handler::<worth_query_topology_entry::PlanarIslandCouplingBinding<Schema>, _>(
         worth_query_topology_entry::PlanarIslandCouplingHandler,
     )?;
@@ -347,4 +350,12 @@ fn install_topology_behavior<Schema: TopologySchemaBinding>(
     setup.producer::<worth_query_topology_entry::PlanarFinalPreserveProducer<Schema>>(
         worth_query_topology_entry::PlanarFinalOutputProvider::default(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn complete_handler_registration_leaves_only_the_intended_producer_omission() {
+        super::missing_provider_precedes_initializer();
+    }
 }

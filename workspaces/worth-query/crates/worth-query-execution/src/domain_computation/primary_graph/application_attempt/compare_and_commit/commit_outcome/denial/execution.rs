@@ -94,7 +94,9 @@ impl Denial {
                     Err(stop) => return Some(Err(stop)),
                 };
                 match kind {
-                    kind @ (Session::ProjectionContract { .. } | Session::HistoricalVisibility { .. }
+                    kind @ (Session::StaleIncarnation | Session::ProjectionContract { .. } | Session::HistoricalVisibility { .. }
+                    | Session::ContentInconsistency
+                    | Session::Content(_)
                     | Session::StorageUnavailable(_)
                     | Session::ExecutionResource { .. }
                     | Session::ExecutionNestedPatternStopped { .. }
@@ -194,6 +196,8 @@ pub(super) fn execution_kind(
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
     match cause {
         Ok(Session::StorageUnavailable(failure)) => Kind::StorageUnavailable(failure),
+        Ok(Session::ContentInconsistency) => Kind::ContentInconsistency,
+        Ok(Session::Content(cause)) => Kind::Content(cause),
         Ok(Session::ExecutionResource {
             denial,
             partition_identity,
@@ -220,6 +224,7 @@ pub(super) fn execution_kind(
         | Ok(Session::ForeignOperationAttempt)
         | Ok(Session::ForeignExecutionBasis)
         | Ok(Session::ForeignGraphAuthority)
+        | Ok(Session::StaleIncarnation)
         | Ok(Session::UndeclaredOperationScope)
         | Ok(Session::ResourceEnvelopeMismatch)
         | Ok(Session::ActiveSnapshotCapacityExhausted { .. })

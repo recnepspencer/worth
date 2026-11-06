@@ -1,6 +1,8 @@
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[path = "worth_court_relational_certification/support/canonical_commit_frame.rs"]
 pub(crate) mod canonical_commit_frame;
+#[path = "worth_court_relational_certification/content/mod.rs"]
+mod content;
 #[path = "worth_court_relational_certification/cost/mod.rs"]
 pub(crate) mod cost;
 #[path = "worth_court_relational_certification/determinism/mod.rs"]

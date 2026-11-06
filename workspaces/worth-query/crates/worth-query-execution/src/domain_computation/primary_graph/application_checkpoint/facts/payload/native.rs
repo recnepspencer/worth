@@ -16,7 +16,7 @@ enum BuildStage {
     Postcommit,
 }
 
-pub(in crate::domain_computation::primary_graph) struct NativeFactPayloadBuilder {
+pub struct NativeFactPayloadBuilder {
     chunks: AuthorSlots<ExecutionArrayBuilder<Fact>>,
     joins: AuthorSlots<ExecutionArrayBuilder<FactPayload>>,
     roots: AuthorSlots<FactPayload>,
@@ -26,10 +26,7 @@ pub(in crate::domain_computation::primary_graph) struct NativeFactPayloadBuilder
 }
 
 impl NativeFactPayloadBuilder {
-    pub(in crate::domain_computation::primary_graph) fn allocate(
-        count: usize,
-        control: StorageControl<'_, '_>,
-    ) -> Result<Self, StoreDenial> {
+    pub fn allocate(count: usize, control: StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
         Self::allocate_at(count, control, BuildStage::Postcommit)
     }
 
@@ -72,10 +69,7 @@ impl NativeFactPayloadBuilder {
         })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn push(
-        &mut self,
-        fact: Fact,
-    ) -> Result<(), ExecutionAllocationDenial> {
+    pub fn push(&mut self, fact: Fact) -> Result<(), ExecutionAllocationDenial> {
         assert!(self.written < self.count, "prepared native fact count");
         self.chunks[self.written / CHUNK]
             .borrow_mut()
@@ -90,9 +84,7 @@ impl NativeFactPayloadBuilder {
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn seal(
-        self,
-    ) -> Result<FactPayload, ExecutionAllocationDenial> {
+    pub fn seal(self) -> Result<FactPayload, ExecutionAllocationDenial> {
         assert_eq!(self.written, self.count, "complete native publication only");
         for (index, chunk) in self.chunks.into_iter().enumerate() {
             let chunk = chunk
@@ -166,3 +158,5 @@ fn author_slots<T>(
     }
     Ok(slots.seal()?)
 }
+
+mod court_doors_for_test;

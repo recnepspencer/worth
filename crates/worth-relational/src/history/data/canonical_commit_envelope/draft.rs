@@ -30,6 +30,7 @@ impl std::ops::DerefMut for CanonicalCommitEnvelopeDraft {
 }
 impl CanonicalCommitEnvelopeDraft {
     pub(crate) fn new(
+        content: crate::content::ContentPublication,
         index_definition_delta: super::CanonicalIndexDefinitionDelta,
         commit: RelationalCommitReceipt,
         branch_context: BranchId,
@@ -53,11 +54,15 @@ impl CanonicalCommitEnvelopeDraft {
     ) -> Self {
         Self {
             body: CanonicalCommitEnvelopeBody {
+                content,
                 index_definition_delta,
                 caller_association: None,
                 authored_index_writes: CanonicalAuthoredIndexWrites::default(),
                 required_output_codec_retirements: Vec::new(),
                 required_output_origin: None,
+                producer_cascade_retirement: None,
+                authored_cascade_retirement: None,
+                authored_cascade_restoration: None,
                 required_output_materialization: None,
                 commit,
                 branch_context,

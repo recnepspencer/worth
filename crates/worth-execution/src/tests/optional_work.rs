@@ -107,11 +107,14 @@ fn absent_work_ceiling_preserves_original_interruption_before_execution() {
         let source = CancellationSource::new();
         let mut admitted = optional_request(None);
         admitted.cancellation = source.token();
-        admitted.deadline = (!cancelled).then(Instant::now);
+        admitted.deadline = (!cancelled).then(|| {
+            let clock = crate::MonotonicClock::system();
+            clock.deadline_at(clock.now())
+        });
         let serial = SerialRequest::from_policy(
             &admitted.policy,
             admitted.cancellation.clone(),
-            admitted.deadline,
+            admitted.deadline.clone(),
         );
         let lease = authority().request_lease(admitted).unwrap();
         if cancelled {

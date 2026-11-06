@@ -29,13 +29,26 @@ where
                 }
             }
         };
-        if prepared.expected_head().owner_identity() != owner.owner_identity() {
+        if let Err(cause) = owner
+            .owner_identity()
+            .admit_incarnation(prepared.expected_head().owner_identity())
+        {
             return Outcome::RecoveryRequired {
-                cause: Denial::ForeignOwner,
+                cause: match cause {
+                    worth_proof::HomeIncarnationDenial::StaleIncarnation => {
+                        Denial::StaleIncarnation
+                    }
+                    worth_proof::HomeIncarnationDenial::ForeignHome => Denial::ForeignOwner,
+                },
                 custody: prepared.cancel(),
             };
         }
-        let outcome = owner.execute_without_signal(execution, prepared.prepared, cancellation);
+        let outcome = owner.execute_without_signal_with_cutover(
+            execution,
+            prepared.prepared,
+            cancellation,
+            None,
+        );
         owner.finish_durable_publication(&execution, outcome, cancellation)
     }
 }

@@ -9,7 +9,7 @@ mod disposition;
 mod journal;
 mod occurrence;
 mod occurrence_admission;
-pub(crate) use disposition::AdmittedWorldDisposition;
+pub(crate) use disposition::{AdmittedWorldDisposition, PreparedWorldReleasedDisposition};
 mod open;
 pub(crate) use occurrence::{AdmittedWorldOccurrence, AdmittedWorldOccurrenceLocation};
 pub(crate) use open::AdmittedWorldOpenAttempt;

@@ -12,22 +12,27 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryProductPreparationPending::new(
             stage,
             handle,
-            self.product_runtime.owner.recovery_port(),
-            self.primary_provider.unpublished_idempotency_disposition(),
+            self.runtime.product_runtime.owner.recovery_port(),
+            self.runtime
+                .primary_provider
+                .unpublished_idempotency_disposition(),
         )
     }
     pub fn readmit_product_preparation_pending(
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<WorthQueryProductPreparationPending, RuntimeWorldRecoveryDenial> {
-        let disposition = self.primary_provider.unpublished_idempotency_disposition();
+        let disposition = self
+            .runtime
+            .primary_provider
+            .unpublished_idempotency_disposition();
         let stage = disposition
             .preparation_stage(handle)
             .ok_or(RuntimeWorldRecoveryDenial::MissingRecord)?;
         Ok(WorthQueryProductPreparationPending::new(
             stage,
             handle.clone(),
-            self.product_runtime.owner.recovery_port(),
+            self.runtime.product_runtime.owner.recovery_port(),
             disposition,
         ))
     }

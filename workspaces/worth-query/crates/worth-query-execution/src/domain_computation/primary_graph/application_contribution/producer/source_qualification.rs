@@ -22,7 +22,7 @@ use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 
 /// Only native source qualification constructs this stable family address.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct OutputSourceAddress {
+pub struct OutputSourceAddress {
     runtime: u64,
     schema: ApplicationSchemaBindingIdentity,
     occurrence: ProductBranchIncarnation,

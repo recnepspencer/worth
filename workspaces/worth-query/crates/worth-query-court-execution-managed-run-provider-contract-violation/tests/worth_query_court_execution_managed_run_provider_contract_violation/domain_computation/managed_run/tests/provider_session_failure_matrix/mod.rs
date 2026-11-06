@@ -1,0 +1,220 @@
+use std::sync::Arc;
+
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provider_session_protocol::cleanup;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provider_session_protocol::session_run;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provider_session_protocol::staged_session;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provider_session_protocol::SessionCallCounts;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provider_session_protocol::SessionCallObservation;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provider_session_protocol::SessionFailurePoint;
+use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionProtocolStage;
+use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionRecoveryPosture;
+
+#[test]
+fn readmission_and_preparation_failures_stop_at_the_exact_callback() {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        assert_early_failure(
+            execution,
+            SessionFailurePoint::ReadmissionRejection,
+            WorthQueryProviderSessionProtocolStage::PlanReadmission,
+            WorthQueryProviderSessionRecoveryPosture::Closed,
+            calls(1, 0, 0, 0, 0),
+            resource_request,
+        );
+        assert_early_failure(
+            execution,
+            SessionFailurePoint::ReadmissionPanic,
+            WorthQueryProviderSessionProtocolStage::PlanReadmission,
+            WorthQueryProviderSessionRecoveryPosture::RecoveryRequired,
+            calls(1, 0, 0, 0, 0),
+            resource_request,
+        );
+        assert_early_failure(
+            execution,
+            SessionFailurePoint::PreparationRejection,
+            WorthQueryProviderSessionProtocolStage::SessionPreparation,
+            WorthQueryProviderSessionRecoveryPosture::Closed,
+            calls(1, 1, 0, 0, 1),
+            resource_request,
+        );
+        assert_early_failure(
+            execution,
+            SessionFailurePoint::PreparationPanic,
+            WorthQueryProviderSessionProtocolStage::SessionPreparation,
+            WorthQueryProviderSessionRecoveryPosture::Closed,
+            calls(1, 1, 0, 0, 1),
+            resource_request,
+        );
+    });
+}
+
+#[test]
+fn staged_preparation_failures_abort_without_reaching_commit() {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        for point in [
+            SessionFailurePoint::StagedPreparationRejection,
+            SessionFailurePoint::StagedPreparationPanic,
+        ] {
+            let observed = with_session(
+                point,
+                |running, graph| {
+                    let failure = staged_session(execution, running, graph)
+                        .prepare_for_commit_for_test()
+                        .expect_err("staged preparation failure must not mint a prepare outcome");
+                    assert_failure(
+                        &failure,
+                        WorthQueryProviderSessionProtocolStage::StagedPreparation,
+                        WorthQueryProviderSessionRecoveryPosture::Closed,
+                    );
+                },
+                resource_request,
+            );
+            assert_eq!(observed, calls(1, 1, 1, 0, 1));
+        }
+    });
+}
+
+#[test]
+fn commit_failures_leave_recovery_required_and_drop_aborts_once() {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        for point in [
+            SessionFailurePoint::CommitRejection,
+            SessionFailurePoint::CommitPanic,
+        ] {
+            let observed = with_session(
+                point,
+                |running, graph| {
+                    let prepared = staged_session(execution, running, graph)
+                        .prepare_for_commit_for_test()
+                        .expect("staged preparation should succeed");
+                    let outcome = prepared.commit_for_test(
+                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    );
+                    assert_failure(
+                        outcome.failure().expect("commit should fail"),
+                        WorthQueryProviderSessionProtocolStage::Commit,
+                        WorthQueryProviderSessionRecoveryPosture::RecoveryRequired,
+                    );
+                },
+                resource_request,
+            );
+            assert_eq!(observed, calls(1, 1, 1, 1, 1));
+        }
+    });
+}
+
+#[test]
+fn abort_failures_are_retried_once_by_the_live_session_guard() {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        for point in [
+            SessionFailurePoint::AbortRejection,
+            SessionFailurePoint::AbortPanic,
+        ] {
+            let observed = with_session(
+                point,
+                |running, graph| {
+                    let outcome = staged_session(execution, running, graph).abort();
+                    assert_failure(
+                        outcome.failure().expect("abort should fail"),
+                        WorthQueryProviderSessionProtocolStage::Abort,
+                        WorthQueryProviderSessionRecoveryPosture::RecoveryRequired,
+                    );
+                },
+                resource_request,
+            );
+            assert_eq!(observed, calls(1, 1, 0, 0, 2));
+        }
+    });
+}
+
+pub fn assert_early_failure(
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+
+    point: SessionFailurePoint,
+    stage: WorthQueryProviderSessionProtocolStage,
+    posture: WorthQueryProviderSessionRecoveryPosture,
+    expected_calls: SessionCallObservation,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let observed = with_session(
+        point,
+        |running, graph| {
+            let installed_fixture_phase = running.fixture_phase_for_test(execution);
+            let plan = running
+                .admit_provider_execution_plan(graph)
+                .expect("failure fixture plan should admit");
+            let (grant, receiver) = plan
+                .admit_session(&installed_fixture_phase)
+                .expect("the grant has no provider effect");
+            let failure = grant
+                .prepare(receiver, &installed_fixture_phase)
+                .expect_err("physical readmission or preparation should fail");
+            assert_failure(&failure, stage, posture);
+        },
+        resource_request,
+    );
+    assert_eq!(observed, expected_calls);
+}
+
+pub fn with_session(
+    point: SessionFailurePoint,
+    assertion: impl FnOnce(
+        &mut worth_query_execution::facade::domain_computation::WorthQueryRunningDirectRun,
+        &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+    ),
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> SessionCallObservation {
+    let counts = Arc::new(SessionCallCounts::default());
+    let (mut running, graph) = session_run(point, Arc::clone(&counts), false, resource_request);
+    assertion(&mut running, &graph);
+    cleanup(running);
+    counts.observe()
+}
+
+pub fn assert_failure(
+    failure: &worth_query_execution::facade::domain_computation::WorthQueryProviderSessionFailure,
+    stage: WorthQueryProviderSessionProtocolStage,
+    posture: WorthQueryProviderSessionRecoveryPosture,
+) {
+    assert_eq!(failure.stage(), stage);
+    assert_eq!(failure.recovery_posture(), posture);
+}
+
+pub const fn calls(
+    readmissions: usize,
+    preparations: usize,
+    staged_preparations: usize,
+    commits: usize,
+    aborts: usize,
+) -> SessionCallObservation {
+    SessionCallObservation {
+        readmissions,
+        preparations,
+        staged_preparations,
+        commits,
+        aborts,
+    }
+}

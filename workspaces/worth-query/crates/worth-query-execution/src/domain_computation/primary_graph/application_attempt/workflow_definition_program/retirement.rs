@@ -167,6 +167,7 @@ where
             retain_client_observation: false,
             producer_required_invariants: &[],
             output_currentness_facts: None,
+            content_attachments: Default::default(),
         })
     }
 }

@@ -1,3 +1,4 @@
+use worth_foundational::CanonicalDigestId;
 use worth_store_physical_backend::{BackendCapabilityKind, BackendTargetProfile};
 
 use crate::{IoPressureEvidenceMaturity, IoPressureHarnessEvidence, PhysicalSimulationProfile};
@@ -25,7 +26,7 @@ pub enum QualificationHarnessProofStrength {
 pub struct QualificationHarnessProof {
     backend_profile: BackendTargetProfile,
     replay_profile: PhysicalSimulationProfile,
-    replay_identity: [u8; 32],
+    replay_identity: CanonicalDigestId,
     maturity: IoPressureEvidenceMaturity,
     claim: QualificationHarnessProofClaim,
     strength: QualificationHarnessProofStrength,
@@ -41,7 +42,7 @@ impl QualificationHarnessProof {
         Self {
             backend_profile: evidence.scenario().backend_profile(),
             replay_profile: evidence.replay_profile(),
-            replay_identity: *evidence.replay_identity(),
+            replay_identity: CanonicalDigestId::new(*evidence.replay_identity()),
             maturity: evidence.maturity(),
             claim: QualificationHarnessProofClaim::IoPressureEnvelope,
             strength: proof_strength_for(evidence),
@@ -126,7 +127,7 @@ impl QualificationHarnessProof {
         Self {
             backend_profile: evidence.scenario().backend_profile(),
             replay_profile: evidence.replay_profile(),
-            replay_identity: *evidence.replay_identity(),
+            replay_identity: CanonicalDigestId::new(*evidence.replay_identity()),
             maturity: evidence.maturity(),
             claim,
             strength: proof_strength_for(evidence),
@@ -142,7 +143,7 @@ impl QualificationHarnessProof {
     }
 
     pub const fn replay_identity(self) -> [u8; 32] {
-        self.replay_identity
+        *self.replay_identity.bytes()
     }
 
     pub const fn maturity(self) -> IoPressureEvidenceMaturity {

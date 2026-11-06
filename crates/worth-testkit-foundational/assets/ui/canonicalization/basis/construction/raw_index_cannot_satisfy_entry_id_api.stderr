@@ -1,15 +1,15 @@
 error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/basis/construction/raw_index_cannot_satisfy_entry_id_api.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/basis/construction/raw_index_cannot_satisfy_entry_id_api.rs:6:23
   |
-  |     requires_entry_id(7_u32);
-  |     ----------------- ^^^^^ expected `CanonicalBasisEntryId<...>`, found `u32`
+6 |     requires_entry_id(7_u32);
+  |     ----------------- ^^^^^ expected `CanonicalBasisEntryId<_>`, found `u32`
   |     |
   |     arguments to this function are incorrect
   |
   = note: expected struct `CanonicalBasisEntryId<CanonicalBasisDomain>`
                found type `u32`
 note: function defined here
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/basis/construction/raw_index_cannot_satisfy_entry_id_api.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/basis/construction/raw_index_cannot_satisfy_entry_id_api.rs:3:4
   |
-  | fn requires_entry_id(_: CanonicalBasisEntryId<CanonicalBasisDomain>) {}
+3 | fn requires_entry_id(_: CanonicalBasisEntryId<CanonicalBasisDomain>) {}
   |    ^^^^^^^^^^^^^^^^^ ----------------------------------------------

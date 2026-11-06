@@ -33,14 +33,12 @@ pub(crate) fn body_decoded_bytes<E>(
             input.skip(4)?;
             0
         }
-        tags::INT64
-        | tags::UINT64
-        | tags::FLOAT64
-        | tags::BYTES
-        | tags::TIME
-        | tags::TIMESTAMP
-        | tags::CONTENT_REF => {
+        tags::INT64 | tags::UINT64 | tags::FLOAT64 | tags::TIME | tags::TIMESTAMP => {
             input.skip(8)?;
+            0
+        }
+        tags::CONTENT_REF => {
+            input.skip(32)?;
             0
         }
         tags::UUID | tags::ENTITY_REF => {

@@ -69,6 +69,62 @@ pub struct DerivedRelationDefinitionParts {
 }
 
 impl DerivedRelationDefinitionParts {
+    pub(crate) fn clone_allocation_bytes(
+        &self,
+        control: crate::schema::SchemaCompilationControl<'_, '_>,
+    ) -> Result<Option<usize>, crate::execution::RelationalExecutionDenialCause> {
+        let mut stopped = None;
+        let bytes = self.measure_clone_bytes(&mut || match control.checkpoint() {
+            Ok(()) => Some(()),
+            Err(cause) => {
+                stopped = Some(cause);
+                None
+            }
+        });
+        match stopped {
+            Some(cause) => Err(cause),
+            None => Ok(bytes),
+        }
+    }
+    fn measure_clone_bytes(&self, checkpoint: &mut dyn FnMut() -> Option<()>) -> Option<usize> {
+        let mut bytes = self
+            .identity
+            .schema
+            .0
+            .len()
+            .checked_add(self.identity.name.len())?
+            .checked_add(self.from.name_bytes()?)?
+            .checked_add(self.to.name_bytes()?)?
+            .checked_add(
+                self.nodes
+                    .len()
+                    .checked_mul(size_of::<DerivedRelationNode>())?,
+            )?;
+        for node in &self.nodes {
+            checkpoint()?;
+            let names = match node {
+                DerivedRelationNode::Derived(identity) => {
+                    identity.schema.0.len().checked_add(identity.name.len())?
+                }
+                DerivedRelationNode::CarrierLift { domain, case } => {
+                    domain.name_bytes()?.checked_add(case.len())?
+                }
+                DerivedRelationNode::Stored { .. }
+                | DerivedRelationNode::Compose { .. }
+                | DerivedRelationNode::Reverse { .. }
+                | DerivedRelationNode::WithoutSelfEdges { .. }
+                | DerivedRelationNode::Union { .. }
+                | DerivedRelationNode::Intersection { .. }
+                | DerivedRelationNode::OrderedEvents { .. } => 0,
+            };
+            bytes = bytes.checked_add(names)?;
+        }
+        if let Some(laws) = &self.laws {
+            bytes = bytes.checked_add(laws.clone_allocation_bytes(checkpoint)?)?;
+        }
+        Some(bytes)
+    }
+
     pub(crate) fn owned_capacity_bytes(&self) -> usize {
         self.laws
             .as_ref()
@@ -154,4 +210,5 @@ pub enum DerivedRelationDenial {
     InvalidMemberCase,
     InvalidGraphLaws,
     InvalidEventChain,
+    SourceProgramIdentityExhausted,
 }

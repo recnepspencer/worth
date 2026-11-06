@@ -2,7 +2,6 @@ use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch;
 
 impl WorthQueryPrimaryGraphProvider {
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn observe_application_commit_causality(
         &self,
         product: &crate::basis::WorthQueryProductBranchLease,
@@ -12,12 +11,10 @@ impl WorthQueryPrimaryGraphProvider {
             .expect("the test observer has subscription capacity")
     }
 
-    #[cfg(test)]
     pub(crate) fn set_application_commit_causality_limits(&self, batch_capacity: usize) {
         self.live_delivery.set_limits(batch_capacity);
     }
 
-    #[cfg(test)]
     pub(crate) fn set_application_commit_causality_reservation_hook(
         &self,
         hook: Option<std::sync::Arc<dyn Fn() + Send + Sync>>,
@@ -47,7 +44,6 @@ impl WorthQueryPrimaryGraphProvider {
             .publish(reservation, publication, emissions, predicate)
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn committed_application_emissions(
         &self,
         publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
@@ -56,13 +52,13 @@ impl WorthQueryPrimaryGraphProvider {
         self.live_delivery.emissions(publication)
     }
 
-    #[cfg(test)]
     pub(crate) fn published_application_commit_count(&self) -> usize {
         self.live_delivery.published_commit_count()
     }
 
-    #[cfg(test)]
     pub(crate) fn active_application_commit_causality_partitions(&self) -> usize {
         self.live_delivery.active_partition_count()
     }
 }
+
+mod court_doors_for_test;

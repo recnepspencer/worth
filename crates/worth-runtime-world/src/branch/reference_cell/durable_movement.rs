@@ -38,6 +38,7 @@ pub(crate) struct WorldProductMovementPermit {
     cell: ProductBranchReferenceCell,
     subject: WorldDurableArtifact,
     armed: bool,
+    control: Option<Arc<crate::publication::HomeTransitionEffectControlState>>,
 }
 impl ProductBranchReferenceCell {
     pub(crate) fn begin_durable_movement(
@@ -71,10 +72,34 @@ impl ProductBranchReferenceCell {
             cell: self.clone(),
             subject,
             armed: true,
+            control: None,
         })
     }
 }
 impl WorldProductMovementPermit {
+    pub(crate) fn bind_home_transition_control(
+        &mut self,
+        control: Option<Arc<crate::publication::HomeTransitionEffectControlState>>,
+    ) {
+        self.control = control;
+    }
+
+    pub(super) fn refuse_head_movement(&self) -> bool {
+        self.control.as_ref().is_some_and(|control| {
+            control
+                .fire(crate::publication::WorldHomeTransitionEffectInterruption::RefuseHeadMovement)
+        })
+    }
+
+    pub(super) fn after_committed(&self) {
+        if self.control.as_ref().is_some_and(|control| {
+            control.fire(
+                crate::publication::WorldHomeTransitionEffectInterruption::UnwindAfterHeadMovement,
+            )
+        }) {
+            panic!("receiver interrupted the original continuation after its committed head swap");
+        }
+    }
     /// Retain the actual witness before materialization or any other work that
     /// could unwind. No caller-provided fate is accepted here.
     pub(crate) fn acknowledge(&mut self, witness: DurablyCommitted<ActualWorldPublication>) {
@@ -104,7 +129,7 @@ impl WorldProductMovementPermit {
         successor: &ProductBranchHeadProtection,
     ) -> Result<(), ProductBranchReferenceCellDenial> {
         validate_successor(current, successor)?;
-        let crate::durability::WorldRecord::Occurrence { open, .. } = &self.subject.record else {
+        let crate::durability::WorldRecord::Occurrence { open, .. } = self.subject.record() else {
             return Err(ProductBranchReferenceCellDenial::DurableSubjectMismatch);
         };
         let commit = successor.snapshot().selected_commit();
@@ -154,6 +179,33 @@ impl WorldProductMovementPermit {
         result
     }
 
+    /// The caller prearms its retained reopen-required phase before consuming
+    /// this permit. A loss or post-swap unwind cannot restore a spent phase.
+    pub(crate) fn publish_readmitted(
+        mut self,
+        expected: &ProductBranchObservation,
+        successor: &mut Option<ProductBranchHeadProtection>,
+        record: &crate::history::ReadmittedPublicationRecord,
+    ) -> Result<ProductBranchReferenceMovement, ProductBranchReferenceLoss> {
+        assert_eq!(&record.before, expected.snapshot());
+        assert_eq!(
+            successor.as_ref().expect("retained successor").snapshot(),
+            &record.after
+        );
+        let _actual_location = record.location();
+        let result = self.cell.replace_expected_permitted(
+            expected,
+            successor,
+            |slot| slot,
+            None,
+            Some(&self),
+        );
+        if result.is_ok() {
+            self.armed = false;
+        }
+        result
+    }
+
     pub(super) fn admits(&self, phase: &ProductMovementPhase) -> bool {
         matches!(phase, ProductMovementPhase::MovementInFlight { subject, committed: Some(_) }
             if subject.same_subject(&self.subject))
@@ -164,7 +216,7 @@ fn is_original_occurrence(
     subject: &WorldDurableArtifact,
     expected: &ProductBranchObservation,
 ) -> bool {
-    let crate::durability::WorldRecord::Occurrence { open, .. } = &subject.record else {
+    let crate::durability::WorldRecord::Occurrence { open, .. } = subject.record() else {
         return false;
     };
     expected.owner_identity().durable() == Some(open.expected.branch.owner())

@@ -1,5 +1,6 @@
 //! Real populations and whole original SDK invoices, with a separate coordinate oracle.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use worth_execution::{
     CancellationSource, ExecutionWorkCeiling, SerialMemoryBudget, SerialRequest,
 };
@@ -57,7 +58,7 @@ fn geometry_chain_growth_uses_real_source_and_original_sdk_invoice() {
             beside <= doubled * 3 / 2,
             "unrelated geometry cannot dominate the whole invoice"
         );
-        // Both sampled scopes grow together; 2000→52000 adds fewer than six binary height steps. Allow
+        // Both sampled scopes grow together; 2000â†’52000 adds fewer than six binary height steps. Allow
         // eight times one step and a 20k granule for fixed-width paths whose
         // ordered-node split/grant charge need not be monotone at two samples.
         let one_step = doubled.saturating_sub(base).max(20_000);
@@ -84,10 +85,15 @@ fn journey(vertices: u32, unrelated: u32, shared: SharedChain) -> (u64, u64) {
     let configuration = Configuration::new(Arc::clone(&calls));
     let public_calls = Arc::clone(&configuration.public_source);
     let rules = Arc::clone(&configuration.rules);
-    let prefix_calls = Arc::new(prefix::Calls::default());
+    let prefix_calls = Arc::new(prefix_observation::Calls::default());
     let prefix_rules = Arc::new(prefix_rule::Calls::new(Arc::clone(&prefix_calls)));
-    let world = host::install_growth(prefix_calls, prefix_rules, configuration);
-    let scope = authentication::request_scope();
+    // Work/locality is independent of wall time. Every scope still has its
+    // original deadline on the same installed, owner-controlled clock.
+    let time = WorthQueryAdmissionTimeController::new().unwrap();
+    time.hold();
+    let clock = time.clock();
+    let world = host::install_growth(prefix_calls, prefix_rules, configuration, clock.clone());
+    let scope = authentication::request_scope_with_clock(clock.clone());
     let principal = authenticate(&world, &scope);
     setup(&world, &principal, &scope);
     commit(
@@ -122,7 +128,7 @@ fn journey(vertices: u32, unrelated: u32, shared: SharedChain) -> (u64, u64) {
         .step_by(REMOTE_BATCH_EDGES as usize)
         .enumerate()
     {
-        let batch_scope = authentication::request_scope();
+        let batch_scope = authentication::request_scope_with_clock(clock.clone());
         let batch_principal = authenticate(&world, &batch_scope);
         let count = (unrelated - start).min(REMOTE_BATCH_EDGES);
         let ((), setup_work) = invoice(|| {
@@ -144,7 +150,7 @@ fn journey(vertices: u32, unrelated: u32, shared: SharedChain) -> (u64, u64) {
     }
     // Each remote batch has its own ordinary scope and authentication. Census
     // and both measured edits share this one fresh context after population.
-    let scope = authentication::request_scope();
+    let scope = authentication::request_scope_with_clock(clock.clone());
     let principal = authenticate(&world, &scope);
     let request = world
         .runtime()
@@ -326,10 +332,11 @@ fn journey(vertices: u32, unrelated: u32, shared: SharedChain) -> (u64, u64) {
 
 fn authenticate(world: &host::Host, scope: &WorthQueryRequestScope) -> Principal {
     authentication::block_on(
-        authentication::admit(world.installed_schema()).authenticate(
-            authentication::LocalCredential::issued_for_model_owner(),
-            scope,
-        ),
+        authentication::admit_with_clock(world.installed_schema(), scope.clock().clone())
+            .authenticate(
+                authentication::LocalCredential::issued_for_model_owner(),
+                scope,
+            ),
     )
     .unwrap()
 }

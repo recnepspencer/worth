@@ -8,6 +8,7 @@ where
     Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
 {
     pub(super) settlement: WorthQueryApplicationProgramOutputSettlement<Query<S, R>>,
+    pub(super) source: WorthQueryApplicationReadObservation,
     pub(super) branch: WorthQueryProductBranch,
     // Original settlement and all enclosing native custody die before this clone.
     pub(super) runtime: WorthQueryProgramApplicationRuntime<S, P>,
@@ -20,7 +21,7 @@ where
     R: ApplicationOutputGraphShape<S> + ApplicationFixedOutputRoot,
     Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
 {
-    fn matches(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, S>) -> bool {
+    pub(super) fn matches(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, S>) -> bool {
         std::ptr::eq(self.runtime.runtime(), request.application) && self.branch == request.branch
     }
     fn current_observation(

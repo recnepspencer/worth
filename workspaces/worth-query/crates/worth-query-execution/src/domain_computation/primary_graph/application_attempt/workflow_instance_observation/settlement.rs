@@ -19,9 +19,8 @@ use crate::domain_computation::primary_graph::workflow::{
 };
 
 mod approval;
-mod dependency;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use dependency::decode_field_revision_fact;
+pub(crate) mod dependency;
+
 mod proposal;
 mod retained_evidence;
 mod value;

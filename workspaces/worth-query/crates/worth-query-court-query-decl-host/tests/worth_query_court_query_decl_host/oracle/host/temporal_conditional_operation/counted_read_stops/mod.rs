@@ -99,7 +99,9 @@ fn conditional_operation_work_stop_terminal_matches_its_typed_cause() {
                 worth_runtime_bridge::facade::BridgeExecutionDenial::WorkCeiling,
             )) | Cause::ApplicationExecutionDenied {
                 stage: graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet
-                    | graph::WorthQueryApplicationCommitDenialStage::InvariantExecution,
+                    | graph::WorthQueryApplicationCommitDenialStage::InvariantExecution
+                    // The domain write seal charges each realized effect.
+                    | graph::WorthQueryApplicationCommitDenialStage::EffectLowering,
                 cause: Ok(graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
                     denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted,
                     partition_identity: None | Some(0) | Some(1), policy_ancestor: None,

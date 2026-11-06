@@ -3,7 +3,7 @@ use worth_relational::facade::identity::EntityId;
 use super::super::invariant_projection::WorthQueryRealizedProjectionScope;
 
 /// Instance authority for identities that may enter one application read set.
-pub(super) struct WorthQueryApplicationReadScope {
+pub struct WorthQueryApplicationReadScope {
     root: EntityId,
     projected: Option<WorthQueryRealizedProjectionScope>,
 }

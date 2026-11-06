@@ -149,7 +149,7 @@ pub(crate) fn primary_graph_application(
                     retention: worth_query_host::facade::runtime::RuntimeWorldRetentionBudgetInstallation { unique_exact_component_pins: 1_024, in_flight_pin_acquisition_reservations: 256 },
                     custody: worth_query_host::facade::runtime::RuntimeWorldCustodyBudgetInstallation { owner_created_component_custody_records: 256 },
                 },
-                worth_query_host::facade::runtime::WorthQueryProductWorldClock::start(),
+                worth_query_host::facade::runtime::WorthQueryProductWorldClock::start(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
                 worth_query_host::facade::runtime::WorthQueryInvalidationResources::new(),
                 execution_policy,
             )

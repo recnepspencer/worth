@@ -123,8 +123,7 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let mut cancelled = fixture
         .world
         .runtime
@@ -135,8 +134,7 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
     cancellation.cancel();
     let cancellation_request = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let cancelled_outcome = cancelled.poll(&owner, &cancellation_request);
     assert!(
         matches!(cancelled_outcome, BankAccountActivityLiveOutcome::Cancelled),
@@ -149,7 +147,7 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
 
     let deadline = Instant::now() + Duration::from_secs(1);
     let deadline_source = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(Some(deadline), deadline_source.token());
+    let request = WorthQueryRequestScope::new(Some(deadline), deadline_source.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let mut expired = fixture
         .world
         .runtime
@@ -160,7 +158,7 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
     while Instant::now() < deadline {
         std::thread::yield_now();
     }
-    let expired_request = WorthQueryRequestScope::new(Some(deadline), deadline_source.token());
+    let expired_request = WorthQueryRequestScope::new(Some(deadline), deadline_source.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let expired_outcome = expired.poll(&owner, &expired_request);
     assert!(
         matches!(

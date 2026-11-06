@@ -447,13 +447,19 @@ with this path.
   `control-callers.txt`.
 - **Owner unit courts.** Owners outside Store use `cfg(test)` in-crate media.
   Those are not a second durable path.
-- **The oracle's identity rule.** The memory-only reference host and the home
-  issue home-scoped identities from the same initial frontiers in the same
-  order (D6). Comparison covers only durable identities. Identities consumed
-  by attempts that never became durable are not part of the prefix. After each
-  reopen, the reference's issuers are reset to the recovered frontiers before
-  the script continues, so later identities compare exactly. Process-local
-  identities are excluded from comparison.
+- **The oracle's identity rule.** The reference is the ordinary MemoryOnly
+  host, issuing normal ephemeral identities without a durable binding,
+  Home-scoped identity, frontier snapshot or reset. One typed run-wide
+  `DurableIdentityCorrespondence` bijection relates Home durable identities
+  to reference identities across every reopen. Its `admit(home, reference)`
+  refuses either a Home identity mapped to a second reference identity or a
+  reference identity reached from a second Home identity. Admit identities
+  only when they first appear in compared durable graph state, occurrences,
+  custody, product heads or idempotency outcomes. Process-local identities and
+  identities consumed by attempts that never became durable stay out.
+  Identity meaning is compared by correspondence, which needs no durable
+  reference. The separate required test that identities issued after reopen
+  never collide with recovered ones remains unchanged.
 - **Seeds and lanes.** A failing seed reproduces deterministically. Focused
   lanes run a small seed range. A scheduled lane runs the broad campaign under
   a stated time and memory budget.
@@ -522,6 +528,23 @@ The supported development workflow is:
   - It is idempotent. It completes a partly discarded or damaged location.
   - Opening a tombstoned location refuses with `DiscardPending` until
     `discard_home` completes.
+
+**Cleanup track: moved courts.** The following transition-source recovery
+courts leave the happy-path tree under the M3 track split. Restore and migrate
+them against real Store Home/World authority; do not ignore or gate them.
+
+- `transition_source_recovers_the_exact_durable_prefix_and_original_planning_root`: Recovers the exact durable transition prefix and original planning root, keeps that historical root distinct from the current execution basis, and readmits successor schema version 2.
+  `restore from 34edd18ff6:crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/home_program_transition_source.rs`. Migration needs catalog-grant access before
+  cutover and a replacement for the expected-zero prefix scenario, because
+  zero-step plans are prohibited.
+- `transition_source_reads_its_planning_predecessor_from_the_selected_admission_image`: Reads the original planning predecessor from the selected admission image, preserving one predecessor row and two current rows after the durable migration tail.
+  `restore from 34edd18ff6:crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/home_program_transition_source.rs`. Migration needs catalog-grant access before
+  cutover and a replacement for the expected-zero prefix scenario, because
+  zero-step plans are prohibited.
+- `transition_source_refuses_a_missing_or_foreign_prefix_before_runtime_cutover`: Refuses a missing or foreign prefix with a typed refusal before runtime cutover; the receiver remains empty.
+  `restore from 34edd18ff6:crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/home_program_transition_source.rs`. Migration needs catalog-grant access before
+  cutover and a replacement for the expected-zero prefix scenario, because
+  zero-step plans are prohibited.
 
 **D17. Type-enforced invariants, placed by the vocabulary rule.**
 
@@ -1512,10 +1535,13 @@ build guide and Host README must explain this distinction and use the real facad
 **Oracle extension**
 
 - **Reference and script.** A memory-only host running the same program
-  executes a seeded host script. The script covers keyed and unkeyed
-  mutations, response loss, branch creation, product movement on several
+  executes a seeded host script. The script covers keyed mutations, including
+  distinct keys, same-key retries, changed-intent retries and concurrent same-key
+  retries; response loss, branch creation, product movement on several
   branches, settlement failure, custody continue and release, caller
   abandonment, and checkpoints. Every seed in the tested range generates.
+  Application mutations require an idempotency key by contract (build §5.3), so
+  there is no unkeyed route to exercise.
 - **Interruption points.** The oracle interrupts at every durable boundary:
   - before commitment;
   - after durable Relational publication;
@@ -1693,6 +1719,11 @@ changed build identity is an oracle dimension rather than a single case.
 
 **Required tests**
 
+- **Producer directory build identity.** Restore
+  `directory_changed_build_reuses_original_output_until_new_implementation_is_demanded`
+  (restore from `5358b31d3083dc88eea961af716e948f759eac96:workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/producer_predicate_checkpoint/changed_build.rs`): produce under A, reuse the
+  original accepted output under A, reopen under B without producer execution,
+  then regenerate only on demand.
 - **Retirement survives restart.** Retire support, kill, reopen: the status is
   still Retired, and interpretation refuses where the retirement requires it.
 - **Adoption resumes.** Adoption interrupted at each stage across a kill

@@ -55,7 +55,7 @@ impl ValidationRequestControl {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
     use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
     use worth_relational::facade::mvcc::RelationalOperationInterruption;
 
@@ -63,9 +63,8 @@ mod tests {
     fn live_request_control_preserves_cancellation_and_exact_deadline() {
         let source = WorthQueryCancellationSource::new();
         let request = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(30)),
-            source.token(),
-        );
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(30)),
+            source.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let control = ValidationRequestControl::new(&request);
         assert_eq!(control.relational().interruption(), None);
         source.cancel();
@@ -74,9 +73,8 @@ mod tests {
             Some(RelationalOperationInterruption::Cancelled)
         );
         let deadline = WorthQueryRequestScope::new(
-            Some(Instant::now()),
-            WorthQueryCancellationSource::new().token(),
-        );
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now()),
+            WorthQueryCancellationSource::new().token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let timed = ValidationRequestControl::new(&deadline);
         assert_eq!(
             timed.relational().interruption(),

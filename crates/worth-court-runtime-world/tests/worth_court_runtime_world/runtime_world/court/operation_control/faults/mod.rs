@@ -166,7 +166,14 @@ fn injected_signal_unwind_retains_any_moved_truth() {
                 root.selected_commit()
             );
             drop(effects);
-            recovery.release_effects(row.handle(), 0).unwrap();
+            recovery
+                .release_effects(
+                    request_execution,
+                    row.handle(),
+                    0,
+                    court.observe_recovery_original(request_execution, row.handle()),
+                )
+                .unwrap();
         }
         drop(root);
         court.finish();

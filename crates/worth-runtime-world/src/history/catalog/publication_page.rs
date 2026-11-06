@@ -103,13 +103,17 @@ impl CompositeHistoryCatalog {
         clippy::disallowed_methods,
         reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
     )]
+    pub(super) fn allocation_affinity(&self) -> usize {
+        Arc::as_ptr(&self.state) as usize
+    }
+
     pub(crate) fn performed_publication_page(
         &self,
         after: Option<&RuntimeWorldPublicationCursor>,
         maximum: NonZeroUsize,
     ) -> Result<RuntimeWorldPublicationPage, CompositeHistoryCatalogDenial> {
         let state = lock_state(&self.state);
-        let affinity = Arc::as_ptr(&self.state) as usize;
+        let affinity = self.allocation_affinity();
         let frontier = match after {
             Some(cursor) => {
                 validate_frontier(&state, affinity, &cursor.frontier)?;
@@ -196,17 +200,13 @@ impl CompositeHistoryCatalog {
         })
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
-    )]
     pub(crate) fn publication_frontier_is_current(
         &self,
         frontier: &RuntimeWorldPublicationFrontier,
     ) -> Result<bool, CompositeHistoryCatalogDenial> {
         let state = lock_state(&self.state);
         validate_owner(&state, frontier.owner)?;
-        if frontier.catalog_affinity != Arc::as_ptr(&self.state) as usize {
+        if frontier.catalog_affinity != self.allocation_affinity() {
             return Err(CompositeHistoryCatalogDenial::ForeignInspectionCursor);
         }
         Ok(frontier.revision != u64::MAX

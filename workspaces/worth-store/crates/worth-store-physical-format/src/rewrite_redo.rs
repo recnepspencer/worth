@@ -2,6 +2,7 @@
 //!
 //! This payload is not a reinterpretation of `store.physical.wal.canonical-redo.v3`.
 
+use worth_foundational::CanonicalDigestId;
 mod arena;
 pub use arena::PhysicalExtentArenaRewrite;
 
@@ -11,18 +12,18 @@ const BODY_BYTES: usize = 280;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PhysicalRewriteRedo {
-    operation: [u8; 32],
-    group: [u8; 32],
+    operation: CanonicalDigestId,
+    group: CanonicalDigestId,
     source_root_generation: u64,
     source_generation: u64,
     source_offset: u64,
     source_length: u32,
-    source_digest: [u8; 32],
+    source_digest: CanonicalDigestId,
     destination_generation: u64,
     destination_offset: u64,
     destination_length: u32,
     page_lsn: u64,
-    record_identity: [u8; 32],
+    record_identity: CanonicalDigestId,
     source_placement: u64,
     destination_placement: u64,
     candidate_bytes: u64,
@@ -61,18 +62,18 @@ impl PhysicalRewriteRedo {
             return None;
         }
         Some(Self {
-            operation,
-            group,
+            operation: CanonicalDigestId::new(operation),
+            group: CanonicalDigestId::new(group),
             source_root_generation,
             source_generation,
             source_offset,
             source_length,
-            source_digest,
+            source_digest: CanonicalDigestId::new(source_digest),
             destination_generation,
             destination_offset,
             destination_length: source_length,
             page_lsn,
-            record_identity,
+            record_identity: CanonicalDigestId::new(record_identity),
             source_placement,
             destination_placement,
             candidate_bytes: u64::from(source_length),
@@ -82,7 +83,7 @@ impl PhysicalRewriteRedo {
     }
 
     pub const fn operation(self) -> [u8; 32] {
-        self.operation
+        *self.operation.bytes()
     }
     pub fn with_extent_arena(mut self, ranges: PhysicalExtentArenaRewrite) -> Option<Self> {
         if self.source_placement != self.destination_placement {
@@ -96,7 +97,7 @@ impl PhysicalRewriteRedo {
     }
 
     pub const fn group(self) -> [u8; 32] {
-        self.group
+        *self.group.bytes()
     }
 
     pub const fn source_root_generation(self) -> u64 {
@@ -116,7 +117,7 @@ impl PhysicalRewriteRedo {
     }
 
     pub const fn source_digest(self) -> [u8; 32] {
-        self.source_digest
+        *self.source_digest.bytes()
     }
 
     pub const fn destination_generation(self) -> u64 {
@@ -136,7 +137,7 @@ impl PhysicalRewriteRedo {
     }
 
     pub const fn record_identity(self) -> [u8; 32] {
-        self.record_identity
+        *self.record_identity.bytes()
     }
 
     pub const fn source_placement(self) -> u64 {
@@ -157,7 +158,7 @@ impl PhysicalRewriteRedo {
     }
 
     pub const fn with_group(mut self, group: [u8; 32]) -> Self {
-        self.group = group;
+        self.group = CanonicalDigestId::new(group);
         self
     }
 
@@ -168,18 +169,18 @@ impl PhysicalRewriteRedo {
     pub fn encode(self) -> Vec<u8> {
         let mut encoded = Vec::with_capacity(8 + REWRITE_REDO_DOMAIN.len() + BODY_BYTES);
         write_field(&mut encoded, REWRITE_REDO_DOMAIN);
-        encoded.extend_from_slice(&self.operation);
-        encoded.extend_from_slice(&self.group);
+        encoded.extend_from_slice(self.operation.bytes());
+        encoded.extend_from_slice(self.group.bytes());
         encoded.extend_from_slice(&self.source_root_generation.to_le_bytes());
         encoded.extend_from_slice(&self.source_generation.to_le_bytes());
         encoded.extend_from_slice(&self.source_offset.to_le_bytes());
         encoded.extend_from_slice(&self.source_length.to_le_bytes());
-        encoded.extend_from_slice(&self.source_digest);
+        encoded.extend_from_slice(self.source_digest.bytes());
         encoded.extend_from_slice(&self.destination_generation.to_le_bytes());
         encoded.extend_from_slice(&self.destination_offset.to_le_bytes());
         encoded.extend_from_slice(&self.destination_length.to_le_bytes());
         encoded.extend_from_slice(&self.page_lsn.to_le_bytes());
-        encoded.extend_from_slice(&self.record_identity);
+        encoded.extend_from_slice(self.record_identity.bytes());
         encoded.extend_from_slice(&self.source_placement.to_le_bytes());
         encoded.extend_from_slice(&self.destination_placement.to_le_bytes());
         encoded.extend_from_slice(&self.candidate_bytes.to_le_bytes());
@@ -205,18 +206,18 @@ impl PhysicalRewriteRedo {
             });
         }
         let redo = Self {
-            operation: take_array(&mut cursor)?,
-            group: take_array(&mut cursor)?,
+            operation: CanonicalDigestId::new(take_array(&mut cursor)?),
+            group: CanonicalDigestId::new(take_array(&mut cursor)?),
             source_root_generation: take_u64(&mut cursor)?,
             source_generation: take_u64(&mut cursor)?,
             source_offset: take_u64(&mut cursor)?,
             source_length: take_u32(&mut cursor)?,
-            source_digest: take_array(&mut cursor)?,
+            source_digest: CanonicalDigestId::new(take_array(&mut cursor)?),
             destination_generation: take_u64(&mut cursor)?,
             destination_offset: take_u64(&mut cursor)?,
             destination_length: take_u32(&mut cursor)?,
             page_lsn: take_u64(&mut cursor)?,
-            record_identity: take_array(&mut cursor)?,
+            record_identity: CanonicalDigestId::new(take_array(&mut cursor)?),
             source_placement: take_u64(&mut cursor)?,
             destination_placement: take_u64(&mut cursor)?,
             candidate_bytes: take_u64(&mut cursor)?,

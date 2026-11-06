@@ -138,6 +138,7 @@ fn quote(
             >(raw, request, |row| {
                 super::schema::projected(row, request)
             })?,
+            "content_formats" => super::content_schema::quote(raw, request)?,
             "format_version"
             | "carrier_digest"
             | "schema_root"

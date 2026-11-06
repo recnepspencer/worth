@@ -1,19 +1,37 @@
 //! Endpoint augmentation retains the original operation Vec and its funding.
+mod scoped_comparison;
 use super::field_authoring_candidate::{self as allocation, FieldCandidate};
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::identity::data::EntityId;
 use crate::schema::data::{AspectBinding, LoweredAspectContractPlan};
+pub(crate) use scoped_comparison::append_portable_in_scope;
 use worth_foundational::facade::{
     AspectValue, ContractValidationInput, PortableAspectContractBasis, PortableAspectPatchOperation,
 };
 
 pub(super) fn append_authoritative_endpoints(
     request: &worth_execution::ExecutionRequest<'_, '_>,
-    mut candidate: FieldCandidate,
+    candidate: FieldCandidate,
     plan: Option<&LoweredAspectContractPlan>,
     source: EntityId,
     target: EntityId,
 ) -> Result<FieldCandidate, super::record_aspect_patch::MutationPatchDenial> {
+    append(candidate, plan, source, target, |memory, bytes| {
+        allocation::resize(request, memory, bytes)
+    })
+    .map_err(Into::into)
+}
+
+pub(super) fn append(
+    mut candidate: FieldCandidate,
+    plan: Option<&LoweredAspectContractPlan>,
+    source: EntityId,
+    target: EntityId,
+    mut resize: impl FnMut(
+        &mut Option<worth_execution::ExecutionMemoryReservation>,
+        u64,
+    ) -> Result<(), Cause>,
+) -> Result<FieldCandidate, Cause> {
     let Some(plan) = plan else {
         return Ok(candidate);
     };
@@ -53,7 +71,7 @@ pub(super) fn append_authoritative_endpoints(
     let peak = final_bill
         .checked_add(if grew { old_backing } else { 0 })
         .ok_or(Cause::ChargedBytesOverflow)?;
-    allocation::resize(request, &mut candidate.funding, peak)?;
+    resize(&mut candidate.funding, peak)?;
     candidate.operations.reserve_exact(count);
     for binding in &plan.executable_bindings {
         let endpoint = match binding.target {
@@ -71,7 +89,7 @@ pub(super) fn append_authoritative_endpoints(
             });
     }
     // reserve_exact's displaced buffer is gone before its overlap bill refunds.
-    allocation::resize(request, &mut candidate.funding, final_bill)?;
+    resize(&mut candidate.funding, final_bill)?;
     Ok(candidate)
 }
 fn bytes(count: usize) -> Result<u64, Cause> {

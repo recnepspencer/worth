@@ -267,7 +267,6 @@ impl crate::runtime::RelationalRuntime {
 
 #[cfg(test)]
 mod retained_owner_tests {
-    use super::*;
     use crate::branch::RelationalBranchBasisDenial as Denial;
     use crate::tests::support::runtime_with_test_schema;
 

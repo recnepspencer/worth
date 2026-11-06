@@ -1,49 +1,37 @@
 //! One registry owner; production supplies its original controlled comparison extent.
 use super::*;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 impl WorthQueryObservedSourceMeaningRegistry {
-    pub(in crate::domain_computation::primary_graph) fn intern_compared<E>(
+    pub(in crate::domain_computation::primary_graph) fn intern_compared(
         &self,
         query: &[u8; 32],
         parameters: &[u8; 32],
         footprint: WorthQueryObservedSourceFootprint,
         selection: &WorthQueryApplicationBasisSelectionIdentity,
-        equal: &mut impl FnMut(
+        equal: &mut dyn FnMut(
             &WorthQueryObservedSourceFootprint,
             &WorthQueryObservedSourceFootprint,
-        ) -> Result<bool, E>,
-    ) -> Result<Option<Arc<WorthQueryObservedSourceMeaning>>, E> {
-        self.intern_with_storage(
-            query,
-            parameters,
-            footprint,
-            selection,
-            equal,
-            None,
-            &mut |_| unreachable!("ordinary interning has no material allocation"),
-        )
+        ) -> Result<bool, Cause>,
+    ) -> Result<Option<Arc<WorthQueryObservedSourceMeaning>>, Cause> {
+        self.intern_with_storage(query, parameters, footprint, selection, equal, None)
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn intern_material_compared<
-        E,
-    >(
+    pub(in crate::domain_computation::primary_graph::application_query) fn intern_material_compared(
         &self,
         query: &[u8; 32],
         parameters: &[u8; 32],
         footprint: WorthQueryObservedSourceFootprint,
         selection: &WorthQueryApplicationBasisSelectionIdentity,
-        equal: &mut impl FnMut(
+        equal: &mut dyn FnMut(
             &WorthQueryObservedSourceFootprint,
             &WorthQueryObservedSourceFootprint,
-        ) -> Result<bool, E>,
+        ) -> Result<bool, Cause>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         allocation: &Arc<
             crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
         >,
-        failure: &mut impl FnMut(
-            worth_relational::facade::transactions::RelationalExecutionDenialCause,
-        ) -> E,
-    ) -> Result<Option<Arc<WorthQueryObservedSourceMeaning>>, E> {
+    ) -> Result<Option<Arc<WorthQueryObservedSourceMeaning>>, Cause> {
         self.intern_with_storage(
             query,
             parameters,
@@ -54,25 +42,21 @@ impl WorthQueryObservedSourceMeaningRegistry {
                 execution,
                 allocation,
             }),
-            failure,
         )
     }
 
-    fn intern_with_storage<E>(
+    fn intern_with_storage(
         &self,
         query: &[u8; 32],
         parameters: &[u8; 32],
         footprint: WorthQueryObservedSourceFootprint,
         selection: &WorthQueryApplicationBasisSelectionIdentity,
-        equal: &mut impl FnMut(
+        equal: &mut dyn FnMut(
             &WorthQueryObservedSourceFootprint,
             &WorthQueryObservedSourceFootprint,
-        ) -> Result<bool, E>,
+        ) -> Result<bool, Cause>,
         storage: Option<material_storage::ManagedInternerStorage<'_, '_, '_>>,
-        failure: &mut impl FnMut(
-            worth_relational::facade::transactions::RelationalExecutionDenialCause,
-        ) -> E,
-    ) -> Result<Option<Arc<WorthQueryObservedSourceMeaning>>, E> {
+    ) -> Result<Option<Arc<WorthQueryObservedSourceMeaning>>, Cause> {
         let occurrence = match selection {
             WorthQueryApplicationBasisSelectionIdentity::Relational => {
                 WorthQueryObservedSourceOccurrence::Relational
@@ -102,7 +86,7 @@ impl WorthQueryObservedSourceMeaningRegistry {
             } = &mut *state;
             let count = meanings.len();
             if let Some(storage) = &storage {
-                storage.lookup(count).map_err(&mut *failure)?;
+                storage.lookup(count)?;
             }
             let mut entry = meanings.entry(coordinate.clone());
             if let Some(storage) = &storage {
@@ -110,7 +94,7 @@ impl WorthQueryObservedSourceMeaningRegistry {
                     Entry::Occupied(entry) => entry.get().entries.len(),
                     Entry::Vacant(_) => 0,
                 };
-                unmatched = storage.scratch(size).map_err(&mut *failure)?;
+                unmatched = storage.scratch(size)?;
             }
             if let Entry::Occupied(entry) = &mut entry {
                 let meanings = entry.get_mut();
@@ -122,9 +106,7 @@ impl WorthQueryObservedSourceMeaningRegistry {
                     let existing = unmatched.last().expect("retained comparator operand");
                     let footprint = incoming.as_ref().expect("incoming until admitted");
                     if let Some(storage) = &storage {
-                        storage
-                            .comparison(&existing.footprint, footprint)
-                            .map_err(&mut *failure)?;
+                        storage.comparison(&existing.footprint, footprint)?;
                     }
                     if equal(&existing.footprint, footprint)? {
                         return Ok(Some(Arc::clone(existing)));
@@ -137,12 +119,12 @@ impl WorthQueryObservedSourceMeaningRegistry {
             };
             let mut vacant = material_storage::CoordinateMeanings::default();
             if let Some(storage) = &storage {
-                storage.meaning().map_err(&mut *failure)?;
+                storage.meaning()?;
                 let bucket = match &mut entry {
                     Entry::Occupied(entry) => entry.get_mut(),
                     Entry::Vacant(_) => &mut vacant,
                 };
-                bucket.reserve(storage, count).map_err(&mut *failure)?;
+                bucket.reserve(storage, count)?;
             }
             let footprint = incoming.as_ref().expect("incoming until admitted");
             let checkpoint_identity = if let Some(storage) = &storage {
@@ -151,8 +133,7 @@ impl WorthQueryObservedSourceMeaningRegistry {
                     parameters,
                     footprint,
                     &mut |bytes| storage.work(bytes),
-                )
-                .map_err(&mut *failure)?
+                )?
             } else {
                 checkpoint_commitment::checkpoint_source_identity(query, parameters, footprint)
             };
@@ -189,17 +170,17 @@ impl WorthQueryObservedSourceMeaningRegistry {
     }
 
     /// Set membership is a distinct source contract from any returned row.
-    pub(in crate::domain_computation::primary_graph) fn intern_result_set_compared<E>(
+    pub(in crate::domain_computation::primary_graph) fn intern_result_set_compared(
         &self,
         query: &[u8; 32],
         parameters: &[u8; 32],
         footprint: WorthQueryObservedSourceFootprint,
         selection: &WorthQueryApplicationBasisSelectionIdentity,
-        equal: &mut impl FnMut(
+        equal: &mut dyn FnMut(
             &WorthQueryObservedSourceFootprint,
             &WorthQueryObservedSourceFootprint,
-        ) -> Result<bool, E>,
-    ) -> Result<Option<Arc<WorthQueryObservedSourceMeaning>>, E> {
+        ) -> Result<bool, Cause>,
+    ) -> Result<Option<Arc<WorthQueryObservedSourceMeaning>>, Cause> {
         self.intern_compared(
             &result_set_query(query),
             parameters,
@@ -208,26 +189,21 @@ impl WorthQueryObservedSourceMeaningRegistry {
             equal,
         )
     }
-    pub(in crate::domain_computation::primary_graph::application_query) fn intern_material_result_set_compared<
-        E,
-    >(
+    pub(in crate::domain_computation::primary_graph::application_query) fn intern_material_result_set_compared(
         &self,
         query: &[u8; 32],
         parameters: &[u8; 32],
         footprint: WorthQueryObservedSourceFootprint,
         selection: &WorthQueryApplicationBasisSelectionIdentity,
-        equal: &mut impl FnMut(
+        equal: &mut dyn FnMut(
             &WorthQueryObservedSourceFootprint,
             &WorthQueryObservedSourceFootprint,
-        ) -> Result<bool, E>,
+        ) -> Result<bool, Cause>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         allocation: &Arc<
             crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
         >,
-        failure: &mut impl FnMut(
-            worth_relational::facade::transactions::RelationalExecutionDenialCause,
-        ) -> E,
-    ) -> Result<Option<Arc<WorthQueryObservedSourceMeaning>>, E> {
+    ) -> Result<Option<Arc<WorthQueryObservedSourceMeaning>>, Cause> {
         self.intern_material_compared(
             &result_set_query(query),
             parameters,
@@ -236,11 +212,9 @@ impl WorthQueryObservedSourceMeaningRegistry {
             equal,
             execution,
             allocation,
-            failure,
         )
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn intern(
         &self,
         query: &[u8; 32],
@@ -248,15 +222,12 @@ impl WorthQueryObservedSourceMeaningRegistry {
         footprint: WorthQueryObservedSourceFootprint,
         selection: &WorthQueryApplicationBasisSelectionIdentity,
     ) -> Option<Arc<WorthQueryObservedSourceMeaning>> {
-        match self.intern_compared(query, parameters, footprint, selection, &mut |a, b| {
-            Ok::<bool, std::convert::Infallible>(a == b)
-        }) {
-            Ok(value) => value,
-            Err(never) => match never {},
-        }
+        self.intern_compared(query, parameters, footprint, selection, &mut |a, b| {
+            Ok(a == b)
+        })
+        .expect("ordinary equality comparison cannot refuse")
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn intern_result_set(
         &self,
         query: &[u8; 32],
@@ -264,16 +235,10 @@ impl WorthQueryObservedSourceMeaningRegistry {
         footprint: WorthQueryObservedSourceFootprint,
         selection: &WorthQueryApplicationBasisSelectionIdentity,
     ) -> Option<Arc<WorthQueryObservedSourceMeaning>> {
-        match self.intern_result_set_compared(
-            query,
-            parameters,
-            footprint,
-            selection,
-            &mut |a, b| Ok::<bool, std::convert::Infallible>(a == b),
-        ) {
-            Ok(value) => value,
-            Err(never) => match never {},
-        }
+        self.intern_result_set_compared(query, parameters, footprint, selection, &mut |a, b| {
+            Ok(a == b)
+        })
+        .expect("ordinary equality comparison cannot refuse")
     }
 }
 
@@ -284,3 +249,5 @@ fn result_set_query(query: &[u8; 32]) -> [u8; 32] {
     digest.update(query);
     digest.finalize().into()
 }
+
+mod court_doors_for_test;

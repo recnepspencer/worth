@@ -31,6 +31,8 @@ pub enum RecoveryFailureClass {
     UnsupportedLegacySemantics,
     MissingAuthoritativeParentClosure,
     ReplayFailure,
+    /// Live retained-root fork custody is not reconstructed from a tail record.
+    UnsupportedRetainedForkReplay,
     DurableIoFailure,
     ColdStorageUnavailable,
     CheckpointPublicationInFlight,
@@ -38,6 +40,8 @@ pub enum RecoveryFailureClass {
     CheckpointSizeOverflow,
     CheckpointAllocationUnavailable,
     CheckpointFrameSizeMismatch,
+    /// Retained entity selection requires its original live historical basis.
+    UnsupportedRetainedEntitySelectionReplay,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -221,6 +225,8 @@ impl DurabilityError {
         let suggested_fix = match class {
             RecoveryFailureClass::CheckpointSizeOverflow
             | RecoveryFailureClass::CheckpointAllocationUnavailable
+            | RecoveryFailureClass::UnsupportedRetainedForkReplay
+            | RecoveryFailureClass::UnsupportedRetainedEntitySelectionReplay
             | RecoveryFailureClass::CheckpointFrameSizeMismatch => None,
             _ => Some(SuggestedFix::RepairDurableStore),
         };
@@ -242,6 +248,8 @@ impl DurabilityError {
             | RecoveryFailureClass::UnsupportedLegacySemantics
             | RecoveryFailureClass::MissingAuthoritativeParentClosure
             | RecoveryFailureClass::ReplayFailure
+            | RecoveryFailureClass::UnsupportedRetainedForkReplay
+            | RecoveryFailureClass::UnsupportedRetainedEntitySelectionReplay
             | RecoveryFailureClass::SchemaMismatch
             | RecoveryFailureClass::DeclaredSchemaMismatch
             | RecoveryFailureClass::ProfileMismatch

@@ -5,7 +5,7 @@ use super::super::{
 };
 use crate::domain_computation::provider_session::WorthQueryMutationGraphWorkCompletion;
 
-pub(in crate::domain_computation) enum WorthQueryProviderProgressionOutcome {
+pub enum WorthQueryProviderProgressionOutcome {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),

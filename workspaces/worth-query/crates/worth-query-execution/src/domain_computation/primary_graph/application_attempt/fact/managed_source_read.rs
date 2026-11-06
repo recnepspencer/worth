@@ -16,21 +16,22 @@ use worth_relational::facade::{
 /// Descriptive locator within the already checked schema/runtime/branch affinity.
 /// The retained Native observation, not this key, supplies Source currentness.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct ManagedSourceReadKey {
-    pub obligation: [u8; 32],
-    pub authorization: [u8; 32],
-    pub scope: EntityId,
-    pub influence: Option<ManagedInfluenceOrigin>,
+pub struct ManagedSourceReadKey {
+    pub(in crate::domain_computation::primary_graph) obligation: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) authorization: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) scope: EntityId,
+    pub(in crate::domain_computation::primary_graph) influence: Option<ManagedInfluenceOrigin>,
 }
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct ManagedInfluenceOrigin {
-    pub parameters: [u8; 32],
-    pub audience: [u8; 32],
-    pub content: worth_foundational::facade::ProjectedCandidateContentV1,
+    pub(in crate::domain_computation::primary_graph) parameters: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) audience: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) content:
+        worth_foundational::facade::ProjectedCandidateContentV1,
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation) struct ManagedSourceRead {
+pub struct ManagedSourceRead {
     key: ManagedSourceReadKey,
     authorization: Arc<super::SourceReadAuthorization>,
     native: Arc<ManagedIndexSourceObservation>,
@@ -142,7 +143,11 @@ impl ManagedSourceRead {
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
         reserve: &mut impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>,
-        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault) -> E,
+        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault) -> E,
+        frames: &mut dyn FnMut(
+            &worth_relational::facade::content::RelationalContentFrame,
+            &worth_relational::facade::content::RelationalContentFrame,
+        ) -> Result<bool, E>,
     ) -> Result<bool, E> {
         if self.key != other.key || !self.authorization.same_truth(&other.authorization, admit)? {
             return Ok(false);
@@ -151,7 +156,7 @@ impl ManagedSourceRead {
             (None, None) => self.native.same_source(&other.native),
             (Some(left), Some(right)) if Arc::ptr_eq(left, right) => true,
             (Some(left), Some(right)) => {
-                return left.same_inputs(right, admit, reserve, fault);
+                return left.same_inputs(right, admit, reserve, fault, frames);
             }
             _ => false,
         })

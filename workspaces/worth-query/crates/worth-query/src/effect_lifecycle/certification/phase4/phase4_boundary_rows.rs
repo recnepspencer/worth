@@ -141,13 +141,8 @@ pub(super) fn deferred_replay_row() -> EffectLifecyclePhase4CertificationRow {
 pub(super) fn host_override_denial_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> EffectLifecyclePhase4CertificationRow {
-    let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(
-        execution,
-        &mut runtime,
-        "before",
-        BranchId("main".to_string()),
-    );
+    let runtime = relational_runtime_with_intent_strategy();
+    let entity_id = create_entity(execution, &runtime, "before", BranchId("main".to_string()));
     let bridge = test_bridge_with_writeback_authority();
     let basis = EffectAuthoringBasis::from(branch_mutation_basis("branch-a"));
     let raw = raw_mutation_effect_with_binding(
@@ -180,16 +175,11 @@ pub(super) fn host_override_denial_row(
 pub(super) fn stale_after_admission_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> EffectLifecyclePhase4CertificationRow {
-    let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(
-        execution,
-        &mut runtime,
-        "before",
-        BranchId("main".to_string()),
-    );
+    let runtime = relational_runtime_with_intent_strategy();
+    let entity_id = create_entity(execution, &runtime, "before", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
         execution,
-        &mut runtime,
+        &runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
     )
@@ -210,17 +200,14 @@ pub(super) fn stale_after_admission_row(
     };
     create_entity(
         execution,
-        &mut runtime,
+        &runtime,
         "intervening",
         BranchId("branch-a".to_string()),
     );
     let denial = scope_admitted_effect_plan(admitted)
         .lower()
         .expect("mutation should still lower after admission")
-        .execute_with(
-            execution,
-            EffectExecutionAuthority::relational(&mut runtime),
-        )
+        .execute_with(execution, EffectExecutionAuthority::relational(&runtime))
         .expect_err("changed truth after admission should deny at execution");
     let denial = denial.denial().expect("stale admission is a denial");
     EffectLifecyclePhase4CertificationRow::new(
@@ -237,16 +224,11 @@ pub(super) fn stale_after_admission_row(
 pub(super) fn stale_after_lowering_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> EffectLifecyclePhase4CertificationRow {
-    let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(
-        execution,
-        &mut runtime,
-        "before",
-        BranchId("main".to_string()),
-    );
+    let runtime = relational_runtime_with_intent_strategy();
+    let entity_id = create_entity(execution, &runtime, "before", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
         execution,
-        &mut runtime,
+        &runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
     )
@@ -275,15 +257,12 @@ pub(super) fn stale_after_lowering_row(
     .expect("mutation should lower");
     create_entity(
         execution,
-        &mut runtime,
+        &runtime,
         "intervening",
         BranchId("branch-a".to_string()),
     );
     let denial = lowered
-        .execute_with(
-            execution,
-            EffectExecutionAuthority::relational(&mut runtime),
-        )
+        .execute_with(execution, EffectExecutionAuthority::relational(&runtime))
         .expect_err("retained lowered artifact should stale-deny");
     let denial = denial.denial().expect("stale lowering is a denial");
     EffectLifecyclePhase4CertificationRow::new(

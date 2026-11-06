@@ -1,4 +1,4 @@
-//! Fresh Directory completion publication; stored meaning grants no authority.
+//! Location-independent bootstrap completion; stored meaning grants no authority.
 mod codec;
 mod publication;
 pub(in crate::domain_computation::primary_graph) mod readmission;

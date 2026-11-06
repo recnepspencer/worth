@@ -23,6 +23,38 @@ pub(super) struct PreparedAuthoredIdentity {
 }
 
 impl PreparedAuthoredIdentity {
+    pub(super) fn retirement_anchor(&self) -> Option<EntityId> {
+        (self.declaration.parts().source_posture == Posture::Create).then_some(self.original)
+    }
+
+    pub(super) fn restoration_anchor<'a>(
+        &self,
+        mut roles: impl Iterator<
+            Item = (
+                &'a str,
+                Posture,
+                &'a str,
+                &'a worth_relational::facade::transactions::EntityReference,
+            ),
+        >,
+    ) -> Option<(
+        EntityId,
+        worth_relational::facade::transactions::CreatedEntityRef,
+    )> {
+        let parts = self.declaration.parts();
+        if parts.source_posture != Posture::Retire {
+            return None;
+        }
+        roles.find_map(|(name, posture, _, target)| match target {
+            worth_relational::facade::transactions::EntityReference::Created(target)
+                if name == parts.inverse_role && posture == Posture::Create =>
+            {
+                Some((self.original, target.clone()))
+            }
+            _ => None,
+        })
+    }
+
     pub(super) fn prepare<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
         source: &WorthQuerySelectedCorrectionSource<'_, S>,
         request: &worth_execution::ExecutionRequest<'_, '_>,

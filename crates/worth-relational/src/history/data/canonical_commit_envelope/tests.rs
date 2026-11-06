@@ -25,6 +25,7 @@ fn envelope_with_patch_and_update(
     update_target: EntityId,
 ) -> CanonicalCommitEnvelope {
     let draft = crate::history::data::CanonicalCommitEnvelopeDraft::new(
+        Default::default(),
         crate::history::data::CanonicalIndexDefinitionDelta::prepared(1, 1, Vec::new(), None),
         RelationalCommitReceipt {
             commit_id: CommitId(1),

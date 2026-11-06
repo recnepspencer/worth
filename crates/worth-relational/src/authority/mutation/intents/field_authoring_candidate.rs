@@ -8,7 +8,7 @@ mod allocation;
 mod selection;
 #[cfg(test)]
 mod tests;
-pub(super) use allocation::{admit_readmission, resize, retained_patch_bytes};
+pub(super) use allocation::{admit_readmission, readmission_bytes, resize, retained_patch_bytes};
 
 #[derive(Clone, Copy)]
 pub(crate) enum FieldAuthoringDomain {

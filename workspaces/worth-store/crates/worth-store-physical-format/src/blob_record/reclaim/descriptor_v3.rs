@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use super::super::envelope::{
     canonical_frame_sha256, decode, nonzero_32, visit_canonical_frame, BLOB_RECORD_HEADER_BYTES,
@@ -16,12 +17,12 @@ const CUSTODY_DIGEST_DOMAIN: &[u8] = b"store.physical.released-drop-custody.v1";
 /// bind this to the selected descriptor, reservation, and durable drop fate.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ReleasedDropCustodyV1 {
-    source_root_frame_sha256: [u8; 32],
-    source_free_space_frame_sha256: [u8; 32],
-    selected_route_inventory_sha256: [u8; 32],
-    authenticated_closure_edge_sha256: [u8; 32],
-    external_edge_audit_sha256: [u8; 32],
-    postorder_drop_sha256: [u8; 32],
+    source_root_frame_sha256: CanonicalDigestId,
+    source_free_space_frame_sha256: CanonicalDigestId,
+    selected_route_inventory_sha256: CanonicalDigestId,
+    authenticated_closure_edge_sha256: CanonicalDigestId,
+    external_edge_audit_sha256: CanonicalDigestId,
+    postorder_drop_sha256: CanonicalDigestId,
     request: OriginalDropReservationRequestV1,
 }
 
@@ -37,33 +38,41 @@ impl ReleasedDropCustodyV1 {
         request: OriginalDropReservationRequestV1,
     ) -> Result<Self, BlobRecordDenial> {
         Ok(Self {
-            source_root_frame_sha256: nonzero_32(source_root_frame_sha256)?,
-            source_free_space_frame_sha256: nonzero_32(source_free_space_frame_sha256)?,
-            selected_route_inventory_sha256: nonzero_32(selected_route_inventory_sha256)?,
-            authenticated_closure_edge_sha256: nonzero_32(authenticated_closure_edge_sha256)?,
-            external_edge_audit_sha256: nonzero_32(external_edge_audit_sha256)?,
-            postorder_drop_sha256: nonzero_32(postorder_drop_sha256)?,
+            source_root_frame_sha256: CanonicalDigestId::new(nonzero_32(source_root_frame_sha256)?),
+            source_free_space_frame_sha256: CanonicalDigestId::new(nonzero_32(
+                source_free_space_frame_sha256,
+            )?),
+            selected_route_inventory_sha256: CanonicalDigestId::new(nonzero_32(
+                selected_route_inventory_sha256,
+            )?),
+            authenticated_closure_edge_sha256: CanonicalDigestId::new(nonzero_32(
+                authenticated_closure_edge_sha256,
+            )?),
+            external_edge_audit_sha256: CanonicalDigestId::new(nonzero_32(
+                external_edge_audit_sha256,
+            )?),
+            postorder_drop_sha256: CanonicalDigestId::new(nonzero_32(postorder_drop_sha256)?),
             request,
         })
     }
 
     pub const fn source_root_frame_sha256(self) -> [u8; 32] {
-        self.source_root_frame_sha256
+        *self.source_root_frame_sha256.bytes()
     }
     pub const fn source_free_space_frame_sha256(self) -> [u8; 32] {
-        self.source_free_space_frame_sha256
+        *self.source_free_space_frame_sha256.bytes()
     }
     pub const fn selected_route_inventory_sha256(self) -> [u8; 32] {
-        self.selected_route_inventory_sha256
+        *self.selected_route_inventory_sha256.bytes()
     }
     pub const fn authenticated_closure_edge_sha256(self) -> [u8; 32] {
-        self.authenticated_closure_edge_sha256
+        *self.authenticated_closure_edge_sha256.bytes()
     }
     pub const fn external_edge_audit_sha256(self) -> [u8; 32] {
-        self.external_edge_audit_sha256
+        *self.external_edge_audit_sha256.bytes()
     }
     pub const fn postorder_drop_sha256(self) -> [u8; 32] {
-        self.postorder_drop_sha256
+        *self.postorder_drop_sha256.bytes()
     }
     pub const fn request(self) -> OriginalDropReservationRequestV1 {
         self.request
@@ -188,12 +197,12 @@ impl BlobReclaimDescriptorV3 {
         self.base.visit_payload(emit);
         emit(&[CUSTODY_VERSION]);
         for digest in [
-            self.custody.source_root_frame_sha256,
-            self.custody.source_free_space_frame_sha256,
-            self.custody.selected_route_inventory_sha256,
-            self.custody.authenticated_closure_edge_sha256,
-            self.custody.external_edge_audit_sha256,
-            self.custody.postorder_drop_sha256,
+            *self.custody.source_root_frame_sha256.bytes(),
+            *self.custody.source_free_space_frame_sha256.bytes(),
+            *self.custody.selected_route_inventory_sha256.bytes(),
+            *self.custody.authenticated_closure_edge_sha256.bytes(),
+            *self.custody.external_edge_audit_sha256.bytes(),
+            *self.custody.postorder_drop_sha256.bytes(),
             self.custody.request.idempotency(),
             self.custody.request.fingerprint(),
         ] {

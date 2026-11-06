@@ -1,4 +1,6 @@
+mod retained_backing;
 mod retirement;
+pub(crate) use retained_backing::{admit_validated_for_request, CompositeBasisBackingDenial};
 pub(crate) use retirement::CompositeBasisRetirement;
 use std::sync::Arc;
 
@@ -26,10 +28,11 @@ pub struct AdmittedCompositeRuntimeWorldBasis {
     inner: Arc<AdmittedCompositeRuntimeWorldBasisInner>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct AdmittedCompositeRuntimeWorldBasisInner {
     basis: CompositeRuntimeWorldBasis,
     admission: CompositeBasisAdmissionBinding,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 #[derive(Debug, Clone)]
@@ -48,6 +51,14 @@ impl Eq for AdmittedCompositeRuntimeWorldBasis {}
 
 impl AdmittedCompositeRuntimeWorldBasis {
     fn new(basis: CompositeRuntimeWorldBasis, identity: CompositeBasisKey) -> Self {
+        Self::with_backing(basis, identity, None)
+    }
+
+    fn with_backing(
+        basis: CompositeRuntimeWorldBasis,
+        identity: CompositeBasisKey,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Self {
         let authority =
             AuthorityWitness::from_authority_marker(CompositeBasisAdmissionAuthorityMarker::seal());
         Self {
@@ -57,6 +68,7 @@ impl AdmittedCompositeRuntimeWorldBasis {
                     identity,
                     _authority: Arc::new(authority),
                 },
+                _memory: memory,
             }),
         }
     }

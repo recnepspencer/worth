@@ -7,12 +7,14 @@ mod checkpoint;
 mod close;
 mod deadline;
 mod descriptor;
+mod discard;
 mod frame_encoding;
 mod home_context;
 #[cfg(feature = "certification-test-authority")]
 mod home_controls_for_test;
 mod home_request;
 mod open;
+mod opening_control;
 mod registry;
 mod relational_preparation;
 mod request_stage;

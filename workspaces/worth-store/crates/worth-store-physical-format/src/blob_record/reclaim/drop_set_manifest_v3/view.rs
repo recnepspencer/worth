@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use crate::PersistedRecordIdentity;
 
@@ -25,7 +26,7 @@ pub struct DropSetManifestV3View<'a> {
     store: [u8; 16],
     reclaim_attempt: [u8; 16],
     source_basis: BlobReclaimSourceBasisV1,
-    dropped_digest: [u8; 32],
+    dropped_digest: CanonicalDigestId,
     dropped: DroppedIdentities<'a>,
     count: u16,
     manifest_selected_generation: u64,
@@ -133,7 +134,7 @@ impl<'a> DropSetManifestV3View<'a> {
             store,
             reclaim_attempt,
             source_basis,
-            dropped_digest,
+            dropped_digest: CanonicalDigestId::new(dropped_digest),
             dropped: DroppedIdentities::Encoded(bytes),
             count,
             manifest_selected_generation,
@@ -145,7 +146,7 @@ impl<'a> DropSetManifestV3View<'a> {
             store: manifest.store(),
             reclaim_attempt: manifest.reclaim_attempt(),
             source_basis: manifest.source_basis(),
-            dropped_digest: manifest.dropped_digest(),
+            dropped_digest: CanonicalDigestId::new(manifest.dropped_digest()),
             dropped: DroppedIdentities::Owned(manifest.dropped()),
             count: manifest.count(),
             manifest_selected_generation: manifest.never_reserved_slot_generation(),
@@ -210,7 +211,7 @@ impl<'a> DropSetManifestV3View<'a> {
         emit(&(self.source_basis.encoded_len() as u16).to_le_bytes());
         self.source_basis.visit_bytes(emit);
         emit(&self.count.to_le_bytes());
-        emit(&self.dropped_digest);
+        emit(self.dropped_digest.bytes());
         match self.dropped {
             DroppedIdentities::Encoded(bytes) => emit(bytes),
             DroppedIdentities::Owned(records) => {

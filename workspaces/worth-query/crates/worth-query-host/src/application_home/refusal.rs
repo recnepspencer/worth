@@ -133,14 +133,7 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
 
 #[derive(Debug)]
 pub enum HomeCustodyReadmissionDenial {
-    Execution(worth_execution::WorkCeilingDenial),
-    WorldUnavailable(RuntimeWorldOwnerUnavailable),
-    RetainedWorldCustody {
-        installed: usize,
-        reserved: usize,
-        abandoned: usize,
-        updating: usize,
-    },
+    Query(QueryHomeCustodyReadmissionDenial),
 }
 
 impl<Schema: ApplicationSchemaComposition, Program> std::fmt::Debug

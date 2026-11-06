@@ -10,7 +10,7 @@ pub use cleanup_required::{
 };
 
 mod commit_deferred;
-mod commit_outcome;
+pub(crate) mod commit_outcome;
 mod commit_receipt;
 mod committed_publication;
 
@@ -35,6 +35,6 @@ pub use committed_publication::WorthQueryCommittedProductPublication;
 
 pub(in crate::domain_computation::primary_graph) use commit_receipt::MaterializedCommittedField;
 
-pub(in crate::domain_computation) use commit_receipt::WorthQueryPendingApplicationCommitReceipt;
+pub use commit_receipt::WorthQueryPendingApplicationCommitReceipt;
 
 pub(in crate::domain_computation) use cleanup_receipt::RetainedOriginalCleanupCommit;

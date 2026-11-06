@@ -27,7 +27,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         loop {
             match admit() {
                 Err(Denial::Refused(AdmissionRefusal::ObservationCapacityExhausted)) => {
-                    if !matches!(self.output_demands.reclaim_unheld_observation(), Ok(true)) {
+                    if !matches!(
+                        self.runtime.output_demands.reclaim_unheld_observation(),
+                        Ok(true)
+                    ) {
                         return Err(Denial::Refused(
                             AdmissionRefusal::ObservationCapacityExhausted,
                         ));

@@ -283,7 +283,7 @@ fn support_contract() -> domain::WorthQueryOperationSupportRequirements {
     }
 }
 
-fn denial(detail: impl Into<String>) -> WorthQueryOutputReadinessContractDenial {
+pub fn denial(detail: impl Into<String>) -> WorthQueryOutputReadinessContractDenial {
     WorthQueryOutputReadinessContractDenial {
         detail: detail.into(),
         locus: None,

@@ -5,6 +5,7 @@ use super::*;
 pub(crate) trait RuntimeWorldRecoveryService:
     crate::lifecycle::availability::RuntimeWorldAvailability
 {
+    fn owner_identity(&self) -> crate::identity::RuntimeWorldOwnerIdentity;
     fn retained_commits(
         &self,
         candidates: &[crate::identity::CompositeCommitIdentity],
@@ -23,6 +24,11 @@ pub(crate) trait RuntimeWorldRecoveryService:
         crate::recovery::WorldRecoveredUnpublishedEffects,
         crate::recovery::RuntimeWorldRecoveryDenial,
     >;
+    fn continue_recovered_effects(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effects: crate::recovery::WorldRecoveredUnpublishedEffects,
+    ) -> crate::recovery::WorldRecoveredContinuationOutcome;
     fn release_recovered_effects(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -44,13 +50,20 @@ pub(crate) trait RuntimeWorldRecoveryService:
     ) -> Result<ProductUnpublishedOwnerEffects, crate::recovery::RuntimeWorldRecoveryDenial>;
     fn release_effects(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
         minimum_age_ticks: u64,
+        native: Option<worth_relational::facade::durability::ObservedRelationalMemoryCommit>,
+    ) -> Result<crate::recovery::WorldReleasedEffects, crate::recovery::RuntimeWorldRecoveryDenial>;
+    fn released_original_page(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        after: Option<&crate::identity::ProductUnpublishedOwnerEffectsIdentity>,
+        maximum: std::num::NonZeroUsize,
     ) -> Result<
-        crate::recovery::ProductUnpublishedCleanup,
-        crate::recovery::RuntimeWorldRecoveryDenial,
+        crate::recovery::WorldReleasedOriginalPage,
+        crate::durability::WorldDurableMediumDenial,
     >;
-
     fn continue_effects(
         &self,
         effects: ProductUnpublishedOwnerEffects,

@@ -75,10 +75,13 @@ fn reopened_home_refuses_the_prior_open_branch_selector_before_effect() {
         contacts.clone(),
     );
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
-        request.open_in_advancement(&phase)
+        Box::new(
+            request
+                .open_in_advancement(&phase)
+                .unwrap_or_else(|refused| opening_failed("stale-selector writer Home", &refused)),
+        )
     })
-    .unwrap()
-    .unwrap_or_else(|refused| opening_failed("stale-selector writer Home", &refused));
+    .unwrap();
     let stale = home.runtime().runtime().current_world();
     let (_, live) = scope();
     assert!(matches!(
@@ -93,10 +96,13 @@ fn reopened_home_refuses_the_prior_open_branch_selector_before_effect() {
             panic!("existing Home cannot initialize")
         });
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
-        request.open_in_advancement(&phase)
+        Box::new(
+            request
+                .open_in_advancement(&phase)
+                .unwrap_or_else(|refused| opening_failed("stale-selector reader Home", &refused)),
+        )
     })
-    .unwrap()
-    .unwrap_or_else(|refused| opening_failed("stale-selector reader Home", &refused));
+    .unwrap();
     let principal = identity::inspection_authentication::authenticate(
         home.runtime().runtime().installed_schema(),
         &live,
@@ -119,10 +125,21 @@ fn reopened_home_refuses_the_prior_open_branch_selector_before_effect() {
     match answer {
         Err(Denial::ProductSelection(denial)) => assert_eq!(
             denial,
-            BranchDenial::Refused(WorthQueryProductBranchAdmissionRefusalKind::ForeignOwner)
+            BranchDenial::Refused(WorthQueryProductBranchAdmissionRefusalKind::StaleIncarnation)
         ),
         other => panic!("the previous open's selector grants no current admission: {other:?}"),
     }
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
     assert_eq!(balance(home.runtime(), &live), 8);
+    assert!(
+        matches!(
+            set(home.runtime(), &live, 0x7374616c65, 8).unwrap(),
+            Outcome::RecoveredCommitted(_)
+        ),
+        "fresh admission still resolves the original durable occurrence"
+    );
+    assert_eq!(contacts.load(Ordering::SeqCst), 1);
 }
+
+mod capability_home;
+mod session_grant;

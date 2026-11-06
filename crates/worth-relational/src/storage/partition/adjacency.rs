@@ -7,8 +7,13 @@ mod carrier;
 #[cfg(test)]
 mod carrier_tests;
 mod ids;
+mod kind_memberships;
 mod request;
 pub(crate) use ids::AdjacencyIds;
+pub(crate) type HistoricalKindCustody = crate::storage::substrate::StorageAllocation<
+    std::sync::Mutex<worth_execution::ExecutionMemoryReservation>,
+>;
+
 type RelationSet = SharedMap<RelationId, ()>;
 
 #[derive(Debug, Clone)]
@@ -23,26 +28,11 @@ pub(crate) struct AdjacencyEntries {
     current: RelationSet,
     current_by_kind: Option<SharedMap<KindId, RelationSet>>,
     historical_by_kind: Option<SharedMap<KindId, RelationSet>>,
+    historical_kind_custody: Option<HistoricalKindCustody>,
     structural_revision_by_kind: Option<SharedMap<KindId, VersionId>>,
 }
 
 impl AdjacencySet {
-    /// Borrow canonical kind incidences without constructing checkpoint Vecs.
-    pub(crate) fn kind_memberships(
-        &self,
-        basis: super::AdjacencyKindBasis,
-    ) -> impl Iterator<Item = (KindId, RelationId)> + '_ {
-        let entries = self.entries();
-        let selected = match basis {
-            super::AdjacencyKindBasis::Current => &entries.current_by_kind,
-            super::AdjacencyKindBasis::Historical => &entries.historical_by_kind,
-        };
-        selected
-            .iter()
-            .flat_map(|map| map.iter())
-            .flat_map(|(&kind, ids)| ids.keys().map(move |&id| (kind, id)))
-    }
-
     pub(crate) fn index_historical_kind_for_request(
         &mut self,
         kind: KindId,
@@ -107,6 +97,7 @@ impl AdjacencySet {
             current: RelationSet::new(),
             current_by_kind: None,
             historical_by_kind: None,
+            historical_kind_custody: None,
             structural_revision_by_kind: None,
         };
         match policy.backend {
@@ -123,6 +114,7 @@ impl AdjacencySet {
             current: current.into_iter().map(|id| (id, ())).collect(),
             current_by_kind: None,
             historical_by_kind: None,
+            historical_kind_custody: None,
             structural_revision_by_kind: (!structural_revisions.is_empty())
                 .then(|| structural_revisions.into_iter().collect()),
         })
@@ -149,10 +141,43 @@ impl AdjacencySet {
         let entries = self.entries_mut();
         entries.current_by_kind = None;
         entries.historical_by_kind = None;
+        entries.historical_kind_custody = None;
     }
 
+    #[cfg(test)]
     pub(crate) fn reset_historical_kind_buckets(&mut self) {
-        self.entries_mut().historical_by_kind = None;
+        self.reset_historical_kind_buckets_with_custody(None);
+    }
+
+    pub(crate) fn reset_historical_kind_buckets_with_custody(
+        &mut self,
+        custody: Option<HistoricalKindCustody>,
+    ) {
+        let entries = self.entries_mut();
+        entries.historical_by_kind = None;
+        entries.historical_kind_custody = custody;
+    }
+
+    pub(crate) fn historical_kind_custody(&self) -> Option<&HistoricalKindCustody> {
+        self.entries().historical_kind_custody.as_ref()
+    }
+
+    /// Persistent map path coexistence, including the separately owned values.
+    pub(crate) fn historical_kind_insertion_bound(&self, kind: KindId) -> Option<u64> {
+        let empty_kinds = SharedMap::new();
+        let empty_relations = RelationSet::new();
+        let kinds = match &self.entries().historical_by_kind {
+            Some(kinds) => kinds,
+            None => &empty_kinds,
+        };
+        let relations = match kinds.get(&kind) {
+            Some(relations) => relations,
+            None => &empty_relations,
+        };
+        kinds
+            .adoption_allocation_bound()?
+            .checked_add(relations.adoption_allocation_bound()?)?
+            .checked_add(256)
     }
 
     pub(crate) fn index_current_kind(&mut self, kind_id: KindId, relation_id: RelationId) {
@@ -249,27 +274,6 @@ impl AdjacencySet {
         )
     }
 
-    pub(crate) fn checkpoint_kind_memberships(
-        &self,
-        basis: super::AdjacencyKindBasis,
-    ) -> Vec<(KindId, Vec<RelationId>)> {
-        let entries = self.entries();
-        let selected = if matches!(basis, super::AdjacencyKindBasis::Historical) {
-            &entries.historical_by_kind
-        } else {
-            &entries.current_by_kind
-        };
-        selected
-            .as_ref()
-            .map(|kinds| {
-                kinds
-                    .iter()
-                    .map(|(&kind, ids)| (kind, ids.keys().copied().collect()))
-                    .collect()
-            })
-            .unwrap_or_default()
-    }
-
     pub(crate) fn historical_kind_ids(&self, kind_id: KindId) -> AdjacencyIds<'_> {
         AdjacencyIds::new(
             self.entries()
@@ -309,6 +313,10 @@ impl AdjacencySet {
 
     pub(crate) fn optional_cache_allocation_bytes(&self) -> u64 {
         let entries = self.entries();
+        let custody_bytes = entries
+            .historical_kind_custody
+            .as_ref()
+            .map_or(0, |_| HistoricalKindCustody::layout_bytes());
         [&entries.current_by_kind, &entries.historical_by_kind]
             .into_iter()
             .flatten()
@@ -321,6 +329,7 @@ impl AdjacencySet {
                 )
             })
             .sum::<u64>()
+            .saturating_add(custody_bytes)
             .saturating_add(
                 entries
                     .structural_revision_by_kind

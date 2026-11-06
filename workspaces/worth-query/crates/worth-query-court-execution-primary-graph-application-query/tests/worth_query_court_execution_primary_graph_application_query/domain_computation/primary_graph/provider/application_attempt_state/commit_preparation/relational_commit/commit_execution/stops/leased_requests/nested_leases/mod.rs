@@ -1,0 +1,117 @@
+use crate::process::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::stops::leased_requests::*;
+
+#[test]
+fn refusing_ancestor_through_both_public_doors() {
+    let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    in_isolated_process(
+        concat!(
+            module_path!(),
+            "::refusing_ancestor_through_both_public_doors"
+        ),
+        || {
+            let lease = authority()
+                .request_lease(request(32 * 1024 * 1024, 1_000_000))
+                .unwrap();
+            let _held = lease.reserve_memory(32 * 1024 * 1024).unwrap();
+            check_lease(execution, &lease, |stop, ancestor| {
+                let Outcome::Denied(failure) = stop else {
+                    panic!("wrong ancestor stop")
+                };
+                assert!(matches!(
+                    failure.kind(),
+                    Kind::ExecutionResource {
+                        denial: Resource::MemoryLimit {
+                            requested: 1..,
+                            admitted: 0,
+                            level: Level::Policy
+                        },
+                        policy_ancestor: Some(actual),
+                        ..
+                    } if actual == ancestor
+                ));
+            });
+        },
+    );
+}
+
+#[test]
+fn unrelated_lease_through_public_commit() {
+    in_isolated_process(
+        concat!(module_path!(), "::unrelated_lease_through_public_commit"),
+        || {
+            use worth_execution::ExecutionScan;
+            use worth_execution::MapKernelFailure;
+            use worth_execution::ScanOutcome;
+            use worth_relational::facade::transactions::CommitExecutionDenialKind;
+            let runtime = RelationalRuntimeApi::builder()
+                .schema_registry(schema())
+                .build()
+                .expect("valid native runtime configuration");
+            let before = runtime
+                .observe_branch(&runtime.main_branch_identity())
+                .unwrap()
+                .0;
+            let parent = authority()
+                .request_lease(request(32 * 1024 * 1024, 1_000_000))
+                .unwrap();
+            let unrelated = authority()
+                .request_lease(request(32 * 1024 * 1024, 1_000_000))
+                .unwrap();
+            let execution = &worth_execution::ExecutionRequest::leased(&unrelated);
+            // Only a flat Copy denial crosses this probe's kernel boundary; the
+            // rejected transaction and its log are dropped before returning.
+            let captured = std::sync::Mutex::new(None);
+            let identity = worth_foundational::PartitionIdentity::new(7);
+            let scan =
+                ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())]).unwrap();
+            let outcome = scan.run(Some(&parent), (), 0, 0, 0, 0, |_, _, _| {
+                let error = runtime
+                    .prepare_branch_transaction(execution, transaction(&runtime, "nested-target"))
+                    .expect_err("a public preparation cannot nest under an unrelated lease");
+                let TransactionCommitError::Execution { denial, .. } = error else {
+                    panic!("wrong nested refusal")
+                };
+                *captured.lock().unwrap() = Some(denial);
+                Ok::<_, MapKernelFailure<()>>(((), ()))
+            });
+            // A typed inner refusal cannot acknowledge the original request's
+            // stop at handoff. Preserve both the outer stop and inner cause.
+            assert!(matches!(
+                outcome,
+                ScanOutcome::Stopped {
+                    reason: worth_execution::MapStop::Failure {
+                        cause: MapKernelFailure::Stop(
+                            worth_execution::MapKernelStop::NestedStopped
+                        ),
+                        ..
+                    },
+                    ..
+                }
+            ));
+            let denial = captured
+                .into_inner()
+                .unwrap()
+                .expect("public commit produced a denial");
+            let CommitExecutionDenialKind::Cause(cause) = denial.kind;
+            let stop = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, denial.partition_identity);
+            let Stop::PreEffectDenied(failure) = stop else {
+                panic!("nested cause must reach pre-effect refusal");
+            };
+            let outcome = provider_compare_denied(Compare::ProviderSession(failure));
+            let Outcome::Denied(failure) = &outcome else {
+                panic!("nested preparation refusal folded");
+            };
+            worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::conditional_operation::application_operation_reentry::sealed_commit::denial::tests::assert_preparation_retry(failure);
+            assert_eq!(resource(outcome), Resource::NestedLeaseMisuse);
+            assert_eq!(
+                runtime
+                    .observe_branch(&runtime.main_branch_identity())
+                    .unwrap()
+                    .0,
+                before
+            );
+        },
+    );
+}

@@ -9,13 +9,13 @@ use worth_execution::MemoryLimitLevel;
 mod chunk;
 mod concatenation;
 mod copied;
-mod iteration;
-mod native;
+pub(crate) mod iteration;
+pub(crate) mod native;
 mod patch;
 mod performed_fields;
 pub(in crate::domain_computation::primary_graph) use patch::NativeFactPatchBuilder;
 
-mod sequence;
+pub(crate) mod sequence;
 #[cfg(test)]
 mod tests;
 pub(in crate::domain_computation::primary_graph) use iteration::FactIter;
@@ -53,7 +53,7 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Na
     }
 }
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct FactPayload {
+pub struct FactPayload {
     storage: FactStorage,
     start: usize,
     length: usize,
@@ -134,10 +134,7 @@ impl FactPayload {
     pub(in crate::domain_computation::primary_graph) fn is_empty(&self) -> bool {
         self.length == 0
     }
-    pub(in crate::domain_computation::primary_graph) fn get(
-        &self,
-        ordinal: usize,
-    ) -> Option<&Fact> {
+    pub fn get(&self, ordinal: usize) -> Option<&Fact> {
         if ordinal >= self.length {
             return None;
         }
@@ -169,9 +166,7 @@ impl FactPayload {
             height: self.height,
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn native(
-        facts: worth_execution::ExecutionArray<Fact>,
-    ) -> Self {
+    pub fn native(facts: worth_execution::ExecutionArray<Fact>) -> Self {
         Self::copied_native(facts, None, None)
     }
 
@@ -304,3 +299,5 @@ fn resident_bytes(facts: &[Fact], backing: Option<u64>) -> Option<u64> {
         bytes.checked_add(fact.additional_charged_bytes())
     })
 }
+
+mod court_doors_for_test;

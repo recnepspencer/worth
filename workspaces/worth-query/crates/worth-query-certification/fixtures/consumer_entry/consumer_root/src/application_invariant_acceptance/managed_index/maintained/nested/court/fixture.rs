@@ -1,5 +1,6 @@
 //! All graph edits use installed conventional authoring and actual publication.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 pub(super) fn publish(world: &host::Host, model: &mut Model, key: &mut u64, edit: Edit) {
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
@@ -29,8 +30,14 @@ pub(super) fn publish(world: &host::Host, model: &mut Model, key: &mut u64, edit
     );
     model.apply(&edit);
 }
-pub(super) fn setup() -> (host::Host, Arc<prefix::Calls>, Arc<rule::Calls>, Model, u64) {
-    let calls = Arc::new(prefix::Calls::default());
+pub(super) fn setup() -> (
+    host::Host,
+    Arc<prefix_observation::Calls>,
+    Arc<rule::Calls>,
+    Model,
+    u64,
+) {
+    let calls = Arc::new(prefix_observation::Calls::default());
     let records = Arc::new(rule::Calls::default());
     let world = host::install(Arc::clone(&calls), Arc::clone(&records));
     let mut model = Model::default();

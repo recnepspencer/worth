@@ -8,21 +8,20 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFai
 /// Governance keeps the pending value and its computation/disclosure copy alive
 /// together, so both copies are admitted before the first is constructed.
 /// Existing capability authorization remains shared under its original owner.
-pub(in crate::domain_computation) fn prepare_funded_pending_disclosure<
-    Schema,
-    Scope,
-    Capability,
-    Operation,
-    Input,
-    E,
->(
+pub fn prepare_funded_pending_disclosure<Schema, Scope, Capability, Operation, Input, E>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     binding: &ApplicationSchemaBindingIdentity,
     principal: EntityId,
     scope: EntityId,
     capability: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+    validate_original_request: impl FnOnce(
+        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    ) -> Result<(), E>,
     validate_current_request: impl FnOnce() -> Result<(), E>,
     mismatch: impl Fn() -> E,
+    incarnation_refusal: impl FnOnce(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ) -> E,
     execution: &ExecutionRequest<'_, '_>,
     memory: &mut Option<ExecutionMemoryReservation>,
     storage_stop: impl Fn(CaptureStop<RetainedStorageDenial>) -> E,
@@ -37,8 +36,10 @@ where
         principal,
         scope,
         capability,
+        validate_original_request,
         validate_current_request,
         mismatch,
+        incarnation_refusal,
         |name, kind, value| {
             let copied = run_retained_stage(execution, memory, |context, memory| {
                 checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;

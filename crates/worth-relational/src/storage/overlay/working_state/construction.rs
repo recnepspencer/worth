@@ -18,6 +18,7 @@ impl WorkingState {
         adjacency_policy: AdjacencyPolicy,
     ) -> Self {
         Self {
+            content: Default::default(),
             adjacency_policy,
             clone_mode: PartitionCloneMode::Full,
             entity_working_set_layout: EntityWorkingSetLayout::CanonicalSoA,
@@ -93,6 +94,7 @@ impl WorkingState {
             }
         }
         Self {
+            content: Default::default(),
             adjacency_policy,
             clone_mode,
             entity_working_set_layout,

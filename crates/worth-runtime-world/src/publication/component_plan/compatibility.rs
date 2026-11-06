@@ -31,7 +31,7 @@ pub(super) fn plan_is_internally_consistent(plan: &LoweredOwnerComponentPlan) ->
 fn relational_plan_is_compatible(plan: &RelationalComponentPlan, changes: bool) -> bool {
     match plan.posture() {
         RelationalComponentPlanPosture::RetainExact => {
-            !changes && plan.prepared_candidate().is_none()
+            !changes && plan.prepared_candidate().is_none() && plan.current_read().is_none()
         }
         RelationalComponentPlanPosture::PublishPrepared => {
             changes
@@ -42,6 +42,7 @@ fn relational_plan_is_compatible(plan: &RelationalComponentPlan, changes: bool) 
         }
         RelationalComponentPlanPosture::AdoptSettled => {
             changes
+                && plan.current_read().is_none()
                 && plan.prepared_candidate().is_none()
                 && plan.settled_adoption().is_some_and(|adoption| {
                     adoption.successor_basis().identity().branch_id()

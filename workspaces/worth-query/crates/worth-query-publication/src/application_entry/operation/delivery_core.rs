@@ -62,6 +62,26 @@ where
         retained: &WorthQueryApplicationRetainedRequest<'_, '_, '_, Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<(), WorthQueryOperationDeliveryDenial> {
+        self.selected_action_at(retained, phase)?;
+        retained.require_current_program_output_in_advancement(phase, &self.settlement).map_err(|denial| match denial {
+            WorthQueryOutputCurrentnessDenial::Output(output) if matches!(output.kind(), worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded) => WorthQueryOperationDeliveryDenial::Stale(output),
+            other => WorthQueryOperationDeliveryDenial::Currentness(other),
+        })
+    }
+
+    /// Original installed action admission shared by delivery and history's
+    /// complete-output qualification, before either consumes lineage evidence.
+    pub(super) fn selected_action_at<'owner>(
+        &'owner self,
+        retained: &WorthQueryApplicationRetainedRequest<'_, '_, '_, Schema>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+    ) -> Result<
+        worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
+            'owner,
+            Schema,
+        >,
+        WorthQueryOperationDeliveryDenial,
+    > {
         use WorthQueryOperationDeliveryDenial as Denial;
         let selected = retained
             .retained_observation()
@@ -73,16 +93,15 @@ where
                 WorthQueryOutputCurrentnessDenial::ForeignBranch,
             ));
         }
-        let owner = self
-            .runtime
-            .selected_program_owner(&selected)
-            .map_err(Denial::Program)?;
-        owner
-            .resolve_declared_action::<Binding<Schema, Intent>>(&self.installed_action)
-            .map_err(Denial::Action)?;
-        retained.require_current_program_output_in_advancement(phase, &self.settlement).map_err(|denial| match denial {
-            WorthQueryOutputCurrentnessDenial::Output(output) if matches!(output.kind(), worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded) => Denial::Stale(output),
-            other => Denial::Currentness(other),
-        })
+        {
+            let owner = self
+                .runtime
+                .selected_program_owner(&selected)
+                .map_err(Denial::Program)?;
+            owner
+                .resolve_declared_action::<Binding<Schema, Intent>>(&self.installed_action)
+                .map_err(Denial::Action)?;
+        }
+        Ok(selected)
     }
 }

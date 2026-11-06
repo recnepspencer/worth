@@ -380,4 +380,3 @@ These are composed results from the named normal lanes and exact failed/affected
 
 Granted integration entries: World exact original publication observation/readmitted facade; Foundation recorded owner/head/attempt/settlement vocabulary; Native original created-row accessor and compact observation facade; Query recovered receipt/causal/outbox and typed original-owner execution branches; Host-forwarded ProductUnpublishedCause; Bank historical_original forwarding to existing Query admission. Removed historical receipt facades, retry-cache wiring and stale authority variants are clean cutovers.
 The only boundary configuration change is `tools/boundary-check/config/control-callers.txt`: exact Host request-stop observer, Native-effect/World-compare fate court, Host/Server concurrent history observers and Bank closed HTTP retained-effect scheduling caller. No caller-family widening, feature, constitution baseline or Source-opening exception was added.
-

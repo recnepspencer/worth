@@ -103,7 +103,13 @@ where
             WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
                 WorkflowProposalOutcome::RecoveredCommitted(receipt)
             }
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => WorkflowProposalOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())),
             WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                WorkflowProposalOutcome::Application(
+                    WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+                )
+            }
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                 WorkflowProposalOutcome::Application(
                     WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
@@ -133,7 +139,7 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(cause) = phase.execution_request_for(&self.product_runtime) {
+        if let Err(cause) = phase.execution_request_for(&self.runtime.product_runtime) {
             return WorkflowProposalOutcome::Application(
                 crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
                     .into_commit_outcome()
@@ -202,6 +208,7 @@ where
             let committed_revision = performed.receipt().commit_reference().version_id;
             let progress_key = progress_update.key();
             let _ = self
+                .runtime
                 .primary_provider
                 .graph
                 .with_workflow_instance_progress_mut(progress_key, |retention| {

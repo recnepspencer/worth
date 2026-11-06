@@ -87,16 +87,6 @@ impl ReadmittedCanonicalCommit {
     }
 
     #[cfg(test)]
-    pub(crate) fn synchronize_patch_semantics_for_test(
-        &mut self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) {
-        self.journal = None;
-        self.positioned
-            .synchronize_patch_semantics_for_test(request);
-    }
-
-    #[cfg(test)]
     pub(crate) fn envelope_mut_for_test(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,

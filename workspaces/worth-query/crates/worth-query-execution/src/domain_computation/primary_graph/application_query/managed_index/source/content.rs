@@ -76,7 +76,11 @@ impl Entry {
         admit: &mut impl FnMut(u64) -> Result<(), E>,
         reserve: &mut (impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>
                   + ?Sized),
-        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault) -> E,
+        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault) -> E,
+        frames: &mut dyn FnMut(
+            &worth_relational::facade::content::RelationalContentFrame,
+            &worth_relational::facade::content::RelationalContentFrame,
+        ) -> Result<bool, E>,
     ) -> Result<bool, E> {
         admit(65)?;
         if self.occurrence != other.occurrence
@@ -99,6 +103,7 @@ impl Entry {
             admit,
             reserve,
             fault,
+            frames,
         )
     }
 }

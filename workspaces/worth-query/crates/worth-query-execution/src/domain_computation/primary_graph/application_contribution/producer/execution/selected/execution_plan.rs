@@ -14,7 +14,7 @@ pub(super) fn prepare_selected_execution<'owner, Schema, Binding>(
     required_output: RequiredOutputExecution,
     input: ValidatedProducerInput<'_>,
     successor_of: Option<[u8; 32]>,
-    commit_authority: WorthQueryProducerCommitAuthority,
+    commit_authority: ProducerInvocationAuthority<'owner>,
     edition: super::super::super::InstalledProducerEdition,
     producer_contacts: &mut usize,
 ) -> Result<super::super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop>
@@ -30,7 +30,7 @@ where
     SourceQuery<Schema, Binding>: 'static,
 {
     let execution = phase
-        .execution_request_for(&runtime.product_runtime)
+        .execution_request_for(&runtime.runtime.product_runtime)
         .map_err(|cause| {
             denial(
                 WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -84,7 +84,9 @@ where
         )
         .into());
     }
+    let proof = commit_authority.confirm_source(&execution, runtime, proof)?;
     let (source, observed_source) = proof.into_parts();
+    let control = super::super::select_invocation_control(&execution, runtime, &commit_authority)?;
     let input = this.provider.operation_input(&source);
     let prepared =
         super::super::selected_public::prepare_selected_public_mutation::<Schema, Binding>(
@@ -92,6 +94,7 @@ where
             this,
             runtime,
             shared,
+            control.as_ref(),
             principal,
             request_scope,
             &input,
@@ -101,6 +104,7 @@ where
         phase,
         runtime,
         shared,
+        control.as_ref(),
         principal,
         request_scope,
         prepared.principal.principal(),

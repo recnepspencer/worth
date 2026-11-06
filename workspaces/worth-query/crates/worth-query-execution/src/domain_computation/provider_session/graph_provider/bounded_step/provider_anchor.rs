@@ -142,6 +142,8 @@ impl<P: WorthQueryProviderSessionLifecycle> WorthQueryErasedProviderSessionLifec
 }
 
 pub struct WorthQueryGraphProviderAnchor {
+    pub(in crate::domain_computation) session_grant_control:
+        Arc<crate::domain_computation::ProviderSessionGrantControl>,
     pub(super) provider: Arc<dyn WorthQueryErasedGraphParticipationProvider>,
     pub(super) session_lifecycle: Option<Arc<dyn WorthQueryErasedProviderSessionLifecycle>>,
     pub(super) decision_fact_provider: Option<Arc<dyn WorthQueryErasedDecisionFactProvider>>,
@@ -192,7 +194,6 @@ impl WorthQueryGraphProviderAnchor {
         self.session_lifecycle.is_some()
     }
 
-    #[cfg(test)]
     pub(crate) fn retains_convergence_and_phase_seven_through_ten(&self) -> bool {
         self.convergence_provider.is_some()
             && self.session_lifecycle.is_some()
@@ -345,3 +346,5 @@ impl WorthQueryGraphProviderAnchor {
             .abort(session)
     }
 }
+
+mod court_doors_for_test;

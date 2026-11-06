@@ -8,6 +8,19 @@ mod acknowledged_claim;
 mod sequence;
 use sequence::{Commit, Demands, Trace, Xorshift, COMMITS, DEMANDS, HELD_ORDERS};
 
+// The positive history World's business calls keep their existing finite allowance.
+// Whole-history capture and reconstruction use their separate population request.
+const HISTORY_EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
+    worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            None,
+            Some(25_000_000),
+        ),
+    );
+
 const SEEDS: [u64; 4] = [0x9176_3c01, 0x9176_3c02, 0x9176_3c03, 0x9170_4004];
 const STEPS: usize = 40;
 
@@ -68,7 +81,12 @@ fn run(seed: u64, observations: u64, steps: usize, driven: &mut Driven) {
         } else {
             "opening"
         };
-        let application = install_observing(checkpoint.take(), ring_world::seed::<3>, observations);
+        let application = install_observing_with_policy(
+            checkpoint.take(),
+            ring_world::seed::<3>,
+            observations,
+            HISTORY_EXECUTION_POLICY,
+        );
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let court = Court::new(&application, &request, idempotency);
@@ -211,16 +229,25 @@ fn run(seed: u64, observations: u64, steps: usize, driven: &mut Driven) {
         drop((principal, scope));
         if step < steps {
             // Whatever the last step left marked and unsettled is captured so.
+            let capture = worth_query_host::facade::primary_graph::query_test_execution_authority_for_test()
+                .request_lease(worth_query_host::facade::runtime::LeaseRequest {
+                    policy: crate::checkpoint_recovery::support::observation::POPULATION_BOOTSTRAP_POLICY,
+                    cancellation: worth_query_host::facade::runtime::CancellationToken::new(),
+                    deadline: None,
+                }).expect("the population owns its original checkpoint-capture request");
             checkpoint = Some(
                 application
-                    .with_host_advancement(|host_phase| {
-                        application
-                            .capture_application_checkpoint(
-                                &host_phase,
-                                CapturePolicy::SystemAllocation,
-                            )
-                            .unwrap()
-                    })
+                    .with_funded_host_advancement(
+                        CapturePolicy::Execution(&capture),
+                        |host_phase| {
+                            application
+                                .capture_application_checkpoint(
+                                    &host_phase,
+                                    CapturePolicy::SystemAllocation,
+                                )
+                                .unwrap()
+                        },
+                    )
                     .expect("installed host call opens"),
             );
             driven.restores += 1;

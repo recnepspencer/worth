@@ -36,7 +36,7 @@ impl KernelContext<'_, '_> {
                     let meter = self.meter.borrow();
                     (
                         meter.limits.tokens.len(),
-                        meter.limits.deadline,
+                        meter.limits.deadline.clone(),
                         meter.accounting.is_some(),
                     )
                 };

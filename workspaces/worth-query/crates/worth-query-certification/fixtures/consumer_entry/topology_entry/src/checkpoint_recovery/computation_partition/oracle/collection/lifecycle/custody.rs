@@ -151,7 +151,7 @@ mod serial {
         foreign.close_conditional_runtime().unwrap();
         let cancellation = authentication::WorthQueryCancellationSource::new();
         cancellation.cancel();
-        let stopped_scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
+        let stopped_scope = authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let stopped = application.request(&principal, &stopped_scope);
         let original = match original.advance(&stopped) {
             WorthQueryProgramOutputOperationAdvance::Refused { operation, denial } => {

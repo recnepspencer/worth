@@ -146,8 +146,10 @@ where
                         }
                     }
                     Resolution::Unseen => return Ok(Step::Progress),
-                    resolution @ (Resolution::IntentDrift
-                    | Resolution::ProductPreparationPending(_)) => {
+                    resolution @ (Resolution::ReleasedOriginal(_)
+                    | Resolution::IntentDrift
+                    | Resolution::ProductPreparationPending(_)
+                    | Resolution::ProductUnpublished(_)) => {
                         self.keyed_terminal = Some(resolution);
                         return Ok(Step::Terminal);
                     }

@@ -82,10 +82,9 @@ impl WorthQueryPrimaryGraphProvider {
             .verify_expired_for_cleanup(correlations, now_unix_seconds)
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn destroy_completed_inbound_index_for_test(
-        &self,
-    ) {
+    pub fn destroy_completed_inbound_index_for_test(&self) {
         self.inbound_terminal_index.destroy_derived();
     }
 }
+
+mod court_doors_for_test;

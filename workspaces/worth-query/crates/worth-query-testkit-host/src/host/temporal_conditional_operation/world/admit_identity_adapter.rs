@@ -13,8 +13,7 @@ pub fn admit_identity_adapter(
             admission::authenticated_principal::WorthQueryAuthenticationAudience::new("host")
                 .unwrap(),
             admission::authenticated_principal::WorthQueryAuthenticationMethod::new("test")
-                .unwrap(),
-        ),
+                .unwrap(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         IdentityAdapter,
     )
     .unwrap()

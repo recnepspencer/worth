@@ -26,6 +26,7 @@ fn identity(field: ApplicationSchemaMember) -> super::ApplicationSchemaIdentity 
 
 fn field(presence: ApplicationFieldPresence) -> ApplicationSchemaMember {
     ApplicationSchemaMember::Field {
+        content_format: None,
         entity: "Record".to_string(),
         aspect: "Facts".to_string(),
         field: "Value".to_string(),

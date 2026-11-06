@@ -136,8 +136,7 @@ pub async fn prove_cancellation_denial(
     cancellation.cancel();
     let scope = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let error = identity
         .finish_authorization(pending, callback_value, &scope)
         .await

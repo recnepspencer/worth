@@ -17,8 +17,7 @@ fn cancellation_during_compute_stops_native_application_and_keeps_settled_work()
                 probe.cancel_at_checkpoint(source.clone(), phased_workflow::MEMBERS[at], held);
                 let scope = WorthQueryRequestScope::new(
                     Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-                    source.token(),
-                );
+                    source.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
                 let mut workspace = Policy::width(workers).workspace(&execution, &probe);
                 let run = start(&mut workspace);
                 let (actual, charged, failed) =

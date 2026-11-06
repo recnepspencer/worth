@@ -136,7 +136,10 @@ fn destruction_panic_does_not_release_an_interruption() {
             let child = parent
                 .child(LeaseRequest {
                     cancellation: cancellation.token(),
-                    deadline: deadline.then(|| Instant::now() - Duration::from_secs(1)),
+                    deadline: deadline.then(|| {
+                        crate::MonotonicClock::system()
+                            .deadline_at(Instant::now() - Duration::from_secs(1))
+                    }),
                     ..request(1, 1_000, 100)
                 })
                 .unwrap();

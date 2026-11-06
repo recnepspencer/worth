@@ -15,7 +15,7 @@ use super::ExecutionRequest;
 ///     bootstrap: &'run WorthQueryBootstrapAdvancementPhase<'scope>,
 ///     raw: ExecutionRequest<'run, 'run>,
 /// ) {
-///     let _ = plan.readmit(bootstrap);
+///     let _ = plan.admit_session(bootstrap);
 /// }
 /// ```
 /// ```
@@ -29,7 +29,7 @@ use super::ExecutionRequest;
 ///     bootstrap: &'run WorthQueryBootstrapAdvancementPhase<'scope>,
 ///     raw: ExecutionRequest<'run, 'run>,
 /// ) {
-///     let _ = plan.readmit(installed);
+///     let _ = plan.admit_session(installed);
 /// }
 /// ```
 /// A host-built raw request cannot readmit an installed provider plan.
@@ -44,7 +44,7 @@ use super::ExecutionRequest;
 ///     bootstrap: &'run WorthQueryBootstrapAdvancementPhase<'scope>,
 ///     raw: ExecutionRequest<'run, 'run>,
 /// ) {
-///     let _ = plan.readmit(raw);
+///     let _ = plan.admit_session(raw);
 /// }
 /// ```
 /// ```
@@ -58,7 +58,7 @@ use super::ExecutionRequest;
 ///     bootstrap: &'run WorthQueryBootstrapAdvancementPhase<'scope>,
 ///     raw: ExecutionRequest<'run, 'run>,
 /// ) {
-///     let _ = plan.readmit(installed);
+///     let _ = plan.admit_session(installed);
 /// }
 /// ```
 pub struct WorthQueryBootstrapAdvancementPhase<'scope> {

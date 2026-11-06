@@ -1,13 +1,22 @@
 //! Exact Source support equality; disclosed-row equality has different meaning.
 use super::*;
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ProjectionContentComparisonFault {
+    CapacityOverflow,
+    AllocationFailed,
+    ContentInconsistency,
+}
 
 impl WorthQueryApplicationDisclosedProjectionTree {
-    pub(in crate::domain_computation::primary_graph::application_query) fn same_one_hop_content<
-        E,
-    >(
+    pub fn same_one_hop_content<E>(
         &self,
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
+        fault: &mut impl FnMut(ProjectionContentComparisonFault) -> E,
+        frames: &mut dyn FnMut(
+            &worth_relational::facade::content::RelationalContentFrame,
+            &worth_relational::facade::content::RelationalContentFrame,
+        ) -> Result<bool, E>,
     ) -> Result<bool, E> {
         let left = self.raw_rows();
         let right = other.raw_rows();
@@ -16,11 +25,13 @@ impl WorthQueryApplicationDisclosedProjectionTree {
             return Ok(false);
         }
         for (left, right) in left.iter().zip(right) {
-            if !same_row(left, right, admit)? || left.relations.len() != right.relations.len() {
+            if !same_row(left, right, admit, fault, frames)?
+                || left.relations.len() != right.relations.len()
+            {
                 return Ok(false);
             }
             for (left, right) in left.relations.iter().zip(&right.relations) {
-                if !same_relation(left, right, admit)? {
+                if !same_relation(left, right, admit, fault, frames)? {
                     return Ok(false);
                 }
             }
@@ -58,6 +69,11 @@ fn same_relation<E>(
     left: &WorthQueryApplicationProjectedRelation,
     right: &WorthQueryApplicationProjectedRelation,
     admit: &mut impl FnMut(u64) -> Result<(), E>,
+    fault: &mut impl FnMut(ProjectionContentComparisonFault) -> E,
+    frames: &mut dyn FnMut(
+        &worth_relational::facade::content::RelationalContentFrame,
+        &worth_relational::facade::content::RelationalContentFrame,
+    ) -> Result<bool, E>,
 ) -> Result<bool, E> {
     if !same_relation_header(left, right, admit)? {
         return Ok(false);
@@ -67,7 +83,7 @@ fn same_relation<E>(
         // The installed qualification is one hop. Never omit a future depth.
         if !left.relations.is_empty()
             || !right.relations.is_empty()
-            || !same_row(left, right, admit)?
+            || !same_row(left, right, admit, fault, frames)?
         {
             return Ok(false);
         }
@@ -79,6 +95,11 @@ fn same_row<E>(
     left: &WorthQueryApplicationProjectionNode,
     right: &WorthQueryApplicationProjectionNode,
     admit: &mut impl FnMut(u64) -> Result<(), E>,
+    fault: &mut impl FnMut(ProjectionContentComparisonFault) -> E,
+    frames: &mut dyn FnMut(
+        &worth_relational::facade::content::RelationalContentFrame,
+        &worth_relational::facade::content::RelationalContentFrame,
+    ) -> Result<bool, E>,
 ) -> Result<bool, E> {
     admit(65)?;
     if left.entity_id != right.entity_id
@@ -102,11 +123,34 @@ fn same_row<E>(
         if !same_value(&left.value, &right.value, admit)? {
             return Ok(false);
         }
+        match (&left.value, &left.content, &right.content) {
+            (AspectValue::ContentRef(identity), Some(a), Some(b)) => {
+                if a.identity() != *identity || b.identity() != *identity {
+                    return Err(fault(
+                        ProjectionContentComparisonFault::ContentInconsistency,
+                    ));
+                }
+                if !frames(a, b)? {
+                    return Ok(false);
+                }
+            }
+            (AspectValue::ContentRef(_), _, _) => {
+                return Err(fault(
+                    ProjectionContentComparisonFault::ContentInconsistency,
+                ))
+            }
+            (_, None, None) => {}
+            _ => {
+                return Err(fault(
+                    ProjectionContentComparisonFault::ContentInconsistency,
+                ))
+            }
+        }
     }
     Ok(true)
 }
 
-fn same_value<E>(
+pub fn same_value<E>(
     left: &AspectValue,
     right: &AspectValue,
     admit: &mut impl FnMut(u64) -> Result<(), E>,
@@ -128,7 +172,7 @@ fn same_text<E>(
     Ok(left == right)
 }
 
-fn admit_pair_width<E>(
+pub fn admit_pair_width<E>(
     left: usize,
     right: usize,
     admit: &mut impl FnMut(u64) -> Result<(), E>,
@@ -139,6 +183,17 @@ fn admit_pair_width<E>(
     admit(right as u64)
 }
 
-#[cfg(test)]
-mod tests;
 mod traversal;
+
+impl ProjectionContentComparisonFault {
+    pub(in crate::domain_computation::primary_graph) fn into_native(
+        self,
+    ) -> worth_relational::facade::transactions::RelationalExecutionDenialCause {
+        use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
+        match self {
+            Self::CapacityOverflow => Native::ChargedBytesOverflow,
+            Self::AllocationFailed => Native::AllocationFailed,
+            Self::ContentInconsistency => Native::ContentInconsistency,
+        }
+    }
+}

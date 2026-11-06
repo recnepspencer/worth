@@ -43,8 +43,8 @@ remains a lower-level or expert seam rather than the preferred public story.
 
 These are explicit future gates, not implied support:
 
-- store-backed parity: Milestone 10
-- durable restart and artifact reload: Milestone 11
+- store-backed parity: Store execution/historical integration
+- durable restart and artifact reload: Store Milestone 11
 
 Each future milestone must extend the stabilized handle, state, authority lane,
 aspect, support matrix, and inspection contracts. It must not introduce a

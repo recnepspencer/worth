@@ -25,6 +25,7 @@ pub(crate) mod operations;
 #[allow(dead_code, unused_imports)]
 #[path = "record_history/mod.rs"]
 pub(crate) mod record_history;
+mod recovery_original;
 #[allow(dead_code, unused_imports)]
 #[path = "relational/mod.rs"]
 pub(crate) mod relational;

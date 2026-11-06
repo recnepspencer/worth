@@ -1,18 +1,14 @@
 use super::{WorthQueryPrimaryGraphCommittedApplication, WorthQueryPrimaryGraphProvider};
 
 impl WorthQueryPrimaryGraphProvider {
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn discard_receipt_basis_window_for_test(
-        &self,
-    ) {
+    pub fn discard_receipt_basis_window_for_test(&self) {
         *self
             .receipt_basis_retention
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = Default::default();
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn discard_completed_evidence_for_test(&self) {
+    pub fn discard_completed_evidence_for_test(&self) {
         *self
             .completed_commit_evidence
             .lock()
@@ -43,7 +39,6 @@ impl WorthQueryPrimaryGraphProvider {
             .observe(commit)
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn retained_application_commit_basis(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
@@ -58,13 +53,12 @@ impl WorthQueryPrimaryGraphProvider {
             .acquire(commit.commit_id)
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn retained_receipt_basis_count(
-        &self,
-    ) -> usize {
+    pub fn retained_receipt_basis_count(&self) -> usize {
         self.receipt_basis_retention
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .retained_count()
     }
 }
+
+mod court_doors_for_test;

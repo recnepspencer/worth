@@ -19,7 +19,7 @@ use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 use worth_relational::facade::{identity::EntityId, transactions::RelationalExecutionDenialCause};
 use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchIncarnation};
 
-mod association;
+pub(crate) mod association;
 mod eviction;
 pub(in crate::domain_computation::primary_graph::application_query) use association::ManagedIndexRegistrationKey;
 mod maintained;
@@ -84,19 +84,21 @@ enum RetainedIndexImage<S: ApplicationSchema, I: ApplicationManagedIndexBinding<
     Completed(Arc<ReadyIndex<S, I>>),
     // Status owns one observation directly. The funded registration header
     // includes this slot; replacing it creates no accumulating header charge.
-    #[allow(
-        dead_code,
-        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
-    )]
-    Maintained(worth_relational::facade::runtime::ManagedIndexSourceObservation),
+    Maintained {
+        native_custody: worth_relational::facade::runtime::ManagedIndexSourceObservation,
+    },
 }
 
 impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> RetainedIndexImage<S, I> {
     fn retire(self) {
-        if let Self::Completed(root) = &self {
-            drop(root.cache.retire());
+        match self {
+            Self::Completed(root) => {
+                drop(root.cache.retire());
+                drop(root);
+            }
+            // Native backing stays alive until the caller retires it outside the cache gate.
+            Self::Maintained { native_custody } => drop(native_custody),
         }
-        drop(self);
     }
 }
 

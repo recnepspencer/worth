@@ -37,10 +37,14 @@ pub enum WorthQueryOperationAuthorizationRefusalKind {
     ExpiredAuthentication,
     /// The authorization material belongs to a different runtime.
     ForeignRuntime,
+    /// Authority was issued by an earlier admission of this same Home.
+    StaleIncarnation,
     /// The installed schema binding changed since the material was admitted.
     StaleInstalledSchema,
     /// The installed operation changed or is no longer installed.
     StaleInstalledOperation,
+    /// The admission brand carries a different input type than installation.
+    InputNotAdmitted,
     /// The principal no longer resolves as it did.
     StalePrincipal,
     /// The request scope no longer resolves as it did.
@@ -338,3 +342,5 @@ impl From<crate::basis::WorthQueryProductBranchAdmissionDenial>
         }
     }
 }
+
+mod court_doors_for_test;

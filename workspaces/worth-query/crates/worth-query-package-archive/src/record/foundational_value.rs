@@ -48,7 +48,6 @@ pub(super) fn write_aspect_value(
         AspectValue::String(InternedString::Symbol(value)) => {
             tagged(output, 17, |output| output.u32(value.0))
         }
-        AspectValue::Bytes(value) => tagged(output, 18, |output| output.u64(value.0)),
         AspectValue::Uuid(value) => tagged(output, 19, |output| output.raw_bytes(value)),
         AspectValue::Date(value) => {
             tagged(output, 20, |output| output.i32(value.days_from_unix_epoch))
@@ -70,7 +69,7 @@ pub(super) fn write_aspect_value(
             output.u64(value.local_slot.0)?;
             output.u32(value.generation.0)
         }
-        AspectValue::ContentRef(value) => tagged(output, 25, |output| output.u64(value.0)),
+        AspectValue::ContentRef(value) => tagged(output, 27, |output| output.raw_bytes(&value.0)),
     }
 }
 
@@ -104,7 +103,6 @@ pub(super) fn decode_aspect_value(input: &mut BinaryInput<'_>) -> Result<AspectV
         }),
         16 => AspectValue::String(InternedString::Raw(input.text()?.to_owned())),
         17 => AspectValue::String(InternedString::Symbol(Symbol(input.u32()?))),
-        18 => AspectValue::Bytes(ContentRefId(input.u64()?)),
         19 => AspectValue::Uuid(input.array()?),
         20 => AspectValue::Date(CanonicalDate {
             days_from_unix_epoch: input.i32()?,
@@ -124,7 +122,7 @@ pub(super) fn decode_aspect_value(input: &mut BinaryInput<'_>) -> Result<AspectV
             local_slot: LocalSlot(input.u64()?),
             generation: Generation(input.u32()?),
         }),
-        25 => AspectValue::ContentRef(ContentRefId(input.u64()?)),
+        27 => AspectValue::ContentRef(ContentRefId(input.array()?)),
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     })
 }
@@ -178,7 +176,6 @@ mod tests {
             ),
             AspectValue::String(InternedString::Raw("raw".to_owned())),
             AspectValue::String(InternedString::Symbol(Symbol(17))),
-            AspectValue::Bytes(ContentRefId(18)),
             AspectValue::Uuid([19; 16]),
             AspectValue::Date(CanonicalDate {
                 days_from_unix_epoch: -20,
@@ -198,7 +195,10 @@ mod tests {
                 local_slot: LocalSlot(25),
                 generation: Generation(26),
             }),
-            AspectValue::ContentRef(ContentRefId(27)),
+            AspectValue::ContentRef(ContentRefId([
+                27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0,
+            ])),
             AspectValue::InlineBytes(
                 worth_foundational::InlineBytes::try_new(vec![0, 128, 255]).unwrap(),
             ),

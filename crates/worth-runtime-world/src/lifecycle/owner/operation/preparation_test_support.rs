@@ -44,8 +44,9 @@ fn budgets(publication_attempts: u64, custody_records: u64) -> RuntimeWorldBudge
         },
         history: RuntimeWorldHistoryBudgetInstallation {
             retained_composite_commits: 8,
-            // Keep history storage independent of the attempt-capacity boundary.
-            history_metadata_bytes: 8192,
+            // Fund the retained root and both publication envelopes independently
+            // of the active-attempt limit, as in publication_service_tests.
+            history_metadata_bytes: 16384,
         },
         observations: RuntimeWorldObservationBudgetInstallation {
             active_observations: 8,

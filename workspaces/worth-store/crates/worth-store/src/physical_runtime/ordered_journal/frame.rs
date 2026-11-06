@@ -8,6 +8,7 @@
 //! bounded header reads.
 
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 use worth_store_physical_format::{PersistedRecordIdentity, RecordAnchorName};
 
 use super::OrderedJournalName;
@@ -31,7 +32,7 @@ pub(super) struct SpineEntry {
 pub(super) struct JournalRecordHeader {
     pub(super) journal: OrderedJournalName,
     pub(super) position: u64,
-    pub(super) payload_sha256: [u8; 32],
+    pub(super) payload_sha256: CanonicalDigestId,
     pub(super) payload_bytes: u64,
     /// Strictly descending positions, each below `position`.
     pub(super) spine: Vec<SpineEntry>,
@@ -71,7 +72,7 @@ impl JournalRecordHeader {
         bytes.extend_from_slice(self.journal.as_str().as_bytes());
         bytes.resize(8 + 32, 0);
         bytes.extend_from_slice(&self.position.to_le_bytes());
-        bytes.extend_from_slice(&self.payload_sha256);
+        bytes.extend_from_slice(self.payload_sha256.bytes());
         bytes.extend_from_slice(&self.payload_bytes.to_le_bytes());
         bytes.push(self.spine.len() as u8);
         bytes.extend_from_slice(&[0; 7]);
@@ -183,7 +184,7 @@ impl JournalRecordHeader {
             _memory: memory,
             journal,
             position,
-            payload_sha256,
+            payload_sha256: CanonicalDigestId::new(payload_sha256),
             payload_bytes,
             spine,
         })
@@ -211,7 +212,7 @@ impl JournalRecordHeader {
             _memory: None,
             journal,
             position,
-            payload_sha256: Sha256::digest(payload).into(),
+            payload_sha256: CanonicalDigestId::new(Sha256::digest(payload).into()),
             payload_bytes: payload.len() as u64,
             spine,
         })
@@ -229,7 +230,7 @@ impl JournalRecordHeader {
 
     pub(super) fn verify_payload(&self, payload: &[u8]) -> Result<(), JournalFrameDenial> {
         if payload.len() as u64 != self.payload_bytes
-            || <[u8; 32]>::from(Sha256::digest(payload)) != self.payload_sha256
+            || <[u8; 32]>::from(Sha256::digest(payload)) != *self.payload_sha256.bytes()
         {
             return Err(JournalFrameDenial::PayloadDigestMismatch);
         }

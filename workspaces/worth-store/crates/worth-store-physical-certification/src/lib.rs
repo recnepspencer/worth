@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+pub use worth_foundational::CanonicalDigestId;
+
 pub mod harness;
 
 mod actors;

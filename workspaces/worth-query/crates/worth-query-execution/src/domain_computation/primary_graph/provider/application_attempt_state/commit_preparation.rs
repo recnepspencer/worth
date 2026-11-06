@@ -10,14 +10,15 @@ use super::super::{
     WorthQueryPrimaryGraphProvider,
 };
 
-mod preimage_retention;
-mod relational_commit;
+pub(crate) mod preimage_retention;
+pub(crate) mod relational_commit;
 pub(in crate::domain_computation::primary_graph) use preimage_retention::WorthQueryPreImageRetentionWork;
 pub(crate) use preimage_retention::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::ManagedUnpublishedAttempt;
+pub(in crate::domain_computation::primary_graph) use relational_commit::RebaseVerificationFailure;
+pub use relational_commit::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
 pub(in crate::domain_computation::primary_graph) use relational_commit::{
-    FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
     WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommittedApplication,
 };
 
@@ -52,13 +53,14 @@ impl WorthQueryPreparedApplicationCommit {
 pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_application(
     provider: &WorthQueryPrimaryGraphProvider,
     session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
+    history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
-    let prepared = take_prepared_session(provider, session, allocation_policy)
-        .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
+    let prepared =
+        take_prepared_session(provider, session, allocation_policy).map_err(preparation_stop)?;
     if provider.take_rejected_commit_before_transaction() {
         return Err(
             crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(
@@ -76,6 +78,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_ap
         session.execution_request(),
         provider,
         prepared,
+        history,
         allocation_policy,
     )
 }
@@ -102,9 +105,13 @@ fn take_prepared_session(
         predicate,
     } = approved;
     let source_fact_rebase = attempt.take_source_fact_rebase();
-    let (retained_preimage, preimage_retention_work) =
-        preimage_retention::retain_attempt_preimage(&attempt, &candidate, allocation_policy)?
-            .into_parts();
+    let (retained_preimage, preimage_retention_work) = preimage_retention::retain_attempt_preimage(
+        &attempt,
+        &candidate,
+        &session.execution_request(),
+        allocation_policy,
+    )?
+    .into_parts();
     Ok(WorthQueryPreparedApplicationCommit {
         attempt,
         candidate,
@@ -130,3 +137,20 @@ pub(in crate::domain_computation::primary_graph) use relational_commit::{
 
 pub(in crate::domain_computation) use relational_commit::QueryPreparingApplicationCommit;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::RetainedQueryDurablePreparation;
+// Typed content/read stops precede the Native transaction. Preserve semantic
+// protocol failures through the existing abort-and-cleanup owner.
+fn preparation_stop(
+    failure: WorthQueryProviderSessionFailure,
+) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    use crate::domain_computation::{
+        WorthQueryProviderSessionCommitControlStopped as Control,
+        WorthQueryProviderSessionCommitStop as Stop,
+    };
+    match failure.checked_read_stop() {
+        Some(Err(kind)) => {
+            Stop::ControlStopped(Control::execution_preparation(kind, failure.detail()))
+        }
+        Some(Ok(_)) => Stop::PreEffectDenied(failure),
+        None => Stop::from(failure),
+    }
+}

@@ -1,0 +1,9 @@
+error[E0521]: borrowed data escapes outside of closure
+  --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/scoped_cutover/cutover_cannot_escape_callback.rs:13:9
+   |
+11 |     let mut escaped = None;
+   |         ----------- `escaped` declared here, outside of the closure body
+12 |     let _ = port.with_prepared_memory_cutover(request, candidate, |cutover| {
+   |                                                                    ------- `cutover` is a reference that is only valid in the closure body
+13 |         escaped = Some(cutover);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ `cutover` escapes the closure body here

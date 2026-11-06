@@ -1,5 +1,7 @@
 //! Installs the real literal-body fixture and retains its projection owner.
 pub use super::*;
+#[path = "installation/admission_time.rs"]
+mod admission_time;
 
 pub fn install<const DESTINATION: u64>() -> WorthQueryProgramApplicationRuntime<
     DocumentRetentionSchema<DESTINATION>,
@@ -17,14 +19,31 @@ pub fn install_with_projection<const DESTINATION: u64>() -> (
         DocumentRetentionSchema<DESTINATION>,
     >,
 ) {
+    install_with_projection_on_clock::<DESTINATION>(
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
+    )
+}
+
+/// Installs this fixture with the same observer retained by admission and requests.
+pub fn install_with_projection_on_clock<const DESTINATION: u64>(
+    clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
+) -> (
+    WorthQueryProgramApplicationRuntime<
+        DocumentRetentionSchema<DESTINATION>,
+        program::BodyProgram<DESTINATION>,
+    >,
+    worth_query_host::facade::primary_graph::WorthQueryApplicationInvariantProjectionAuthority<
+        DocumentRetentionSchema<DESTINATION>,
+    >,
+) {
     let schema = program::schema::<DESTINATION>();
     let mut projection = None;
-    let app = in_memory_program(
+    let app = worth_query_host::facade::application_installation::in_memory_program_with_authorization_time_source(
         program::validated::<DESTINATION>(&schema),
         schema,
         (program::Installation::Native,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(clock.clone()),
         |_phase, graph, installed| {
             projection = Some(graph.retain_invariant_projection_authority());
             graph.bind_principal(
@@ -73,6 +92,7 @@ pub fn install_with_projection<const DESTINATION: u64>() -> (
             retirement::seed::seed::<DESTINATION>(graph)?;
             Ok(())
         },
+        admission_time::FixtureAdmissionTime(clock),
     )
     .unwrap();
     (app, projection.unwrap())

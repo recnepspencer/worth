@@ -44,6 +44,7 @@ pub(crate) fn decode_checkpoint_effect(
             .ok_or_else(malformed)? as u64,
     )
     .map_err(|cause| match cause {
+        crate::durability::data::RelationalRecoveryStop::Content(cause) => Refusal::Content(cause),
         crate::durability::data::RelationalRecoveryStop::Request(cause) => Refusal::Request(cause),
         crate::durability::data::RelationalRecoveryStop::AdmissionImage(_)
         | crate::durability::data::RelationalRecoveryStop::Allocation(_)

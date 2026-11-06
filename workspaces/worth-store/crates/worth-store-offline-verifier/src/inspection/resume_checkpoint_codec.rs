@@ -1,4 +1,5 @@
 use std::time::Duration;
+use worth_foundational::CanonicalDigestId;
 
 use crate::OfflinePhysicalArtifactFamily;
 use sha2::{Digest, Sha256};
@@ -48,9 +49,10 @@ pub(super) fn encode_checkpoint(
             output.u8(1)?;
             encode_source(&mut output, source)?;
             output.bytes(
-                &checkpoint
+                checkpoint
                     .partial_digest
-                    .ok_or(OfflineInspectionCheckpointCodecDenial::InvalidEncoding)?,
+                    .ok_or(OfflineInspectionCheckpointCodecDenial::InvalidEncoding)?
+                    .bytes(),
             )?;
         }
         None if checkpoint.partial_digest.is_none() => output.u8(0)?,
@@ -130,7 +132,7 @@ pub(super) fn decode_checkpoint(
         elapsed: Duration::new(elapsed_seconds, elapsed_nanos),
         completed,
         partial_source,
-        partial_digest,
+        partial_digest: partial_digest.map(CanonicalDigestId::new),
     };
     validate_shape(&checkpoint)?;
     Ok(checkpoint)

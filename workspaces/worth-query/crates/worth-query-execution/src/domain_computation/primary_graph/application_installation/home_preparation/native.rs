@@ -136,7 +136,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
                 activation_seed: super::super::super::bootstrap::WorthQueryProgramActivationSeed::for_initial_program(
                     &self.state.support.initial_revision, self.state.activation.clone()),
                 state: self.state,
-                schema: self.schema,
+                schema: self.schema.bind_sources(&native.main_branch_identity()),
                 restore_work: None,
             }),
             Err(cause) => Err(QueryHomeNativeReadmissionRefused {

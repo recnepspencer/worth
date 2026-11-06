@@ -1,4 +1,5 @@
 //! Entity and owned-relation maintenance must preserve canonical semantic payload.
+use super::super::PublicationHistoryFailure as Failure;
 use super::*;
 use crate::history::data::CanonicalRequiredOutputMaterializationRecord;
 use crate::publication::patch::data::RecordStructuralChange;
@@ -114,7 +115,7 @@ pub(super) fn validate(
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<(), Stop> {
+) -> Result<(), Failure> {
     validate_one(runtime, envelope, context, lease)?;
     let event = envelope
         .required_output_materialization
@@ -160,7 +161,7 @@ fn validate_one(
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<(), Stop> {
+) -> Result<(), Failure> {
     let event = envelope
         .required_output_materialization
         .as_ref()
@@ -175,80 +176,99 @@ fn validate_one(
                     .then_some(envelope)
             })
             .ok_or("maintenance producer association absent")?;
-        let origin = original.validate_output_membership_header()?;
-        let (plan, expected) = match member.record {
-            RecordRef::Entity(id) => {
-                let entry = origin
-                    .members
-                    .iter()
-                    .find(|entry| entry.id == id)
-                    .ok_or("maintenance entity absent")?;
-                let plan = runtime
-                    .schema_contract_runtime
-                    .aspect_contract_plans
-                    .entity_plans
-                    .get(&entry.kind)
-                    .ok_or("maintenance entity contract absent")?;
-                if !envelope.merged_plan.merged_intents.iter().any(|intent| matches!(intent,
-                    crate::transactions::data::MutationIntent::Materialization(crate::transactions::data::MaterializationMutationIntent::RematerializeEntity(value))
-                    if value.entity_id == id && value.kind_id == entry.kind)) {
-                    return Err("maintenance entity kind differs from producer".into());
-                }
-                (
-                    plan,
-                    super::super::membership::reconstruct_canonical_payload(
-                        runtime, &original, id, plan, context, lease,
-                    )?,
-                )
+        let source = original
+            .required_output_origin
+            .as_ref()
+            .ok_or("maintenance producer origin absent")?
+            .meaning
+            .source_scope;
+        validate_record(runtime, envelope, &original, member, context, lease)
+            .map_err(|stop| Failure::at_source(source, stop))?;
+    }
+    Ok(())
+}
+
+fn validate_record(
+    runtime: &crate::runtime::RelationalRuntime,
+    envelope: &CanonicalCommitEnvelope,
+    original: &Arc<CanonicalCommitEnvelope>,
+    member: &CanonicalRequiredOutputMaterializationRecord,
+    context: &mut MapKernelContext<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
+) -> Result<(), Stop> {
+    let origin = original.validate_output_membership_header()?;
+    let (plan, expected) = match member.record {
+        RecordRef::Entity(id) => {
+            let entry = origin
+                .members
+                .iter()
+                .find(|entry| entry.id == id)
+                .ok_or("maintenance entity absent")?;
+            let plan = runtime
+                .schema_contract_runtime
+                .aspect_contract_plans
+                .entity_plans
+                .get(&entry.kind)
+                .ok_or("maintenance entity contract absent")?;
+            if !envelope.merged_plan.merged_intents.iter().any(|intent| matches!(intent,
+                crate::transactions::data::MutationIntent::Materialization(crate::transactions::data::MaterializationMutationIntent::RematerializeEntity(value))
+                if value.entity_id == id && value.kind_id == entry.kind)) {
+                return Err("maintenance entity kind differs from producer".into());
             }
-            RecordRef::Relation(id) => {
-                let entry = origin
-                    .relations
-                    .iter()
-                    .find(|entry| entry.id == id)
-                    .ok_or("maintenance relation absent")?;
-                let plan = runtime
-                    .schema_contract_runtime
-                    .aspect_contract_plans
-                    .relation_plans
-                    .get(&entry.kind)
-                    .ok_or("maintenance relation contract absent")?;
-                let intent_matches = envelope.merged_plan.merged_intents.iter().any(|intent| matches!(intent,
-                    crate::transactions::data::MutationIntent::Materialization(crate::transactions::data::MaterializationMutationIntent::RematerializeRelation(value))
-                    if value.relation_id == id && value.kind_id == entry.kind && value.source == entry.source && value.target == entry.target));
-                if !intent_matches {
-                    return Err("maintenance relation endpoints/kind differ from producer".into());
-                }
-                (
-                    plan,
-                    super::super::relation_payload::reconstruct(
-                        runtime, &original, id, plan, context, lease,
-                    )?,
-                )
+            (
+                plan,
+                super::super::membership::reconstruct_canonical_payload(
+                    runtime, original, id, plan, context, lease,
+                )?,
+            )
+        }
+        RecordRef::Relation(id) => {
+            let entry = origin
+                .relations
+                .iter()
+                .find(|entry| entry.id == id)
+                .ok_or("maintenance relation absent")?;
+            let plan = runtime
+                .schema_contract_runtime
+                .aspect_contract_plans
+                .relation_plans
+                .get(&entry.kind)
+                .ok_or("maintenance relation contract absent")?;
+            let intent_matches = envelope.merged_plan.merged_intents.iter().any(|intent| matches!(intent,
+                crate::transactions::data::MutationIntent::Materialization(crate::transactions::data::MaterializationMutationIntent::RematerializeRelation(value))
+                if value.relation_id == id && value.kind_id == entry.kind && value.source == entry.source && value.target == entry.target));
+            if !intent_matches {
+                return Err("maintenance relation endpoints/kind differ from producer".into());
             }
-        };
-        let patch = envelope
-            .patch
-            .authoritative_record_patches
-            .iter()
-            .find(|patch| patch.target == member.record)
-            .ok_or("maintenance payload patch absent")?;
-        if patch.structural_change != RecordStructuralChange::Rematerialized
-            || patch.contains_opaque_aspect
-        {
-            return Err("maintenance has an unsupported physical payload operation".into());
+            (
+                plan,
+                super::super::relation_payload::reconstruct(
+                    runtime, original, id, plan, context, lease,
+                )?,
+            )
         }
-        let actual = super::super::payload_reconstruction::apply(
-            None,
-            &patch.authoritative_patch,
-            plan,
-            true,
-            lease,
-            context,
-        )?;
-        if actual.state.as_ref() != expected.as_ref().and_then(|state| state.state.as_ref()) {
-            return Err("maintenance changed canonical producer payload".into());
-        }
+    };
+    let patch = envelope
+        .patch
+        .authoritative_record_patches
+        .iter()
+        .find(|patch| patch.target == member.record)
+        .ok_or("maintenance payload patch absent")?;
+    if patch.structural_change != RecordStructuralChange::Rematerialized
+        || patch.contains_opaque_aspect
+    {
+        return Err("maintenance has an unsupported physical payload operation".into());
+    }
+    let actual = super::super::payload_reconstruction::apply(
+        None,
+        &patch.authoritative_patch,
+        plan,
+        true,
+        lease,
+        context,
+    )?;
+    if actual.state.as_ref() != expected.as_ref().and_then(|state| state.state.as_ref()) {
+        return Err("maintenance changed canonical producer payload".into());
     }
     Ok(())
 }

@@ -170,7 +170,7 @@ impl WorthQueryOutputDemandRegistry {
             .source_custody
             .get_mut(receipt.committed_product_publication().composite_commit())
             .filter(|_| visible)
-            .filter(|custody| custody.retired.is_none())
+            .filter(|custody| custody.retired.is_none() && !custody.completed)
             .filter(|custody| custody.root_kind == PreparedOutputRootKind::Discovered(root_type))
             .ok_or_else(|| {
                 denial(
@@ -210,3 +210,5 @@ fn source_capacity_denial() -> WorthQueryOutputDemandDenial {
         "performed source custody storage cannot be allocated",
     )
 }
+
+mod court_doors_for_test;

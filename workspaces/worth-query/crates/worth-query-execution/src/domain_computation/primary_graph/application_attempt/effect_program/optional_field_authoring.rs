@@ -73,7 +73,7 @@ impl<Schema, Operation, Input, Scope>
         locator: AspectFieldLocator,
         value: Option<AspectValue>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        self.require_parent_not_removed(entity_id, &locator)?;
+        self.require_parent_not_removed(field.entity(), entity_id, &locator)?;
         self.require_field_observation(entity_id, &locator)?;
         let contract = self
             .layout

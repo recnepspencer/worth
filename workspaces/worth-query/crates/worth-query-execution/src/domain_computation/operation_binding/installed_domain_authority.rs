@@ -45,3 +45,5 @@ impl WorthQueryInstalledDomainExecutionAuthority {
         self.current_generation.load(Ordering::Acquire) == self.generation.ordinal()
     }
 }
+
+mod court_doors_for_test;

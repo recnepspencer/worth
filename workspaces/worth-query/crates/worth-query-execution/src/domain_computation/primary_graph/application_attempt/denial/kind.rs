@@ -12,6 +12,8 @@
 /// and approvals.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationAttemptDenialKind {
+    /// Equal certified content identities carried disagreeing bytes.
+    ContentInconsistency,
     /// The original request refused an admitted field decode; completion is vetoed.
     ValueDecode(
         crate::domain_computation::primary_graph::value_decode::WorthQueryValueDecodeDenial,

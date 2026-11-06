@@ -70,7 +70,6 @@ impl WorthQueryExecutionRuntime {
         .bind())
     }
 
-    #[cfg(test)]
     pub(crate) fn bind_standalone_test_domain_operation<L: BasisOperationLane>(
         &self,
         installation_authority: &WorthQueryExecutionInstallationAuthority,
@@ -332,3 +331,5 @@ fn binding_identity<L: BasisOperationLane>(
         format!("installed-support:{}", installed_support.identity()),
     ])
 }
+
+mod court_doors_for_test;

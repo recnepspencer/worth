@@ -72,8 +72,8 @@ pub(crate) fn partition_from_image(
     )
     .map_err(|cause| match cause {
         Stop::Durability(cause) => cause,
-        Stop::Request(_) | Stop::Allocation(_) | Stop::AdmissionImage(_) => {
-            unreachable!("ordinary image conversion has no request or admission-image operation")
+        Stop::Request(_) | Stop::Allocation(_) | Stop::AdmissionImage(_) | Stop::Content(_) => {
+            unreachable!("ordinary image conversion has no request, content demand or admission-image operation")
         }
     })
 }

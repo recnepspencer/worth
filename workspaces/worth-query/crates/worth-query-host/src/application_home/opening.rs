@@ -37,6 +37,7 @@ where
     }
 }
 
+mod custody;
 mod existing;
 mod fresh;
 mod initialization;

@@ -193,18 +193,6 @@ impl<K: Ord + Copy, V: StoredValue> MapNode<K, V> {
         balance(current, copied, request)?;
         Ok(previous)
     }
-    pub(super) fn collect_mut<'a>(
-        root: &'a mut Option<Arc<Self>>,
-        values: &mut Vec<(&'a K, &'a mut V::Value)>,
-    ) {
-        let Some(current) = root else {
-            return;
-        };
-        let node = Arc::make_mut(current);
-        Self::collect_mut(&mut node.left, values);
-        values.push((&node.key, node.value.value_mut()));
-        Self::collect_mut(&mut node.right, values);
-    }
     pub(super) fn into_values(root: Option<Arc<Self>>, values: &mut Vec<(K, V::Value)>) {
         let Some(current) = root else {
             return;

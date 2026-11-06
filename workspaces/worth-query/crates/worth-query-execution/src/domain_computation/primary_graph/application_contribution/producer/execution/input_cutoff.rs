@@ -96,7 +96,7 @@ where
     let _observation = observation::Scope::begin(Binding::IDENTITY, Gate::ExecutionRequest);
     let scope = operation.operation_scope_binding();
     let execution = phase
-        .execution_request_for(&runtime.product_runtime)
+        .execution_request_for(&runtime.runtime.product_runtime)
         .map_err(|cause| {
             WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -104,7 +104,7 @@ where
             )
         })?;
     let observation = selected.product().observation();
-    let handle = &runtime.primary_provider.graph;
+    let handle = &runtime.runtime.primary_provider.graph;
     let source_owner = &handle.source_owner.invalidation_owner;
     // A producer whose operation runs a retained partitioned computation
     // takes the live record at the demand's own address, the one its
@@ -344,6 +344,28 @@ pub(super) fn source_preparation_denial(
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
             format!("{identity}: {stop}"),
         ),
-        _ => failed(identity, stop),
+        Kind::AdmissionAuthorization => denial(
+            WorthQueryOutputDemandDenialKind::of_request_authorization(
+                stop.authorization_denial()
+                    .expect("the source denial owner retains its authorization cause")
+                    .kind(),
+            ),
+            identity.to_owned(),
+        ),
+        Kind::MissingExpectation
+        | Kind::ForeignApplication
+        | Kind::ForeignInstallation
+        | Kind::ForeignSchema
+        | Kind::ForeignModel
+        | Kind::ForeignBranch
+        | Kind::ForeignOperation
+        | Kind::SourceChanged
+        | Kind::IncompleteFootprint
+        | Kind::SourceContractMismatch
+        | Kind::SourceParametersMismatch
+        | Kind::RetainedSourceStorageDenied => failed(identity, stop),
     }
 }
+
+#[cfg(test)]
+mod authorization_cause_tests;

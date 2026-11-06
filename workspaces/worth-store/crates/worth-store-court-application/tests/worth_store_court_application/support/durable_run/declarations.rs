@@ -107,27 +107,40 @@ pub(crate) fn apply(
     execution: &ExecutionRequest<'_, '_>,
     steps: &[Step],
 ) -> usize {
+    apply_steps(home.relational().runtime(), execution, steps, || {
+        home.checkpoint(execution).expect("home checkpoint");
+    })
+}
+
+pub(crate) fn apply_steps(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &ExecutionRequest<'_, '_>,
+    steps: &[Step],
+    mut checkpoint: impl FnMut(),
+) -> usize {
     let mut acknowledged = 0;
     for step in steps {
         match step {
             crate::workload::Step::Commit { .. } | crate::workload::Step::Transition { .. } => {
                 let completed = step
-                    .commit(home.relational().runtime(), execution)
+                    .commit(runtime, execution)
                     .unwrap_or_else(|error| panic!("durable commit {acknowledged}: {error:?}"));
                 // The script consumes the result here; only explicit snapshot
                 // cases retain a read pin beyond an acknowledged operation.
-                home.relational()
-                    .runtime()
+                runtime
                     .snapshots()
                     .release_snapshot(&completed.snapshot)
                     .unwrap();
                 acknowledged += 1;
             }
             crate::workload::Step::Checkpoint => {
-                home.checkpoint(execution).expect("home checkpoint");
+                checkpoint();
             }
-            _ => step
-                .lifecycle(home.relational().runtime(), execution)
+            crate::workload::Step::Fork { .. }
+            | crate::workload::Step::Archive { .. }
+            | crate::workload::Step::RequestDeletion { .. }
+            | crate::workload::Step::Delete { .. } => step
+                .lifecycle(runtime, execution)
                 .expect("durable lifecycle"),
         }
     }
@@ -143,7 +156,17 @@ pub(crate) fn assert_holds(
     script: &Script,
     acknowledged: &[Vec<u8>],
 ) {
-    let artifacts = crate::workload::artifacts_of(execution, home.relational().runtime());
+    assert_holds_native(execution, home.relational().runtime(), script, acknowledged);
+    assert_lifecycle_prefix(home, script, acknowledged.len(), "held");
+}
+
+pub(crate) fn assert_holds_native(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    script: &Script,
+    acknowledged: &[Vec<u8>],
+) {
+    let artifacts = crate::workload::artifacts_of(execution, runtime);
     let commits = acknowledged.len();
     assert_eq!(artifacts.len(), commits, "recovered commit count");
     for (index, (found, expected)) in artifacts.iter().zip(acknowledged).enumerate() {
@@ -154,7 +177,6 @@ pub(crate) fn assert_holds(
         );
     }
     assert_reference_artifacts(&artifacts, script, "held");
-    assert_lifecycle_prefix(home, script, commits, "held");
 }
 
 pub(crate) fn assert_lifecycle_prefix(
@@ -163,7 +185,22 @@ pub(crate) fn assert_lifecycle_prefix(
     commits: usize,
     case: &str,
 ) {
-    let transitions = crate::branch_lifecycle::artifacts_of_home(home);
+    assert_lifecycle_state(
+        home.relational().runtime(),
+        crate::branch_lifecycle::artifacts_of_home(home),
+        script,
+        commits,
+        case,
+    );
+}
+
+pub(crate) fn assert_lifecycle_state(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    transitions: Vec<Vec<u8>>,
+    script: &Script,
+    commits: usize,
+    case: &str,
+) {
     assert_eq!(
         transitions,
         script.transitions[..transitions.len()],
@@ -174,12 +211,12 @@ pub(crate) fn assert_lifecycle_prefix(
         .get(&(commits, transitions.len()))
         .expect("a legal reference prefix");
     assert_eq!(
-        &crate::branch_lifecycle::state_of(home.relational().runtime(), &script.records),
+        &crate::branch_lifecycle::state_of(runtime, &script.records),
         expected,
         "{case}: records, branch existence and lifecycle"
     );
     assert_eq!(
-        &crate::branch_lifecycle::state_of(home.relational().runtime(), &script.records),
+        &crate::branch_lifecycle::state_of(runtime, &script.records),
         expected,
         "{case}: warm records, branch existence and lifecycle"
     );
@@ -192,10 +229,21 @@ pub(crate) fn assert_reference_artifacts(artifacts: &[Vec<u8>], script: &Script,
         "{case}: more artifacts than the reference"
     );
     for (index, (found, reference)) in artifacts.iter().zip(&script.artifacts).enumerate() {
+        if found != reference {
+            let reports =
+                Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../target/lane-evidence");
+            let report = reports.join(format!(
+                "lifecycle-artifact-difference-{}-{}.json",
+                std::process::id(),
+                index + 1
+            ));
+            std::fs::write(report, serde_json::to_vec(&(found, reference)).unwrap()).unwrap();
+        }
         assert!(
             found == reference,
-            "{case}: artifact at position {} differs from the reference's",
-            index + 1
+            "{case}: artifact at position {} differs from the reference's; lengths {}/{}, first offset {:?}",
+            index + 1, found.len(), reference.len(),
+            found.iter().zip(reference).position(|(a, b)| a != b)
         );
     }
 }

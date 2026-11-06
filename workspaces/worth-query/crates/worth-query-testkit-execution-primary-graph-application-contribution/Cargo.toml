@@ -1,0 +1,28 @@
+[package]
+name = "worth-query-testkit-execution-primary-graph-application-contribution"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query-admission = { path = "../worth-query-admission" }
+worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-installation = { path = "../worth-query-installation" }
+worth-query-testkit-execution-primary-graph-application-attempt = { path = "../worth-query-testkit-execution-primary-graph-application-attempt" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
+worth-signal = { path = "../../../../crates/worth-signal" }
+
+[lints]
+workspace = true

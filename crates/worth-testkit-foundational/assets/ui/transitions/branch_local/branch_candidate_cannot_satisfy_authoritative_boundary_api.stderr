@@ -1,13 +1,13 @@
 error[E0277]: the trait bound `FoundationalBranchCandidateArtifact<&str>: FoundationalBoundaryCategorySurface` is not satisfied
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/branch_local/branch_candidate_cannot_satisfy_authoritative_boundary_api.rs
-  |
-  |     let _ = admit_authoritative_current_boundary_surface(candidate, authority);
-  |             -------------------------------------------- ^^^^^^^^^ the trait `FoundationalBoundaryCategorySurface` is not implemented for `FoundationalBranchCandidateArtifact<&str>`
-  |             |
-  |             required by a bound introduced by this call
-  |
+  --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/branch_local/branch_candidate_cannot_satisfy_authoritative_boundary_api.rs:24:58
+   |
+24 |     let _ = admit_authoritative_current_boundary_surface(candidate, authority);
+   |             -------------------------------------------- ^^^^^^^^^ the trait `FoundationalBoundaryCategorySurface` is not implemented for `FoundationalBranchCandidateArtifact<&str>`
+   |             |
+   |             required by a bound introduced by this call
+   |
 help: the following other types implement trait `FoundationalBoundaryCategorySurface`
- --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/categories.rs
+  --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/categories.rs
   |
   | impl FoundationalBoundaryCategorySurface for FoundationalBoundarySummarySurface {
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundarySummarySurface`
@@ -21,7 +21,7 @@ help: the following other types implement trait `FoundationalBoundaryCategorySur
   | impl FoundationalBoundaryCategorySurface for FoundationalBoundaryReceiptSurface {
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundaryReceiptSurface`
 note: required by a bound in `admit_authoritative_current_boundary_surface`
- --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/authority.rs
+  --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/authority.rs
   |
   | pub fn admit_authoritative_current_boundary_surface<Surface>(
   |        -------------------------------------------- required by a bound in this function

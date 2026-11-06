@@ -11,12 +11,14 @@ use crate::progression::ReopenedPhysicalRecovery;
 /// listings, or a removal refused before its effect. The store is blocked for
 /// inspection with the evidence named, not reported as a stuck publication.
 pub(super) fn damaged(reopened: ReopenedPhysicalRecovery) -> PhysicalRecoveryOutcome {
+    let (payload, unused_handoff) = reopened.into_handoff_parts();
+    drop(unused_handoff);
     let crate::progression::ReopenedPayload {
         state,
         publication_counters,
         publication_settlement,
         ..
-    } = reopened.into_payload();
+    } = payload;
     let store = state.authority.media.store_identity();
     let session_identity = state.authority.session.identity();
     let recovery_effects = state.authority.media.recovery_effect_count();
@@ -50,12 +52,14 @@ pub(super) fn damaged(reopened: ReopenedPhysicalRecovery) -> PhysicalRecoveryOut
 /// A removal that started but did not settle leaves recovery's publication
 /// durable and the residue namespace unproven.
 pub(super) fn indeterminate(reopened: ReopenedPhysicalRecovery) -> PhysicalRecoveryOutcome {
+    let (payload, unused_handoff) = reopened.into_handoff_parts();
+    drop(unused_handoff);
     let crate::progression::ReopenedPayload {
         state,
         publication_counters,
         publication_settlement,
         ..
-    } = reopened.into_payload();
+    } = payload;
     let store = state.authority.media.store_identity();
     let session_identity = state.authority.session.identity();
     let recovery_effects = state.authority.media.recovery_effect_count();

@@ -16,6 +16,9 @@ pub(super) fn execute_authorized<Schema, Binding>(
     phase: &WorthQueryAdvancementPhase<'_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     shared: &crate::domain_computation::primary_graph::SharedSelectedProductOperation<'_, Schema>,
+    control: Option<
+        &crate::domain_computation::primary_graph::SharedSelectedProductOperation<'_, Schema>,
+    >,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
@@ -38,7 +41,7 @@ pub(super) fn execute_authorized<Schema, Binding>(
     input: <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Input,
     matched_predecessors: Option<super::super::demand::MatchedRequiredPredecessors<'_>>,
     successor_of: Option<[u8; 32]>,
-    commit_authority: WorthQueryProducerCommitAuthority,
+    commit_authority: ProducerInvocationAuthority<'_>,
     edition: super::super::InstalledProducerEdition,
     producer_contacts: &mut usize,
 ) -> Result<ProducerExecutionOutcome, ProducerExecutionStop>
@@ -51,16 +54,19 @@ where
             SourceQuery<Schema, Binding>,
         >,
 {
-    let member_execution = phase.execution_for(&runtime.product_runtime).map_err(|_| {
-        denial(
-            WorthQueryOutputDemandDenialKind::ForeignSettlement,
-            Binding::IDENTITY,
-        )
-    })?;
+    let member_execution = phase
+        .execution_for(&runtime.runtime.product_runtime)
+        .map_err(|_| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                Binding::IDENTITY,
+            )
+        })?;
     let plan = prepare_authorized::<Schema, Binding>(
         phase,
         runtime,
         shared,
+        control,
         external_principal,
         request_scope,
         principal,

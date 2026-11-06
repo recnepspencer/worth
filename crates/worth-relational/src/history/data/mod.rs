@@ -10,13 +10,16 @@ mod caller_association;
 mod canonical_commit_allocation;
 mod canonical_commit_envelope;
 pub use caller_association::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
+pub(crate) use canonical_commit_envelope::validate_authored_restoration_candidate;
 mod codec_retirement_closure;
 mod codec_retirement_preservation;
+pub(crate) use codec_retirement_closure::select_owned_scope_dependent;
 pub(crate) use codec_retirement_closure::{
     capture_materialization_producers, derive_codec_retirement_closure,
     output_materialization_write_matches, prepare_materialization_continuity,
-    readmit_required_output_route, select_authored_retirement,
+    readmit_required_output_route, select_authored_retirement, select_authored_source_retirement,
     validate_codec_output_correspondence, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
+    SelectedOutputPublication,
 };
 pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
 mod canonical_record_allocation;
@@ -50,14 +53,16 @@ pub(crate) use canonical_commit_envelope::{
     CanonicalIndexDefinitionDelta, CommittedRecordChange,
 };
 pub(crate) use canonical_commit_envelope::{
-    CanonicalCodecRetirementKind, CanonicalOutputMember, CanonicalRequiredOutputCodecRetirement,
+    CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalCodecRetirementKind,
+    CanonicalOutputMember, CanonicalProducerRetirement, CanonicalRequiredOutputCodecRetirement,
     CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
     CanonicalRequiredOutputOrigin, CanonicalRequiredOutputRelation,
 };
 pub use canonical_commit_envelope::{
-    CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalDescriptiveTouch,
-    RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision, RelationalReplayRecord,
-    RelationalTouchAdjacencyDirection, ReplaySchemaVersion, SharedCanonicalCommitEnvelope,
+    CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, CanonicalRetainedEntitySelection,
+    RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
+    RelationalDescriptiveTouchPrecision, RelationalReplayRecord, RelationalTouchAdjacencyDirection,
+    ReplaySchemaVersion, SharedCanonicalCommitEnvelope,
 };
 pub(crate) use canonical_commit_envelope::{
     CanonicalCommitEnvelopeBody, CanonicalCommitEnvelopeDraft, CanonicalEnvelopeReadmissionMemory,
@@ -216,7 +221,7 @@ pub struct MergeInspection {
     pub can_merge: bool,
 }
 
-pub(crate) use canonical_commit_envelope::CanonicalEnvelopeWire;
+pub(crate) use canonical_commit_envelope::{CanonicalEnvelopeSeed, CanonicalEnvelopeWire};
 
 pub(crate) use canonical_commit_envelope::{
     CodecDeclarationsReadmissionMemory, StrategyReadmissionMemory,

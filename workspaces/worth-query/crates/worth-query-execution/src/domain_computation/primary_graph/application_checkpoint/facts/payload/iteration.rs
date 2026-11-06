@@ -81,7 +81,7 @@ impl<'a> Cursor<'a> {
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct FactIter<'a> {
+pub struct FactIter<'a> {
     front: Cursor<'a>,
     back: Cursor<'a>,
     remaining: usize,

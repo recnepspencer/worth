@@ -1,5 +1,7 @@
 //! The landed WSRHOME1 version-2 envelope, with its application binding tag.
 use super::{ApplicationHomeDescriptorDenial as Denial, HomeDescriptor};
+#[cfg(test)]
+mod tests;
 
 const MAGIC: &[u8; 8] = b"WSRHOME1";
 const VERSION: u16 = 2;
@@ -40,13 +42,43 @@ fn text(text: &str, bytes: &mut Vec<u8>) {
     bytes.extend_from_slice(text.as_bytes());
 }
 
-pub(super) fn admit_record(
-    bytes: &[u8],
+#[derive(Debug)]
+pub(super) enum DescriptorBindingAdmission<'record> {
+    Exact(worth_foundational::facade::HomeIncarnation),
+    TransitionRequired {
+        recorded: &'record [u8],
+        incarnation: worth_foundational::facade::HomeIncarnation,
+    },
+}
+
+pub(super) fn admit_record<'record>(
+    bytes: &'record [u8],
     identity: [u8; 16],
     runtime: &str,
     profile: &str,
     binding: &[u8],
-) -> Result<worth_foundational::facade::HomeIncarnation, Denial> {
+) -> Result<DescriptorBindingAdmission<'record>, Denial> {
+    let recorded = read_record(bytes, identity, runtime, profile)?;
+    if recorded.binding != binding {
+        return Ok(DescriptorBindingAdmission::TransitionRequired {
+            recorded: recorded.binding,
+            incarnation: recorded.incarnation,
+        });
+    }
+    Ok(DescriptorBindingAdmission::Exact(recorded.incarnation))
+}
+
+pub(super) struct RecordedHomeDescriptor<'record> {
+    pub(super) incarnation: worth_foundational::facade::HomeIncarnation,
+    pub(super) binding: &'record [u8],
+}
+
+pub(super) fn read_record<'record>(
+    bytes: &'record [u8],
+    identity: [u8; 16],
+    runtime: &str,
+    profile: &str,
+) -> Result<RecordedHomeDescriptor<'record>, Denial> {
     let rest = bytes.strip_prefix(MAGIC).ok_or(Denial::Malformed)?;
     let (version, rest) = rest.split_first_chunk::<2>().ok_or(Denial::Malformed)?;
     let version = u16::from_le_bytes(*version);
@@ -89,10 +121,13 @@ pub(super) fn admit_record(
         return Err(Denial::Malformed);
     }
     // A prior implementation build is lineage, never authored program meaning.
-    if found_runtime != runtime || found_profile != profile || application != binding {
+    if found_runtime != runtime || found_profile != profile {
         return Err(Denial::BindingMismatch);
     }
-    Ok(incarnation)
+    Ok(RecordedHomeDescriptor {
+        incarnation,
+        binding: application,
+    })
 }
 
 fn take_text(bytes: &[u8]) -> Result<(&str, &[u8]), Denial> {

@@ -34,6 +34,15 @@ impl AdjacencySet {
                 );
             }
         }
+        if let Some(custody) = &entries.historical_kind_custody
+            && previous
+                .historical_kind_custody
+                .as_ref()
+                .map(|old| old.id())
+                != Some(custody.id())
+        {
+            visitor.visit(custody.observation(false));
+        }
         if let Some(revisions) = &entries.structural_revision_by_kind {
             revisions.visit_new_allocations(
                 previous
@@ -80,6 +89,9 @@ impl AdjacencySet {
                     relations.visit_allocations(false, visitor, &mut visit_inline_value);
                 },
             );
+        }
+        if let Some(custody) = &entries.historical_kind_custody {
+            visitor.visit(custody.observation(false));
         }
         if let Some(revisions) = &entries.structural_revision_by_kind {
             revisions.visit_allocations(false, visitor, &mut visit_inline_value);

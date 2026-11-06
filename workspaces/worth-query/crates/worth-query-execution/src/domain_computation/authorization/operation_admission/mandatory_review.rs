@@ -1,14 +1,12 @@
-use super::{WorthQueryAdmittedApplicationOperation, WorthQueryOperationAuthorizationBasis};
+use super::{ErasedAuthorizationBasis, WorthQueryAdmittedOperation};
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
     WorthQueryMandatoryReviewBinding, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialKind,
 };
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
-{
-    pub(in crate::domain_computation) fn bind_mandatory_review(
+impl WorthQueryAdmittedOperation {
+    pub(super) fn bind_mandatory_review(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryMandatoryReviewBinding,
@@ -19,11 +17,10 @@ impl<Schema, Operation, Input, Scope>
             WorthQueryMandatoryReviewBinding,
         ),
     > {
-        let basis = std::mem::replace(
-            &mut self.authorization_basis,
-            WorthQueryOperationAuthorizationBasis::Conventional,
-        );
-        let WorthQueryOperationAuthorizationBasis::Capability { input } = basis else {
+        if !matches!(
+            self.authorization_basis,
+            ErasedAuthorizationBasis::Capability
+        ) {
             return Err((
                 WorthQueryOperationAuthorizationDenial::new(
                     WorthQueryOperationAuthorizationDenialKind::Refused(
@@ -48,8 +45,7 @@ impl<Schema, Operation, Input, Scope>
                 ))
             }
         };
-        self.authorization_basis = WorthQueryOperationAuthorizationBasis::MandatoryReview {
-            input,
+        self.authorization_basis = ErasedAuthorizationBasis::MandatoryReview {
             binding: Box::new(binding),
             _binding_memory: memory,
         };
@@ -60,7 +56,7 @@ impl<Schema, Operation, Input, Scope>
         &self,
     ) -> Option<&WorthQueryMandatoryReviewBinding> {
         match &self.authorization_basis {
-            WorthQueryOperationAuthorizationBasis::MandatoryReview { binding, .. } => Some(binding),
+            ErasedAuthorizationBasis::MandatoryReview { binding, .. } => Some(binding),
             _ => None,
         }
     }
@@ -68,22 +64,15 @@ impl<Schema, Operation, Input, Scope>
     pub(in crate::domain_computation) fn take_mandatory_review_binding(
         &mut self,
     ) -> Option<WorthQueryMandatoryReviewBinding> {
-        let basis = std::mem::replace(
+        match std::mem::replace(
             &mut self.authorization_basis,
-            WorthQueryOperationAuthorizationBasis::Conventional,
-        );
-        match basis {
-            WorthQueryOperationAuthorizationBasis::MandatoryReview {
-                input,
+            ErasedAuthorizationBasis::Capability,
+        ) {
+            ErasedAuthorizationBasis::MandatoryReview {
                 binding,
                 _binding_memory: memory,
             } => {
-                self.authorization_basis =
-                    WorthQueryOperationAuthorizationBasis::Capability { input };
-                let binding = {
-                    let backing = binding;
-                    *backing
-                };
+                let binding = *binding;
                 drop(memory);
                 Some(binding)
             }

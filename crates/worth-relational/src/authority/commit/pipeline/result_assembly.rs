@@ -118,7 +118,7 @@ impl CommitResultMaterial {
             diagnostics,
             complexity_before,
             prior_complexity_delta,
-        ) = admitted.into_result_parts();
+        ) = admitted.into_inner().into_result_parts();
         Self {
             transaction_id,
             phase_timing,

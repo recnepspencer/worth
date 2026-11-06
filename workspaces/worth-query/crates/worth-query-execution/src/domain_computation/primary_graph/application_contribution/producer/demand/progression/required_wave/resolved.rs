@@ -28,7 +28,7 @@ impl ResolvedConsumedPredecessor {
     }
 }
 
-mod matched_predecessors;
+pub(crate) mod matched_predecessors;
 pub(in crate::domain_computation::primary_graph) use matched_predecessors::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use matched_predecessors::ReboundConsumedOutput;
 
@@ -152,7 +152,7 @@ where
         let crate::domain_computation::primary_graph::application_output_demand::PendingUpstream::Ready(
             upstream,
         ) = runtime
-            .output_demands
+            .runtime.output_demands
             .pending_exact_ready_readmission(pending, positioned)?
         else {
             return Ok(None);
@@ -195,6 +195,7 @@ where
     // Initial and Preserve may have different bindings; this match authenticates
     // the live successor cell and the exact consumed predecessor below.
     let Some(live_successor) = runtime
+        .runtime
         .output_demands
         .interest_ready_readmission(progress.interest())?
     else {
@@ -205,6 +206,7 @@ where
     }
 
     let predecessor = runtime
+        .runtime
         .primary_provider
         .graph
         .output_lineage

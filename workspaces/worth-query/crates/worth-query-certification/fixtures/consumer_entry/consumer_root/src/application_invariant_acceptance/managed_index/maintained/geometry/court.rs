@@ -5,10 +5,8 @@ use super::super::{
     bounds::Coordinates, court::accounted_request, host, prefix, rule as prefix_rule,
     schema::Catalog,
 };
-use super::{
-    authoring::{self, Edit},
-    provider, query, rule, Configuration,
-};
+use super::{authoring::Edit, provider, query, rule, Configuration};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use stats_alloc::Region;
 use std::sync::{atomic::Ordering, Arc, Mutex};
 use worth_query_host::facade::{
@@ -151,7 +149,7 @@ fn journey() {
     let calls = Arc::new(provider::Calls::default());
     let configuration = Configuration::new(Arc::clone(&calls));
     let rules = Arc::clone(&configuration.rules);
-    let prefix_calls = Arc::new(prefix::Calls::default());
+    let prefix_calls = Arc::new(prefix_observation::Calls::default());
     let prefix_rules = Arc::new(prefix_rule::Calls::new(Arc::clone(&prefix_calls)));
     let world = host::install_geometry(prefix_calls, prefix_rules, configuration);
     let scope = authentication::request_scope();

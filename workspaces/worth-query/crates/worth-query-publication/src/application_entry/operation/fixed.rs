@@ -81,7 +81,12 @@ where
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
 {
     Initial,
-    Replay(worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt),
+    ReplayRetained(
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+    ),
+    ReplayRecorded(
+        worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+    ),
     Unpublished(
         WorthQueryUnpublishedRequiredApplicationMutation<
             Schema,

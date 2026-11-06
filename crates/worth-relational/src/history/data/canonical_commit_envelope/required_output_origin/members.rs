@@ -209,7 +209,10 @@ pub(super) fn capture(
                 || producer.to_owned(),
                 |member| member.birth_producer.clone(),
             ),
-            birth_dependency: old.map_or(dependency, |member| member.birth_dependency),
+            birth_dependency: old.map_or(
+                worth_foundational::CanonicalDigestId::new(dependency),
+                |member| member.birth_dependency,
+            ),
             before_write,
             after_write,
         });

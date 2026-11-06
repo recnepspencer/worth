@@ -1,0 +1,23 @@
+{
+  "counts": {
+    "unit-graph (no compilation)": 103,
+    "check": 33,
+    "clippy": 26,
+    "test build/runtime": 7,
+    "fmt (non-compiling)": 51,
+    "run": 6,
+    "test runtime (nextest)": 33,
+    "metadata reuse": 91,
+    "native build/list": 23,
+    "metadata (non-compiling)": 32,
+    "build": 6,
+    "rustc code-generation build": 2,
+    "tree (non-compiling)": 1,
+    "direct named test invocations": 48,
+    "native diagnostic reexecutions": 10,
+    "formal internal Cargo run not separately captured": 1,
+    "focused native builds (subset of native build/list)": 15,
+    "Tier2/fixture native builds (subset of native build/list)": 8
+  },
+  "definition": "All attempts since latest resume at6aac, including failed attempts; unit graphs/metadata/fmt separated from compilation. Direct diagnostic executions are not passing test evidence."
+}

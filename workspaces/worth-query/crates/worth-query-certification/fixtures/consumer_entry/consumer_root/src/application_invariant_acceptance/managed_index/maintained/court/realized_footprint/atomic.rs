@@ -1,12 +1,13 @@
 //! Interfere after successful target verification, outside the Query branch lane.
 use super::super::super::schema::ItemName;
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::{num::NonZeroUsize, time::Duration};
 
 #[test]
 fn realized_footprint_atomic_pin_rejects_a_native_write_after_target_verification() {
     lifecycle::run(|| {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install_decision_read(
             calls.clone(),
             Arc::new(rule::Calls::new(calls)),

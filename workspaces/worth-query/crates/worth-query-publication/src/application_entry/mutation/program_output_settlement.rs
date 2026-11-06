@@ -1,4 +1,6 @@
 use std::any::Any;
+mod source;
+pub use source::WorthQueryPerformedProgramOutputSource;
 
 use worth_query_declaration::facade::application_program::ApplicationConnectionShape;
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
@@ -28,6 +30,7 @@ pub enum WorthQueryApplicationProgramOutputProgress<RootQuery> {
 /// Settled required program outputs: the root settlement, the outputs produced, and the
 /// work spent.
 pub struct WorthQueryApplicationProgramOutputSettlement<RootQuery> {
+    pub(super) performed_source: Option<WorthQueryPerformedProgramOutputSource>,
     pub(super) root:
         crate::application_entry::WorthQueryApplicationOutputDemandSettlement<RootQuery>,
     pub(super) outputs: Vec<ProgramOutputRecord>,
@@ -36,11 +39,17 @@ pub struct WorthQueryApplicationProgramOutputSettlement<RootQuery> {
 }
 
 impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
+    /// The performed action's original source, distinct from producer receipts.
+    /// A tree started from a read retains no performed action here.
+    pub fn performed_source(&self) -> Option<&WorthQueryPerformedProgramOutputSource> {
+        self.performed_source.as_ref()
+    }
+
     pub(in crate::application_entry) fn retained_settlements(
         &self,
     ) -> impl Iterator<
         Item = &worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement,
-    > {
+    > + Clone {
         std::iter::once(self.root.retained_settlement()).chain(
             self.outputs
                 .iter()

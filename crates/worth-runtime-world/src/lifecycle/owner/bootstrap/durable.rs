@@ -7,8 +7,8 @@ use crate::branch::{
     WorldDurableBootstrapOutcome as Outcome, WorldDurableBootstrapRefusal as Refusal,
 };
 use crate::durability::{
-    ActualWorldPublication, DurableWorldHead, WorldDurableArtifact, WorldDurableMediumBinding,
-    WorldDurablePublicationStop, WorldRecord,
+    ActualWorldPublication, WorldArtifactInput, WorldDurableArtifact, WorldDurableMediumBinding,
+    WorldDurablePublicationStop, WorldHeadInput,
 };
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -133,32 +133,12 @@ where
         };
         let owner = binding.binding().owner();
         let observed = &prepared.observation;
-        let branch = match DurableProductBranchIdentity::from_recorded(
-            owner,
-            observed.branch_identity().name().as_str().to_owned(),
-        ) {
-            Ok(branch) => branch,
-            Err(_) => {
-                return Outcome::Refused(Refusal::Preparation(
-                    RuntimeWorldBootstrapNoEffectCause::ForeignBasis,
-                ))
-            }
+        let head = match WorldHeadInput::from_observation(observed) {
+            Ok(head) => head,
+            Err(cause) => return Outcome::Refused(Refusal::Medium(cause)),
         };
-        let record = WorldRecord::Branch {
-            head: DurableWorldHead {
-                branch,
-                incarnation: DurableProductBranchIncarnation::from_recorded(
-                    owner,
-                    observed.lifecycle_incarnation().ordinal(),
-                ),
-                generation: DurableProductReferenceGeneration::from_recorded(
-                    observed.reference_generation().get(),
-                ),
-                commit: DurableCompositeCommitIdentity::from_recorded(
-                    owner,
-                    observed.selected_commit().ordinal(),
-                ),
-            },
+        let input = WorldArtifactInput::Branch {
+            head,
             bootstrap: DurableWorldBootstrapAttemptIdentity::from_recorded(
                 owner,
                 prepared.attempt.ordinal(),
@@ -170,7 +150,7 @@ where
                 bridge,
             },
         };
-        let subject = match WorldDurableArtifact::from_record(record, execution) {
+        let subject = match WorldDurableArtifact::from_input(input, execution) {
             Ok(subject) => subject,
             Err(cause) => return Outcome::Refused(Refusal::Medium(cause)),
         };
@@ -232,7 +212,8 @@ where
         if !acknowledged && !selected {
             match pending.binding.publish(&pending.subject, execution) {
                 Ok(witness) => {
-                    *pending.committed.lock().unwrap_or_else(|e| e.into_inner()) = Some(witness)
+                    *pending.committed.lock().unwrap_or_else(|e| e.into_inner()) =
+                        Some(witness.into_witness())
                 }
                 Err(WorldDurablePublicationStop::Pending | WorldDurablePublicationStop::Busy) => {
                     return Outcome::Pending

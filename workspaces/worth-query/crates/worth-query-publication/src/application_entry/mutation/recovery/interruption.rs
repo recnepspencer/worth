@@ -17,6 +17,30 @@ use worth_query_execution::facade::{
 };
 pub(in crate::application_entry::mutation) fn request_stop(denial: &Request) -> Option<Denial> {
     match denial {
+        Request::DocumentHistory(cause) => {
+            use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial as History;
+            use worth_query_execution::facade::product::WorthQueryExpectedProductBranchAdoptionDenial as Adoption;
+            match cause {
+                History::Stopped(cause) | History::Adoption(Adoption::Stopped(cause)) => Some(*cause),
+                History::OperationAdmission(cause) => authorization_interruption(cause.kind()),
+                History::Metadata(cause) => metadata_stop(cause),
+                History::CandidateSelection(Product::Stopped(cause)) => execution_stop(*cause),
+                History::Recording(cause) => execution_stop(worth_query_execution::facade::primary_graph::relational_execution_kind(*cause, None)),
+                History::NativeBasis(_) => cause.native_basis_interruption().map(Denial::Interrupted),
+                History::ForeignPhase | History::ForeignRuntime | History::InstalledBindingMismatch
+                | History::UnsupportedReadMode | History::ForeignModel | History::ForeignHistoryNode | History::HistoryNodeUnavailable | History::OperationNotDeclared
+                | History::HeadDiverged | History::RecordingIdentityExhausted | History::AttemptInFlight
+                | History::IntentDrift | History::ForeignRecording | History::UnsupportedOperation
+                | History::ReceiptMismatch | History::CandidateSelection(_) | History::Adoption(_)
+                | History::HeadAdmission(_) | History::Read(_) | History::MetadataCapabilityInstallation(_) | History::Paging(_)
+                | History::UnsupportedContextRefresh | History::ContextRefresh(_)
+                | History::HistoryNodeExcluded | History::RetentionMaintenancePending
+                | History::RetentionReleaseCapacityExhausted | History::BookmarkCapacityExhausted
+                | History::RetentionPolicyNotDeclared | History::RetentionOperationInstallation(_) | History::Allocation(_)
+                | History::EmptyGroup | History::GroupMemberLimitExceeded
+                | History::GroupResultLimitExceeded | History::GroupMemberMismatch | History::GroupNotComplete => None,
+            }
+        },
         Request::SignedCreation(worth_query_execution::facade::primary_graph::WorthQuerySignedCreationPreparationDenial::Execution(cause)) => Some(*cause),
         Request::SignedCreation(worth_query_execution::facade::primary_graph::WorthQuerySignedCreationPreparationDenial::LifecycleObservation(outcome)) => {
             use worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome as Outcome;
@@ -88,6 +112,28 @@ pub(super) fn authorization_interruption(cause: Authorization) -> Option<Denial>
     }
 }
 
+fn metadata_stop(
+    cause: &worth_query_execution::facade::primary_graph::WorthQueryApplicationHistoryDenial,
+) -> Option<Denial> {
+    use worth_query_execution::facade::primary_graph::{
+        WorthQueryApplicationHistoryDenial as History,
+        WorthQueryApplicationQueryAdmissionDenialKind as Query,
+    };
+    match cause {
+        History::Authorization(cause) => authorization_interruption(cause.kind()),
+        History::Query(cause) => match cause.kind() {
+            Query::Cancelled => Some(Denial::Interrupted(Interruption::Cancelled)),
+            Query::DeadlineExceeded => Some(Denial::Interrupted(Interruption::DeadlineExceeded)),
+            Query::Authorization(cause) => authorization_interruption(cause),
+            Query::ExecutionRequest(cause) => execution_stop(Ok(cause)),
+            _ => None,
+        },
+        // This carrier is used by recording admission for metadata governance.
+        // Original model-read failures keep their separate History::Read owner.
+        _ => None,
+    }
+}
+
 fn execution_stop(cause: Result<Execution, Control>) -> Option<Denial> {
     match cause {
         Err(Control::Cancelled) => Some(Denial::Interrupted(Interruption::Cancelled)),
@@ -95,12 +141,15 @@ fn execution_stop(cause: Result<Execution, Control>) -> Option<Denial> {
         Ok(Execution::ExecutionResource { denial, .. }) => Some(Denial::Resource(denial)),
         Ok(Execution::ExecutionNestedPatternStopped { .. }) => Some(Denial::NestedStopped),
         Ok(Execution::ExecutionWorkerPanicked { .. }) => Some(Denial::Panicked),
-        Ok(Execution::ProjectionContract { .. })
+        Ok(Execution::Content(_))
+        | Ok(Execution::ContentInconsistency)
+        | Ok(Execution::ProjectionContract { .. })
         | Ok(Execution::HistoricalVisibility { .. })
         | Ok(Execution::StorageUnavailable(_))
         | Ok(Execution::ForeignOperationAttempt)
         | Ok(Execution::ForeignExecutionBasis)
         | Ok(Execution::ForeignGraphAuthority)
+        | Ok(Execution::StaleIncarnation)
         | Ok(Execution::UndeclaredOperationScope)
         | Ok(Execution::ResourceEnvelopeMismatch)
         | Ok(Execution::ExecutionIdentitiesNotCanonical { .. })

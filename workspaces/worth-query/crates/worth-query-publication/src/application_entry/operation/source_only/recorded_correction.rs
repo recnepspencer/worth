@@ -30,6 +30,7 @@ where
             preconditions: Default::default(),
             source: None,
             branch,
+            history: None,
         };
         let mut operation = Self::construct(description, runtime).map_err(|(_, cause)| cause)?;
         operation.admission.recorded_correction = Some(correction);

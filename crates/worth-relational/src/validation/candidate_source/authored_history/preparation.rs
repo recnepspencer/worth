@@ -34,6 +34,7 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
         runtime,
         selected,
         proposal,
+        records: _,
     } = *context;
     let catalog = &runtime
         .schema_contract_runtime
@@ -70,10 +71,19 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
             )
         })?,
     )?;
-    let groups = runtime
-        .schema_contract_runtime
-        .custom_invariant_registries
-        .source_groups(input.entity_kinds(&before, &after), input.relation_kinds());
+    let groups = if runtime.home_target.is_some() {
+        runtime
+            .schema_contract_runtime
+            .custom_invariant_registries
+            .all_source_groups()
+            .iter()
+            .collect()
+    } else {
+        runtime
+            .schema_contract_runtime
+            .custom_invariant_registries
+            .source_groups(input.entity_kinds(&before, &after), input.relation_kinds())
+    };
     let adjacency = input.deltas(budget)?;
     let mut seen = ExecutionOrderedMap::<usize, ()>::default();
     let mut impacts = ExecutionOrderedMap::default();
@@ -103,14 +113,23 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
             let new = StructuralRelationView::new(after.clone(), execution, work.clone(), access)
                 .with_structural_source(&runtime_view, &observation, false);
             let records = source_records(execution, budget, program, &input, &before, &after)?;
-            let closure = super::super::scope_closure::discover(
-                runtime_view.selected_registry.registry(),
-                program,
-                &records,
-                &adjacency,
-                &old,
-                &new,
-            )?;
+            let closure = if runtime.home_target.is_some() {
+                super::super::scope_closure::discover_home_target(
+                    runtime_view.selected_registry.registry(),
+                    program,
+                    context.records,
+                    &new,
+                )?
+            } else {
+                super::super::scope_closure::discover(
+                    runtime_view.selected_registry.registry(),
+                    program,
+                    &records,
+                    &adjacency,
+                    &old,
+                    &new,
+                )?
+            };
             for (scope, rows) in &closure.scopes {
                 let mut retained = ExecutionOrderedMap::default();
                 for row in rows {

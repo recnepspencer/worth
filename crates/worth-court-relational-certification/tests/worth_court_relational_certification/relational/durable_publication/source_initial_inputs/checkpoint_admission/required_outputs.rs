@@ -109,8 +109,8 @@ fn captured_outputs(
                 .unwrap(),
                 family: (*family).into(),
                 source_scope: EntityId::new(PartitionId::main(), 0, 1),
-                source_partition: [3; 32],
-                source_epoch: [4; 32],
+                source_partition: worth_foundational::CanonicalDigestId::new([3; 32]),
+                source_epoch: worth_foundational::CanonicalDigestId::new([4; 32]),
             },
             roles: vec![RequiredOutputRoleTarget {
                 role: "output".into(),

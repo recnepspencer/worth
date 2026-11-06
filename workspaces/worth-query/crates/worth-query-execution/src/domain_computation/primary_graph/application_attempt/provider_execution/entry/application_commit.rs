@@ -11,16 +11,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let request = program.read_set.admission.publication_request().clone();
-        self.with_funded_application_advancement(&request, allocation_policy, |phase| {
-            self.compare_and_commit_application_in_advancement(
-                &phase,
-                program,
-                idempotency,
-                allocation_policy,
-            )
-        })
-        .unwrap_or_else(|denial| denial.into_commit_outcome())
+        if let Err(outcome) = self.require_program_incarnation(&program) {
+            return outcome;
+        }
+        let entry = match self.validate_commit_program(program) {
+            Ok(entry) => entry,
+            Err(outcome) => return outcome,
+        };
+        entry.compare_and_commit_application(idempotency, allocation_policy)
     }
 
     #[doc(hidden)]
@@ -35,24 +33,39 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let execution = match phase.execution_request_for(&self.product_runtime) {
-            Ok(execution) => execution,
-            Err(cause) => {
-                return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
-                    cause,
-                )
-                .into_commit_outcome()
-            }
-        };
-        if let Some(denial) = self.direct_operation_commit_denial::<Operation>() {
-            return WorthQueryApplicationCommitOutcome::Denied(denial);
+        if let Err(outcome) = self.require_program_incarnation(&program) {
+            return outcome;
         }
-        self.compare_and_commit_application_with_output_observation(
-            &execution,
-            phase,
-            program,
+        let entry = match self.validate_commit_program_in_advancement(phase, program) {
+            Ok(entry) => entry,
+            Err(outcome) => return outcome,
+        };
+        entry.compare_and_commit_application_in_advancement(idempotency, allocation_policy)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_in_advancement_with_history<
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        history: Option<HistoryProducerInvocation<'_>>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+    {
+        let entry = match self.validate_commit_program_in_advancement(phase, program) {
+            Ok(entry) => entry,
+            Err(outcome) => return outcome,
+        };
+        entry.compare_and_commit_application_in_advancement_with_history(
             idempotency,
-            false,
+            history,
             allocation_policy,
         )
     }

@@ -1,4 +1,3 @@
-#[cfg(test)]
 use super::own_effect_observation::{self, Stage};
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
@@ -14,9 +13,12 @@ use crate::domain_computation::primary_graph::application_output_demand::{
     WorthQueryOutputDemandInterest, WorthQueryPendingOutputDelivery as Delivery,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+mod publication;
+mod recovered;
 mod selected;
+mod unpublished;
 
-struct PreparedSelectedDelivery<'a> {
+pub struct PreparedSelectedDelivery<'a> {
     lowering: &'a std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
     ordinal: usize,
     preserved: bool,
@@ -35,8 +37,28 @@ where
         producer_identity: &str,
         claim: WorthQueryOutputClaimIdentity,
         checkpoint: Checkpoint,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        invocation: &super::super::ProducerInvocationAuthority<'_>,
+        returned: &mut Option<Checkpoint>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         match checkpoint {
+            Checkpoint::PublicationPending {
+                owner,
+                ready_backing,
+            } => self.advance_unpublished_checkpoint(
+                phase,
+                producer_identity,
+                principal,
+                request,
+                invocation,
+                owner,
+                ready_backing,
+                |checkpoint| {
+                    self.finish_output_checkpoint(interest, claim, checkpoint, None, returned)
+                        .map(|_| ())
+                },
+            ),
             Checkpoint::Published {
                 receipt,
                 delivery,
@@ -44,23 +66,21 @@ where
             } => {
                 // A delivery that is still waiting leaves the checkpoint
                 // Published: nothing moved, so the caller does not spin on it.
-                #[cfg(test)]
                 own_effect_observation::record(Stage::DeliveryStarted);
                 let mut delivered = false;
                 self.deliver_output_checkpoint_with_finish(
                     phase,
                     producer_identity,
-                    receipt,
+                    receipt.into(),
                     delivery,
                     ready_backing,
                     false,
                     None,
                     |checkpoint, denial| {
                         delivered = matches!(&checkpoint, Checkpoint::Delivered { .. });
-                        self.finish_output_checkpoint(interest, claim, checkpoint, denial)
+                        self.finish_output_checkpoint(interest, claim, checkpoint, denial, returned)
                     },
                 )?;
-                #[cfg(test)]
                 own_effect_observation::record(if delivered {
                     Stage::Delivered
                 } else {
@@ -77,7 +97,7 @@ where
                     execution,
                     phase,
                     producer_identity,
-                    &receipt,
+                    (&receipt).into(),
                     delivery.as_ref(),
                     &ready_backing,
                 ) {
@@ -93,11 +113,11 @@ where
                                     ready_backing,
                                 },
                                 Some(cause),
+                                returned,
                             )
                             .map(|_| false)
                     }
                 };
-                #[cfg(test)]
                 own_effect_observation::record(Stage::Ready);
                 let completion = ready_backing.complete(WorthQueryCompletedOutputDemand {
                     authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
@@ -108,9 +128,21 @@ where
                     claim,
                     Checkpoint::Ready(completion),
                     None,
+                    returned,
                 )?;
                 Ok(true)
             }
+            checkpoint @ (Checkpoint::RecoveredPublished { .. }
+            | Checkpoint::RecoveredDelivered { .. }) => self.advance_recovered_checkpoint(
+                execution,
+                phase,
+                producer_identity,
+                checkpoint,
+                None,
+                |checkpoint, denial| {
+                    self.finish_output_checkpoint(interest, claim, checkpoint, denial, returned)
+                },
+            ),
             Checkpoint::Ready(_) => unreachable!("ready output opens reads without a claim"),
         }
     }
@@ -120,7 +152,7 @@ where
         phase: &WorthQueryAdvancementPhase<'_>,
 
         producer_identity: &str,
-        receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: publication::Publication,
         delivery: Delivery,
         ready_backing: crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
         selected: bool,
@@ -132,32 +164,20 @@ where
             -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         if self
+            .runtime
             .primary_provider
             .take_delayed_output_readiness_delivery()
         {
-            return finish(
-                Checkpoint::Published {
-                    receipt,
-                    delivery,
-                    ready_backing,
-                },
-                None,
-            );
+            return finish(receipt.published(delivery, ready_backing), None);
         }
         let Delivery::Change(change) = delivery else {
-            return finish(
-                Checkpoint::Delivered {
-                    receipt,
-                    delivery: None,
-                    ready_backing,
-                },
-                None,
-            );
+            return finish(receipt.delivered(None, ready_backing), None);
         };
         let (lowering, ordinal) = if let Some(prepared) = prepared.as_ref() {
             (prepared.lowering, prepared.ordinal)
         } else {
             let route = self
+                .runtime
                 .output_readiness_routes
                 .get(producer_identity)
                 .expect("installation requires one readiness route for every output producer");
@@ -183,7 +203,7 @@ where
                 };
                 let kind = WorthQueryOutputDemandDenialKind::CorrespondenceDelivery(Box::new(posture));
                 return finish(
-                    Checkpoint::Published { receipt, delivery: Delivery::Change(change), ready_backing },
+                    receipt.published(Delivery::Change(change), ready_backing),
                     Some(denial(kind, detail)),
                 );
             }
@@ -204,11 +224,7 @@ where
                 ) };
                 let failure = denial(kind, detail);
                 return finish(
-                    Checkpoint::Published {
-                        receipt,
-                        delivery: Delivery::Change(cause.into_change()),
-                        ready_backing,
-                    },
+                    receipt.published(Delivery::Change(cause.into_change()), ready_backing),
                     Some(failure),
                 );
             }
@@ -222,7 +238,7 @@ where
                     .get(producer_identity)
                     .expect("readiness route retains its installed producer")
                     .executor
-                    .preserved_readiness_output(&receipt)
+                    .preserved_readiness_output(receipt.view())
             };
             let counters = delivered.counters();
             let exact_noop = delivered.truth_targets_admitted() == 0
@@ -233,11 +249,7 @@ where
                 && counters.failed_deliveries() == 0;
             if !preserved || !exact_noop {
                 return finish(
-                    Checkpoint::Delivered {
-                        receipt,
-                        delivery: Some(delivered),
-                        ready_backing,
-                    },
+                    receipt.delivered(Some(delivered), ready_backing),
                     Some(denial(
                         WorthQueryOutputDemandDenialKind::SchedulingRejected,
                         if selected {
@@ -251,14 +263,7 @@ where
                 );
             }
         }
-        finish(
-            Checkpoint::Delivered {
-                receipt,
-                delivery: Some(delivered),
-                ready_backing,
-            },
-            None,
-        )
+        finish(receipt.delivered(Some(delivered), ready_backing), None)
     }
 
     fn finish_output_checkpoint(
@@ -267,9 +272,23 @@ where
         claim: WorthQueryOutputClaimIdentity,
         checkpoint: Checkpoint,
         denial: Option<WorthQueryOutputDemandDenial>,
+        returned: &mut Option<Checkpoint>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
-        self.output_demands
-            .finish_checkpoint(interest, claim, checkpoint, denial.as_ref())?;
+        use crate::domain_computation::primary_graph::application_output_demand::CheckpointFinishStop;
+        match self.runtime.output_demands.finish_checkpoint_owned(
+            interest,
+            claim,
+            checkpoint,
+            denial.as_ref(),
+        ) {
+            Ok(()) => {}
+            Err(CheckpointFinishStop::Restored(stop)) => return Err(stop),
+            Err(CheckpointFinishStop::Returned(stop, checkpoint)) => {
+                assert!(returned.is_none(), "one original checkpoint owner");
+                *returned = Some(checkpoint);
+                return Err(stop);
+            }
+        }
         match denial {
             Some(denial) => Err(denial),
             None => Ok(WorthQueryOutputDemandAdvance::Pending),
@@ -277,5 +296,4 @@ where
     }
 }
 
-#[cfg(test)]
-mod stopped_delivery;
+mod court_doors_for_test;

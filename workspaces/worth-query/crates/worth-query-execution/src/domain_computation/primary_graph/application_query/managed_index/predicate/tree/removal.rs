@@ -42,11 +42,11 @@ impl<P, R, S: Summary> PredicateTree<P, R, S> {
             .expect("unlinked actual record remains owned");
         self.rebalance(next);
         Some(Retired {
-            _empty_backing: self
+            empty_backing_custody: self
                 .records
                 .is_empty()
                 .then(|| std::mem::take(&mut self.records)),
-            record,
+            record_custody: Some(record),
         })
     }
 }

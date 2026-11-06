@@ -12,27 +12,12 @@ impl ExecutionRequest<'_, '_> {
     ) -> Result<Option<ExecutionMemoryReservation>, WorkCeilingDenial> {
         let mut held = None;
         let outcome = self.run_native_with_checkpoint(|context| {
-            let admission = (|| {
-                context.poll().map_err(WorkCeilingDenial::Stopped)?;
-                if !context.has_accounting() {
-                    Ok(None)
-                } else {
-                    let reservation = match self.form {
-                        RequestBacking::Leased(lease) => {
-                            let active = lease.current_descendant();
-                            ExecutionMemoryReservation::reserve_in_scope(
-                                Some(active.as_ref().unwrap_or(lease)),
-                                bytes,
-                            )
-                        }
-                        RequestBacking::Serial(_) => {
-                            ExecutionMemoryReservation::reserve_in_scope(None, bytes)
-                        }
-                    };
-                    reservation.map(Some).map_err(WorkCeilingDenial::Admission)
-                }
-            })();
-            held = Some(admission);
+            held = Some(
+                context
+                    .poll()
+                    .map_err(WorkCeilingDenial::Stopped)
+                    .and_then(|()| self.reserve_retained_memory_in_stage(context, bytes)),
+            );
         });
         match (outcome, held) {
             (Ok(_), Some(held)) => held,
@@ -44,5 +29,31 @@ impl ExecutionRequest<'_, '_> {
             (Err(cause), _) => Err(cause),
             (Ok(_), None) => unreachable!("completed original-request callback"),
         }
+    }
+
+    /// Admit retained backing inside the caller's active stage of this request.
+    /// The reservation draws on that stage's lineage and opens no scope. A
+    /// native-only stage has no accounting ticket. The reservation must live
+    /// with its backing until the final drop.
+    pub fn reserve_retained_memory_in_stage(
+        self,
+        context: &crate::MapKernelContext<'_, '_>,
+        bytes: u64,
+    ) -> Result<Option<ExecutionMemoryReservation>, WorkCeilingDenial> {
+        if !context.has_accounting() {
+            return Ok(None);
+        }
+        match self.form {
+            RequestBacking::Leased(lease) => {
+                let active = lease.current_descendant();
+                ExecutionMemoryReservation::reserve_in_scope(
+                    Some(active.as_ref().unwrap_or(lease)),
+                    bytes,
+                )
+            }
+            RequestBacking::Serial(_) => ExecutionMemoryReservation::reserve_in_scope(None, bytes),
+        }
+        .map(Some)
+        .map_err(WorkCeilingDenial::Admission)
     }
 }

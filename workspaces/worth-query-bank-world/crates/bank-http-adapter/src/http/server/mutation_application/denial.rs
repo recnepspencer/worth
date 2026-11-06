@@ -9,6 +9,10 @@ pub(in crate::http::server) fn request_mutation_denial(
 ) -> BankHttpDenial {
     use WorthQueryApplicationRequestMutationDenialKind as Denial;
     match kind {
+        Denial::OriginalEffectReleased => BankHttpDenial::new(
+            BankHttpDenialKind::OriginalEffectReleased,
+            BankHttpNextAction::ContactOperator,
+        ),
         Denial::ExecutionRequest(cause) => super::super::advancement_denial::advancement(cause),
         Denial::IdempotencyPreparationBusy => {
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
@@ -50,6 +54,7 @@ pub(in crate::http::server) fn request_mutation_denial(
         | Denial::WorkflowControl
         | Denial::WorkflowCapturedInput
         | Denial::InputNotAdmitted
+        | Denial::DocumentHistory
         | Denial::SignedCreation
         | Denial::HandlerNotInstalled
         | Denial::IdempotencyIntentUnverifiable
@@ -105,6 +110,9 @@ pub(in crate::http::server) fn pending_execution_denial(
 ) -> BankHttpDenial {
     use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
     match kind {
+        Kind::Content(cause) => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::Content(cause)),
+        Kind::StaleIncarnation => BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        Kind::ContentInconsistency => BankHttpDenial::new(BankHttpDenialKind::InternalDenied, BankHttpNextAction::ContactOperator),
         Kind::ProjectionContract { denial, .. } => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::ProjectionContract(denial)),
         Kind::HistoricalVisibility { denial, .. } => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::HistoricalVisibility(denial)),
         Kind::StorageUnavailable(failure) => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::StorageUnavailable(failure)),
@@ -175,6 +183,7 @@ mod tests {
     fn each_idempotency_cause_asks_for_the_action_that_can_succeed() {
         use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind as Authorization;
         let cases = [
+            (Denial::OriginalEffectReleased, BankHttpDenialKind::OriginalEffectReleased, BankHttpNextAction::ContactOperator),
             (
                 Denial::Authorization(Authorization::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut))),
                 BankHttpDenialKind::DeadlineExceeded,

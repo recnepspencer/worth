@@ -1,0 +1,63 @@
+//! Each actual journal insertion keeps the originating request's native memory grant.
+use crate::domain_computation::primary_graph::structural_walk::memory;
+use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+
+pub(super) fn reserve_buffer(
+    execution: &ExecutionRequest<'_, '_>,
+    bytes: usize,
+) -> Result<Option<ExecutionMemoryReservation>, Cause> {
+    memory::reserve(
+        execution,
+        execution.has_accounting(),
+        u64::try_from(bytes).map_err(|_| Cause::ChargedBytesOverflow)?,
+    )
+}
+
+pub(super) fn reserve_arc<T>(
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<Option<ExecutionMemoryReservation>, Cause> {
+    let (layout, _) = std::alloc::Layout::new::<[usize; 2]>()
+        .extend(std::alloc::Layout::new::<T>())
+        .map_err(|_| Cause::ChargedBytesOverflow)?;
+    memory::reserve(
+        execution,
+        execution.has_accounting(),
+        layout.pad_to_align().size() as u64,
+    )
+}
+
+#[derive(Debug)]
+pub(super) struct HistoryInsertionAllocation {
+    _ticket: Option<ExecutionMemoryReservation>,
+}
+
+impl HistoryInsertionAllocation {
+    pub(super) fn reserve<T>(
+        execution: &ExecutionRequest<'_, '_>,
+        len: usize,
+        additional_bytes: usize,
+    ) -> Result<(Self, u64), Cause> {
+        let mut ticket = None;
+        let mut bytes = u64::try_from(additional_bytes).map_err(|_| Cause::ChargedBytesOverflow)?;
+        let reserved = execution.run_native_with_checkpoint(|context| {
+            memory::grow_tree::<T>(
+                &mut ticket,
+                &mut bytes,
+                len,
+                execution,
+                context.has_accounting(),
+            )
+        });
+        match reserved {
+            Ok((result, _)) => result?,
+            Err(stop) => return Err(stop.into()),
+        }
+        Ok((Self { _ticket: ticket }, bytes))
+    }
+    pub(super) fn ticket_bytes(&self) -> u64 {
+        self._ticket
+            .as_ref()
+            .map_or(0, ExecutionMemoryReservation::bytes)
+    }
+}

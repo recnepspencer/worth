@@ -5,8 +5,9 @@ use worth_execution::ExecutionAllocationDenial;
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum RelationalCanonicalCommitArtifactEncodeDenial {
-    Request(worth_execution::WorkCeilingDenial),
     Readmission(crate::durability::data::RelationalRecoveryStop),
+    Frame(super::RelationalCanonicalCommitArtifactFrameRefusal),
+    Request(crate::execution::RelationalExecutionDenialCause),
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     /// The caller's allocation policy refused, was cancelled or expired.
     Allocation(ExecutionAllocationDenial),
@@ -16,6 +17,10 @@ pub enum RelationalCanonicalCommitArtifactEncodeDenial {
     },
     /// Header plus payload length is not representable.
     FrameSizeOverflow,
+    SizeLimit {
+        observed: usize,
+        maximum: usize,
+    },
     /// The counting pass and the emitting pass disagreed on payload length.
     CountEmissionMismatch {
         counted: usize,
@@ -47,10 +52,11 @@ impl From<crate::durability::artifact_payload_emission::ArtifactPayloadEmissionD
 impl std::fmt::Display for RelationalCanonicalCommitArtifactEncodeDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Request(cause) => {
-                write!(formatter, "original canonical artifact request: {cause:?}")
-            }
             Self::Readmission(cause) => write!(formatter, "selected canonical source: {cause}"),
+            Self::Frame(cause) => write!(formatter, "canonical artifact source frame: {cause:?}"),
+            Self::Request(cause) => {
+                write!(formatter, "canonical artifact original request: {cause:?}")
+            }
             Self::StorageUnavailable(failure) => write!(
                 formatter,
                 "canonical artifact storage unavailable: {failure:?}"
@@ -64,6 +70,10 @@ impl std::fmt::Display for RelationalCanonicalCommitArtifactEncodeDenial {
                     "canonical commit artifact payload encoding: {detail}"
                 )
             }
+            Self::SizeLimit { observed, maximum } => write!(
+                formatter,
+                "canonical artifact size {observed} exceeds {maximum}"
+            ),
             Self::FrameSizeOverflow => {
                 formatter.write_str("canonical commit artifact size is not representable")
             }
@@ -89,7 +99,9 @@ impl From<worth_execution::ExecutionRequestArrayDenial>
 {
     fn from(cause: worth_execution::ExecutionRequestArrayDenial) -> Self {
         match cause {
-            worth_execution::ExecutionRequestArrayDenial::Request(cause) => Self::Request(cause),
+            worth_execution::ExecutionRequestArrayDenial::Request(cause) => {
+                Self::Request(cause.into())
+            }
             worth_execution::ExecutionRequestArrayDenial::Allocation(cause) => {
                 Self::Allocation(cause)
             }

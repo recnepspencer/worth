@@ -31,7 +31,7 @@ pub(in crate::domain_computation::authorization) struct WorthQueryResolvedCapabi
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
-pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityContextKey {
+pub struct WorthQueryCapabilityContextKey {
     context: String,
     context_type: String,
     slot: String,

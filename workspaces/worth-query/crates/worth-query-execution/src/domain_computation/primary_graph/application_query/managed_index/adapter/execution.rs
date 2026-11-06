@@ -111,12 +111,7 @@ where
                 .map_err(Denial::Product)?
                 .prepare_shared_query_basis()
                 .map_err(|(_, cause)| Denial::NativeAdmission(cause))?;
-            let access = SourceQueryReaderAccess {
-                application,
-                shared: &shared,
-                principal: external,
-                request,
-            };
+            let access = SourceQueryReaderAccess::ordinary(application, &shared, external, request);
             return super::super::maintained_read::select::<S, I>(
                 execution,
                 application,

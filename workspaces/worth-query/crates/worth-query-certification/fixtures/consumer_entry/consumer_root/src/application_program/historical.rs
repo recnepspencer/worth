@@ -12,6 +12,7 @@ pub(crate) type FixedAction = ApplicationActionReference<
     Binding,
     FixedDelivery,
 >;
+#[cfg(test)]
 pub(crate) type DiscoveredAction = ApplicationActionReference<
     ConsumerSchema,
     InitialDiscoveredPlanarRoot,
@@ -20,6 +21,7 @@ pub(crate) type DiscoveredAction = ApplicationActionReference<
     DiscoveredDelivery,
 >;
 pub(crate) struct FixedDelivery;
+#[cfg(test)]
 pub(crate) struct DiscoveredDelivery;
 impl ApplicationActionDelivery<ConsumerSchema, Binding> for FixedDelivery {
     type Mode =
@@ -30,6 +32,7 @@ impl ApplicationFixedActionDelivery<ConsumerSchema, Binding> for FixedDelivery {
     type Root = ConsumerInitialFixedProgramRoot;
     type Projection = ApplicationNoProjection;
 }
+#[cfg(test)]
 impl ApplicationActionDelivery<ConsumerSchema, Binding> for DiscoveredDelivery {
     type Mode = ApplicationDiscoveredDeliveryMode<
         ConsumerInitialDiscoveredProgramRoot,
@@ -37,14 +40,16 @@ impl ApplicationActionDelivery<ConsumerSchema, Binding> for DiscoveredDelivery {
     >;
     const IDENTITY: &'static str = "consumer.historical-discovered.v1";
 }
+#[cfg(test)]
 impl ApplicationDiscoveredActionDelivery<ConsumerSchema, Binding> for DiscoveredDelivery {
     type Root = ConsumerInitialDiscoveredProgramRoot;
     type Projection = ApplicationNoProjection;
 }
 pub(crate) struct FixedProgram;
+#[cfg(test)]
 pub(crate) struct DiscoveredProgram;
 macro_rules! historical_program {
-    ($program:ty,$delivery:ty,$root:ty,$identity:literal) => {
+    ($program:ty,$delivery:ty,$root:ty,$identity:literal,$additional:expr) => {
         impl ApplicationProgramDefinition<ConsumerSchema> for $program {
             type Contributions = <ConsumerProgram as ApplicationProgramDefinition<ConsumerSchema>>::Contributions;
             type Rules = <ConsumerProgram as ApplicationProgramDefinition<ConsumerSchema>>::Rules;
@@ -59,7 +64,11 @@ macro_rules! historical_program {
                 specs.retain(|spec| !(spec.feature().composition_instance()==InitialDiscoveredPlanarRoot::PATH
                     && spec.feature().identity()==<PlanarSourceFeature as ApplicationFeature<ConsumerSchema>>::IDENTITY));
                 specs.push(ApplicationFeatureSpec::at::<ConsumerSchema,InitialDiscoveredPlanarRoot,PlanarSourceFeature>()
-                    .provides::<PlanarBodyOutput>().action::<Binding, $delivery>().finish_action().finish());
+                    .provides::<PlanarBodyOutput>().action::<Binding, $delivery>().finish_action()
+                    .action::<worth_query_topology_entry::SetPlanarHistoryStatusBinding<ConsumerSchema>,
+                        crate::application_program::source_completion::ConsumerSourceCompletion>()
+                    .finish_action().finish());
+                specs.extend($additional);
                 specs
             }
         }
@@ -69,14 +78,24 @@ historical_program!(
     FixedProgram,
     FixedDelivery,
     ConsumerInitialFixedProgramRoot,
-    "consumer.historical-fixed-program.v1"
+    "consumer.historical-fixed-program.v1",
+    Vec::<ApplicationFeatureSpec>::new()
 );
+#[cfg(test)]
 historical_program!(
     DiscoveredProgram,
     DiscoveredDelivery,
     ConsumerInitialDiscoveredProgramRoot,
-    "consumer.historical-discovered-program.v1"
+    "consumer.historical-discovered-program.v1",
+    Vec::<ApplicationFeatureSpec>::new()
 );
+
+#[cfg(test)]
+pub(crate) mod branching;
+#[cfg(test)]
+pub(crate) mod eligibility;
+#[cfg(test)]
+pub(crate) mod owner_discovery;
 
 // Initiation/replay can move this intent; no runtime source observation enters its durable identity.
 pub(crate) struct Original(pub PlanarInitialAdjustment);

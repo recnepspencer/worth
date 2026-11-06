@@ -4,13 +4,10 @@ use super::{
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
 };
 
-mod native_priors;
+pub(crate) mod native_priors;
 mod output_facts;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use native_priors::merge as merge_native_checkpoint_priors;
 
-#[cfg(test)]
-pub(super) fn merge_accepted_outputs(
+pub fn merge_accepted_outputs(
     mut current: Vec<
         super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
     >,
@@ -44,8 +41,9 @@ where
         phase: &super::super::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryApplicationCheckpoint, WorthQueryCheckpointCaptureDenial> {
         let policy = WorthQueryCheckpointCapturePolicy::SystemAllocation;
-        let execution = phase.execution_request_for(&self.product_runtime)?;
-        self.primary_provider
+        let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
+        self.runtime
+            .primary_provider
             .graph
             .with_runtime(&execution, |runtime| {
                 runtime
@@ -87,19 +85,22 @@ where
         WorthQueryCheckpointCaptureDenial,
     > {
         policy.check_live()?;
-        let occurrence = self.product_runtime.default_occurrence;
+        let occurrence = self.runtime.product_runtime.default_occurrence;
         let lane = self
+            .runtime
             .primary_provider
             .application_branch_commit_lane_for_occurrence(occurrence);
         let _coordination = lane.enter();
         let lease = self
+            .runtime
             .product_runtime
             .admit_product_occurrence(occurrence)
             .map_err(|_| {
                 native_priors::capture_denial("checkpoint product occurrence cannot be admitted")
             })?;
-        let execution = phase.execution_request_for(&self.product_runtime)?;
-        self.primary_provider
+        let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
+        self.runtime
+            .primary_provider
             .graph
             .with_runtime(&execution, |runtime| {
                 policy.check_live()?;
@@ -108,9 +109,10 @@ where
                     .native_checkpoint(&execution, policy)
                     .map_err(WorthQueryCheckpointCaptureDenial::from)
                     .and_then(|checkpoint| {
-                        let accepted = self.output_demands.accepted_checkpoint_records();
+                        let accepted = self.runtime.output_demands.accepted_checkpoint_records();
 
                         let lineage = self
+                            .runtime
                             .primary_provider
                             .graph
                             .output_lineage
@@ -131,7 +133,7 @@ where
                         let mut accepted = native_priors::merge(
                             &lineage,
                             accepted,
-                            self.recovered_outputs.iter().map(|accepted| {
+                            self.runtime.recovered_outputs.iter().map(|accepted| {
                                 (
                                     accepted.checkpoint.clone(),
                                     accepted.correspondence.binding_type(),
@@ -148,11 +150,16 @@ where
                             // payload. Neither the query footprint nor the digest can
                             // reconstruct a producer's original decision reads.
                             identity.producer_facts = match source {
-                                AcceptedCheckpointFactSource::Committed(receipt) => {
-                                    lineage.checkpoint_facts_for_receipt(receipt).and_then(
-                                        |(facts, witness)| output_facts::encode(&facts, witness),
-                                    )
-                                }
+                                AcceptedCheckpointFactSource::Committed(receipt) => lineage
+                                    .checkpoint_facts_for_publication((&*receipt).into())
+                                    .and_then(|(facts, witness)| {
+                                        output_facts::encode(&facts, witness)
+                                    }),
+                                AcceptedCheckpointFactSource::Recovered(publication) => lineage
+                                    .checkpoint_facts_for_publication(publication.view())
+                                    .and_then(|(facts, witness)| {
+                                        output_facts::encode(&facts, witness)
+                                    }),
                                 AcceptedCheckpointFactSource::Stable(stable) => stable
                                     .checkpoint_source_facts()
                                     .and_then(|facts| facts::encode(&facts)),

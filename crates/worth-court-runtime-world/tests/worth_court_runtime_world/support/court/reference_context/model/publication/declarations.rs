@@ -208,7 +208,13 @@ impl ModelRun {
         self.court
             .world
             .recovery_port()
-            .release_effects(&handle, 0)
+            .release_effects(
+                request_execution,
+                &handle,
+                0,
+                self.court
+                    .observe_recovery_original(request_execution, &handle),
+            )
             .unwrap();
         self.check(request_execution);
         self.steps.push("reclaim unpublished successor".into());

@@ -22,7 +22,7 @@ pub(in crate::domain_computation::primary_graph::application_query) use selected
     execute_selected_authorized_read_with_native_access, SelectedAuthorizedReadStop,
 };
 
-pub(super) enum WorthQueryAuthorizedApplicationReadDenial {
+pub enum WorthQueryAuthorizedApplicationReadDenial {
     StalePrincipal,
     StaleScope,
     StaleBasisScope,
@@ -199,7 +199,7 @@ where
     Schema: ApplicationSchema,
 {
     plan.authorization
-        .validate_currentness_in(execution, runtime, current, application.authorization.bridge())
+        .validate_currentness_in(execution, runtime, current, application.runtime.authorization.bridge())
         .map_err(|kind| match kind {
             crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StalePrincipal) => {
                 WorthQueryAuthorizedApplicationReadDenial::StalePrincipal
@@ -213,7 +213,7 @@ where
         })?;
     if let Some(authorization) = plan.governance.authorization() {
         authorization
-            .validate_currentness_in(execution, runtime, current, application.authorization.bridge())
+            .validate_currentness_in(execution, runtime, current, application.runtime.authorization.bridge())
             .map_err(|kind| {
                 WorthQueryAuthorizedApplicationReadDenial::Authorization(
                     crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(

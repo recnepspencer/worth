@@ -3,7 +3,7 @@ pub use std::pin::pin;
 pub use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 pub use std::sync::Arc;
 pub use std::task::{Context, Poll, Waker};
-pub use std::time::{Duration, Instant, SystemTime};
+pub use std::time::{Duration, SystemTime};
 
 pub use worth_query_host::facade::{admission, domain, primary_graph};
 
@@ -323,9 +323,8 @@ impl primary_graph::WorthQueryTemporalPrincipalSource<TemporalHostSchema> for Pr
         assert!(!self.panic.panic.load(Ordering::SeqCst), "principal panic");
         let cancellation = admission::authenticated_principal::WorthQueryCancellationSource::new();
         let scope = admission::authenticated_principal::WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let external = block_on(self.adapter.authenticate((), &scope)).map_err(|denial| {
             primary_graph::WorthQueryTemporalPrincipalFailure::new(
                 primary_graph::WorthQueryTemporalPrincipalFailureKind::AdmissionRejected,

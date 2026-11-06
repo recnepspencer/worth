@@ -1,4 +1,4 @@
-mod recovery;
+pub(crate) mod recovery;
 
 pub use recovery::{
     WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryDenial,

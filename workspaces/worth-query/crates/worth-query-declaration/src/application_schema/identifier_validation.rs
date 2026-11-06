@@ -41,6 +41,16 @@ pub(super) fn validate_member_identifiers(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     for member in members {
         match member {
+            ApplicationSchemaMember::ContentFormat { declaration } => {
+                worth_foundational::facade::ContentFormat::new(
+                    &declaration.name,
+                    declaration.version,
+                )
+                .map_err(|_| ApplicationSchemaDeclarationDenial::InvalidContentFormat)?;
+                if declaration.maximum_frame_bytes == 0 {
+                    return Err(ApplicationSchemaDeclarationDenial::InvalidContentFormat);
+                }
+            }
             ApplicationSchemaMember::InvariantManagedIndexSource {
                 invariant,
                 requirement,
@@ -213,6 +223,11 @@ pub(super) fn validate_member_identifiers(
                 definition
                     .validate()
                     .map_err(|_| ApplicationSchemaDeclarationDenial::InvalidApplicationResource)?;
+            }
+            ApplicationSchemaMember::ApplicationHistory { definition } => {
+                definition
+                    .validate()
+                    .map_err(|_| ApplicationSchemaDeclarationDenial::InvalidApplicationHistory)?;
             }
             ApplicationSchemaMember::ApplicationQueryInspection { .. }
             | ApplicationSchemaMember::ApplicationHistoryQuery { .. } => {

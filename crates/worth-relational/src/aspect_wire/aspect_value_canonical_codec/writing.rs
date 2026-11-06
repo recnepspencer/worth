@@ -2,7 +2,8 @@ use worth_foundational::facade::{
     AspectValue, CanonicalBigInt, ContentRefId, EntityId, InternedString,
 };
 
-use super::{encode_string, encode_u32, tags};
+use super::{encode_u32, tags};
+use crate::aspect_wire::{CanonicalAspectOutput, CollectCanonicalAspect};
 
 pub(crate) fn encode_length_prefixed_aspect_value(bytes: &mut Vec<u8>, value: &AspectValue) {
     let mut value_bytes = Vec::new();
@@ -36,9 +37,8 @@ pub(crate) fn encoded_aspect_value_len(value: &AspectValue) -> Option<usize> {
         | AspectValue::UInt64(_)
         | AspectValue::Float64(_)
         | AspectValue::Time(_)
-        | AspectValue::Timestamp(_)
-        | AspectValue::Bytes(_)
-        | AspectValue::ContentRef(_) => Some(9),
+        | AspectValue::Timestamp(_) => Some(9),
+        AspectValue::ContentRef(_) => Some(33),
         AspectValue::String(InternedString::Raw(value)) => 2usize.checked_add(text(value)?),
         AspectValue::String(InternedString::Symbol(_)) => Some(6),
         AspectValue::Decimal(value) => 1usize.checked_add(text(value.as_str())?),
@@ -52,133 +52,156 @@ pub(crate) fn encoded_aspect_value_len(value: &AspectValue) -> Option<usize> {
 }
 
 fn encode_aspect_value_body(bytes: &mut Vec<u8>, value: &AspectValue) {
+    match write_aspect_value(&mut CollectCanonicalAspect(bytes), value) {
+        Ok(()) => {}
+        Err(never) => match never {},
+    }
+}
+
+pub(crate) fn write_aspect_value<O: CanonicalAspectOutput>(
+    bytes: &mut O,
+    value: &AspectValue,
+) -> Result<(), O::Error> {
     match value {
         AspectValue::InlineBytes(value) => {
-            bytes.push(tags::INLINE_BYTES);
-            encode_u32(bytes, value.wire_length());
-            bytes.extend_from_slice(value.as_bytes());
+            bytes.byte(tags::INLINE_BYTES)?;
+            bytes.length(value.as_bytes().len())?;
+            bytes.bytes(value.as_bytes())?;
         }
-        AspectValue::Null => bytes.push(tags::NULL),
+        AspectValue::Null => bytes.byte(tags::NULL)?,
         AspectValue::Bool(value) => {
-            bytes.push(tags::BOOL);
-            bytes.push(u8::from(*value));
+            bytes.byte(tags::BOOL)?;
+            bytes.byte(u8::from(*value))?;
         }
         AspectValue::Int8(value) => {
-            bytes.push(tags::INT8);
-            bytes.push(*value as u8);
+            bytes.byte(tags::INT8)?;
+            bytes.byte(*value as u8)?;
         }
         AspectValue::Int16(value) => {
-            bytes.push(tags::INT16);
-            bytes.extend_from_slice(&value.to_le_bytes());
+            bytes.byte(tags::INT16)?;
+            bytes.bytes(&value.to_le_bytes())?;
         }
         AspectValue::Int32(value) => {
-            bytes.push(tags::INT32);
-            bytes.extend_from_slice(&value.to_le_bytes());
+            bytes.byte(tags::INT32)?;
+            bytes.bytes(&value.to_le_bytes())?;
         }
         AspectValue::Int64(value) => {
-            bytes.push(tags::INT64);
-            bytes.extend_from_slice(&value.to_le_bytes());
+            bytes.byte(tags::INT64)?;
+            bytes.bytes(&value.to_le_bytes())?;
         }
         AspectValue::UInt8(value) => {
-            bytes.push(tags::UINT8);
-            bytes.push(*value);
+            bytes.byte(tags::UINT8)?;
+            bytes.byte(*value)?;
         }
         AspectValue::UInt16(value) => {
-            bytes.push(tags::UINT16);
-            bytes.extend_from_slice(&value.to_le_bytes());
+            bytes.byte(tags::UINT16)?;
+            bytes.bytes(&value.to_le_bytes())?;
         }
         AspectValue::UInt32(value) => {
-            bytes.push(tags::UINT32);
-            bytes.extend_from_slice(&value.to_le_bytes());
+            bytes.byte(tags::UINT32)?;
+            bytes.bytes(&value.to_le_bytes())?;
         }
         AspectValue::UInt64(value) => {
-            bytes.push(tags::UINT64);
-            bytes.extend_from_slice(&value.to_le_bytes());
+            bytes.byte(tags::UINT64)?;
+            bytes.bytes(&value.to_le_bytes())?;
         }
         AspectValue::Float32(value) => {
-            bytes.push(tags::FLOAT32);
-            bytes.extend_from_slice(&value.bits().to_le_bytes());
+            bytes.byte(tags::FLOAT32)?;
+            bytes.bytes(&value.bits().to_le_bytes())?;
         }
         AspectValue::Float64(value) => {
-            bytes.push(tags::FLOAT64);
-            bytes.extend_from_slice(&value.bits().to_le_bytes());
+            bytes.byte(tags::FLOAT64)?;
+            bytes.bytes(&value.bits().to_le_bytes())?;
         }
         AspectValue::String(value) => {
-            bytes.push(tags::STRING);
-            encode_interned_string(bytes, value);
+            bytes.byte(tags::STRING)?;
+            encode_interned_string(bytes, value)?;
         }
         AspectValue::Decimal(value) => {
-            bytes.push(tags::DECIMAL);
-            encode_string(bytes, value.as_str());
+            bytes.byte(tags::DECIMAL)?;
+            bytes.text(value.as_str())?;
         }
         AspectValue::BigInt(value) => {
-            bytes.push(tags::BIG_INT);
-            encode_big_int(bytes, value);
+            bytes.byte(tags::BIG_INT)?;
+            encode_big_int(bytes, value)?;
         }
         AspectValue::Rational(value) => {
-            bytes.push(tags::RATIONAL);
-            encode_big_int(bytes, &value.numerator);
-            encode_big_int(bytes, &value.denominator);
-        }
-        AspectValue::Bytes(value) => {
-            bytes.push(tags::BYTES);
-            encode_content_ref(bytes, *value);
+            bytes.byte(tags::RATIONAL)?;
+            encode_big_int(bytes, &value.numerator)?;
+            encode_big_int(bytes, &value.denominator)?;
         }
         AspectValue::Uuid(value) => {
-            bytes.push(tags::UUID);
-            bytes.extend_from_slice(value);
+            bytes.byte(tags::UUID)?;
+            bytes.bytes(value)?;
         }
         AspectValue::Date(value) => {
-            bytes.push(tags::DATE);
-            bytes.extend_from_slice(&value.days_from_unix_epoch.to_le_bytes());
+            bytes.byte(tags::DATE)?;
+            bytes.bytes(&value.days_from_unix_epoch.to_le_bytes())?;
         }
         AspectValue::Time(value) => {
-            bytes.push(tags::TIME);
-            bytes.extend_from_slice(&value.nanos_since_midnight.to_le_bytes());
+            bytes.byte(tags::TIME)?;
+            bytes.bytes(&value.nanos_since_midnight.to_le_bytes())?;
         }
         AspectValue::Timestamp(value) => {
-            bytes.push(tags::TIMESTAMP);
-            bytes.extend_from_slice(&value.micros_since_unix_epoch.to_le_bytes());
+            bytes.byte(tags::TIMESTAMP)?;
+            bytes.bytes(&value.micros_since_unix_epoch.to_le_bytes())?;
         }
         AspectValue::TimestampTz(value) => {
-            bytes.push(tags::TIMESTAMP_TZ);
-            bytes.extend_from_slice(&value.utc_micros_since_unix_epoch.to_le_bytes());
-            bytes.extend_from_slice(&value.offset_minutes.to_le_bytes());
+            bytes.byte(tags::TIMESTAMP_TZ)?;
+            bytes.bytes(&value.utc_micros_since_unix_epoch.to_le_bytes())?;
+            bytes.bytes(&value.offset_minutes.to_le_bytes())?;
         }
         AspectValue::EntityRef(value) => {
-            bytes.push(tags::ENTITY_REF);
-            encode_entity_id(bytes, *value);
+            bytes.byte(tags::ENTITY_REF)?;
+            encode_entity_id(bytes, *value)?;
         }
         AspectValue::ContentRef(value) => {
-            bytes.push(tags::CONTENT_REF);
-            encode_content_ref(bytes, *value);
+            bytes.byte(tags::CONTENT_REF)?;
+            encode_content_ref(bytes, *value)?;
         }
     }
+    Ok(())
 }
 
-fn encode_interned_string(bytes: &mut Vec<u8>, value: &InternedString) {
+fn encode_interned_string<O: CanonicalAspectOutput>(
+    bytes: &mut O,
+    value: &InternedString,
+) -> Result<(), O::Error> {
     match value {
         InternedString::Raw(text) => {
-            bytes.push(tags::RAW_STRING);
-            encode_string(bytes, text);
+            bytes.byte(tags::RAW_STRING)?;
+            bytes.text(text)?;
         }
         InternedString::Symbol(symbol) => {
-            bytes.push(tags::SYMBOL_STRING);
-            encode_u32(bytes, symbol.0);
+            bytes.byte(tags::SYMBOL_STRING)?;
+            bytes.bytes(&symbol.0.to_le_bytes())?;
         }
     }
+    Ok(())
 }
 
-fn encode_big_int(bytes: &mut Vec<u8>, value: &CanonicalBigInt) {
-    encode_string(bytes, value.as_str());
+fn encode_big_int<O: CanonicalAspectOutput>(
+    bytes: &mut O,
+    value: &CanonicalBigInt,
+) -> Result<(), O::Error> {
+    bytes.text(value.as_str())?;
+    Ok(())
 }
 
-fn encode_content_ref(bytes: &mut Vec<u8>, value: ContentRefId) {
-    bytes.extend_from_slice(&value.0.to_le_bytes());
+fn encode_content_ref<O: CanonicalAspectOutput>(
+    bytes: &mut O,
+    value: ContentRefId,
+) -> Result<(), O::Error> {
+    bytes.bytes(&value.0)?;
+    Ok(())
 }
 
-fn encode_entity_id(bytes: &mut Vec<u8>, value: EntityId) {
-    bytes.extend_from_slice(&value.partition_id.0.to_le_bytes());
-    bytes.extend_from_slice(&value.local_slot.0.to_le_bytes());
-    bytes.extend_from_slice(&value.generation.0.to_le_bytes());
+fn encode_entity_id<O: CanonicalAspectOutput>(
+    bytes: &mut O,
+    value: EntityId,
+) -> Result<(), O::Error> {
+    bytes.bytes(&value.partition_id.0.to_le_bytes())?;
+    bytes.bytes(&value.local_slot.0.to_le_bytes())?;
+    bytes.bytes(&value.generation.0.to_le_bytes())?;
+    Ok(())
 }

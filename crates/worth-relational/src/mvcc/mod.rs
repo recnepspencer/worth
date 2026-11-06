@@ -1,6 +1,9 @@
 mod observation;
 pub use crate::history::data::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 pub(crate) mod publication;
+pub use publication::RelationalPublicationReadDependencyDenial;
+pub use publication::{PreparedMemoryRelationalCutover, ScopedRelationalPublication};
+pub(crate) mod retained_entity_selection;
 mod transaction;
 pub(crate) use transaction::normalized_plan as plan_copy_admission;
 pub(crate) use transaction::normalized_plan::OwnedNormalizedPlan;
@@ -45,9 +48,14 @@ pub(crate) use publication::{
     PublicationPreparationDenial,
 };
 pub use publication::{
+    RelationalAuthoredRestoration, RelationalAuthoredRetirement,
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
     RequiredOutputProducingImplementation, RequiredOutputPublication,
     RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
+};
+pub use retained_entity_selection::{
+    RelationalRetainedEntitySelection, RelationalRetainedEntitySelectionDenial,
+    RelationalRetainedEntitySelectionPreparationError,
 };
 pub(crate) use transaction::commit_plan::bulk_reservations_for_plan;
 pub(crate) use transaction::RelationalMaterializationTransactionMode;

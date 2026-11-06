@@ -9,7 +9,10 @@ use crate::lineage::data::LineageCheckpointArtifact;
 use super::checkpoint_capture::CapturedCheckpointBasis;
 
 impl CapturedCheckpointBasis {
-    pub(super) fn build_checkpoint_image(self) -> Result<DurableCheckpoint, DurabilityError> {
+    pub(super) fn build_checkpoint_image(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<DurableCheckpoint, crate::durability::data::RelationalRecoveryStop> {
         let CapturedCheckpointBasis {
             recorded_components,
             retained_empty_components,
@@ -65,7 +68,7 @@ impl CapturedCheckpointBasis {
             roots: branch_roots,
             schemas: mut branch_root_schema_images,
             kinds: root_kind_images,
-        } = branch_root_images(branch_roots)?;
+        } = branch_root_images(branch_roots, execution)?;
         branch_root_schema_images.extend(empty_component_schemas);
         branch_root_schema_images.sort_by_key(|image| image.carrier_digest());
         branch_root_schema_images.dedup_by_key(|image| image.carrier_digest());
@@ -137,7 +140,8 @@ struct CapturedBranchRootImages {
 
 fn branch_root_images(
     branch_roots: Vec<crate::branch::RelationalBranchRootCheckpoint>,
-) -> Result<CapturedBranchRootImages, DurabilityError> {
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<CapturedBranchRootImages, crate::durability::data::RelationalRecoveryStop> {
     let mut root_kind_images = std::collections::BTreeMap::new();
     let mut schema_images = std::collections::BTreeMap::new();
     let root_images = branch_roots
@@ -190,13 +194,16 @@ fn branch_root_images(
                         )
                     })?;
             let format_version = DurableBranchRootImage::CURRENT_FORMAT_VERSION;
+            let content_records = root.content().retained_records(execution)?;
             let root_image_digest = crate::durability::data::branch_root_image_digest(
                 format_version,
                 root.commit_id(),
                 partition_image_digest,
                 schema_carrier_digest,
+                &content_records,
             );
-            Ok::<_, DurabilityError>(DurableBranchRootImage {
+            Ok::<_, crate::durability::data::RelationalRecoveryStop>(DurableBranchRootImage {
+                content_records,
                 format_version,
                 commit_id: root.commit_id(),
                 partition_images,

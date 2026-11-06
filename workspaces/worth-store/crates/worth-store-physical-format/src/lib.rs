@@ -4,6 +4,8 @@
 //! and the internal `compile_fail` module tree.
 #![forbid(unsafe_code)]
 
+pub use worth_foundational::CanonicalDigestId;
+
 pub mod access;
 pub mod integrity_declarations;
 pub mod physical_work_obligation;

@@ -39,13 +39,16 @@ impl AttachedRelationalRuntime {
         placement: AdmittedRecordPlacementPolicy,
         cold_source: Arc<crate::cold_source::StoreColdSource>,
         checkpoint_selection: Arc<dyn RelationalCheckpointSelectionSource>,
+        transition: Option<worth_proof::HomeProgramTransitionAuthority>,
+        transition_required: Option<worth_proof::HomeProgramTransitionRequired>,
     ) -> Result<Self, RelationalRuntimeConstructionDenial> {
         let medium = crate::journal_medium::StoreJournalMedium::new(
             serving.clone(),
             placement,
             cold_source.clone(),
             checkpoint_selection.clone(),
-        );
+        )
+        .with_home_transition_authority(transition, transition_required);
         let runtime = definition.build_durable(Box::new(medium))?;
         Ok(Self {
             runtime,
@@ -97,6 +100,8 @@ impl UnrecoveredRelationalSection {
         placement: AdmittedRecordPlacementPolicy,
         source: Arc<crate::cold_source::StoreColdSource>,
         checkpoint_selection: Arc<dyn RelationalCheckpointSelectionSource>,
+        transition: Option<worth_proof::HomeProgramTransitionAuthority>,
+        transition_required: Option<worth_proof::HomeProgramTransitionRequired>,
     ) -> Result<Self, RelationalRuntimeConstructionDenial> {
         AttachedRelationalRuntime::attach(
             definition,
@@ -104,6 +109,8 @@ impl UnrecoveredRelationalSection {
             placement,
             source,
             checkpoint_selection,
+            transition,
+            transition_required,
         )
         .map(|attached| Self {
             attached,

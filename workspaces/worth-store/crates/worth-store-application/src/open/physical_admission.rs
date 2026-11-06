@@ -79,6 +79,7 @@ impl ApplicationHomePhysicalRefusal {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ApplicationHomePhysicalRefusalKind {
     PhysicalStep,
+    DiscardPending,
     MutationOwnerContended,
     UnsupportedRootSchema { observed: u32 },
 }
@@ -269,4 +270,18 @@ fn finish(
             })
         }
     }
+}
+
+fn require_no_discard(root: &Path) -> Result<(), Refusal> {
+    if crate::discard::pending(root)
+        .map_err(|e| Refusal::new(Stage::MediaAdmission, e.to_string()))?
+    {
+        let mut refusal = Refusal::new(
+            Stage::MediaAdmission,
+            "explicit Home discard must finish before opening",
+        );
+        refusal.kind = ApplicationHomePhysicalRefusalKind::DiscardPending;
+        return Err(refusal);
+    }
+    Ok(())
 }

@@ -181,7 +181,7 @@ The following are not part of Milestone 9.4 closeout:
 - durable downstream resume/replay beyond runtime-backed basis negotiation
 - any new sibling public runtime API root for temporal/async/mixed-cause work
 
-Milestones 10 and 11 should inherit the runtime-backed semantic surface as
+Store execution and durable-artifact integration should inherit the runtime-backed semantic surface as
 closed and extend it through store-backed and durable guarantees rather than
 rediscovering temporal/async meaning there.
 

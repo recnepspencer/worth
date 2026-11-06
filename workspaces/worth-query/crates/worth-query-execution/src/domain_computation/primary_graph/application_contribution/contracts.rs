@@ -2,6 +2,7 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
 mod feature;
+mod home_seed;
 
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryPortableDomainPackage;
@@ -351,5 +352,4 @@ fn denial(
     WorthQueryPrimaryGraphInstallationDenial::new(kind, subject)
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

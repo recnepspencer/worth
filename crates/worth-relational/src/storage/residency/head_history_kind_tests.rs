@@ -237,12 +237,11 @@ fn update_target(
 
 fn assert_owned_history(partial: &mut PartitionState, full: &mut PartitionState) {
     for partition in [&mut *partial, &mut *full] {
-        for (_, adjacency) in partition
-            .adjacency
-            .iter_mut()
-            .chain(partition.reverse_adjacency.iter_mut())
-        {
-            adjacency.reset_historical_kind_buckets();
+        for table in [&mut partition.adjacency, &mut partition.reverse_adjacency] {
+            let slots = table.iter().map(|(&slot, _)| slot).collect::<Vec<_>>();
+            for slot in slots {
+                table.get_mut(slot).unwrap().reset_historical_kind_buckets();
+            }
         }
         super::super::rebuild_region_history_kind_buckets(partition).unwrap();
     }

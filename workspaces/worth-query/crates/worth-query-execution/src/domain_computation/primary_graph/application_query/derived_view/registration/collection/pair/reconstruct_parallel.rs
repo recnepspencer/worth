@@ -10,7 +10,6 @@ use crate::domain_computation::primary_graph::application_query::derived_view::r
     RetainedMemberToken, WorthQueryManagedDerivedMemberToken,
 };
 use crate::domain_computation::primary_graph::application_query::one_shot::outcome::finalize_one_shot_with_decode;
-#[cfg(test)]
 use crate::domain_computation::primary_graph::application_query::DispatchWitness;
 use crate::domain_computation::primary_graph::application_query::{
     read_execution::read_plan::ReadPlan, WorthQueryApplicationAuthorizationWorkEvidence,
@@ -226,7 +225,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                     &second_link,
                                     |first, second| project(first, second),
                                 )?;
-                            #[cfg(test)]
                             DispatchWitness::applied(root, &dependencies);
                             owner_stage::retain_entry(
                                 &mut owner_hold,
@@ -272,6 +270,3 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
 #[cfg(test)]
 mod denial_tests;
-
-#[cfg(test)]
-mod read_ceiling_tests;

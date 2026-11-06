@@ -1,7 +1,6 @@
 //! Routes items to partitions by key digest, through `worth-execution`'s
 //! keyed partitioner.
 
-#[cfg(test)]
 use worth_execution::KeyedDenial;
 use worth_execution::{
     KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionItemId, PartitionWork,
@@ -12,9 +11,8 @@ use worth_query_declaration::facade::application_operation::ApplicationComputati
 use super::super::WorthQueryManagedComputationResourceDenial;
 
 /// Why an item has no partition.
-#[cfg(test)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum ComputationPartitionRoutingDenial {
+pub enum ComputationPartitionRoutingDenial {
     /// The request's memory refused what the partitioner would retain.
     Resource(WorthQueryManagedComputationResourceDenial),
     /// A different key digest already owns this partition identity.
@@ -25,7 +23,7 @@ pub(super) enum ComputationPartitionRoutingDenial {
 /// encoding, so two keys are one partition exactly when their digests are
 /// equal, and two digests that share a partition identity are a collision.
 #[derive(Clone, Default)]
-pub(super) struct ComputationPartitionRouting {
+pub struct ComputationPartitionRouting {
     partitioner: KeyedPartitioner<[u8; 32]>,
 }
 
@@ -81,7 +79,6 @@ impl ComputationPartitionRouting {
     /// its last partition first, uncharged, so every route charges what a
     /// fresh build's route of it charges. Before the partitioner grows,
     /// `admit` is offered all it would retain.
-    #[cfg(test)]
     pub(super) fn route(
         &mut self,
         item: PartitionItemId,
@@ -145,3 +142,5 @@ impl ComputationPartitionRouting {
             .flat_map(|members| members.iter().copied())
     }
 }
+
+mod court_doors_for_test;

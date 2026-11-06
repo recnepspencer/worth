@@ -4,7 +4,6 @@ mod admission;
 mod touched;
 use crate::transactions::data::{
     RelationalInvariantCheckMeaning, RelationalInvariantDecisionMeaning,
-    RelationalValidationPreparationFailure,
 };
 pub(in super::super) use admission::prepare_canonical_readmission;
 pub(super) use admission::prepare_semantic_readmission;
@@ -59,7 +58,6 @@ fn metadata(
 ) -> Result<OwnerAllocation, Refusal> {
     let mut bytes = OwnerAllocation::default();
     value.fields(request, |field, value| add(&mut bytes, match field {
-        "preparation_failures" => vector::<RelationalValidationPreparationFailure>(value, request, |_| Ok(OwnerAllocation::default()))?,
         "proof_scope" => optional(value, |scope| {
             let mut bytes = OwnerAllocation::default();
             scope.fields(request, |field, value| {

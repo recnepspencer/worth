@@ -36,7 +36,7 @@ impl ExecutionResourceLease<'_> {
                 max_workers: node.max_workers,
                 posture: node.posture,
                 charged_memory_bytes: None,
-                deadline: node.deadline,
+                deadline: node.deadline.clone(),
                 cancellation: node.cancellation.clone(),
             })
         }

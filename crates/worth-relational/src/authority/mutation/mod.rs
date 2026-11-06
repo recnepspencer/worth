@@ -13,6 +13,7 @@ mod mutation_context;
 mod outcomes;
 mod patch_details;
 mod record_changes;
+pub(crate) mod retained_entity_selection;
 mod round_denial;
 mod stale_targets;
 mod workspace;
@@ -21,9 +22,7 @@ pub(crate) use canonical_deltas::{
     CanonicalRecordAspectDelta, EvaluatedAspectBinding, FoundationalPatchFragment,
 };
 pub(crate) use effect::{AdjacencyDelta, AdjacencyDeltaKind, MutationEffect};
-pub(crate) use execution::{
-    apply_original_intents_to_working_state, apply_plan_to_working_state, MutationApplyOutcome,
-};
+pub(crate) use execution::{apply_plan_to_working_state, MutationApplyOutcome};
 pub(crate) use field_versions::visit_changed_fields;
 pub(crate) use outcomes::RecordMutation;
 pub(crate) use record_changes::apply_adjacency_deltas;

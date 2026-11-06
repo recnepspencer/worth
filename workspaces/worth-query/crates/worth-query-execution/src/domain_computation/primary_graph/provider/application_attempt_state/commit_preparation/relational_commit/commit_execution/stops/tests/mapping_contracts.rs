@@ -120,3 +120,8 @@ fn malformed_identity() {
         },
     );
 }
+
+#[test]
+fn content_inconsistency_keeps_its_pre_effect_commit_category() {
+    assert_kind(Cause::ContentInconsistency, Kind::ContentInconsistency);
+}

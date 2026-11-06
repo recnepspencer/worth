@@ -3,19 +3,23 @@ mod commit_outcome;
 mod commit_stop;
 mod control_stopped;
 mod counters;
-mod declared_closure;
-#[cfg(test)]
-mod declared_closure_tests;
+pub(crate) mod declared_closure;
+
 mod denial;
 mod execution_plan;
 mod plan_contract;
 mod product_affinity;
 mod provider_port;
 mod readmission;
-mod session_affinity;
+mod session_grant_control;
+pub(in crate::domain_computation) use session_grant_control::ProviderSessionGrantControl;
+pub use session_grant_control::{
+    WorthQueryProviderSessionGrantControlDenial, WorthQueryProviderSessionGrantControlForTest,
+};
+pub(crate) mod session_affinity;
 mod session_binding;
 mod session_lease;
-mod terminal_binding;
+pub(crate) mod terminal_binding;
 mod terminal_outcome;
 
 pub use abort_outcome::*;
@@ -33,9 +37,10 @@ pub(crate) use product_affinity::WorthQueryProviderProductAffinity;
 pub(in crate::domain_computation) use product_affinity::WorthQueryProviderTerminalProductAffinity;
 pub use provider_port::*;
 pub use readmission::{
-    WorthQueryPreparedProviderSession, WorthQueryProviderPlanReadmission,
-    WorthQuerySessionBoundReadsAndEffects, WorthQuerySessionEffectAuthority,
-    WorthQuerySessionPrepareOutcome, WorthQuerySessionReadAuthority,
+    WorthQueryPreparedProviderSession, WorthQueryProviderSessionGrant,
+    WorthQueryProviderSessionReceiver, WorthQuerySessionBoundReadsAndEffects,
+    WorthQuerySessionEffectAuthority, WorthQuerySessionPrepareOutcome,
+    WorthQuerySessionReadAuthority,
 };
 pub(crate) use session_affinity::WorthQueryProviderSessionAffinity;
 #[allow(

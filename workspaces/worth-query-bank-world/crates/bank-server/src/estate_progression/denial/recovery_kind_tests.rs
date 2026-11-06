@@ -48,6 +48,7 @@ fn redispatch_refusals_keep_distinct_bank_kinds() {
         ),
         (Query::TimeObservationDenied, Bank::TimeObservationDenied),
         (Query::RecoveryNotAdmitted, Bank::RecoveryNotAdmitted),
+        (Query::StaleIncarnation, Bank::StaleIncarnation),
         (Query::FreshAuthorityDenied, Bank::FreshAuthorityDenied),
         (Query::AdmissionCancelled, Bank::AdmissionCancelled),
         (

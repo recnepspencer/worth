@@ -12,6 +12,13 @@ impl CapturedCheckpointBasis {
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         source: Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
         placement: &RelationalCheckpointArtifactPolicy<'_>,
+        control: &mut crate::durability::log::native_checkpoint_codec::CheckpointEncodingControl<
+            '_,
+            '_,
+            '_,
+            '_,
+            '_,
+        >,
     ) -> Result<CapturedManifest, RelationalNativeCheckpointCaptureDenial> {
         let mut symbols = crate::symbols::data::StringInterner::default();
         symbols.restore_snapshot(self.symbol_table.clone());
@@ -74,18 +81,19 @@ impl CapturedCheckpointBasis {
                     })?;
             }
         }
-        let metadata = self.build_checkpoint_image()?;
+        let metadata = self.build_checkpoint_image(execution)?;
         let mut captured = CapturedManifest::capture_metadata(
             &metadata,
             policy,
             prior.as_ref().map(|prior| &prior.manifest),
             journal_index,
+            control,
             |position| {
                 captured_cells
                     .get(&position)
                     .ok_or_else(|| corrupt("original Memory canonical cell unavailable"))?
-                    .original_memory_payload_digest()
-                    .map_err(Into::into)
+                    .original_memory_payload_digest(execution)
+                    .map_err(crate::durability::checkpoint_history::capture::capture_stop)
             },
         )?;
         captured.component_holds = component_holds;
@@ -135,24 +143,7 @@ impl CapturedCheckpointBasis {
                     &symbols,
                     current_members.as_ref(),
                 )?;
-                if capture.leaf.partition_id != region.partition_id
-                    || capture.leaf.content_digest != region.content_digest
-                    || capture.leaf.entity_slots != region.entity_slots
-                    || capture.leaf.relation_slots != region.relation_slots
-                    || capture.leaf.unavailable_records != region.unavailable_records
-                    || capture.leaf.kind_authority != region.kind_commitment
-                {
-                    return Err(corrupt(format!(
-                        "captured region differs from its selected root leaf: partition={} partition_equal={} content_equal={} entity_slots_equal={} relation_slots_equal={} availability_equal={} kind_equal={}",
-                        region.partition_id.0,
-                        capture.leaf.partition_id == region.partition_id,
-                        capture.leaf.content_digest == region.content_digest,
-                        capture.leaf.entity_slots == region.entity_slots,
-                        capture.leaf.relation_slots == region.relation_slots,
-                        capture.leaf.unavailable_records == region.unavailable_records,
-                        capture.leaf.kind_authority == region.kind_commitment,
-                    )).into());
-                }
+                super::checkpoint_region_consistency::validate(&region, &capture.leaf)?;
                 merge_history_dependencies(
                     &mut history_dependencies,
                     capture.history_dependencies,
@@ -182,6 +173,12 @@ impl CapturedCheckpointBasis {
                         .ok_or_else(|| corrupt("root lacks exact component observations"))?,
                     schema_digest,
                     leaves,
+                    crate::durability::checkpoints::content::capture(
+                        execution,
+                        root.content(),
+                        &mut captured.members,
+                        current_members.as_ref(),
+                    )?,
                 ));
         }
         if let Some(schema) = mirror_schema {

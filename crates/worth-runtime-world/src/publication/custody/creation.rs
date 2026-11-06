@@ -13,17 +13,23 @@ use std::sync::Arc;
 /// Creation-only custody carried in the same owner record as its fork evidence.
 #[derive(Debug)]
 pub(super) struct ActiveCreationResources {
+    pub(super) source_kind: crate::branch::BranchCreationSourceKind,
     pub(super) observation_capacity: Option<ReservedObservationCapacity>,
     pub(super) observation: Option<ProductBranchObservation>,
     pub(super) cell: Option<ProductBranchReferenceCell>,
 }
 
 impl ActiveAttemptCustody {
-    pub(crate) fn configure_creation(&mut self, observation_capacity: ReservedObservationCapacity) {
+    pub(crate) fn configure_creation(
+        &mut self,
+        observation_capacity: ReservedObservationCapacity,
+        source_kind: crate::branch::BranchCreationSourceKind,
+    ) {
         let mut lease = self.lease_resources();
         let resources = lease.resources_mut();
         assert!(resources.creation.is_none());
         resources.creation = Some(ActiveCreationResources {
+            source_kind,
             observation_capacity: Some(observation_capacity),
             observation: None,
             cell: None,
@@ -143,13 +149,23 @@ impl ActiveAttemptCustody {
             .creation
             .as_mut()
             .expect("creation custody");
-        reservation.install_from_source(
-            &source,
-            branch.clone(),
-            incarnation,
-            &mut creation.cell,
-            cancellation,
-        )?;
+        match creation.source_kind {
+            crate::branch::BranchCreationSourceKind::Current => reservation.install_from_source(
+                &source,
+                branch.clone(),
+                incarnation,
+                &mut creation.cell,
+                cancellation,
+            ),
+            crate::branch::BranchCreationSourceKind::Retained => reservation
+                .install_from_retained_source(
+                    &source,
+                    branch.clone(),
+                    incarnation,
+                    &mut creation.cell,
+                    cancellation,
+                ),
+        }?;
         assert!(
             witness.installed_commit().is_some(),
             "the registry records success before releasing its guard"

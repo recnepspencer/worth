@@ -54,8 +54,8 @@ pub fn assert_agrees(
             basis.branch_id().clone(),
             basis.reference().generation(),
             basis.truth_version(),
-            basis.schema_commitment().clone(),
-            basis.visibility_commitment().clone(),
+            basis.schema_commitment(),
+            basis.visibility_commitment(),
             basis.posture(),
         )
     };

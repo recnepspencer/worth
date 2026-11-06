@@ -124,7 +124,7 @@ where
                 execution,
                 self.relational,
                 self.snapshot,
-                self.runtime.authorization.bridge(),
+                self.runtime.runtime.authorization.bridge(),
             )
             .map_err(|cause| {
                 crate::domain_computation::authorization::denial::relational_read_denial(
@@ -151,6 +151,7 @@ where
         installed: &WorthQueryInstalledCapabilityPlan,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         let owned = self
+            .runtime
             .runtime
             .authorization
             .capability_plan_by_identity(&capability_identity)

@@ -12,7 +12,7 @@ mod fact_custody;
 mod home_readmission;
 mod indexes;
 mod instance;
-mod layout;
+pub(crate) mod layout;
 mod migration;
 mod operation_output;
 mod proposal;

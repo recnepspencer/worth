@@ -3,10 +3,10 @@ use super::super::{WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphPublic
 use super::{
     codec, recovery_denial as denial, request, WorthQueryPrimaryGraphInstallationDenial as Denial,
 };
-use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{
-    ApplicationHomeBinding, AspectFieldLocator, AspectValue, ContractValidatedAspectValueView,
-    InternedString, StructAspectValue,
+    AspectFieldLocator, AspectValue, ContractValidatedAspectValueView, InternedString,
+    StructAspectValue,
 };
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::{
@@ -21,8 +21,7 @@ use worth_relational::facade::{
 use worth_runtime_world::facade::ProductBranchObservation;
 
 struct DecodedCompletion {
-    binding: ApplicationHomeBinding,
-    funding: Option<ExecutionMemoryReservation>,
+    binding: codec::BootstrapInstallationBinding,
     terminal: CommitId,
     created: VersionId,
     counts: [usize; 5],
@@ -50,7 +49,6 @@ pub(in crate::domain_computation::primary_graph) fn readmit<Schema: ApplicationS
                 })?;
             let DecodedCompletion {
                 binding,
-                funding,
                 terminal,
                 created,
                 counts,
@@ -66,9 +64,46 @@ pub(in crate::domain_computation::primary_graph) fn readmit<Schema: ApplicationS
             execution.consult().map_err(request)?;
             cell.publish(activation)
                 .map_err(|_| denial("Home activation was already published"))?;
-            drop(funding);
             Ok(publication)
         })
+}
+
+pub(in crate::domain_computation::primary_graph) enum RecoveredBootstrapPublication {
+    Incomplete,
+    Completed,
+}
+
+pub(in crate::domain_computation::primary_graph) fn inspect_native_completion<
+    Schema: ApplicationSchema,
+>(
+    native: &RelationalRuntime,
+    layout: &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    installed: &WorthQueryInstalledApplicationSchema<Schema>,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<RecoveredBootstrapPublication, Denial> {
+    let (_, basis) = native
+        .observe_branch(&native.main_branch_identity())
+        .map_err(|cause| denial(format!("Home completion Native basis denied: {cause:?}")))?;
+    let view = native
+        .read_truth()
+        .project_observation(&basis.observation())
+        .map_err(|cause| denial(format!("Home completion Native view denied: {cause:?}")))?;
+    match decode_optional_selected_row(&view, layout, execution)? {
+        None => Ok(RecoveredBootstrapPublication::Incomplete),
+        Some(completion) => {
+            if completion.binding
+                != codec::BootstrapInstallationBinding::from_installed(
+                    &installed.binding_identity(),
+                )
+            {
+                return Err(denial(
+                    "Home completion binding is foreign: installed package/schema mismatch",
+                ));
+            }
+            admit_receipts(native, &basis, completion.terminal, completion.created)?;
+            Ok(RecoveredBootstrapPublication::Completed)
+        }
+    }
 }
 
 fn decode_selected_row(
@@ -76,11 +111,23 @@ fn decode_selected_row(
     graph_layout: &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<DecodedCompletion, Denial> {
+    decode_optional_selected_row(view, graph_layout, execution)?
+        .ok_or_else(|| denial("Home root must contain exactly one bootstrap completion record"))
+}
+
+fn decode_optional_selected_row(
+    view: &VisibilityProjectionView,
+    graph_layout: &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<Option<DecodedCompletion>, Denial> {
     let layout = &graph_layout.bootstrap_publication;
     let rows = view
         .bounded_entities_of_kind(execution, layout.kind, usize::MAX)
         .map_err(super::super::request_read_denial::read)?
         .map_err(|_| denial("Home completion scan exceeded its bound"))?;
+    if rows.records().is_empty() {
+        return Ok(None);
+    }
     let [row] = rows.records() else {
         return Err(denial(
             "Home root must contain exactly one bootstrap completion record",
@@ -96,7 +143,7 @@ fn decode_selected_row(
     let ContractValidatedAspectValueView::Struct(fields) = aspect.view() else {
         return Err(denial("Home completion aspect has foreign shape"));
     };
-    if numeric_field(fields, &layout.fields[0])? != 1 {
+    if numeric_field(fields, &layout.fields[0])? != 2 {
         return Err(denial("Home bootstrap completion format is unsupported"));
     }
     let AspectValue::String(InternedString::Raw(binding)) =
@@ -110,14 +157,13 @@ fn decode_selected_row(
     };
     let counts = [count(3)?, count(4)?, count(5)?, count(6)?, count(7)?];
     let terminal = CommitId(numeric_field(fields, &layout.fields[2])?);
-    let (binding, funding) = codec::decode(binding, execution)?;
-    Ok(DecodedCompletion {
+    let binding = codec::decode(binding, execution)?;
+    Ok(Some(DecodedCompletion {
         binding,
-        funding,
         terminal,
         created: row.created_at_version,
         counts,
-    })
+    }))
 }
 
 fn required_field<'a>(
@@ -144,13 +190,21 @@ fn admit_binding<Schema: ApplicationSchema>(
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
     roster: &WorthQueryProgramSupportRoster<Schema>,
     selected: &ApplicationProgramRevision,
-    binding: ApplicationHomeBinding,
+    binding: codec::BootstrapInstallationBinding,
 ) -> Result<(), Denial> {
-    drop(
-        installed
-            .admit_home_binding(roster, selected, binding)
-            .map_err(|cause| denial(format!("Home completion binding is foreign: {cause:?}")))?,
-    );
+    if binding != codec::BootstrapInstallationBinding::from_installed(&installed.binding_identity())
+    {
+        return Err(denial(
+            "Home completion binding is foreign: installed package/schema mismatch",
+        ));
+    }
+    if !roster
+        .entries()
+        .iter()
+        .any(|entry| entry.revision() == selected)
+    {
+        return Err(denial("Home completion selected program is not rostered"));
+    }
     Ok(())
 }
 fn admit_receipts(

@@ -47,12 +47,11 @@ impl WorldCheckpointAcknowledgement {
         if !selected.admits(subject) {
             return Err(Denial::CheckpointSelectionRequired);
         }
-        if let Some((generation, digest)) = self.selected {
-            if selected.generation() < generation
-                || (selected.generation() == generation && selected.manifest_sha256() != digest)
-            {
-                return Err(Denial::StaleCheckpoint);
-            }
+        if let Some((generation, digest)) = self.selected
+            && (selected.generation() < generation
+                || (selected.generation() == generation && selected.manifest_sha256() != digest))
+        {
+            return Err(Denial::StaleCheckpoint);
         }
         self.validate(subject.coverage())?;
         self.coverage = subject.coverage().clone();

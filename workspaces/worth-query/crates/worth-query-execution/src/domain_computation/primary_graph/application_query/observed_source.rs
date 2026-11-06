@@ -11,18 +11,18 @@ use super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 pub(in crate::domain_computation::primary_graph::application_query) mod comparison;
 mod denial;
 mod expression_context;
-mod fact_conversion;
+pub(crate) mod fact_conversion;
 pub(in crate::domain_computation::primary_graph) use fact_conversion::SourceFactExpansionControl;
 mod fact_sources;
 mod footprint_accounting;
-mod prepared_expectation;
+pub(crate) mod prepared_expectation;
 mod query_context_binding;
 pub(in crate::domain_computation) use query_context_binding::ObservedQueryExpressionContext;
 mod realized_footprint;
 mod result_set;
 pub(crate) mod retained_dependencies;
-mod retained_parameters;
-mod root_selection;
+pub(crate) mod retained_parameters;
+pub(crate) mod root_selection;
 mod scope_selector;
 mod workflow_capture;
 pub use denial::{WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind};
@@ -77,7 +77,7 @@ impl WorthQueryBoundSourceExpectation {
             .bind_source_partition(&self.partition_identity)
     }
 }
-pub(in crate::domain_computation::primary_graph) mod source_identity;
+pub(crate) mod source_identity;
 pub(in crate::domain_computation::primary_graph) use super::super::entity_resolution::WorthQueryObservedScopeSelector;
 pub(in crate::domain_computation::primary_graph::application_query) use retained_parameters::WorthQueryRetainedObservedParameters;
 pub(in crate::domain_computation::primary_graph) use root_selection::WorthQueryObservedRootSelection;
@@ -95,15 +95,13 @@ pub(in crate::domain_computation) use super::super::source_facts::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryObservedSourceFootprint {
+pub struct WorthQueryObservedSourceFootprint {
     pub(in crate::domain_computation::primary_graph) root: EntityId,
     pub(in crate::domain_computation::primary_graph) complete: bool,
     pub(in crate::domain_computation::primary_graph) entities: Vec<EntityId>,
     pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedFieldRevision>,
-    pub(in crate::domain_computation::primary_graph) adjacencies:
-        Vec<WorthQueryObservedAdjacencyRevision>,
-    pub(in crate::domain_computation::primary_graph) root_selection:
-        Option<std::sync::Arc<WorthQueryObservedRootSelection>>,
+    pub adjacencies: Vec<WorthQueryObservedAdjacencyRevision>,
+    pub root_selection: Option<std::sync::Arc<WorthQueryObservedRootSelection>>,
 }
 
 /// Opaque proof of the native source projected into one public query row.
@@ -223,9 +221,7 @@ impl<Query> WorthQueryObservedSource<Query> {
             })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn output_source_epoch(
-        &self,
-    ) -> Option<source_identity::WorthQueryObservedSourceEpoch> {
+    pub fn output_source_epoch(&self) -> Option<source_identity::WorthQueryObservedSourceEpoch> {
         source_identity::WorthQueryObservedSourceEpoch::from_observation(
             self.query_identity.as_bytes(),
             self.parameter_binding_identity.bytes(),
@@ -245,10 +241,9 @@ impl<Query> WorthQueryObservedSource<Query> {
         self.source_meaning.footprint().root
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn footprint_for_test(
-        &self,
-    ) -> &WorthQueryObservedSourceFootprint {
+    pub fn footprint_for_test(&self) -> &WorthQueryObservedSourceFootprint {
         self.source_meaning.footprint()
     }
 }
+
+mod court_doors_for_test;

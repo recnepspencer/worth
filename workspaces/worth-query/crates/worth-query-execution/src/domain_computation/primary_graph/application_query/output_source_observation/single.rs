@@ -55,7 +55,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     .expect("exactly one native source");
                 let facts = source
                     .admit_fact_materialization(
-                        &application.primary_provider.graph.layout,
+                        &application.runtime.primary_provider.graph.layout,
                         query.name(),
                         super::super::observed_source::SourceFactExpansionControl::in_request(
                             *execution,
@@ -94,5 +94,6 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 })
             },
         )
+        .map_err(|stop| self.record_history_refusal(stop))
     }
 }

@@ -7,11 +7,13 @@ use worth_query_host::facade::primary_graph::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankAuthorizationDenialKind {
+    InputNotAdmitted,
     ForeignPhase,
     Cancelled,
     DeadlineExceeded,
     ExpiredAuthentication,
     ForeignRuntime,
+    StaleIncarnation,
     StaleInstalledSchema,
     StaleInstalledOperation,
     StalePrincipal,
@@ -124,11 +126,13 @@ const fn map_kind(kind: QueryKind) -> BankAuthorizationDenialKind {
     use BankAuthorizationDenialKind as Bank;
     match kind {
         QueryKind::Stopped(Ok(cause)) => Bank::ExecutionRequest(cause),
+        QueryKind::Refused(AuthorizationRefusal::InputNotAdmitted) => Bank::InputNotAdmitted,
         QueryKind::Refused(AuthorizationRefusal::ForeignPhase) => Bank::ForeignPhase,
         QueryKind::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled)) => Bank::Cancelled,
         QueryKind::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut)) => Bank::DeadlineExceeded,
         QueryKind::Refused(AuthorizationRefusal::ExpiredAuthentication) => Bank::ExpiredAuthentication,
         QueryKind::Refused(AuthorizationRefusal::ForeignRuntime) => Bank::ForeignRuntime,
+        QueryKind::Refused(AuthorizationRefusal::StaleIncarnation) => Bank::StaleIncarnation,
         QueryKind::Refused(AuthorizationRefusal::StaleInstalledSchema) => Bank::StaleInstalledSchema,
         QueryKind::Refused(AuthorizationRefusal::StaleInstalledOperation) => Bank::StaleInstalledOperation,
         QueryKind::Refused(AuthorizationRefusal::StalePrincipal) => Bank::StalePrincipal,
@@ -204,6 +208,7 @@ const fn authorization_code(kind: BankAuthorizationDenialKind) -> &'static str {
         Bank::DeadlineExceeded => "deadline-exceeded",
         Bank::ExpiredAuthentication => "expired-authentication",
         Bank::ForeignRuntime => "foreign-runtime",
+        Bank::StaleIncarnation => "stale-incarnation",
         Bank::StaleInstalledSchema => "stale-installed-schema",
         Bank::StaleInstalledOperation => "stale-installed-operation",
         Bank::StalePrincipal => "stale-principal",
@@ -212,6 +217,7 @@ const fn authorization_code(kind: BankAuthorizationDenialKind) -> &'static str {
         Bank::CanonicalWorkDenied => "canonical-work-denied",
         Bank::RelationalExecution(_) => "relational-execution-denied",
         Bank::TrustedTimeUnavailable => "trusted-time-unavailable",
+        Bank::InputNotAdmitted => "input-not-admitted",
         Bank::InvalidOperationInput => "invalid-operation-input",
         Bank::CapabilityProjectionRejected => "capability-projection-rejected",
         Bank::CapabilityGrantMissing => "capability-grant-missing",

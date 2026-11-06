@@ -183,6 +183,7 @@ pub fn assert_application_query_inventory(members: &[ApplicationSchemaMember]) {
             "account_detail",
             "account_discovery",
             "account_summary",
+            "current_accounts",
             "estate_case_overview",
             "estate_customer_identity",
             "estate_emergency_account_details",

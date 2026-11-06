@@ -1,6 +1,6 @@
 use super::*;
 
-pub(in crate::domain_computation::primary_graph::application_query) fn read_continuation_page<
+pub fn read_continuation_page<
     Schema,
     Query,
     Parameters,

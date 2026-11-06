@@ -35,8 +35,50 @@ pub type ConsumerInitialDiscoveredProgramRoot = ApplicationDiscoveredOutputGraph
 >;
 
 // This fixed graph uses the same lawful no-source connection and real dependent delivery.
-#[cfg(test)]
 pub type ConsumerInitialFixedProgramRoot = ApplicationOutputGraph<
     InitialConnection,
     ApplicationOutputEdge<InitialDependentConnection, ApplicationOutputLeaf>,
+>;
+
+#[cfg(test)]
+pub type ConsumerInitialLeafProgramRoot =
+    ApplicationOutputGraph<InitialConnection, ApplicationOutputLeaf>;
+
+#[cfg(test)]
+pub type ConsumerOwnerDiscoveryRoot = ApplicationOutputGraph<
+    InitialConnection,
+    ApplicationOutputEdge<
+        ApplicationConnectionInstanceRef<
+            ConsumerSchema,
+            InitialDiscoveredPlanarRoot,
+            PlanarOutputFeature,
+            PlanarDerivedBodyOutput,
+            InitialDiscoveredPlanarRoot,
+            PlanarFinalOutputFeature,
+            PlanarDerivedBodyInput,
+            worth_query_topology_entry::PlanarOutputToOwnerFinalConnection,
+        >,
+        ApplicationOutputLeaf,
+    >,
+>;
+
+#[cfg(test)]
+pub type ConsumerInitialBranchedProgramRoot = ApplicationOutputGraph<
+    InitialConnection,
+    (
+        ApplicationOutputEdge<InitialDependentConnection, ApplicationOutputLeaf>,
+        ApplicationOutputEdge<
+            ApplicationConnectionInstanceRef<
+                ConsumerSchema,
+                InitialDiscoveredPlanarRoot,
+                PlanarOutputFeature,
+                PlanarDerivedBodyOutput,
+                InitialDiscoveredPlanarRoot,
+                worth_query_topology_entry::PlanarAlternateFinalOutputFeature,
+                worth_query_topology_entry::PlanarAlternateDerivedBodyInput,
+                worth_query_topology_entry::PlanarOutputToAlternateFinalConnection,
+            >,
+            ApplicationOutputLeaf,
+        >,
+    ),
 >;

@@ -59,7 +59,9 @@ where
             }
         };
         Ok(match resolution {
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Err(WorthQueryApplicationRequestMutationDenial::Idempotency(worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::original_effect_released())),
             WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => Some(WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt)),
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(effects) => Some(WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(effects))),
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => Some(WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductPreparationPending(owner))),
             WorthQueryApplicationIdempotencyResolution::IntentDrift => {
                 Some(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)

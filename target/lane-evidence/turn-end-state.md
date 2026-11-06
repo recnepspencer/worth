@@ -1,3 +1,64 @@
+# P-A current state: IN PROGRESS, funding merge not certified
+
+2026-11-06. Real merge parents: P-A25619ac5d1 and integration14b16fa292.
+The source merge has no unresolved conflicts and is preserved in an explicitly
+in-progress local merge commit. Resolve its HEAD from the branch log; the final
+commit-identity log records it. No WIP branch, parked changes or push.
+
+Root, Query and Store compile; final full Root and Store Clippy exit0. The33
+Native warnings match accepted funding diagnostics, with zero additions. All34
+selected parent tests pass (zero failed or selected ignored). This includes the
+unchanged <=40 court, live/cold zero-covered-read recapture, growth, caller/Host
+funding isolation, head41, close exhaustion/D11, partial-Home refusal, kill/ACK,
+CDC/recovery, Store recovery, and direct same-directory with RUST_MIN_STACK absent.
+Final format,7677-file dirty line caps and generated context pass. No broad suite.
+
+The boundary gate is RED:17 findings (five caller seals and12 BC9002). Six Native
+sites are P-A's already-granted queue. Six other topology sites touch two Native
+transition digest tests, three World custody/released-source tests, and Bank.
+The five missing caller entries reach one Query court and three Store court
+files. Owner evidence is funding-merge-boundary-handoff.json; the Lifecycle
+quiet-diffs return1 for those extra paths. The five seals require exact reach
+rulings or owner caller cutover, not a blanket allowlist. No gate suppression,
+baseline growth, ungranted owner edit or claim of FUNDING MERGED.
+
+Review01 rejected a real typed-content-to-corruption translation; the exhaustive
+frame map and initial-input map now preserve their original causes, with a pure
+regression passing1/0/0. Review02 finds no material funding merge defect but
+REJECTS constitutional closure: five dirty-set seals and nine dirty-set source
+courts. The three unchanged adapters are still P-A's queued work, not excused.
+
+Source evidence and every lane/count are indexed in funding-merge-lanes.md.
+Only two Rust blobs changed after the initial compilation tree; final Root Clippy
+and the new regression qualify them. UI Cargo.lock mechanically gains41 already
+qualified resolutions and updates four local dependency rows; the normalized
+audit proves no external version/checksum change or package removal. It adds no
+source implementation and caused no UI build. Scheduling catalogs retain both
+parents' immutable samples, generated through their existing owner.
+
+This turn's budget:5 Clippy runs,1 check,5 focused builds,7 top-level selected
+test-run commands;2 additional Cargo run invocations for mandatory tools. The
+cold/multi-workspace exception was recorded before the extra verification round.
+
+Open items, all HAPPY under the latest queue:
+- Boundary ownership: exact reach rulings/owner fixes for the eleven extra
+  findings, while P-A retains its six Native topology migrations.
+- D13: one interim door, Home-named limits/profile/denial, capture-proof-bound
+  Native image and authenticated World-original registry, typed predecessor and
+  byte-only refusals; both restored-historical terminal courts and held receipts
+  remain unrun this turn. Current Query format13 has not been changed.
+- Named digests: integration's CanonicalDigestId codec is now present; the P-A
+  fields remain queued. original_image.rs and branches.rs stay transferred.
+- BC9002: assertion-equivalence design/review, external provider migrations,
+  root value validation, adapter deletion and shrinking baseline are not done.
+
+No D13/digest/BC9002 source implementation is mixed into this merge. No new
+format/version change or additional development-Home retirement by these merge
+resolutions. The accepted selected-checkpoint missing/predecessor-image cutoff
+remains. Do not read the historical parking record below as current state.
+
+## Historical parking record (superseded; preserved for provenance)
+
 # P-A integration handoff and parked C2 work
 
 Integration branch: codex/m3-p3-reopen. Source HEAD: ea739387f6a20e134462c6811fe08c3a361d5165.

@@ -1,0 +1,303 @@
+{
+  "slice": "Read completion bodies (engine-once slice 4)",
+  "source_parent": "f399b14c7ba0a394de06a2ecc8d2aa5cdd1f784b",
+  "fixture": "worth-query-testkit-certification-canonical",
+  "profile": "Unchanged repository test profile: opt-level 0, debug 0.",
+  "commands": [
+    "$env:WORTH_IMPLEMENTATION_BUILD_ID='11111111-1111-1111-1111-111111111111'; $env:CARGO_TARGET_DIR='C:/worth-build-cache/target-cut-pub-mono'; $env:PYTHONUTF8='1'",
+    "cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host --no-run --message-format=json 1> target/pub-mono-logs/slice4-after-build.jsonl 2> target/pub-mono-logs/slice4-after-build.log",
+    "python scripts/quality/query_monomorphization.py --cargo-messages target/pub-mono-logs/slice4-after-build.jsonl --llvm-bin C:/Users/Esther/.rustup/toolchains/1.99.1-x86_64-pc-windows-msvc/lib/rustlib/x86_64-pc-windows-msvc/bin --output target/pub-mono-logs/mono-slice4-after.json"
+  ],
+  "before": {
+    "archive": "C:\\worth-build-cache\\target-cut-pub-mono\\debug\\deps\\libworth_query_testkit_certification_canonical-15d7b7f23c793455.rlib",
+    "archive_sha256": "f829ffbad0948e12943226488940d10eec45cebbd5590714c4a616837d5f0b21",
+    "rlib_bytes": 622208582,
+    "exported_symbols": 150756,
+    "code_bytes": 45014698,
+    "objects": 258,
+    "independent_nm_symbols": 150756,
+    "independent_size_code_bytes": 45014698,
+    "unattributed_code_bytes": 67667,
+    "shared_alias_code_bytes": 0
+  },
+  "after": {
+    "archive": "C:\\worth-build-cache\\target-cut-pub-mono\\debug\\deps\\libworth_query_testkit_certification_canonical-15d7b7f23c793455.rlib",
+    "archive_sha256": "fcb09c54dd6e74f02c7a8e55c6b4f2d71d56fc9cf5163d82146a8b4f619db8fe",
+    "rlib_bytes": 608125004,
+    "exported_symbols": 147315,
+    "code_bytes": 43865724,
+    "objects": 258,
+    "independent_nm_symbols": 147315,
+    "independent_size_code_bytes": 43865724,
+    "unattributed_code_bytes": 66903,
+    "shared_alias_code_bytes": 0
+  },
+  "slice_delta": {
+    "exported_symbols": -3441,
+    "rlib_bytes": -14083578,
+    "code_bytes": -1148974
+  },
+  "original_baseline": {
+    "exported_symbols": 160719,
+    "rlib_bytes": 674508286,
+    "code_bytes": 48544077
+  },
+  "slope_definition": "Sum(bytes/copies) over normalized families with at least 7 copies; a single-fixture proxy, not a multi-application derivative.",
+  "slope": {
+    "before_all": {
+      "families": 3691,
+      "sum_bytes_per_copy": 1802401.771237
+    },
+    "after_all": {
+      "families": 3618,
+      "sum_bytes_per_copy": 1766893.061652
+    },
+    "before_execution": {
+      "families": 2240,
+      "sum_bytes_per_copy": 1385124.143361
+    },
+    "after_execution": {
+      "families": 2173,
+      "sum_bytes_per_copy": 1350100.143361
+    }
+  },
+  "top_40_disappeared_families": [
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_native",
+      "bytes": 340488,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full",
+      "bytes": 277896,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::original_read::CompletedOriginalRead::from_native_completion::<>",
+      "bytes": 55992,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::admitted_arrays::admit_array::<>",
+      "bytes": 44808,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#1}",
+      "bytes": 43224,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::CompletedComputationRetention::reserve_fact_index::<>",
+      "bytes": 27600,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#12}",
+      "bytes": 23592,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::precondition_binding::WorthQueryBoundMutationPreconditions::validate_observations_with::<>::{closure#0}",
+      "bytes": 9384,
+      "copies": 24
+    },
+    {
+      "name": "im::ord::set::OrdSet<>::from_iter::<>",
+      "bytes": 8232,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#6}",
+      "bytes": 4920,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#1}::{closure#0}",
+      "bytes": 4176,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#1}::{closure#2}",
+      "bytes": 4176,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#1}::{closure#4}",
+      "bytes": 4176,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#1}::{closure#8}",
+      "bytes": 4176,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#1}::{closure#10}",
+      "bytes": 4176,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#5}",
+      "bytes": 3888,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::check_completion_live::{closure#0}",
+      "bytes": 3576,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_native::{closure#0}",
+      "bytes": 3024,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#3}",
+      "bytes": 2688,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#7}",
+      "bytes": 2688,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#15}",
+      "bytes": 2688,
+      "copies": 24
+    },
+    {
+      "name": "core::iter::traits::iterator::Iterator::all::check::<>::{closure#0}",
+      "bytes": 2688,
+      "copies": 48
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_native::{closure#16}",
+      "bytes": 2688,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::admitted_arrays::admit_array::<>::{closure#0}",
+      "bytes": 2280,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::admitted_arrays::admit_array::<>::{closure#2}",
+      "bytes": 2280,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::admitted_arrays::admit_array::<>::{closure#1}",
+      "bytes": 2280,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_native::{closure#5}",
+      "bytes": 2256,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#10}",
+      "bytes": 2112,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#11}",
+      "bytes": 2112,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_native::{closure#4}",
+      "bytes": 2112,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_native::{closure#6}",
+      "bytes": 2112,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_native::{closure#7}",
+      "bytes": 2112,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_native::{closure#8}",
+      "bytes": 2112,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_native::{closure#9}",
+      "bytes": 2112,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_native::{closure#10}",
+      "bytes": 2112,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_native::{closure#11}",
+      "bytes": 2112,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_native::{closure#14}",
+      "bytes": 2112,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::record_completed_handler_facts",
+      "bytes": 1896,
+      "copies": 24
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full::{closure#4}::{closure#0}",
+      "bytes": 1800,
+      "copies": 24
+    },
+    {
+      "name": "core::iter::adapters::zip::Zip<>::all::<>",
+      "bytes": 1680,
+      "copies": 24
+    }
+  ],
+  "remaining_read_completion_shells": [
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_projected_dependencies_with_request",
+      "bytes": 140737,
+      "copies": 23
+    },
+    {
+      "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete",
+      "bytes": 118920,
+      "copies": 24
+    }
+  ],
+  "namespace_counts": {
+    "worth_query_execution": {
+      "before": 43454,
+      "after": 41792
+    },
+    "core": {
+      "before": 65736,
+      "after": 64080
+    },
+    "alloc": {
+      "before": 13356,
+      "after": 13259
+    }
+  },
+  "scope": "The ranked native/full read-completion bodies are concrete; typed projection and DecisionReader seams are unchanged. The original admission and typed inputs stay in the shell; completion borrows a restricted Authorization-owned loan. No new AspectShape form or public Decl/Host signature.",
+  "growth_policy": "No automatic fixture-size gate: reproducing this archive requires the large court build. This measurement is the allowed growth record.",
+  "baseline_delta": {
+    "exported_symbols": -13404,
+    "rlib_bytes": -66383282,
+    "code_bytes": -4678353
+  },
+  "primary_graph_symbols": {
+    "before": 37880,
+    "after": 36222
+  }
+}

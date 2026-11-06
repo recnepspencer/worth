@@ -1722,6 +1722,8 @@ dependencies = [
 name = "worth-store-court-application"
 version = "0.1.0"
 dependencies = [
+ "serde",
+ "serde_json",
  "sha2",
  "tempfile",
  "worth-execution",
@@ -1730,6 +1732,7 @@ dependencies = [
  "worth-query-execution",
  "worth-query-host",
  "worth-query-testkit-host",
+ "worth-query-testkit-installation",
  "worth-relational",
  "worth-runtime-bridge",
  "worth-runtime-world",
@@ -2611,9 +2614,13 @@ dependencies = [
 name = "worth-store-testkit-application-oracle"
 version = "0.1.0"
 dependencies = [
+ "serde",
+ "serde_json",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
+ "worth-query-host",
+ "worth-query-testkit-host",
  "worth-query-testkit-installation",
  "worth-relational",
  "worth-runtime-bridge",

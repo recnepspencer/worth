@@ -1,6 +1,6 @@
 //! A queue pop claims a physical row, without selecting its current cause.
 use super::*;
-pub(in crate::domain_computation::primary_graph) struct RequiredWorkClaim {
+pub struct RequiredWorkClaim {
     pub(super) membership: Arc<RequiredWorkMembership>,
     pub(super) armed: bool,
 }
@@ -15,10 +15,7 @@ impl RequiredWorkClaim {
         Ok(Arc::ptr_eq(&self.membership, &ready.membership))
     }
     /// Owner tests exercise overlapping selected versions outside an advance.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn select_without_advance(
-        mut self,
-    ) -> Option<SelectedRequiredWork> {
+    pub fn select_without_advance(mut self) -> Option<SelectedRequiredWork> {
         let selected = self.select();
         self.membership
             .state
@@ -30,9 +27,7 @@ impl RequiredWorkClaim {
     }
     /// Only inspection selects the live cause and version. An unfinished claim
     /// or selection requeues on drop; a pop itself acknowledges nothing.
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn select(
-        &mut self,
-    ) -> Option<SelectedRequiredWork> {
+    pub fn select(&mut self) -> Option<SelectedRequiredWork> {
         let member = self
             .membership
             .state

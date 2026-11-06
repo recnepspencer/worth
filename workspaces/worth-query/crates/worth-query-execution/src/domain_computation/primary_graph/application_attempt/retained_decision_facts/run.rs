@@ -2,17 +2,14 @@ use super::{AdmittedFactKey, RetainedFact, Slot, Slots, StoreDenial};
 use std::cell::{Cell, RefCell};
 use worth_execution::ExecutionArrayBuilder;
 
-pub(in crate::domain_computation::primary_graph) struct Run<T> {
+pub struct Run<T> {
     pub(in crate::domain_computation::primary_graph) slots: Slots<T>,
     pub(in crate::domain_computation::primary_graph) used: usize,
     cursor: Cell<usize>,
 }
 
 impl<T> Run<T> {
-    pub(in crate::domain_computation::primary_graph) fn empty(
-        count: usize,
-        policy: super::StorageControl<'_, '_>,
-    ) -> Result<Self, StoreDenial> {
+    pub fn empty(count: usize, policy: super::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
         policy.check_live()?;
         let mut slots = ExecutionArrayBuilder::allocate(count, policy.policy())?;
         for _ in 0..count {
@@ -118,3 +115,5 @@ impl<T> Run<T> {
         })
     }
 }
+
+mod court_doors_for_test;

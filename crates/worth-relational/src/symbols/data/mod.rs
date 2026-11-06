@@ -20,6 +20,7 @@ mod field_text;
 mod stored_text;
 pub use field_text::{RelationalFieldText, RelationalFieldTextAdmissionDenial};
 pub use stored_text::StoredSymbolText;
+pub(crate) use stored_text::SymbolTextLookupKey;
 
 mod text_wire;
 pub(crate) use text_wire::SymbolSnapshotWire;

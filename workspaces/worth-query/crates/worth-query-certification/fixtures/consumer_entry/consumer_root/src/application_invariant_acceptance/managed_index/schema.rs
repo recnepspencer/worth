@@ -25,7 +25,7 @@ worth_query_application_contribution! { pub contribution CatalogContribution in 
             .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
             .relation(Contains::reference(), Directory::reference(), Item::reference())
             .principal_binding(CatalogPrincipal::reference())
-            .application_query(query::guarded_source_definition())
+            .application_query(query::source_definition(true))
             .application_query_binding::<query::SourceBinding>()
             .application_query(query::prefix_definition())
             .application_query_binding::<query::PrefixBinding>()

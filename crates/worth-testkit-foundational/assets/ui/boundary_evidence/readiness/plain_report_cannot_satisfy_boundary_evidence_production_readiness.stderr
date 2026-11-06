@@ -1,8 +1,8 @@
 error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/readiness/plain_report_cannot_satisfy_boundary_evidence_production_readiness.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/readiness/plain_report_cannot_satisfy_boundary_evidence_production_readiness.rs:9:89
   |
-  |     let _ = require_foundational_boundary_evidence_milestone7_production_test_readiness(&report);
-  |             --------------------------------------------------------------------------- ^^^^^^^ expected `&Artifact<..., ..., ..., ...>`, found `&...`
+9 |     let _ = require_foundational_boundary_evidence_milestone7_production_test_readiness(&report);
+  |             --------------------------------------------------------------------------- ^^^^^^^ expected `&Artifact<_, _, _, _>`, found `&_`
   |             |
   |             arguments to this function are incorrect
   |

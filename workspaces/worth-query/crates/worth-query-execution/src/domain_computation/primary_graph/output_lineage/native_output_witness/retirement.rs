@@ -4,13 +4,13 @@ use super::*;
 // prepaid before publication, including the commit's own deletion version.
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) struct RetirementMetadata {
+pub struct RetirementMetadata {
     pub(super) kind: KindId,
     pub(super) created_at: VersionId,
     pub(super) deleted_at: VersionId,
 }
 
-pub(super) fn native_metadata(
+pub fn native_metadata(
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     entity: EntityId,
@@ -32,3 +32,5 @@ pub(super) fn native_metadata(
         deleted_at: record.deleted_at_version(),
     }))
 }
+
+mod court_doors_for_test;

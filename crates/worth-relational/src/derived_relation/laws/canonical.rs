@@ -3,7 +3,11 @@ use super::DerivedRelationGraphLaws;
 use crate::config::data::CrossContextPolicy;
 use sha2::{Digest, Sha256};
 
-pub(crate) fn update_digest(hasher: &mut Sha256, laws: &DerivedRelationGraphLaws) {
+pub(crate) fn update_digest_for_compilation(
+    hasher: &mut Sha256,
+    laws: &DerivedRelationGraphLaws,
+    control: crate::schema::SchemaCompilationControl<'_, '_>,
+) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
     hasher.update(b"\0WORTH_DERIVED_RELATION_LAWS_V1\0");
     hasher.update([
         u8::from(laws.self_edges_allowed),
@@ -41,8 +45,10 @@ pub(crate) fn update_digest(hasher: &mut Sha256, laws: &DerivedRelationGraphLaws
             hasher.update(minimum.minimum_reachable_targets.to_le_bytes());
             hasher.update((minimum.target_domains.len() as u64).to_le_bytes());
             for domain in &minimum.target_domains {
+                control.checkpoint()?;
                 crate::derived_relation::canonical::endpoint(hasher, domain);
             }
         }
     }
+    Ok(())
 }

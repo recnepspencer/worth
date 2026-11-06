@@ -2,30 +2,26 @@ use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId};
 
-mod adjacency;
+pub(crate) mod adjacency;
 mod dependency_key;
 mod entity_touch;
 mod equality;
-mod indexed_entity_selection;
+pub(crate) mod indexed_entity_selection;
 mod locator_identity;
-mod managed_source_read;
-mod movement;
+pub(crate) mod managed_source_read;
+pub(crate) mod movement;
 mod retirement_equality;
-mod source_currentness;
+pub(crate) mod source_currentness;
 mod source_read_authorization;
-pub(in crate::domain_computation::primary_graph) use source_read_authorization::{
-    SourceReadAuthorization, SourceReadAuthorizationKey,
-};
+
 mod source_merge;
 mod source_publication_read;
-pub(in crate::domain_computation::primary_graph) use managed_source_read::{
-    ManagedSourceRead, ManagedSourceReadKey,
-};
-pub(in crate::domain_computation::primary_graph) use source_publication_read::SourcePublicationRead;
+pub(in crate::domain_computation::primary_graph) use managed_source_read::ManagedSourceRead;
+
 mod workflow_definition_predecessor;
-mod workflow_history_basis;
+pub(crate) mod workflow_history_basis;
 pub(in crate::domain_computation) use workflow_history_basis::WorkflowHistoryRequirement;
-mod workflow_instance_capacity;
+pub(crate) mod workflow_instance_capacity;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency_with_work;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_audit_outgoing_adjacency;
@@ -33,7 +29,7 @@ pub(in crate::domain_computation::primary_graph) use adjacency::{
     observe_adjacency_checked, AdjacencyObservationDenial,
 };
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::reobserve as reobserve_indexed_entity_selection;
-pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::IndexedSelectionReobserveDenial;
+pub use indexed_entity_selection::IndexedSelectionReobserveDenial;
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::{
     observe_indexed_candidates, observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal,
 };
@@ -43,20 +39,20 @@ pub(in crate::domain_computation::primary_graph) use movement::{
 pub(in crate::domain_computation::primary_graph) use source_currentness::WorthQuerySourceCurrentnessFailure;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation) enum WorthQueryApplicationAdjacencyDirection {
+pub enum WorthQueryApplicationAdjacencyDirection {
     Outgoing,
     Incoming,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation) struct WorthQueryApplicationObservedRelation {
+pub struct WorthQueryApplicationObservedRelation {
     pub(in crate::domain_computation::primary_graph) relation_id: RelationId,
     pub(in crate::domain_computation::primary_graph) from: EntityId,
     pub(in crate::domain_computation::primary_graph) to: EntityId,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactKey {
+pub enum WorthQueryApplicationFactKey {
     StructuralWalk(super::super::structural_walk::StructuralWalkKey),
     Aggregate(super::super::aggregate_observation::AggregateKey),
     ComponentSelection(super::super::component_selection::ComponentSelectionKey),
@@ -91,7 +87,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactK
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
+pub enum WorthQueryApplicationObservedFact {
     /// Actual conventional Source permission, independently retained and checked.
     SourceReadAuthorization {
         observation: std::sync::Arc<SourceReadAuthorization>,
@@ -278,8 +274,14 @@ impl WorthQueryApplicationObservedFact {
     }
 }
 
-#[cfg(test)]
-mod cancellation_tests;
+pub mod consult_observation;
 
-#[cfg(test)]
-pub(in crate::domain_computation) mod consult_observation;
+mod court_doors_for_test;
+
+pub use source_publication_read::SourcePublicationRead;
+
+pub use managed_source_read::ManagedSourceReadKey;
+
+pub use source_read_authorization::SourceReadAuthorizationKey;
+
+pub use source_read_authorization::SourceReadAuthorization;

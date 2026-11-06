@@ -3,7 +3,7 @@ use super::*;
 use crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource;
 use worth_foundational::facade::AspectFieldLocator;
 use worth_relational::facade::indexes::{BoundedEntityFieldBoundary, DerivedIndexId};
-mod page_allocation;
+pub(crate) mod page_allocation;
 pub(in crate::domain_computation::primary_graph) use page_allocation::WorthQueryCorrectionHistoryPageAllocation;
 
 #[derive(Debug)]

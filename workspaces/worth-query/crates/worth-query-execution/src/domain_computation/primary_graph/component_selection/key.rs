@@ -7,7 +7,7 @@ pub(in crate::domain_computation::primary_graph) enum ComponentSelectionSubject 
     DerivedOf(worth_relational::facade::schema::NativeMemberKey),
 }
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct ComponentSelectionKey {
+pub struct ComponentSelectionKey {
     query: bool,
     derived: bool,
     scope: [u8; 32],

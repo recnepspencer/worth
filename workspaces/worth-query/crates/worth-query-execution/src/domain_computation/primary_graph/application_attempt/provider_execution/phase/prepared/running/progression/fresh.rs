@@ -180,6 +180,7 @@ where
             .resolve_application_idempotency(execution, &provider_session)
     });
     match resolution {
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(_))) => Some(Progression::Denied(WorthQueryApplicationCommitDenial::original_effect_released())),
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt))) => Some(if graph::application_attempt::provider_execution::aftermath_resolution::recovered_answers_aftermath(authority.aftermath_causality(), &receipt) {
             Progression::RecoveredCommitted(receipt)
         } else { Progression::Denied(WorthQueryApplicationCommitDenial::idempotency_intent_drift()) }),
@@ -195,7 +196,13 @@ where
                 WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
             ))
         }
-        Ok(Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { handle, stage })) => Some(Progression::ProductPreparationPending(authority.application().primary_provider.preparation_pending(&authority.product.publication_binding(), handle, stage))),
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { handle, stage })) => Some(Progression::ProductPreparationPending(authority.application().runtime.primary_provider.preparation_pending(&authority.product.publication_binding(), handle, stage))),
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle })) => Some(
+            match authority.application().runtime.primary_provider.recovered_unpublished_application(&authority.product.publication_binding(), handle) {
+                Ok(effects) => Progression::ProductUnpublished(effects),
+                Err(_) => Progression::Denied(WorthQueryApplicationCommitDenial::idempotency_preparation_busy()),
+            }
+        ),
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Unpublished)) => {
             Some(progression_denied(DenialStage::Idempotency))
         }

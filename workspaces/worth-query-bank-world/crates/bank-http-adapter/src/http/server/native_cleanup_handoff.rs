@@ -80,7 +80,7 @@ pub(super) async fn execute<A: super::authentication::BankHttpApplicationAuthent
     >,
     return_sender: tokio::sync::mpsc::Sender<super::mutation_executor::WorkerCommand>,
 ) {
-    let scope = WorthQueryRequestScope::new(Some(command.deadline), cancellation.token());
+    let scope = WorthQueryRequestScope::new(Some(command.deadline), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = match application.authenticate(command.credential, &scope).await {
         Ok(principal) => principal,
         Err(denial) => {

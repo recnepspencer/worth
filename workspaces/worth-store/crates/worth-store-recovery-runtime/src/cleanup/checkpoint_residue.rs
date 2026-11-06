@@ -27,12 +27,14 @@ pub(super) fn failure(
     reopened: ReopenedPhysicalRecovery,
     outcome: RecoveryCheckpointResidueOutcome,
 ) -> PhysicalRecoveryOutcome {
+    let (payload, unused_handoff) = reopened.into_handoff_parts();
+    drop(unused_handoff);
     let crate::progression::ReopenedPayload {
         state,
         publication_counters,
         publication_settlement,
         ..
-    } = reopened.into_payload();
+    } = payload;
     let store = state.authority.media.store_identity();
     let session_identity = state.authority.session.identity();
     let recovery_effects = state.authority.media.recovery_effect_count();

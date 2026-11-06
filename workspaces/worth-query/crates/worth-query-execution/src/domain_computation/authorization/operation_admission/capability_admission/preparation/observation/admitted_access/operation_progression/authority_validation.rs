@@ -1,5 +1,4 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use std::time::Instant;
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
@@ -26,6 +25,25 @@ where
     Operation: ApplicationOperationMarkerIdentity<Schema>,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
+    runtime
+        .runtime
+        .product_runtime
+        .owner
+        .owner_identity()
+        .admit_incarnation(access.home_owner)
+        .map_err(|cause| {
+            denial(
+                WorthQueryOperationAuthorizationDenialKind::Refused(match cause {
+                    worth_proof::HomeIncarnationDenial::ForeignHome => {
+                        AuthorizationRefusal::ForeignRuntime
+                    }
+                    worth_proof::HomeIncarnationDenial::StaleIncarnation => {
+                        AuthorizationRefusal::StaleIncarnation
+                    }
+                }),
+                access.operation.as_ref(),
+            )
+        })?;
     validate_access_lifecycle(access)?;
     validate_installed_operation_identity(runtime, access, operation, progression)?;
     validate_capability_graph_work_authority(access, operation)
@@ -43,6 +61,7 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     let lifecycle = runtime
+        .runtime
         .authorization
         .elevation_lifecycle_operation::<Schema, Operation>(
             operation.operation(),
@@ -119,12 +138,12 @@ where
     Schema: ApplicationSchema,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    if access.graph_work.runtime_authority() != access.runtime_authority
-        || access.graph_work.binding() != &access.binding_identity
-        || access.graph_work.principal() != access.principal_entity_id
-        || access.graph_work.capability_access_context()
+    if !access
+        .authorization
+        .belongs_to_session(access.graph_work_session)
+        || access.graph_work_capability
             != Some(access.authorization.installed_capability_identity())
-        || access.authorization.exact_fact_count() != access.graph_work.retained_decision_facts()
+        || access.authorization.exact_fact_count() != access.graph_work_decision_facts
     {
         return Err(inconsistent(operation.operation()));
     }
@@ -162,7 +181,7 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     admit_request(&access.request_scope, &access.operation)?;
-    if Instant::now() >= access.authentication_valid_until {
+    if access.request_scope.clock().now() >= access.authentication_valid_until {
         return Err(denial(
             WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::ExpiredAuthentication,

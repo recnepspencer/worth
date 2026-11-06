@@ -4,10 +4,43 @@ pub const ACTIVE_WORLD_OBSERVATIONS: u64 = 128;
 
 pub const WORKFLOW_DEFINITION_BYTES: u32 = 16 * 1024 * 1024;
 
+/// Installed finite lifecycle allowances, independent of retained commit/pin limits.
+#[derive(Clone, Copy, Debug)]
+pub struct WorldLifecycleCapacity {
+    pub live_product_branches: u64,
+    pub active_observations: u64,
+    pub owner_created_component_custody_records: u64,
+}
+
+impl WorldLifecycleCapacity {
+    pub const DEFAULT: Self = Self {
+        live_product_branches: 32,
+        active_observations: ACTIVE_WORLD_OBSERVATIONS,
+        owner_created_component_custody_records: 64,
+    };
+}
+
 pub fn world_resources(
     commits: u64,
     metadata_bytes: u64,
     pins: u64,
+    clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
+) -> runtime::WorthQueryProductWorldResources {
+    world_resources_with_capacity(
+        commits,
+        metadata_bytes,
+        pins,
+        WorldLifecycleCapacity::DEFAULT,
+        clock,
+    )
+}
+
+pub fn world_resources_with_capacity(
+    commits: u64,
+    metadata_bytes: u64,
+    pins: u64,
+    capacity: WorldLifecycleCapacity,
+    clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
 ) -> runtime::WorthQueryProductWorldResources {
     // These ordinary authority courts impose no guessed request-work ceiling.
     // Native checked work and allocation handling retain their existing policy.
@@ -19,14 +52,14 @@ pub fn world_resources(
     runtime::WorthQueryProductWorldResources::install(
         runtime::RuntimeWorldBudgetInstallation {
             branches: runtime::RuntimeWorldBranchBudgetInstallation {
-                live_product_branches: 32,
+                live_product_branches: capacity.live_product_branches,
             },
             history: runtime::RuntimeWorldHistoryBudgetInstallation {
                 retained_composite_commits: commits,
                 history_metadata_bytes: metadata_bytes,
             },
             observations: runtime::RuntimeWorldObservationBudgetInstallation {
-                active_observations: ACTIVE_WORLD_OBSERVATIONS,
+                active_observations: capacity.active_observations,
             },
             publication: runtime::RuntimeWorldPublicationBudgetInstallation {
                 active_publication_attempts: 32,
@@ -40,10 +73,11 @@ pub fn world_resources(
                 in_flight_pin_acquisition_reservations: 64,
             },
             custody: runtime::RuntimeWorldCustodyBudgetInstallation {
-                owner_created_component_custody_records: 64,
+                owner_created_component_custody_records: capacity
+                    .owner_created_component_custody_records,
             },
         },
-        runtime::WorthQueryProductWorldClock::start(),
+        runtime::WorthQueryProductWorldClock::start(clock),
         runtime::WorthQueryInvalidationResources::new(),
         execution_policy,
     )

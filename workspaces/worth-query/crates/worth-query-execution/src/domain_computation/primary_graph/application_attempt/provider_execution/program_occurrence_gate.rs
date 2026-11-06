@@ -16,9 +16,6 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_foundational::facade::AspectValue;
 use worth_query_installation::facade::WorthQueryProgramSupportEntry;
 
-#[cfg(test)]
-mod tests;
-
 use super::super::super::program_occurrence::WorthQueryInstalledProgramSupport;
 use super::super::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationEffectProgram,
@@ -27,9 +24,7 @@ use super::super::{
 
 /// The rostered program one occurrence resolved to, together with the exact
 /// stored rendering the attempt observed.
-pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryOccurrenceProgram<
-    'support,
-> {
+pub struct WorthQueryOccurrenceProgram<'support> {
     entry: &'support WorthQueryProgramSupportEntry,
     rendering: AspectValue,
 }
@@ -70,7 +65,7 @@ pub(super) fn require_selected_program_matches_occurrence(
 }
 
 /// Requires the activated program to declare the effectful operation route.
-pub(super) fn require_occurrence_acts_through<Operation: 'static>(
+pub fn require_occurrence_acts_through<Operation: 'static>(
     occurrence: &WorthQueryOccurrenceProgram<'_>,
 ) -> Result<(), WorthQueryApplicationCommitDenial> {
     if !occurrence
@@ -94,13 +89,7 @@ pub(super) fn require_occurrence_acts_through<Operation: 'static>(
 /// published, cannot be read, or names no rostered program is refused, each
 /// under its own named cause: a host that cannot attribute work to admitted
 /// meaning must not perform it.
-pub(in crate::domain_computation::primary_graph::application_attempt) fn resolve_occurrence_program<
-    'support,
-    Schema,
-    Operation,
-    Input,
-    Scope,
->(
+pub fn resolve_occurrence_program<'support, Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     support: &'support WorthQueryInstalledProgramSupport<Schema>,
     program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,

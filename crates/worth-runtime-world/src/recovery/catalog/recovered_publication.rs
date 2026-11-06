@@ -17,14 +17,21 @@ impl ReservedProductUnpublishedSlot {
 }
 
 impl ProductUnpublishedRecoveryCatalog {
+    pub(crate) fn has_recovered(&self) -> bool {
+        let state = self.locked_state();
+        (0..state.slots.span()).any(|position| {
+            matches!(
+                state.slots.at(position),
+                Some((_, RecoveryEntry::Recovered(_)))
+            )
+        })
+    }
     pub(crate) fn claim_recovered(
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<WorldRecoveredUnpublishedEffects, crate::recovery::RuntimeWorldRecoveryDenial> {
         use crate::recovery::RuntimeWorldRecoveryDenial as Denial;
-        if handle.catalog_affinity() != self.affinity() {
-            return Err(Denial::ForeignHandle);
-        }
+        self.admit_handle(handle)?;
         let record = {
             let state = self.locked_state();
             match state.slots.get(handle.identity()) {
@@ -39,7 +46,26 @@ impl ProductUnpublishedRecoveryCatalog {
             }
             *claimed = true;
         }
+        let source = match &*record.native.lock().unwrap_or_else(|e| e.into_inner()) {
+            crate::recovery::RecoveredNativeCustody::OpenOnly => None,
+            crate::recovery::RecoveredNativeCustody::Relational(native) => Some(
+                crate::recovery::recovered_publication::RecoveredNativeObservation::Original(
+                    native.clone(),
+                ),
+            ),
+            crate::recovery::RecoveredNativeCustody::Prepared(record) => Some(
+                crate::recovery::recovered_publication::RecoveredNativeObservation::Prepared(
+                    record.clone(),
+                ),
+            ),
+            crate::recovery::RecoveredNativeCustody::Continuing(_)
+            | crate::recovery::RecoveredNativeCustody::Working => None,
+            crate::recovery::RecoveredNativeCustody::Released => {
+                unreachable!("current recovered catalog entry")
+            }
+        };
         Ok(WorldRecoveredUnpublishedEffects {
+            source,
             record,
             catalog: self.clone(),
         })

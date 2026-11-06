@@ -1,10 +1,10 @@
 //! Authoritative branch-local workflow-instance facts.
 
 mod adoption_inventory;
-mod facts;
-mod migration;
-mod progression;
-pub(in crate::domain_computation::primary_graph) mod start_provenance;
+pub(crate) mod facts;
+pub(crate) mod migration;
+pub(crate) mod progression;
+pub(crate) mod start_provenance;
 mod state;
 mod transition;
 

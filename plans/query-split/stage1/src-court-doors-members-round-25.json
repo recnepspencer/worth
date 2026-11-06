@@ -1,0 +1,40 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.framework_required_count",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.framework_required_count (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.performed_obligations",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.performed_obligations (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.performed_source",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.performed_source (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.prerequisites",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.prerequisites (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.readmission_source",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.readmission_source (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.required_stop",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.source_commits (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.state",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.state (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.successor_of",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.successor_of (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.wake",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.work_membership",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState.records (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState.required_work_queue (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey.source",
+  "domain_computation::primary_graph::bootstrap::WorthQueryPrimaryGraphBootstrap.managed_indexes (mut)",
+  "domain_computation::primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle.layout"
+ ],
+ "method_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::record_map::DemandRecords::insert",
+  "domain_computation::primary_graph::application_output_demand::registry::record_map::DemandRecords::values",
+  "domain_computation::primary_graph::application_output_demand::registry::record_map::mutation::RecordMutation<'a>::finish",
+  "domain_computation::primary_graph::provider::application_decision_fact::application_table::ApplicationFactTable::get",
+  "domain_computation::primary_graph::provider::application_decision_fact::application_table::ApplicationFactTable::requests",
+  "domain_computation::primary_graph::provider::application_decision_fact::application_table::ApplicationFactTable::values"
+ ],
+ "unplaced": [
+  "cannot assign to data in a `&` reference"
+ ]
+}

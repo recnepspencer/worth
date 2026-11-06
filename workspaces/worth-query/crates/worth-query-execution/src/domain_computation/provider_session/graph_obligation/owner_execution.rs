@@ -51,16 +51,13 @@ impl WorthQueryGraphReadOwnerPort {
         let read = self
             .source
             .with_runtime(execution, |runtime| {
-                #[cfg(test)]
                 let replacement = pin_control::snapshot();
-                #[cfg(test)]
                 let snapshot = replacement.as_ref().unwrap_or(snapshot);
                 let result = runtime.read_truth().pin_read_capability(
                     snapshot,
                     &selected_indexes,
                     execution,
                 );
-                #[cfg(test)]
                 pin_panic::panic_if_armed();
                 result
             })
@@ -134,11 +131,10 @@ impl WorthQuerySessionGraphReadProof {
     }
 }
 
-#[cfg(test)]
-pub(in crate::domain_computation) mod pin_panic {
+pub(crate) mod pin_panic {
     use std::cell::Cell;
     thread_local! { static ARMED: Cell<bool> = const { Cell::new(false) }; }
-    pub(in crate::domain_computation) struct PanicDuringPinGuardForTest(bool);
+    pub struct PanicDuringPinGuardForTest(bool);
     impl PanicDuringPinGuardForTest {
         pub(in crate::domain_computation) fn install_on_this_thread() -> Self {
             assert!(crate::domain_computation::execution_observation::is_installed());
@@ -153,7 +149,8 @@ pub(in crate::domain_computation) mod pin_panic {
     pub(super) fn panic_if_armed() {
         assert!(!ARMED.replace(false), "injected panic inside owner pin");
     }
+
+    mod court_doors_for_test;
 }
 
-#[cfg(test)]
-pub(in crate::domain_computation) mod pin_control;
+pub(crate) mod pin_control;

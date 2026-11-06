@@ -24,7 +24,7 @@ impl PreparedResidentRegion {
         }
         request
             .consult()
-            .map_err(|cause| RegionContentFailure::Request(cause.into()))?;
+            .map_err(|cause| RegionContentFailure::Execution(cause.into()))?;
         let kind_commitment = {
             let history = FullKindProjection::normalize(&mut partition, request)?;
             let head = FullKindProjection::capture(
@@ -44,7 +44,7 @@ impl PreparedResidentRegion {
             PartitionContentCommitment::capture_full_for_request(&partition, symbols, request)
                 .map_err(|cause| match cause {
                     crate::storage::overlay::PartitionContentDigestError::Request(cause) => {
-                        RegionContentFailure::Request(cause)
+                        RegionContentFailure::Execution(cause)
                     }
                     other => RegionContentFailure::Content(other),
                 })?;

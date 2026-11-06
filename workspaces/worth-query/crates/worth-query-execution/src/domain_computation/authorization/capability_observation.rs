@@ -16,7 +16,7 @@ mod bridge_observation;
 mod decision_denial;
 mod elevation;
 mod expiry;
-mod grant_selection;
+pub(crate) mod grant_selection;
 mod path_preparation;
 mod projection_validation;
 mod recorded_actor;
@@ -355,6 +355,3 @@ pub(super) fn invalid_policy(subject: &str) -> WorthQueryOperationAuthorizationD
         subject,
     )
 }
-
-#[cfg(test)]
-pub(in crate::domain_computation) use grant_selection::late_cancellation::CancelGrantSelectionGuardForTest;

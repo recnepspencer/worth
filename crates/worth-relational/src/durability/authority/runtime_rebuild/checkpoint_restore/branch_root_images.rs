@@ -21,7 +21,7 @@ pub(super) fn restore_branch_root_images(
     checkpoint: &DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
     original_schemas: Option<&super::super::original_schemas::OriginalSchemaGraph>,
-) -> Result<RestoredBranchRootImages, DurabilityError> {
+) -> Result<RestoredBranchRootImages, crate::durability::data::RelationalRecoveryStop> {
     let mut schema_catalog = match original_schemas {
         Some(_) => None,
         None => Some(RootSchemaReadmissionCatalog::readmit(checkpoint)?),
@@ -35,7 +35,8 @@ pub(super) fn restore_branch_root_images(
             return Err(corrupt_checkpoint(format!(
                 "duplicate checkpoint commit envelope `{}`",
                 commit_id.0
-            )));
+            ))
+            .into());
         }
     }
     for image in &checkpoint.branch_roots {
@@ -59,7 +60,8 @@ pub(super) fn restore_branch_root_images(
             return Err(corrupt_checkpoint(format!(
                 "branch-root image `{}` partition integrity mismatch",
                 image.commit_id.0
-            )));
+            ))
+            .into());
         }
         work.root_images_verified += 1;
         let schema_authority = match original_schemas {
@@ -69,7 +71,7 @@ pub(super) fn restore_branch_root_images(
                     .ok_or_else(|| corrupt_checkpoint("source root carrier unavailable".into()))?;
                 if !schema.matches(&envelope.schema_authority)
                     || schema.descriptor_semantics_version() != envelope.descriptor_semantics_version {
-                    return Err(corrupt_checkpoint("source root schema binding mismatch".into()));
+                    return Err(corrupt_checkpoint("source root schema binding mismatch".into()).into());
                 }
                 schema.clone()
             }
@@ -100,7 +102,8 @@ pub(super) fn restore_branch_root_images(
             return Err(corrupt_checkpoint(format!(
                 "duplicate branch-root image `{}`",
                 image.commit_id.0
-            )));
+            ))
+            .into());
         }
         schema_authorities.insert(image.commit_id, schema_authority);
     }

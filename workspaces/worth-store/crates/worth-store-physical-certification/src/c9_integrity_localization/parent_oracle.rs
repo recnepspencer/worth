@@ -1,5 +1,6 @@
 use std::ops::Range;
 use std::path::{Path, PathBuf};
+use worth_foundational::CanonicalDigestId;
 
 use super::corruption_operator::RootCorruptionOperation;
 use super::{
@@ -44,8 +45,8 @@ pub(crate) struct ExpectedRootLocalization {
     expected_ranges: Vec<Range<u64>>,
     minimum_blast_radius: ExpectedMinimumBlastRadius,
     minimum_reachable_paths: Vec<PathBuf>,
-    manifest_identity: [u8; 32],
-    edit_identity: [u8; 32],
+    manifest_identity: CanonicalDigestId,
+    edit_identity: CanonicalDigestId,
 }
 
 pub(crate) fn derive_parent_expectation(
@@ -130,8 +131,8 @@ pub(crate) fn derive_parent_expectation(
         expected_ranges,
         minimum_blast_radius,
         minimum_reachable_paths,
-        manifest_identity: manifest.identity(),
-        edit_identity: edit.identity(),
+        manifest_identity: CanonicalDigestId::new(manifest.identity()),
+        edit_identity: CanonicalDigestId::new(edit.identity()),
     })
 }
 
@@ -155,9 +156,9 @@ impl ExpectedRootLocalization {
         self.minimum_reachable_paths.iter().map(PathBuf::as_path)
     }
     pub(crate) const fn manifest_identity(&self) -> [u8; 32] {
-        self.manifest_identity
+        *self.manifest_identity.bytes()
     }
     pub(crate) const fn edit_identity(&self) -> [u8; 32] {
-        self.edit_identity
+        *self.edit_identity.bytes()
     }
 }

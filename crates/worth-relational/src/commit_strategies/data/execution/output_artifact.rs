@@ -5,7 +5,7 @@ use sha2::{Digest, Sha256};
 
 use crate::commit_strategies::data::{PersistentArtifactName, StrategyOutputSchemaName};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct CanonicalStrategyOutputDigest(pub [u8; 32]);
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -91,5 +91,17 @@ pub(super) fn forged_output_artifact_for_digest_test(
         canonical_bytes,
         digest: artifact.digest(),
         artifact_name: artifact.artifact_name().clone(),
+    }
+}
+
+impl Serialize for CanonicalStrategyOutputDigest {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        worth_foundational::CanonicalDigestId::new(self.0).serialize(serializer)
+    }
+}
+impl<'de> Deserialize<'de> for CanonicalStrategyOutputDigest {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        worth_foundational::CanonicalDigestId::deserialize(deserializer)
+            .map(|digest| Self(*digest.bytes()))
     }
 }

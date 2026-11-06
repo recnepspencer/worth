@@ -164,7 +164,19 @@ where
                 dispatch_outbox,
                 provider_session,
             );
-            let compared = candidate.compare_and_commit_with(control.policy(), |read_authority, fresh| {
+            let compared = candidate.compare_and_commit_with(|prepared| {
+                match authority.history {
+                    Some(history) => {
+                        let request = authority.admission().retain_admitted_request();
+                        prepared.commit_using(|_provider, session| {
+                            authority.provider().commit_prepared_application_in_history(
+                                session, history.bind_producer_request(&request), control.policy(),
+                            )
+                        })
+                    }
+                    None => prepared.commit(control.policy()),
+                }
+            }, |read_authority, fresh| {
                 authority.provider().recompare_application_read_set(execution,
                     read_authority, fresh,
                     crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
@@ -173,6 +185,12 @@ where
                 )
             });
             finish_authorized_compare(execution, compared, context)
+        }
+        Ok(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(_)) => {
+            candidate.discard();
+            WorthQueryProviderProgressionOutcome::Denied(
+                WorthQueryApplicationCommitDenial::original_effect_released(),
+            )
         }
         Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => {
             candidate.discard();
@@ -193,9 +211,24 @@ where
             WorthQueryProviderProgressionOutcome::ProductPreparationPending(
                 authority
                     .application()
+                    .runtime
                     .primary_provider
                     .preparation_pending(&authority.product.publication_binding(), handle, stage),
             )
+        }
+        Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle }) => {
+            candidate.discard();
+            match authority
+                .application()
+                .runtime
+                .primary_provider
+                .recovered_unpublished_application(&authority.product.publication_binding(), handle)
+            {
+                Ok(effects) => WorthQueryProviderProgressionOutcome::ProductUnpublished(effects),
+                Err(_) => WorthQueryProviderProgressionOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::idempotency_preparation_busy(),
+                ),
+            }
         }
         Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
             candidate.discard();

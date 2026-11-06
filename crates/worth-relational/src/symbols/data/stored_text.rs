@@ -1,5 +1,7 @@
 //! Physical custody for a symbol's text, independent of semantic string identity.
+mod index_key;
 use super::field_text::RelationalFieldTextAdmissionDenial as Denial;
+pub(crate) use index_key::SymbolTextLookupKey;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     borrow::Borrow,

@@ -7,14 +7,14 @@ use crate::domain_computation::primary_graph::product_operation::SharedSelectedP
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryApplicationSnapshotLeaseDenial {
+pub enum WorthQueryApplicationSnapshotLeaseDenial {
     ForeignRuntime,
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     SnapshotIdentityExhausted,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryApplicationSnapshotRelease {
+pub enum WorthQueryApplicationSnapshotRelease {
     NativeSnapshotReleased,
     SharedBasisRelease(WorthQueryApplicationBasisReleaseOutcome),
 }
@@ -76,7 +76,7 @@ impl SnapshotCustody {
     }
 }
 
-pub(in crate::domain_computation) struct WorthQueryApplicationSnapshotLease {
+pub struct WorthQueryApplicationSnapshotLease {
     custody: Option<SnapshotCustody>,
     product: crate::basis::WorthQueryProductBranchLease,
     selection_origin: super::super::product_operation::SelectedQueryOrigin,
@@ -228,9 +228,7 @@ impl WorthQueryApplicationSnapshotLease {
             .snapshot()
     }
 
-    pub(in crate::domain_computation) fn product(
-        &self,
-    ) -> &crate::basis::WorthQueryProductBranchLease {
+    pub fn product(&self) -> &crate::basis::WorthQueryProductBranchLease {
         &self.product
     }
 
@@ -241,14 +239,11 @@ impl WorthQueryApplicationSnapshotLease {
             .handle()
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation) fn release(self) -> bool {
         self.release_custody().snapshot_released()
     }
 
-    pub(in crate::domain_computation) fn release_custody(
-        mut self,
-    ) -> WorthQueryApplicationSnapshotRelease {
+    pub fn release_custody(mut self) -> WorthQueryApplicationSnapshotRelease {
         release_custody(self.custody.take().expect("snapshot lease releases once"))
     }
 }
@@ -281,3 +276,5 @@ fn release_custody(custody: SnapshotCustody) -> WorthQueryApplicationSnapshotRel
         },
     }
 }
+
+mod court_doors_for_test;

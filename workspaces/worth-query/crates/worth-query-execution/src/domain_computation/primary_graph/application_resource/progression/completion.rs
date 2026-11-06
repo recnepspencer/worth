@@ -61,6 +61,7 @@ where
     };
     if matches!(candidate.queue, ResourceCandidateQueue::Unadmitted) {
         let admitted = runtime
+            .runtime
             .bridge
             .conditional()
             .enqueue_managed_owned_async_queue(owner, 1)
@@ -128,6 +129,7 @@ where
             let issued = witness.effects_indeterminate_issuer().certify(bytes);
             candidate.admission = Some(
                 runtime
+                    .runtime
                     .bridge
                     .conditional()
                     .admit_owned_async_effects_indeterminate(issued)
@@ -140,6 +142,7 @@ where
             .expect("actual indeterminate admission retained");
         if admission.report().denied_completion().is_some() {
             runtime
+                .runtime
                 .bridge
                 .conditional()
                 .release_process_local_completion_denial(owner, admission)
@@ -181,11 +184,13 @@ where
             u64::try_from(candidate.frame.length()).map_err(|_| ResourceCause::Unavailable)?,
         );
         let validated = runtime
+            .runtime
             .bridge
             .conditional()
             .validate_owned_async_completion_envelope(witness, raw)
             .map_err(ResourceCause::Completion)?;
         let admitted = runtime
+            .runtime
             .bridge
             .conditional()
             .admit_owned_async_completion(witness, &validated)
@@ -198,6 +203,7 @@ where
         .expect("actual Native admission retained before handoff");
     if admission.report().denied_completion().is_some() {
         runtime
+            .runtime
             .bridge
             .conditional()
             .release_process_local_completion_denial(owner, admission)
@@ -210,6 +216,7 @@ where
     }
     execution.consult().map_err(ResourceCause::Request)?;
     let committed = runtime
+        .runtime
         .bridge
         .conditional()
         .commit_owned_async_completion(witness, admission)

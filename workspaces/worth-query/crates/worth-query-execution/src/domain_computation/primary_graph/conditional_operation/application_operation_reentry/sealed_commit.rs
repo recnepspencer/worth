@@ -156,7 +156,4 @@ fn classify_commit(
     }
 }
 
-mod denial;
-
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use denial::tests::assert_preparation_retry;
+pub(crate) mod denial;

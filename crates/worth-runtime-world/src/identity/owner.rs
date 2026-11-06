@@ -15,12 +15,13 @@ enum OwnerScope {
     Home(worth_foundational::facade::DurableWorldOwnerIdentity),
 }
 
-/// Live identity carriage. Home equality uses the durable scope; the local
-/// observation handle is descriptive and never enters a durable artifact.
+/// Live identity carriage. Home authority equality includes its admitted
+/// incarnation. Durable data uses the separate Foundation identity instead.
 #[derive(Debug, Clone, Copy)]
 pub struct RuntimeWorldOwnerIdentity {
     scope: OwnerScope,
     instance: EphemeralWorldOwnerIdentity,
+    home_fence: Option<worth_proof::HomeIncarnationFence>,
 }
 impl RuntimeWorldOwnerIdentity {
     const fn from_ordinal(ordinal: u64) -> Self {
@@ -28,6 +29,7 @@ impl RuntimeWorldOwnerIdentity {
         Self {
             scope: OwnerScope::Ephemeral(instance),
             instance,
+            home_fence: None,
         }
     }
     /// Process-local observation ordinal, not a durable identity encoding.
@@ -42,17 +44,58 @@ impl RuntimeWorldOwnerIdentity {
     }
     pub(crate) fn for_admitted_home(
         home: worth_foundational::facade::DurableWorldOwnerIdentity,
+        incarnation: worth_foundational::facade::HomeIncarnation,
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
         let instance = issue_owner_identity()?.instance;
         Ok(Self {
             scope: OwnerScope::Home(home),
             instance,
+            home_fence: Some(incarnation.fence()),
         })
+    }
+
+    /// The fence carried by live Home authorities; never a durable identity.
+    pub const fn home_incarnation_fence(self) -> Option<worth_proof::HomeIncarnationFence> {
+        self.home_fence
+    }
+
+    pub fn admit_incarnation(
+        self,
+        presented: Self,
+    ) -> Result<(), worth_proof::HomeIncarnationDenial> {
+        if let (OwnerScope::Home(current), OwnerScope::Home(other)) = (self.scope, presented.scope)
+            && current != other
+        {
+            return Err(worth_proof::HomeIncarnationDenial::ForeignHome);
+        }
+        match (self.home_fence, presented.home_fence) {
+            (Some(current), Some(presented)) => current.admit(presented),
+            (None, None) if self.scope == presented.scope => Ok(()),
+            (None, None) | (Some(_), None) | (None, Some(_)) => {
+                Err(worth_proof::HomeIncarnationDenial::ForeignHome)
+            }
+        }
+    }
+
+    pub(crate) fn admit_branch_authority(
+        self,
+        presented: Self,
+    ) -> Result<(), crate::branch::RuntimeWorldBranchAdmissionDenial> {
+        use crate::branch::RuntimeWorldBranchAdmissionDenial as Denial;
+        self.admit_incarnation(presented)
+            .map_err(|cause| match cause {
+                worth_proof::HomeIncarnationDenial::ForeignHome => Denial::ForeignOwner,
+                worth_proof::HomeIncarnationDenial::StaleIncarnation => Denial::StaleIncarnation,
+            })?;
+        if self != presented {
+            return Err(Denial::ForeignOwner);
+        }
+        Ok(())
     }
 }
 impl PartialEq for RuntimeWorldOwnerIdentity {
     fn eq(&self, other: &Self) -> bool {
-        self.scope == other.scope
+        self.scope == other.scope && self.home_fence == other.home_fence
     }
 }
 impl Eq for RuntimeWorldOwnerIdentity {}
@@ -63,12 +106,13 @@ impl PartialOrd for RuntimeWorldOwnerIdentity {
 }
 impl Ord for RuntimeWorldOwnerIdentity {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.scope.cmp(&other.scope)
+        (self.scope, self.home_fence).cmp(&(other.scope, other.home_fence))
     }
 }
 impl std::hash::Hash for RuntimeWorldOwnerIdentity {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         std::hash::Hash::hash(&self.scope, state);
+        std::hash::Hash::hash(&self.home_fence, state);
     }
 }
 

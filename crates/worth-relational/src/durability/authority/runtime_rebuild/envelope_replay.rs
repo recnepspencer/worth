@@ -31,6 +31,15 @@ pub(super) fn replay_readmitted_envelope(
 ) -> Result<crate::history::data::PositionedCanonicalCommit, RelationalRecoveryStop> {
     let catalog = super::index_catalog::readmit(execution, restored, &readmitted)?;
     let envelope = readmitted.envelope();
+    if matches!(
+        envelope.authority_kind,
+        CanonicalCommitAuthorityKind::RetainedEntitySelection(_)
+    ) {
+        return Err(DurabilityError::new(
+            RecoveryFailureClass::UnsupportedRetainedEntitySelectionReplay,
+            "retained entity selection cannot be reconstructed from a canonical tail without its original source custody",
+        ).into());
+    }
     for (_, text) in &envelope.symbol_texts.entries {
         restored
             .services
@@ -45,6 +54,7 @@ pub(super) fn replay_readmitted_envelope(
             DurabilityError::new(RecoveryFailureClass::CorruptCanonicalArtifact, detail)
         })?;
     let had_checkpoint_artifact = prepare_replay_context(
+        execution,
         restored,
         envelope,
         readmitted.position(),
@@ -84,6 +94,7 @@ pub(super) fn replay_readmitted_envelope(
         .into());
     }
     restore_authoritative_artifacts_when_required(
+        execution,
         restored,
         &positioned,
         restore_authoritative_envelope,

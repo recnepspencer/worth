@@ -251,6 +251,11 @@ fn retained_age_is_carried_and_cleanup_uses_the_explicit_minimum() {
             OwnerExecutionOutcome::ProductUnpublished(value) => value,
             other => panic!("{other:?}"),
         };
+    let original_receipt = effects
+        .component_results()
+        .relational_settlement()
+        .unwrap()
+        .clone();
     let handle = effects.recovery_handle();
     drop(effects);
     let page = owner
@@ -265,11 +270,37 @@ fn retained_age_is_carried_and_cleanup_uses_the_explicit_minimum() {
     );
     use crate::lifecycle::RuntimeWorldRecoveryService;
     assert_eq!(
-        owner.release_effects(&handle, 4).unwrap_err(),
+        owner
+            .release_effects(
+                &execution,
+                &handle,
+                4,
+                Some(
+                    fixture
+                        .relational_runtime()
+                        .durability_authority()
+                        .observe_memory_commit(&execution, &original_receipt)
+                        .unwrap()
+                )
+            )
+            .unwrap_err(),
         crate::recovery::RuntimeWorldRecoveryDenial::TooYoung
     );
     clock.set(14);
-    owner.release_effects(&handle, 4).unwrap();
+    owner
+        .release_effects(
+            &execution,
+            &handle,
+            4,
+            Some(
+                fixture
+                    .relational_runtime()
+                    .durability_authority()
+                    .observe_memory_commit(&execution, &original_receipt)
+                    .unwrap(),
+            ),
+        )
+        .unwrap();
     let snapshot = owner.state.recovery.snapshot();
     assert_eq!(snapshot.installed(), 0);
     assert_eq!(snapshot.costs().retained_records_created(), 1);

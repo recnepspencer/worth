@@ -1,7 +1,7 @@
 //! Distinct fixed action on the original Catalog feature and Request operation.
 use super::super::super::schema::*;
 use super::super::source::operation as ordinary;
-use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
+use worth_query_decl::facade::{application_operation::*, application_schema::*};
 pub struct Binding;
 impl ApplicationMutationAdmissionBinding<Catalog> for Binding {
     type Admission = ApplicationConventionalAdmission;

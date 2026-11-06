@@ -8,6 +8,9 @@ use std::sync::{
     Arc, Condvar, Mutex, Weak,
 };
 use std::time::Duration;
+#[path = "operation_control/recovered_disposition.rs"]
+mod recovered_disposition;
+pub use recovered_disposition::RuntimeWorldRecoveredDispositionObservationForTest;
 
 #[path = "operation_control/currentness_hold.rs"]
 mod currentness_hold;
@@ -20,6 +23,7 @@ pub use performed_publication::RuntimeWorldPerformedPublicationObservationForTes
 #[derive(Clone, Default)]
 pub struct RuntimeWorldOperationControlForTest {
     performed_publication: Arc<performed_publication::PerformedPublicationSlot>,
+    recovered_disposition: Arc<recovered_disposition::RecoveredDispositionSlot>,
     pending_product_compare: Arc<ProductCompareSlot>,
     pending_currentness: Arc<ProductCurrentnessSlot>,
 }

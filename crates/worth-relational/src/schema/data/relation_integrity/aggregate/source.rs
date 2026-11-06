@@ -93,28 +93,28 @@ impl AggregateIdentitySource {
         }
     }
 
-    pub(super) fn write_canonical(&self, bytes: &mut Vec<u8>) {
+    pub(super) fn try_write_canonical(
+        &self,
+        emit: &mut dyn FnMut(&[u8]) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
         match self {
-            Self::Orbit(kind) => bytes.extend_from_slice(&kind.0.to_be_bytes()),
+            Self::Orbit(kind) => emit(&kind.0.to_be_bytes())?,
             Self::Components { relations } => {
-                bytes.extend_from_slice(b"WORTH_COMPONENT_SOURCES_V1\0");
-                bytes.extend_from_slice(&(relations.len() as u64).to_be_bytes());
+                emit(b"WORTH_COMPONENT_SOURCES_V1\0")?;
+                emit(&(relations.len() as u64).to_be_bytes())?;
                 for kind in relations {
-                    bytes.extend_from_slice(&kind.0.to_be_bytes());
+                    emit(&kind.0.to_be_bytes())?;
                 }
             }
             Self::DerivedOrbit { derived_orbit } => {
-                bytes.extend_from_slice(b"WORTH_DERIVED_ORBIT_SOURCE_V1\0");
-                crate::derived_relation::canonical::write_identity(derived_orbit, |part| {
-                    bytes.extend_from_slice(part)
-                });
+                emit(b"WORTH_DERIVED_ORBIT_SOURCE_V1\0")?;
+                crate::derived_relation::canonical::try_write_identity(derived_orbit, emit)?;
             }
             Self::DerivedComponents { derived_components } => {
-                bytes.extend_from_slice(b"WORTH_DERIVED_COMPONENT_SOURCE_V1\0");
-                crate::derived_relation::canonical::write_identity(derived_components, |part| {
-                    bytes.extend_from_slice(part)
-                });
+                emit(b"WORTH_DERIVED_COMPONENT_SOURCE_V1\0")?;
+                crate::derived_relation::canonical::try_write_identity(derived_components, emit)?;
             }
         }
+        Ok(())
     }
 }

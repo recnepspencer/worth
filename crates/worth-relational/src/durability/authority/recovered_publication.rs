@@ -53,6 +53,16 @@ impl RelationalRecoveredPublicationCustody {
         &self.successor
     }
 
+    /// Identity of the actual admitted successor, never rebuilt by a caller
+    /// from receipt fields. The caller owns backing for the copied branch name.
+    pub fn readmitted_commit_identity(
+        &self,
+    ) -> Result<crate::history::RelationalCommitIdentity, RelationalRecordedSuccessorRefusal> {
+        self.successor
+            .commit_identity()
+            .ok_or(RelationalRecordedSuccessorRefusal::SubjectMismatch)
+    }
+
     /// Consume once into the next owner's retained custody. Excluded live
     /// fields are unavailable; no snapshot, result or timing is fabricated.
     pub fn into_retained_parts(

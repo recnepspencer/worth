@@ -162,7 +162,6 @@ fn prepare_assessment_history(width: usize) -> impl FnOnce() {
             )
             .unwrap()
     );
-    drop(workflow);
     move || {
         let workflow = fixture
             .world
@@ -174,7 +173,7 @@ fn prepare_assessment_history(width: usize) -> impl FnOnce() {
             };
             let cancellation = WorthQueryCancellationSource::new();
             let expired =
-                WorthQueryRequestScope::new(Some(std::time::Instant::now()), cancellation.token());
+                WorthQueryRequestScope::new(Some(std::time::Instant::now()), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
             let stopped = fixture
                 .world
                 .runtime

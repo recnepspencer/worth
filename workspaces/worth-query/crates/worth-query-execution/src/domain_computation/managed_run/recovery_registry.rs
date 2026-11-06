@@ -15,7 +15,7 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 
 /// Authoritative commit identity claimed exactly once for recovery minting.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub(crate) struct WorthQueryRecoveryMintClaim {
+pub struct WorthQueryRecoveryMintClaim {
     provider_runtime_instance_id: u64,
     world_owner: worth_foundational::facade::WorldOwnerCoordinate,
     commit_ordinal: u64,
@@ -41,11 +41,11 @@ impl WorthQueryRecoveryMintClaim {
 
 /// The receipt's authoritative commit identity was already claimed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct WorthQueryRecoveryMintAlreadyClaimed;
+pub struct WorthQueryRecoveryMintAlreadyClaimed;
 
 /// Terminal fate recorded when a live recovery resource leaves the registry.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum WorthQueryRecoveryResourceTerminal {
+pub enum WorthQueryRecoveryResourceTerminal {
     Consumed,
     /// Safe retry observed external completion before consuming the handle.
     Completed,
@@ -78,10 +78,9 @@ impl worth_proof::TerminalState for WorthQueryRecoveryResourceTerminal {
 /// Opaque registry slot. Not a public recovery identity and not Clone on the
 /// handle path â€” only the registry retains membership.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub(crate) struct WorthQueryRecoveryRegistrySlot(u64);
+pub struct WorthQueryRecoveryRegistrySlot(u64);
 
 impl WorthQueryRecoveryRegistrySlot {
-    #[cfg(test)]
     pub(crate) const fn as_u64(self) -> u64 {
         self.0
     }
@@ -122,7 +121,7 @@ impl RecoveryRegistryState {
 /// what lets a handle re-check its own deadline without any transition growing
 /// a clock parameter â€” freshness stays something the runtime samples, never
 /// something a caller presents (R8.31).
-pub(crate) struct WorthQueryRecoveryHandleRegistry {
+pub struct WorthQueryRecoveryHandleRegistry {
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     clock: Arc<WorthQueryRuntimeClock>,
     state: Mutex<RecoveryRegistryState>,
@@ -151,7 +150,6 @@ impl WorthQueryRecoveryHandleRegistry {
     }
 
     /// Test fixture registry with a freshly minted runtime authority identity.
-    #[cfg(test)]
     pub(crate) fn new() -> Self {
         Self::for_runtime(
             WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
@@ -226,7 +224,6 @@ impl WorthQueryRecoveryHandleRegistry {
     }
 
     /// Register an unclaimed slot for owner-level lifecycle fixtures.
-    #[cfg(test)]
     pub(crate) fn register_axis_probe(&self) -> WorthQueryRecoveryRegistrySlot {
         let mut state = self.state.lock().expect("recovery registry lock");
         let slot = WorthQueryRecoveryRegistrySlot(state.next_slot);
@@ -251,15 +248,21 @@ impl WorthQueryRecoveryHandleRegistry {
     /// into a cross-holder one, so it is fixture-only; no production path needs
     /// to ask the question, and clippy confirms it (the method is dead code in
     /// a build without this gate).
-    #[cfg(test)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "The closed diagnostic snapshot sorts issued slot identities before exposure; ordinary registry operations remain point lookups"
+    )]
     pub(crate) fn enumerate_live(&self) -> Vec<WorthQueryRecoveryRegistrySlot> {
-        self.state
+        let mut slots: Vec<_> = self
+            .state
             .lock()
             .expect("recovery registry lock")
             .live
             .keys()
             .copied()
-            .collect()
+            .collect();
+        slots.sort_unstable_by_key(|slot| slot.0);
+        slots
     }
 
     /// Retire a slot and record why.
@@ -303,7 +306,6 @@ impl WorthQueryRecoveryHandleRegistry {
     }
 
     /// Leak detection: no live handle may remain after the named terminals.
-    #[cfg(test)]
     pub(crate) fn assert_no_live_handles(&self) {
         let live = self.enumerate_live();
         assert!(
@@ -313,4 +315,5 @@ impl WorthQueryRecoveryHandleRegistry {
     }
 }
 
+mod court_doors_for_test;
 mod recorded_observation;

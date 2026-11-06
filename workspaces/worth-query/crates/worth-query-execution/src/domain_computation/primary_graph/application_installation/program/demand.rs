@@ -1,4 +1,5 @@
 mod advancement;
+mod source_recovery;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_admission::facade::authenticated_principal::{
@@ -15,10 +16,15 @@ use worth_query_declaration::facade::application_schema::{
 use super::WorthQueryProgramApplicationRuntime;
 mod dependent;
 mod discovered_roots;
+mod fulfillment;
 mod handle;
+mod history;
+mod history_group;
 mod read_close;
+mod root_completion;
+pub(in crate::domain_computation::primary_graph) use root_completion::OriginalProgramRootCompletion;
 mod required_affinity;
-mod unavailable;
+pub(crate) mod unavailable;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationDependentOutputConnection,
     WorthQueryApplicationOutputDemand, WorthQueryApplicationOutputDemandSource,
@@ -58,6 +64,8 @@ where
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
+    pub(in crate::domain_computation::primary_graph) original_root_completion:
+        Option<std::sync::Arc<OriginalProgramRootCompletion>>,
     target_feature: TypeId,
     artifact: Option<Artifact>,
     marker: std::marker::PhantomData<fn() -> Program>,
@@ -110,7 +118,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationFixedOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime().product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -137,49 +145,12 @@ where
             >(execution, source, limits)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_root_completion: None,
                 target_feature: TypeId::of::<
                     <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature,
                 >(),
                 artifact,
                 marker: std::marker::PhantomData,
-            })
-    }
-
-    pub fn recover_prepared_program_root_source<Root>(
-        &self,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-    ) -> Result<
-        (
-            std::sync::Arc<
-                crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
-            >,
-            WorthQueryPreparedRequiredOutputSource,
-        ),
-        WorthQueryOutputDemandDenial,
-    >
-    where
-        Root: ApplicationOutputGraphShape<Schema>
-            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    {
-        if !self.contains_output_root::<Root>() {
-            return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
-                "selected output root is not installed for this program",
-            ));
-        }
-        self.backing.runtime().validate_recovered_output_root_kind(
-            receipt,
-            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()),
-        )?;
-        self.backing.runtime()
-            .recover_prepared_output_source(receipt, TypeId::of::<Root>())
-            .ok_or_else(|| {
-                WorthQueryOutputDemandDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                    "the required root publication has no exact retained observation",
-                )
             })
     }
 
@@ -285,7 +256,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime().product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -318,6 +289,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_root_completion: None,
                 target_feature: TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,
@@ -343,7 +315,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime().product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -367,6 +339,7 @@ where
             >(execution, source, limits, prepared)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_root_completion: None,
                 target_feature: TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,

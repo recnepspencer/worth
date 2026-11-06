@@ -17,6 +17,8 @@ pub enum BankCommitRecoveryKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankProviderFailureKind {
+    ContentInconsistency,
+    Content(worth_query_host::facade::primary_graph::RelationalContentRejection),
     ProjectionContract {
         denial: worth_query_host::facade::primary_graph::RelationalProjectionContractDenial,
         partition_identity: Option<u64>,
@@ -36,6 +38,7 @@ pub enum BankProviderFailureKind {
     ExecutionUncheckedCustomKernel { partition_identity: Option<u64> },
     ExecutionIdentitiesNotCanonical { partition_identity: Option<u64> },
     ForeignOperationAttempt,
+    StaleIncarnation,
     ForeignExecutionBasis,
     ForeignGraphAuthority,
     UndeclaredOperationScope,
@@ -175,6 +178,8 @@ const fn provider_failure_kind(
             denial,
             partition_identity,
         },
+        Query::ContentInconsistency => BankProviderFailureKind::ContentInconsistency,
+        Query::Content(cause) => BankProviderFailureKind::Content(cause),
         Query::StorageUnavailable(failure) => BankProviderFailureKind::StorageUnavailable(failure),
         Query::ExecutionResource {
             denial,
@@ -198,6 +203,7 @@ const fn provider_failure_kind(
             BankProviderFailureKind::ExecutionIdentitiesNotCanonical { partition_identity }
         }
         Query::ForeignOperationAttempt => BankProviderFailureKind::ForeignOperationAttempt,
+        Query::StaleIncarnation => BankProviderFailureKind::StaleIncarnation,
         Query::ForeignExecutionBasis => BankProviderFailureKind::ForeignExecutionBasis,
         Query::ForeignGraphAuthority => BankProviderFailureKind::ForeignGraphAuthority,
         Query::UndeclaredOperationScope => BankProviderFailureKind::UndeclaredOperationScope,
@@ -250,6 +256,10 @@ mod tests {
     use super::*;
     #[test]
     fn unresolved_commit_controls_keep_their_values() {
+        assert_eq!(
+            provider_failure_stop(Ok(WorthQueryProviderSessionDenialKind::StaleIncarnation)),
+            Ok(BankProviderFailureKind::StaleIncarnation),
+        );
         use worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind as Control;
         for control in [Control::Cancelled, Control::TimedOut] {
             assert_eq!(provider_failure_stop(Err(control)), Err(control));

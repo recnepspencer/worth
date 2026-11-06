@@ -21,6 +21,7 @@ pub use tip::{ReleasedDropTipProvenanceV1, RELEASE_CHECKPOINT_TIP_WIRE_BYTES};
 use super::identity::{decode_identity, encode_identity};
 use super::PhysicalCheckpointIdentity;
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 const DOMAIN: &[u8] = b"store.physical.checkpoint.released-drop-custody.v1";
 const DOMAIN_V2: &[u8] = b"store.physical.checkpoint.released-drop-custody.v2";
@@ -41,8 +42,8 @@ pub enum ReleaseCheckpointCertificateDenial {
 pub struct ReleasedDropWalFateWitnessV1 {
     lsn_start: u64,
     lsn_end_exclusive: u64,
-    identity_digest: [u8; 32],
-    payload_digest: [u8; 32],
+    identity_digest: CanonicalDigestId,
+    payload_digest: CanonicalDigestId,
 }
 
 impl ReleasedDropWalFateWitnessV1 {
@@ -62,8 +63,8 @@ impl ReleasedDropWalFateWitnessV1 {
         Ok(Self {
             lsn_start,
             lsn_end_exclusive,
-            identity_digest,
-            payload_digest,
+            identity_digest: CanonicalDigestId::new(identity_digest),
+            payload_digest: CanonicalDigestId::new(payload_digest),
         })
     }
 
@@ -74,17 +75,17 @@ impl ReleasedDropWalFateWitnessV1 {
         self.lsn_end_exclusive
     }
     pub const fn identity_digest(self) -> [u8; 32] {
-        self.identity_digest
+        *self.identity_digest.bytes()
     }
     pub const fn payload_digest(self) -> [u8; 32] {
-        self.payload_digest
+        *self.payload_digest.bytes()
     }
 
     fn write(self, out: &mut Vec<u8>) {
         out.extend_from_slice(&self.lsn_start.to_le_bytes());
         out.extend_from_slice(&self.lsn_end_exclusive.to_le_bytes());
-        out.extend_from_slice(&self.identity_digest);
-        out.extend_from_slice(&self.payload_digest);
+        out.extend_from_slice(self.identity_digest.bytes());
+        out.extend_from_slice(self.payload_digest.bytes());
     }
 
     fn read(cursor: &mut Cursor<'_>) -> Result<Self, ReleaseCheckpointCertificateDenial> {

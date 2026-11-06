@@ -2,11 +2,12 @@
 use super::super::super::authentication;
 use super::super::lifecycle;
 use super::{host, mutation, prefix, query, rule};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use stats_alloc::Region;
 use std::sync::{atomic::Ordering, Arc, Mutex};
 use worth_query_host::facade::{
-    admission::authenticated_principal::*, application_contribution::*, application_entry::*,
-    primary_graph::*, runtime::ExecutionAllocationPolicy,
+    admission::authenticated_principal::*, application_entry::*, primary_graph::*,
+    runtime::ExecutionAllocationPolicy,
 };
 
 mod cancellation;
@@ -67,7 +68,7 @@ fn run() {
         "all relevant requests, snapshots, public handles, Native roots, runtime caches and observers closed");
 }
 fn journey() {
-    let provider = Arc::new(prefix::Calls::default());
+    let provider = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(Arc::clone(&provider)));
     let world = host::install(Arc::clone(&provider), Arc::clone(&rules));
     let scope = authentication::request_scope();
@@ -146,20 +147,25 @@ fn journey() {
         );
         let b = records
             .iter()
-            .find(|record| values(&record.after) == expected("B", "taken", "taken"))
+            .find(|record| values(&record.source.after) == expected("B", "taken", "taken"))
             .expect("the real B proposal contains both x and y");
         assert_eq!(
-            values(b.before.as_ref().expect("B has an actual committed root")),
+            values(
+                b.source
+                    .before
+                    .as_ref()
+                    .expect("B has an actual committed root")
+            ),
             expected("B", "shared", "taken")
         );
         if let Some(a) = records
             .iter()
-            .find(|record| values(&record.after) == expected("A", "taken", "taken"))
+            .find(|record| values(&record.source.after) == expected("A", "taken", "taken"))
         {
-            assert_ne!(a.scope, b.scope);
-            assert!(a.before.as_ref().unwrap().is_empty());
+            assert_ne!(a.source.scope, b.source.scope);
+            assert!(a.source.before.as_ref().unwrap().is_empty());
         }
-        b.scope
+        b.source.scope
     };
     rules.records.lock().unwrap().clear();
     assert!(
@@ -215,19 +221,19 @@ fn journey() {
         );
         let b = records
             .iter()
-            .find(|record| record.scope == denied_b)
+            .find(|record| record.source.scope == denied_b)
             .unwrap();
         assert_eq!(
-            values(b.before.as_ref().unwrap()),
+            values(b.source.before.as_ref().unwrap()),
             expected("B", "shared", "taken")
         );
-        assert_eq!(values(&b.after), expected("B", "free", "taken"));
+        assert_eq!(values(&b.source.after), expected("B", "free", "taken"));
         let a = records
             .iter()
-            .find(|record| record.scope != denied_b)
+            .find(|record| record.source.scope != denied_b)
             .unwrap();
-        assert!(a.before.as_ref().unwrap().is_empty());
-        assert!(a.after.is_empty());
+        assert!(a.source.before.as_ref().unwrap().is_empty());
+        assert!(a.source.after.is_empty());
     }
     rules.records.lock().unwrap().clear();
     let head = request

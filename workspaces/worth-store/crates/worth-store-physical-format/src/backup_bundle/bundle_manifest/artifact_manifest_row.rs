@@ -1,3 +1,5 @@
+use worth_foundational::CanonicalDigestId;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BackupBundleArtifactFamily {
     RootManifest,
@@ -36,8 +38,8 @@ pub enum BackupBundleArtifactCoverage {
         checkpoint_identity: String,
         manifest_generation: u64,
         durable_checkpoint_lsn: u64,
-        authority_fingerprint: [u8; 32],
-        frontier_digest: [u8; 32],
+        authority_fingerprint: CanonicalDigestId,
+        frontier_digest: CanonicalDigestId,
     },
     WalSegment {
         start_lsn: u64,
@@ -57,7 +59,7 @@ pub struct BackupBundleArtifactManifestRow {
     output_name: String,
     generation: u64,
     bytes: u64,
-    content_digest: [u8; 32],
+    content_digest: CanonicalDigestId,
     coverage: BackupBundleArtifactCoverage,
     reclaim_owner: super::super::BackupBundlePhysicalOwner,
 }
@@ -96,7 +98,7 @@ impl BackupBundleArtifactManifestRow {
                 output_name,
                 generation,
                 bytes,
-                content_digest,
+                content_digest: CanonicalDigestId::new(content_digest),
                 coverage,
                 reclaim_owner,
             })
@@ -121,7 +123,7 @@ impl BackupBundleArtifactManifestRow {
         self.bytes
     }
     pub const fn content_digest(&self) -> [u8; 32] {
-        self.content_digest
+        *self.content_digest.bytes()
     }
     pub const fn coverage(&self) -> &BackupBundleArtifactCoverage {
         &self.coverage

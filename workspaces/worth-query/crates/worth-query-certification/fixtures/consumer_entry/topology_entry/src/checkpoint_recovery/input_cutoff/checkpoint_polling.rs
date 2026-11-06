@@ -1,7 +1,7 @@
 //! Real swallowed decision interruption cannot reach candidate authoring.
 use super::*;
 use crate::handler::checkpoint_polling::PollObservation;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use worth_query_host::facade::{
     application_entry::WorthQueryApplicationOutputDemandDenial,
     primary_graph::{
@@ -13,8 +13,14 @@ use worth_query_host::facade::{
 
 fn interrupted(deadline: bool, later_cancel: bool) {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
-    let (scope, principal) = authenticate(&application);
+    let time = authentication::WorthQueryAdmissionTimeController::new().unwrap();
+    let held = time.hold();
+    let application = support::install_on_clock(time.clock());
+    let (scope, principal) = support::authentication_fixture::authenticate_in_realm(
+        &application,
+        support::authentication_fixture::FixtureAuthenticationRealm::Checkpoint,
+        time.clock(),
+    );
     let request = application.request(&principal, &scope);
     let before = support::retain_read(&application, &request).unwrap();
     let output_before = request
@@ -24,16 +30,16 @@ fn interrupted(deadline: bool, later_cancel: bool) {
         .execute()
         .unwrap();
     let cancellation = authentication::WorthQueryCancellationSource::new();
-    let expires = deadline.then(|| Instant::now() + Duration::from_secs(2));
+    let expires = deadline.then(|| held + Duration::from_secs(2));
     let interrupted_scope =
-        authentication::WorthQueryRequestScope::new(expires, cancellation.token());
+        authentication::WorthQueryRequestScope::new(expires, cancellation.token(), time.clock());
     let stopped_request = application.request(&principal, &interrupted_scope);
     let signal = cancellation.clone();
     let second_signal = cancellation.clone();
     let polling = PollObservation::arm(
         move || {
-            if let Some(expires) = expires {
-                std::thread::sleep(expires.saturating_duration_since(Instant::now()));
+            if expires.is_some() {
+                time.advance(Duration::from_secs(2)).unwrap();
             } else {
                 signal.cancel();
             }

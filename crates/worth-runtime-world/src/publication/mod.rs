@@ -1,5 +1,24 @@
 mod cancellation;
+mod home_transition;
+pub(crate) use home_transition::HomeTransitionOpenAssignment;
+mod home_transition_effect;
+mod home_transition_open;
+pub use home_transition::{
+    home_transition_caller_association_commitment, ReservedWorldHomeTransitionAssignments,
+    WorldHomeTransitionReservationRefusal, WorldHomeTransitionStepReservation,
+};
+pub(crate) use home_transition_effect::HomeTransitionEffectControlState;
+pub use home_transition_effect::{
+    WorldHomeTransitionEffectControl, WorldHomeTransitionEffectDenial,
+    WorldHomeTransitionEffectInterruption, WorldHomeTransitionEffectOutcome,
+    WorldHomeTransitionEffectProgress,
+};
+pub use home_transition_open::{
+    WorldHomeTransitionOpenResumeDenial, WorldHomeTransitionOpenResumeRefused,
+    WorldHomeTransitionUnopenedDenial,
+};
 mod open_attempt;
+pub(crate) use open_attempt::WorldOpenAttemptOriginal;
 pub use open_attempt::{
     WorldNativePreparationDenial, WorldNativePreparationRefusal, WorldOpenAttemptOutcome,
     WorldOpenAttemptRefusal, WorldOpenedPublicationAttempt, WorldPendingOpenAttempt,
@@ -10,6 +29,7 @@ mod conditional_definition;
 mod conditional_recovery;
 pub use conditional_recovery::PreparedConditionalDefinitionRecovery;
 mod cost_counters;
+mod current_read;
 mod custody;
 #[cfg(test)]
 pub(crate) use custody::AttemptProductMovementFailure;
@@ -45,6 +65,7 @@ pub use conditional_definition::{
     RuntimeWorldUnpublishedConditionalDefinition,
 };
 pub use cost_counters::CompositePublicationCostCounters;
+pub use current_read::CurrentProductReadDependencyDenial;
 pub(crate) use intent::CompositePublicationStage;
 pub use intent::{
     CompositeComponentIntent, CompositePublicationIntent, PreparedCompositePublicationWithSignal,

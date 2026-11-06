@@ -7,7 +7,7 @@ use crate::domain_computation::application_aftermath::ExternalEffectCorrelationI
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryOutstandingInFlightDenial {
+pub enum WorthQueryOutstandingInFlightDenial {
     Missing,
     PendingPublication,
     OriginalMismatch,
@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryOutstandingInFli
 
 /// Move-only claim that keeps the original dispatch's finite capacity charge
 /// while a physical send or its Completed recovery custody may still act.
-pub(in crate::domain_computation::primary_graph) struct OutstandingDispatchInFlightLease {
+pub struct OutstandingDispatchInFlightLease {
     owner: OutstandingDispatchOwner,
     basis_retention: Arc<Mutex<super::super::session_commit::WorthQueryReceiptBasisRetentionStore>>,
     correlation: ExternalEffectCorrelationIdentity,

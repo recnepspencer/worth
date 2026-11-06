@@ -20,23 +20,34 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        let program = match self.validate_commit_program(program) {
+            Ok(program) => program,
+            Err(outcome) => return outcome,
+        };
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.with_application_advancement(&request, |active_phase| {
             let execution = active_phase
-                .execution_request_for(&self.product_runtime)
+                .execution_request_for(&self.runtime.product_runtime)
                 .map_err(
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                 )?;
             if let Some(denial) = self.direct_operation_commit_denial::<Operation>() {
                 return Ok(WorthQueryApplicationCommitOutcome::Denied(denial));
             }
-            Ok(self.compare_and_commit_capability_delegation_for_program(
-                &execution,
-                &active_phase,
-                candidate.take().expect("candidate admitted once"),
-                idempotency,
-            ))
+            Ok(
+                match candidate
+                    .take()
+                    .expect("candidate admitted once")
+                    .in_advancement(&active_phase)
+                {
+                    Ok(entry) => entry.compare_and_commit_capability_delegation_for_program(
+                        &execution,
+                        idempotency,
+                    ),
+                    Err(outcome) => outcome,
+                },
+            )
         })
         .and_then(std::convert::identity)
         .unwrap_or_else(|denial| denial.into_commit_outcome())
@@ -57,12 +68,10 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        self.compare_and_commit_application_inner(
-            execution,
-            phase,
-            program.into_inner(),
-            idempotency,
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        let entry = match self.validate_commit_program_in_advancement(phase, program) {
+            Ok(entry) => entry,
+            Err(outcome) => return outcome,
+        };
+        entry.compare_and_commit_capability_delegation_for_program(execution, idempotency)
     }
 }

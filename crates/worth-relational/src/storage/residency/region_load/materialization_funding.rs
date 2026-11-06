@@ -110,7 +110,14 @@ pub(in crate::storage::residency) fn wire_stop(
 ) -> Failure {
     match error {
         RelationalCanonicalCommitArtifactRefusal::Request(cause) => Failure::Request(cause),
-        _ => damaged(),
+        RelationalCanonicalCommitArtifactRefusal::Content(cause) => Failure::Content(cause),
+        RelationalCanonicalCommitArtifactRefusal::Frame(_)
+        | RelationalCanonicalCommitArtifactRefusal::PayloadDecode { .. }
+        | RelationalCanonicalCommitArtifactRefusal::PositionDisagreement { .. }
+        | RelationalCanonicalCommitArtifactRefusal::CommitIdDisagreement { .. }
+        | RelationalCanonicalCommitArtifactRefusal::FieldText(_)
+        | RelationalCanonicalCommitArtifactRefusal::PositionAdmission(_)
+        | RelationalCanonicalCommitArtifactRefusal::NonCanonicalPayload => damaged(),
     }
 }
 pub(in crate::storage::residency) fn damaged() -> Failure {
@@ -153,6 +160,7 @@ pub(in crate::storage::residency) fn record<'a>(
 fn to_wire_stop(cause: Failure) -> RelationalCanonicalCommitArtifactRefusal {
     match cause {
         Failure::Request(cause) => RelationalCanonicalCommitArtifactRefusal::Request(cause),
+        Failure::Content(cause) => RelationalCanonicalCommitArtifactRefusal::Content(cause),
         Failure::StorageUnavailable(_) => {
             crate::durability::canonical_commit_artifact::borrowed_payload::malformed()
         }
@@ -291,6 +299,7 @@ pub(in crate::storage::residency) fn image(
     use crate::durability::data::RelationalRecoveryStop as Stop;
     match cause {
         Stop::Request(cause) => Failure::Request(cause),
+        Stop::Content(cause) => Failure::Content(cause),
         Stop::Allocation(cause) => match cause.classify() {
             worth_execution::ExecutionAllocationDenialClass::Request(cause) => {
                 Failure::Request(cause.into())

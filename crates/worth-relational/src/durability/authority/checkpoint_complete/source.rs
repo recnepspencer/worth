@@ -234,15 +234,9 @@ impl FrozenOriginalInputs {
                 }
                 .into());
             }
-            let readmitted = frame.readmit_owned(execution).map_err(|cause| match cause {
-                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Request(cause) => Denial::Request(cause),
-                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::FieldText(cause) =>
-                    capture_stop(crate::symbols::data::field_text_recovery_stop(cause)),
-                cause => Denial::Durability(crate::durability::data::DurabilityError::new(
-                    crate::durability::data::RecoveryFailureClass::CorruptCanonicalArtifact,
-                    format!("original complete canonical frame refused: {cause:?}"),
-                )),
-            })?;
+            let readmitted = frame
+                .readmit_framed(execution)
+                .map_err(canonical_readmission_stop)?;
             let positioned = readmitted.into_positioned();
             let envelope = positioned.canonical_arc().clone();
             if positioned.position().0 != offset as u64 + 1
@@ -287,6 +281,30 @@ impl FrozenOriginalInputs {
     }
 }
 
+fn canonical_readmission_stop(
+    cause: crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal,
+) -> Denial {
+    use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal as Refusal;
+    match cause {
+        Refusal::Request(cause) => Denial::Request(cause),
+        Refusal::FieldText(cause) => {
+            capture_stop(crate::symbols::data::field_text_recovery_stop(cause))
+        }
+        Refusal::Content(cause) => cause.into(),
+        cause @ (Refusal::Frame(_)
+        | Refusal::PayloadDecode { .. }
+        | Refusal::PositionDisagreement { .. }
+        | Refusal::CommitIdDisagreement { .. }
+        | Refusal::PositionAdmission(_)
+        | Refusal::NonCanonicalPayload) => {
+            Denial::Durability(crate::durability::data::DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::CorruptCanonicalArtifact,
+                format!("original complete canonical frame refused: {cause:?}"),
+            ))
+        }
+    }
+}
+
 use crate::durability::checkpoint_history::capture::{
     array_capture_stop as array_stop, capture_stop, map_stop as read_map_stop,
 };
@@ -309,6 +327,7 @@ fn initial_inputs_stop(
         Refusal::Payload(Payload::FieldText(cause)) => {
             capture_stop(crate::symbols::data::field_text_recovery_stop(cause))
         }
+        Refusal::Payload(Payload::Content(cause)) => cause.into(),
         Refusal::Malformed
         | Refusal::Missing
         | Refusal::UnsupportedVersion(_)
@@ -316,3 +335,6 @@ fn initial_inputs_stop(
         | Refusal::Payload(_) => Denial::OriginalAuthorityUnavailable,
     }
 }
+
+#[cfg(test)]
+mod tests;

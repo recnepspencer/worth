@@ -13,7 +13,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 
 type Endpoints =
     crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints;
-pub(super) struct SelectedRebase {
+pub struct SelectedRebase {
     facts: FactPayload,
     posting_basis: Option<
         crate::domain_computation::primary_graph::output_lineage::invalidation::PostingRebaseBasis,
@@ -148,26 +148,23 @@ impl SelectedRebase {
             match prepared {
                 Err(stop) => {
                     return RebasedSourceFacts::VerificationRequired {
-                        reason: failure.unwrap_or(RebaseVerificationReason::AdmissionDenied(stop)),
+                        reason: match failure {
+                            Some(reason) => reason,
+                            None => RebaseVerificationFailure::admission_denied(stop),
+                        },
                         own_effect: self.unanswered(ordinal, producer, own, OwnEffect::Moved),
                     }
                 }
-                Ok(Err(RebaseVerificationReason::Execution(cause))) => {
+                Ok(Err(reason))
+                    if matches!(reason.reason(), RebaseVerificationReason::Execution(_)) =>
+                {
                     return RebasedSourceFacts::VerificationRequired {
-                        reason: RebaseVerificationReason::Execution(cause),
+                        reason,
                         own_effect: self.unanswered(ordinal, producer, own, OwnEffect::Undecidable),
                     }
                 }
                 Ok(Err(reason)) => {
-                    let reason = match reason {
-                        RebaseVerificationReason::NativeRevisionUnavailable => {
-                            RebaseVerificationReason::NativeFactRevisionUnavailable(ordinal)
-                        }
-                        RebaseVerificationReason::IndexedSelectionDenied(denial) => {
-                            RebaseVerificationReason::IndexedSelectionFactDenied(ordinal, denial)
-                        }
-                        reason => reason,
-                    };
+                    let reason = reason.at_fact(ordinal);
                     if producer && resolution::reads_source(fact) {
                         own = own.join(OwnEffect::Undecidable);
                     }
@@ -239,7 +236,7 @@ impl SelectedRebase {
                         if let Err(interrupted) = control.check_live() {
                             return storage_stop(interrupted, own);
                         }
-                        let reason = RebaseVerificationReason::NativeRevisionUnavailable;
+                        let reason = RebaseVerificationFailure::native_unavailable();
                         return RebasedSourceFacts::VerificationRequired {
                             reason,
                             own_effect: own,
@@ -282,13 +279,15 @@ impl SelectedRebase {
 fn storage_stop(cause: StoreDenial, own_effect: OwnEffectOnReads) -> RebasedSourceFacts {
     use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
     let reason = match cause {
-        StoreDenial::ExecutionRequest(cause) => RebaseVerificationReason::Execution(cause.into()),
+        StoreDenial::ExecutionRequest(cause) => RebaseVerificationFailure::execution(cause.into()),
         StoreDenial::Allocation(cause) => return rebase_walk::storage_stopped(cause, own_effect),
-        StoreDenial::RequestInterruption(stop) => RebaseVerificationReason::Execution(match stop {
+        StoreDenial::RequestInterruption(stop) => RebaseVerificationFailure::execution(match stop {
             Stop::Cancelled => worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled,
             Stop::DeadlineExceeded => worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed,
         }),
-        _ => RebaseVerificationReason::NativeRevisionUnavailable,
+        _ => RebaseVerificationFailure::native_unavailable(),
     };
     RebasedSourceFacts::VerificationRequired { reason, own_effect }
 }
+
+mod court_doors_for_test;

@@ -209,6 +209,7 @@ fn recompute_partition_image_digest(root: &mut crate::durability::data::DurableB
         root.commit_id,
         root.partition_image_digest,
         root.schema_carrier_digest,
+        &root.content_records,
     );
 }
 

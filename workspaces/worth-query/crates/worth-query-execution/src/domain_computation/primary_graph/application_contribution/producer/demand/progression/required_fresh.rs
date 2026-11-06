@@ -40,7 +40,7 @@ where
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
         matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
-
+        invocation: ProducerInvocationAuthority<'owner>,
         performed: &'owner std::cell::RefCell<PerformedMembers>,
     ) -> Result<crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan<'owner, RequiredFreshProgress<Schema>, WorthQueryOutputDemandDenial>, WorthQueryOutputDemandDenial>
     where
@@ -51,10 +51,10 @@ where
                     FamilySourceQuery<Schema, Family>,
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
-        WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
+        WorthQueryAdmittedOutputDemand<Schema, Family>: Send,
 {
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -83,7 +83,8 @@ where
         // join must observe the same predecessor ownership on every exit.
         let outcome = transfer
             .and_then(|readiness| {
-                self.output_demands
+                self.runtime
+                    .output_demands
                     .finish_replaced_interest(
                         slot.claim().interest(),
                         successor
@@ -112,7 +113,7 @@ where
                         delivery_branch,
                         ValidatedOutputDisclosure::Fresh(fresh),
                         successor_entry.as_ref(),
-                        mode,
+                        invocation.for_mode(mode),
                         super::validated::schedule_progression::ScheduleProgression::Selected {
                             shared,
                             matched_predecessors,
@@ -196,5 +197,4 @@ where
     }
 }
 
-#[cfg(test)]
 mod admission_court;

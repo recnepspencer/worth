@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
-mod effect_accumulator;
+pub(crate) mod effect_accumulator;
 pub(in crate::domain_computation::primary_graph) use effect_accumulator::WorthQueryExpectedEffectStepPreparationWork;
 mod effect_lowering;
 mod registration;
@@ -9,11 +9,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use regist
 pub(in crate::domain_computation::primary_graph::application_attempt) use registration::WorthQueryRegisteredProviderAttemptSeal;
 
 #[cfg(test)]
-mod semantic_model_tests;
-#[cfg(test)]
 mod unique_value_tests;
-#[cfg(test)]
-mod unobserved_write_tests;
 
 use worth_query_installation::facade::{
     InstalledCorrectionMechanism, InstalledPreImageDemand, WorthQueryInstalledAftermathContract,
@@ -27,7 +23,7 @@ use super::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEmission,
 };
 
-pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAttempt {
+pub struct WorthQueryPreparedApplicationProviderAttempt {
     workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     local_action_settlement: Option<super::workflow_transition_program::LocalActionSettlementProof>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
@@ -48,6 +44,14 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
 }
 
 impl WorthQueryPreparedApplicationProviderAttempt {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn with_content_attachments(
+        mut self,
+        attachments: worth_relational::facade::content::RelationalContentAttachments,
+    ) -> Self {
+        self.effects.bind_content_attachments(attachments);
+        self
+    }
+
     pub(in crate::domain_computation::primary_graph::application_attempt) fn with_workflow_origin(
         mut self,
         origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
@@ -122,7 +126,7 @@ pub(super) fn installed_preimage_demand(
     }
 }
 
-pub(super) fn prepare_provider_attempt<'layout>(
+pub fn prepare_provider_attempt<'layout>(
     unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
         'layout,
     >,
@@ -235,3 +239,5 @@ pub(super) fn invalid_emission_denial() -> WorthQueryApplicationAttemptDenial {
         "application emission batch",
     )
 }
+
+mod court_doors_for_test;

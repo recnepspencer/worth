@@ -38,7 +38,10 @@ fn interrupted_close(deadline: bool) {
     let closing = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         cancellation.token(),
-        deadline.then(|| std::time::Instant::now() + std::time::Duration::from_secs(5)),
+        deadline.then(|| {
+            worth_execution::MonotonicClock::system()
+                .deadline_at(std::time::Instant::now() + std::time::Duration::from_secs(5))
+        }),
     );
     let (sender, receiver) = std::sync::mpsc::sync_channel(1);
     let (outcome, gate) = std::thread::scope(|scope| {

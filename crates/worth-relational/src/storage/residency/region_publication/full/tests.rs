@@ -141,7 +141,7 @@ fn controlled_full_region_matches_prior_projection_preimages_and_legacy_truth() 
         let mut hash = Sha256::new();
         hash.update(b"worth.relational.region-kind-authority.v2\0");
         hash.update(bytes);
-        assert_eq!(<[u8; 32]>::from(hash.finalize()), expected);
+        assert_eq!(<[u8; 32]>::from(hash.finalize()), *expected.bytes());
     }
     let local = RelationId::new(actual.partition_id, 2, 1);
     assert!(actual

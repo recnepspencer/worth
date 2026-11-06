@@ -10,7 +10,7 @@ use crate::domain_computation::authorization::{
 
 mod admitted_access;
 mod currentness;
-mod request_resolution;
+pub(crate) mod request_resolution;
 
 pub(super) use admitted_access::admit_observed_capability;
 pub use admitted_access::WorthQueryAdmittedApplicationCapabilityAccess;

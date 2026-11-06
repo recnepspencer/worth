@@ -18,6 +18,7 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {
         let invariant_catalog =
             WorthQueryInstalledApplicationInvariantCatalog::compile(&compiled.schema);
         let mut installed = Self {
+            operation_catalog: compiled.operation_catalog,
             package_authority: compiled.package_authority,
             schema_name: compiled.schema_name,
             schema_identity: compiled.schema_identity,
@@ -32,6 +33,8 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {
             installation_canonical_work: compiled.installation_canonical_work,
             query_catalog: WorthQueryInstalledApplicationQueryCatalog::default(),
             mutation_catalog: WorthQueryInstalledApplicationMutationCatalog::default(),
+            document_history_catalog:
+                crate::application_history::WorthQueryInstalledApplicationHistoryCatalog::default(),
             resource_catalog: WorthQueryInstalledApplicationResourceCatalog::default(),
             invariant_catalog,
             _schema: compiled.marker,
@@ -43,6 +46,11 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {
         installed.resource_catalog =
             WorthQueryInstalledApplicationResourceCatalog::compile(&installed)
                 .map_err(ApplicationSchemaCompilationDenial::Resource)?;
+        installed.document_history_catalog =
+            crate::application_history::WorthQueryInstalledApplicationHistoryCatalog::compile(
+                &installed,
+            )
+            .map_err(ApplicationSchemaCompilationDenial::History)?;
         Ok(installed)
     }
 }

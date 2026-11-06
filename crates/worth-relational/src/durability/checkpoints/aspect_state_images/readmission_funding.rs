@@ -103,10 +103,7 @@ pub(crate) fn contract_clone_bytes(
                     .ok_or(Cause::ChargedBytesOverflow)?;
             }
         }
-        AspectShape::Scalar(_)
-        | AspectShape::Opaque(_)
-        | AspectShape::Reference(_)
-        | AspectShape::Content => {}
+        AspectShape::Scalar(_) | AspectShape::Opaque(_) | AspectShape::Reference(_) => {}
     }
     Ok(bytes)
 }

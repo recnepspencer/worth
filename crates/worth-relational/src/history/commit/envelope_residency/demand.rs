@@ -66,6 +66,7 @@ impl RelationalCommitEnvelopeResidency {
         }
         .map_err(|stop| match stop {
             RelationalRecoveryStop::Request(cause) => Failure::Request(cause),
+            RelationalRecoveryStop::Content(cause) => Failure::Content(cause),
             RelationalRecoveryStop::Allocation(_) => RelationalStorageUnavailable {
                 subject: RelationalStorageSubject::Envelope(position),
                 cause: Cause::MemoryExhausted,

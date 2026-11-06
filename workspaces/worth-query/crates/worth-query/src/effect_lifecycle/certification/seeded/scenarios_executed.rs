@@ -28,14 +28,14 @@ pub(super) fn scalar_mutation_row(
     let branch = seeded_label("branch", stepper, index);
     let entity_name = seeded_label("entity", stepper, index);
     let updated_name = seeded_label("updated", stepper, index);
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
         execution,
-        &mut runtime,
+        &runtime,
         &entity_name,
         BranchId("main".to_string()),
     );
-    fork_seed_branch_from_main(execution, &mut runtime, &branch);
+    fork_seed_branch_from_main(execution, &runtime, &branch);
     let binding =
         runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, &branch), &branch);
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(&branch));
@@ -50,10 +50,7 @@ pub(super) fn scalar_mutation_row(
     let scoped = scope_admitted_effect_plan(admitted);
     let lowered = scoped.lower().expect("mutation scenario should lower");
     let executed = lowered
-        .execute_with(
-            execution,
-            EffectExecutionAuthority::relational(&mut runtime),
-        )
+        .execute_with(execution, EffectExecutionAuthority::relational(&runtime))
         .expect("mutation scenario should execute");
     scalar_or_terminal_row(
         format!("seeded-mutation-executed-{index}"),
@@ -209,7 +206,7 @@ pub(super) fn batch_mutation_row(
     stepper: &mut SeedStepper,
 ) -> EffectLifecycleSeededCertificationRow {
     let branch = seeded_label("branch", stepper, index);
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     let batch_width = 2 + stepper.next_index(2);
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(&branch));
     let mut seeded_entities = Vec::with_capacity(batch_width);
@@ -220,7 +217,7 @@ pub(super) fn batch_mutation_row(
         );
         let entity_id = create_entity(
             execution,
-            &mut runtime,
+            &runtime,
             &entity_name,
             BranchId("main".to_string()),
         );
@@ -230,7 +227,7 @@ pub(super) fn batch_mutation_row(
         );
         seeded_entities.push((entity_id, desired));
     }
-    fork_seed_branch_from_main(execution, &mut runtime, &branch);
+    fork_seed_branch_from_main(execution, &runtime, &branch);
     let binding =
         runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, &branch), &branch);
     let mut draft = effect_batch();
@@ -250,10 +247,7 @@ pub(super) fn batch_mutation_row(
     let lowered = admitted.lower().expect("batch scenario should lower");
     let lowered_digest = lowered.batch_for_reporting().to_string();
     let executed = lowered
-        .execute_with(
-            execution,
-            EffectExecutionAuthority::relational(&mut runtime),
-        )
+        .execute_with(execution, EffectExecutionAuthority::relational(&runtime))
         .expect("batch scenario should execute");
     scalar_or_terminal_row(
         format!("seeded-batch-executed-{index}"),

@@ -2,10 +2,10 @@
 
 mod admitted;
 mod component;
-mod follower;
+pub(crate) mod follower;
 mod history;
-mod registry;
-mod retirement;
+pub(crate) mod registry;
+pub(crate) mod retirement;
 pub(crate) use retirement::OwnerCleanupRetirements;
 
 use worth_runtime_world::facade::{
@@ -19,7 +19,7 @@ pub(crate) use registry::WorthQueryProductBranchOwnerCleanupReservation;
 pub(super) use registry::{CleanupScope, WorthQueryProductBranchOwnerCleanupRegistry};
 
 #[derive(Clone)]
-pub(crate) struct WorthQueryRetiredProductOccurrence {
+pub struct WorthQueryRetiredProductOccurrence {
     branch: worth_runtime_world::facade::ProductBranchIdentity,
     incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
 }
@@ -39,9 +39,7 @@ impl WorthQueryRetiredProductOccurrence {
         &self.branch
     }
 
-    pub(crate) const fn incarnation(
-        &self,
-    ) -> worth_runtime_world::facade::ProductBranchIncarnation {
+    pub const fn incarnation(&self) -> worth_runtime_world::facade::ProductBranchIncarnation {
         self.incarnation
     }
 }
@@ -69,7 +67,7 @@ pub enum WorthQueryProductBranchOwnerCleanupDenial {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct WorthQueryProductBranchOwnerCleanupCapacityExhausted;
+pub struct WorthQueryProductBranchOwnerCleanupCapacityExhausted;
 
 #[derive(Debug)]
 pub struct WorthQueryProductBranchOwnerCleanupReceipt {
@@ -180,7 +178,7 @@ impl WorthQueryProductBranchOwnerCleanupFailure {
     }
 }
 
-pub(super) struct WorthQueryProductBranchOwnerCleanupRecord {
+pub struct WorthQueryProductBranchOwnerCleanupRecord {
     history: Option<WorthQueryProductBranchHistoryCleanup>,
     pending: Vec<OwnerRetirementWork>,
     retired_component_count: usize,
@@ -327,16 +325,11 @@ impl WorthQueryProductRuntime {
             .pending_application_retired_product_occurrences()
     }
 
-    #[cfg(test)]
     pub(crate) fn replace_owner_cleanup_after_install_hook(&self, hook: Option<Box<dyn Fn()>>) {
         self.owner_cleanup.replace_after_install_hook(hook);
     }
 
-    #[cfg(test)]
-    pub(crate) fn replace_owner_cleanup_after_component_progress_hook(
-        &self,
-        hook: Option<Box<dyn Fn()>>,
-    ) {
+    pub fn replace_owner_cleanup_after_component_progress_hook(&self, hook: Option<Box<dyn Fn()>>) {
         self.owner_cleanup
             .replace_after_component_progress_hook(hook);
     }
@@ -356,3 +349,5 @@ fn describe_work(work: &OwnerRetirementWork) -> WorthQueryProductBranchOwnerClea
         }
     }
 }
+
+mod court_doors_for_test;

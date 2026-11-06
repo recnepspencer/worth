@@ -1,13 +1,14 @@
 //! A real link creates the only violating Source membership without a public B handle.
 use super::super::authoring::Edit;
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 #[test]
 fn authored_membership_into_unopened_scope_runs_its_rule_and_refuses_only_the_conflicting_link() {
     lifecycle::run(journey);
 }
 fn journey() {
-    let provider = Arc::new(prefix::Calls::default());
+    let provider = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(Arc::clone(&provider)));
     let world = host::install(Arc::clone(&provider), Arc::clone(&rules));
     // Eligibility is compiled from these actual catalog entries. The prefix
@@ -89,14 +90,14 @@ fn journey() {
         let records = rules.records.lock().unwrap();
         let b = records
             .iter()
-            .find(|record| record.after.len() == 2)
+            .find(|record| record.source.after.len() == 2)
             .expect("B actually observes the proposed y/z conflict");
         assert_eq!(
-            values(b.before.as_ref().unwrap()),
+            values(b.source.before.as_ref().unwrap()),
             vec![("y".into(), "taken".into())]
         );
         assert_eq!(
-            values(&b.after),
+            values(&b.source.after),
             vec![("y".into(), "taken".into()), ("z".into(), "taken".into())]
         );
     }
@@ -126,10 +127,11 @@ fn journey() {
         let c = records
             .iter()
             .find(|record| {
-                record.before.as_ref().is_some_and(Vec::is_empty) && record.after.len() == 1
+                record.source.before.as_ref().is_some_and(Vec::is_empty)
+                    && record.source.after.len() == 1
             })
             .expect("the empty, unopened C Source must run its actual rule on the new membership");
-        assert_eq!(values(&c.after), vec![("z".into(), "taken".into())]);
+        assert_eq!(values(&c.source.after), vec![("z".into(), "taken".into())]);
     }
     let b = request
         .query(find("B", ""))

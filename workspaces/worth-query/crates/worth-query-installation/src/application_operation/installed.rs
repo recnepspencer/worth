@@ -1,5 +1,10 @@
+mod backing;
 mod operation_compilation;
 mod reinstallation_match;
+mod retention;
+mod view;
+pub use retention::{InstalledOperationCatalog, InstalledOperationSource};
+pub use view::InstalledOperationView;
 
 pub(in crate::application_operation) use operation_compilation::WorthQuerySealedOperationContractCompilation;
 
@@ -76,19 +81,7 @@ pub(crate) trait WorthQueryOperationAftermathInstallationSource:
 }
 
 pub struct WorthQueryInstalledApplicationOperation<Schema, Operation, Input> {
-    binding_identity: ApplicationSchemaBindingIdentity,
-    owner: String,
-    schema_name: String,
-    operation: String,
-    input_type: String,
-    contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
-    native_contracts:
-        Arc<crate::application_schema::WorthQueryInstalledApplicationSchemaContractCatalog>,
-    portable_native_contracts: Arc<Vec<WorthQueryPortableNativeAspectContractRecord>>,
-    portable_contract: WorthQueryPortableApplicationOperationContractRecord,
-    obligations: WorthQueryInstalledGraphObligationSet,
-    authority_identity: AuthoritySeal,
-    definition_identity: [u8; 32],
+    core: backing::InstalledOperationBacking,
     _marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -143,7 +136,11 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     {
         let declaration =
             resolve_operation_declaration::<Schema, Operation, Input>(schema, operation)?;
-        Self::install_executable_operation(schema, &declaration)
+        let installed = Self::install_executable_operation(schema, &declaration)?;
+        schema
+            .operation_catalog
+            .register(installed.retain_for_reentry())?;
+        Ok(installed)
     }
 
     pub(crate) fn graph_authority_from_installed_schema<Capability>(
@@ -202,7 +199,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     ) -> Result<Self, WorthQueryApplicationOperationInstallationDenial>
     where
         Schema: ApplicationSchema,
-        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
         Input: 'static,
     {
@@ -260,48 +257,60 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             obligations.identity(),
         );
         let definition_identity = definition_identity(&binding_identity, operation, input_type)?;
+        #[expect(
+            clippy::disallowed_methods,
+            reason = "Rust type identity is kept for exact admission equality; it never orders operations"
+        )]
+        let (operation_type_id, input_type_id) = (
+            std::any::TypeId::of::<Operation>(),
+            std::any::TypeId::of::<Input>(),
+        );
         Ok(Self {
-            binding_identity,
-            owner: schema.owner().to_string(),
-            schema_name: schema.schema_name().to_string(),
-            operation: operation.to_string(),
-            input_type: input_type.to_string(),
-            contracts: Arc::new(contracts),
-            native_contracts: schema.retain_native_contracts(),
-            portable_native_contracts: Arc::new(schema.portable_native_contracts().to_vec()),
-            portable_contract: portable_contract.clone(),
-            obligations,
-            authority_identity,
-            definition_identity,
+            core: backing::InstalledOperationBacking {
+                binding_identity,
+                owner: schema.owner().to_string(),
+                schema_name: schema.schema_name().to_string(),
+                operation: operation.to_string(),
+                input_type: input_type.to_string(),
+                contracts: Arc::new(contracts),
+                native_contracts: schema.retain_native_contracts(),
+                portable_native_contracts: Arc::new(schema.portable_native_contracts().to_vec()),
+                portable_contract: portable_contract.clone(),
+                obligations,
+                authority_identity,
+                definition_identity,
+                operation_type_id,
+                input_type_id,
+            },
             _marker: PhantomData,
         })
     }
 
     pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
-        &self.binding_identity
+        &self.core.binding_identity
     }
 
     pub fn owner(&self) -> &str {
-        &self.owner
+        &self.core.owner
     }
 
     pub fn schema_name(&self) -> &str {
-        &self.schema_name
+        &self.core.schema_name
     }
 
     pub fn operation(&self) -> &str {
-        &self.operation
+        &self.core.operation
     }
 
     pub fn contracts(&self) -> &WorthQueryCompiledApplicationOperationContracts {
-        &self.contracts
+        &self.core.contracts
     }
 
     pub fn body(
         &self,
     ) -> Option<&worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram>
     {
-        self.contracts.body()
+        self.core.contracts.body()
     }
 
     /// Retains the one cold-compiled immutable contract object for an admitted
@@ -310,7 +319,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     pub fn retain_compiled_contracts_for_admission(
         &self,
     ) -> Arc<WorthQueryCompiledApplicationOperationContracts> {
-        Arc::clone(&self.contracts)
+        Arc::clone(&self.core.contracts)
     }
 
     /// Funds the shallow Arc retain before an admitted operation takes custody.
@@ -320,26 +329,26 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
         prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
     ) -> Result<Arc<WorthQueryCompiledApplicationOperationContracts>, E> {
         prepare(2, 0)?;
-        Ok(Arc::clone(&self.contracts))
+        Ok(Arc::clone(&self.core.contracts))
     }
 
     pub fn input_type(&self) -> &str {
-        &self.input_type
+        &self.core.input_type
     }
 
     pub fn execution_posture(
         &self,
     ) -> super::WorthQueryInstalledApplicationOperationExecutionPosture {
-        self.contracts.execution_posture()
+        self.core.contracts.execution_posture()
     }
 
     pub fn authority_identity(&self) -> &str {
-        self.authority_identity.as_str()
+        self.core.authority_identity.as_str()
     }
 
     #[doc(hidden)]
     pub fn authority_identity_bytes(&self) -> [u8; 32] {
-        *self.authority_identity.bytes()
+        *self.core.authority_identity.bytes()
     }
 
     /// The identity of this operation's definition, the same in every runtime
@@ -348,15 +357,27 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     /// after it.
     #[doc(hidden)]
     pub const fn definition_identity_bytes(&self) -> [u8; 32] {
-        self.definition_identity
+        self.core.definition_identity
+    }
+
+    /// The `Operation` and `Input` type identities, captured where both are
+    /// `'static`, so an admission's brand is compared with them by value.
+    #[doc(hidden)]
+    pub const fn operation_type_id(&self) -> std::any::TypeId {
+        self.core.operation_type_id
+    }
+
+    #[doc(hidden)]
+    pub const fn input_type_id(&self) -> std::any::TypeId {
+        self.core.input_type_id
     }
 
     pub const fn graph_obligations(&self) -> WorthQueryInstalledGraphObligationInspection<'_> {
-        self.obligations.inspect()
+        self.core.obligations.inspect()
     }
 
     #[doc(hidden)]
     pub fn retain_graph_obligations_for_admission(&self) -> WorthQueryInstalledGraphObligationSet {
-        self.obligations.clone()
+        self.core.obligations.clone()
     }
 }

@@ -19,6 +19,7 @@ pub(super) fn query_posture(
 ) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryApplicationRequestQueryDenial as Denial;
     match denial {
+        Denial::HistoryOutput(cause) => super::history_read_posture(cause),
         Denial::ExecutionRequest(cause) => {
             if cause.is_transient() {
                 WorthQueryRequiredOutputRecoveryPosture::Retryable
@@ -59,7 +60,9 @@ fn product_posture(kind: ProductKind) -> WorthQueryRequiredOutputRecoveryPosture
     }
 }
 
-fn authorization_posture(kind: AuthorizationKind) -> WorthQueryRequiredOutputRecoveryPosture {
+pub(super) fn authorization_posture(
+    kind: AuthorizationKind,
+) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryRequiredOutputRecoveryPosture::{Retryable, Terminal};
     match kind {
         AuthorizationKind::Refused(AuthorizationRefusal::ProductSecurityBasis(refusal)) => product_posture(ProductKind::Refused(refusal)),
@@ -73,6 +76,7 @@ fn authorization_posture(kind: AuthorizationKind) -> WorthQueryRequiredOutputRec
         | AuthorizationKind::Refused(AuthorizationRefusal::ForeignPhase)
         | AuthorizationKind::Refused(AuthorizationRefusal::ExpiredAuthentication)
         | AuthorizationKind::Refused(AuthorizationRefusal::ForeignRuntime)
+        | AuthorizationKind::Refused(AuthorizationRefusal::StaleIncarnation)
         | AuthorizationKind::Refused(AuthorizationRefusal::StaleInstalledSchema)
         | AuthorizationKind::Refused(AuthorizationRefusal::StaleInstalledOperation)
         | AuthorizationKind::Refused(AuthorizationRefusal::StalePrincipal)
@@ -80,6 +84,7 @@ fn authorization_posture(kind: AuthorizationKind) -> WorthQueryRequiredOutputRec
         | AuthorizationKind::Refused(AuthorizationRefusal::MutationPreconditionRejected)
         | AuthorizationKind::Refused(AuthorizationRefusal::CanonicalWorkDenied)
         | AuthorizationKind::Refused(AuthorizationRefusal::InvalidOperationInput)
+        | AuthorizationKind::Refused(AuthorizationRefusal::InputNotAdmitted)
         | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityProjectionRejected)
         | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityGrantMissing)
         | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
@@ -191,6 +196,7 @@ fn scope_posture(kind: ScopeKind) -> WorthQueryRequiredOutputRecoveryPosture {
 fn admission_posture(kind: AdmissionKind) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryRequiredOutputRecoveryPosture::{Retryable, Terminal};
     match kind {
+        AdmissionKind::ExecutionRequest(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::ContentInconsistency | worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::Content(_)) => Terminal,
         AdmissionKind::ExecutionRequest(_) => Retryable,
         AdmissionKind::Cancelled
         | AdmissionKind::DeadlineExceeded
@@ -255,9 +261,11 @@ fn execution_posture(kind: ExecutionKind) -> WorthQueryRequiredOutputRecoveryPos
         | ExecutionKind::ProjectionInspectionIncomplete
         | ExecutionKind::PredicateIndexUnavailable
         | ExecutionKind::TraversalUnavailable => Retryable,
+        ExecutionKind::ExecutionRequest(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::ContentInconsistency | worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::Content(_)) => Terminal,
         ExecutionKind::ExecutionRequest(_) => Retryable,
         ExecutionKind::Authorization(kind) => authorization_posture(kind),
-        ExecutionKind::ForeignPlan
+        ExecutionKind::Content(_)
+        | ExecutionKind::ForeignPlan
         | ExecutionKind::StaleInstalledQuery
         | ExecutionKind::StalePrincipal
         | ExecutionKind::StaleScope
@@ -311,6 +319,19 @@ mod tests {
     }
 
     #[test]
+    fn an_unadmitted_input_is_terminal_at_both_query_recovery_entries() {
+        let kind = AuthorizationKind::Refused(AuthorizationRefusal::InputNotAdmitted);
+        assert_eq!(
+            admission_posture(AdmissionKind::Authorization(kind)),
+            WorthQueryRequiredOutputRecoveryPosture::Terminal,
+        );
+        assert_eq!(
+            execution_posture(ExecutionKind::Authorization(kind)),
+            WorthQueryRequiredOutputRecoveryPosture::Terminal,
+        );
+    }
+
+    #[test]
     fn nested_world_capacity_is_retryable_but_foreign_authority_is_terminal() {
         assert_eq!(
             admission_posture(AdmissionKind::Authorization(AuthorizationKind::Refused(
@@ -358,3 +379,6 @@ mod currency_request_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod content_tests;

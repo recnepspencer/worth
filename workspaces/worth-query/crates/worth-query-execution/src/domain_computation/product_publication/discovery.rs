@@ -21,7 +21,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         maximum: NonZeroUsize,
     ) -> Result<RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial<RuntimeWorldRecoveryDenial>>
     {
-        self.product_runtime
+        self.runtime
+            .product_runtime
             .owner
             .inspection_port()
             .recovery_page(after, maximum)
@@ -32,12 +33,20 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<WorthQueryProductUnpublishedRecovery, RuntimeWorldRecoveryDenial> {
-        let recovery = self.product_runtime.owner.recovery_port();
-        drop(recovery.inspect_effects(handle)?);
+        let recovery = self.runtime.product_runtime.owner.recovery_port();
+        match recovery.inspect_effects(handle) {
+            Ok(effects) => drop(effects),
+            Err(RuntimeWorldRecoveryDenial::RecoveredCustodyRequired) => {
+                drop(recovery.inspect_recovered_effects(handle)?)
+            }
+            Err(cause) => return Err(cause),
+        }
         Ok(WorthQueryProductUnpublishedRecovery::new(
             handle.clone(),
             recovery,
-            self.primary_provider.unpublished_idempotency_disposition(),
+            self.runtime
+                .primary_provider
+                .unpublished_idempotency_disposition(),
         ))
     }
 
@@ -72,7 +81,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         minimum_age_ticks: u64,
     ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductUnpublishedRecoveryReleaseFailure>{
         let mut retirements = OwnerCleanupRetirements::default();
-        let execution = match phase.checked_execution_request_for(&self.product_runtime) {
+        let execution = match phase.checked_execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(denial) => {
                 return Err(recovery_failure(
@@ -112,6 +121,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             )
                         })?;
                         self.prepare_product_publication_recovery_release(
+                            execution,
                             retained.take().expect("one admitted record release"),
                             minimum_age_ticks,
                         )?
@@ -138,11 +148,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     fn prepare_product_publication_recovery_release(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         minimum_age_ticks: u64,
     ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup, WorthQueryProductUnpublishedRecoveryReleaseFailure>{
         let handle = recovery.record_handle().clone();
         let provider_release = match self
+            .runtime
             .primary_provider
             .unpublished_idempotency_disposition()
             .reserve_release(&handle)
@@ -156,18 +168,63 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         };
         let effects = match self
+            .runtime
             .product_runtime
             .owner
             .recovery_port()
             .inspect_effects(&handle)
         {
             Ok(effects) => effects,
+            Err(RuntimeWorldRecoveryDenial::RecoveredCustodyRequired) => {
+                return self.prepare_recovered_product_release(execution, recovery)
+            }
             Err(denial) => return Err(recovery_failure(recovery, denial.into())),
         };
+        // The actual World durable-open custody selects reopening before any
+        // Memory-only Native observation or binding allocation is attempted.
+        if effects
+            .next_actions()
+            .contains(&worth_runtime_world::facade::ProductUnpublishedNextAction::ReopenRequired)
+        {
+            return Err(recovery_failure(
+                recovery,
+                RuntimeWorldRecoveryDenial::ReopenRequired.into(),
+            ));
+        }
+        let (native, original_binding) = match self
+            .runtime
+            .primary_provider
+            .prepare_memory_released_binding(
+                execution,
+                effects.component_results().relational_settlement(),
+                provider_release.is_some(),
+            ) {
+            Ok(prepared) => prepared,
+            Err(cause) => {
+                return Err(recovery_failure(
+                    recovery,
+                    WorthQueryProductUnpublishedRecoveryReleaseDenial::OriginalBinding(cause),
+                ))
+            }
+        };
+        if let (Some(reservation), Some(binding)) = (&provider_release, &original_binding)
+            && reservation
+                .validate_original(binding, effects.expected_head())
+                .is_err()
+        {
+            return Err(recovery_failure(
+                recovery,
+                WorthQueryProductUnpublishedRecoveryReleaseDenial::OriginalBindingMismatch,
+            ));
+        }
         let reservation = if effects.destination_branch().is_some() {
-            self.product_runtime.reserve_owner_cleanup_for_creation()
+            self.runtime
+                .product_runtime
+                .reserve_owner_cleanup_for_creation()
         } else {
-            self.product_runtime.reserve_owner_cleanup_for_application()
+            self.runtime
+                .product_runtime
+                .reserve_owner_cleanup_for_application()
         };
         drop(effects);
         let reservation = match reservation {
@@ -180,21 +237,27 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         };
         let (handle, recovery_port, disposition) = recovery.into_release_parts();
-        let cleanup = match recovery_port.release_effects(&handle, minimum_age_ticks) {
-            Ok(cleanup) => cleanup,
-            Err(denial) => {
-                return Err(recovery_failure(
-                    WorthQueryProductUnpublishedRecovery::new(handle, recovery_port, disposition),
-                    denial.into(),
-                ))
-            }
-        };
+        let cleanup =
+            match recovery_port.release_effects(execution, &handle, minimum_age_ticks, native) {
+                Ok(cleanup) => cleanup,
+                Err(denial) => {
+                    return Err(recovery_failure(
+                        WorthQueryProductUnpublishedRecovery::new(
+                            handle,
+                            recovery_port,
+                            disposition,
+                        ),
+                        denial.into(),
+                    ))
+                }
+            };
+        let (original, cleanup) = cleanup.into_parts();
         if let Some(provider_release) = provider_release {
-            provider_release.finish();
+            provider_release.finish(original_binding, original);
         }
         let cleanup_identity = reservation.install_unpublished(cleanup);
         Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(
-            self.product_runtime.clone(),
+            self.runtime.product_runtime.clone(),
             cleanup_identity,
         ))
     }

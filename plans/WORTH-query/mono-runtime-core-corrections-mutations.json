@@ -1,0 +1,143 @@
+{
+  "central_comparison_unchanged": true,
+  "batches": [
+    {
+      "mode": "entries",
+      "verification": {
+        "expected_local_sites": [
+          "elevation_request_readmission",
+          "history_constraint",
+          "managed_recovery",
+          "migration",
+          "pending_source_consumption",
+          "redispatch",
+          "source_binding",
+          "workflow_definition"
+        ],
+        "observed_failed_local_sites": [
+          "elevation_request_readmission",
+          "history_constraint",
+          "managed_recovery",
+          "migration",
+          "pending_source_consumption",
+          "redispatch",
+          "source_binding",
+          "workflow_definition"
+        ],
+        "summary": "test result: FAILED. 6 passed; 8 failed; 0 ignored; 0 measured; 2244 filtered out; finished in 4.11s",
+        "central_comparator": "unchanged",
+        "restoration": "exact bytes restored in finally with fresh mtime"
+      },
+      "mutations": [
+        {
+          "file": "application_attempt/provider_execution/external_dispatch.rs",
+          "removed": "admission\r\n            .validate_installed_operation(&self.runtime.installed_operations)",
+          "replacement": "Ok::<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>(())",
+          "original_sha256": "59fdd971b1d1cebb5bf1610ae1f60f42e2fa20bb780895c81ded712cc734dd54",
+          "restored_sha256": "59fdd971b1d1cebb5bf1610ae1f60f42e2fa20bb780895c81ded712cc734dd54"
+        },
+        {
+          "file": "provider/managed_application_recovery.rs",
+          "removed": "admission\r\n                .validate_installed_operation(&self.runtime.installed_operations)",
+          "replacement": "Ok::<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>(())",
+          "original_sha256": "cefa618e765727bebc526e95bd35f3bd097e598c88553f85ad1a5520418230b8",
+          "restored_sha256": "cefa618e765727bebc526e95bd35f3bd097e598c88553f85ad1a5520418230b8"
+        },
+        {
+          "file": "application_attempt/migration.rs",
+          "removed": "program\r\n        .validate_installed_entry(\r\n            &application.runtime,\r\n            &application.installed_schema.binding_identity(),\r\n        )",
+          "replacement": "Ok::<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>(())",
+          "original_sha256": "f93a8958984ac1998699ca6be7595f8d796c35c6c1eb96623a85757ba9f04873",
+          "restored_sha256": "f93a8958984ac1998699ca6be7595f8d796c35c6c1eb96623a85757ba9f04873"
+        },
+        {
+          "file": "workflow/definition/preparation.rs",
+          "removed": "admission\n            .validate_installed_entry(\n                application.runtime.authority_identity(),\n                &application.installed_schema.binding_identity(),\n                &application.runtime.installed_operations,\n            )",
+          "replacement": "Ok::<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>(())",
+          "original_sha256": "606a353d9d98bde47894317f43dd99c9c9f0e704d553d8bed228b6f2c4e79aee",
+          "restored_sha256": "606a353d9d98bde47894317f43dd99c9c9f0e704d553d8bed228b6f2c4e79aee"
+        },
+        {
+          "file": "product_operation/document_history/constraint.rs",
+          "removed": "admitted\n            .validate_installed_operation(&self.runtime.installed_operations)",
+          "replacement": "Ok::<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>(())",
+          "original_sha256": "3899747c4ae3834e4b60264bfd40fb722fc2d54f5874a520acf861ccac555e31",
+          "restored_sha256": "3899747c4ae3834e4b60264bfd40fb722fc2d54f5874a520acf861ccac555e31"
+        },
+        {
+          "file": "application_query/observed_source/prepared_expectation.rs",
+          "removed": "        self.validate_source_admission(admission, Binding::IDENTITY)?;",
+          "replacement": "",
+          "original_sha256": "98874c7b6b5f8e3e26de8bc7a736311a24f6ce64da1b87d7e100c2eb65d27c38",
+          "restored_sha256": "98874c7b6b5f8e3e26de8bc7a736311a24f6ce64da1b87d7e100c2eb65d27c38"
+        },
+        {
+          "file": "application_query/observed_source/prepared_expectation/pending.rs",
+          "removed": "        runtime.validate_source_admission(admission, self.expected_query_identifier)?;",
+          "replacement": "",
+          "original_sha256": "3797a89eea09176ae6c4e6f4d7a911c9c7632116441ba45e0ef2d9f808222b27",
+          "restored_sha256": "3797a89eea09176ae6c4e6f4d7a911c9c7632116441ba45e0ef2d9f808222b27"
+        },
+        {
+          "file": "application_attempt/provider_execution/elevation_lifecycle/installed_readmission.rs",
+          "removed": "        if let Err(outcome) = self.validate_commit_program(None, program.application_program()) {\r\n            let mut inner = program.into_inner();\r\n            let Some(binding) = inner.read_set.admission.take_elevation_request_binding() else {\r\n                return Err(WorthQueryElevationRequestOutcome::Denied(\r\n                    WorthQueryApplicationCommitDenial::elevation_request_program_mismatch(),\r\n                ));\r\n            };\r\n            return Err(requested_outcome(outcome, binding));\r\n        }",
+          "replacement": "",
+          "original_sha256": "2767844b65e798ca9b0d2487a88b7684c28be9b330914d4f67cd5e851d1bbd24",
+          "restored_sha256": "2767844b65e798ca9b0d2487a88b7684c28be9b330914d4f67cd5e851d1bbd24"
+        }
+      ]
+    },
+    {
+      "mode": "commit",
+      "verification": {
+        "expected_local_sites": [
+          "commit_validation"
+        ],
+        "observed_failed_local_sites": [
+          "commit_validation"
+        ],
+        "summary": "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2257 filtered out; finished in 0.25s",
+        "central_comparator": "unchanged",
+        "restoration": "exact bytes restored in finally with fresh mtime"
+      },
+      "mutations": [
+        {
+          "file": "application_attempt/effect_program/installed_reentry.rs",
+          "removed": "self.validate_commit_installation(core, tag, binding)",
+          "replacement": "Ok::<(), WorthQueryApplicationCommitDenial>(())",
+          "original_sha256": "a69789299b0a256b840861faa9b509a0bdd099647ec88a0a499cf1258c2500b1",
+          "restored_sha256": "a69789299b0a256b840861faa9b509a0bdd099647ec88a0a499cf1258c2500b1"
+        }
+      ]
+    },
+    {
+      "mode": "history-after-access-owner-correction",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--lib",
+        "foreign_installed_seal_is_stale_at_history_constraint_before_work",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit": 101,
+      "build": "4m 19s",
+      "summary": "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2257 filtered out; finished in 1.21s",
+      "failure_output": "a stale installed seal must precede history work: Ok(())",
+      "restoration": [
+        {
+          "file": "product_operation/document_history/constraint.rs",
+          "removed": "admitted\n            .validate_installed_operation(&self.runtime.installed_operations)",
+          "replacement": "Ok::<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>(())",
+          "original_sha256": "3899747c4ae3834e4b60264bfd40fb722fc2d54f5874a520acf861ccac555e31",
+          "restored_sha256": "3899747c4ae3834e4b60264bfd40fb722fc2d54f5874a520acf861ccac555e31"
+        }
+      ],
+      "central_comparator": "unchanged"
+    }
+  ]
+}

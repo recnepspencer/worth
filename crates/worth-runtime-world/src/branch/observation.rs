@@ -185,6 +185,7 @@ pub enum RuntimeWorldBranchAdmissionDenial {
     DeadlineBeforeEffect,
     OwnerUnavailable,
     ForeignOwner,
+    StaleIncarnation,
     RetiredBranch,
     DuplicateName,
     CapacityExhausted,
@@ -192,6 +193,10 @@ pub enum RuntimeWorldBranchAdmissionDenial {
     /// A creation intent reached branch creation without the two explicit
     /// component postures a creation cell requires.
     PlansOmitted,
+    /// Retained creation requires a genuine fork destination for both owners.
+    UnsupportedRetainedSourcePlan,
+    /// Historical roots cannot be reopened through the attached durable medium.
+    RetainedSourceDurabilityUnsupported,
     /// The installed owner-created component custody budget has no free slot
     /// for the fork this creation would perform.
     CustodyCapacityExhausted,
@@ -307,6 +312,17 @@ impl ProductBranchObservation {
 
     pub fn selected_commit(&self) -> &CompositeCommitIdentity {
         self.snapshot.commit().identity()
+    }
+
+    /// Original publication provenance of this retained product occurrence.
+    /// This observation cannot issue or restart the recorded attempt.
+    pub fn publication_attempt(
+        &self,
+    ) -> Option<&crate::identity::CompositePublicationAttemptIdentity> {
+        match self.snapshot.commit().provenance() {
+            crate::history::CompositeCommitProvenance::Bootstrap(_) => None,
+            crate::history::CompositeCommitProvenance::Publication(attempt) => Some(attempt),
+        }
     }
 
     pub fn basis(&self) -> &AdmittedCompositeRuntimeWorldBasis {

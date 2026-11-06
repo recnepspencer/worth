@@ -3,10 +3,9 @@
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::time::Instant;
 
 #[path = "operation_admission/capability_admission/mod.rs"]
-mod capability_admission;
+pub(crate) mod capability_admission;
 pub use capability_admission::WorthQueryAdmittedApplicationCapabilityAccess;
 pub(in crate::domain_computation) use capability_admission::{
     admit_capability_access, admit_encoded_capability_access,
@@ -17,19 +16,31 @@ pub(in crate::domain_computation::authorization) use capability_admission::{
     WorthQueryResolvedCapabilityRequest,
 };
 
-use worth_query_declaration::facade::application_operation::ApplicationCanonicalWork;
-use worth_query_installation::facade::{
-    ApplicationSchemaBindingIdentity, WorthQueryCanonicalWorkEvidence,
-    WorthQueryCanonicalWorkPhases, WorthQueryCompiledApplicationOperationContracts,
+use worth_query_declaration::facade::application_operation::{
+    ApplicationCanonicalWork, ApplicationSharedInput,
 };
+use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
-use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
-use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditions;
+#[path = "admitted_operation_core.rs"]
+mod admitted_operation_core;
+pub(in crate::domain_computation) use admitted_operation_core::WorthQueryAdmittedOperation;
+pub(in crate::domain_computation) use brand_tag::BrandTag;
 
 #[path = "operation_admission/access.rs"]
-mod access;
+pub(crate) mod access;
 #[path = "operation_admission/authorization_basis.rs"]
 mod authorization_basis;
+#[path = "operation_admission/brand_access.rs"]
+mod brand_access;
+#[path = "operation_admission/brand_custody.rs"]
+mod brand_custody;
+#[path = "operation_admission/read_completion_loan.rs"]
+mod read_completion_loan;
+pub(in crate::domain_computation) use read_completion_loan::ReadCompletionAdmission;
+#[path = "operation_admission/brand_phases.rs"]
+mod brand_phases;
+#[path = "operation_admission/brand_tag.rs"]
+mod brand_tag;
 #[path = "operation_admission/capability_revocation.rs"]
 mod capability_revocation;
 #[path = "operation_admission/conventional.rs"]
@@ -48,6 +59,10 @@ mod graph_work_inspection;
 mod idempotency_binding;
 #[path = "operation_admission/identity_admitted.rs"]
 mod identity_admitted;
+#[path = "operation_admission/incarnation.rs"]
+mod incarnation;
+#[path = "operation_admission/installed_reentry.rs"]
+mod installed_reentry;
 #[path = "operation_admission/mandatory_review.rs"]
 mod mandatory_review;
 #[path = "operation_admission/original_input.rs"]
@@ -57,16 +72,17 @@ mod output_demand;
 #[path = "operation_admission/selected_conventional.rs"]
 mod selected_conventional;
 pub(in crate::domain_computation) use selected_conventional::{
-    authorize_public_mutation_on_selected, SelectedConventionalAdmissionStop,
+    authorize_current_control_mutation_on_selected, authorize_public_mutation_on_selected,
+    SelectedConventionalAdmissionStop,
 };
 
-pub(in crate::domain_computation::authorization) use authorization_basis::WorthQueryOperationAuthorizationBasis;
+use authorization_basis::ErasedAuthorizationBasis;
 
 static NEXT_OPERATION_ADMISSION_IDENTITY: AtomicU64 = AtomicU64::new(1);
 const RESOURCE_LABEL: &str = "worth-query-application-admission:";
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(crate) struct WorthQueryOperationAdmissionIdentity(u64);
+pub struct WorthQueryOperationAdmissionIdentity(u64);
 
 impl WorthQueryOperationAdmissionIdentity {
     pub(in crate::domain_computation::authorization) fn mint() -> Option<Self> {
@@ -103,8 +119,6 @@ impl WorthQueryOperationAdmissionIdentity {
     }
 }
 
-use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
-
 /// Query-owned proof that one installed operation was authorized for one exact
 /// current principal and typed scope.
 ///
@@ -130,63 +144,86 @@ use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 ///     let _session = admitted.graph_work_session_identity();
 /// }
 /// ```
+///
+/// The erased core behind the proof is not nameable outside the engine, and
+/// no proof can be rebuilt around another proof's core:
+///
+/// ```compile_fail,E0432
+/// use worth_query_execution::facade::primary_graph::WorthQueryAdmittedOperation;
+/// ```
+///
+/// ```compile_fail,E0616
+/// use worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation;
+///
+/// fn cannot_take_core<Schema, Operation, Input, Scope>(
+///     admitted: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+/// ) {
+///     let _core = admitted.core;
+/// }
+/// ```
+///
+/// The proof is `Send` only when its typed input is `Send + Sync`:
+///
+/// ```compile_fail,E0277
+/// use worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation;
+///
+/// fn send<T: Send>() {}
+/// send::<WorthQueryAdmittedApplicationOperation<(), (), std::rc::Rc<u8>, ()>>();
+/// ```
+///
+/// ```compile_fail,E0277
+/// use worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation;
+///
+/// fn send<T: Send>() {}
+/// send::<WorthQueryAdmittedApplicationOperation<(), (), std::cell::Cell<u8>, ()>>();
+/// ```
 pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope> {
-    runtime_authority:
-        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
-    binding_identity: ApplicationSchemaBindingIdentity,
-    operation: String,
-    operation_authority_identity: Arc<str>,
-    operation_authority_identity_bytes: [u8; 32],
-    operation_definition_identity: [u8; 32],
-    admission_identity: WorthQueryOperationAdmissionIdentity,
-    resource_binding_identity: Arc<str>,
-    operation_scope_binding: WorthQueryOperationScopeBinding,
-    canonical_work: WorthQueryCanonicalWorkPhases,
-    scope_entity_id: worth_relational::facade::identity::EntityId,
-    scope_entity_kind: worth_relational::facade::identity::KindId,
-    scope_entity_name: String,
-    authentication_valid_until: Instant,
-    request_scope: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
-    mutation_preconditions: WorthQueryBoundMutationPreconditions,
-    authorization: Option<WorthQueryRetainedAuthorizationDecisionFacts>,
-    governed_input_identity: Option<[u8; 32]>,
-    original_input: Option<original_input::OriginalOperationInput<Input>>,
-    original_scope:
-        Option<Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>>,
-    original_inspection_disclosure: Option<Arc<crate::domain_computation::primary_graph::source_disclosure::OriginalSourceInspectionDisclosure>>,
-    authorization_basis: WorthQueryOperationAuthorizationBasis<Input>,
-    graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
-    source_partition_identity: Option<[u8; 32]>,
-    source_expectation_kind:
-        Option<crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind>,
-    source_facts: Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
-    query_context: Option<
-        crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext,
-    >,
-    required_output_demand:
-        Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
+    core: WorthQueryAdmittedOperation,
+    tag: brand_tag::BrandTag,
+    // The typed inputs stay beside the core; the core records only which
+    // authorization mode and original input identity it carries.
+    capability_input: Option<ApplicationSharedInput<Input>>,
+    original_input: Option<ApplicationSharedInput<Input>>,
     _marker: PhantomData<fn(Input) -> (Schema, Operation, Scope)>,
 }
+
+// An admission is `Send` exactly when its typed input is shared-thread safe,
+// as before erasure; the core never narrows it.
+const _: fn() = || {
+    fn send<T: Send>() {}
+    send::<WorthQueryAdmittedApplicationOperation<(), (), u8, ()>>();
+};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {
+    #[inline]
     pub(in crate::domain_computation) fn retain_execution_canonical_work(
         &mut self,
         work: WorthQueryCanonicalWorkEvidence,
     ) {
-        self.canonical_work = self.canonical_work.with_execution_work(work);
+        self.core.retain_execution_canonical_work(work);
     }
 
     /// Reports the derivations that encoded this request's key and input in
     /// the admission phase, so a fresh commit and a replayed retry both carry
     /// them. Only Publication's request entries report them, once per request.
+    #[inline]
     pub fn record_request_identity_work(
         &mut self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         work: ApplicationCanonicalWork,
     ) {
+        self.core.record_request_identity_work(work);
+    }
+}
+
+impl WorthQueryAdmittedOperation {
+    fn retain_execution_canonical_work(&mut self, work: WorthQueryCanonicalWorkEvidence) {
+        self.canonical_work = self.canonical_work.with_execution_work(work);
+    }
+
+    fn record_request_identity_work(&mut self, work: ApplicationCanonicalWork) {
         self.canonical_work = self
             .canonical_work
             .with_admission_work(WorthQueryCanonicalWorkEvidence::streamed_identities(work));
@@ -235,10 +272,11 @@ mod tests {
     }
 }
 
-#[cfg(test)]
 #[path = "operation_admission/retained_activation_read_tests.rs"]
 mod retained_activation_read_tests;
 
-#[cfg(test)]
 #[path = "operation_admission/request_read_stops_tests.rs"]
 mod request_read_stops_tests;
+
+#[path = "operation_admission/forgery_doors.rs"]
+mod forgery_doors;

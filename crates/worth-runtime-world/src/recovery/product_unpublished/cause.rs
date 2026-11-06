@@ -3,6 +3,7 @@
 pub enum ProductUnpublishedCause {
     /// World accepted the original durable open before Native preparation.
     OpenAttemptRetained,
+    RecoveredWithoutProductMovement,
     WorldOccurrencePending,
     OriginalObservationStopped(
         worth_relational::facade::transactions::RelationalExecutionDenialCause,

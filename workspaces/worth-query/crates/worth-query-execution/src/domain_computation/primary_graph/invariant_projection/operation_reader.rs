@@ -12,15 +12,16 @@ use worth_query_installation::facade::{
 mod admitted;
 mod admitted_projection;
 mod borrowed;
+mod content;
 mod prepared_inputs;
 pub(in crate::domain_computation::primary_graph) use borrowed::BorrowedOperationProjection;
 pub(in crate::domain_computation::primary_graph) use prepared_inputs::PreparedCurrentInputs;
 mod component_reads;
-mod computation_calls;
-mod current_output;
+pub(crate) mod computation_calls;
+pub(crate) mod current_output;
 pub(super) use current_output::CertifiedOutputCorrespondence;
-mod decision_plan;
-mod decision_reads;
+pub(crate) mod decision_plan;
+pub(crate) mod decision_reads;
 mod derived_relation;
 pub use derived_relation::{
     WorthQueryInvariantDerivedMemberRelation, WorthQueryInvariantDerivedRelation,
@@ -28,6 +29,7 @@ pub use derived_relation::{
     WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
 };
 mod managed_index;
+pub(in crate::domain_computation::primary_graph) use managed_index::native_index_decision_cause;
 mod output_availability;
 pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
@@ -270,7 +272,14 @@ where
         WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Output>,
         WorthQueryOperationProjectionDenial,
     > {
-        admission.validate_projection_authority(self.runtime_authority, &self.binding_identity)?;
+        if let Some(owner) = phase.world_owner() {
+            admission.refuse_stale_home_authority(owner)?;
+        }
+        admission.validate_projection_authority(
+            self.runtime_authority,
+            &self.binding_identity,
+            &self.installed_operations,
+        )?;
         let owner = admission
             .graph_work()
             .mutation_lease()
@@ -294,12 +303,7 @@ where
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn project_admitted_operation_with_request<
-        Operation,
-        Input,
-        Scope,
-        Output,
-    >(
+    pub fn project_admitted_operation_with_request<Operation, Input, Scope, Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -374,3 +378,5 @@ impl<Schema, Operation, Output>
 mod read_access;
 
 mod snapshot_scope;
+
+mod court_doors_for_test;

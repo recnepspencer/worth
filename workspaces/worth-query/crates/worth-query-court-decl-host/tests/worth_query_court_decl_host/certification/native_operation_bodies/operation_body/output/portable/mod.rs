@@ -116,7 +116,7 @@ fn output_bodies_reconstruct_and_new_receipts_rebind_exact_entity_types() {
         schema,
         (program::Installation::Native,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
     .unwrap();

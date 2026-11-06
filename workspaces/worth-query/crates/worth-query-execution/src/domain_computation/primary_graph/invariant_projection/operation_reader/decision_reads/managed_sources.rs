@@ -99,6 +99,10 @@ impl DecisionReads {
                             .map_err(|cause| Stop::Execution(cause.into()))
                     },
                     &mut |cause| Stop::Execution(cause.into_native()),
+                    &mut |left, right| {
+                        left.same_content(execution, right)
+                            .map_err(|cause| Stop::Execution(cause.into_execution_cause()))
+                    },
                 )?
             {
                 return Err(Stop::ManagedSourceChanged);

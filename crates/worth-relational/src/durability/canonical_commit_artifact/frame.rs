@@ -44,6 +44,23 @@ impl CanonicalCommitArtifactHeader {
     ///
     /// Cost: O(1) header checks, then one SHA-256 pass over the payload.
     pub(super) fn verify(frame: &[u8]) -> Result<(Self, &[u8]), Refusal> {
+        let (header, payload) = Self::inspect(frame)?;
+        let computed = Digest::of_payload(header.position.0, header.commit_id.0, payload)?;
+        header.require_digest(computed)?;
+        Ok((header, payload))
+    }
+
+    pub(super) fn require_digest(&self, computed: Digest) -> Result<(), Refusal> {
+        if computed != self.digest {
+            return Err(Refusal::DigestMismatch {
+                recorded: self.digest,
+                computed,
+            });
+        }
+        Ok(())
+    }
+
+    pub(super) fn inspect(frame: &[u8]) -> Result<(Self, &[u8]), Refusal> {
         validate_frame_version(frame)?;
         let header = Self {
             position: PatchStreamPosition(u64::from_le_bytes(fixed(frame, POSITION_OFFSET)?)),
@@ -51,15 +68,13 @@ impl CanonicalCommitArtifactHeader {
             digest: Digest::recorded(fixed(frame, DIGEST_OFFSET)?),
         };
         let declared = u64::from_le_bytes(fixed(frame, LENGTH_OFFSET)?);
-        let payload = declared_payload(frame, declared)?;
-        let computed = Digest::of_payload(header.position.0, header.commit_id.0, payload)?;
-        if computed != header.digest {
-            return Err(Refusal::DigestMismatch {
-                recorded: header.digest,
-                computed,
+        if declared > (super::MAXIMUM_ARTIFACT_BYTES - HEADER_LEN) as u64 {
+            return Err(Refusal::SizeLimit {
+                declared_payload: declared,
+                maximum_frame: super::MAXIMUM_ARTIFACT_BYTES,
             });
         }
-        Ok((header, payload))
+        Ok((header, declared_payload(frame, declared)?))
     }
 }
 
@@ -109,4 +124,27 @@ pub(crate) fn validate_frame_version(frame: &[u8]) -> Result<(), Refusal> {
     .admit(version)
     .map_err(Refusal::UnsupportedVersion)?;
     Ok(())
+}
+
+#[test]
+fn content_artifact_ceiling_includes_header_and_refuses_before_payload_or_digest() {
+    let mut header = CanonicalCommitArtifactHeader {
+        position: PatchStreamPosition(1),
+        commit_id: CommitId(1),
+        digest: Digest::unsealed(),
+    }
+    .emit((super::MAXIMUM_ARTIFACT_BYTES - HEADER_LEN) as u64);
+    assert!(matches!(
+        CanonicalCommitArtifactHeader::verify(&header),
+        Err(Refusal::TruncatedPayload { .. })
+    ));
+    let excessive = (super::MAXIMUM_ARTIFACT_BYTES - HEADER_LEN + 1) as u64;
+    header[LENGTH_OFFSET..].copy_from_slice(&excessive.to_le_bytes());
+    assert_eq!(
+        CanonicalCommitArtifactHeader::verify(&header).unwrap_err(),
+        Refusal::SizeLimit {
+            declared_payload: excessive,
+            maximum_frame: super::MAXIMUM_ARTIFACT_BYTES
+        }
+    );
 }

@@ -1,6 +1,8 @@
 //! Genuine branch, retained occurrence and reclaimed full-generation controls.
 use super::super::{directory, mutation};
 use super::*;
+use crate::application_invariant_acceptance::managed_index::directory_edit;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use worth_query_host::facade::{
     product::WorthQueryProductBranch, runtime::ExecutionAllocationPolicy,
 };
@@ -10,7 +12,7 @@ fn registered_prefix_rejects_same_runtime_foreign_branch_and_retained_stale_basi
     run(branch_and_basis);
 }
 fn branch_and_basis() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(Arc::clone(&calls));
     let scope = authentication::request_scope();
     let principal = authenticate(&world, &scope);
@@ -183,7 +185,7 @@ fn registered_prefix_rejects_genuine_reclaimed_scope_generation_replacement() {
     run(scope_generation);
 }
 fn scope_generation() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(Arc::clone(&calls));
     let scope = authentication::request_scope();
     let principal = authenticate(&world, &scope);
@@ -207,8 +209,8 @@ fn scope_generation() {
     assert!(request.query(empty()).execute().unwrap().rows().is_empty());
     let retired = request
         .advanced()
-        .mutate(directory::Replace {
-            edit: directory::Edit::Retire,
+        .mutate(directory_edit::Replace {
+            edit: directory_edit::Edit::Retire,
         })
         .without_source()
         .idempotency(&0x919d002u64)
@@ -234,8 +236,8 @@ fn scope_generation() {
     );
     let created = request
         .advanced()
-        .mutate(directory::Replace {
-            edit: directory::Edit::Create,
+        .mutate(directory_edit::Replace {
+            edit: directory_edit::Edit::Create,
         })
         .without_source()
         .idempotency(&0x919d003u64)

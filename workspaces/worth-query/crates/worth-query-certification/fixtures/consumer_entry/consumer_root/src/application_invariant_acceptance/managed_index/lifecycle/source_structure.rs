@@ -1,6 +1,7 @@
 //! Actual cold roots cannot omit Source support or launder duplicate/cyclic structure.
 use super::*;
-use prefix::structure::Fault;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
+use crate::application_invariant_acceptance::managed_index::structure_fault::Fault;
 
 #[test]
 fn source_tree_refuses_omitted_duplicate_and_cyclic_roots_before_ready() {
@@ -25,7 +26,7 @@ fn journey() {
             WorthQueryManagedIndexStop::SourceStructureCycle,
         ),
     ] {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install(calls.clone());
         let scope = authentication::request_scope();
         let principal = authenticate(&world, &scope);

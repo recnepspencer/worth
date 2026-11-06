@@ -61,7 +61,7 @@ impl<Schema: ApplicationSchema, Scope> ResourceActionRead<'_, Schema, Scope> {
                         execution,
                         relational,
                         snapshot,
-                        self.runtime.authorization.bridge(),
+                        self.runtime.runtime.authorization.bridge(),
                     )
                     .map_err(|kind| {
                         ResourceAdmissionDenial::Authorization(
@@ -74,7 +74,7 @@ impl<Schema: ApplicationSchema, Scope> ResourceActionRead<'_, Schema, Scope> {
                             execution,
                             relational,
                             snapshot,
-                            self.runtime.authorization.bridge(),
+                            self.runtime.runtime.authorization.bridge(),
                         )
                         .map_err(|kind| {
                             ResourceAdmissionDenial::DisclosureAuthorization(

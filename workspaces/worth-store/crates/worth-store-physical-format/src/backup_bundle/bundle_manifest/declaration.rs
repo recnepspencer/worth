@@ -1,4 +1,5 @@
 use super::{BackupBundleArtifactManifestRow, BackupBundleManifest};
+use worth_foundational::CanonicalDigestId;
 
 /// Stable identity fields declared for a backup bundle manifest.
 ///
@@ -6,7 +7,7 @@ use super::{BackupBundleArtifactManifestRow, BackupBundleManifest};
 /// recovery authority.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BackupBundleManifestIdentity {
-    pub cut_identity: [u8; 32],
+    pub cut_identity: CanonicalDigestId,
     pub store_lineage: String,
     pub root_generation: u64,
     pub manifest_generation: u64,
@@ -54,7 +55,7 @@ impl BackupBundleManifestDeclaration {
     ) -> Self {
         Self::new(
             BackupBundleManifestIdentity {
-                cut_identity: manifest.cut_identity(),
+                cut_identity: CanonicalDigestId::new(manifest.cut_identity()),
                 store_lineage: manifest.store_lineage().to_owned(),
                 root_generation: manifest.root_generation(),
                 manifest_generation: manifest.manifest_generation(),

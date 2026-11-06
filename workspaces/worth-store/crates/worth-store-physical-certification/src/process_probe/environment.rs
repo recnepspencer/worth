@@ -1,5 +1,6 @@
 use std::ffi::OsString;
 use std::process::Command;
+use worth_foundational::CanonicalDigestId;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -9,7 +10,7 @@ use super::{wire_encoding, ProcessProbeEvidenceDenial};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ProcessEnvironmentBindingEvidence {
     pub name: String,
-    pub value_sha256: [u8; 32],
+    pub value_sha256: CanonicalDigestId,
 }
 
 pub(super) fn inherited_runtime_bindings() -> Vec<(String, OsString)> {
@@ -66,14 +67,16 @@ pub(super) fn is_admitted(bindings: &[ProcessEnvironmentBindingEvidence]) -> boo
     !bindings.is_empty()
         && bindings
             .iter()
-            .all(|binding| admitted_name(&binding.name) && binding.value_sha256 != [0; 32])
+            .all(|binding| admitted_name(&binding.name) && *binding.value_sha256.bytes() != [0; 32])
         && bindings.windows(2).all(|pair| pair[0].name < pair[1].name)
 }
 
 fn binding(name: &str, value: &std::ffi::OsStr) -> ProcessEnvironmentBindingEvidence {
     ProcessEnvironmentBindingEvidence {
         name: name.to_owned(),
-        value_sha256: Sha256::digest(value.to_string_lossy().as_bytes()).into(),
+        value_sha256: CanonicalDigestId::new(
+            Sha256::digest(value.to_string_lossy().as_bytes()).into(),
+        ),
     }
 }
 

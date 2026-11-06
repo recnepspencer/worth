@@ -67,3 +67,5 @@ impl ComponentSelection {
             .check_component(self, execution, control)
     }
 }
+
+mod court_doors_for_test;

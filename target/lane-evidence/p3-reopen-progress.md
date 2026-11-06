@@ -1,4 +1,41 @@
-FUNDING LANDED bd8d5b6af58d540deba439ebbbb82e6a297c258d; queue IN PROGRESS.
+IN PROGRESS: integrating 14b16fa292; FUNDING LANDED bd8d5b6af58d540deba439ebbbb82e6a297c258d remains retained.
+
+Final2026-11-06 status:34 selected tests pass, final Root/Store Clippy and Query
+check pass, format/context/7677-file dirty caps pass. Independent review02
+REJECTS merge closure because the mandatory boundary lane has17 findings:
+five caller seals and12 topology findings. Six Native sites are P-A's queue;
+the extra Lifecycle/Bank source/caller paths require ownership/reach decisions.
+The real merge is preserved as an IN PROGRESS local commit, not FUNDING MERGED.
+No D13, digest or BC9002 source change, no baseline growth/suppression, no push.
+See funding-merge-lanes.md and turn-end-state.md for exact counts/owner evidence.
+
+2026-11-06: Real merge is pending qualification, with no unresolved index
+conflicts. Full Root Clippy (third attempt), Query workspace/test check (first
+attempt), and full Store Clippy (first attempt) pass. Counts so far: four
+Clippy invocations, one check. Two failed Root attempts exposed a retired
+Bytes arm, a retired AspectShape::Content arm and four missing typed-content
+matches; these and two source-review caller findings are fixed. The remaining
+33 Native warnings match the accepted funding log with no additions.
+
+The first proof packet passes14 Native public courts, four Native/Foundation
+unit cases and nine Host controls (same-directory direct with RUST_MIN_STACK
+unset). Five additional funding/isolation controls pass on the same Host binary;
+its exact pre-correction source-tree provenance is in the log. Store recovery
+is still in its first cold build, with no runtime result claimed yet.
+Line caps passed7676 dirty Rust files before the review correction. Detail and budget exception:
+merge-14b16-plan.md. No D13/digest/BC9002 source edits are mixed into this merge.
+
+Independent source review01 rejected one real typed-refusal mapping defect:
+uncovered content decode failure was converted into corruption. Both original
+frame and initial-input mappings now preserve Content through the owner's
+existing conversion, with an exhaustive pure map and runtime-free regression.
+The post-review Root Clippy/regression and final gates follow the active Store
+packet. A fresh reviewer02 is checking the final source and raw evidence.
+
+The integration prerequisite and root ownership blocks below are historical:
+14b16fa292 and the five production root seams are now explicitly granted.
+D13 (including authenticated registry), named digests and BC9002 remain queued
+after the qualified merge commit. No push or other-worktree edit.
 
 2026-11-05: The three newly granted root consumer paths are Lifecycle-clean
 both committed and dirty. Independent boundary review identifies remaining

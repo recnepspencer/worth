@@ -15,7 +15,7 @@ fn owning_bank_payment_refuses_cancellation_then_commits_once() {
         .expect("actual declared Bank action");
     let cancel = WorthQueryCancellationSource::new();
     cancel.cancel();
-    let stopped = WorthQueryRequestScope::new(None, cancel.token());
+    let stopped = WorthQueryRequestScope::new(None, cancel.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let owner = match owner.advance(
         &runtime
             .request(&ready.principal, &stopped)
@@ -117,7 +117,7 @@ fn owning_bank_payment_retains_original_outbox_handle_through_fresh_refusal() {
     assert_eq!(ready.rail.completed_effect_count(), 0);
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let owner = match owner.advance(
         &runtime
             .request(&ready.principal, &stopped)

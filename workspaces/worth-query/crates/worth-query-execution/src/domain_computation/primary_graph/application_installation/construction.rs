@@ -49,6 +49,7 @@ where
         configuration,
         &limits,
         program_admission,
+        None,
     )?;
     let (
         invariants,
@@ -116,6 +117,12 @@ where
             runtime.installed_packages(),
         )
         .map_err(Denial::Contributions)?;
+    super::source_scope_ownership::seal(
+        &graph.graph.layout,
+        &mut graph.graph.application_publication,
+        &producers,
+    )
+    .map_err(Denial::Graph)?;
     if restoring && let Some(support) = &admitted_program_support {
         if let Some(transition) = checkpoint_transition {
             graph = super::super::bootstrap::checkpoint_transition::transition_checkpoint(
@@ -151,6 +158,14 @@ where
     graph.program_activation = admitted_program_support
         .as_ref()
         .map(|_| activation.clone());
+    // Codec/program activation may rebind the native publisher. Install the
+    // same immutable declaration roster on that final publication authority.
+    super::source_scope_ownership::seal(
+        &graph.graph.layout,
+        &mut graph.graph.application_publication,
+        &producers,
+    )
+    .map_err(Denial::Graph)?;
     if !restoring {
         if let Some(support) = &admitted_program_support {
             graph.program_activation_seed = Some(
@@ -215,6 +230,7 @@ where
     application.installed_producers = producers;
     application.installed_conditionals = installed_conditionals;
     application
+        .runtime
         .primary_provider
         .graph
         .output_lineage
@@ -223,6 +239,7 @@ where
         .bind_implementation_build(build_identity);
     if let Some(support) = admitted_program_support {
         application
+            .runtime
             .product_runtime
             .activations
             .require_program_coordination();
@@ -234,7 +251,7 @@ where
         );
     }
     if let Some(checkpoint) = decoded_checkpoint {
-        application.recovered_outputs =
+        application.runtime.recovered_outputs =
             super::super::application_output_demand::WorthQueryRecoveredOutputs::from_checkpoint(
                 checkpoint,
                 &execution,

@@ -7,7 +7,10 @@ use crate::domain_computation::primary_graph::tests::application_attempt::resolv
 use worth_relational::facade::history::BranchId;
 
 pub(super) fn restored_root_consumption_and_later_writes() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.with_host_advancement(|phase| {
  let custody = phase.test_host_request();
  let phase_custody = &custody;

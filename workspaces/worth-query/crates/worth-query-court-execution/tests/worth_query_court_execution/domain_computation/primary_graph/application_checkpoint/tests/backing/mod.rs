@@ -1,0 +1,98 @@
+//! Physical byte custody across Query framing and native handoff. Literal native
+//! bytes deliberately prove no Relational recovery admission or graph authority.
+use std::sync::Arc;
+use worth_relational::facade::durability::RelationalNativeCheckpoint;
+
+use worth_execution::ExecutionAllocationPolicy as CapturePolicy;
+use crate::domain_computation::primary_graph::application_checkpoint::tests::checkpoint_from_body;
+use worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::recoverable_application_world;
+
+#[test]
+fn untrusted_query_clones_share_moved_bytes_after_original_owner_drops() {
+    let bytes = b"untrusted-query".to_vec().into_boxed_slice();
+    let expected = bytes.as_ptr();
+    let checkpoint = WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes);
+    let clones = [checkpoint.clone(), checkpoint.clone(), checkpoint.clone()];
+    drop(checkpoint);
+    for clone in &clones {
+        assert_eq!(clone.bytes(), b"untrusted-query");
+        assert_eq!(clone.bytes().as_ptr(), expected);
+        assert_eq!(clone.charged_payload_bytes(), None);
+        assert_eq!(
+            clone,
+            &WorthQueryApplicationCheckpoint::from_untrusted_bytes(b"untrusted-query".to_vec())
+        );
+    }
+}
+
+#[test]
+fn query_clones_decode_into_the_same_native_payload_backing() {
+    let mut body = Vec::new();
+    body.extend_from_slice(&FORMAT_VERSION.to_be_bytes());
+    body.extend_from_slice(&worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::WORKFLOW_FACTS.to_be_bytes());
+    body.extend_from_slice(&worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::WORKFLOW_INSTANCES.to_be_bytes());
+    body.extend_from_slice(&1_u64.to_be_bytes());
+    body.extend_from_slice(&3_u64.to_be_bytes());
+    body.extend_from_slice(&0_u64.to_be_bytes());
+    body.extend_from_slice(b"abc");
+    let checkpoint = checkpoint_from_body(body);
+    let bytes = Arc::new(checkpoint.bytes().to_vec().into_boxed_slice());
+    let lifetime = Arc::downgrade(&bytes);
+    drop(checkpoint);
+    let checkpoint = WorthQueryApplicationCheckpoint::new_for_test(
+        worth_execution::ExecutionImmutableBytes::from_external_bytes(bytes),
+    );
+    assert_three_handoffs_share_backing(checkpoint, b"abc", 1);
+    assert!(lifetime.upgrade().is_none());
+}
+
+#[test]
+fn encoded_query_clones_preserve_shared_backing_through_native_handoff() {
+    let (world, _receipt) = recoverable_application_world(142, "checkpoint-backing-proof");
+    let publication = world.application.publication();
+    let native = b"literal-native-backing-payload";
+    let (checkpoint, sections) = WorthQueryApplicationCheckpoint::encode_for_test(
+        RelationalNativeCheckpoint::from_untrusted_bytes(native.to_vec()),
+        publication,
+        &[],
+        CapturePolicy::SystemAllocation,
+    )
+    .expect("the actual production formatter creates an authenticated Query frame");
+    assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
+    assert_three_handoffs_share_backing(
+        checkpoint,
+        native,
+        publication.bootstrap_commit_id_for_test().0,
+    );
+}
+
+pub fn assert_three_handoffs_share_backing(
+    checkpoint: WorthQueryApplicationCheckpoint,
+    native_bytes: &[u8],
+    bootstrap: u64,
+) {
+    let expected = checkpoint
+        .bytes()
+        .as_ptr()
+        .wrapping_add(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::HEADER_BYTES);
+    let clones = [checkpoint.clone(), checkpoint.clone(), checkpoint.clone()];
+    for clone in &clones {
+        assert_eq!(clone.bytes().as_ptr(), checkpoint.bytes().as_ptr());
+    }
+    drop(checkpoint);
+    let decoded = clones.map(|clone| clone.decode_for_test().expect("Query framing is admitted"));
+    for handoff in &decoded {
+        assert_eq!((*handoff.native_for_test()).bytes(), native_bytes);
+        assert_eq!((*handoff.native_for_test()).bytes().as_ptr(), expected);
+        assert_eq!((*handoff.native_for_test()).captured_sections(), None);
+        assert_eq!(handoff.bootstrap_commit_id_for_test().0, bootstrap);
+        assert!((*handoff.accepted_outputs_for_test()).is_empty());
+    }
+    let native_clone = (*decoded[0].native_for_test()).clone();
+    drop(decoded);
+    assert_eq!(native_clone.bytes(), native_bytes);
+    assert_eq!(native_clone.bytes().as_ptr(), expected);
+    drop(native_clone);
+}

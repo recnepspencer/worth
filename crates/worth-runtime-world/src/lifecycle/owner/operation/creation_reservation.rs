@@ -38,6 +38,23 @@ where
         Ok(attempt)
     }
 
+    pub(in crate::lifecycle::owner) fn prepare_retained_creation(
+        &self,
+        source: ProductBranchObservation,
+        intent: ProductBranchCreationIntent,
+        retained: worth_relational::facade::branch::AdmittedRelationalRetainedForkSource,
+        cancellation: &RuntimeWorldCancellationToken,
+        deadline: Option<RuntimeWorldInstant>,
+    ) -> Result<ReservedBranchCreationAttempt, RuntimeWorldBranchAdmissionDenial> {
+        self.admit_retained_source_lifecycle(&source)?;
+        creation_pre_effect_denial(self, cancellation, deadline)?;
+        let plan =
+            LoweredBranchCreationPlan::lower(source.clone(), intent)?.from_retained(retained);
+        let attempt = self.reserve_creation_attempt(source, plan, deadline)?;
+        creation_pre_effect_denial(self, cancellation, deadline)?;
+        Ok(attempt)
+    }
+
     /// The pre-reservation admission for a creation: this owner, an open and
     /// bootstrapped world, an intent that carries both per-owner postures, and
     /// an admitted source that still matches the registry's current head for
@@ -56,9 +73,8 @@ where
         cancellation: &RuntimeWorldCancellationToken,
         deadline: Option<RuntimeWorldInstant>,
     ) -> Result<LoweredBranchCreationPlan, RuntimeWorldBranchAdmissionDenial> {
-        if source.owner_identity() != self.owner_identity() {
-            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
-        }
+        self.owner_identity()
+            .admit_branch_authority(source.owner_identity())?;
         if !self.is_open_and_bootstrapped_for_creation() {
             return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
         }
@@ -96,7 +112,7 @@ where
             reserved_component_pin_pair,
             reserved_successor_observation: _,
             reserved_publication_capacity,
-        } = reserve_publication_resources(self, &source, &commit_identity, None, false)
+        } = reserve_publication_resources(self, &source, &commit_identity, None, false, None)
             .map_err(map_reservation_cause)?;
         let relational_custody = reserve_custody(
             self,

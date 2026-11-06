@@ -50,7 +50,7 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -132,12 +132,18 @@ where
             &observed_source,
         )?;
         let limits = self.output_demand_resource_profile().constrain(limits);
-        let owner = &self.primary_provider.graph.source_owner.invalidation_owner;
+        let owner = &self
+            .runtime
+            .primary_provider
+            .graph
+            .source_owner
+            .invalidation_owner;
         // The selection and its verification share one meter, no larger than
         // the demand's declared source-currentness work.
 
         let observation = at.product().observation();
         let outputs = self
+            .runtime
             .primary_provider
             .graph
             .output_lineage
@@ -188,7 +194,7 @@ where
                 continue;
             };
             let verified = self
-                .primary_provider
+                .runtime.primary_provider
                 .graph
                 .with_runtime(execution, |relational| {
                     let unavailable =
@@ -279,6 +285,7 @@ where
         )?;
 
         let observed_source = self
+            .runtime
             .output_demands
             .retain_readmission_source(observed_source, limits, None)?
             .without_row();

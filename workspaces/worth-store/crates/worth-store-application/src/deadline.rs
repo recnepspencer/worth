@@ -17,10 +17,7 @@ pub(crate) fn milliseconds(
     let Some(deadline) = execution.deadline() else {
         return Ok(maximum);
     };
-    let remaining = deadline
-        .saturating_duration_since(std::time::Instant::now())
-        .as_millis()
-        .min(u128::from(maximum)) as u64;
+    let remaining = deadline.remaining().as_millis().min(u128::from(maximum)) as u64;
     if remaining == 0 {
         execution
             .consult()

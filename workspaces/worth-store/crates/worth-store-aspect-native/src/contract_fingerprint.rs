@@ -92,7 +92,6 @@ fn update_shape(digest: &mut Sha256, shape: &AspectShape) {
         }
         AspectShape::Opaque(_) => digest.update([3, 1]),
         AspectShape::Reference(_) => digest.update([4, 1]),
-        AspectShape::Content => digest.update([5]),
     }
 }
 
@@ -154,7 +153,6 @@ const fn scalar_code(value: ScalarAspectType) -> u8 {
         ScalarAspectType::BigInt => 14,
         ScalarAspectType::Rational => 15,
         ScalarAspectType::String => 16,
-        ScalarAspectType::Bytes => 17,
         ScalarAspectType::Uuid => 18,
         ScalarAspectType::Date => 19,
         ScalarAspectType::Time => 20,

@@ -116,23 +116,6 @@ impl<'a> BorrowedPayload<'a> {
         })
     }
 
-    /// Borrow one actual MessagePack bin allocation without staging a Vec.
-    #[cfg(test)]
-    pub(super) fn binary(self, execution: &ExecutionRequest<'_, '_>) -> Result<&'a [u8], Refusal> {
-        let mut cursor = Cursor::new(self.0, execution);
-        let marker = cursor.marker()?;
-        let width = match marker {
-            0xc4 => 1,
-            0xc5 => 2,
-            0xc6 => 4,
-            _ => return Err(malformed()),
-        };
-        let count = cursor.length(width)?;
-        let bytes = cursor.take(count)?;
-        cursor.finish()?;
-        Ok(bytes)
-    }
-
     /// Only callers selecting actual Serde Option fields may default absence.
     pub(super) fn optional_field(
         self,

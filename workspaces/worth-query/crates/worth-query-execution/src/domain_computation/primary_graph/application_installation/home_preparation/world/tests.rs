@@ -25,7 +25,7 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
         let phase = active.bootstrap_for_test();
         let drops = Arc::new(AtomicUsize::new(0));
         let limits = WorthQueryInMemoryApplicationLimits::new(
-            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             crate::domain_computation::execution_runtime::WorthQueryApplicationQueryResourceProfile::default(),
             worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
         );
@@ -43,6 +43,8 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
             )
             .unwrap(),
             limits,
+            None,
+            |_, _| panic!("the Relational-only fixture has no authored component seed"),
         )
         .unwrap_or_else(|cause| panic!("real installed meaning: {cause:?}"));
         let mut bootstrap = state

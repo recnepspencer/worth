@@ -106,10 +106,12 @@ macro_rules! split_phase {
                             Some(reader.mutation_target(&cell)?)
                         } else { None };
                         let mut children = Vec::new();
-                        for index in 0..if TIER < 2 { input.0.width } else { 0 } {
+                        if TIER < 2 {
+                        for index in 0..input.0.width {
                             let child = reader.resolve_optional_entity(Key::reference(), format!("{}.{}", input.0.key, index))?;
                             if let Some(child) = &child { reader.field(child, Value::reference())?; }
                             children.push(child.as_ref().map(|child| reader.mutation_target(child)).transpose()?);
+                        }
                         }
                         Ok(Ok(SplitDecision { source: reader.mutation_target(&source)?, realization, children, cell }))
                     })();

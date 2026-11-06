@@ -764,8 +764,8 @@ milestones must respect.
 - implementing async/resource query families from Milestone 9.5
 - implementing mixed truth/time/async delivery from Milestone 9.6
 - certifying temporal/async behavior from Milestone 9.7
-- implementing store-backed parity from Milestone 10
-- implementing durable restart/reload from Milestone 11
+- implementing store-backed parity from Store execution/historical integration
+- implementing durable restart/reload from Store Milestone 11
 - adding geometry, workflow, table, CAD, spreadsheet, or product-domain
   semantics to `worth-query`
 - removing low-level internal APIs needed for certification and lower-runtime

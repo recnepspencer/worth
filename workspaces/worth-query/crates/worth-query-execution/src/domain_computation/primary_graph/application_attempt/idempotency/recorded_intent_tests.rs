@@ -139,3 +139,31 @@ fn scope(principal_slot: u64) -> WorthQueryIdempotencyScopeIdentity {
         },
     }
 }
+
+#[test]
+fn original_lookup_scope_uses_only_the_validated_correction_slot() {
+    let root = "01".repeat(32);
+    let intent = format!("v2:{root}:source=-:operation=-:scope=-:precondition=-:input=-:proposal=-:conditional-definition=-");
+    assert_eq!(
+        WorthQueryApplicationIdempotencyBinding::recorded_correction_scope(&intent),
+        Ok(false)
+    );
+    assert_eq!(
+        WorthQueryApplicationIdempotencyBinding::recorded_correction_scope(&format!(
+            "{intent}:correction={root}"
+        )),
+        Ok(true)
+    );
+    assert!(
+        WorthQueryApplicationIdempotencyBinding::recorded_correction_scope(&format!(
+            "{intent}:correction=-"
+        ))
+        .is_err()
+    );
+    assert!(
+        WorthQueryApplicationIdempotencyBinding::recorded_correction_scope(&format!(
+            "{intent}:unknown={root}"
+        ))
+        .is_err()
+    );
+}

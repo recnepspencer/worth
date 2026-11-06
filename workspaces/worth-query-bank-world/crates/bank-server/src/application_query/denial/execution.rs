@@ -39,6 +39,7 @@ pub enum BankProductSelectionDenialKind {
     ForeignOwner,
     RetiredBranch,
     IncarnationChanged,
+    StaleIncarnation,
     ObservationRejected,
     ObservationStaleSourceHead,
     ObservationCapacityExhausted,
@@ -72,6 +73,7 @@ pub enum BankApplicationProjectionDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationOneShotDenialKind {
+    Content(worth_query_host::facade::primary_graph::RelationalContentDenial),
     ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
     ForeignPlan,
     StaleInstalledQuery,
@@ -113,6 +115,7 @@ pub enum BankApplicationOneShotDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationContinuationDenialKind {
+    Content(worth_query_host::facade::primary_graph::RelationalContentDenial),
     ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
     ForeignPlan,
     StaleInstalledQuery,
@@ -143,6 +146,7 @@ pub enum BankApplicationContinuationDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationLiveOpenDenialKind {
+    Content(worth_query_host::facade::primary_graph::RelationalContentDenial),
     LiveContractMissing,
     BindingMismatch,
     Admission(BankApplicationQueryAdmissionDenialKind),
@@ -174,6 +178,7 @@ pub(super) const fn product_selection(
             QueryRefusal::ForeignOwner => Bank::ForeignOwner,
             QueryRefusal::RetiredBranch => Bank::RetiredBranch,
             QueryRefusal::IncarnationChanged => Bank::IncarnationChanged,
+            QueryRefusal::StaleIncarnation => Bank::StaleIncarnation,
             QueryRefusal::ObservationRejected => Bank::ObservationRejected,
             QueryRefusal::ObservationStaleSourceHead => Bank::ObservationStaleSourceHead,
             QueryRefusal::ObservationCapacityExhausted => Bank::ObservationCapacityExhausted,
@@ -198,6 +203,7 @@ pub(super) const fn product_selection(
 pub(super) const fn one_shot(kind: QueryOneShot) -> BankApplicationOneShotDenialKind {
     use BankApplicationOneShotDenialKind as Bank;
     match kind {
+        QueryOneShot::Content(cause) => Bank::Content(cause),
         QueryOneShot::ExecutionRequest(cause) => Bank::ExecutionRequest(cause),
         QueryOneShot::ForeignPlan => Bank::ForeignPlan,
         QueryOneShot::StaleInstalledQuery => Bank::StaleInstalledQuery,
@@ -227,7 +233,9 @@ pub(super) const fn one_shot(kind: QueryOneShot) -> BankApplicationOneShotDenial
         QueryOneShot::ExpressionContextIncomplete => Bank::ExpressionContextIncomplete,
         QueryOneShot::ProjectionInspectionUnavailable => Bank::ProjectionInspectionUnavailable,
         QueryOneShot::ProjectionInspectionIncomplete => Bank::ProjectionInspectionIncomplete,
-        QueryOneShot::Projection(kind) => Bank::Projection(projection(kind)),
+        QueryOneShot::Projection(kind) => {
+            Bank::Projection(BankApplicationProjectionDenialKind::from_query(kind))
+        }
         QueryOneShot::ResultBufferLimitExceeded => Bank::ResultBufferLimitExceeded,
         QueryOneShot::WorkLimitExceeded => Bank::WorkLimitExceeded,
         QueryOneShot::SourceObservationAllocation {
@@ -243,6 +251,7 @@ pub(super) const fn one_shot(kind: QueryOneShot) -> BankApplicationOneShotDenial
 pub(super) const fn continuation(kind: QueryContinuation) -> BankApplicationContinuationDenialKind {
     use BankApplicationContinuationDenialKind as Bank;
     match kind {
+        QueryContinuation::Content(cause) => Bank::Content(cause),
         QueryContinuation::ExecutionRequest(cause) => Bank::ExecutionRequest(cause),
         QueryContinuation::ForeignPlan => Bank::ForeignPlan,
         QueryContinuation::StaleInstalledQuery => Bank::StaleInstalledQuery,
@@ -266,7 +275,9 @@ pub(super) const fn continuation(kind: QueryContinuation) -> BankApplicationCont
         QueryContinuation::ContinuationPageWidthInvalid => Bank::ContinuationPageWidthInvalid,
         QueryContinuation::ContinuationGenerationChanged => Bank::ContinuationGenerationChanged,
         QueryContinuation::ProjectionUnavailable => Bank::ProjectionUnavailable,
-        QueryContinuation::Projection(kind) => Bank::Projection(projection(kind)),
+        QueryContinuation::Projection(kind) => {
+            Bank::Projection(BankApplicationProjectionDenialKind::from_query(kind))
+        }
         QueryContinuation::ResultBufferLimitExceeded => Bank::ResultBufferLimitExceeded,
         QueryContinuation::WorkLimitExceeded => Bank::WorkLimitExceeded,
     }
@@ -275,6 +286,7 @@ pub(super) const fn continuation(kind: QueryContinuation) -> BankApplicationCont
 pub(super) const fn live(kind: QueryLive) -> BankApplicationLiveOpenDenialKind {
     use BankApplicationLiveOpenDenialKind as Bank;
     match kind {
+        QueryLive::Content(cause) => Bank::Content(cause),
         QueryLive::LiveContractMissing => Bank::LiveContractMissing,
         QueryLive::BindingMismatch => Bank::BindingMismatch,
         QueryLive::Admission(kind) => Bank::Admission(admission(kind)),
@@ -287,19 +299,22 @@ pub(super) const fn live(kind: QueryLive) -> BankApplicationLiveOpenDenialKind {
     }
 }
 
-const fn projection(kind: QueryProjection) -> BankApplicationProjectionDenialKind {
-    use BankApplicationProjectionDenialKind as Bank;
-    match kind {
-        QueryProjection::ValueDecode(cause) => Bank::ValueDecode(cause),
-        QueryProjection::FieldNotProjected => Bank::FieldNotProjected,
-        QueryProjection::FieldContractMismatch => Bank::FieldContractMismatch,
-        QueryProjection::FieldTypeMismatch => Bank::FieldTypeMismatch,
-        QueryProjection::FieldOmitted => Bank::FieldOmitted,
-        QueryProjection::RelationNotProjected => Bank::RelationNotProjected,
-        QueryProjection::RelationContractMismatch => Bank::RelationContractMismatch,
-        QueryProjection::RelationCardinalityMismatch => Bank::RelationCardinalityMismatch,
-        QueryProjection::RelationOmitted => Bank::RelationOmitted,
-        QueryProjection::DomainProjectionRejected => Bank::DomainProjectionRejected,
+impl BankApplicationProjectionDenialKind {
+    /// Preserve the original public Query projection refusal for transport adapters.
+    pub const fn from_query(kind: QueryProjection) -> Self {
+        use BankApplicationProjectionDenialKind as Bank;
+        match kind {
+            QueryProjection::ValueDecode(cause) => Bank::ValueDecode(cause),
+            QueryProjection::FieldNotProjected => Bank::FieldNotProjected,
+            QueryProjection::FieldContractMismatch => Bank::FieldContractMismatch,
+            QueryProjection::FieldTypeMismatch => Bank::FieldTypeMismatch,
+            QueryProjection::FieldOmitted => Bank::FieldOmitted,
+            QueryProjection::RelationNotProjected => Bank::RelationNotProjected,
+            QueryProjection::RelationContractMismatch => Bank::RelationContractMismatch,
+            QueryProjection::RelationCardinalityMismatch => Bank::RelationCardinalityMismatch,
+            QueryProjection::RelationOmitted => Bank::RelationOmitted,
+            QueryProjection::DomainProjectionRejected => Bank::DomainProjectionRejected,
+        }
     }
 }
 

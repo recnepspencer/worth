@@ -41,7 +41,7 @@ fn unpublished_claim_resumes_its_native_owner_after_fresh_admission_and_native_d
         .record(&model, &author, "proposal-2", 1204, vec![input(4)])
         .unwrap();
     let cancellation = WorthQueryCancellationSource::new();
-    let original_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let original_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let original =
         authentication::authenticate(host.installed_schema(), Actor::Reviewer, &original_scope)
             .unwrap();
@@ -137,7 +137,7 @@ fn unpublished_claim_resumes_its_native_owner_after_fresh_admission_and_native_d
     assert_eq!(registration.claim.data.input, loaded.input(1205));
     assert!(matches!(
         registration.evidence,
-        WorthQuerySourceCompletion::Recovered { .. }
+        WorthQuerySourceCompletion::Recorded { .. }
     ));
     let claims = host
         .request(&fresh.principal, fresh.scope)

@@ -1,10 +1,14 @@
+mod settlement_provenance;
+pub use settlement_provenance::WorthQueryOutputSettlementProvenanceDenial;
 pub(super) mod cleanup_custody;
 mod diagnostic_copy;
+mod history_source;
 mod invariant_refusal;
 mod kind;
 mod output_comparison;
 mod producer_value;
 mod publication_stale;
+mod retirement_refusal;
 pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
 pub(in crate::domain_computation::primary_graph) use publication_stale::ProducerPublicationStale;
 
@@ -54,6 +58,7 @@ struct DemandDenialEvidence {
     capacity_stop: Option<
         crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop,
     >,
+    retirement: Option<std::sync::Arc<worth_relational::facade::publication::PublicationError>>,
 }
 
 impl WorthQueryOutputDemandDenial {
@@ -120,7 +125,7 @@ impl WorthQueryOutputDemandDenial {
     ) -> Result<(), super::WorthQueryOutputReadCloseDenial> {
         if let Some(cleanup) = self.cleanup.as_mut() {
             cleanup.close_read(phase, &mut |recovery| {
-                runtime.close_read_product_publication_recovery_in_advancement(phase, recovery)
+                runtime.close_product_publication_recovery_in_advancement(phase, recovery)
             })?;
         }
         Ok(())
@@ -388,3 +393,5 @@ mod charged_bytes;
 mod managed_index;
 
 mod managed_source_query;
+
+mod court_doors_for_test;

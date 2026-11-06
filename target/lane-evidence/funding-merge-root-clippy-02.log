@@ -1,0 +1,156 @@
+command: python scripts/application_build.py cargo clippy --workspace --all-targets
+HEAD: 25619ac5d1ae6092ab5a91bc4b7123be6042475c
+git_status_short_empty: false
+start_utc: 2026-11-06T16:37:00.692350+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+    Checking worth-foundational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-foundational)
+    Checking axum v0.8.9
+    Checking js-sys v0.3.106
+    Checking console_error_panic_hook v0.1.7
+    Checking serde-wasm-bindgen v0.6.5
+    Checking worth-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-execution)
+    Checking worth-store-aspect-native v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-aspect-native)
+    Checking worth-query-declaration v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-declaration)
+    Checking worth-testkit-foundational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-testkit-foundational)
+    Checking worth-signal v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-signal)
+    Checking worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+    Checking worth-court-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-execution)
+    Checking worth-store-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-authority)
+    Checking worth-court-foundational-expressions v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-foundational-expressions)
+    Checking worth-court-foundational-certification-boundary-evidence v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-foundational-certification-boundary-evidence)
+    Checking worth-court-foundational-certification-boundary-artifacts v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-foundational-certification-boundary-artifacts)
+    Checking worth-query-installation v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-installation)
+    Checking worth-query-decl v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-decl)
+warning: unused import: `apply_original_intents_to_working_state`
+  --> crates\worth-relational\src\authority\mutation\mod.rs:26:5
+   |
+26 |     apply_original_intents_to_working_state, apply_plan_to_working_state, MutationApplyOutcome,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+    Checking worth-store-physical-format v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-physical-format)
+    Checking worth-store-security v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-security)
+    Checking worth-store-modes v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-modes)
+warning: unused imports: `OriginalRecordAllocationCursor` and `OriginalSymbolMeanings`
+ --> crates\worth-relational\src\runtime\mod.rs:5:37
+  |
+5 |     OriginalEmptySchemaObservation, OriginalRecordAllocationCursor, OriginalSymbolMeanings,
+  |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^
+
+    Checking worth-query-admission v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-admission)
+    Checking worth-store-physical-integrity v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-physical-integrity)
+    Checking worth-store-wal v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-wal)
+error[E0599]: no variant, associated function, or constant named `Content` found for enum `worth_foundational::AspectShape` in the current scope
+   --> crates\worth-relational\src\durability\checkpoints\aspect_state_images\readmission_funding.rs:109:24
+    |
+109 |         | AspectShape::Content => {}
+    |                        ^^^^^^^ variant, associated function, or constant not found in `worth_foundational::AspectShape`
+
+    Checking worth-store-physical-backend v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-physical-backend)
+    Checking worth-store-buffer-pool v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-buffer-pool)
+    Checking worth-store-recovery-physics v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-recovery-physics)
+    Checking worth-store-physical-isolation v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-physical-isolation)
+    Checking worth-store-io-scheduler v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-io-scheduler)
+error[E0004]: non-exhaustive patterns: `durability::data::recovery_stop::RelationalRecoveryStop::Content(_)` not covered
+  --> crates\worth-relational\src\durability\checkpoints\images.rs:73:28
+   |
+73 |     .map_err(|cause| match cause {
+   |                            ^^^^^ pattern `durability::data::recovery_stop::RelationalRecoveryStop::Content(_)` not covered
+   |
+note: `durability::data::recovery_stop::RelationalRecoveryStop` defined here
+  --> crates\worth-relational\src\durability\data\recovery_stop.rs:18:10
+   |
+18 | pub enum RelationalRecoveryStop {
+   |          ^^^^^^^^^^^^^^^^^^^^^^
+...
+23 |     Content(crate::content::RelationalContentDenial),
+   |     ------- not covered
+   = note: the matched value is of type `durability::data::recovery_stop::RelationalRecoveryStop`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+   |
+77 ~         },
+78 +         durability::data::recovery_stop::RelationalRecoveryStop::Content(_) => todo!()
+   |
+
+    Checking worth-signal-wasm v1.6.4 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-signal-wasm)
+    Checking worth-court-signal-branch-retention-contract v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-signal-branch-retention-contract)
+    Checking worth-court-signal-owner-services v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-signal-owner-services)
+    Checking worth-store-reclaim-policy v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-reclaim-policy)
+    Checking worth-store-retention v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-retention)
+    Checking worth-store-lsm-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-lsm-authority)
+error[E0004]: non-exhaustive patterns: `storage::residency::demand_failure::RelationalResidencyDemandFailure::Content(_)` not covered
+   --> crates\worth-relational\src\storage\residency\region_load\materialization_funding.rs:154:11
+    |
+154 |     match cause {
+    |           ^^^^^ pattern `storage::residency::demand_failure::RelationalResidencyDemandFailure::Content(_)` not covered
+    |
+note: `storage::residency::demand_failure::RelationalResidencyDemandFailure` defined here
+   --> crates\worth-relational\src\storage\residency\demand_failure.rs:6:17
+    |
+  6 | pub(crate) enum RelationalResidencyDemandFailure {
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  9 |     Content(crate::content::RelationalContentDenial),
+    |     ------- not covered
+    = note: the matched value is of type `storage::residency::demand_failure::RelationalResidencyDemandFailure`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+    |
+158 ~         },
+159 +         storage::residency::demand_failure::RelationalResidencyDemandFailure::Content(_) => todo!()
+    |
+
+error[E0004]: non-exhaustive patterns: `durability::data::recovery_stop::RelationalRecoveryStop::Content(_)` not covered
+   --> crates\worth-relational\src\storage\residency\region_load\materialization_funding.rs:292:11
+    |
+292 |     match cause {
+    |           ^^^^^ pattern `durability::data::recovery_stop::RelationalRecoveryStop::Content(_)` not covered
+    |
+note: `durability::data::recovery_stop::RelationalRecoveryStop` defined here
+   --> crates\worth-relational\src\durability\data\recovery_stop.rs:18:10
+    |
+ 18 | pub enum RelationalRecoveryStop {
+    |          ^^^^^^^^^^^^^^^^^^^^^^
+...
+ 23 |     Content(crate::content::RelationalContentDenial),
+    |     ------- not covered
+    = note: the matched value is of type `durability::data::recovery_stop::RelationalRecoveryStop`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+    |
+302 ~         Stop::Durability(_) | Stop::AdmissionImage(_) => at_region(damaged(), partition),
+303 ~         durability::data::recovery_stop::RelationalRecoveryStop::Content(_) => todo!(),
+    |
+
+error[E0004]: non-exhaustive patterns: `storage::residency::demand_failure::RelationalResidencyDemandFailure::Content(_)` not covered
+   --> crates\worth-relational\src\storage\residency\region_load.rs:348:11
+    |
+348 |     match cause {
+    |           ^^^^^ pattern `storage::residency::demand_failure::RelationalResidencyDemandFailure::Content(_)` not covered
+    |
+note: `storage::residency::demand_failure::RelationalResidencyDemandFailure` defined here
+   --> crates\worth-relational\src\storage\residency\demand_failure.rs:6:17
+    |
+  6 | pub(crate) enum RelationalResidencyDemandFailure {
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  9 |     Content(crate::content::RelationalContentDenial),
+    |     ------- not covered
+    = note: the matched value is of type `storage::residency::demand_failure::RelationalResidencyDemandFailure`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+    |
+353 ~         },
+354 +         storage::residency::demand_failure::RelationalResidencyDemandFailure::Content(_) => todo!()
+    |
+
+    Checking worth-court-signal-wasm v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-signal-wasm)
+Some errors have detailed explanations: E0004, E0599.
+For more information about an error, try `rustc --explain E0004`.
+warning: `worth-relational` (lib) generated 2 warnings
+error: could not compile `worth-relational` (lib) due to 5 previous errors; 2 warnings emitted
+warning: build failed, waiting for other jobs to finish...
+
+end_utc: 2026-11-06T16:39:10.563025+00:00
+exit_code: 101
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

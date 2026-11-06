@@ -1,6 +1,7 @@
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use worth_foundational::CanonicalDigestId;
 
 use sha2::{Digest, Sha256};
 use worth_store_offline_verifier::OperationalTruthReport;
@@ -30,17 +31,17 @@ pub const OFFLINE_TRUTH_TARGET_ENV: &str = "WORTH_STORE_S10_OFFLINE_TRUTH_TARGET
 #[derive(Debug)]
 pub struct FreshProcessOfflineTruthBaseline {
     target: PathBuf,
-    live_digest: [u8; 32],
+    live_digest: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FreshProcessDestroyedPrimaryEvidence {
-    live_digest: [u8; 32],
-    damaged_digest: [u8; 32],
-    source_inspection_identity: [u8; 32],
-    truth_evidence_identity: [u8; 32],
+    live_digest: CanonicalDigestId,
+    damaged_digest: CanonicalDigestId,
+    source_inspection_identity: CanonicalDigestId,
+    truth_evidence_identity: CanonicalDigestId,
     observer_process_id: u32,
-    evidence_identity: [u8; 32],
+    evidence_identity: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -81,12 +82,12 @@ impl FreshProcessOfflineTruthBaseline {
             sha256_file(&target).ok_or(FreshProcessOfflineTruthDenial::BaselineUnavailable)?;
         Ok(Self {
             target,
-            live_digest,
+            live_digest: CanonicalDigestId::new(live_digest),
         })
     }
 
     pub const fn live_digest(&self) -> [u8; 32] {
-        self.live_digest
+        *self.live_digest.bytes()
     }
 }
 
@@ -123,14 +124,14 @@ impl FreshProcessOfflineTruthRunner {
             .ok_or(FreshProcessOfflineTruthDenial::ExecutableMismatch)?;
         let damaged_digest = sha256_file(&baseline.target)
             .ok_or(FreshProcessOfflineTruthDenial::BaselineUnavailable)?;
-        if damaged_digest == baseline.live_digest {
+        if damaged_digest == *baseline.live_digest.bytes() {
             return Err(FreshProcessOfflineTruthDenial::TargetNotDamaged);
         }
         let mut subject = Sha256::new();
         subject.update(b"worth-store-s10-offline-truth-subject-v1");
         subject.update((scenario_identity.len() as u64).to_le_bytes());
         subject.update(scenario_identity.as_bytes());
-        subject.update(baseline.live_digest);
+        subject.update(baseline.live_digest.bytes());
         subject.update(damaged_digest);
         let subject: [u8; 32] = subject.finalize().into();
         let challenge = fresh_challenge(
@@ -239,11 +240,11 @@ pub fn write_offline_truth_observation_from_environment(
     write_report(
         &report_path,
         &FreshProcessTruthReport {
-            challenge,
+            challenge: CanonicalDigestId::new(challenge),
             observer_process_id: std::process::id(),
-            source_inspection_identity: truth.source_inspection_identity(),
-            truth_evidence_identity: truth.truth_evidence_identity(),
-            observed_content_digest: region.evidence().content_digest(),
+            source_inspection_identity: CanonicalDigestId::new(truth.source_inspection_identity()),
+            truth_evidence_identity: CanonicalDigestId::new(truth.truth_evidence_identity()),
+            observed_content_digest: CanonicalDigestId::new(region.evidence().content_digest()),
             region_kind: TruthRegionKind::from_region(region),
             start,
             end,
@@ -260,19 +261,21 @@ fn validate_report(
     damaged_digest: [u8; 32],
     executable_identity: [u8; 32],
 ) -> Result<FreshProcessDestroyedPrimaryEvidence, FreshProcessOfflineTruthDenial> {
-    if report.challenge != challenge {
+    if *report.challenge.bytes() != challenge {
         return Err(FreshProcessOfflineTruthDenial::ChallengeMismatch);
     }
     if report.observer_process_id == 0 || report.observer_process_id == std::process::id() {
         return Err(FreshProcessOfflineTruthDenial::SameProcessObservation);
     }
-    if report.observed_content_digest != damaged_digest {
+    if *report.observed_content_digest.bytes() != damaged_digest {
         return Err(FreshProcessOfflineTruthDenial::ChildDisagreedWithDamagedBytes);
     }
     if report.region_kind == TruthRegionKind::TrustedAuthority {
         return Err(FreshProcessOfflineTruthDenial::TargetRemainedTrustedAuthority);
     }
-    if report.source_inspection_identity == [0; 32] || report.truth_evidence_identity == [0; 32] {
+    if *report.source_inspection_identity.bytes() == [0; 32]
+        || *report.truth_evidence_identity.bytes() == [0; 32]
+    {
         return Err(FreshProcessOfflineTruthDenial::InvalidTruthIdentity);
     }
     let length = std::fs::metadata(&baseline.target)
@@ -286,19 +289,19 @@ fn validate_report(
     digest.update(b"worth-store-s10-destroyed-primary-evidence-v1");
     digest.update(executable_identity);
     digest.update(challenge);
-    digest.update(baseline.live_digest);
+    digest.update(baseline.live_digest.bytes());
     digest.update(damaged_digest);
-    digest.update(report.source_inspection_identity);
-    digest.update(report.truth_evidence_identity);
+    digest.update(report.source_inspection_identity.bytes());
+    digest.update(report.truth_evidence_identity.bytes());
     digest.update(report.observer_process_id.to_be_bytes());
     digest.update([report.region_kind as u8]);
     Ok(FreshProcessDestroyedPrimaryEvidence {
         live_digest: baseline.live_digest,
-        damaged_digest,
+        damaged_digest: CanonicalDigestId::new(damaged_digest),
         source_inspection_identity: report.source_inspection_identity,
         truth_evidence_identity: report.truth_evidence_identity,
         observer_process_id: report.observer_process_id,
-        evidence_identity: digest.finalize().into(),
+        evidence_identity: CanonicalDigestId::new(digest.finalize().into()),
     })
 }
 
@@ -324,22 +327,22 @@ fn sha256_file(path: &Path) -> Option<[u8; 32]> {
 
 impl FreshProcessDestroyedPrimaryEvidence {
     pub const fn live_digest(self) -> [u8; 32] {
-        self.live_digest
+        *self.live_digest.bytes()
     }
     pub const fn damaged_digest(self) -> [u8; 32] {
-        self.damaged_digest
+        *self.damaged_digest.bytes()
     }
     pub const fn source_inspection_identity(self) -> [u8; 32] {
-        self.source_inspection_identity
+        *self.source_inspection_identity.bytes()
     }
     pub const fn truth_evidence_identity(self) -> [u8; 32] {
-        self.truth_evidence_identity
+        *self.truth_evidence_identity.bytes()
     }
     pub const fn observer_process_id(self) -> u32 {
         self.observer_process_id
     }
     pub const fn evidence_identity(self) -> [u8; 32] {
-        self.evidence_identity
+        *self.evidence_identity.bytes()
     }
 }
 

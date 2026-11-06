@@ -56,6 +56,8 @@ pub use super::workflow::{
     UnlinkReviewRequirementHandler, WorkflowGrantStatusBinding, WorkflowGrantStatusHandler,
 };
 
+#[path = "host/auxiliary_programs.rs"]
+mod auxiliary_programs;
 #[path = "host/checkpoint_restore.rs"]
 pub mod checkpoint_restore;
 #[path = "host/trusted_time.rs"]
@@ -94,6 +96,9 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
         setup.handler::<super::actor_generation::ActorLifecycleBinding, _>(
             super::actor_generation::ActorLifecycleHandler,
         )?;
+        setup.handler::<super::model_lifecycle::ModelLifecycleBinding, _>(
+            super::model_lifecycle::ModelLifecycleHandler,
+        )?;
         setup.handler::<super::record_history::reaffirm::Binding, _>(
             super::record_history::reaffirm::Handler,
         )?;
@@ -108,7 +113,7 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
             resolve_second_rule,
         )?;
         setup
-            .handler::<SetRetentionBinding, _>(SetRetentionHandler)
+            .handler::<SetRetentionBinding, _>(SetRetentionHandler::default())
             .and_then(|()| {
                 setup.handler::<super::correctable_retention::CorrectableRetentionBinding, _>(
                     ReviewedSetRetentionHandler,
@@ -147,7 +152,7 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
 
 /// Publishes a host whose first occurrence runs P0, with P1 rostered beside it.
 pub fn publish_on_first_program() -> DocumentRetentionRuntime<RetentionProgramP0> {
-    publish_on_first_program_with_limits(host_limits())
+    publish_on_first_program_with_limits(host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()))
 }
 
 /// Scale publication lane with WorkflowScale's Relational publication and
@@ -156,7 +161,7 @@ pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime
 {
     publish_on_first_program_with_limits(
         WorthQueryInMemoryApplicationLimits::new(
-            world_resources(1_024, 256 * 1024 * 1024, 2_048),
+            world_resources(1_024, 256 * 1024 * 1024, 2_048, worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
             runtime::WorthQueryApplicationQueryResourceProfile::new(
                 std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
             ),
@@ -237,7 +242,7 @@ where
                 DocumentRetentionSchema,
             >,
 {
-    publish_with_limits(initial, roster, host_limits())
+    publish_with_limits(initial, roster, host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()))
 }
 
 pub fn publish_with_limits<Initial>(
@@ -256,11 +261,10 @@ where
                 DocumentRetentionSchema,
             >,
 {
+    let roster = auxiliary_programs::include(roster, initial.identity(), initial.revision());
     in_memory_rostered_program(
         initial,
-        // The installed lifecycle binding is owned by this explicitly rostered
-        // program, not implicitly added to P0/P1 or the alternative programs.
-        roster.support(super::actor_generation::validated_actor_program()),
+        roster,
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),

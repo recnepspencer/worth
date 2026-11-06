@@ -7,6 +7,7 @@ use super::corruption::{self, Operator, IDENTITY};
 use super::process_roles::{execute, Request, Role};
 use sha2::{Digest, Sha256};
 use std::path::Path;
+use worth_foundational::CanonicalDigestId;
 
 pub(in crate::c9_integrity_localization) fn run(observer: &Path) {
     let temporary = tempfile::tempdir().unwrap();
@@ -60,8 +61,11 @@ pub(in crate::c9_integrity_localization) fn run(observer: &Path) {
             root: root.clone(),
             role,
             report: reports.join(format!("{}.{suffix}.json", operator.label())),
-            scenario,
-            run: fresh_identity(&format!("{}-{suffix}", operator.label()), world),
+            scenario: CanonicalDigestId::new(scenario),
+            run: CanonicalDigestId::new(fresh_identity(
+                &format!("{}-{suffix}", operator.label()),
+                world,
+            )),
         };
         let edited = execute(request_for("editor", Role::Editor(operator)));
         assert_eq!(edited["operator"], operator.label());
@@ -91,7 +95,7 @@ pub(in crate::c9_integrity_localization) fn run(observer: &Path) {
         assert_eq!(offline.report["scenario"], hex(scenario));
         assert_eq!(offline.report["run"], hex(offline_run));
         assert_eq!(
-            offline.executable_sha256,
+            *offline.executable_sha256.bytes(),
             executable_sha256(observer).unwrap()
         );
         before.require_unchanged(&root).unwrap();

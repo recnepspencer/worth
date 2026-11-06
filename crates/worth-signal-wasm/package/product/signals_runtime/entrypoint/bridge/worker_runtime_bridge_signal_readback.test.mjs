@@ -61,6 +61,34 @@ test("createWorkerRuntimeBridge reads committed source and derived signal truth 
   }
 });
 
+test("worker bulk readback preserves request order across cold and changed dependency chains", async () => {
+  const previousWorker = globalThis.Worker;
+  globalThis.Worker = NodeWorker;
+  const { createWorkerRuntimeBridge, cleanup } = await loadSignalsModule({ rawSurface: "real" });
+  const bridge = createWorkerRuntimeBridge();
+  try {
+    await bridge.publishPortableGraph({ policy: { preset: "operational" },
+      sources: [{ id: "source", initial: 2 }],
+      recipes: [
+        { id: "middle", reads: ["source"], expr: { kind: "sum",
+          args: [{ kind: "read", id: "source" }, { kind: "value", value: 1 }] }, identity: { kind: "exact" } },
+        { id: "last", reads: ["middle"], expr: { kind: "sum",
+          args: [{ kind: "read", id: "middle" }, { kind: "value", value: 1 }] }, identity: { kind: "exact" } },
+      ] });
+    const read = () => bridge.readSignals({ signalIds: ["last", "source", "middle"] });
+    assert.deepEqual((await read()).signals.map(({ id, value }) => [id, value]),
+      [["last", 4], ["source", 2], ["middle", 3]]);
+    await bridge.applyTransaction([{ kind: "set", id: "source", value: 8 }]);
+    await assert.rejects(bridge.readSignals({ signalIds: ["last", "missing"] }), /unknown signal id/);
+    assert.deepEqual((await read()).signals.map(({ id, value }) => [id, value]),
+      [["last", 10], ["source", 8], ["middle", 9]]);
+  } finally {
+    await bridge.terminate();
+    await cleanup();
+    globalThis.Worker = previousWorker;
+  }
+});
+
 test("createWorkerRuntimeBridge signal readback rejects malformed signal batches before claiming worker truth", async () => {
   const previousWorker = globalThis.Worker;
   globalThis.Worker = NodeWorker;

@@ -165,6 +165,12 @@ pub struct WorthQueryAdvancementPhase<'scope> {
 }
 
 impl<'scope> WorthQueryAdvancementPhase<'scope> {
+    pub(in crate::domain_computation) fn world_owner(
+        &self,
+    ) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
+        self.owner
+    }
+
     fn admitted_request(&self) -> ExecutionRequest<'scope, 'scope> {
         self.active
             .execution
@@ -185,6 +191,18 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
         runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     ) -> Result<ExecutionRequest<'scope, 'scope>, super::WorthQueryAdvancementDenial> {
         self.execution_request_for(runtime).map_err(Into::into)
+    }
+
+    /// Checks the receiving runtime and this phase's current interruption state.
+    pub fn check_live_for(
+        &self,
+        runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+    ) -> Result<(), super::WorthQueryAdvancementDenial> {
+        self.checked_execution_request_for(runtime)?
+            .check_live()
+            .map_err(|stop| {
+                super::advancement_denial(worth_execution::WorkCeilingDenial::Stopped(stop))
+            })
     }
 
     pub(crate) fn request_for_owner(
@@ -227,14 +245,15 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     }
 }
 
-#[cfg(test)]
 impl<'scope> WorthQueryAdvancementPhase<'scope> {
     pub(crate) fn test_host_request(&self) -> super::test_host_policy::TestHostRequest<'scope> {
         super::test_host_policy::TestHostRequest::from_installed(self)
     }
 
     /// Budget-only fixture controls borrow the existing host request.
-    pub(crate) fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
+    pub fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
         self.admitted_request()
     }
 }
+
+mod court_doors_for_test;

@@ -14,14 +14,15 @@ pub struct SchemaAuthoritySnapshot {
     pub primary_schema_version_id: Option<SchemaVersionId>,
     pub entity_kinds: Vec<SchemaAuthorityKindSnapshot>,
     pub relation_kinds: Vec<SchemaAuthorityRelationSnapshot>,
-    /// Complete executable recipes. Empty legacy authorities keep their text
-    /// representation and V2 digest unchanged.
+    /// Complete executable recipes. Older decoding defaults remain separate
+    /// from the required content-format authority below.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub derived_relations: Vec<crate::derived_relation::DerivedRelationDefinitionParts>,
-    /// The optional finite member-domain authority. Physical-only encodings
-    /// and digests acquire no new field or suffix.
+    /// The finite member-domain authority retains its older decoding default.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub projected_member_domains: Vec<crate::projected_member_domain::ProjectedMemberDomainParts>,
+    /// Required even when no content format is installed.
+    pub content_formats: crate::content::RelationalContentSchemaSnapshot,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -77,7 +78,8 @@ impl SchemaAuthoritySnapshot {
                 entity_storage
                     .saturating_add(relation_storage)
                     .saturating_add(derived_storage)
-                    .saturating_add(domain_storage),
+                    .saturating_add(domain_storage)
+                    .saturating_add(self.content_formats.owned_bytes()),
                 |bytes, kind| bytes.saturating_add(kind.kind_name.capacity() as u64),
             )
             .saturating_add(
@@ -90,6 +92,16 @@ impl SchemaAuthoritySnapshot {
 }
 
 pub fn schema_authority_snapshot_digest_bytes(snapshot: &SchemaAuthoritySnapshot) -> [u8; 32] {
+    schema_authority_snapshot_digest_for_compilation(
+        snapshot,
+        crate::schema::SchemaCompilationControl::Configuration,
+    )
+    .expect("configuration schema digest has no request refusal")
+}
+pub(crate) fn schema_authority_snapshot_digest_for_compilation(
+    snapshot: &SchemaAuthoritySnapshot,
+    control: crate::schema::SchemaCompilationControl<'_, '_>,
+) -> Result<[u8; 32], crate::execution::RelationalExecutionDenialCause> {
     let mut hasher = Sha256::new();
     hasher.update(b"WORTH_SCHEMA_AUTHORITY_SNAPSHOT_V2");
     if let Some(schema_id) = &snapshot.primary_schema_id {
@@ -106,6 +118,7 @@ pub fn schema_authority_snapshot_digest_bytes(snapshot: &SchemaAuthoritySnapshot
     }
     update_count(&mut hasher, snapshot.entity_kinds.len());
     for entity_kind in &snapshot.entity_kinds {
+        control.checkpoint()?;
         hasher.update(b"entity_kind\0");
         hasher.update(entity_kind.kind_id.0.to_le_bytes());
         update_bytes(&mut hasher, entity_kind.kind_name.as_bytes());
@@ -115,6 +128,7 @@ pub fn schema_authority_snapshot_digest_bytes(snapshot: &SchemaAuthoritySnapshot
     }
     update_count(&mut hasher, snapshot.relation_kinds.len());
     for relation_kind in &snapshot.relation_kinds {
+        control.checkpoint()?;
         hasher.update(b"relation_kind\0");
         hasher.update(relation_kind.kind_id.0.to_le_bytes());
         update_bytes(&mut hasher, relation_kind.kind_name.as_bytes());
@@ -132,15 +146,34 @@ pub fn schema_authority_snapshot_digest_bytes(snapshot: &SchemaAuthoritySnapshot
             relation_kind.cascade_delete_policy,
         )]);
     }
-    crate::derived_relation::canonical::update_digest(&mut hasher, &snapshot.derived_relations);
-    crate::projected_member_domain::canonical::update_digest(
+    crate::derived_relation::canonical::update_digest_for_compilation(
+        &mut hasher,
+        &snapshot.derived_relations,
+        control,
+    )?;
+    crate::projected_member_domain::canonical::update_digest_for_compilation(
         &mut hasher,
         &snapshot.projected_member_domains,
-    );
+        control,
+    )?;
+    hasher.update(b"worth.native.content-schema.v1\0");
+    update_count(&mut hasher, snapshot.content_formats.formats().len());
+    for format in snapshot.content_formats.formats() {
+        hasher.update(format.identity);
+        update_bytes(&mut hasher, format.descriptor.name().as_bytes());
+        hasher.update(format.descriptor.version().to_le_bytes());
+        hasher.update(format.maximum_frame_bytes.to_le_bytes());
+    }
+    update_count(&mut hasher, snapshot.content_formats.fields().len());
+    for field in snapshot.content_formats.fields() {
+        hasher.update(field.field_meaning);
+        hasher.update(field.format);
+    }
     let digest = hasher.finalize();
     let mut out = [0_u8; 32];
     out.copy_from_slice(&digest);
-    out
+    control.checkpoint()?;
+    Ok(out)
 }
 
 fn update_count(hasher: &mut Sha256, count: usize) {

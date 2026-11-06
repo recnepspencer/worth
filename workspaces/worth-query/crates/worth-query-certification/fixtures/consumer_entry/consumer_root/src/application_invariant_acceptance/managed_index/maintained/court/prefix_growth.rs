@@ -1,6 +1,7 @@
 //! Real prefix populations, whole original SDK invoices and authored membership.
 use super::super::{authoring, geometry, schema::Catalog};
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use worth_execution::{
     CancellationSource, ExecutionWorkCeiling, SerialMemoryBudget, SerialRequest,
 };
@@ -59,12 +60,13 @@ fn local_guard(first: (u64, u64), doubled: (u64, u64)) {
     }
 }
 fn journey(local: u32, remote: u32, invalid_batches: bool) -> (u64, u64) {
-    let provider = Arc::new(prefix::Calls::default());
+    let provider = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(provider.clone()));
     let world = host::install_growth(
         provider.clone(),
         rules.clone(),
         geometry::Configuration::default(),
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let scope = authentication::request_scope();
     let principal = authenticate(&world, &scope);
@@ -144,7 +146,7 @@ fn journey(local: u32, remote: u32, invalid_batches: bool) -> (u64, u64) {
             .all(|record| record.updates_before_callback >= updates + 2));
         assert!(records
             .iter()
-            .any(|record| values(&record.after) == expected("B", "taken", "taken")));
+            .any(|record| values(&record.source.after) == expected("B", "taken", "taken")));
     }
     selection::check(
         &world,
@@ -187,7 +189,7 @@ fn journey(local: u32, remote: u32, invalid_batches: bool) -> (u64, u64) {
             .all(|record| record.updates_before_callback >= updates + 4));
         assert!(records
             .iter()
-            .any(|record| values(&record.after) == expected("B", "free", "taken")));
+            .any(|record| values(&record.source.after) == expected("B", "free", "taken")));
     }
     selection::census(&world, &fresh_principal, &fresh_scope, &items, "free");
     selection::check(

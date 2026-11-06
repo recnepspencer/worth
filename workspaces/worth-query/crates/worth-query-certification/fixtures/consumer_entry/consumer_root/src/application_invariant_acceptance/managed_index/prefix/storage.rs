@@ -1,5 +1,6 @@
 //! Controlled finite operations consumed by the Query-free AVL mechanism.
 use super::*;
+use std::sync::Mutex;
 use worth_query_consumer_values::{compare_prefix_keys, PrefixBuildStorage};
 
 pub(super) struct Build<'call, 'source, 'node, 'control, I: PrefixSourceIndex> {

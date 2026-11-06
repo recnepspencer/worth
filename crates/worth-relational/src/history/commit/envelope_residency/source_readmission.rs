@@ -59,13 +59,27 @@ impl RelationalCommitEnvelopeResidency {
             subject: RelationalStorageSubject::Envelope(entry.position),
             cause,
         };
-        let bytes = source.read_commit(entry.position, limit).map_err(failure)?;
-        let artifact = RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes)
-            .map_err(|_| failure(Cause::Damaged))?;
+        let read_limit =
+            limit.min(crate::durability::canonical_commit_artifact::MAXIMUM_ARTIFACT_BYTES as u64);
+        let reservation = execution
+            .reserve_retained_memory(read_limit)
+            .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
+        let bytes = source
+            .read_commit(entry.position, read_limit)
+            .map_err(failure)?;
+        let artifact = RelationalCanonicalCommitArtifact::copy_frame_original(&bytes, execution)
+            .map_err(|cause| match cause {
+                crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial::Request(cause) => RelationalRecoveryStop::Request(cause),
+                crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial::Allocation(cause) => RelationalRecoveryStop::Allocation(cause),
+                crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial::Frame(cause) => crate::durability::data::RelationalNativeCheckpointCaptureDenial::ArtifactFrame(cause).into(),
+            })?;
+        drop(bytes);
+        drop(reservation);
         Self::check_frame(entry, &artifact)?;
-        let admitted = RelationalCanonicalCommitArtifact::readmit(artifact.as_bytes(), execution)
+        let admitted = artifact.readmit_framed(execution)
             .map_err(|error| match error {
                 crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Request(cause) => RelationalRecoveryStop::Request(cause),
+                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Content(cause) => cause.into(),
                 crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::FieldText(cause) => crate::symbols::data::field_text_recovery_stop(cause),
                 _ => failure(Cause::Damaged).into(),
             })?.into_positioned();
@@ -77,9 +91,10 @@ impl RelationalCommitEnvelopeResidency {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
         Self::check_frame(entry, &artifact)?;
-        let admitted=artifact.readmit_owned(execution).map_err(|error| match error {
+        let admitted=artifact.readmit_framed(execution).map_err(|error| match error {
             crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Request(cause)=>RelationalRecoveryStop::Request(cause),
-            crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::FieldText(cause)=>crate::symbols::data::field_text_recovery_stop(cause),
+            crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Content(cause) => cause.into(),
+                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::FieldText(cause)=>crate::symbols::data::field_text_recovery_stop(cause),
             _=>RelationalStorageUnavailable{subject:RelationalStorageSubject::Envelope(entry.position),cause:Cause::Damaged}.into(),
         })?.into_positioned();
         Self::check_positioned(entry, admitted, execution)

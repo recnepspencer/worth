@@ -163,7 +163,7 @@ fn cached_results_require_current_result_read_and_independent_mutation_authority
     let retry = storage.claim(&model, &reviewer, &loaded, 823).unwrap();
     assert!(matches!(
         retry.evidence(),
-        WorthQuerySourceCompletion::Recovered { .. }
+        WorthQuerySourceCompletion::Recorded { .. }
     ));
     drop(retry);
     assert_eq!(model.describe(&reviewer).unwrap(), before);

@@ -47,7 +47,6 @@ impl<'member> WorthQueryMemberExecution<'member> {
             charge: self.charge,
             poll: self.poll,
             refused: None,
-            #[cfg(test)]
             native: None,
         }
     }
@@ -75,7 +74,6 @@ impl<'member> WorthQueryMemberExecution<'member> {
         )
     }
 
-    #[cfg(test)]
     pub(super) fn into_parts(
         self,
     ) -> (
@@ -92,3 +90,5 @@ impl<'member> WorthQueryMemberExecution<'member> {
         self.execution.interruption()
     }
 }
+
+mod court_doors_for_test;

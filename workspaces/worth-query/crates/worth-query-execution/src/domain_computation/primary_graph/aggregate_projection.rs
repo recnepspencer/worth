@@ -30,7 +30,7 @@ pub(super) struct WorthQueryIncomingSumKey {
 }
 
 #[derive(Clone, Default)]
-pub(super) struct WorthQueryAggregateProjections {
+pub struct WorthQueryAggregateProjections {
     incoming_sums: BTreeMap<WorthQueryIncomingSumKey, WorthQueryIncomingSumGeneration>,
 }
 
@@ -343,3 +343,5 @@ mod tests {
         );
     }
 }
+
+mod court_doors_for_test;

@@ -123,7 +123,7 @@ fn ownership_at_creation(
         return Err("relation lacks exact canonical Created operation".into());
     }
     let kind = row.kind_id().ok_or("relation kind absent")?;
-    let birth = if envelope.required_output_origin.is_some() {
+    let birth = if envelope.output_origins().next().is_some() {
         actual_birth_endpoints(patch, birth, kind, context)?
     } else {
         birth
@@ -141,7 +141,7 @@ fn classify(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {
     let mut producer_owned = false;
-    if let Some(origin) = envelope.required_output_origin.as_deref() {
+    for origin in envelope.output_origins() {
         charge(
             context,
             origin.relations.len()
@@ -153,8 +153,13 @@ fn classify(
                 + selected.birth_producer.len()
                 + 2 * std::mem::size_of::<[u8; 32]>(),
         )?;
-        let origin = envelope.validate_output_membership_header()?;
+        let origin = envelope.output_origin_for_route(&origin.meaning, context)?;
         let entry = origin.relations.iter().find(|entry| entry.id == id);
+        // Multi-publication restore names the unique owning route explicitly.
+        // Another group's endpoint reference never transfers this edge's custody.
+        if envelope.authored_cascade_restoration.is_some() && entry.is_none() {
+            continue;
+        }
         let (_, source, target) =
             native_birth.ok_or("producer-side actual relation creation endpoints unavailable")?;
         let endpoints = match entry {
@@ -177,7 +182,7 @@ fn classify(
             || origin.outputs.binary_search(&endpoints.1).is_ok();
         if touches {
             entry.ok_or("producer-created incident relation is missing from its birth roster")?;
-            producer_owned = origin.meaning.same_route(&selected.meaning)
+            producer_owned |= origin.meaning.same_route(&selected.meaning)
                 && origin.birth == selected.birth
                 && origin.birth_producer == selected.birth_producer
                 && origin.birth_dependency == selected.birth_dependency;

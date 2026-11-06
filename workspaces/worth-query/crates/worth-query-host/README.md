@@ -17,30 +17,38 @@ internals.
 
 **Writing an application?** Start with
 [Build an Application](../../../../docs/build-an-application.md). It shows the real calls, in order: install
-the application graph (`application_installation::in_memory_program`), run
+or reopen a Home (`WorthQueryApplicationHomeRequest::open_in_advancement`), run
 program-owned actions (`retain_operation`, then fresh-request `advance`), install a workflow vocabulary
 and publish, start, and advance workflows, and adopt a new program on a
 branch. This README covers the host's deeper contracts.
 
-## Directory Home publication custody
+## Open, initialize and reopen a Home
 
-`WorthQueryApplicationHome` owns the physical Home and its lifecycle. Keep the
-Home while borrowing its program runtime; consuming Home close retains the
-same advanced owner on refusal. A retained program-runtime alias refuses
-before World seal, preserving the same serving Query. Post-seal refusal retains
-the original retiring owners; sealed ordinary ports cannot resume service.
+Construct `WorthQueryApplicationHomeRequest` with a `MemoryOnly` or
+`Directory(path)` location, the validated program, support roster, schema,
+contribution configuration, build identity, limits and `initial_state` callback.
+Call `open_in_advancement(&phase)` inside
+`application_contribution::with_bootstrap_advancement_from_request` using the
+original setup request. The outer result describes bootstrap entry; the inner
+result is the Home or `WorthQueryApplicationHomeOpenRefused`. Keep both failure
+boundaries distinct. [Build §4](../../../../docs/build-an-application.md#4-install-or-reopen)
+shows the caller sequence.
 
-Ordinary `OperationHandler` retirement covers the Home's registry entry, typed
-slot, original handler Arc and invocation capability. Supplier-internal shared
-state stays outside Home custody. An original erased-slot or active-handler
-alias refuses `Busy`; a supplier may explicitly refuse its own operational
-retirement. Retired handler payloads stay owned by the close result until its
-explicit unbudgeted `reclaim` (or ordinary abandonment).
+Keep the returned `WorthQueryApplicationHome` and borrow `home.runtime()` for
+requests. The Home owns its filesystem lease and lifecycle. Store decides
+whether a Directory is genuinely new: only that disposition invokes
+`initial_state`. A successful fresh open durably publishes completed seed/index
+installation before its first World root becomes available. An existing or
+partially initialized directory never becomes a fresh initialization opportunity.
+Do not rerun seed suppliers after an owning opening refusal.
 
-Fresh Directory bootstrap publishes its portable completion record after all
-seed batches and indexes succeed, before World genesis. Completion refusal
-retains accepted seeds and the same Home through the existing owning opening
-refusal; initialization is not replayed. Memory bootstrap adds no extra commit.
+Fresh Memory and Directory bootstrap publish the same completion commit after
+all seed batches and indexes succeed, before World genesis. Its record binds
+installed package/schema meaning, the terminal seed receipt and aggregate
+counts; it gives Memory no durable association. Completion refusal retains
+accepted seeds; Directory keeps the same Home through its owning opening
+refusal, without replaying initialization. Retired development completion
+formats refuse Query readmission with a typed recovery denial; no migration runs.
 Reopen the same Directory with the same admitted schema/program meaning and
 ordinary Home request. Existing artifacts readmit their completion and program
 activation at the recovered World root; the initializer and seed suppliers
@@ -48,32 +56,21 @@ never run again. Reads use that published World basis even when an independent
 Native commit is newer. Recovered index definitions and their selected-basis
 generations must be admitted before service escapes.
 
-An exact old mutation key returns `RecoveredCommitted` with the original
-recorded receipt. Query reads the binding's creation artifact and the matching
-World occurrence; process evidence supplies no receipt fields. The receipt
-preserves Native meaning, old/new product references, original publication
-attempt, intent, outcome, emissions, output settlement, outbox and causality.
-It contains no live output capability or reconstructed Rust handler result.
-Use `recovered_receipt()` for that data and a fresh query for current state. Memory-only receipt heads remain explicitly memory scoped; their Native frame coordinates do not prove durable backing.
-A changed intent or foreign product affinity refuses before handler execution.
-Durable binding rows restore the outcome identity frontier before a new key can
-commit. Malformed or duplicate bindings return owning opening refusal.
+### Relational-only Directory installation
 
-For retained reads, pass the recovered data to
-`request.at_original_receipt(&phase, &receipt, maximum_history_work)` under a
-fresh authorized request. This selects through the current owner's real history
-and can refuse unavailable retained material. `at_recorded_commit` accepts the
-Home-scoped commit coordinate. Neither method turns recorded data into live
-publication or recovery authority. Owning source completion exposes recorded
-evidence through `recorded_receipt()` and already-held live evidence through
-`live_receipt()`; keep its publication and cleanup obligations until lawful close.
+Phases 3 and 4 support an owner-proven InitialEmpty Signal root and Bridge
+baseline. Ordinary Relational handlers, managed Native indexes, World resources
+and trusted authorization time use the shared installation owner. Arbitrary
+Signal graphs and installation that allocates Signal nodes or Bridge
+correspondence are unsupported, even when the first requested action would not
+change them.
 
-An ordinary Directory mutation can return `ProductPreparationPending` before
-or after Native effects. Keep that original terminal. Same-key requests observe
-the existing custody and must not replay the handler. Its explicit
-`try_into_recovery()` handoff can return the same terminal when busy; successful
-handoff abandons only the original World phase into its existing catalog. This
-uses ordinary owner destruction and is not a deadline-bounded conversion.
+Declared producers, conditionals and application resource pools refuse through
+one preparation check, before contribution configuration, initialization,
+physical Home creation or World bootstrap. Match
+`WorthQueryApplicationHomeOpenRefused::Preparation` and its
+`WorthQueryInMemoryApplicationDenial::UnsupportedSeed` cause. The cause carries
+`WorthQueryDurableStateAdmissionDenial::Unsupported { family, supported_from_phase }`:
 
 Inspect `next_actions()` through `facade::primary_graph::ProductUnpublishedNextAction`
 and the canonical `RuntimeWorldRecoveryDenial`. A persistent live open reports
@@ -85,55 +82,135 @@ successful close. The old Home's lease blocks concurrent opening, and old
 recovery handles cannot cross incarnations: obtain claims from the newly
 readmitted Home. Neither zero observed effects nor this diagnostic proves
 release, restores a proposal, or permits resubmission.
-Existing service requires zero actual retained World recovery custody. A Native
-effect beyond the published World head remains an owning refusal until recovered
-Query custody can be admitted. Original business-result readmission remains open
-work. Persisted workflow, outbox, inbound-completion and aftermath rows also
+Reopen admits actual recovered World custody and its original source-backed Query
+key before service. The original key returns `ProductUnpublished` with
+`RecoveredWithoutProductMovement`; its Native semantic result and predecessor
+remain original, without a reconstructed Rust return value. Obtain a fresh
+recovery claim from this Home. `continue_original_in_request` publishes that
+original occurrence without handler/effect replay; release records the durable
+disposition before removing live custody. Pending and refused actions retain the
+same catalog owner. An acknowledged `Continued` permits continuation, never
+release, including after another reopen. Persisted workflow, outbox, inbound-completion and aftermath rows also
 refuse cold service; compiled workflow declarations alone remain allowed.
 
-Before Directory service escapes, Store also inspects its actual reserved
-transition, Signal and Query obligation journals. An entry, unresolved journal
-publication or unavailable inspection returns owned opening refusal. Keep that
-refusal and use its consuming `close` route; it retains the same Home lease
-until actual close completes. Program activation equality alone does not
-establish that a pending transition has settled.
+MemoryOnly keeps its ordinary producer, conditional and resource installation.
+The richer contribution, output, workflow and adoption examples below use that
+lane. Directory operations requiring unsupported families return typed durable
+state admission refusals before effects. Do not substitute a MemoryOnly Home
+when persistence is required.
 
-Configure Directory checkpoint cadence with
-`WorthQueryApplicationHomeRequest::with_checkpoint_limits`. The default is
-4,096 uncovered entries or 64 MiB of uncovered payload in any one of the two
-Native and three World journals. Limits are finite, nonzero values. Counts are
-checked first; below the default entry threshold, byte inspection examines at
-most 4,095 actual suffix headers per journal. These headers schedule work;
-they do not establish payload integrity or checkpoint coverage.
+`WorthQueryApplicationHomeRequest::with_authorization_time_source(source)`
+installs a trusted `WorthQueryRuntimeTimeSource` for capability admission and
+revalidation in either location, including reopen. Opening does not sample the
+clock. When an authorization decision needs time, an unavailable source returns
+`TrustedTimeUnavailable`.
 
-`home.inspect_checkpoint(original_request)` reports the acknowledged prefixes,
-observed heads, due status and actual pending attempt. `home.checkpoint` requests
-manual capture; `home.recover_checkpoint` advances only the retained attempt.
-Both use the same Directory checkpoint owner as automatic maintenance. Memory
-Homes return `MemoryLifecycleRequired` through these Directory lifecycle doors.
-Inspection derives its state from owner observations rather than a separate
-counter or last-error ledger.
+### Writer contention and incarnation
 
-Directory program runtimes carry the same mandatory maintenance callback when
-cloned, including runtimes borrowed through `home.runtime()`. Maintenance runs
-after the business callback using its remaining original meter and controls.
-It preserves the exact business result or error, even when maintenance stops;
-preexisting own or joined stops prevent entering maintenance. It does not mint
-a fresh allowance. A pending checkpoint is recovered before a new due capture.
+Two processes opening the same Directory through the Host cannot both become
+writers. The process holding the real Store Application mutation lease serves;
+a competing opener receives the typed physical `MutationOwnerContended`
+refusal. After the writer dies without closing, a new process can acquire that
+lease and reopen the journal-only Home. Process death releases the lease; it
+does not attest to completed application cleanup.
 
-The coupled checkpoint selects both actual owner sections with one Home
-publication. World is captured first and Native later; Native may therefore be
-ahead of the World cut. Unknown selection or interrupted acknowledgement keeps
-the same sections, bytes, grants and attempt. Owning close requests this same
-operation while the stopped World and Serving Native remain owned. Unresolved
-custody refuses teardown; a settled checkpoint failure remains visible in the
-otherwise lawful close outcome.
+Each open has a new Home incarnation. A prior-open branch selector refuses with
+`WorthQueryProductBranchAdmissionRefusalKind::StaleIncarnation`, retained
+capability access with `WorthQueryApplicationInspectionStopKind::StaleIncarnation`,
+and a retained provider-session grant with
+`WorthQueryProviderSessionDenialKind::StaleIncarnation`. The receiving Home
+checks the fence before disclosure or provider effects, including before an old
+selector could resolve an otherwise valid idempotency key. Reacquire selectors,
+capabilities and sessions from the new runtime under fresh authority.
 
-`ProductPreparationRefused` is different: it retains unprepared Query input and
-the actual terminal cause, with no publication or retry door. Its business entry
-is released, but it may retain partial successor reservations. Discard the
-carrier before a resource-blocked fresh attempt; disposal is unbudgeted. Memory
-recovery retains its existing owner-specific actions.
+Retained capabilities and `WorthQueryProviderSessionGrant` carry their issued
+identity and grant without retaining the old Home's live ports. Advanced
+integrations call `runtime.prepare_provider_session_grant(&phase, grant, receiver)`
+with a lazy constructor for `WorthQueryProviderSessionReceiver`; the current
+receiver supplies live resources only after the incarnation check. Physically
+prepared sessions retain their original request and Drop-abort custody. Recorded
+occurrences and receipts are data that the new owner may admit; they are not old
+live capabilities.
+
+### Rebuild with a new implementation identity
+
+Issue a fresh `ApplicationBuildIdentity` UUID for every complete build. Opening
+the same supported Relational-only program/schema with that new identity is
+admitted, preserves authored binding and durable history, and does not rerun the
+initializer or eagerly regenerate anything. Producer installation is unsupported
+in this Directory lane. Same-build accepted-output reuse and regeneration on
+demand belong to Phase 6; rebuild admission alone does not qualify them.
+
+## Commitment and same-key retry
+
+An ordinary Directory mutation uses its stable original key, intent and selected
+product affinity. `WorthQueryApplicationMutationOutcome::Committed` returns the
+new live receipt and Rust result. A same-key retry can return `RecoveredCommitted`
+with `WorthQueryRecoveredApplicationCommitReceipt`, read from original owner
+artifacts without replaying the business handler. Changed intent refuses with
+`IdempotencyIntentDrift`; stale or foreign product selection refuses before an
+effect. Preserve the original key across response loss and process restart.
+
+Inspect `outcome.recovered_receipt()` for original Native semantics, old/new
+product references, publication attempt, intent, outcome identity and exact output
+settlement. This is recorded evidence, with no live output capability,
+`Performed` delivery, snapshot or reconstructed Rust handler result. Query current
+state separately. MemoryOnly receipt coordinates do not establish durable backing.
+For an authorized historical read, `request.at_original_receipt(&phase, &receipt,
+maximum_history_work)` asks the current owner to select that original occurrence;
+it may refuse unavailable history. `at_recorded_commit` takes a Home-scoped
+`DurableCompositeCommitIdentity` and also requires fresh owner admission.
+
+A timeout, cancellation or transport loss alone does not decide whether an effect
+committed. Keep returned `ProductPreparationPending`, `ProductUnpublished` or
+indeterminate custody. Same-key observations cannot replace its original owner.
+`try_into_recovery()` on pending preparation returns that original recovery
+custody, or the same pending terminal when busy. For a live persistent owner,
+`RuntimeWorldRecoveryDenial::ReopenRequired` and
+`ProductUnpublishedNextAction::ReopenRequired` direct the caller to preserve its
+stable data, end current Home ownership and reopen the same location. Old
+recovery handles cannot cross incarnations. Zero observed effects are not proof
+of no effect, and lower recovery does not recreate a Rust business result.
+
+Existing service refuses retained World recovery custody and unsupported
+persisted workflow, outbox, inbound-completion or aftermath state. Keep the owning
+opening refusal and follow its close route. `ProductPreparationRefused` is a
+terminal preparation failure, with no publication/retry door; its carrier may
+still own partial reservations until ordinary unbudgeted destruction.
+
+## Close a Directory Home
+
+Release ordinary request/read owners and runtime aliases, then consume the Home
+with `home.close(&original_request)`. A held alias, active owner, supplier refusal
+or interrupted cleanup returns `WorthQueryApplicationHomeCloseRefused` with the
+same actual custody. Inspect `query_denial()`, `directory_denial()` and `detail()`;
+retry that owner with `try_close(&fresh_request)` after addressing its cause.
+
+`resume()` returns the same serving Home only if refusal occurred before seal.
+After seal, the retained close task continues retirement; sealed ordinary ports
+do not resume service. Ordinary handler retirement consumes its installed
+registry entry, slot, handler Arc and invocation capability. An active-handler or
+erased-slot alias can refuse `Busy`; supplier-internal shared state retains its
+supplier contract. A successful `WorthQueryApplicationHomeClosed` reports
+`is_closed()` and `outcome()`. Its inert retired payloads remain owned until
+explicit unbudgeted `reclaim()` or abandonment. Dropping a Home is not successful
+close. The Directory close method does not provide a completed MemoryOnly close;
+its owning refusal can return the original MemoryOnly Home through `resume()`.
+
+Dispose of a development directory with
+`discard_home(WorthQueryApplicationHomeLocation::Directory(path))` only when its
+lease is free. Discard destroys its data; it is separate from close. A held lease
+refuses `MutationOwnerContended`. Interrupted discard leaves `discard.pending`,
+and opening refuses `DiscardPending` until another explicit discard completes.
+The next successful open after discard initializes a new Home identity.
+
+### Checkpoint admission — pending (owner P-A, D12)
+
+### Recovery after a selected checkpoint — pending (owner P-A, D12)
+
+### Development workflow with program transitions — pending (owner P-C, D16)
+
+### Durable branch creation — pending (owner P-C, after D12)
 
 ## Explain a query result or source operation
 
@@ -580,6 +657,9 @@ exact external-effect owner; `await_inbound` reads that result on fresh
 workflow advance. No callback or resume message advances an instance itself.
 
 ## Branch-Local Program Evolution
+
+This section uses MemoryOnly. Directory program transitions and durable branch
+creation remain pending under the owners named above.
 
 One host may roster multiple validated application programs over the same
 installed native contracts. A request enters the public path with

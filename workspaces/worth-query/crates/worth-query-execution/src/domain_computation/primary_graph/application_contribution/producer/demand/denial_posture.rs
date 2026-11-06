@@ -7,6 +7,30 @@ impl WorthQueryOutputDemandDenialKind {
     pub(super) fn default_recovery_posture(&self) -> WorthQueryOutputDemandRecoveryPosture {
         use WorthQueryOutputDemandRecoveryPosture::{Retryable, Terminal};
         match self {
+            Self::PublicationReceipt(stop) => {
+                use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind as Read;
+                match stop {
+                    Read::ForeignAdmission
+                    | Read::OriginalEffectReleased
+                    | Read::RecordedIntentUnverifiable
+                    | Read::RetentionIdentityExhausted
+                    | Read::SnapshotIdentityExhausted => Terminal,
+                    Read::PreparationBusy
+                    | Read::ExecutionDenied(_)
+                    | Read::Authorization(_)
+                    | Read::ActiveSnapshotCapacityExhausted { .. }
+                    | Read::RetentionCapacityExhausted
+                    | Read::ProviderUnavailable => Retryable,
+                }
+            }
+            Self::WorldRecovery(stop) => match stop {
+                worth_runtime_world::facade::RuntimeWorldRecoveryDenial::ForeignHandle
+                | worth_runtime_world::facade::RuntimeWorldRecoveryDenial::MissingRecord => {
+                    Terminal
+                }
+                _ => Retryable,
+            },
+            Self::RecoveryPublication(_) => Terminal,
             Self::ProductDelivery(_) => Terminal,
             Self::CorrespondenceDelivery(cause) => match cause.as_ref() {
                 worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop::Denied(_)
@@ -40,7 +64,7 @@ impl WorthQueryOutputDemandDenialKind {
                     Terminal
                 }
             }
-            Self::SchedulingDeferred => Retryable,
+            Self::SchedulingDeferred | Self::CurrentControlBusy => Retryable,
             Self::SourcePrincipal(_)
             | Self::SourceScope(_)
             | Self::SourceQueryInstallation(_)
@@ -68,6 +92,8 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::ForeignDemand
             | Self::RequiredSuccessorStateUnavailable
             | Self::ForeignSettlement
+            | Self::RetainedVerificationFactUnavailable(_)
+            | Self::SettlementProvenance(_)
             | Self::IncompleteDependencyCoverage
             | Self::RetainedBasisUnavailable
             | Self::Closed
@@ -158,3 +184,5 @@ impl WorthQueryOutputDemandDenialKind {
         }
     }
 }
+
+mod court_doors_for_test;

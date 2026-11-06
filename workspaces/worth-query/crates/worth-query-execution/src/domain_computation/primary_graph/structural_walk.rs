@@ -6,17 +6,17 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause as Cause,
 };
 mod currentness;
-mod dependencies;
+pub(crate) mod dependencies;
 pub(in crate::domain_computation::primary_graph) use dependencies::StructuralWalkDependencies;
 mod commitment;
-mod key;
+pub(crate) mod key;
 pub(in crate::domain_computation::primary_graph) mod memory;
-mod read;
+pub(crate) mod read;
 pub(in crate::domain_computation::primary_graph) use key::StructuralWalkKey;
 pub(in crate::domain_computation::primary_graph) use read::StructuralWalkQuery;
 
 #[derive(Debug)]
-pub(in crate::domain_computation) struct StructuralWalkObservation {
+pub struct StructuralWalkObservation {
     query: StructuralWalkKey,
     native: PinnedStructuralWalk,
     commitment: [u8; 32],
@@ -98,3 +98,5 @@ impl PartialEq for StructuralWalkObservation {
     }
 }
 impl Eq for StructuralWalkObservation {}
+
+mod court_doors_for_test;

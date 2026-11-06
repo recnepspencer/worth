@@ -72,7 +72,7 @@ pub struct WorthQueryApplicationEntityIdentity<Schema, Entity> {
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
-pub(in crate::domain_computation) struct WorthQueryResolvedEntity {
+pub struct WorthQueryResolvedEntity {
     entity_id: EntityId,
     entity_kind: KindId,
     entity_name: String,
@@ -187,10 +187,7 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         self.identity_index_id
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) const fn identity_index_generation(
-        &self,
-    ) -> DerivedIndexGenerationId {
+    pub const fn identity_index_generation(&self) -> DerivedIndexGenerationId {
         self.identity_index_generation
     }
 
@@ -218,3 +215,5 @@ impl<Schema, Entity> std::fmt::Debug for WorthQueryApplicationEntityIdentity<Sch
             .finish_non_exhaustive()
     }
 }
+
+mod court_doors_for_test;

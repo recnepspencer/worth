@@ -10,8 +10,8 @@ commits, inspection, migration, and shortcut-rejection scope described in
 
 This closeout covers the runtime-backed surface that consumes Milestones 9.1
 through 9.3. It does not claim temporal/async query semantics from Milestones
-9.4 through 9.7, store-backed execution parity from Milestone 10, durable
-subscription replay from Milestone 11, or domain-specific DSL behavior.
+9.4 through 9.7, store-backed execution parity from Store execution/historical integration, durable
+subscription replay from Store Milestone 11, or domain-specific DSL behavior.
 
 ## Governing Source Summary
 
@@ -241,10 +241,10 @@ This closeout does not claim:
 - async/resource query families from Milestone 9.5
 - mixed truth/time/async delivery from Milestone 9.6
 - temporal/async certification closure from Milestone 9.7
-- store-backed execution parity from Milestone 10
+- store-backed execution parity from Store execution/historical integration
 - durable saved-query, cursor, subscription, diagnostic, or continuation reload
-  from Milestone 11
-- blob/media-backed delivery from Milestone 12
+  from Store Milestone 11
+- blob/media-backed delivery from Store Milestone 12
 - domain-specific DSL, geometry kernel, table, workflow, or UI semantics inside
   `worth-query`
 - removal of low-level query/subscription modules needed for crate-internal

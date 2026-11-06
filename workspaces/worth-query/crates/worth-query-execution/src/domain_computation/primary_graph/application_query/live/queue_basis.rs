@@ -37,10 +37,14 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admit_liv
         descriptor,
         worth_runtime_bridge::facade::SnapshotReadPacket::new(Vec::new()),
     );
-    let request_bridge = application.bridge.ordinary().fork_managed_request_lane();
+    let request_bridge = application
+        .runtime
+        .bridge
+        .ordinary()
+        .fork_managed_request_lane();
     admit_live_lower_execution_basis(
         &request_bridge,
-        application.product_runtime.source(),
+        application.runtime.product_runtime.source(),
         subject,
         &attempt_identity,
         buffer_capacity,

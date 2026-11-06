@@ -66,6 +66,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
     ) -> Result<bool, Denial> {
         match self
+            .runtime
             .primary_provider
             .lookup_completed_inbound(record.correlation())?
         {
@@ -84,3 +85,6 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         }
     }
 }
+
+#[path = "external_settlement_court_doors_for_test.rs"]
+mod court_doors_for_test;
