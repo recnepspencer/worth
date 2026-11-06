@@ -36,6 +36,7 @@ impl WorthQueryCompiledApplicationQuery {
         let canonical_work_policy =
             crate::application_query::WorthQueryApplicationQueryCanonicalWorkPolicy::for_definition(
                 definition,
+                schema.identity_budget,
             );
         let read_graph = WorthQueryInstalledGraphReadContract::compile(
             definition,
@@ -69,6 +70,7 @@ impl WorthQueryCompiledApplicationQuery {
         let disclosure_capabilities =
             install_disclosure_capabilities(schema, definition.disclosure());
         let obligations = bind_query_obligations(
+            schema.identity_budget,
             &binding_identity,
             definition.name(),
             &identity,

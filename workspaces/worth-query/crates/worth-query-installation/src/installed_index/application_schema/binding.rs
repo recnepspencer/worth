@@ -56,6 +56,7 @@ impl WorthQueryInstalledPackageIndex {
             .domain(schema.owner())
             .map_err(map_index_denial_to_schema_denial)?;
         let compiled = compile_application_schema(ApplicationSchemaCompilationInput {
+            identity_budget: installed.identity_budget(),
             operation_catalog: installed.operation_catalog(),
             package_authority: authority,
             declaration: &declaration,

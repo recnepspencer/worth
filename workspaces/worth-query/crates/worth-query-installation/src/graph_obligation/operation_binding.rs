@@ -31,6 +31,7 @@ pub(crate) struct WorthQueryApplicationOperationObligationSource<'a> {
 }
 
 pub(crate) fn bind_operation_obligations(
+    budget: worth_foundational::facade::CanonicalDigestWorkBudget,
     binding: &ApplicationSchemaBindingIdentity,
     operation: &str,
     input_type: &str,
@@ -67,6 +68,7 @@ pub(crate) fn bind_operation_obligations(
             ),
     );
     WorthQueryInstalledGraphObligationSet::for_operation(
+        budget,
         binding,
         operation.to_owned(),
         input_type.to_owned(),
@@ -79,12 +81,14 @@ pub(crate) fn bind_operation_obligations(
 }
 
 pub(crate) fn bind_capability_operation_obligations(
+    budget: worth_foundational::facade::CanonicalDigestWorkBudget,
     binding: &ApplicationSchemaBindingIdentity,
     operation: &str,
     input_type: &str,
     requirement: WorthQueryInstalledGraphCapabilityRequirement,
 ) -> Result<WorthQueryInstalledGraphObligationSet, Denial> {
     WorthQueryInstalledGraphObligationSet::for_operation(
+        budget,
         binding,
         operation.to_owned(),
         input_type.to_owned(),

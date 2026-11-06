@@ -43,6 +43,7 @@ fn installed_mutation_matrix_names_only_real_semantic_owners() {
         WorthQueryInvariantExecutionContract::declared([invariant()]).unwrap();
     let resources = WorthQueryExecutionResourceContract::default();
     let installed = bind_operation_obligations(
+        worth_foundational::facade::CanonicalDigestWorkBudget::new(4096, 1024 * 1024).unwrap(),
         &binding(),
         "Transfer",
         "TransferInput",
@@ -106,6 +107,7 @@ fn mismatched_invariant_contract_is_denied_before_identity_minting() {
         WorthQueryInvariantExecutionContract::declared([invariant()]).unwrap();
     let resources = WorthQueryExecutionResourceContract::default();
     let denial = bind_operation_obligations(
+        worth_foundational::facade::CanonicalDigestWorkBudget::new(4096, 1024 * 1024).unwrap(),
         &binding(),
         "Transfer",
         "TransferInput",
@@ -139,6 +141,7 @@ fn installed_identity_enforces_entry_and_encoded_byte_budgets() {
     let too_many = vec![WorthQueryInstalledGraphObligationContract::PrincipalAuthorization; 4_096];
     assert!(matches!(
         derive_set_identity(
+            worth_foundational::facade::CanonicalDigestWorkBudget::new(4096, 1024 * 1024).unwrap(),
             &binding(),
             "application-operation",
             "entry-overflow",
@@ -153,6 +156,7 @@ fn installed_identity_enforces_entry_and_encoded_byte_budgets() {
     let huge_name = "x".repeat(2 * 1024 * 1024);
     assert!(matches!(
         derive_set_identity(
+            worth_foundational::facade::CanonicalDigestWorkBudget::new(4096, 1024 * 1024).unwrap(),
             &binding(),
             "application-operation",
             &huge_name,
@@ -188,6 +192,7 @@ fn read_only_obligations(entity: &str) -> super::WorthQueryInstalledGraphObligat
         )],
     };
     bind_operation_obligations(
+        worth_foundational::facade::CanonicalDigestWorkBudget::new(4096, 1024 * 1024).unwrap(),
         &binding(),
         "Inspect",
         "InspectInput",

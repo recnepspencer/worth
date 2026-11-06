@@ -40,6 +40,7 @@ pub enum WorthQueryInstalledApplicationSchemaDenialKind {
 pub struct WorthQueryInstalledApplicationSchemaDenial {
     kind: WorthQueryInstalledApplicationSchemaDenialKind,
     subject: String,
+    canonical_denial: Option<worth_foundational::facade::CanonicalDigestDerivationDenial>,
 }
 
 impl WorthQueryInstalledApplicationSchemaDenial {
@@ -50,6 +51,7 @@ impl WorthQueryInstalledApplicationSchemaDenial {
         Self {
             kind,
             subject: subject.into(),
+            canonical_denial: None,
         }
     }
 
@@ -59,6 +61,20 @@ impl WorthQueryInstalledApplicationSchemaDenial {
 
     pub fn subject(&self) -> &str {
         &self.subject
+    }
+
+    pub const fn canonical_denial(
+        &self,
+    ) -> Option<&worth_foundational::facade::CanonicalDigestDerivationDenial> {
+        self.canonical_denial.as_ref()
+    }
+
+    pub(crate) fn with_canonical_denial(
+        mut self,
+        cause: worth_foundational::facade::CanonicalDigestDerivationDenial,
+    ) -> Self {
+        self.canonical_denial = Some(cause);
+        self
     }
 }
 
