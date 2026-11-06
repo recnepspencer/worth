@@ -1,7 +1,7 @@
 //! Actual Query admission and fresh disclosure for one real MODE2 completion.
 
+use super::{BodyKey, RegionOutputFamily};
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::PlanarReadBinding;
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::principal;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::principal::ConsumerPrincipalBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandAdvance;
@@ -12,7 +12,6 @@ use worth_query_execution::facade::domain_computation::WorthQueryProductQueryCon
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::Application;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::OwnerSchema;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::ANCHOR;
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::*;
 use std::sync::Arc;
 use std::time::Duration;
 use worth_query_decl::facade::application_query::ApplicationQueryParameterSet;
@@ -38,7 +37,7 @@ pub fn complete_with_contacts(
         .with_application_advancement(&scope, |phase| {
             let execution = phase
                 .execution_request_for_for_test(
-                    &(*(*runtime.runtime_for_test()).product_runtime_for_test()),
+                    (*runtime.runtime_for_test()).product_runtime_for_test(),
                 )
                 .unwrap();
             let branch = runtime.current_world();
@@ -59,7 +58,7 @@ pub fn complete_with_contacts(
             let entity = selected
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     ANCHOR.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -124,7 +123,6 @@ pub fn complete_with_contacts(
         .unwrap()
 }
 
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::*;
 #[test]
 fn real_mode2_mixed_query_publication_attests_neither_whole_nor_created_subset() {
     let runtime = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::install();

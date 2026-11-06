@@ -34,7 +34,7 @@ fn sealed_absent_parent_initialization_stales_before_any_native_effect() {
             let root = selected
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::ANCHOR.to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -79,7 +79,7 @@ fn sealed_absent_parent_initialization_stales_before_any_native_effect() {
             let (program, _) = candidate.into_parts();
             crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::retained_recovery::materialize_source_in_phase(&runtime, &phase);
             let execution = phase
-                .execution_request_for_for_test(&(*(*runtime.runtime_for_test()).product_runtime_for_test()))
+                .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
                 .unwrap();
             let outcome = runtime.compare_and_commit_application_for_program_output_producer(
                 &execution,

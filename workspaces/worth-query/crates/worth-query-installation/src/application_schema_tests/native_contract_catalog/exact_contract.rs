@@ -1,4 +1,7 @@
+#[path = "exact_contract/records.rs"]
+mod storage_model;
 use std::collections::BTreeSet;
+use storage_model::*;
 
 use worth_foundational::facade::{
     aspects, canonical_basis_sequence_material, prepare_aspect_contract_for_canonical_basis,
@@ -16,27 +19,6 @@ use crate::facade::{
 };
 
 struct ExactContractSchema;
-worth_query_declaration::worth_query_entity!(ExactEntity for ExactContractSchema);
-worth_query_declaration::worth_query_aspect!(
-    ExactAspect for ExactContractSchema, ExactEntity;
-    identity = AspectIdentity(0x9161_2100),
-    revision = AspectContractRevision(7),
-);
-worth_query_declaration::worth_query_field!(
-    RequiredCount for ExactContractSchema, ExactEntity, ExactAspect:
-    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
-    read_only, equality
-);
-worth_query_declaration::worth_query_field!(
-    OptionalLabel for ExactContractSchema, ExactEntity, ExactAspect:
-    optional String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding,
-    read_only, no_equality
-);
-worth_query_declaration::worth_query_field!(
-    RequiredActive for ExactContractSchema, ExactEntity, ExactAspect:
-    bool => worth_query_declaration::facade::application_schema::BoolApplicationValueBinding,
-    read_only, no_equality
-);
 
 impl ApplicationSchema for ExactContractSchema {
     const OWNER: &'static str = "native-contract-exact";
@@ -48,13 +30,7 @@ impl ApplicationSchema for ExactContractSchema {
         ApplicationSchemaDeclaration<Self>,
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(ExactEntity::reference())
-            .aspect(ExactEntity::reference(), ExactAspect::reference())
-            .field(ExactEntity::reference(), RequiredCount::reference())
-            .field(ExactEntity::reference(), OptionalLabel::reference())
-            .field(ExactEntity::reference(), RequiredActive::reference())
-            .build()
+        ApplicationSchemaDeclarationBuilder::from_fragment(ExactRecords)?.build()
     }
 }
 
@@ -88,7 +64,7 @@ fn catalog_contract_equals_an_independently_authored_foundational_contract() {
     let schema = index.bind_application_schema(declaration).unwrap();
     let installed = schema
         .native_contracts()
-        .aspect("ExactEntity", "ExactAspect")
+        .aspect("ExactEntity", RequiredCount::at("RequiredCount").aspect())
         .unwrap();
 
     assert_eq!(installed.contract(), &expected);
@@ -126,8 +102,17 @@ fn expected_contract() -> worth_foundational::facade::AspectContract {
         .unwrap();
     aspects()
         .contract()
-        .for_key(AspectKey::new("ExactAspect").unwrap())
-        .identified_by(AspectIdentity(0x9161_2100))
-        .at_revision(AspectContractRevision(7))
+        .for_key(AspectKey::new(RequiredCount::at("RequiredCount").aspect()).unwrap())
+        .identified_by(AspectIdentity(super::name_identity(
+            "exact_records.ExactEntity.ExactAspect",
+        )))
+        .at_revision(declared_revision())
         .struct_aspect(shape)
+}
+
+fn declared_revision() -> AspectContractRevision {
+    let declaration = ExactContractSchema::declaration().unwrap();
+    declaration.erased().members().iter().find_map(|member| match member {
+        worth_query_declaration::facade::application_schema::ApplicationSchemaMember::Aspect { revision, .. } => Some(*revision), _ => None,
+    }).unwrap()
 }

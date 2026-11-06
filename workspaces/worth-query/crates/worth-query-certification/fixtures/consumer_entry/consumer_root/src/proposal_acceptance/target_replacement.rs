@@ -33,8 +33,8 @@ worth_query_structured_value_binding!(pub ResultBinding for Replaced {identity:"
 worth_query_structured_value_binding!(pub DenialBinding for Denial {identity:"proposal-application.replace-target.denial.v1"});
 worth_query_operation!(pub Replace for Schema,input InputBinding);
 worth_query_operation_requires!(Replace=>[ManageTargets]);
-worth_query_operation_reads!(Replace=>[Model,Target,ModelName,TargetName,ModelTarget]);
-worth_query_operation_writes!(Replace=>[TargetName,Retention]);
+worth_query_operation_reads!(Replace => [Model, Target, ModelTarget]);
+
 worth_query_operation_creates!(Replace=>[Target]);
 worth_query_operation_deletes!(Replace=>[Target]);
 worth_query_operation_links!(Replace=>[ModelTarget]);
@@ -49,7 +49,7 @@ worth_query_mutation_binding!(pub Binding for ReplaceTarget,schema Schema,
     workflow_requirements ApplicationWorkflowExecutionRequirements::not_applicable(),outputs NoApplicationMutationOutputs,
     principal PrincipalBinding,mapping ExternalMapping,principal_entity Principal,
     principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Model,ModelFacts,ModelName,String,ReadOnly,NoApplicationUnit,field ModelName::reference(),value model,
+    scope ModelName, field ModelName::at("ModelName"),value model,
 );
 
 pub struct Handler;
@@ -72,7 +72,8 @@ impl OperationHandler<Schema, Binding> for Handler {
             return HandlerResult::DomainDenied(Denial::ModelMismatch);
         }
         let observed = (|| -> Result<_, HandlerExecutionDenial> {
-            if reader.field(&model, ModelName::reference())? != Some(input.model.label.clone()) {
+            if reader.field(&model, ModelName::at("ModelName"))? != Some(input.model.label.clone())
+            {
                 return Ok(Err(Denial::ModelMismatch));
             }
             let targets = reader
@@ -88,7 +89,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 slot: id.local_slot_value(),
                 generation: id.generation_value(),
             };
-            let Some(name) = reader.field(target, TargetName::reference())? else {
+            let Some(name) = reader.field(target, TargetName::at("TargetName"))? else {
                 return Ok(Err(Denial::TargetMismatch));
             };
             if occurrence != input.target.occurrence || name != input.target.label {
@@ -136,10 +137,10 @@ impl OperationHandler<Schema, Binding> for Handler {
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&replacement, TargetName::reference(), decision.name)
+                .initialize_field(&replacement, TargetName::at("TargetName"), decision.name)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&replacement, Retention::reference(), input.days)
+                .initialize_field(&replacement, Retention::at("Retention"), input.days)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .link(
@@ -171,7 +172,8 @@ pub fn declare(
             [
                 ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
                     .forward(GrantGrantor::reference())
-                    .where_equal(GrantStatus::reference(), access::encoded(1))
+                    .where_equal(GrantStatus::at("GrantStatus"), access::encoded(1))
+                    .expect("owned record field matches its declaration")
                     .forward(GrantResource::reference())
                     .allow(Model::reference()),
             ],
@@ -181,14 +183,14 @@ pub fn declare(
         .operation_projection_work_budget(op, 32)
         .operation_read_entity(op, Model::reference())
         .operation_read_entity(op, Target::reference())
-        .operation_read_field(op, ModelName::reference())
-        .operation_read_field(op, TargetName::reference())
+        .operation_read_field(op, ModelName::at("ModelName"))
+        .operation_read_field(op, TargetName::at("TargetName"))
         .operation_read_relation(op, ModelTarget::reference())
         .operation_unlink(op, ModelTarget::reference())
         .operation_delete(op, Target::reference())
         .operation_create(op, Target::reference())
-        .operation_write(op, TargetName::reference())
-        .operation_write(op, Retention::reference())
+        .operation_write(op, TargetName::at("TargetName"))
+        .operation_write(op, Retention::at("Retention"))
         .operation_link(op, ModelTarget::reference())
         .application_mutation_binding::<Binding>()
 }

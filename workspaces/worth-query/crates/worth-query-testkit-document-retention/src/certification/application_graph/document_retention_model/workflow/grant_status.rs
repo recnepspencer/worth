@@ -7,9 +7,8 @@ pub use worth_query_host::facade::{
             NoApplicationMutationOutputs, NoApplicationMutationSource,
         },
         application_schema::{
-            ApplicationFieldRef, ApplicationPrincipalBindingRef,
-            ApplicationSchemaDeclarationBuilder, EqualityPredicate, NoApplicationUnit, ReadOnly,
-            U64ApplicationValueBinding,
+            ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder, EqualityPredicate,
+            NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
         },
     },
     primary_graph::{
@@ -39,8 +38,6 @@ worth_query_structured_value_binding!(pub WorkflowGrantStatusInputBinding for Wo
     identity: "worth.query.certification.workflow-grant-status-input.v1"
 });
 worth_query_operation!(pub WorkflowGrantStatusOperation for DocumentRetentionSchema, input WorkflowGrantStatusInputBinding);
-worth_query_operation_reads!(WorkflowGrantStatusOperation => [WorkflowGrantIdentityField, WorkflowGrantStatusField]);
-worth_query_operation_writes!(WorkflowGrantStatusOperation => [WorkflowGrantStatusField]);
 
 #[derive(Clone, Debug)]
 pub struct WorkflowGrantStatusIntent {
@@ -65,15 +62,7 @@ worth_query_structured_value_binding!(pub WorkflowGrantStatusDenialBinding for W
 
 pub struct WorkflowGrantStatusBinding;
 
-pub type GrantScope = ApplicationMutationFieldScope<
-    DocumentRetentionSchema,
-    WorkflowAuthoringGrant,
-    WorkflowAuthoringGrantFacts,
-    WorkflowGrantIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type GrantScope = ApplicationMutationFieldScope<WorkflowGrantIdentityField>;
 
 impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowGrantStatusBinding {
     fn workflow_execution_requirements(
@@ -107,17 +96,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowGrantStatus
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.workflow-grant-status-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        WorkflowAuthoringGrant,
-        WorkflowAuthoringGrantFacts,
-        WorkflowGrantIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        WorkflowGrantIdentityField::reference()
+    fn scope_field() -> WorkflowGrantIdentityField {
+        WorkflowGrantIdentityField::at("WorkflowGrantIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -141,8 +121,8 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for WorkflowGrantStatusI
 
     fn scope_binding(&self) -> GrantScope {
         GrantScope::new(
-            WorkflowGrantIdentityField::reference(),
-            self.input.grant_identity.clone(),
+            WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+            self.input.grant_identity.clone().into(),
         )
     }
 }
@@ -170,13 +150,16 @@ impl OperationHandler<DocumentRetentionSchema, WorkflowGrantStatusBinding>
             return HandlerResult::DomainDenied(WorkflowGrantStatusDenial::InvalidStatus);
         }
         let grant = match reader.resolve_entity(
-            WorkflowGrantIdentityField::reference(),
-            input.grant_identity.clone(),
+            WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+            input.grant_identity.clone().into(),
         ) {
             Ok(grant) => grant,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&grant, WorkflowGrantStatusField::reference()) {
+        match reader.field(
+            &grant,
+            WorkflowGrantStatusField::at("WorkflowGrantStatusField"),
+        ) {
             Ok(Some(current)) if current == input.status => {
                 return HandlerResult::DomainDenied(WorkflowGrantStatusDenial::Unchanged)
             }
@@ -203,7 +186,7 @@ impl OperationHandler<DocumentRetentionSchema, WorkflowGrantStatusBinding>
         };
         if let Err(error) = writer.write_field(
             &grant,
-            WorkflowGrantStatusField::reference(),
+            WorkflowGrantStatusField::at("WorkflowGrantStatusField"),
             input.status.clone(),
         ) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
@@ -226,15 +209,15 @@ pub fn install_members(
         .operation_projection_work_budget(WorkflowGrantStatusOperation::reference(), 64)
         .operation_read_field(
             WorkflowGrantStatusOperation::reference(),
-            WorkflowGrantIdentityField::reference(),
+            WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
         )
         .operation_read_field(
             WorkflowGrantStatusOperation::reference(),
-            WorkflowGrantStatusField::reference(),
+            WorkflowGrantStatusField::at("WorkflowGrantStatusField"),
         )
         .operation_write(
             WorkflowGrantStatusOperation::reference(),
-            WorkflowGrantStatusField::reference(),
+            WorkflowGrantStatusField::at("WorkflowGrantStatusField"),
         )
         .application_mutation_binding::<WorkflowGrantStatusBinding>()
 }

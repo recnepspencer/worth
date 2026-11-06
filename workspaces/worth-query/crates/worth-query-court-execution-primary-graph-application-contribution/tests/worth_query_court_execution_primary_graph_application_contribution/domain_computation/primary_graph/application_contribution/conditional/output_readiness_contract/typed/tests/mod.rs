@@ -7,37 +7,30 @@ pub use worth_query_execution::facade::application_contribution::WorthQueryReadi
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::denial;
 pub use worth_query_installation::facade as domain;
 pub use worth_query_declaration::facade::application_schema as schema;
-pub use schema::ApplicationScalarValueBinding;
-pub use schema::ApplicationSchema;
+use schema::fragment::{self};
+use schema::{ApplicationScalarValueBinding, ApplicationSchema};
+mod composition_refusal;
+mod scalar;
+use worth_foundational::facade::{AbsenceLaw, AspectShape, WorthValue};
+use worth_query_declaration::facade::{
+    authoring::*, binding::QueryBindingDescriptor, canonicalization::canonicalize_request,
+};
 
-pub use worth_foundational::facade::AbsenceLaw;
-pub use worth_foundational::facade::AspectShape;
-pub use worth_foundational::facade::WorthValue;
-pub use worth_query_declaration::facade::authoring::*;
-pub use worth_query_declaration::facade::binding::QueryBindingDescriptor;
-pub use worth_query_declaration::facade::canonicalization::canonicalize_request;
-
-pub trait Fixture: ApplicationSchema {}
-worth_query_declaration::worth_query_entity!(Entity for S: Fixture);
-worth_query_declaration::worth_query_aspect!(Publication for S: Fixture, Entity;
-    identity = AspectIdentity(0x0071_9301), revision = AspectContractRevision(1));
-worth_query_declaration::worth_query_aspect!(Identity for S: Fixture, Entity;
-    identity = AspectIdentity(0x0071_9302), revision = AspectContractRevision(1));
-#[derive(WorthValue)]
-pub struct Payload {
-    pub nested: Vec<Choice>,
+#[derive(Clone, WorthValue)]
+struct Payload {
+    nested: Vec<Choice>,
 }
-#[derive(WorthValue)]
-pub enum Choice {
+#[derive(Clone, WorthValue)]
+enum Choice {
     Empty,
     Selected { label: String, count: u64 },
 }
-#[derive(WorthValue)]
-pub struct ChangedPayload {
-    pub nested: Vec<ChangedChoice>,
+#[derive(Clone, WorthValue)]
+struct ChangedPayload {
+    nested: Vec<ChangedChoice>,
 }
-#[derive(WorthValue)]
-pub enum ChangedChoice {
+#[derive(Clone, WorthValue)]
+enum ChangedChoice {
     Empty,
     Selected { renamed: String, count: u64 },
 }
@@ -50,41 +43,52 @@ worth_query_declaration::worth_query_value_binding!(TwinBinding for Payload {
 worth_query_declaration::worth_query_value_binding!(ChangedBinding for ChangedPayload {
     identity: "readiness.payload.v1", scalar: String, canonical,
 });
-worth_query_declaration::worth_query_field!(Record for S: Fixture, Entity, Publication:
-    Payload => Binding, read_only, no_equality);
-worth_query_declaration::worth_query_field!(Sibling for S: Fixture, Entity, Publication:
-    optional String => schema::StringApplicationValueBinding, read_only, no_equality);
-worth_query_declaration::worth_query_field!(Key for S: Fixture, Entity, Identity:
-    String => schema::StringApplicationValueBinding, read_only, no_equality);
-
-macro_rules! fixture {
-    ($S:ident, $field:path) => {
-        worth_query_declaration::worth_query_application_schema!(schema $S {
-            owner: $S, version: (1,0), members: |schema| {
-                schema.entity(Entity::reference())
-                    .aspect(Entity::reference(),Identity::reference())
-                    .field(Entity::reference(),Key::reference())
-                    .optional_aspect(Entity::reference(),Publication::reference())
-                    .field(Entity::reference(),Sibling::reference())
-                    .field(Entity::reference(),<$field>::reference())
-            }
-        });
-        impl Fixture for $S {}
-    };
-}
-fixture!(Actual, Record);
-fixture!(Changed, crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::changed::Record);
-// A valid declaration lacking the requested field, with a real remaining sibling.
-worth_query_declaration::worth_query_application_schema!(schema Missing {
-    owner: Missing, version: (1,0), members: |schema| {
-        schema.entity(Entity::reference())
-            .aspect(Entity::reference(),Identity::reference())
-            .field(Entity::reference(),Key::reference())
-            .optional_aspect(Entity::reference(),Publication::reference())
-            .field(Entity::reference(),Sibling::reference())
+#[path = "records.rs"]
+mod records;
+use records::*;
+type Record = fragment::FieldSelection<Model<0>, Node<0>, Publication<0>, Payload>;
+type Key = fragment::FieldSelection<Model<0>, Node<0>, Identity, String>;
+mod changed;
+mod twin;
+struct Actual;
+impl schema::ApplicationSchema for Actual {
+    const OWNER: &'static str = "Actual";
+    const NAME: &'static str = "Actual";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        schema::ApplicationSchemaDeclaration<Self>,
+        schema::ApplicationSchemaDeclarationDenial,
+    > {
+        schema::ApplicationSchemaDeclarationBuilder::from_fragment(Model::<0>)?.build()
     }
-});
-impl Fixture for Missing {}
+}
+struct Changed;
+impl schema::ApplicationSchema for Changed {
+    const OWNER: &'static str = "Changed";
+    const NAME: &'static str = "Changed";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        schema::ApplicationSchemaDeclaration<Self>,
+        schema::ApplicationSchemaDeclarationDenial,
+    > {
+        schema::ApplicationSchemaDeclarationBuilder::from_fragment(Model::<1>)?.build()
+    }
+}
+struct Missing;
+impl schema::ApplicationSchema for Missing {
+    const OWNER: &'static str = "Missing";
+    const NAME: &'static str = "Missing";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        schema::ApplicationSchemaDeclaration<Self>,
+        schema::ApplicationSchemaDeclarationDenial,
+    > {
+        schema::ApplicationSchemaDeclarationBuilder::from_fragment(Model::<3>)?.build()
+    }
+}
 
 pub fn installed() -> domain::WorthQueryInstalledApplicationSchema<Actual> {
     let declaration = Actual::declaration().unwrap();
@@ -109,12 +113,12 @@ pub fn installed() -> domain::WorthQueryInstalledApplicationSchema<Actual> {
 }
 pub fn query() -> CanonicalQueryBundle {
     let request = DetailQueryBuilder::new(RootEntityKey::new("Entity").unwrap())
-        .project(AspectFieldSelector::new("Identity", "Key").unwrap())
+        .project(AspectFieldSelector::new(Key::at("Key").aspect(), "Key").unwrap())
         .build()
         .unwrap()
         .into_raw();
     let shape = DetailResultShapeBuilder::new()
-        .field(AuthoredResultShapeField::new("Identity", "Key", "key").unwrap())
+        .field(AuthoredResultShapeField::new(Key::at("Key").aspect(), "Key", "key").unwrap())
         .build()
         .unwrap()
         .into_raw();
@@ -133,7 +137,7 @@ pub fn builder(
 ) -> WorthQueryOutputReadinessContractBuilder {
     WorthQueryOutputReadinessContractBuilder::for_field(
         declaration,
-        Key::reference::<Actual>(),
+        Key::at("Key"),
         domain::WorthQueryDomainOperationIdentity::new("readiness", 1),
         "ready",
         query(),
@@ -149,7 +153,7 @@ fn typed_field_uses_complete_optional_aspect_and_real_nested_codec() {
     let installed = installed();
     let field = FieldExpectation::declared_for_test(
         installed.installed_declaration(),
-        Record::reference::<Actual>(),
+        Record::at("Record"),
     )
     .unwrap();
     field.seal_for_test(&installed).unwrap();
@@ -176,7 +180,7 @@ fn typed_field_uses_complete_optional_aspect_and_real_nested_codec() {
     );
     let changed = Changed::declaration().unwrap();
     let changed_field =
-        FieldExpectation::declared_for_test(changed.erased(), crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::changed::Record::reference::<Changed>())
+        FieldExpectation::declared_for_test(changed.erased(), crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::changed::Record::at("Record"))
             .unwrap();
     assert_ne!(
         (*field.aspect_for_test()),
@@ -207,13 +211,12 @@ fn actual_missing_changed_and_wrong_concrete_bindings_refuse_at_field_locus() {
         Changed::declaration().unwrap().into_erased(),
     ] {
         let denial =
-            FieldExpectation::declared_for_test(&declaration, Record::reference::<Actual>())
-                .unwrap_err();
+            FieldExpectation::declared_for_test(&declaration, Record::at("Record")).unwrap_err();
         assert_eq!(
             denial.field_locus_for_test(),
             Some(&schema::ApplicationFieldBindingLocus::new(
                 "Entity",
-                "Publication",
+                Record::at("Record").aspect(),
                 "Record"
             ))
         );
@@ -221,7 +224,7 @@ fn actual_missing_changed_and_wrong_concrete_bindings_refuse_at_field_locus() {
     // Portable bytes agree, but the actual installed Binding TypeId differs.
     let twin = FieldExpectation::declared_for_test(
         installed.installed_declaration(),
-        crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::twin::Record::reference::<Actual>(),
+        crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::twin::Record::at("Record"),
     )
     .unwrap();
     let denial = twin.seal_for_test(&installed).unwrap_err();
@@ -235,16 +238,16 @@ fn canonical_order_and_distinct_delivery_eligibility_are_preserved() {
     let declaration = installed.installed_declaration();
     let both = WorthQueryReadinessFieldUse::DeliveryAndEligibility;
     let first = builder(declaration)
-        .field_dependency(declaration, Record::reference::<Actual>(), both)
+        .field_dependency(declaration, Record::at("Record"), both)
         .unwrap()
-        .field_dependency(declaration, Key::reference::<Actual>(), both)
+        .field_dependency(declaration, Key::at("Key"), both)
         .unwrap()
         .build_typed::<(), (), ()>()
         .unwrap();
     let reversed = builder(declaration)
-        .field_dependency(declaration, Key::reference::<Actual>(), both)
+        .field_dependency(declaration, Key::at("Key"), both)
         .unwrap()
-        .field_dependency(declaration, Record::reference::<Actual>(), both)
+        .field_dependency(declaration, Record::at("Record"), both)
         .unwrap()
         .build_typed::<(), (), ()>()
         .unwrap();
@@ -259,9 +262,9 @@ fn canonical_order_and_distinct_delivery_eligibility_are_preserved() {
     );
     let node = &first.definition().semantics().conditional_nodes[0];
     let ordinal = first
-        .delivery_ordinal(&installed, node, Record::reference::<Actual>())
+        .delivery_ordinal(&installed, node, Record::at("Record"))
         .unwrap();
-    let expected = FieldExpectation::declared_for_test(declaration, Record::reference::<Actual>())
+    let expected = FieldExpectation::declared_for_test(declaration, Record::at("Record"))
         .unwrap()
         .dependency_for_test()
         .unwrap();
@@ -269,13 +272,13 @@ fn canonical_order_and_distinct_delivery_eligibility_are_preserved() {
     let distinct = builder(declaration)
         .field_dependency(
             declaration,
-            Record::reference::<Actual>(),
+            Record::at("Record"),
             WorthQueryReadinessFieldUse::Delivery,
         )
         .unwrap()
         .field_dependency(
             declaration,
-            Key::reference::<Actual>(),
+            Key::at("Key"),
             WorthQueryReadinessFieldUse::Eligibility,
         )
         .unwrap()
@@ -286,19 +289,10 @@ fn canonical_order_and_distinct_delivery_eligibility_are_preserved() {
     assert_eq!(node.condition().dependencies().len(), 1);
     assert_ne!(node.dependencies(), node.condition().dependencies());
     let ordinal = distinct
-        .delivery_ordinal(&installed, node, Record::reference::<Actual>())
+        .delivery_ordinal(&installed, node, Record::at("Record"))
         .unwrap();
     assert_eq!(node.dependencies()[ordinal], expected);
     assert!(distinct
-        .delivery_ordinal(&installed, node, Key::reference::<Actual>())
+        .delivery_ordinal(&installed, node, Key::at("Key"))
         .is_err());
 }
-
-#[path = "changed/mod.rs"]
-pub mod changed;
-#[path = "composition_refusal/mod.rs"]
-pub mod composition_refusal;
-#[path = "scalar/mod.rs"]
-pub mod scalar;
-#[path = "twin/mod.rs"]
-pub mod twin;

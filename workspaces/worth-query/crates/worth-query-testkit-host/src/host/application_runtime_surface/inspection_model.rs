@@ -40,19 +40,9 @@ worth_query_application_query!(
     name "host_inspection_account_query"
 );
 
-pub(super) fn number_result<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    NumberSlot,
-    HostIdentitySchema,
-    Account,
-    AccountIdentity,
-    AccountNumber,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("number", AccountNumber::reference())
+pub(super) fn number_result<Q>(
+) -> ApplicationQueryResultFieldRef<Q, NumberSlot, HostIdentitySchema, AccountNumber> {
+    ApplicationQueryResultFieldRef::new("number", AccountNumber::at("AccountNumber"))
 }
 
 pub(super) fn definition(
@@ -107,8 +97,8 @@ worth_query_query_binding!(
     result AccountResultBinding,
     principal IdentityBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding worth_query_decl::facade::application_schema::U64ApplicationValueBinding,
-    scope Account, AccountIdentity, AccountNumber, String, ReadOnly, NoApplicationUnit,
-    field AccountNumber::reference(),
+    scope AccountNumber,
+    field AccountNumber::at("AccountNumber"),
     value AccountRead::into_number,
     limits results 1
 );

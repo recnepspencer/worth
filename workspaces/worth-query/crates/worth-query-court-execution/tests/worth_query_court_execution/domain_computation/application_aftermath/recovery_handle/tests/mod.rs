@@ -2,7 +2,6 @@
 
 use std::sync::Arc;
 
-use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::application_aftermath::aftermath_schema_fixture as fixture;
 use worth_query_execution::court_doors_for_test::domain_computation::managed_run::recovery_registry::WorthQueryRecoveryHandleRegistry;
 use worth_query_execution::court_doors_for_test::domain_computation::managed_run::recovery_registry::WorthQueryRecoveryMintClaim;
 use worth_query_execution::court_doors_for_test::domain_computation::managed_run::recovery_registry::WorthQueryRecoveryResourceTerminal;

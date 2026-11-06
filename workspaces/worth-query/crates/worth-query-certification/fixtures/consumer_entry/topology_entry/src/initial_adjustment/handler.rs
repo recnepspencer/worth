@@ -15,11 +15,11 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarInitialAdjust
         reader: &mut DecisionReader<'_, '_, '_, Schema, PlanarInitialAdjustmentBinding<Schema>>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Body>, PlanarMutationDenial> {
         super::super::source_adjustment::contacts::decision(&observed_input(input));
-        let entity = match reader.resolve_entity(BodyKey::reference(), input.scope_key.clone()) {
+        let entity = match reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone()) {
             Ok(entity) => entity,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&entity, PositionY::reference()) {
+        match reader.field(&entity, PositionY::at("PositionY")) {
             Ok(Some(_)) => {}
             Ok(None) => {
                 return HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate)
@@ -45,7 +45,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarInitialAdjust
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
             }
         };
-        match writer.write_field(&entity, PositionY::reference(), input.replacement_y) {
+        match writer.write_field(&entity, PositionY::at("PositionY"), input.replacement_y) {
             Ok(()) => HandlerResult::Completed(PlanarAdjustmentResult {
                 changed_vertices: 1,
             }),

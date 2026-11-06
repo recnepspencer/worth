@@ -20,16 +20,16 @@ impl<L: LawPolicy> OperationHandler<GraphSchema<L>, EditBinding<L>> for Handler 
                 if remove && !removal_commands.insert((source, target)) {
                     continue;
                 }
-                let source = match reader.resolve_entity(NodeKey::reference(), source) {
+                let source = match reader.resolve_entity(node_key::<GraphSchema<L>>(), source) {
                     Ok(value) => value,
                     Err(error) => return HandlerResult::ExecutionDenied(error),
                 };
-                let target = match reader.resolve_entity(NodeKey::reference(), target) {
+                let target = match reader.resolve_entity(node_key::<GraphSchema<L>>(), target) {
                     Ok(value) => value,
                     Err(error) => return HandlerResult::ExecutionDenied(error),
                 };
                 if remove {
-                    match reader.relations_from(Precedes::reference(), &source) {
+                    match reader.relations_from(precedes::<GraphSchema<L>>(), &source) {
                         Ok(edges) if edges.iter().any(|edge| edge.to() == &target) => {}
                         Ok(_) => continue,
                         Err(error) => {
@@ -79,10 +79,10 @@ pub fn write_edges<L: LawPolicy>(
             let source = writer.projected_entity(&source)?;
             let target = writer.projected_entity(&target)?;
             if remove {
-                writer.unlink(Precedes::reference(), &source, &target)?;
+                writer.unlink(precedes::<GraphSchema<L>>(), &source, &target)?;
             } else {
                 writer.link(
-                    Precedes::reference(),
+                    precedes::<GraphSchema<L>>(),
                     format!("edge-{}-{index}", input.serial),
                     &source,
                     &target,

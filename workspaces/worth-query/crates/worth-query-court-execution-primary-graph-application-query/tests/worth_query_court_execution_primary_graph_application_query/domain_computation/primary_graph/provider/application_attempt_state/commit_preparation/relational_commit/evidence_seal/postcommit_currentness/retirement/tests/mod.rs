@@ -102,7 +102,7 @@ pub fn reads(
     let entity = selected
         .resolve_entity(
             phase_custody,
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
             key.to_owned(),
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -112,8 +112,8 @@ pub fn reads(
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let identity = AccountIdentity::reference();
-    let note = AccountNote::reference();
+    let identity = AccountIdentity::at("AccountIdentity");
+    let note = AccountNote::at("AccountNote");
     let kind = (*graph.layout_for_test())
         .entity_kind_for_test(identity.entity())
         .unwrap();

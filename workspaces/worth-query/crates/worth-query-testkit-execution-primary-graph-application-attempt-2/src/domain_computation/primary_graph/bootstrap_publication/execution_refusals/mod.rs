@@ -2,7 +2,6 @@
 
 use std::num::NonZeroUsize;
 use std::sync::OnceLock;
-use worth_execution::CancellationSource;
 use worth_execution::CancellationToken;
 use worth_execution::ExecutionAuthority;
 use worth_execution::ExecutionAuthorityConfig;
@@ -21,17 +20,12 @@ use worth_foundational::ExecutionBudget;
 use worth_foundational::ExecutionPosture;
 use worth_foundational::ExecutionRequestPolicy;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::bootstrap_publication::identity_indexes_built;
-use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
-use worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel;
-use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
-use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as QueryKind;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::identity::PartitionId;
 use worth_relational::facade::indexes::DerivedIndexBuildOutcome;
 use worth_relational::facade::indexes::DerivedIndexBuildRequest;
 use worth_relational::facade::indexes::DerivedIndexDefinition;
-use worth_relational::facade::indexes::DerivedIndexExecutionDenialKind;
 use worth_relational::facade::indexes::DerivedIndexId;
 use worth_relational::facade::indexes::DerivedIndexKind;
 use worth_relational::facade::mvcc::RelationalTransactionIntent;
@@ -48,7 +42,6 @@ use worth_relational::facade::transactions::AspectFieldPatch;
 use worth_relational::facade::transactions::BulkEntityCreateIntent;
 use worth_relational::facade::transactions::CreateIntent;
 use worth_relational::facade::transactions::MutationIntent;
-use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 pub fn isolated(test_name: &str, run: impl FnOnce()) {
     let test_name = test_name.split_once("::").unwrap().1;

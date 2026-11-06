@@ -1,33 +1,33 @@
 //! Canonical Query declaration authority.
 //!
-//! This package owns authored intent, canonicalization, schema-visible
-//! validation, binding grammar, result shapes, and collection declarations.
-//! Runtime installation, execution, publication, and replay are downstream.
+//! This package owns authored intent, canonicalization, schema validation,
+//! bindings, result shapes and collection declarations. Installation,
+//! execution, publication and replay are downstream.
 //!
-//! Application aspects are declaration-owned identities. The stable
-//! [`worth_query_aspect!`] form requires both an explicit
-//! [`facade::application_schema::AspectIdentity`] and
-//! [`facade::application_schema::AspectContractRevision`]; installation retains
-//! that exact contract rather than deriving identity from a display name.
+//! Application membership is declared top-down through [`facade::application_schema::fragment`].
+//! Aspect identities derive from qualified names; revisions derive from their
+//! lowered row shapes and bindings.
 //!
 //! ```
-//! use worth_query_declaration::{worth_query_aspect, facade::application_schema::{
-//!     AspectContractRevision, AspectIdentity,
-//! }};
-//!
-//! # pub struct ExampleSchema;
-//! # pub struct Account;
-//! worth_query_aspect!(
-//!     pub AccountFacts for ExampleSchema, Account;
-//!     identity = AspectIdentity(0x9161_1001),
-//!     revision = AspectContractRevision(1),
-//! );
-//!
-//! assert_eq!(AccountFacts::reference().identity(), AspectIdentity(0x9161_1001));
-//! assert_eq!(
-//!     AccountFacts::reference().revision(),
-//!     AspectContractRevision(1),
-//! );
+//! use worth_query_declaration::facade::application_schema::{fragment::{self, *}, *};
+//! struct Values;
+//! impl BindingSet for Values {
+//!     type Work<'a> = ValueDecodeAdmission<'a>;
+//!     fn with_admission<T>(work: &mut Self::Work<'_>, run: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T) -> T { run(work) }
+//! }
+//! impl Scalar<u64> for Values { type Binding = U64ApplicationValueBinding; }
+//! struct Entry;
+//! impl Entity for Entry { const NAME: &'static str = "entry"; type Aspects = (Quantity,); type Relations = (); }
+//! struct Quantity;
+//! impl Aspect for Quantity { const NAME: &'static str = "quantity"; type Row = u64; }
+//! struct Example;
+//! impl Fragment for Example { const NAME: &'static str = "example"; type Bindings = Values; type Members = (Entry,); }
+//! impl ApplicationSchema for Example {
+//!     const NAME: &'static str = "example";
+//!     fn declaration() -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> { fragment::declare(Self) }
+//! }
+//! let declaration = Example::declaration().unwrap();
+//! assert!(declaration.erased().members().iter().any(|member| matches!(member, ApplicationSchemaMember::Aspect { identity, revision, .. } if identity.0 != 0 && revision.0 != 0)));
 //! ```
 
 #![forbid(unsafe_code)]
@@ -49,8 +49,6 @@ mod feature_spec_macro;
 mod application_query;
 mod application_resource;
 #[macro_use]
-mod application_contribution_macro;
-#[macro_use]
 mod application_query_macro;
 #[macro_use]
 mod query_binding_macro;
@@ -60,17 +58,9 @@ mod application_schema;
 mod authentication;
 mod authoring;
 #[macro_use]
-mod application_aspect_macro;
-#[macro_use]
 mod application_capability_macro;
 #[macro_use]
-mod application_schema_macro;
-#[macro_use]
-mod application_field_macro;
-#[macro_use]
-mod application_relation_field_macro;
-#[macro_use]
-mod application_relation_macro;
+mod principal_binding_macro;
 #[macro_use]
 mod application_operation_macro;
 mod aspect_removal_macro;

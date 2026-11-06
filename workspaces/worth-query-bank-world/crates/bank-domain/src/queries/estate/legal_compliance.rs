@@ -62,10 +62,8 @@ worth_query_decl::facade::worth_query_query_binding!(
     result EstateLegalComplianceQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope EstateCase, crate::schema::EstateCaseRecord, crate::schema::EstateCaseIdentityField,
-        EstateCaseId, worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
-    field crate::schema::EstateCaseIdentityField::reference(),
+    scope crate::schema::EstateCaseIdentityField,
+    field crate::schema::EstateCaseIdentityField::at("EstateCaseIdentityField"),
     value EstateLegalComplianceRequest::estate,
     limits results 1_024
 );

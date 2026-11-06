@@ -28,9 +28,7 @@ use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::AccountAllActivity;
 use crate::domain_computation::primary_graph::tests::fixture::AccountIdentity;
 use crate::domain_computation::primary_graph::tests::fixture::AccountLabel;
-use crate::domain_computation::primary_graph::tests::fixture::AccountPolicy;
 use crate::domain_computation::primary_graph::tests::fixture::Activity;
-use crate::domain_computation::primary_graph::tests::fixture::ActivityFacts;
 use crate::domain_computation::primary_graph::tests::fixture::ActivityIdentity;
 use crate::domain_computation::primary_graph::tests::fixture::ActivitySequence;
 use crate::domain_computation::primary_graph::tests::fixture::CapabilityDisclosureBinding;
@@ -129,20 +127,23 @@ pub fn governed_live_account_definition() -> ApplicationQueryDefinition<
         TouchAccountCapability::reference(),
     )
     .use_field_by(
-        AccountIdentity::reference(),
+        AccountIdentity::at("AccountIdentity"),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
         influence.clone(),
     )
+    .expect("record field contract")
     .use_field_by(
-        ActivityIdentity::reference(),
+        ActivityIdentity::at("ActivityIdentity"),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
         influence.clone(),
     )
+    .expect("record field contract")
     .use_field_by(
-        ActivitySequence::reference(),
+        ActivitySequence::at("ActivitySequence"),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
         influence.clone(),
     )
+    .expect("record field contract")
     .disclose_field_by(
         account_identity(),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
@@ -183,13 +184,13 @@ pub fn governed_live_account_definition() -> ApplicationQueryDefinition<
         )
         .public()
         .parameter(account_parameter())
-        .where_equal(AccountIdentity::reference(), account_parameter())
+        .where_equal(AccountIdentity::at("AccountIdentity"), account_parameter())
         .order_by(
             activity_sequence(),
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(activities())
-        .live_by::<Activity, GovernedLiveAccountActivityCause, _, _, _, _, _, _, _, _>(
+        .live_by::<Activity, GovernedLiveAccountActivityCause>(
             account_identity(),
             activity_identity(),
         )
@@ -277,60 +278,36 @@ pub fn account_identity() -> ApplicationQueryResultFieldRef<
     GovernedLiveAccountActivityQuery,
     AccountIdentitySlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("account", AccountIdentity::reference())
+    ApplicationQueryResultFieldRef::new("account", AccountIdentity::at("AccountIdentity"))
 }
 
 pub fn account_label() -> ApplicationQueryResultFieldRef<
     GovernedLiveAccountActivityQuery,
     AccountLabelSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountLabel,
-    String,
-    worth_query_declaration::facade::application_schema::ReadWrite,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("label", AccountLabel::reference())
+    ApplicationQueryResultFieldRef::new("label", AccountLabel::at("AccountLabel"))
 }
 
 pub fn activity_identity() -> ApplicationQueryResultFieldRef<
     GovernedLiveAccountActivityQuery,
     ActivityIdentitySlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivityIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("activity", ActivityIdentity::reference())
+    ApplicationQueryResultFieldRef::new("activity", ActivityIdentity::at("ActivityIdentity"))
 }
 
 pub fn activity_sequence() -> ApplicationQueryResultFieldRef<
     GovernedLiveAccountActivityQuery,
     ActivitySequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 pub fn activities() -> ApplicationQueryResultRelationRef<

@@ -104,8 +104,7 @@ worth_query_mutation_binding!(pub SpawnBinding for Spawn, schema Schema,
     program required, outputs SpawnOutputs,
     principal Actor, mapping Mapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit,
-    field Id::reference(), value spawn_scope,
+    scope Id, field Id::at("Id"), value spawn_scope,
 );
 worth_query_mutation_binding!(pub DespawnBinding for Despawn, schema Schema,
     identity "relation-only-inverse.despawn.v1", input DespawnInput,
@@ -115,8 +114,7 @@ worth_query_mutation_binding!(pub DespawnBinding for Despawn, schema Schema,
     program required, outputs DespawnOutputs,
     principal Actor, mapping Mapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit,
-    field Id::reference(), value despawn_scope,
+    scope Id, field Id::at("Id"), value despawn_scope,
 );
 impl OperationCreates<SpawnOp> for Node {}
 impl OperationReads<SpawnOp> for Node {}
@@ -130,10 +128,10 @@ impl ApplicationDeclaredOperation<Schema> for SpawnOp {
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
         schema
             .operation_read_entity(Self::reference(), Node::reference())
-            .operation_read_field(Self::reference(), Id::reference())
+            .operation_read_field(Self::reference(), Id::at("Id"))
             .operation_read_relation(Self::reference(), Holds::reference())
             .operation_create(Self::reference(), Node::reference())
-            .operation_write(Self::reference(), Id::reference())
+            .operation_write(Self::reference(), Id::at("Id"))
             .operation_link(Self::reference(), Holds::reference())
     }
 }
@@ -148,7 +146,7 @@ impl ApplicationDeclaredOperation<Schema> for DespawnOp {
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
         schema
             .operation_read_entity(Self::reference(), Node::reference())
-            .operation_read_field(Self::reference(), Id::reference())
+            .operation_read_field(Self::reference(), Id::at("Id"))
             .operation_read_relation(Self::reference(), Holds::reference())
             .operation_unlink(Self::reference(), Holds::reference())
             .operation_delete(Self::reference(), Node::reference())

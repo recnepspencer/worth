@@ -1,19 +1,71 @@
 //! Optional generated support has its own payload lifecycle, outside the planar ring.
 use super::*;
-use worth_query_decl::facade::{
-    application_schema::*, worth_query_aspect, worth_query_entity, worth_query_field,
-};
+use worth_query_decl::facade::application_schema::*;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationEffectEntity;
 
-worth_query_entity!(pub(super) GeneratedSupport for Schema: TopologySchemaBinding);
-worth_query_aspect!(pub(super) SupportPayload for Schema: TopologySchemaBinding, GeneratedSupport;
-    identity = AspectIdentity(0x9184_1001), revision = AspectContractRevision(1));
-worth_query_field!(pub(super) SupportKey for Schema: TopologySchemaBinding, GeneratedSupport, SupportPayload:
-    String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub(super) SupportValue for Schema: TopologySchemaBinding, GeneratedSupport, SupportPayload:
-    u64 => U64ApplicationValueBinding, read_write, equality);
+use worth_query_decl::facade::application_schema::fragment::{self, *};
+pub struct SupportRecords;
+impl Fragment for SupportRecords {
+    const NAME: &'static str = "generated_support";
+    type Bindings = SupportBindings;
+    type Members = (GeneratedSupport,);
+}
+pub struct SupportBindings;
+impl BindingSet for SupportBindings {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl Scalar<String> for SupportBindings {
+    type Binding = StringApplicationValueBinding;
+    const EQUALITY_QUERYABLE: bool = true;
+    const WRITABLE: bool = false;
+}
+impl Scalar<u64> for SupportBindings {
+    type Binding = U64ApplicationValueBinding;
+    const EQUALITY_QUERYABLE: bool = true;
+}
+pub struct GeneratedSupport;
+impl Entity for GeneratedSupport {
+    const NAME: &'static str = "GeneratedSupport";
+    type Aspects = (SupportPayload,);
+    type Relations = ();
+}
+impl GeneratedSupport {
+    pub fn reference<S: TopologySchemaBinding>() -> ApplicationEntityRef<S, Self> {
+        entity(SupportRecords, Self)
+    }
+}
+pub struct SupportPayload;
+impl Aspect for SupportPayload {
+    const NAME: &'static str = "SupportPayload";
+    type Row = SupportValueRow;
+}
+pub struct SupportValueRow {
+    key: String,
+    value: u64,
+}
+impl fragment::Record<SupportValueRow> for SupportBindings {
+    fn record() -> impl Shape<SupportValueRow, Self> {
+        field("SupportKey", |row: &SupportValueRow| row.key.clone())
+            .and("SupportValue", |row: &SupportValueRow| row.value)
+            .build(|key, value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(SupportValueRow { key, value })
+            })
+    }
+}
+pub type SupportKey = FieldSelection<SupportRecords, GeneratedSupport, SupportPayload, String>;
+pub type SupportValue = FieldSelection<SupportRecords, GeneratedSupport, SupportPayload, u64>;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) struct TotalSupport;
+pub struct TotalSupport;
+impl Relation for TotalSupport {
+    const NAME: &'static str = "TotalSupport";
+    type To = GeneratedSupport;
+}
 impl TotalSupport {
     pub(super) fn reference<Schema: TopologySchemaBinding>(
     ) -> ApplicationRelationRef<Schema, Self, Body, GeneratedSupport> {
@@ -21,12 +73,12 @@ impl TotalSupport {
             "TotalSupport",
             "Body",
             "GeneratedSupport",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            relation_integrity::<TotalSupport>(),
         )
     }
 }
-worth_query_decl::facade::worth_query_operation_reads!(TotalRegionOutput => [GeneratedSupport, SupportKey, SupportValue, TotalSupport]);
-worth_query_decl::facade::worth_query_operation_writes!(TotalRegionOutput => [SupportKey, SupportValue]);
+worth_query_decl::facade::worth_query_operation_reads!(TotalRegionOutput =>[GeneratedSupport,TotalSupport]);
+
 worth_query_decl::facade::worth_query_operation_creates!(TotalRegionOutput => [GeneratedSupport]);
 worth_query_decl::facade::worth_query_operation_deletes!(TotalRegionOutput => [GeneratedSupport]);
 worth_query_decl::facade::worth_query_operation_links!(TotalRegionOutput => [TotalSupport]);
@@ -37,21 +89,12 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let operation = TotalRegionOutput::reference();
     schema
-        .entity(GeneratedSupport::reference())
-        .aspect(GeneratedSupport::reference(), SupportPayload::reference())
-        .field(GeneratedSupport::reference(), SupportKey::reference())
-        .field(GeneratedSupport::reference(), SupportValue::reference())
-        .relation(
-            TotalSupport::reference(),
-            Body::reference(),
-            GeneratedSupport::reference(),
-        )
         .operation_read_entity(operation, GeneratedSupport::reference())
-        .operation_read_field(operation, SupportKey::reference())
-        .operation_read_field(operation, SupportValue::reference())
+        .operation_read_field(operation, SupportKey::at("SupportKey"))
+        .operation_read_field(operation, SupportValue::at("SupportValue"))
         .operation_read_relation(operation, TotalSupport::reference())
-        .operation_write(operation, SupportKey::reference())
-        .operation_write(operation, SupportValue::reference())
+        .operation_write(operation, SupportKey::at("SupportKey"))
+        .operation_write(operation, SupportValue::at("SupportValue"))
         .operation_create(operation, GeneratedSupport::reference())
         .operation_delete(operation, GeneratedSupport::reference())
         .operation_link(operation, TotalSupport::reference())
@@ -69,18 +112,18 @@ pub(super) fn observe<Schema: TopologySchemaBinding>(
     input: &RegionOutputInput,
     reader: &mut DecisionReader<'_, '_, '_, Schema, PreserveBinding<Schema>>,
 ) -> Result<bool, HandlerExecutionDenial> {
-    let total = reader.resolve_entity(BodyKey::reference(), output_key(&input.scope_key))?;
+    let total = reader.resolve_entity(BodyKey::at("BodyKey"), output_key(&input.scope_key))?;
     let members = reader
         .relations_from(TotalSupport::reference(), &total)
         .map_err(HandlerExecutionDenial::new)?;
     for member in &members {
         let entity = member.to();
         reader.entity(entity, GeneratedSupport::reference())?;
-        if let Some(key) = reader.field(entity, SupportKey::reference())? {
-            let selected = reader.resolve_entity(SupportKey::reference(), key)?;
+        if let Some(key) = reader.field(entity, SupportKey::at("SupportKey"))? {
+            let selected = reader.resolve_entity(SupportKey::at("SupportKey"), key)?;
             assert_eq!(selected.entity_id(), entity.entity_id());
         }
-        reader.field(entity, SupportValue::reference())?;
+        reader.field(entity, SupportValue::at("SupportValue"))?;
     }
     assert!(
         members.len() <= 1,
@@ -130,10 +173,10 @@ where
 {
     let key = key(total_key);
     writer
-        .initialize_field(extra, SupportKey::reference(), key.clone())
+        .initialize_field(extra, SupportKey::at("SupportKey"), key.clone())
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .initialize_field(extra, SupportValue::reference(), value)
+        .initialize_field(extra, SupportValue::at("SupportValue"), value)
         .map_err(HandlerExecutionDenial::new)?;
     writer
         .link(
@@ -156,7 +199,7 @@ pub(super) fn preserve<Schema: TopologySchemaBinding>(
     command: u64,
 ) -> Result<(), HandlerExecutionDenial> {
     let total = writer
-        .resolve_entity(BodyKey::reference(), total_key.to_owned())
+        .resolve_entity(BodyKey::at("BodyKey"), total_key.to_owned())
         .map_err(HandlerExecutionDenial::new)?;
     if !present {
         if required(value) {
@@ -178,11 +221,11 @@ pub(super) fn preserve<Schema: TopologySchemaBinding>(
         return Ok(());
     }
     let extra = writer
-        .resolve_entity(SupportKey::reference(), key(total_key))
+        .resolve_entity(SupportKey::at("SupportKey"), key(total_key))
         .map_err(HandlerExecutionDenial::new)?;
     if required(value) {
         writer
-            .write_field(&extra, SupportValue::reference(), value)
+            .write_field(&extra, SupportValue::at("SupportValue"), value)
             .map_err(HandlerExecutionDenial::new)?;
         writer
             .preserve_member::<binding::PreservedExtra<Schema>>("extra", &extra)

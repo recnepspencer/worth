@@ -31,7 +31,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
                     selected
                         .resolve_entity(
                             &host_custody.phase_for_application_for_test(&source.application),
-                            AccountIdentity::reference(),
+                            AccountIdentity::at("AccountIdentity"),
                             key.to_owned(),
                             &live_scope(),
                             WorthQueryPrincipalResolutionMode::Ordinary,

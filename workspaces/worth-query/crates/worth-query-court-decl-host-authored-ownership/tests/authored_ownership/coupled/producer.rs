@@ -9,16 +9,16 @@ pub struct Input {
 }
 worth_query_structured_value_binding!(pub InputBinding for Input { identity: "ownership.body.preserve.input.v1" });
 worth_query_operation!(pub Operation for S: Scenario, input InputBinding);
-impl OperationReads<Operation> for Node {}
-impl OperationReads<Operation> for Id {}
-impl OperationReads<Operation> for Value {}
+impl<const CONTENT: bool> OperationReads<Operation> for NativeNode<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<Operation> for RawId<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<Operation> for RawValue<CONTENT> {}
 impl OperationReads<Operation> for Peer {}
-impl OperationCreates<Operation> for Node {}
-impl OperationDeletes<Operation> for Node {}
+impl<const CONTENT: bool> OperationCreates<Operation> for NativeNode<CONTENT> {}
+impl<const CONTENT: bool> OperationDeletes<Operation> for NativeNode<CONTENT> {}
 impl OperationLinks<Operation> for Peer {}
 impl OperationUnlinks<Operation> for Peer {}
-impl OperationWrites<Operation> for Id {}
-impl OperationWrites<Operation> for Value {}
+impl<const CONTENT: bool> OperationWrites<Operation> for RawId<CONTENT> {}
+impl<const CONTENT: bool> OperationWrites<Operation> for RawValue<CONTENT> {}
 pub struct Outputs;
 pub struct Body<S>(PhantomData<fn() -> S>);
 pub struct Cell<S>(PhantomData<fn() -> S>);
@@ -26,7 +26,7 @@ pub struct RetiredCell<S>(PhantomData<fn() -> S>);
 impl<S: Scenario> WorthQueryApplicationOutputRole for Body<S> {
     type Schema = S;
     type Contract = Outputs;
-    type Entity = Node;
+    type Entity = Node<S>;
     type Action = WorthQueryPreserveOutput;
     type Cardinality = WorthQueryExactlyOneOutput;
     const NAME: &'static str = "derived";
@@ -34,7 +34,7 @@ impl<S: Scenario> WorthQueryApplicationOutputRole for Body<S> {
 impl<S: Scenario> WorthQueryApplicationOutputRole for Cell<S> {
     type Schema = S;
     type Contract = Outputs;
-    type Entity = Node;
+    type Entity = Node<S>;
     type Action = WorthQueryCreateOutput;
     type Cardinality = WorthQueryExactlyOneOutput;
     const NAME: &'static str = "cell-or-child-source";
@@ -42,7 +42,7 @@ impl<S: Scenario> WorthQueryApplicationOutputRole for Cell<S> {
 impl<S: Scenario> WorthQueryApplicationOutputRole for RetiredCell<S> {
     type Schema = S;
     type Contract = Outputs;
-    type Entity = Node;
+    type Entity = Node<S>;
     type Action = WorthQueryRetireOutput;
     type Cardinality = WorthQueryExactlyOneOutput;
     const NAME: &'static str = "previous-cell";
@@ -69,7 +69,7 @@ impl<S: Scenario> ApplicationMutationOutputContract<S> for Outputs {
         <RetiredCell<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
     ];
 }
-type Target<S> = WorthQueryInvariantMutationTarget<S, Node>;
+type Target<S> = WorthQueryInvariantMutationTarget<S, Node<S>>;
 pub struct Decision<S: Scenario> {
     pub boundary: Option<<S::Boundary as sheet_boundary::Profile>::Decision<S>>,
     pub next_cell: u64,
@@ -90,10 +90,9 @@ worth_query_mutation_binding!(
     result query::UnitBinding, idempotency u64, identity "ownership.body.key.v1",
     decision Decision<S>, denial query::UnitBinding, handler identity "ownership.body.preserve.handler.v1",
     outputs Outputs, source ApplicationQueryMutationSource<query::Query>,
-    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
+    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node<S>,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit,
-    field Id::reference(), value_field id,
+    scope Id<S>, field schema::id::<S>(), value_field id,
 );
 pub struct Producer<S>(PhantomData<fn() -> S>);
 impl<S: Scenario> WorthQueryApplicationProducerBinding<S> for Producer<S> {
@@ -128,15 +127,15 @@ pub fn declare<S: Scenario>(
     let op = Operation::reference();
     schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
-        .operation_read_entity(op, Node::reference())
-        .operation_read_field(op, Id::reference())
-        .operation_read_field(op, Value::reference())
+        .operation_read_entity(op, schema::node::<S>())
+        .operation_read_field(op, schema::id::<S>())
+        .operation_read_field(op, schema::value::<S>())
         .operation_read_relation(op, Peer::reference())
-        .operation_create(op, Node::reference())
-        .operation_delete(op, Node::reference())
+        .operation_create(op, schema::node::<S>())
+        .operation_delete(op, schema::node::<S>())
         .operation_link(op, Peer::reference())
         .operation_unlink(op, Peer::reference())
-        .operation_write(op, Id::reference())
-        .operation_write(op, Value::reference())
+        .operation_write(op, schema::id::<S>())
+        .operation_write(op, schema::value::<S>())
         .application_mutation_binding::<Binding<S>>()
 }

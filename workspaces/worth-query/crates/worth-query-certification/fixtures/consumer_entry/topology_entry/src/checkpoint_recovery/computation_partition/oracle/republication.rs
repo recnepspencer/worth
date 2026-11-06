@@ -64,16 +64,16 @@ pub(super) fn republish(application: &Application<false, TOTALS_WORK, 1, 2>, tot
             panic!("the ring is generated");
         };
         reconstruction
-            .field(&entity, BodyKey::reference(), key.clone())
+            .field(&entity, BodyKey::at("BodyKey"), key.clone())
             .unwrap();
         reconstruction
-            .field(&entity, PositionX::reference(), length(x))
+            .field(&entity, PositionX::at("PositionX"), length(x))
             .unwrap();
         reconstruction
-            .field(&entity, PositionY::reference(), length(y))
+            .field(&entity, PositionY::at("PositionY"), length(y))
             .unwrap();
         reconstruction
-            .field(&entity, Length::reference(), value)
+            .field(&entity, Length::at("Length"), value)
             .unwrap();
         entities.push(entity);
     }

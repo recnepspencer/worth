@@ -17,19 +17,8 @@ pub struct Row {
 worth_query_structured_value_binding!(pub ResultBinding for Row { identity: "numeric-correction.calculated-row.v1" });
 worth_query_application_query!(pub Query for NumericSchema, identity "numeric-correction.calculation-query.v1",
     parameters ParametersBinding, result ResultBinding, scope Number => "Number", name "calculation");
-pub fn field() -> ApplicationQueryResultFieldRef<
-    Query,
-    Slot,
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Calculated,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("calculated", Calculated::reference())
+pub fn field() -> ApplicationQueryResultFieldRef<Query, Slot, NumericSchema, Calculated> {
+    ApplicationQueryResultFieldRef::new("calculated", Calculated::at("Calculated"))
 }
 pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Parameters, Row, Number> {
     let shape = ApplicationQueryResultShapeBuilder::<
@@ -68,15 +57,7 @@ pub struct Read {
 }
 worth_query_structured_value_binding!(pub InputBinding for Read { identity: "numeric-correction.calculated-read-input.v1" });
 pub struct Binding;
-pub type Scope = ApplicationQueryFieldScope<
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Key,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope = ApplicationQueryFieldScope<Key>;
 impl ApplicationQueryBinding<NumericSchema> for Binding {
     type Input = Read;
     type InputBinding = InputBinding;
@@ -91,17 +72,8 @@ impl ApplicationQueryBinding<NumericSchema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "numeric-correction.calculated-read.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        NumericSchema,
-        Number,
-        NumberFacts,
-        Key,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        Key::reference()
+    fn scope_field() -> Key {
+        Key::at("Key")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         NumericSchema,
@@ -120,6 +92,6 @@ impl ApplicationQueryIntent<NumericSchema> for Read {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> Scope {
-        Scope::new(Key::reference(), self.key)
+        Scope::new(Key::at("Key"), self.key)
     }
 }

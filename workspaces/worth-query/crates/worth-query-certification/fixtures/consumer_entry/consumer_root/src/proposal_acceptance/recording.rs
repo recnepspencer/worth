@@ -22,8 +22,7 @@ worth_query_structured_value_binding!(pub InputBinding for RecordProposal { iden
 worth_query_structured_value_binding!(pub ResultBinding for Recorded { identity:"proposal-application.record.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity:"proposal-application.record.denial.v1" });
 worth_query_operation!(pub Record for Schema, input InputBinding);
-worth_query_operation_reads!(Record => [ModelName]);
-worth_query_operation_writes!(Record => [ProposalName,ProposalData]);
+
 worth_query_operation_creates!(Record => [Proposal]);
 worth_query_operation_links!(Record => [ModelProposal]);
 fn model(input: &RecordProposal) -> String {
@@ -38,8 +37,8 @@ worth_query_mutation_binding!(pub Binding for RecordProposal, schema Schema,
     outputs NoApplicationMutationOutputs,
     principal PrincipalBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Model,ModelFacts,ModelName,String,ReadOnly,NoApplicationUnit,
-    field ModelName::reference(), value model,
+    scope ModelName,
+    field ModelName::at("ModelName"), value model,
 );
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
@@ -49,8 +48,8 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Model>, Denial> {
         let observed = (|| -> Result<_, HandlerExecutionDenial> {
-            let model = reader.resolve_entity(ModelName::reference(), input.model.clone())?;
-            reader.field(&model, ModelName::reference())?;
+            let model = reader.resolve_entity(ModelName::at("ModelName"), input.model.clone())?;
+            reader.field(&model, ModelName::at("ModelName"))?;
             let id = model.entity_id();
             let coordinate = Coordinates {
                 partition: id.partition_value(),
@@ -87,10 +86,18 @@ impl OperationHandler<Schema, Binding> for Handler {
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&proposal, ProposalName::reference(), input.key.clone())
+                .initialize_field(
+                    &proposal,
+                    ProposalName::at("ProposalName"),
+                    input.key.clone(),
+                )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&proposal, ProposalData::reference(), input.data.clone())
+                .initialize_field(
+                    &proposal,
+                    ProposalData::at("ProposalData"),
+                    input.data.clone(),
+                )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .link(
@@ -115,10 +122,10 @@ pub fn declare(
     schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 16)
-        .operation_read_field(op, ModelName::reference())
+        .operation_read_field(op, ModelName::at("ModelName"))
         .operation_create(op, Proposal::reference())
-        .operation_write(op, ProposalName::reference())
-        .operation_write(op, ProposalData::reference())
+        .operation_write(op, ProposalName::at("ProposalName"))
+        .operation_write(op, ProposalData::at("ProposalData"))
         .operation_link(op, ModelProposal::reference())
         .application_mutation_binding::<Binding>()
 }

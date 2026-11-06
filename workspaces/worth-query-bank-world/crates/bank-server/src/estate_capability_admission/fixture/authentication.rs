@@ -27,8 +27,7 @@ pub(super) fn external_identity(
 pub(crate) fn request_scope() -> WorthQueryRequestScope {
     WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
-        WorthQueryCancellationSource::new().token(),
-    )
+        WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 
 pub(super) fn authentication_configuration() -> BankAuthenticationConfiguration {

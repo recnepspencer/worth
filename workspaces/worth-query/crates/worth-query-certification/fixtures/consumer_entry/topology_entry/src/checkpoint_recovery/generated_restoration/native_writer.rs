@@ -25,7 +25,7 @@ mod serial {
                 .unwrap()
                 .resolve_entity(
                     phase,
-                    BodyKey::reference::<CheckpointSchema>(),
+                    BodyKey::at("BodyKey"),
                     ring[1].0.clone(),
                     &scope,
                     primary_graph::WorthQueryPrincipalResolutionMode::Certification,
@@ -37,7 +37,7 @@ mod serial {
             .publish_native_field_write_for_test(
                 branch,
                 record,
-                Length::reference::<CheckpointSchema>(),
+                Length::at("Length"),
                 length(44),
                 &scope,
             )

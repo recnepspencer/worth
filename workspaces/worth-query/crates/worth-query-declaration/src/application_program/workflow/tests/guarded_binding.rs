@@ -9,48 +9,133 @@ use crate::authentication::{
 #[derive(serde::Serialize)]
 pub(super) struct ProposalInput;
 
-// Authoring validates marker identities; this fixture never installs schema
-// references. Implement only the identity contracts it actually consumes.
+use crate::application_schema::fragment::{self, *};
+pub(super) struct WorkflowActors;
+impl Fragment for WorkflowActors {
+    const NAME: &'static str = "workflow_actors";
+    type Bindings = ActorBindings;
+    type Members = (Principal, ExternalMapping);
+}
+pub(super) struct ActorBindings;
+impl BindingSet for ActorBindings {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl Scalar<u64> for ActorBindings {
+    type Binding = U64ApplicationValueBinding;
+    const WRITABLE: bool = false;
+    const EQUALITY_QUERYABLE: bool = true;
+}
+impl Scalar<WorthQueryExternalPrincipalIdentity> for ActorBindings {
+    type Binding = WorthQueryExternalPrincipalIdentityBinding;
+    const WRITABLE: bool = false;
+    const EQUALITY_QUERYABLE: bool = true;
+}
+impl Scalar<WorthQueryPrincipalMappingStatus> for ActorBindings {
+    type Binding = WorthQueryPrincipalMappingStatusBinding;
+    const EQUALITY_QUERYABLE: bool = true;
+}
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct Principal;
+impl Entity for Principal {
+    const NAME: &'static str = "Principal";
+    type Aspects = (PrincipalFacts,);
+    type Relations = ();
+}
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct ExternalMapping;
-impl ApplicationEntityMarkerIdentity<TestSchema> for Principal {
-    const IDENTIFIER: &'static str = "Principal";
+impl Entity for ExternalMapping {
+    const NAME: &'static str = "ExternalMapping";
+    type Aspects = (MappingFacts,);
+    type Relations = (MappingTarget,);
 }
-impl ApplicationEntityMarkerIdentity<TestSchema> for ExternalMapping {
-    const IDENTIFIER: &'static str = "ExternalMapping";
-}
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct PrincipalFacts;
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) struct MappingFacts;
-impl ApplicationAspectMarkerIdentity<TestSchema, Principal> for PrincipalFacts {
-    const IDENTIFIER: &'static str = "PrincipalFacts";
-    const ASPECT_IDENTITY: AspectIdentity = AspectIdentity(0x9500_0101);
-    const CONTRACT_REVISION: AspectContractRevision = AspectContractRevision(1);
+impl Aspect for PrincipalFacts {
+    const NAME: &'static str = "PrincipalFacts";
+    type Row = PrincipalData;
 }
-impl ApplicationAspectMarkerIdentity<TestSchema, ExternalMapping> for MappingFacts {
-    const IDENTIFIER: &'static str = "MappingFacts";
-    const ASPECT_IDENTITY: AspectIdentity = AspectIdentity(0x9500_0102);
-    const CONTRACT_REVISION: AspectContractRevision = AspectContractRevision(1);
-}
-crate::worth_query_field!(pub(super) PrincipalId for TestSchema, Principal, PrincipalFacts:
-    u64 => U64ApplicationValueBinding, read_only, equality);
-crate::worth_query_field!(pub(super) ExternalId for TestSchema, ExternalMapping, MappingFacts:
-    WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding,
-    read_only, equality);
-crate::worth_query_field!(pub(super) MappingStatus for TestSchema, ExternalMapping, MappingFacts:
-    WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding,
-    read_write, equality);
-crate::worth_query_relation!(pub(super) MappingTarget in TestSchema, ExternalMapping => Principal;
-    integrity = same_context_unbounded_retain_dangling);
-crate::worth_query_principal_binding!(pub(super) PrincipalBinding in TestSchema,
-    mapping ExternalMapping {
-        identity: ExternalId, status: MappingStatus,
-        target: MappingTarget => Principal, principal_identity: PrincipalId
+pub(super) struct PrincipalData(u64);
+impl fragment::Record<PrincipalData> for ActorBindings {
+    fn record() -> impl Shape<PrincipalData, Self> {
+        field("PrincipalId", |row: &PrincipalData| row.0).build(
+            |id, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(PrincipalData(id))
+            },
+        )
     }
-);
+}
+pub(super) struct MappingFacts;
+impl Aspect for MappingFacts {
+    const NAME: &'static str = "MappingFacts";
+    type Row = MappingData;
+}
+pub(super) struct MappingData {
+    identity: WorthQueryExternalPrincipalIdentity,
+    status: WorthQueryPrincipalMappingStatus,
+}
+impl fragment::Record<MappingData> for ActorBindings {
+    fn record() -> impl Shape<MappingData, Self> {
+        field("ExternalId", |row: &MappingData| row.identity.clone())
+            .and("MappingStatus", |row: &MappingData| row.status)
+            .build(|identity, status, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(MappingData { identity, status })
+            })
+    }
+}
+pub(super) type PrincipalId = FieldSelection<WorkflowActors, Principal, PrincipalFacts, u64>;
+pub(super) type ExternalId = FieldSelection<
+    WorkflowActors,
+    ExternalMapping,
+    MappingFacts,
+    WorthQueryExternalPrincipalIdentity,
+>;
+pub(super) type MappingStatus =
+    FieldSelection<WorkflowActors, ExternalMapping, MappingFacts, WorthQueryPrincipalMappingStatus>;
+pub(super) struct MappingTarget;
+impl Relation for MappingTarget {
+    const NAME: &'static str = "MappingTarget";
+    type To = Principal;
+}
+impl MappingTarget {
+    fn reference() -> ApplicationRelationRef<TestSchema, Self, ExternalMapping, Principal> {
+        relation(WorkflowActors, ExternalMapping, Self)
+    }
+}
+pub(super) struct PrincipalBinding;
+impl PrincipalBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        TestSchema,
+        Self,
+        ExternalMapping,
+        Principal,
+        <PrincipalId as RecordSelection>::Value,
+        <PrincipalId as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "PrincipalBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    ExternalId::at("ExternalId"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    MappingStatus::at("MappingStatus"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    MappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalId::at("PrincipalId"),
+                ),
+            },
+        )
+    }
+}
+
 crate::worth_query_mutation_binding!(@binding
     pub(super) ApplyBinding for ProposalInput, schema TestSchema,
     identity "worth.query.tests.workflow.apply-binding.v1",
@@ -64,27 +149,24 @@ crate::worth_query_mutation_binding!(@binding
     outputs crate::application_operation::NoApplicationMutationOutputs,
     principal PrincipalBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope_binding crate::application_operation::ApplicationMutationFieldScope<
-        TestSchema, Principal, PrincipalFacts, PrincipalId, u64, ReadOnly, NoApplicationUnit
-    >,
-    scope_field_type Principal, PrincipalFacts, PrincipalId, u64, ReadOnly, NoApplicationUnit,
-    scope_field PrincipalId::reference(),
+    scope_binding crate::application_operation::ApplicationMutationFieldScope<PrincipalId>,
+    scope_field_type PrincipalId,
+    scope_field PrincipalId::at("PrincipalId"),
 );
 
 #[test]
 fn guarded_binding_members_keep_their_declared_identities() {
-    let principal = PrincipalId::reference();
-    let mapping = ExternalId::reference();
+    let principal = PrincipalId::at("PrincipalId");
+    let mapping = ExternalId::at("ExternalId");
     assert_eq!(principal.entity(), "Principal");
     assert_eq!(mapping.entity(), "ExternalMapping");
-    assert_eq!(principal.aspect(), "PrincipalFacts");
     assert_eq!(
-        <PrincipalFacts as ApplicationAspectMarkerIdentity<TestSchema, Principal>>::ASPECT_IDENTITY,
-        AspectIdentity(0x9500_0101)
+        principal.aspect(),
+        aspect(WorkflowActors, Principal, PrincipalFacts).name()
     );
-    assert_eq!(mapping.aspect(), "MappingFacts");
+    assert!(principal.checked().unwrap().locus().field() == "PrincipalId");
     assert_eq!(
-        <MappingFacts as ApplicationAspectMarkerIdentity<TestSchema, ExternalMapping>>::ASPECT_IDENTITY,
-        AspectIdentity(0x9500_0102)
+        mapping.aspect(),
+        aspect(WorkflowActors, ExternalMapping, MappingFacts).name()
     );
 }

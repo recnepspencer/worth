@@ -35,7 +35,7 @@ pub fn meaning<Schema: BirthSchema>() -> (
     .unwrap()
     .bind_application_schema(Schema::declaration().unwrap())
     .unwrap();
-    let field = Value::reference::<Schema>();
+    let field = Value::at("Value");
     let native = installed
         .native_contracts()
         .aspect(field.entity(), field.aspect())

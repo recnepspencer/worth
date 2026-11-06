@@ -5,11 +5,11 @@ fn installed_read_and_directional_traversal_authoring_are_usable() {
     let (index, bank) = installed_bank();
     let read = bank
         .query(Account::reference())
-        .project(AccountIdentity::reference())
-        .project(AccountDisplayName::reference())
-        .project(AccountingRevision::reference())
+        .project(AccountIdentity::at("AccountIdentity"))
+        .project(AccountDisplayName::at("AccountDisplayName"))
+        .project(AccountingRevision::at("AccountingRevision"))
         .where_equal(
-            Status::reference(),
+            Status::at("Status"),
             encoded::<AccountStatusBinding>(AccountStatus::Open),
         )
         .build()
@@ -24,7 +24,7 @@ fn installed_read_and_directional_traversal_authoring_are_usable() {
     let owned = bank
         .query(Principal::reference())
         .traverse(PersonalOwner::reference())
-        .project(AccountIdentity::reference())
+        .project(AccountIdentity::at("AccountIdentity"))
         .build()
         .unwrap();
     assert_eq!(owned.current_entity(), "Account");
@@ -46,7 +46,7 @@ fn installed_money_mutation_and_effect_program_are_usable() {
         .create(JournalEntry::reference())
         .create(Posting::reference())
         .set(
-            PostingAmount::reference(),
+            PostingAmount::at("PostingAmount"),
             encoded::<SignedUsdMoneyBinding>(SignedMoney::<USD>::from_minor(-1_250)),
         )
         .build()
@@ -87,7 +87,7 @@ fn installed_approval_grant_and_revoke_programs_are_usable() {
         .link(PaymentApproval::reference())
         .link(ApprovalPrincipal::reference())
         .set(
-            PaymentStatusField::reference(),
+            PaymentStatusField::at("PaymentStatusField"),
             encoded::<PaymentStatusBinding>(PaymentStatus::Committed),
         )
         .build()
@@ -105,7 +105,7 @@ fn installed_approval_grant_and_revoke_programs_are_usable() {
         .link(AccountAuthorizedUser::reference())
         .link(AuthorizationAccount::reference())
         .set(
-            AuthorizationRole::reference(),
+            AuthorizationRole::at("AuthorizationRole"),
             encoded::<CustomerRoleBinding>(CustomerRole::Viewer),
         )
         .build()
@@ -128,18 +128,10 @@ fn installed_approval_grant_and_revoke_programs_are_usable() {
 }
 
 #[test]
-fn forged_field_capability_type_and_currency_are_denied_independently() {
+fn read_only_fields_and_foreign_currency_bindings_are_denied_independently() {
     let (_, bank) = installed_bank();
     let (from, recipient, amount) = transfer_values();
-    let forged_write = ApplicationFieldRef::<
-        BankSchema,
-        Posting,
-        PostingIdentity,
-        PostingIdentityField,
-        bank_domain::model::PostingId,
-        ReadWrite,
-        EqualityPredicate,
-    >::from_schema_types();
+    let read_only = PostingIdentityField::at("PostingIdentityField");
     let denial = bank
         .operation(SendMoneyOperation::reference())
         .input(SendMoney {
@@ -148,7 +140,7 @@ fn forged_field_capability_type_and_currency_are_denied_independently() {
             amount,
         })
         .set(
-            forged_write,
+            read_only,
             encoded::<PostingIdBinding>(bank_domain::model::PostingId::new(99).unwrap()),
         )
         .build()

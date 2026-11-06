@@ -1,18 +1,28 @@
 //! The real composed constructor refuses mismatched field meaning before effects.
 use crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::*;
-use worth_query_execution::facade::application_contribution as host;
-use schema::ApplicationSchemaContributionAuthoring;
 use std::cell::Cell;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-worth_query_declaration::worth_query_application_schema!(schema Composed {
-    owner: Composed, version: (1,0), members: |schema| {
-        schema.contributions().register::<Contribution>()?
+struct Composed;
+impl fragment::Fragment for Composed {
+    const NAME: &'static str = "Composed";
+    type Bindings = fragment::NoBindings;
+    type Members = (Contribution,);
+}
+impl schema::ApplicationSchema for Composed {
+    const OWNER: &'static str = "Composed";
+    const NAME: &'static str = "Composed";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        schema::ApplicationSchemaDeclaration<Self>,
+        schema::ApplicationSchemaDeclarationDenial,
+    > {
+        fragment::declare(Self)
     }
-});
-impl Fixture for Composed {}
+}
 impl schema::ApplicationSchemaComposition for Composed {
     type Contributions = (Contribution,);
 }
@@ -20,17 +30,7 @@ pub struct Contribution;
 impl schema::ApplicationSchemaContribution<Composed> for Contribution {
     const IDENTITY: schema::ApplicationSchemaContributionIdentity =
         schema::ApplicationSchemaContributionIdentity::new("tests.typed-readiness.fields.v1");
-    fn register_members(
-        schema: schema::ApplicationSchemaDeclarationBuilder<Composed>,
-    ) -> schema::ApplicationSchemaDeclarationBuilder<Composed> {
-        schema
-            .entity(Entity::reference())
-            .aspect(Entity::reference(), Identity::reference())
-            .field(Entity::reference(), Key::reference())
-            .optional_aspect(Entity::reference(), Publication::reference())
-            .field(Entity::reference(), Record::reference())
-            .field(Entity::reference(), Sibling::reference())
-    }
+    type Members = (Model<0>,);
 }
 impl
     worth_query_execution::facade::application_contribution::WorthQueryApplicationContribution<
@@ -76,7 +76,7 @@ impl
     >{
         let _ = builder(declaration).field_dependency(
             declaration,
-            crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::changed::Record::reference::<Composed>(),
+            crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::changed::Record::at("Record"),
             WorthQueryReadinessFieldUse::DeliveryAndEligibility,
         )?;
         panic!("a field with a different nested wire grammar unexpectedly passed declaration admission");
@@ -138,7 +138,7 @@ fn composed_field_refusal_preserves_configuration_and_seed() {
         cause.readiness_denial().unwrap().field_locus(),
         Some(&schema::ApplicationFieldBindingLocus::new(
             "Entity",
-            "Publication",
+            changed::Record::at("Record").aspect(),
             "Record"
         ))
     );

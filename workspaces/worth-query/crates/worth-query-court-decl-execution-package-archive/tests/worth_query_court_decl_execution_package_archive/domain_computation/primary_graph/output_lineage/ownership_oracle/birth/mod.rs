@@ -19,14 +19,14 @@ pub fn admit_genuine_all_create(runtime: &Application) {
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
-                .execution_request_for_for_test(&(*(*runtime.runtime_for_test()).product_runtime_for_test()))
+                .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
                 .unwrap();
             let (_, product, _application_basis) = runtime
                 .on_branch(runtime.current_world())
                 .select(&phase)
                 .unwrap()
                 .into_parts_for_test();
-            let graph = &(*(*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test());
+            let graph = runtime.runtime_for_test().primary_provider_for_test().graph_for_test();
             let publisher = graph.application_publication.as_ref().unwrap();
             let target = CreatedEntityRef {
                 partition_id: PartitionId::main(),
@@ -44,7 +44,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::ANCHOR.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -68,7 +68,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
                 let fields = AspectFieldPatch::from(BTreeMap::from([
                     (
                         layout
-                            .field_locator_for_test("EntrySet", "EntrySetFacts", "EntrySetKey")
+                            .field_locator_for_test("EntrySet", facts::EntrySetWeight::at("EntrySetWeight").aspect(), "EntrySetKey")
                             .unwrap()
                             .clone(),
                         StringApplicationValueBinding::encode(&"genuine-owner-birth".to_owned())
@@ -76,7 +76,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
                     ),
                     (
                         layout
-                            .field_locator_for_test("EntrySet", "EntrySetFacts", "EntrySetWeight")
+                            .field_locator_for_test("EntrySet", facts::EntrySetWeight::at("EntrySetWeight").aspect(), "EntrySetWeight")
                             .unwrap()
                             .clone(),
                         U64ApplicationValueBinding::encode(&9).unwrap(),

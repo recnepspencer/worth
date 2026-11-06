@@ -13,7 +13,7 @@ impl ApplicationMutationOutputContract<MutationSchema> for CreatedOutputs {
 impl WorthQueryApplicationOutputRole for Created {
     type Schema = MutationSchema;
     type Contract = CreatedOutputs;
-    type Entity = FixtureEntity<MutationSchema>;
+    type Entity = FixtureEntity;
     type Action = WorthQueryCreateOutput;
     type Cardinality = WorthQueryExactlyOneOutput;
     const NAME: &'static str = "created-account";
@@ -27,7 +27,7 @@ mutation_binding!(
     MutationDecision,
     MutationDenialBinding,
     "fixture.created-handler.v1",
-    FixturePrincipalIdentityField<MutationSchema>,
+    FixturePrincipalIdentityField::at("PrincipalIdentityField"),
     test_principal_binding::<MutationSchema>(),
     CreatedOutputs
 );
@@ -37,17 +37,13 @@ fn source_output_manifest_resolves_actual_role_and_complete_field_meaning() {
     let source = CreatedBinding::descriptor();
     let inventory = BTreeMap::from([(source.identity().to_owned(), &source)]);
     let queries = [disclosure::HistoryBinding::descriptor()];
-    let field = ApplicationFieldRef::<
-        MutationSchema,
-        FixtureEntity<MutationSchema>,
-        FixtureIdentityAspect<MutationSchema>,
-        FixturePrincipalIdentityField<MutationSchema>,
+    let field = worth_query_declaration::facade::application_schema::fragment::FieldSelection::<
+        InstallationFields,
+        FixtureEntity,
+        FixtureIdentityAspect,
         u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    >::from_schema_types();
-    let witness = ApplicationCorrectionOutput::<CreatedBinding, Created>::field(field);
+    >::at("PrincipalIdentityField");
+    let witness = ApplicationCorrectionOutput::<CreatedBinding, Created>::field(field).unwrap();
     let declared = witness.declaration().parts().clone();
     for axis in [
         "valid",

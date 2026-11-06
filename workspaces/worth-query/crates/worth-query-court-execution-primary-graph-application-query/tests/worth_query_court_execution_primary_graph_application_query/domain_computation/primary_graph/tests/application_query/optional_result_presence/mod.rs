@@ -90,7 +90,7 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let label = AccountLabel::reference();
+    let label = AccountLabel::at("AccountLabel");
     let label_locator = (*graph.layout_for_test())
         .field_locator_for_test(label.entity(), label.aspect(), label.field())
         .unwrap()
@@ -124,7 +124,7 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
         })
         .expect("the fixture read owns its installed host call");
 
-    let note = AccountNote::reference();
+    let note = AccountNote::at("AccountNote");
     let note_locator = (*graph.layout_for_test())
         .field_locator_for_test(note.entity(), note.aspect(), note.field())
         .unwrap()
@@ -263,7 +263,7 @@ pub fn execute_with_note_fact(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             phase_custody,
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
             account.to_owned(),
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -317,7 +317,9 @@ pub fn execute_with_note_fact(
     );
     let note = (*footprint.aspects_for_test())
         .iter()
-        .find(|observed| (*observed.field_for_test()).as_str() == AccountNote::reference().field())
+        .find(|observed| {
+            (*observed.field_for_test()).as_str() == AccountNote::at("AccountNote").field()
+        })
         .expect("the optional note is a tracked source field");
     let fact = WorthQueryApplicationObservedFact::SourceFieldRevision {
         entity_id: (*note.entity_for_test()),

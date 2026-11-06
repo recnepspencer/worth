@@ -28,8 +28,7 @@ worth_query_structured_value_binding!(pub InputBinding for Edit { identity: "num
 worth_query_structured_value_binding!(pub ResultBinding for Edited { identity: "numeric-correction.edit.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for MissingValue { identity: "numeric-correction.edit.denial.v1" });
 worth_query_operation!(pub EditNumber for NumericSchema, input InputBinding);
-worth_query_operation_reads!(EditNumber => [Number, Key, Primary, Ceiling, AuthoredReference]);
-worth_query_operation_writes!(EditNumber => [Primary]);
+worth_query_operation_reads!(EditNumber => [Number, AuthoredReference]);
 
 impl ApplicationDeclaredOperation<NumericSchema> for EditNumber {
     fn declare_access(
@@ -37,12 +36,12 @@ impl ApplicationDeclaredOperation<NumericSchema> for EditNumber {
     ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
         schema
             .operation_projection_work_budget(Self::reference(), 8)
-            .operation_read_field(Self::reference(), Key::reference())
-            .operation_read_field(Self::reference(), Primary::reference())
-            .operation_read_field(Self::reference(), Ceiling::reference())
+            .operation_read_field(Self::reference(), Key::at("Key"))
+            .operation_read_field(Self::reference(), Primary::at("Primary"))
+            .operation_read_field(Self::reference(), Ceiling::at("Ceiling"))
             .operation_read_entity(Self::reference(), Number::reference())
             .operation_read_relation(Self::reference(), AuthoredReference::reference())
-            .operation_write(Self::reference(), Primary::reference())
+            .operation_write(Self::reference(), Primary::at("Primary"))
     }
 }
 
@@ -50,15 +49,7 @@ pub struct EditBinding;
 impl ApplicationMutationAdmissionBinding<NumericSchema> for EditBinding {
     type Admission = ApplicationConventionalAdmission;
 }
-pub type Scope = ApplicationMutationFieldScope<
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Key,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope = ApplicationMutationFieldScope<Key>;
 impl ApplicationMutationBinding<NumericSchema> for EditBinding {
     fn visit_source_disclosure<Visitor: ApplicationSourceDisclosureVisitor<NumericSchema, Self>>(
         visitor: Visitor,
@@ -86,17 +77,8 @@ impl ApplicationMutationBinding<NumericSchema> for EditBinding {
     const IDENTITY: &'static str = "numeric-correction.edit.binding.v1";
     const HANDLER_IDENTITY: &'static str = "numeric-correction.edit.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "numeric-correction.edit.command.v1";
-    fn scope_field() -> ApplicationFieldRef<
-        NumericSchema,
-        Number,
-        NumberFacts,
-        Key,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        Key::reference()
+    fn scope_field() -> Key {
+        Key::at("Key")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         NumericSchema,
@@ -118,7 +100,7 @@ impl ApplicationMutationIntent<NumericSchema> for Edit {
         self
     }
     fn scope_binding(&self) -> Scope {
-        Scope::new(Key::reference(), self.key.clone())
+        Scope::new(Key::at("Key"), self.key.clone())
     }
 }
 pub struct Handler;
@@ -128,7 +110,7 @@ impl OperationHandler<NumericSchema, EditBinding> for Handler {
         input: &Edit,
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, EditBinding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<NumericSchema, Number>, MissingValue> {
-        let root = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+        let root = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
             Ok(root) => root,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
@@ -152,7 +134,7 @@ impl OperationHandler<NumericSchema, EditBinding> for Handler {
             None | Some([]) => &root,
             Some(_) => return HandlerResult::DomainDenied(MissingValue),
         };
-        let ceiling = match reader.field(ceiling_root, Ceiling::reference()) {
+        let ceiling = match reader.field(ceiling_root, Ceiling::at("Ceiling")) {
             Ok(Some(value)) => value,
             Ok(None) => return HandlerResult::DomainDenied(MissingValue),
             Err(error) => return HandlerResult::ExecutionDenied(error),
@@ -162,7 +144,7 @@ impl OperationHandler<NumericSchema, EditBinding> for Handler {
                 return HandlerResult::DomainDenied(MissingValue)
             }
             Value::Primary(_) | Value::AdjacentPrimary(_) => reader
-                .field(&root, Primary::reference())
+                .field(&root, Primary::at("Primary"))
                 .map(|value| value.is_some()),
             _ => return HandlerResult::DomainDenied(MissingValue),
         };
@@ -190,7 +172,7 @@ impl OperationHandler<NumericSchema, EditBinding> for Handler {
         };
         let written = match input.value {
             Value::Primary(value) | Value::AdjacentPrimary(value) => {
-                writer.write_field(&target, Primary::reference(), value)
+                writer.write_field(&target, Primary::at("Primary"), Counter(value))
             }
             _ => return HandlerResult::DomainDenied(MissingValue),
         };

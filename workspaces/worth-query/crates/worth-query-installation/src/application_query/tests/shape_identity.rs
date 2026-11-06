@@ -15,8 +15,8 @@ use super::{
     QueryTestSchema,
 };
 
-pub(super) struct GroupedOneParameters;
-pub(super) struct GroupedTwoParameters;
+pub(in crate::application_query) struct GroupedOneParameters;
+pub(in crate::application_query) struct GroupedTwoParameters;
 struct FirstKindSlot;
 struct FirstSequenceSlot;
 struct SecondSequenceSlot;
@@ -33,17 +33,17 @@ worth_query_portable_type!(AccountIdSlot => "worth.query.test.installation.shape
 worth_query_portable_type!(FirstRelationSlot => "worth.query.test.installation.shape.first-relation.v1");
 worth_query_portable_type!(SecondRelationSlot => "worth.query.test.installation.shape.second-relation.v1");
 worth_query_structured_value_binding!(
-    pub(super) GroupedOneParametersBinding for GroupedOneParameters { identity: "GroupedOneParameters" }
+    pub(in crate::application_query) GroupedOneParametersBinding for GroupedOneParameters { identity: "GroupedOneParameters" }
 );
 worth_query_structured_value_binding!(
-    pub(super) GroupedTwoParametersBinding for GroupedTwoParameters { identity: "GroupedTwoParameters" }
+    pub(in crate::application_query) GroupedTwoParametersBinding for GroupedTwoParameters { identity: "GroupedTwoParameters" }
 );
 worth_query_structured_value_binding!(
     GroupedNestedResultBinding for () { identity: "worth.rust.unit" }
 );
 
 worth_query_application_query!(
-    pub(super) GroupedOneQuery for QueryTestSchema,
+    pub(in crate::application_query) GroupedOneQuery for QueryTestSchema,
     identity "GroupedOneQuery",
     parameters GroupedOneParametersBinding,
     result ActivityQueryResultBinding,
@@ -51,7 +51,7 @@ worth_query_application_query!(
     name "grouped_one"
 );
 worth_query_application_query!(
-    pub(super) GroupedTwoQuery for QueryTestSchema,
+    pub(in crate::application_query) GroupedTwoQuery for QueryTestSchema,
     identity "GroupedTwoQuery",
     parameters GroupedTwoParametersBinding,
     result ActivityQueryResultBinding,
@@ -59,7 +59,7 @@ worth_query_application_query!(
     name "grouped_two"
 );
 
-pub(super) fn grouped_one_definition() -> ApplicationQueryDefinition<
+pub(in crate::application_query) fn grouped_one_definition() -> ApplicationQueryDefinition<
     QueryTestSchema,
     GroupedOneQuery,
     GroupedOneParameters,
@@ -69,7 +69,7 @@ pub(super) fn grouped_one_definition() -> ApplicationQueryDefinition<
     grouped_shape_definition(GroupedOneQuery::reference(), true)
 }
 
-pub(super) fn grouped_two_definition() -> ApplicationQueryDefinition<
+pub(in crate::application_query) fn grouped_two_definition() -> ApplicationQueryDefinition<
     QueryTestSchema,
     GroupedTwoQuery,
     GroupedTwoParameters,
@@ -120,18 +120,12 @@ where
         (),
         GroupedNestedResultBinding,
     >::new(Activity::reference())
-    .field(ApplicationQueryResultFieldRef::<
-        Query,
-        FirstKindSlot,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >::new("kind", ActivityKind::reference()));
+    .field(
+        ApplicationQueryResultFieldRef::<Query, FirstKindSlot, _, _>::new(
+            "kind",
+            ActivityKind::at("ActivityKind"),
+        ),
+    );
     let first = if split_after_first {
         first
     } else {
@@ -140,13 +134,9 @@ where
             FirstSequenceSlot,
             _,
             _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-        >::new("sequence", ActivitySequence::reference()))
+        >::new(
+            "sequence", ActivitySequence::at("ActivitySequence")
+        ))
     };
     let second = ApplicationQueryResultShapeBuilder::<
         QueryTestSchema,
@@ -162,38 +152,26 @@ where
                 SecondSequenceSlot,
                 _,
                 _,
-                _,
-                _,
-                _,
-                _,
-                _,
-                _,
-            >::new("sequence", ActivitySequence::reference()))
+            >::new(
+                "sequence", ActivitySequence::at("ActivitySequence")
+            ))
             .field(ApplicationQueryResultFieldRef::<
                 Query,
                 SecondStatusSlot,
                 _,
                 _,
-                _,
-                _,
-                _,
-                _,
-                _,
-                _,
-            >::new("status", ActivityStatus::reference()))
+            >::new(
+                "status", ActivityStatus::at("ActivityStatus")
+            ))
     } else {
         second.field(ApplicationQueryResultFieldRef::<
             Query,
             SecondStatusSlot,
             _,
             _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-        >::new("status", ActivityStatus::reference()))
+        >::new(
+            "status", ActivityStatus::at("ActivityStatus")
+        ))
     };
     let shape = ApplicationQueryResultShapeBuilder::<
         QueryTestSchema,
@@ -202,18 +180,12 @@ where
         ActivityQueryResult,
         ActivityQueryResultBinding,
     >::new(Account::reference())
-    .field(ApplicationQueryResultFieldRef::<
-        Query,
-        AccountIdSlot,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >::new("account_id", AccountId::reference()))
+    .field(
+        ApplicationQueryResultFieldRef::<Query, AccountIdSlot, _, _>::new(
+            "account_id",
+            AccountId::at("AccountId"),
+        ),
+    )
     .relation(
         ApplicationQueryResultRelationRef::<
             Query,

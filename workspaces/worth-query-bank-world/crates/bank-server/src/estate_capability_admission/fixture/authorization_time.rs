@@ -8,12 +8,15 @@ use worth_query_host::facade::primary_graph::{
 #[derive(Clone)]
 pub(crate) struct AuthorizationTimeController {
     current: Arc<Mutex<SystemTime>>,
+    admission_clock:
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
 }
 
 impl AuthorizationTimeController {
     pub(crate) fn at_epoch_seconds(seconds: u64) -> Self {
         Self {
             current: Arc::new(Mutex::new(UNIX_EPOCH + Duration::from_secs(seconds))),
+            admission_clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
         }
     }
 
@@ -27,6 +30,13 @@ impl AuthorizationTimeController {
 }
 
 impl WorthQueryRuntimeTimeSource for AuthorizationTimeController {
+    fn admission_clock(
+        &self,
+    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
+    {
+        self.admission_clock.clone()
+    }
+
     fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
         Ok(*self
             .current

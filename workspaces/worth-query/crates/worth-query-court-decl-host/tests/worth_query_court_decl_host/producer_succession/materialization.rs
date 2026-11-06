@@ -59,10 +59,14 @@ fn independent_payload_and_its_retained_source_relation_rematerialize_with_owned
         panic!("realization is the generated role")
     };
     reconstruction
-        .field(&output, RealizationKey::reference(), original.key.clone())
+        .field(
+            &output,
+            RealizationKey::at("RealizationKey"),
+            original.key.clone(),
+        )
         .unwrap();
     reconstruction
-        .field(&output, RealizedValue::reference(), original.value)
+        .field(&output, RealizedValue::at("RealizedValue"), original.value)
         .unwrap();
     let retained = reconstruction
         .retained_relation_target(Realizes::reference(), &output, Node::reference())

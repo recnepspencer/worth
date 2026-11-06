@@ -68,7 +68,7 @@ where
             let subject = selected
                 .resolve_entity(
                     &phase,
-                    NodeKey::reference(),
+                    NodeKey::at("NodeKey"),
                     root,
                     request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

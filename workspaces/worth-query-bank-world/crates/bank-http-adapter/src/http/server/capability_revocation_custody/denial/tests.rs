@@ -53,12 +53,12 @@ fn command_preparation_and_recovery_keep_native_refusals() {
         };
         assert_eq!(
             native_denial(NativeDenial::Preparation(
-                bank_server::BankEstateProgressionDenial::Attempt(
+                bank_server::BankEstateProgressionDenial::Attempt(Box::new(
                     bank_server::BankCommitPreparationDenial::Application {
                         kind,
                         allocation: None
-                    },
-                ),
+                    }
+                )),
             )),
             expected,
         );
@@ -69,7 +69,7 @@ fn command_preparation_and_recovery_keep_native_refusals() {
     );
     assert_eq!(
         native_denial(NativeDenial::Preparation(
-            bank_server::BankEstateProgressionDenial::Attempt(
+            bank_server::BankEstateProgressionDenial::Attempt(Box::new(
                 bank_server::BankCommitPreparationDenial::Application {
                     kind: bank_server::BankApplicationAttemptDenialKind::ExecutionRequest(
                         WorthQueryProviderSessionDenialKind::ExecutionWorkerPanicked {
@@ -77,8 +77,8 @@ fn command_preparation_and_recovery_keep_native_refusals() {
                         },
                     ),
                     allocation: None,
-                },
-            ),
+                }
+            )),
         )),
         BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator),
     );
@@ -87,12 +87,12 @@ fn command_preparation_and_recovery_keep_native_refusals() {
 #[test]
 fn storage_unavailability_preparation_is_unavailable_and_retryable() {
     let denial = native_denial(NativeDenial::Preparation(
-        bank_server::BankEstateProgressionDenial::Attempt(
+        bank_server::BankEstateProgressionDenial::Attempt(Box::new(
             bank_server::BankCommitPreparationDenial::Application {
                 kind: bank_server::BankApplicationAttemptDenialKind::StorageUnavailable,
                 allocation: None,
             },
-        ),
+        )),
     ));
     assert_eq!(denial, BankHttpDenial::new(Kind::Unavailable, Next::Retry));
 }

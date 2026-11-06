@@ -112,7 +112,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, program::QuantityFeature, Tot
         for edge in reader.relations_from(members::PopulationMember::reference(), root)? {
             let entity = edge.into_to();
             let number = reader
-                .field(&entity, members::MemberNumber::reference())?
+                .field(&entity, members::MemberNumber::at("MemberNumber"))?
                 .ok_or(WorthQueryComputationInputDenial::Owner(1))?;
             items.push(members::Member { number, entity });
         }
@@ -137,10 +137,10 @@ impl WorthQueryPartitionedComputationOwner<Schema, program::QuantityFeature, Tot
         let mut values = Vec::new();
         for (_, member) in partition.items() {
             let key = reader
-                .field(&member.entity, members::DemandKey::reference())?
+                .field(&member.entity, members::DemandKey::at("DemandKey"))?
                 .ok_or(WorthQueryComputationInputDenial::Owner(2))?;
             let kind = reader
-                .field(&member.entity, members::MemberKind::reference())?
+                .field(&member.entity, members::MemberKind::at("MemberKind"))?
                 .ok_or(WorthQueryComputationInputDenial::Owner(4))?;
             let (measure, output) = match kind {
                 members::Kind::Geometry => {
@@ -150,7 +150,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, program::QuantityFeature, Tot
                         WorthQueryOutputAvailabilityState::Pending => (Measure::Pending, None),
                         WorthQueryOutputAvailabilityState::Current(identity) => {
                             let value = reader
-                                .field(identity, Length::reference())?
+                                .field(identity, Length::at("Length"))?
                                 .ok_or(WorthQueryComputationInputDenial::Owner(3))?;
                             (
                                 Measure::Complete(
@@ -168,7 +168,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, program::QuantityFeature, Tot
                         WorthQueryOutputAvailabilityState::Pending => (Measure::Pending, None),
                         WorthQueryOutputAvailabilityState::Current(identity) => {
                             let value = reader
-                                .field(identity, members::QuantitySnapshot::reference())?
+                                .field(identity, members::QuantitySnapshot::at("QuantitySnapshot"))?
                                 .ok_or(WorthQueryComputationInputDenial::Owner(5))?;
                             (value.measure, Some(members::descriptor(identity)))
                         }

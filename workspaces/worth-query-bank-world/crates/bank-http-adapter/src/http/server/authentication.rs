@@ -87,6 +87,10 @@ fn authentication_kind(kind: WorthQueryAuthenticationDenialKind) -> BankHttpDeni
         | Authentication::ValidationTimeInFuture
         | Authentication::Expired => malformed_credential(),
         Authentication::AdapterFailed(Adapter::DependencyUnavailable) => unavailable(),
+        Authentication::ForeignClock => BankHttpDenial::new(
+            BankHttpDenialKind::InternalDenied,
+            BankHttpNextAction::ContactOperator,
+        ),
     }
 }
 

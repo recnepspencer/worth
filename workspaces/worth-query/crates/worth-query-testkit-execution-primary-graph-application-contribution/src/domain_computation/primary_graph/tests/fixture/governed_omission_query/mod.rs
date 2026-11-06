@@ -21,10 +21,8 @@ use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::AccountAllActivity;
 use crate::domain_computation::primary_graph::tests::fixture::AccountLabel;
 use crate::domain_computation::primary_graph::tests::fixture::AccountNote;
-use crate::domain_computation::primary_graph::tests::fixture::AccountPolicy;
 use crate::domain_computation::primary_graph::tests::fixture::AccountStatus;
 use crate::domain_computation::primary_graph::tests::fixture::Activity;
-use crate::domain_computation::primary_graph::tests::fixture::ActivityFacts;
 use crate::domain_computation::primary_graph::tests::fixture::ActivityIdentity;
 use crate::domain_computation::primary_graph::tests::fixture::ActivitySequence;
 use crate::domain_computation::primary_graph::tests::fixture::CapabilityDisclosureBinding;
@@ -212,75 +210,45 @@ pub fn status() -> ApplicationQueryResultFieldRef<
     GovernedAccountOmissionQuery,
     StatusSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountStatus,
-    String,
-    worth_query_declaration::facade::application_schema::ReadWrite,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("status", AccountStatus::reference())
+    ApplicationQueryResultFieldRef::new("status", AccountStatus::at("AccountStatus"))
 }
 
 pub fn label() -> ApplicationQueryResultFieldRef<
     GovernedAccountOmissionQuery,
     LabelSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountLabel,
-    String,
-    worth_query_declaration::facade::application_schema::ReadWrite,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("label", AccountLabel::reference())
+    ApplicationQueryResultFieldRef::new("label", AccountLabel::at("AccountLabel"))
 }
 
 pub fn note() -> ApplicationQueryOptionalResultFieldRef<
     GovernedAccountOmissionQuery,
     NoteSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountNote,
-    String,
-    worth_query_declaration::facade::application_schema::ReadWrite,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryOptionalResultFieldRef::new("note", AccountNote::reference())
+    ApplicationQueryOptionalResultFieldRef::new("note", AccountNote::at("AccountNote"))
 }
 
 pub fn activity_identity() -> ApplicationQueryResultFieldRef<
     GovernedAccountOmissionQuery,
     ActivityIdentitySlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivityIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("activity", ActivityIdentity::reference())
+    ApplicationQueryResultFieldRef::new("activity", ActivityIdentity::at("ActivityIdentity"))
 }
 
 pub fn activity_sequence() -> ApplicationQueryResultFieldRef<
     GovernedAccountOmissionQuery,
     ActivitySequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 pub fn activities() -> ApplicationQueryResultRelationRef<

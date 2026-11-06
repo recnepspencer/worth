@@ -8,8 +8,6 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::diagnostic_comparison::shape::DiagnosticResult;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::diagnostic_comparison::DiagnosticResultBinding;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::application_queries::parameter_reference::status_parameter;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountPolicy;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::application_queries::AccountSummaryParameters;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
@@ -26,19 +24,9 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_declaration::facade::application_query::ApplicationQueryFieldScope;
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
-use worth_query_declaration::facade::application_schema::NoApplicationUnit;
-use worth_query_declaration::facade::application_schema::ReadWrite;
 use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 
-pub type Scope = ApplicationQueryFieldScope<
-    IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
-    AccountStatus,
-    String,
-    ReadWrite,
-    NoApplicationUnit,
->;
+pub type Scope = ApplicationQueryFieldScope<AccountStatus>;
 
 pub trait DiagnosticBinding:
     ApplicationQueryBinding<
@@ -132,7 +120,7 @@ pub fn read<B: DiagnosticBinding>(
             let scope = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

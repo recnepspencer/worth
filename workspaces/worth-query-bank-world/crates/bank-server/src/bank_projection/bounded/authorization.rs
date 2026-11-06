@@ -16,23 +16,19 @@ impl BoundedProjectionState {
     ) -> Result<AuthorizationEntity, BankProjectionDenial>
     where
         AccountAuthorization: OperationReads<Operation>,
-        AccountAuthorizationIdentity: OperationReads<Operation>,
+
         AccountAuthorizedUser: OperationReads<Operation>,
         AuthorizationAccount: OperationReads<Operation>,
-        AuthorizationRole: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
+
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
-        let authorization = reader.resolve_entity(AccountAuthorizationIdentity::reference(), id)?;
+        let authorization = reader.resolve_entity(
+            AccountAuthorizationIdentity::at("AccountAuthorizationIdentity"),
+            id,
+        )?;
         reader.require_decision_entity(&authorization, AccountAuthorization::reference())?;
         self.project_authorization(reader, &authorization)?;
         Ok(authorization)
@@ -47,19 +43,11 @@ impl BoundedProjectionState {
     where
         AccountAuthorizedUser: OperationReads<Operation>,
         AuthorizationAccount: OperationReads<Operation>,
-        AccountIdentity: OperationReads<Operation>,
-        AccountAuthorizationIdentity: OperationReads<Operation>,
-        AuthorizationRole: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
+
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
         let relations =
             reader.decision_relations_from(AccountAuthorizedUser::reference(), principal)?;
@@ -69,7 +57,10 @@ impl BoundedProjectionState {
             validate_authorization_principal(reader, authorization, principal)?;
             let account_relation = authorization_account(reader, authorization)?;
             let account_id = missing_field(
-                reader.decision_field(account_relation.to(), AccountIdentity::reference())?,
+                reader.decision_field(
+                    account_relation.to(),
+                    AccountIdentity::at("AccountIdentity"),
+                )?,
                 "AccountIdentity",
             )?;
             if account_id == account {
@@ -93,21 +84,13 @@ impl BoundedProjectionState {
         account: &AccountEntity,
     ) -> Result<(), BankProjectionDenial>
     where
-        AccountAuthorizationIdentity: OperationReads<Operation>,
         AccountAuthorizedUser: OperationReads<Operation>,
         AuthorizationAccount: OperationReads<Operation>,
-        AuthorizationRole: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
+
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
         let relations = reader.decision_relations_to(AuthorizationAccount::reference(), account)?;
         for relation in relations {
@@ -122,27 +105,25 @@ impl BoundedProjectionState {
         authorization: &AuthorizationEntity,
     ) -> Result<(), BankProjectionDenial>
     where
-        AccountAuthorizationIdentity: OperationReads<Operation>,
         AccountAuthorizedUser: OperationReads<Operation>,
         AuthorizationAccount: OperationReads<Operation>,
-        AuthorizationRole: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
+
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
         let id = missing_field(
-            reader.decision_field(authorization, AccountAuthorizationIdentity::reference())?,
+            reader.decision_field(
+                authorization,
+                AccountAuthorizationIdentity::at("AccountAuthorizationIdentity"),
+            )?,
             "AccountAuthorizationIdentity",
         )?;
-        let canonical = reader.resolve_entity(AccountAuthorizationIdentity::reference(), id)?;
+        let canonical = reader.resolve_entity(
+            AccountAuthorizationIdentity::at("AccountAuthorizationIdentity"),
+            id,
+        )?;
         if &canonical != authorization {
             return Err(BankProjectionDenial::AmbiguousRelation(
                 "AccountAuthorizationIdentity",
@@ -154,19 +135,22 @@ impl BoundedProjectionState {
         let principal_id = missing_field(
             reader.decision_field(
                 principal_relation.from(),
-                PrincipalIdentityField::reference(),
+                PrincipalIdentityField::at("PrincipalIdentityField"),
             )?,
             "PrincipalIdentityField",
         )?;
         self.project_principal(reader, principal_id)?;
         let account_relation = authorization_account(reader, authorization)?;
         let account_id = missing_field(
-            reader.decision_field(account_relation.to(), AccountIdentity::reference())?,
+            reader.decision_field(
+                account_relation.to(),
+                AccountIdentity::at("AccountIdentity"),
+            )?,
             "AccountIdentity",
         )?;
         self.project_account(reader, account_relation.to())?;
         let role = missing_field(
-            reader.decision_field(authorization, AuthorizationRole::reference())?,
+            reader.decision_field(authorization, AuthorizationRole::at("AuthorizationRole"))?,
             "AuthorizationRole",
         )?;
         self.update_builder(|builder| {

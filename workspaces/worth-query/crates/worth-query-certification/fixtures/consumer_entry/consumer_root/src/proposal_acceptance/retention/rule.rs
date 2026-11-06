@@ -33,7 +33,7 @@ pub fn resolve(
     resolver: &WorthQueryApplicationInvariantSchemaResolver<'_, Schema>,
 ) -> Result<Rule, String> {
     resolver
-        .typed_field(Retention::reference())
+        .typed_field(Retention::at("Retention"))
         .map(|field| Rule { field })
         .ok_or_else(|| "the declared target retention field is not installed".to_owned())
 }

@@ -3,14 +3,16 @@ use super::super::read_basis::NativeProjectionRead;
 use super::WorthQueryApplicationInvariantProjectionReader as Reader;
 use crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial as Stop;
 use worth_foundational::facade::{AspectFieldLocator, ContentRefId};
-use worth_query_declaration::facade::application_schema::ContentRefApplicationValueBinding;
+use worth_query_declaration::facade::application_schema::ApplicationContentReferenceBinding;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{
     identity::{EntityId, KindId},
     runtime::RelationalProjectedFieldObservation as Raw,
 };
 impl<S: ApplicationSchema> Reader<'_, S> {
-    pub(in crate::domain_computation::primary_graph::invariant_projection) fn content_reference(
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn content_reference<
+        Binding: ApplicationContentReferenceBinding,
+    >(
         &mut self,
         entity: EntityId,
         kind: KindId,
@@ -32,6 +34,7 @@ impl<S: ApplicationSchema> Reader<'_, S> {
             kind,
             locus,
             locator,
+            decode: decode_reference::<Binding>,
             optional_field: self.layout.field_is_optional(locus.0, locator),
             optional_aspect: self.layout.aspect_is_optional(locus.0, locator),
         })
@@ -98,6 +101,7 @@ struct ContentFieldRead<'a> {
     kind: KindId,
     locus: (&'a str, &'a str, &'a str),
     locator: &'a AspectFieldLocator,
+    decode: DecodeReference,
     optional_field: bool,
     optional_aspect: bool,
 }
@@ -120,8 +124,7 @@ fn read_reference(
         |raw| {
             work.record_fields(1);
             match raw {
-                Raw::Present(value) => decode
-                    .decode::<ContentRefApplicationValueBinding>(name, aspect, key, value)
+                Raw::Present(value) => (field.decode)(decode, name, aspect, key, value)
                     .map(Some)
                     .ok_or_else(|| match decode.denial() {
                         Some(cause) => cause,
@@ -136,4 +139,24 @@ fn read_reference(
     )
     .map_err(|cause| Stop::Content(cause.into()))?;
     observed.ok_or(Stop::ContentBasisUnavailable)?
+}
+
+type DecodeReference = fn(
+    &crate::domain_computation::primary_graph::value_decode::ValueDecodeSession<'_>,
+    &str,
+    &str,
+    &str,
+    &worth_foundational::facade::AspectValue,
+) -> Option<ContentRefId>;
+fn decode_reference<Binding: ApplicationContentReferenceBinding>(
+    decode: &crate::domain_computation::primary_graph::value_decode::ValueDecodeSession<'_>,
+    entity: &str,
+    aspect: &str,
+    field: &str,
+    value: &worth_foundational::facade::AspectValue,
+) -> Option<ContentRefId> {
+    decode
+        .decode::<Binding>(entity, aspect, field, value)
+        .as_ref()
+        .map(Binding::reference)
 }

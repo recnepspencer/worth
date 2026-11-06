@@ -1,7 +1,7 @@
 use crate::installation::aspect_native_identity::model;
 
 fn measure<const R: usize, const F: usize>() -> (u32, usize) {
-    let declaration = model::declaration::<R, F>(false).unwrap();
+    let declaration = model::declaration::<R, F, false>().unwrap();
     let admitted = model::package(&declaration).validate().unwrap();
     let source = admitted.canonical_work();
     let index = model::index_from(admitted);

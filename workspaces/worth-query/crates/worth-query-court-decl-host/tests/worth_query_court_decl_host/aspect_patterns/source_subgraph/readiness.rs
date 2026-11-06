@@ -35,7 +35,7 @@ fn contract(
 ) -> Result<Contract, WorthQueryOutputReadinessContractDenial> {
     WorthQueryOutputReadinessContractBuilder::for_field(
         declaration,
-        GeneratedValue::reference(),
+        GeneratedValue::at("GeneratedValue"),
         domain::WorthQueryDomainOperationIdentity::new("source-subgraph.producer.v1", 1),
         "source-subgraph.producer.v1",
         canonical_query(),
@@ -45,7 +45,7 @@ fn contract(
     )?
     .field_dependency(
         declaration,
-        GeneratedValue::reference(),
+        GeneratedValue::at("GeneratedValue"),
         WorthQueryReadinessFieldUse::DeliveryAndEligibility,
     )?
     .build_typed()
@@ -102,7 +102,7 @@ impl WorthQueryApplicationConditionalBinding<Schema> for Readiness {
             .delivery_ordinal(
                 installation.installed_schema(),
                 node.declaration(),
-                GeneratedValue::reference(),
+                GeneratedValue::at("GeneratedValue"),
             )
             .unwrap();
         installation.bind_output_readiness::<producer::Producer, _, _, _, _, _, _>(node, ordinal)

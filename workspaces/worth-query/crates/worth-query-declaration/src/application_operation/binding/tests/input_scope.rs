@@ -44,16 +44,7 @@ macro_rules! binding {
             ) -> crate::application_operation::ApplicationWorkflowExecutionRequirements {
                 RenameBinding::workflow_execution_requirements()
             }
-            fn scope_field() -> ApplicationFieldRef<
-                MutationSchema,
-                Account,
-                AccountIdentity,
-                AccountIdField,
-                u64,
-                ReadOnly,
-                EqualityPredicate,
-                NoApplicationUnit,
-            > {
+            fn scope_field() -> AccountIdField {
                 RenameBinding::scope_field()
             }
             fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -93,19 +84,19 @@ binding!(
 type Scope = <RenameBinding as ApplicationMutationBinding<MutationSchema>>::ScopeBinding;
 impl ApplicationMutationInputScope<MutationSchema, InitialBinding> for CommonInput {
     fn scope_for_binding(&self) -> Scope {
-        Scope::new(AccountIdField::reference(), self.initial_account)
+        Scope::new(AccountIdField::at("AccountIdField"), self.initial_account)
     }
 }
 impl ApplicationMutationInputScope<MutationSchema, PreserveBinding> for CommonInput {
     fn scope_for_binding(&self) -> Scope {
-        Scope::new(AccountIdField::reference(), self.preserved_account)
+        Scope::new(AccountIdField::at("AccountIdField"), self.preserved_account)
     }
 }
 // The input already has an ordinary intent for RenameBinding. This separate
 // explicit association must coexist without replacing that ordinary dispatch.
 impl ApplicationMutationInputScope<MutationSchema, OtherBinding> for RenameInput {
     fn scope_for_binding(&self) -> Scope {
-        Scope::new(AccountIdField::reference(), self.account_id + 1)
+        Scope::new(AccountIdField::at("AccountIdField"), self.account_id + 1)
     }
 }
 #[test]

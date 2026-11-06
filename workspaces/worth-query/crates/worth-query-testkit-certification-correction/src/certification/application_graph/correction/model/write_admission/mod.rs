@@ -3,25 +3,15 @@ use super::schema::*;
 use worth_query_host::facade::{declaration::application_schema::*, *};
 mod binary;
 mod canonical;
-pub use binary::BrokenBinaryBinding;
-pub use canonical::{CanonicalBinding, CanonicalCounter, DelegatedBinding};
+pub use binary::{BinaryCounter, BrokenBinaryBinding};
+pub use canonical::{CanonicalBinding, CanonicalCounter, DelegatedBinding, DelegatedCounter};
 mod operation;
 pub use operation::{Binding, Encoding, Handler, Write};
-
-worth_query_aspect!(pub WriteFacts for NumericSchema, Number; identity = AspectIdentity(0x91800109), revision = AspectContractRevision(1));
-worth_query_field!(pub Binary for NumericSchema, Number, WriteFacts: u64 => BrokenBinaryBinding, read_write, no_equality);
-
-worth_query_field!(pub Canonical for NumericSchema, Number, WriteFacts: CanonicalCounter => CanonicalBinding, read_write, no_equality);
-worth_query_field!(pub Delegated for NumericSchema, Number, WriteFacts: u64 => DelegatedBinding, read_write, no_equality);
 
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
     schema
-        .optional_aspect(Number::reference(), WriteFacts::reference())
-        .field(Number::reference(), Binary::reference())
-        .field(Number::reference(), Canonical::reference())
-        .field(Number::reference(), Delegated::reference())
         .operation(
             operation::WriteOperation::reference()
                 .definition()
@@ -30,24 +20,24 @@ pub fn declare(
                 .finish(),
         )
         .operation_projection_work_budget(operation::WriteOperation::reference(), 8)
-        .operation_read_field(operation::WriteOperation::reference(), Key::reference())
-        .operation_read_field(operation::WriteOperation::reference(), Binary::reference())
+        .operation_read_field(operation::WriteOperation::reference(), Key::at("Key"))
+        .operation_read_field(operation::WriteOperation::reference(), Binary::at("Binary"))
         .operation_read_field(
             operation::WriteOperation::reference(),
-            Canonical::reference(),
+            Canonical::at("Canonical"),
         )
         .operation_read_field(
             operation::WriteOperation::reference(),
-            Delegated::reference(),
+            Delegated::at("Delegated"),
         )
-        .operation_write(operation::WriteOperation::reference(), Binary::reference())
+        .operation_write(operation::WriteOperation::reference(), Binary::at("Binary"))
         .operation_write(
             operation::WriteOperation::reference(),
-            Canonical::reference(),
+            Canonical::at("Canonical"),
         )
         .operation_write(
             operation::WriteOperation::reference(),
-            Delegated::reference(),
+            Delegated::at("Delegated"),
         )
         .application_mutation_binding::<Binding>()
 }
@@ -78,3 +68,5 @@ impl
         worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion;
     const IDENTITY: &'static str = "domain-write.completion.v1";
 }
+
+pub use crate::facade::certification::application_graph::correction::model::schema::storage_model::{WriteFacts, Binary, Canonical, Delegated};

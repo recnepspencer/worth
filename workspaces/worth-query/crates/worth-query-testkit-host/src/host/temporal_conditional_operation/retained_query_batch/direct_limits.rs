@@ -59,7 +59,7 @@ pub fn execute(
             selected
                 .resolve_entity(
                     &phase,
-                    IntentIdentityField::reference(),
+                    IntentIdentityField::at("IntentIdentityField"),
                     "intent-1".to_owned(),
                     &request,
                     primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,

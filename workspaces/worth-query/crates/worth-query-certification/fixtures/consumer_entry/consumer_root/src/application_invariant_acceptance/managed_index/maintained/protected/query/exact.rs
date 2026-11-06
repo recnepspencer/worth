@@ -47,12 +47,12 @@ worth_query_query_binding!(pub Binding for Find, schema Catalog, identity "maint
         .bind(probe::<Query>(), source::Probe { prefix: input.prefix.clone() }).unwrap().bind(enabled::<Query>(), true).unwrap() },
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value scope, limits results 16);
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value scope, limits results 16);
 worth_query_query_binding!(pub BlockedBinding for FindBlocked, schema Catalog, identity "maintained-catalog.blocked-exact-binding.v1", input BlockedInputBinding,
     query BlockedQuery, parameters source::ParametersBinding => |input: &FindBlocked| { ApplicationQueryParameterSet::new()
         .bind(probe::<BlockedQuery>(), source::Probe { prefix: input.prefix.clone() }).unwrap().bind(enabled::<BlockedQuery>(), true).unwrap() },
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value blocked_scope, limits results 16);
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value blocked_scope, limits results 16);

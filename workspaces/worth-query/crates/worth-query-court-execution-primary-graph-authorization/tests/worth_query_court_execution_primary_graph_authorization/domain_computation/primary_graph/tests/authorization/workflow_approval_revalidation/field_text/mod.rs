@@ -119,10 +119,10 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
             let locators = locators(layout);
             // Account is the existing valid native fixture carrier. These are
             // transport labels, never incomplete platform approval records.
-            let identity = AccountIdentity::reference();
-            let status = AccountStatus::reference();
-            let membership = AccountMembershipTag::reference();
-            let label = AccountLabel::reference();
+            let identity = AccountIdentity::at("AccountIdentity");
+            let status = AccountStatus::at("AccountStatus");
+            let membership = AccountMembershipTag::at("AccountMembershipTag");
+            let label = AccountLabel::at("AccountLabel");
             let field = |entity, aspect, name| {
                 retained_layout
                     .field_locator_for_test(entity, aspect, name)

@@ -3,7 +3,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::provider_se
 use worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::aftermath_posture::reversal_posture;
 use worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::application::WorthQueryApplicationEffectPosture;
 use worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclaredClosure;
-use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::application_aftermath::aftermath_schema_fixture as fixture;
 
 #[test]
 fn read_only_roles_receive_no_effect_authority() {

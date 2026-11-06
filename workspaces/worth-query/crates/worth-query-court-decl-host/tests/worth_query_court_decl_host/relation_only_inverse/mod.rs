@@ -5,7 +5,6 @@
 //! link's relation pre-image, as a CAD creation declares its body thread: the
 //! inverse learns whether the optional part was born from Native output
 //! correspondence and checks the retained relation rows.
-use std::marker::PhantomData;
 use worth_query_decl::facade::{
     application_aftermath::*, application_operation::*, application_program::*,
     application_query::*, application_schema::*, authentication::*, *,

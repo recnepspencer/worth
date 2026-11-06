@@ -33,7 +33,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
                 .selected_product(&(phase).test_host_request_for_test())
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

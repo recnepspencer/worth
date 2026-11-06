@@ -50,7 +50,7 @@ pub(super) fn read_funded(
             let entity = selected
                 .resolve_entity(
                     &phase,
-                    Key::reference(),
+                    Key::at("Key"),
                     "numeric".to_owned(),
                     scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

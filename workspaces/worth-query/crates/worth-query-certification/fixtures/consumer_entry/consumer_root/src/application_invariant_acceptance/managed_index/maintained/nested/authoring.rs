@@ -59,12 +59,12 @@ worth_query_structured_value_binding!(pub InputBinding for Edit { identity: "nes
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "nested-catalog.edit.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "nested-catalog.edit.denial.v1" });
 worth_query_operation!(pub EditGraph for Catalog, input InputBinding);
-worth_query_operation_reads!(EditGraph => [Directory,DirectoryIdentity,Item,ItemIdentity,ItemName,ItemEnabled,Children]);
+worth_query_operation_reads!(EditGraph => [Directory,Item,Children]);
 worth_query_operation_creates!(EditGraph => [Directory,Item]);
 worth_query_operation_links!(EditGraph => [Contains,Children]);
 worth_query_operation_unlinks!(EditGraph => [Children]);
 worth_query_operation_deletes!(EditGraph => [Item]);
-worth_query_operation_writes!(EditGraph => [DirectoryIdentity,ItemIdentity,ItemName,ItemEnabled]);
+
 fn scope(_: &Edit) -> String {
     "catalog".into()
 }
@@ -73,7 +73,7 @@ worth_query_mutation_binding!(pub Binding for Edit, schema Catalog, identity "ne
     decision Decision, denial DenialBinding, handler identity "nested-catalog.edit.handler.v1", program required,
     workflow_requirements ApplicationWorkflowExecutionRequirements::not_applicable(), outputs NoApplicationMutationOutputs,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit, field DirectoryIdentity::reference(), value scope,);
+    scope DirectoryIdentity, field DirectoryIdentity::at("DirectoryIdentity"), value scope,);
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
@@ -83,10 +83,10 @@ pub(super) fn declare(
         .operation_projection_work_budget(op, 128)
         .operation_read_entity(op, Directory::reference())
         .operation_read_entity(op, Item::reference())
-        .operation_read_field(op, DirectoryIdentity::reference())
-        .operation_read_field(op, ItemIdentity::reference())
-        .operation_read_field(op, ItemName::reference())
-        .operation_read_field(op, ItemEnabled::reference())
+        .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
+        .operation_read_field(op, ItemIdentity::at("ItemIdentity"))
+        .operation_read_field(op, ItemName::at("ItemName"))
+        .operation_read_field(op, ItemEnabled::at("ItemEnabled"))
         .operation_read_relation(op, Children::reference())
         .operation_create(op, Directory::reference())
         .operation_create(op, Item::reference())
@@ -94,10 +94,10 @@ pub(super) fn declare(
         .operation_link(op, Children::reference())
         .operation_unlink(op, Children::reference())
         .operation_delete(op, Item::reference())
-        .operation_write(op, DirectoryIdentity::reference())
-        .operation_write(op, ItemIdentity::reference())
-        .operation_write(op, ItemName::reference())
-        .operation_write(op, ItemEnabled::reference())
+        .operation_write(op, DirectoryIdentity::at("DirectoryIdentity"))
+        .operation_write(op, ItemIdentity::at("ItemIdentity"))
+        .operation_write(op, ItemName::at("ItemName"))
+        .operation_write(op, ItemEnabled::at("ItemEnabled"))
         .application_mutation_binding::<Binding>()
 }
 

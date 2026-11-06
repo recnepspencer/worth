@@ -57,9 +57,10 @@ impl<S: TopologySchemaBinding, C: HistoryPermission<S>> ApplicationCapabilityReq
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                BodyKey::reference(),
+                BodyKey::at("BodyKey"),
                 encoded(self.body_key.clone()),
-            ),
+            )
+            .unwrap(),
             encoded(C::ACTION.to_owned()),
             encoded("model-history".to_owned()),
             ApplicationCapabilityRequestContext::new(PlanarHistoryContext::<S>::reference()),
@@ -74,7 +75,7 @@ pub(super) fn encoded(
 pub(super) fn declare<S: TopologySchemaBinding>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
 ) -> ApplicationSchemaDeclarationBuilder<S> {
-    grant_status::declare(grants::declare(schema))
+    grant_status::declare(schema)
         .capability_context(PlanarHistoryContext::<S>::reference())
         .capability_provenance(PlanarHistoryProvenance::<S>::reference())
 }

@@ -9,10 +9,11 @@ use super::{
 ///
 /// ```
 /// use worth_query_declaration::facade::application_schema::*;
-/// use worth_query_declaration::{worth_query_entity, worth_query_operation,
+/// use worth_query_declaration::{worth_query_operation,
 ///     worth_query_structured_value_binding};
 /// struct Schema;
-/// worth_query_entity!(Record for Schema);
+/// struct Record;
+/// impl worth_query_declaration::facade::application_schema::fragment::Entity for Record {const NAME:&'static str="Record";type Aspects=();type Relations=();}
 /// worth_query_structured_value_binding!(Input for () { identity: "example.operation.input.v1" });
 /// worth_query_operation!(Read for Schema, input Input; access { read_entities: [Record]; });
 /// fn accepts_read<T: OperationReads<Read>>() {}
@@ -23,11 +24,13 @@ use super::{
 ///
 /// ```compile_fail,E0277
 /// use worth_query_declaration::facade::application_schema::*;
-/// use worth_query_declaration::{worth_query_entity, worth_query_operation,
+/// use worth_query_declaration::{worth_query_operation,
 ///     worth_query_structured_value_binding};
 /// struct Schema;
-/// worth_query_entity!(Record for Schema);
-/// worth_query_entity!(Unlisted for Schema);
+/// struct Record;
+/// impl worth_query_declaration::facade::application_schema::fragment::Entity for Record {const NAME:&'static str="Record";type Aspects=();type Relations=();}
+/// struct Unlisted;
+/// impl worth_query_declaration::facade::application_schema::fragment::Entity for Unlisted {const NAME:&'static str="Unlisted";type Aspects=();type Relations=();}
 /// worth_query_structured_value_binding!(Input for () { identity: "example.operation.input.v1" });
 /// worth_query_operation!(Read for Schema, input Input; access { read_entities: [Record]; });
 /// fn accepts_read<T: OperationReads<Read>>() {}
@@ -37,10 +40,12 @@ use super::{
 /// Generic schemas enforce the same unlisted-member boundary:
 /// ```compile_fail,E0277
 /// use worth_query_declaration::facade::application_schema::*;
-/// use worth_query_declaration::{worth_query_entity, worth_query_operation, worth_query_structured_value_binding};
+/// use worth_query_declaration::{worth_query_operation, worth_query_structured_value_binding};
 /// trait Bound: ApplicationSchema {}
-/// worth_query_entity!(Listed for S: Bound);
-/// worth_query_entity!(Unlisted for S: Bound);
+/// struct Listed;
+/// impl worth_query_declaration::facade::application_schema::fragment::Entity for Listed {const NAME:&'static str="Listed";type Aspects=();type Relations=();}
+/// struct Unlisted;
+/// impl worth_query_declaration::facade::application_schema::fragment::Entity for Unlisted {const NAME:&'static str="Unlisted";type Aspects=();type Relations=();}
 /// worth_query_structured_value_binding!(Input for () { identity: "generic.access.input" });
 /// worth_query_operation!(Read for S: Bound, input Input; access { read_entities: [Listed]; });
 /// fn require<T: OperationReads<Read>>() {}

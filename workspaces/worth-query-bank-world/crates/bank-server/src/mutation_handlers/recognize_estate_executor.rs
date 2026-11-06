@@ -47,20 +47,24 @@ impl OperationHandler<BankSchema, RecognizeEstateExecutorMutationBinding>
         else {
             return HandlerResult::DomainDenied(EstateMutationDenial::InputVariant);
         };
-        let estate_entity =
-            match candidate.resolve_entity(EstateCaseIdentityField::reference(), estate) {
-                Ok(entity) => entity,
-                Err(denial) => {
-                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
-                }
-            };
-        let executor_entity =
-            match candidate.resolve_entity(PrincipalIdentityField::reference(), executor) {
-                Ok(entity) => entity,
-                Err(denial) => {
-                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
-                }
-            };
+        let estate_entity = match candidate.resolve_entity(
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
+            estate,
+        ) {
+            Ok(entity) => entity,
+            Err(denial) => {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
+            }
+        };
+        let executor_entity = match candidate.resolve_entity(
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+            executor,
+        ) {
+            Ok(entity) => entity,
+            Err(denial) => {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
+            }
+        };
         if let Err(denial) = candidate.link(
             EstateExecutor::reference(),
             format!("estate-executor:{}:{}", estate.get(), executor.get()),

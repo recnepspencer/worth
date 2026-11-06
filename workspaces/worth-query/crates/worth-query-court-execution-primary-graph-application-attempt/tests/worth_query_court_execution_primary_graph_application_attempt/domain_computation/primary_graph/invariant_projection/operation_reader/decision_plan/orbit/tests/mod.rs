@@ -1,10 +1,8 @@
 //! A refusal after aggregate registration cannot seal the partially recorded pair.
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::identity;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::program::authorize;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::*;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionTraversalDenialKind;
-use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 #[test]
 fn failure_of_second_orbit_registration_vetoes_the_partial_pair() {
@@ -18,7 +16,9 @@ fn failure_of_second_orbit_registration_vetoes_the_partial_pair() {
                 .project(
                     &phase,
                     |reader| {
-                        let root = reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap();
+                        let root = reader
+                            .resolve_entity(NodeKey::at("NodeKey"), 0_u64)
+                            .unwrap();
                         reader.orbit(Next::reference(), &root).unwrap()
                     },
                     Allocation::SystemAllocation,

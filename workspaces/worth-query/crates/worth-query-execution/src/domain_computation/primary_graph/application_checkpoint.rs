@@ -24,7 +24,6 @@ pub(in crate::domain_computation::primary_graph) use producer_computation::{
 };
 mod section_bytes;
 
-use capture::merge_accepted_outputs;
 pub(in crate::domain_computation::primary_graph) use capture::merge_native_checkpoint_priors;
 pub use denial::WorthQueryCheckpointCaptureDenial;
 pub(in crate::domain_computation::primary_graph) use facts::decode as decode_producer_facts;

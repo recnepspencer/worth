@@ -37,10 +37,7 @@ worth_query_operation!(pub SubjectReadOperation for DocumentRetentionSchema,inpu
 worth_query_operation!(pub DefinitionReadOperation for DocumentRetentionSchema,input WorkflowReadInputBinding);
 worth_query_operation!(pub MetadataReadOperation for DocumentRetentionSchema,input WorkflowReadInputBinding);
 worth_query_operation!(pub AuditReadOperation for DocumentRetentionSchema,input WorkflowReadInputBinding);
-worth_query_operation_reads!(SubjectReadOperation => [DocumentIdentityField]);
-worth_query_operation_reads!(DefinitionReadOperation => [DocumentIdentityField]);
-worth_query_operation_reads!(MetadataReadOperation => [DocumentIdentityField]);
-worth_query_operation_reads!(AuditReadOperation => [DocumentIdentityField]);
+
 pub trait ReadCapability:
     ApplicationCapabilityMarkerIdentity<Schema = DocumentRetentionSchema>
 {
@@ -87,9 +84,10 @@ impl<C: ReadCapability> ApplicationCapabilityRequest<DocumentRetentionSchema, C>
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 encoded(self.document_identity.clone()),
-            ),
+            )
+            .unwrap(),
             encoded(C::ACTION.to_owned()),
             encoded("reviewed-document".to_owned()),
             ApplicationCapabilityRequestContext::new(WorkflowReadContext::reference()),
@@ -199,13 +197,13 @@ pub fn declare(
     let schema = schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 512)
-        .operation_read_field(op, DocumentIdentityField::reference())
+        .operation_read_field(op, DocumentIdentityField::at("DocumentIdentityField"))
         .capability(subject_contract(SubjectReadCapability::reference(), op));
     let op = DefinitionReadOperation::reference();
     let schema = schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 512)
-        .operation_read_field(op, DocumentIdentityField::reference())
+        .operation_read_field(op, DocumentIdentityField::at("DocumentIdentityField"))
         .capability(contract::read::<
             DefinitionReadCapability,
             DefinitionReadOperation,
@@ -214,7 +212,7 @@ pub fn declare(
     let schema = schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 512)
-        .operation_read_field(op, DocumentIdentityField::reference())
+        .operation_read_field(op, DocumentIdentityField::at("DocumentIdentityField"))
         .capability(contract::read::<
             MetadataReadCapability,
             MetadataReadOperation,
@@ -223,7 +221,7 @@ pub fn declare(
     schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 512)
-        .operation_read_field(op, DocumentIdentityField::reference())
+        .operation_read_field(op, DocumentIdentityField::at("DocumentIdentityField"))
         .capability(contract::read::<AuditReadCapability, AuditReadOperation>(
             AuditReadCapability::reference(),
             op,

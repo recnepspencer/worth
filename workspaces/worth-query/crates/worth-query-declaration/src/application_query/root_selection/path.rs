@@ -1,9 +1,8 @@
 use std::marker::PhantomData;
 
 use crate::application_schema::{
-    ApplicationEncodedScalarValue, ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationGraphMemberMeaning, ApplicationRelationRef, DeclaredApplicationFieldValue,
-    EqualityCapable, EqualityPredicate, WritePosture,
+    ApplicationEncodedScalarValue, ApplicationEntityRef, ApplicationGraphMemberMeaning,
+    ApplicationRelationRef,
 };
 
 use super::ApplicationQueryRootPathGuard;
@@ -160,6 +159,7 @@ pub struct ApplicationQueryRootPath<Schema, Start, Current> {
     current_entity: &'static str,
     steps: Vec<ApplicationQueryRootPathStep>,
     guards: Vec<ApplicationQueryRootPathGuard>,
+    field_expectations: Vec<crate::application_schema::ApplicationFieldBindingRecipe>,
     _marker: PhantomData<fn() -> (Schema, Start, Current)>,
 }
 
@@ -170,6 +170,7 @@ impl<Schema, Start> ApplicationQueryRootPath<Schema, Start, Start> {
             current_entity: start.name(),
             steps: Vec::new(),
             guards: Vec::new(),
+            field_expectations: Vec::new(),
             _marker: PhantomData,
         }
     }
@@ -193,6 +194,7 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
             current_entity: relation.to(),
             steps: self.steps,
             guards: self.guards,
+            field_expectations: self.field_expectations,
             _marker: PhantomData,
         }
     }
@@ -214,6 +216,7 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
             current_entity: relation.from(),
             steps: self.steps,
             guards: self.guards,
+            field_expectations: self.field_expectations,
             _marker: PhantomData,
         }
     }
@@ -250,41 +253,43 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
         self
     }
 
-    pub fn where_equal<Aspect, Field, Value, Write, Unit>(
+    pub fn where_equal<Field>(
         mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Current,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         expected: ApplicationEncodedScalarValue<Field::Binding>,
-    ) -> Self
+    ) -> Result<Self, crate::application_schema::ApplicationSchemaDeclarationDenial>
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        EqualityPredicate: EqualityCapable,
-        Unit: ApplicationFieldUnit,
+        Field: crate::application_schema::fragment::RecordSelection<Entity = Current>,
     {
+        field.checked()?;
+        self.field_expectations.push(field.expected_recipe());
         self.guards.push(ApplicationQueryRootPathGuard::new(
             self.steps.len(),
             field,
             expected,
         ));
-        self
+        Ok(self)
     }
 
     pub(crate) fn into_meaning(self) -> ApplicationQueryRootPathMeaning {
-        ApplicationQueryRootPathMeaning {
-            start_entity: self.start_entity.to_owned(),
-            terminal_entity: self.current_entity.to_owned(),
-            steps: self.steps,
-            guards: self.guards,
-        }
+        self.into_parts().0
+    }
+
+    pub(crate) fn into_parts(
+        self,
+    ) -> (
+        ApplicationQueryRootPathMeaning,
+        Vec<crate::application_schema::ApplicationFieldBindingRecipe>,
+    ) {
+        (
+            ApplicationQueryRootPathMeaning {
+                start_entity: self.start_entity.to_owned(),
+                terminal_entity: self.current_entity.to_owned(),
+                steps: self.steps,
+                guards: self.guards,
+            },
+            self.field_expectations,
+        )
     }
 }
 

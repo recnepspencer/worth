@@ -32,7 +32,7 @@ pub fn admitted_program_from_selected(
             &admission,
             |reader, projected| {
                 reader
-                    .require_decision_field(projected, AccountStatus::reference())
+                    .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                     .unwrap();
             },
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -59,7 +59,7 @@ pub fn admitted_program_from_selected(
     effects
         .write_field(
             &account,
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             options.replacement.to_owned(),
         )
         .unwrap();

@@ -4,8 +4,7 @@ use crate::model::BankPrincipalId;
 use crate::schema::{BankPrincipalBinding, BankPrincipalIdBinding, ExternalPrincipalMapping};
 
 use worth_query_decl::facade::{
-    application_operation::*, worth_query_ability, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes, worth_query_policy,
+    application_operation::*, worth_query_ability, worth_query_operation, worth_query_policy,
     worth_query_portable_type, worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget;
@@ -22,8 +21,6 @@ worth_query_structured_value_binding!(pub ProgramDeploymentRevocationInputBindin
 });
 worth_query_operation!(pub ProgramDeploymentRevocationOperation for BankSchema, input ProgramDeploymentRevocationInputBinding);
 worth_query_decl::facade::worth_query_operation_requires!(ProgramDeploymentRevocationOperation => [RevokeProgramDeploymentGrant]);
-worth_query_operation_reads!(ProgramDeploymentRevocationOperation => [ProgramDeploymentGrantIdentity, ProgramDeploymentGrantStatus]);
-worth_query_operation_writes!(ProgramDeploymentRevocationOperation => [ProgramDeploymentGrantStatus]);
 
 #[derive(Clone, Debug)]
 pub struct ProgramDeploymentRevocationIntent {
@@ -47,15 +44,7 @@ worth_query_structured_value_binding!(pub ProgramDeploymentRevocationDenialBindi
 
 pub struct ProgramDeploymentRevocationBinding;
 
-type GrantScope = ApplicationMutationFieldScope<
-    BankSchema,
-    ProgramDeploymentGrant,
-    ProgramDeploymentGrantFacts,
-    ProgramDeploymentGrantIdentity,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+type GrantScope = ApplicationMutationFieldScope<ProgramDeploymentGrantIdentity>;
 
 impl ApplicationMutationBinding<BankSchema> for ProgramDeploymentRevocationBinding {
     fn workflow_execution_requirements(
@@ -88,17 +77,8 @@ impl ApplicationMutationBinding<BankSchema> for ProgramDeploymentRevocationBindi
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.bank.program-deployment-revocation-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        BankSchema,
-        ProgramDeploymentGrant,
-        ProgramDeploymentGrantFacts,
-        ProgramDeploymentGrantIdentity,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        ProgramDeploymentGrantIdentity::reference()
+    fn scope_field() -> ProgramDeploymentGrantIdentity {
+        ProgramDeploymentGrantIdentity::at("ProgramDeploymentGrantIdentity")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -122,7 +102,7 @@ impl ApplicationMutationIntent<BankSchema> for ProgramDeploymentRevocationIntent
 
     fn scope_binding(&self) -> GrantScope {
         GrantScope::new(
-            ProgramDeploymentGrantIdentity::reference(),
+            ProgramDeploymentGrantIdentity::at("ProgramDeploymentGrantIdentity"),
             self.input.grant_identity.clone(),
         )
     }
@@ -142,15 +122,15 @@ pub(super) fn install(
         .operation_projection_work_budget(ProgramDeploymentRevocationOperation::reference(), 64)
         .operation_read_field(
             ProgramDeploymentRevocationOperation::reference(),
-            ProgramDeploymentGrantIdentity::reference(),
+            ProgramDeploymentGrantIdentity::at("ProgramDeploymentGrantIdentity"),
         )
         .operation_read_field(
             ProgramDeploymentRevocationOperation::reference(),
-            ProgramDeploymentGrantStatus::reference(),
+            ProgramDeploymentGrantStatus::at("ProgramDeploymentGrantStatus"),
         )
         .operation_write(
             ProgramDeploymentRevocationOperation::reference(),
-            ProgramDeploymentGrantStatus::reference(),
+            ProgramDeploymentGrantStatus::at("ProgramDeploymentGrantStatus"),
         )
         .application_mutation_binding::<ProgramDeploymentRevocationBinding>()
         .ability(RevokeProgramDeploymentGrant::reference())

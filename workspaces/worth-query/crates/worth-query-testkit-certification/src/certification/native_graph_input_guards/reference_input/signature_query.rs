@@ -20,7 +20,7 @@ macro_rules! worlds_certification_native_graph_input_guards_reference_input_sign
         worth_query_structured_value_binding!(pub $input_binding for $input {identity:concat!("worth.query.reference.",stringify!($input))});
         pub struct $slot;worth_query_portable_type!($slot=>$slot_id);
         worth_query_application_query!(pub $query for Schema,identity $query_id,parameters Parameters,result ResultBinding,scope Row=>"Row",name $query_id);
-        fn $field()->ApplicationQueryResultFieldRef<$query,$slot,Schema,Evidence,Facts,SignedIdentity,String,ReadOnly,EqualityPredicate,NoApplicationUnit> {ApplicationQueryResultFieldRef::new("identity",SignedIdentity::reference())}
+        fn $field()->ApplicationQueryResultFieldRef<$query, $slot, Schema, SignedIdentity> {ApplicationQueryResultFieldRef::new("identity",SignedIdentity::at("SignedIdentity"))}
         pub fn $definition()->ApplicationQueryDefinition<Schema,$query,(),Value,Row> {
             ApplicationQueryDefinitionBuilder::declare($query::reference()).root(Evidence::reference()).scope(Row::reference())
                 .result_shape(ApplicationQueryResultShapeBuilder::<Schema,$query,Evidence,Value,ResultBinding>::new(Evidence::reference()).field($field()).build())
@@ -33,7 +33,7 @@ macro_rules! worlds_certification_native_graph_input_guards_reference_input_sign
         }
         worth_query_query_binding!(pub $binding for $input,schema Schema,identity $binding_id,input $input_binding,query $query,parameters Parameters=>|_|ApplicationQueryParameterSet::new(),result ResultBinding,
             principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-            scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value $input::identity,limits results 8);
+            scope RowIdentity, field RowIdentity::at("RowIdentity"),value $input::identity,limits results 8);
     };
 }
 pub use crate::worlds_certification_native_graph_input_guards_reference_input_signature_query_rs_query as query;

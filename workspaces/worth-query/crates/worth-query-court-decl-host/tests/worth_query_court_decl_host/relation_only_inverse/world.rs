@@ -54,7 +54,7 @@ pub fn install() -> Host {
                     Node::reference(),
                     WorthQueryApplicationEntityKey::new("scope").unwrap(),
                 )
-                .field(Id::reference(), SCOPE),
+                .field(Id::at("Id"), SCOPE),
             )?;
             Ok(())
         },

@@ -145,7 +145,7 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
                             reader
                                 .require_decision_field(
                                     projected,
-                                    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::AccountStatus::reference(),
+                                    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::AccountStatus::at("AccountStatus"),
                                 )
                                 .unwrap();
                         },

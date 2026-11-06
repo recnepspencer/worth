@@ -169,7 +169,7 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                 &host_custody.phase_for_application_for_test(&world.application),
                 &world,
                 "unrelated-capability-0",
-                field(&world, CapabilityStatusField::reference()),
+                field(&world, CapabilityStatusField::at("CapabilityStatusField")),
                 worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityStatusBinding::encode(
                     &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityStatus::Revoked,
                 )
@@ -179,7 +179,7 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                 &host_custody.phase_for_application_for_test(&world.application),
                 &world,
                 "unrelated-capability-0",
-                field(&world, CapabilityStatusField::reference()),
+                field(&world, CapabilityStatusField::at("CapabilityStatusField")),
                 worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityStatusBinding::encode(
                     &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityStatus::Active,
                 )
@@ -258,7 +258,7 @@ pub fn native_stamp_for_independent_grant(
     let predicate = RelationalAuthorizationPredicate::new(
         0,
         kind,
-        field(world, CapabilityStatusField::reference()),
+        field(world, CapabilityStatusField::at("CapabilityStatusField")),
         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityStatusBinding::encode(
             &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityStatus::Active,
         )

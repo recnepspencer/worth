@@ -13,7 +13,7 @@ fn installed_components_use_all_source_directions_and_keep_definition_qualified_
     let world = install();
     world.application.with_host_advancement(|phase| {
         let completed = world.invariant.project(&phase, |reader| {
-            let last = reader.resolve_entity(NodeKey::reference(), 2_u64).unwrap();
+            let last = reader.resolve_entity(NodeKey::at("NodeKey"), 2_u64).unwrap();
             let before = reader.work();
             let shell = reader.component_of(Shells::reference(), &last).unwrap();
             let after = reader.work();
@@ -36,18 +36,18 @@ fn installed_components_use_all_source_directions_and_keep_definition_qualified_
             assert_eq!(after.adjacency_edges_inspected() - before.adjacency_edges_inspected(),
                 explicit_after.adjacency_edges_inspected() - explicit_before.adjacency_edges_inspected(),
                 "component coupling reads equal explicit physical acquisition in both directions");
-            let keys = members.iter().map(|member| reader.field(member, NodeKey::reference()).unwrap())
+            let keys = members.iter().map(|member| reader.field(member, NodeKey::at("NodeKey")).unwrap())
                 .collect::<BTreeSet<_>>();
             assert_eq!(keys, BTreeSet::from([0, 1, 2]));
-            let first = reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap();
+            let first = reader.resolve_entity(NodeKey::at("NodeKey"), 0_u64).unwrap();
             let again = reader.component_of(Shells::reference(), &first).unwrap();
             assert_eq!(shell.identity(), again.identity());
             let a_only = reader.component_of(OnlyA::reference(), &last).unwrap();
             assert_eq!(a_only.len(), 1);
             assert_ne!(shell.identity().bytes(), a_only.identity().bytes());
-            let singleton = reader.resolve_entity(NodeKey::reference(), 4_u64).unwrap();
+            let singleton = reader.resolve_entity(NodeKey::at("NodeKey"), 4_u64).unwrap();
             assert_eq!(reader.component_of(Shells::reference(), &singleton).unwrap().len(), 1);
-            let self_member = reader.resolve_entity(NodeKey::reference(), 3_u64).unwrap();
+            let self_member = reader.resolve_entity(NodeKey::at("NodeKey"), 3_u64).unwrap();
             assert_eq!(reader.component_of(Shells::reference(), &self_member).unwrap().len(), 1);
             let lineage = reader.component_lineage(Shells::reference(), shell.identity()).unwrap();
             assert_eq!(lineage.latest_identity().as_ref(), Some(shell.identity()));
@@ -70,11 +70,11 @@ fn fresh_issued_snapshot_reselects_components_by_definition_and_foreign_members_
     let world = install();
     world.application.with_host_advancement(|phase| {
         let prior = world.invariant.project(&phase, |reader| {
-            let root = reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap();
+            let root = reader.resolve_entity(NodeKey::at("NodeKey"), 0_u64).unwrap();
             reader.component_of(Shells::reference(), &root).unwrap()
         }, Allocation::SystemAllocation).unwrap();
         let foreign = world.other_authority.project(&phase, |reader|
-            reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap(),
+            reader.resolve_entity(NodeKey::at("NodeKey"), 0_u64).unwrap(),
             Allocation::SystemAllocation).unwrap();
         let fresh = world.invariant.project(&phase, |reader| {
             assert_eq!(reader.component_of(Shells::reference(), foreign.output()).unwrap_err().kind(), Kind::ForeignIdentity);
@@ -86,7 +86,7 @@ fn fresh_issued_snapshot_reselects_components_by_definition_and_foreign_members_
                 old.remains_equal_at_for_test(&pin, reader.execution_for_test(), context, None).unwrap()).unwrap();
             assert!(result.0, "the actual definition-qualified reselect matches the admitted product image");
             let missing = ApplicationComponentSetRef::<Schema, Shells, Node>::new("Missing", Node::reference());
-            let root = reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap();
+            let root = reader.resolve_entity(NodeKey::at("NodeKey"), 0_u64).unwrap();
             assert_eq!(reader.component_of(missing, &root).unwrap_err().kind(), Kind::ComponentSetNotInstalled);
         }, Allocation::SystemAllocation).unwrap();
         drop(fresh);

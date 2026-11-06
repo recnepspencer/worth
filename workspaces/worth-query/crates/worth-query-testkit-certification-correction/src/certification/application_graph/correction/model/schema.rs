@@ -1,6 +1,17 @@
 //! Authored fields and the installed correction association.
-pub use super::domain_binding::InlineCounterBinding;
+#[path = "schema/records.rs"]
+pub(super) mod storage_model;
+pub use super::domain_binding::{Counter, InlineCounterBinding};
+pub use super::write_admission::{
+    BinaryCounter, BrokenBinaryBinding, CanonicalBinding, CanonicalCounter, DelegatedBinding,
+    DelegatedCounter,
+};
 use super::{correction::RecordedEdit, other_edit, principal_status, query};
+pub use storage_model::{
+    Calculated, Ceiling, ExternalIdentity, ExternalIdentityField, ExternalMapping, Key,
+    MappingStatusField, MappingTarget, Number, NumberFacts, NumericModel, NumericModelBindings,
+    Operand, Primary, Principal, PrincipalFacts, PrincipalIdentityField, ReadEnabled, Secondary,
+};
 use worth_query_host::facade::declaration::application_query::{
     ApplicationQueryDisclosureContract, ApplicationQueryInspectionDefinition,
 };
@@ -9,17 +20,78 @@ use worth_query_host::facade::{
     *,
 };
 
-worth_query_application! {
-    pub NumericSchema {
-        owner: "numeric_correction", version: (2, 0),
-        contributions: [NumericContribution],
+use worth_query_decl::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy)]
+pub struct NumericSchema;
+impl Fragment for NumericSchema {
+    const NAME: &'static str = "NumericSchema";
+    type Bindings = NoBindings;
+    type Members = (NumericContribution,);
+}
+impl ApplicationSchema for NumericSchema {
+    const OWNER: &'static str = "numeric_correction";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 2;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        fragment::visit_correction(Self, source, visitor)
     }
 }
-worth_query_application_contribution! {
-    pub contribution NumericContribution in NumericSchema {
-        identity: "numeric-correction.application.v1",
-        corrections: [RecordedEdit, super::compensation_movement::NeutralizeCredit, super::source_output_correction::RecordIssued, super::composite_definition_model::CorrectDefinition, super::authored_identity_correction::UndoCreate, super::authored_identity_correction::UndoRetire, super::adjacency_link::ReverseLink, super::observed_clone::UndoClone],
-        members: |schema| {
+impl NumericSchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+impl ApplicationSchemaComposition for NumericSchema {
+    type Contributions = <Self as Fragment>::Members;
+}
+
+pub struct NumericContribution;
+impl ApplicationSchemaContribution<NumericSchema> for NumericContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("numeric-correction.application.v1");
+    type Members = (
+        NumericModel,
+        Contracts,
+        (
+            RecordedEdit,
+            super::compensation_movement::NeutralizeCredit,
+            super::source_output_correction::RecordIssued,
+            super::composite_definition_model::CorrectDefinition,
+            super::authored_identity_correction::UndoCreate,
+            super::authored_identity_correction::UndoRetire,
+            super::adjacency_link::ReverseLink,
+            super::observed_clone::UndoClone,
+        ),
+    );
+}
+impl NumericContribution {
+    pub const fn reference() -> ApplicationSchemaContributionRef<NumericSchema, Self> {
+        ApplicationSchemaContributionRef::from_contribution()
+    }
+}
+pub struct Contracts;
+impl Registration<NumericSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<NumericSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok({
             let schema = super::causal_inspection::declare(schema);
             let schema = super::operand_edit::declare(schema);
             let schema = super::write_admission::declare(schema);
@@ -29,64 +101,101 @@ worth_query_application_contribution! {
             let schema = super::authored_identity_model::declare(schema);
             let schema = super::authored_identity_reference::declare(schema);
             let schema = super::adjacency_link::declare(schema);
-            super::source_output_model::declare(super::compensation_movement::declare(super::calculation::declare(super::adoption::declare(schema)))).entity(ExternalMapping::reference()).entity(Principal::reference()).entity(Number::reference())
-                .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-                .aspect(Principal::reference(), PrincipalFacts::reference()).aspect(Number::reference(), NumberFacts::reference())
-                .field(ExternalMapping::reference(), ExternalIdentityField::reference()).field(ExternalMapping::reference(), MappingStatusField::reference())
-                .field(Principal::reference(), PrincipalIdentityField::reference())
-                .field(Number::reference(), Key::reference()).field(Number::reference(), Primary::reference())
-                .field(Number::reference(), Secondary::reference()).field(Number::reference(), ReadEnabled::reference())
-                .field(Number::reference(), Ceiling::reference())
-                .field(Number::reference(), Calculated::reference())
-                .field(Number::reference(), Operand::reference())
-                .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
-                .principal_binding(ActorBinding::reference())
-                .application_query(query::definition())
-                .application_query(query::full::definition())
-                .application_query_binding::<query::full::Binding>()
-                .application_query_inspection(ApplicationQueryInspectionDefinition::<NumericSchema, query::full::Binding>::new(
-                    ApplicationQueryDisclosureContract::public()).unwrap())
-                .application_query(super::calculation_query::definition())
-                .operation(other_edit::EditOther::reference().definition().no_external_effect().no_aftermath().finish())
-                .operation_projection_work_budget(other_edit::EditOther::reference(), 8)
-                .operation_read_field(other_edit::EditOther::reference(), Key::reference())
-                .operation_read_field(other_edit::EditOther::reference(), Primary::reference())
-                .operation_read_field(other_edit::EditOther::reference(), Secondary::reference())
-                .operation_read_field(other_edit::EditOther::reference(), ReadEnabled::reference())
-                .operation_read_field(other_edit::EditOther::reference(), Ceiling::reference())
-                .operation_write(other_edit::EditOther::reference(), Secondary::reference())
-                .operation_write(other_edit::EditOther::reference(), Primary::reference())
-                .operation_write(other_edit::EditOther::reference(), ReadEnabled::reference())
-                .operation_write(other_edit::EditOther::reference(), Ceiling::reference())
-                .application_mutation_binding::<other_edit::OtherBinding>()
-                .operation(principal_status::Disable::reference().definition().no_external_effect().no_aftermath().finish())
-                .operation_projection_work_budget(principal_status::Disable::reference(), 8)
-                .operation_read_field(principal_status::Disable::reference(), ExternalIdentityField::reference())
-                .operation_read_field(principal_status::Disable::reference(), MappingStatusField::reference())
-                .operation_write(principal_status::Disable::reference(), MappingStatusField::reference())
-                .application_mutation_binding::<principal_status::Binding>()
-        }
+            super::source_output_model::declare(super::compensation_movement::declare(
+                super::calculation::declare(super::adoption::declare(schema)),
+            ))
+            .principal_binding(ActorBinding::reference())
+            .application_query(query::definition())
+            .application_query(query::full::definition())
+            .application_query_binding::<query::full::Binding>()
+            .application_query_inspection(
+                ApplicationQueryInspectionDefinition::<NumericSchema, query::full::Binding>::new(
+                    ApplicationQueryDisclosureContract::public(),
+                )
+                .unwrap(),
+            )
+            .application_query(super::calculation_query::definition())
+            .operation(
+                other_edit::EditOther::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .operation_projection_work_budget(other_edit::EditOther::reference(), 8)
+            .operation_read_field(other_edit::EditOther::reference(), Key::at("Key"))
+            .operation_read_field(other_edit::EditOther::reference(), Primary::at("Primary"))
+            .operation_read_field(
+                other_edit::EditOther::reference(),
+                Secondary::at("Secondary"),
+            )
+            .operation_read_field(
+                other_edit::EditOther::reference(),
+                ReadEnabled::at("ReadEnabled"),
+            )
+            .operation_read_field(other_edit::EditOther::reference(), Ceiling::at("Ceiling"))
+            .operation_write(
+                other_edit::EditOther::reference(),
+                Secondary::at("Secondary"),
+            )
+            .operation_write(other_edit::EditOther::reference(), Primary::at("Primary"))
+            .operation_write(
+                other_edit::EditOther::reference(),
+                ReadEnabled::at("ReadEnabled"),
+            )
+            .operation_write(other_edit::EditOther::reference(), Ceiling::at("Ceiling"))
+            .application_mutation_binding::<other_edit::OtherBinding>()
+            .operation(
+                principal_status::Disable::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .operation_projection_work_budget(principal_status::Disable::reference(), 8)
+            .operation_read_field(
+                principal_status::Disable::reference(),
+                ExternalIdentityField::at("ExternalIdentityField"),
+            )
+            .operation_read_field(
+                principal_status::Disable::reference(),
+                MappingStatusField::at("MappingStatusField"),
+            )
+            .operation_write(
+                principal_status::Disable::reference(),
+                MappingStatusField::at("MappingStatusField"),
+            )
+            .application_mutation_binding::<principal_status::Binding>()
+        })
     }
 }
-worth_query_entity!(pub ExternalMapping for NumericSchema);
-worth_query_entity!(pub Principal for NumericSchema);
-worth_query_entity!(pub Number for NumericSchema);
-worth_query_aspect!(pub ExternalIdentity for NumericSchema, ExternalMapping; identity = AspectIdentity(0x91800101), revision = AspectContractRevision(1));
-worth_query_aspect!(pub PrincipalFacts for NumericSchema, Principal; identity = AspectIdentity(0x91800102), revision = AspectContractRevision(1));
-worth_query_aspect!(pub NumberFacts for NumericSchema, Number; identity = AspectIdentity(0x91800103), revision = AspectContractRevision(2));
-worth_query_field!(pub ExternalIdentityField for NumericSchema, ExternalMapping, ExternalIdentity: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub MappingStatusField for NumericSchema, ExternalMapping, ExternalIdentity: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub PrincipalIdentityField for NumericSchema, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub Key for NumericSchema, Number, NumberFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub Primary for NumericSchema, Number, NumberFacts: u64 => InlineCounterBinding, read_write, no_equality);
-worth_query_field!(pub Secondary for NumericSchema, Number, NumberFacts: u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_field!(pub ReadEnabled for NumericSchema, Number, NumberFacts: bool => BoolApplicationValueBinding, read_write, equality);
-worth_query_field!(pub Ceiling for NumericSchema, Number, NumberFacts: u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_field!(pub Calculated for NumericSchema, Number, NumberFacts: u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_relation!(pub MappingTarget in NumericSchema, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(pub ActorBinding in NumericSchema, mapping ExternalMapping {
-    identity: ExternalIdentityField, status: MappingStatusField,
-    target: MappingTarget => Principal, principal_identity: PrincipalIdentityField
-});
 
-worth_query_field!(pub Operand for NumericSchema, Number, NumberFacts: optional u64 => U64ApplicationValueBinding, read_write, equality);
+pub struct ActorBinding;
+impl ActorBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        NumericSchema,
+        Self,
+        ExternalMapping,
+        Principal,
+        <PrincipalIdentityField as RecordSelection>::Value,
+        <PrincipalIdentityField as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "ActorBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    ExternalIdentityField::at("ExternalIdentityField"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    MappingStatusField::at("MappingStatusField"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    MappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
+                ),
+            },
+        )
+    }
+}

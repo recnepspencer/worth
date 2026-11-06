@@ -28,13 +28,9 @@ macro_rules! guarded_binding {
             outputs RenameOutputs,
             principal PrincipalBinding, mapping ExternalMapping, principal_entity Account,
             principal_identity u64, identity_binding crate::application_schema::U64ApplicationValueBinding,
-            scope_binding crate::application_operation::ApplicationMutationFieldScope<
-                MutationSchema, Account, AccountIdentity, AccountIdField, u64,
-                crate::application_schema::ReadOnly, crate::application_schema::NoApplicationUnit
-            >,
-            scope_field_type Account, AccountIdentity, AccountIdField, u64,
-                crate::application_schema::ReadOnly, crate::application_schema::NoApplicationUnit,
-            scope_field AccountIdField::reference(),
+            scope_binding crate::application_operation::ApplicationMutationFieldScope<AccountIdField>,
+            scope_field_type AccountIdField,
+            scope_field AccountIdField::at("AccountIdField"),
 );
     };
 }

@@ -19,9 +19,12 @@ where
         reader: &mut DecisionReader<'_, '_, '_, Catalog, B>,
     ) -> HandlerResult<Decision, Denial> {
         HandlerResult::from_result((|| {
-            let a =
-                reader.resolve_entity(DirectoryIdentity::reference(), input.directory.clone())?;
-            let b = reader.resolve_entity(DirectoryIdentity::reference(), "B".to_owned())?;
+            let a = reader.resolve_entity(
+                DirectoryIdentity::at("DirectoryIdentity"),
+                input.directory.clone(),
+            )?;
+            let b = reader
+                .resolve_entity(DirectoryIdentity::at("DirectoryIdentity"), "B".to_owned())?;
             Ok(Decision {
                 a: reader.mutation_target(&a)?,
                 b: reader.mutation_target(&b)?,
@@ -49,18 +52,22 @@ where
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&item, ItemIdentity::reference(), input.identity.clone())
+                .initialize_field(
+                    &item,
+                    ItemIdentity::at("ItemIdentity"),
+                    input.identity.clone(),
+                )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&item, ItemName::reference(), input.name.clone())
+                .initialize_field(&item, ItemName::at("ItemName"), input.name.clone().into())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&item, ItemEnabled::reference(), true)
+                .initialize_field(&item, ItemEnabled::at("ItemEnabled"), true)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .initialize_field(
                     &item,
-                    bounds::ItemBounds::reference(),
+                    bounds::ItemBounds::at("ItemBounds"),
                     bounds::Coordinates::new(0, 0, 0, 0),
                 )
                 .map_err(HandlerExecutionDenial::new)?;

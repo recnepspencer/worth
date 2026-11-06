@@ -35,13 +35,13 @@ pub fn elevation_status(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            CapabilityElevationIdentity::reference(),
-            "elevation-2".to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            "elevation-2".into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let field = CapabilityElevationStatusField::reference();
+    let field = CapabilityElevationStatusField::at("CapabilityElevationStatusField");
     let locator = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap()
@@ -65,7 +65,7 @@ pub fn review_status(
     world: &World,
 ) -> CapabilityReviewStatus {
     let (review, kind) = resolved_review(phase_custody, execution, world);
-    let field = CapabilityReviewStatusField::reference();
+    let field = CapabilityReviewStatusField::at("CapabilityReviewStatusField");
     let locator = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap()
@@ -135,8 +135,8 @@ pub fn has_exact_approver(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            CapabilityElevationIdentity::reference(),
-            "elevation-2".to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            "elevation-2".into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -191,7 +191,7 @@ pub fn resolved_review(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            CapabilityReviewIdentity::reference(),
+            CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
             "review-2".to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,

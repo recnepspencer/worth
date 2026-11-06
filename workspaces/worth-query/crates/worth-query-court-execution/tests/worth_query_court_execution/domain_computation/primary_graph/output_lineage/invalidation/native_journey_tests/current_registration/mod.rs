@@ -27,7 +27,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
             selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -48,13 +48,13 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
-    let status_ref = AccountStatus::reference();
+    let status_ref = AccountStatus::at("AccountStatus");
     let status = graph
         .layout_for_test()
         .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
-    let label_ref = AccountLabel::reference();
+    let label_ref = AccountLabel::at("AccountLabel");
     let label = graph
         .layout_for_test()
         .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())

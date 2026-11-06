@@ -93,19 +93,9 @@ pub fn counted_query_definition<Schema: TopologySchemaBinding>(
     .build()
     .expect("planar query is canonical")
 }
-fn successor_position_y_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    CountedQuery,
-    SuccessorPositionYSlot,
-    Schema,
-    Body,
-    PlanarPosition,
-    PositionY,
-    PositiveLength,
-    ReadWrite,
-    EqualityPredicate,
-    DeclaredApplicationUnit<Metre, <TopologyLengthBinding as ApplicationScalarValueBinding>::Unit>,
-> {
-    ApplicationQueryResultFieldRef::new("successor_y", PositionY::reference())
+fn successor_position_y_result<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<CountedQuery, SuccessorPositionYSlot, Schema, PositionY> {
+    ApplicationQueryResultFieldRef::new("successor_y", PositionY::at("PositionY"))
 }
 fn planar_successor_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultRelationRef<
     CountedQuery,
@@ -132,33 +122,12 @@ fn second_successor_result<Schema: TopologySchemaBinding>() -> ApplicationQueryR
     ApplicationQueryResultRelationRef::forward_one("second_successor", PlanarSuccessor::reference())
 }
 fn second_successor_position_y_result<Schema: TopologySchemaBinding>(
-) -> ApplicationQueryResultFieldRef<
-    CountedQuery,
-    SecondSuccessorPositionYSlot,
-    Schema,
-    Body,
-    PlanarPosition,
-    PositionY,
-    PositiveLength,
-    ReadWrite,
-    EqualityPredicate,
-    DeclaredApplicationUnit<Metre, <TopologyLengthBinding as ApplicationScalarValueBinding>::Unit>,
-> {
-    ApplicationQueryResultFieldRef::new("second_successor_y", PositionY::reference())
+) -> ApplicationQueryResultFieldRef<CountedQuery, SecondSuccessorPositionYSlot, Schema, PositionY> {
+    ApplicationQueryResultFieldRef::new("second_successor_y", PositionY::at("PositionY"))
 }
-fn position_y_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    CountedQuery,
-    PositionYSlot,
-    Schema,
-    Body,
-    PlanarPosition,
-    PositionY,
-    PositiveLength,
-    ReadWrite,
-    EqualityPredicate,
-    DeclaredApplicationUnit<Metre, <TopologyLengthBinding as ApplicationScalarValueBinding>::Unit>,
-> {
-    ApplicationQueryResultFieldRef::new("y", PositionY::reference())
+fn position_y_result<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<CountedQuery, PositionYSlot, Schema, PositionY> {
+    ApplicationQueryResultFieldRef::new("y", PositionY::at("PositionY"))
 }
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationProjection<Schema, CountedQuery>
     for CountedReadResult
@@ -180,37 +149,19 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProjection<Schema, Coun
         })
     }
 }
-fn body_key_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    CountedQuery,
-    BodyKeySlot,
-    Schema,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("body_key", BodyKey::reference())
+fn body_key_result<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<CountedQuery, BodyKeySlot, Schema, BodyKey> {
+    ApplicationQueryResultFieldRef::new("body_key", BodyKey::at("BodyKey"))
 }
 pub struct CountedReadBinding<Schema>(PhantomData<fn() -> Schema>);
-pub type CountedReadScope<Schema> = ApplicationQueryFieldScope<
-    Schema,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type CountedReadScope = ApplicationQueryFieldScope<BodyKey>;
 impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema> for CountedReadBinding<Schema> {
     type Input = CountedRead;
     type InputBinding = CountedReadInputBinding;
     type Query = CountedQuery;
     type ParameterBinding = CountedReadParametersBinding;
     type ResultBinding = CountedReadResultBinding;
-    type ScopeBinding = CountedReadScope<Schema>;
+    type ScopeBinding = CountedReadScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -218,17 +169,8 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema> for CountedR
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.certification.courtroom-counted-read.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -246,8 +188,8 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryIntent<Schema> for CountedRe
     fn parameters(&self) -> ApplicationQueryParameterSet<CountedQuery> {
         ApplicationQueryParameterSet::new()
     }
-    fn into_scope(self) -> CountedReadScope<Schema> {
-        CountedReadScope::new(BodyKey::reference(), self.body_key)
+    fn into_scope(self) -> CountedReadScope {
+        CountedReadScope::new(BodyKey::at("BodyKey"), self.body_key)
     }
 }
 

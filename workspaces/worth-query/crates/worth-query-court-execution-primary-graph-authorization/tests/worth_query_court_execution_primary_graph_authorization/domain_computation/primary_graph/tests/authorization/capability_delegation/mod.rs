@@ -136,7 +136,7 @@ pub fn apply_parent_drift(
             phase_custody,
             world,
             "capability-parent",
-            field(world, CapabilityStatusField::reference()),
+            field(world, CapabilityStatusField::at("CapabilityStatusField")),
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityStatusBinding::encode(
                 &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityStatus::Revoked,
             )
@@ -146,14 +146,20 @@ pub fn apply_parent_drift(
             phase_custody,
             world,
             "capability-parent",
-            field(world, CapabilityNotAfterField::reference()),
+            field(
+                world,
+                CapabilityNotAfterField::at("CapabilityNotAfterField"),
+            ),
             U64ApplicationValueBinding::encode(&99_u64).unwrap(),
         ),
         ParentDrift::Workflow => update_grant_field(
             phase_custody,
             world,
             "capability-parent",
-            field(world, CapabilityWorkflowField::reference()),
+            field(
+                world,
+                CapabilityWorkflowField::at("CapabilityWorkflowField"),
+            ),
             StringApplicationValueBinding::encode(&"closed".to_owned()).unwrap(),
         ),
         ParentDrift::Resource => {

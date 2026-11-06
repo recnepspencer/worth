@@ -16,8 +16,8 @@ macro_rules! result_field {
     ($slot:ident, $fn:ident, $field:ident, $value:ty, $write:ty, $name:literal) => {
         pub struct $slot;
         worth_query_portable_type!($slot => $name);
-        pub fn $fn() -> ApplicationQueryResultFieldRef<RouteQuery, $slot, Schema, Node, Facts, $field, $value, $write, EqualityPredicate, NoApplicationUnit> {
-            ApplicationQueryResultFieldRef::new(stringify!($field), $field::reference())
+        pub fn $fn() -> ApplicationQueryResultFieldRef<RouteQuery, $slot, Schema, $field> {
+            ApplicationQueryResultFieldRef::new(stringify!($field), $field::at(stringify!($field)))
         }
     };
 }
@@ -95,4 +95,4 @@ fn scope(input: ReadRoute) -> String {
 worth_query_query_binding!(pub Binding for ReadRoute, schema Schema, identity "dispatch.parameter.read", input RouteInput,
     query RouteQuery, parameters Parameters => |input:&ReadRoute| ApplicationQueryParameterSet::new().bind(partition(),input.partition).unwrap(), result RowBinding,
     principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Key, String, ReadOnly, NoApplicationUnit, field Key::reference(), value scope, limits results 1);
+    scope Key, field Key::at("Key"), value scope, limits results 1);

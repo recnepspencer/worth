@@ -78,9 +78,8 @@ pub fn install_with_control(cancellation: Option<WorthQueryCancellationSource>) 
                     Record::reference(),
                     WorthQueryApplicationEntityKey::new("record").unwrap(),
                 )
-                .field(Key::reference(), "record".to_owned())
-                .field(Class::reference(), 1)
-                .field(FirstValue::reference(), 11),
+                .field(Key::at("Key"), "record".to_owned())
+                .field(FirstValue::at("FirstValue"), 11),
             )?;
             Ok(())
         },

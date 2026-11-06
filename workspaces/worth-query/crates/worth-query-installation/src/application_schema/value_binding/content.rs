@@ -8,7 +8,6 @@ use worth_foundational::facade::CanonicalDigestId;
 use worth_query_declaration::facade::application_schema::{
     ApplicationContentBindingRecipe, ApplicationFieldBindingLocus, ApplicationFieldValueMeaning,
     ApplicationSchemaMember as Member, ApplicationSchemaMemberProvenance,
-    ContentRefApplicationValueBinding,
 };
 
 #[derive(Clone, Debug)]
@@ -101,12 +100,9 @@ pub(super) fn compile(
     Ok((formats, fields))
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Type identity certifies one exact binding at installation; portable field meaning alone determines canonical order"
-)]
 fn is_content_reference(
     recipe: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingRecipe,
 ) -> bool {
-    recipe.binding_type() == std::any::TypeId::of::<ContentRefApplicationValueBinding>()
+    recipe.scalar_family() == worth_foundational::facade::ScalarAspectType::ContentRef
+        && recipe.canonical_contract().is_none()
 }

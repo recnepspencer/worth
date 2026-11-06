@@ -38,7 +38,7 @@ fn late_swallowed_pair_decode_refusal_keeps_the_view_cold_and_fresh_retry_recons
                 selected
                     .resolve_entity(
                         &phase,
-                        DocumentIdentityField::reference(),
+                        DocumentIdentityField::at("DocumentIdentityField"),
                         identity.to_owned(),
                         &scope,
                         WorthQueryPrincipalResolutionMode::Ordinary,

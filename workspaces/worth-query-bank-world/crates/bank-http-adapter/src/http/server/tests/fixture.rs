@@ -112,8 +112,7 @@ impl CausalHttpApplication {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
             Some(Instant::now() + Duration::from_secs(5)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let principal = self.authenticate(&scope).await;
         self.runtime
             .query(queries::estate_case(estate))

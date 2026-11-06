@@ -1,23 +1,6 @@
-use std::collections::BTreeMap;
-
-use worth_foundational::facade::{AspectFieldLocator, AspectValue, PortableAspectContractBasis};
-use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
-use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationProgramTarget,
-    ApplicationScalarValueBinding, OperationWrites, OptionalApplicationFieldValue,
-    WritableCapability,
-};
-use worth_relational::facade::identity::EntityId;
-use worth_relational::facade::transactions::EntityReference;
-
-use super::{
-    WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder,
-    WorthQueryApplicationOptionalFieldWrite, WorthQueryApplicationRealizedEffect,
-};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-};
-
+//! Typed optional field shell; concrete patch semantics belong to the effect core.
+use super::{WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder};
+use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial;
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
@@ -25,163 +8,33 @@ impl<Schema, Operation, Input, Scope>
     /// `Some(value)` preserves even empty or zero values; `None` clears the
     /// field. The field must remain an admitted decision read so absence or
     /// value drift participates in compare-and-commit currentness.
-    pub fn write_optional_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    #[inline(always)]
+    pub fn write_optional_field<Entity, Field>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        value: Option<Value>,
+        field: Field,
+        value: Option<Field::Value>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
-        Field: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
-        Write: WritableCapability,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+        >,
     {
-        let value = value
-            .map(|value| Field::Binding::encode(&value))
-            .transpose()
-            .map_err(|_| {
-                super::denial(
-                    WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
-                    field.field(),
-                )
-            })?;
-        self.validate_target(target, field.entity())?;
-        self.admit_program_target(&ApplicationOperationProgramTarget::Write {
-            entity: field.entity().to_string(),
-            aspect: field.aspect().to_string(),
-            field: field.field().to_string(),
-        })?;
-        let EntityReference::Existing(entity_id) = target.reference else {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                field.field(),
-            ));
-        };
-        let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
-        self.write_optional_value(
-            &ApplicationFieldBindingLocus::new(field.entity(), field.aspect(), field.field()),
-            entity_id,
-            locator,
-            value,
-        )
-    }
-
-    pub(super) fn write_optional_value(
-        &mut self,
-        field: &ApplicationFieldBindingLocus,
-        entity_id: EntityId,
-        locator: AspectFieldLocator,
-        value: Option<AspectValue>,
-    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        self.require_parent_not_removed(field.entity(), entity_id, &locator)?;
-        self.require_field_observation(entity_id, &locator)?;
-        let contract = self
-            .layout
-            .aspect_contract(field.entity(), locator.aspect().aspect_key())
-            .map(PortableAspectContractBasis::from_contract)
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                    field.field(),
-                )
-            })?;
-        let position = self
-            .field_write_positions
-            .position(field.entity(), entity_id);
-        self.reserve_effects(usize::from(position.is_none()))?;
-        let write = WorthQueryApplicationOptionalFieldWrite { contract, value };
-        if let Some(position) = position {
-            promote_ordinary_writes(&self.layout, &mut self.effects[position], field.entity())?;
-        }
-        let first_write = position.is_none();
-        let position = record_write(
-            &mut self.effects,
-            position,
-            field.entity(),
-            entity_id,
-            locator,
-            write,
-        );
-        if first_write {
-            self.field_write_positions
-                .remember(field.entity(), entity_id, position);
-        }
-        Ok(())
-    }
-}
-
-fn promote_ordinary_writes(
-    layout: &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
-    effect: &mut WorthQueryApplicationRealizedEffect,
-    entity: &str,
-) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let WorthQueryApplicationRealizedEffect::UpdateEntity {
-        entity_id, fields, ..
-    } = effect
-    else {
-        return Ok(());
-    };
-    let entity_id = *entity_id;
-    let fields = fields
-        .iter()
-        .map(|(locator, value)| {
-            let contract = layout
-                .aspect_contract(entity, locator.aspect().aspect_key())
-                .map(PortableAspectContractBasis::from_contract)
-                .ok_or_else(|| {
-                    denial(
-                        WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                        format!("{:?}", locator.field_path()),
-                    )
-                })?;
-            Ok((
-                locator.clone(),
-                WorthQueryApplicationOptionalFieldWrite {
-                    contract,
-                    value: Some(value.clone()),
-                },
-            ))
-        })
-        .collect::<Result<BTreeMap<_, _>, WorthQueryApplicationAttemptDenial>>()?;
-    *effect = WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
-        entity: entity.to_owned(),
-        entity_id,
-        fields,
-    };
-    Ok(())
-}
-
-fn record_write(
-    effects: &mut Vec<WorthQueryApplicationRealizedEffect>,
-    position: Option<usize>,
-    entity: &str,
-    entity_id: EntityId,
-    locator: worth_foundational::facade::AspectFieldLocator,
-    write: WorthQueryApplicationOptionalFieldWrite,
-) -> usize {
-    match position.map(|position| &mut effects[position]) {
-        Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields { fields, .. }) => {
-            fields.insert(locator, write);
-            position.expect("existing field effect has a position")
-        }
-        Some(_) => unreachable!("optional write promotes an ordinary field effect first"),
-        None => {
-            let position = effects.len();
-            effects.push(
-                WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
-                    entity: entity.to_owned(),
-                    entity_id,
-                    fields: BTreeMap::from([(locator, write)]),
-                },
-            );
-            position
+        match value {
+            Some(value) => self.native_effects().write_optional_field(
+                target.borrowed(),
+                field.identity(),
+                Some(
+                    &crate::domain_computation::primary_graph::value_decode::ScalarFieldEncoder::<
+                        Field::Binding,
+                    >::new(&value),
+                ),
+            ),
+            None => self.native_effects().write_optional_field(
+                target.borrowed(),
+                field.identity(),
+                None,
+            ),
         }
     }
-}
-
-fn denial(
-    kind: WorthQueryApplicationAttemptDenialKind,
-    subject: impl Into<String>,
-) -> WorthQueryApplicationAttemptDenial {
-    WorthQueryApplicationAttemptDenial::new(kind, subject)
 }

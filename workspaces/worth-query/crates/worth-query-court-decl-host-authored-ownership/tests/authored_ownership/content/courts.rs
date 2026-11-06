@@ -10,7 +10,7 @@ use super::super::{
 use super::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::*;
-type S = Model<43>;
+type S = Model<43, heterogeneous::Absent, sheet_boundary::Absent, true>;
 type Host = WorthQueryProgramApplicationRuntime<S, TwoProgram>;
 
 fn retire(

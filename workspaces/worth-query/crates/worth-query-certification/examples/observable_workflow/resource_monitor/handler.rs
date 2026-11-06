@@ -17,9 +17,14 @@ impl OperationHandler<DocumentRetentionSchema, MonitorBinding> for Handler {
         SetRetentionDenial,
     > {
         let mut observe = || {
-            let document = reader
-                .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())?;
-            reader.field(&document, DocumentRetentionField::reference())?;
+            let document = reader.resolve_entity(
+                DocumentIdentityField::at("DocumentIdentityField"),
+                input.identity.clone(),
+            )?;
+            reader.field(
+                &document,
+                DocumentRetentionField::at("DocumentRetentionField"),
+            )?;
             reader.mutation_target(&document)
         };
         match observe() {
@@ -40,7 +45,7 @@ impl OperationHandler<DocumentRetentionSchema, MonitorBinding> for Handler {
             writer
                 .write_field(
                     &document,
-                    DocumentRetentionField::reference(),
+                    DocumentRetentionField::at("DocumentRetentionField"),
                     input.retention_days,
                 )
                 .map_err(HandlerExecutionDenial::new)?;

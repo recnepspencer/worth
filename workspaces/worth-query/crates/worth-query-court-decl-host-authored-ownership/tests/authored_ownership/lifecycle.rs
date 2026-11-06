@@ -50,7 +50,7 @@ pub struct Extra<S>(PhantomData<fn() -> S>);
 impl<S: Scenario> WorthQueryApplicationOutputRole for Extra<S> {
     type Schema = S;
     type Contract = RetiredOutputs;
-    type Entity = Node;
+    type Entity = Node<S>;
     type Action = WorthQueryCreateOutput;
     type Cardinality = WorthQueryAtMostOneOutput;
     const NAME: &'static str = "replacement";
@@ -59,7 +59,7 @@ pub struct Descendant<S, const I: usize>(PhantomData<fn() -> S>);
 impl<S: Scenario> WorthQueryApplicationOutputRole for Created<S> {
     type Schema = S;
     type Contract = CreatedOutputs;
-    type Entity = Node;
+    type Entity = Node<S>;
     type Action = WorthQueryCreateOutput;
     type Cardinality = WorthQueryExactlyOneOutput;
     const NAME: &'static str = "authored-created";
@@ -67,7 +67,7 @@ impl<S: Scenario> WorthQueryApplicationOutputRole for Created<S> {
 impl<S: Scenario> WorthQueryApplicationOutputRole for Retired<S> {
     type Schema = S;
     type Contract = RetiredOutputs;
-    type Entity = Node;
+    type Entity = Node<S>;
     type Action = WorthQueryRetireOutput;
     type Cardinality = WorthQueryExactlyOneOutput;
     const NAME: &'static str = "authored-retired";
@@ -75,7 +75,7 @@ impl<S: Scenario> WorthQueryApplicationOutputRole for Retired<S> {
 impl<S: Scenario, const I: usize> WorthQueryApplicationOutputRole for Descendant<S, I> {
     type Schema = S;
     type Contract = RetiredOutputs;
-    type Entity = Node;
+    type Entity = Node<S>;
     type Action = WorthQueryRetireOutput;
     type Cardinality = WorthQueryAtMostOneOutput;
     const NAME: &'static str = ["Rp", "Sc", "Rc", "Sl", "Rl", "C"][I];
@@ -134,7 +134,7 @@ pub struct CreationTargets<S: Scenario> {
     pub scope: Target<S>,
     pub previous: Option<Target<S>>,
 }
-pub type Target<S> = WorthQueryInvariantMutationTarget<S, Node>;
+pub type Target<S> = WorthQueryInvariantMutationTarget<S, Node<S>>;
 pub struct RetirementTargets<S: Scenario> {
     pub body: Option<WorthQueryInvariantMutationTarget<S, heterogeneous::Body>>,
     pub stage_edges: Vec<(Target<S>, Target<S>)>,
@@ -148,10 +148,10 @@ worth_query_mutation_binding!(
     result query::UnitBinding, idempotency String, identity "ownership.command.v1",
     decision CreationTargets<S>, denial query::UnitBinding, handler identity "ownership.create.handler.v1",
     outputs CreatedOutputs, source NoApplicationMutationSource,
-    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
+    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node<S>,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit,
-    field Id::reference(), value_field scope,
+    scope Id<S>,
+    field schema::id::<S>(), value_field scope,
 );
 worth_query_mutation_binding!(
     pub RetireBinding for Retire, schema generic S: Scenario,
@@ -161,10 +161,10 @@ worth_query_mutation_binding!(
     coupled_outputs |visitor| { if S::COUPLED && S::MODE != 10 { visitor.required::<program::Start>(); }
         if S::TWO_BODIES && S::MODE != 18 { visitor.required::<coupled::multi::SecondStart>(); } },
     outputs RetiredOutputs, source NoApplicationMutationSource,
-    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
+    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node<S>,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit,
-    field Id::reference(), value_field scope,
+    scope Id<S>,
+    field schema::id::<S>(), value_field scope,
 );
 worth_query_mutation_binding!(
     pub RestoreBinding for Restore, schema generic S: Scenario,
@@ -174,10 +174,10 @@ worth_query_mutation_binding!(
     coupled_outputs |visitor| { if S::COUPLED { visitor.required::<program::Start>(); }
         if S::TWO_BODIES { visitor.required::<coupled::multi::SecondStart>(); } },
     outputs CreatedOutputs, source NoApplicationMutationSource,
-    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
+    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node<S>,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit,
-    field Id::reference(), value_field scope,
+    scope Id<S>,
+    field schema::id::<S>(), value_field scope,
 );
 worth_query_mutation_binding!(
     pub PlainBinding for Plain, schema generic S: Scenario,
@@ -185,18 +185,18 @@ worth_query_mutation_binding!(
     result query::UnitBinding, idempotency String, identity "ownership.command.v1",
     decision Vec<Target<S>>, denial query::UnitBinding, handler identity "ownership.plain.handler.v1",
     outputs RetiredOutputs, source NoApplicationMutationSource,
-    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
+    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node<S>,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit,
-    field Id::reference(), value_field scope,
+    scope Id<S>,
+    field schema::id::<S>(), value_field scope,
 );
-impl OperationCreates<CreateOp> for Node {}
-impl OperationReads<CreateOp> for Id {}
-impl OperationReads<CreateOp> for Node {}
+impl<const CONTENT: bool> OperationCreates<CreateOp> for NativeNode<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<CreateOp> for RawId<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<CreateOp> for NativeNode<CONTENT> {}
 impl OperationReads<CreateOp> for Peer {}
 impl OperationLinks<CreateOp> for Peer {}
-impl OperationWrites<CreateOp> for Id {}
-impl OperationWrites<CreateOp> for Value {}
+impl<const CONTENT: bool> OperationWrites<CreateOp> for RawId<CONTENT> {}
+impl<const CONTENT: bool> OperationWrites<CreateOp> for RawValue<CONTENT> {}
 impl<S: Scenario> ApplicationDeclaredOperation<S> for CreateOp {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<S>,
@@ -214,26 +214,26 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for CreateOp {
             schema
         };
         schema
-            .operation_read_field(Self::reference(), Id::reference())
-            .operation_read_entity(Self::reference(), Node::reference())
+            .operation_read_field(Self::reference(), schema::id::<S>())
+            .operation_read_entity(Self::reference(), schema::node::<S>())
             .operation_read_relation(Self::reference(), Peer::reference())
-            .operation_create(Self::reference(), Node::reference())
-            .operation_write(Self::reference(), Id::reference())
-            .operation_write(Self::reference(), Value::reference())
+            .operation_create(Self::reference(), schema::node::<S>())
+            .operation_write(Self::reference(), schema::id::<S>())
+            .operation_write(Self::reference(), schema::value::<S>())
     }
 }
-impl OperationCreates<RestoreOp> for Node {}
-impl OperationReads<RestoreOp> for Id {}
-impl OperationReads<RestoreOp> for Node {}
-impl OperationWrites<RestoreOp> for Id {}
-impl OperationWrites<RestoreOp> for Value {}
+impl<const CONTENT: bool> OperationCreates<RestoreOp> for NativeNode<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<RestoreOp> for RawId<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<RestoreOp> for NativeNode<CONTENT> {}
+impl<const CONTENT: bool> OperationWrites<RestoreOp> for RawId<CONTENT> {}
+impl<const CONTENT: bool> OperationWrites<RestoreOp> for RawValue<CONTENT> {}
 impl<S: Scenario> ApplicationDeclaredOperation<S> for RestoreOp {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<S>,
     ) -> ApplicationSchemaDeclarationBuilder<S> {
         let schema = if matches!(S::MODE, 30 | 39 | 40 | 41) {
             schema
-                .operation_read_entity(Self::reference(), Node::reference())
+                .operation_read_entity(Self::reference(), schema::node::<S>())
                 .operation_read_relation(Self::reference(), PreviousStage::reference())
                 .operation_unlink(Self::reference(), PreviousStage::reference())
                 .operation_link(Self::reference(), PreviousStage::reference())
@@ -241,16 +241,16 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for RestoreOp {
             schema
         };
         schema
-            .operation_read_field(Self::reference(), Id::reference())
-            .operation_create(Self::reference(), Node::reference())
-            .operation_write(Self::reference(), Id::reference())
-            .operation_write(Self::reference(), Value::reference())
+            .operation_read_field(Self::reference(), schema::id::<S>())
+            .operation_create(Self::reference(), schema::node::<S>())
+            .operation_write(Self::reference(), schema::id::<S>())
+            .operation_write(Self::reference(), schema::value::<S>())
     }
 }
-impl OperationReads<RetireOp> for Node {}
-impl OperationReads<RetireOp> for Id {}
-impl OperationReads<RetireOp> for Value {}
-impl OperationDeletes<RetireOp> for Node {}
+impl<const CONTENT: bool> OperationReads<RetireOp> for NativeNode<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<RetireOp> for RawId<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<RetireOp> for RawValue<CONTENT> {}
+impl<const CONTENT: bool> OperationDeletes<RetireOp> for NativeNode<CONTENT> {}
 impl OperationReads<RetireOp> for Peer {}
 impl OperationUnlinks<RetireOp> for Peer {}
 impl<S: Scenario> ApplicationDeclaredOperation<S> for RetireOp {
@@ -273,33 +273,33 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for RetireOp {
             schema
         };
         schema
-            .operation_read_entity(Self::reference(), Node::reference())
-            .operation_read_field(Self::reference(), Id::reference())
-            .operation_read_field(Self::reference(), Value::reference())
+            .operation_read_entity(Self::reference(), schema::node::<S>())
+            .operation_read_field(Self::reference(), schema::id::<S>())
+            .operation_read_field(Self::reference(), schema::value::<S>())
             .operation_read_relation(Self::reference(), Peer::reference())
             .operation_unlink(Self::reference(), Peer::reference())
-            .operation_delete(Self::reference(), Node::reference())
+            .operation_delete(Self::reference(), schema::node::<S>())
     }
 }
-impl OperationReads<PlainOp> for Node {}
-impl OperationReads<PlainOp> for Id {}
-impl OperationReads<PlainOp> for Value {}
-impl OperationDeletes<PlainOp> for Node {}
-impl OperationCreates<PlainOp> for Node {}
-impl OperationWrites<PlainOp> for Id {}
-impl OperationWrites<PlainOp> for Value {}
+impl<const CONTENT: bool> OperationReads<PlainOp> for NativeNode<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<PlainOp> for RawId<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<PlainOp> for RawValue<CONTENT> {}
+impl<const CONTENT: bool> OperationDeletes<PlainOp> for NativeNode<CONTENT> {}
+impl<const CONTENT: bool> OperationCreates<PlainOp> for NativeNode<CONTENT> {}
+impl<const CONTENT: bool> OperationWrites<PlainOp> for RawId<CONTENT> {}
+impl<const CONTENT: bool> OperationWrites<PlainOp> for RawValue<CONTENT> {}
 impl<S: Scenario> ApplicationDeclaredOperation<S> for PlainOp {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<S>,
     ) -> ApplicationSchemaDeclarationBuilder<S> {
         schema
-            .operation_create(Self::reference(), Node::reference())
-            .operation_write(Self::reference(), Id::reference())
-            .operation_write(Self::reference(), Value::reference())
-            .operation_read_entity(Self::reference(), Node::reference())
-            .operation_read_field(Self::reference(), Id::reference())
-            .operation_read_field(Self::reference(), Value::reference())
-            .operation_delete(Self::reference(), Node::reference())
+            .operation_create(Self::reference(), schema::node::<S>())
+            .operation_write(Self::reference(), schema::id::<S>())
+            .operation_write(Self::reference(), schema::value::<S>())
+            .operation_read_entity(Self::reference(), schema::node::<S>())
+            .operation_read_field(Self::reference(), schema::id::<S>())
+            .operation_read_field(Self::reference(), schema::value::<S>())
+            .operation_delete(Self::reference(), schema::node::<S>())
     }
 }
 pub fn declare<S: Scenario>(

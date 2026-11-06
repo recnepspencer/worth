@@ -5,11 +5,11 @@ use worth_query_decl::facade::{
         ApplicationWorkflowExecutionRequirements, NoApplicationMutationOutputs,
     },
     application_schema::{
-        ApplicationFieldRef, ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder,
-        EqualityPredicate, NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
+        ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder,
+        U64ApplicationValueBinding,
     },
     worth_query_operation, worth_query_operation_emits, worth_query_operation_reads,
-    worth_query_operation_writes, worth_query_structured_value_binding,
+    worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
@@ -34,8 +34,8 @@ worth_query_structured_value_binding!(pub WorthUiStatusActionResultBinding for W
 });
 worth_query_operation!(pub WorthUiApplyStatusAction for WorthUiApplicationSchema,
     input WorthUiStatusActionInputBinding);
-worth_query_operation_reads!(WorthUiApplyStatusAction => [WorthUiRecord, IdentityIdField, QueryTextStatusField, QueryRevisionValueField]);
-worth_query_operation_writes!(WorthUiApplyStatusAction => [QueryTextStatusField]);
+worth_query_operation_reads!(WorthUiApplyStatusAction => [WorthUiRecord]);
+
 worth_query_operation_emits!(WorthUiApplyStatusAction => [WorthUiStatusChangedEffect]);
 
 pub struct WorthUiStatusActionBinding;
@@ -71,17 +71,8 @@ impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusActio
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
 
-    fn scope_field() -> ApplicationFieldRef<
-        WorthUiApplicationSchema,
-        WorthUiRecord,
-        super::IdentityAspect,
-        IdentityIdField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        IdentityIdField::reference()
+    fn scope_field() -> IdentityIdField {
+        IdentityIdField::at("IdentityIdField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -105,7 +96,7 @@ impl ApplicationMutationIntent<WorthUiApplicationSchema> for WorthUiStatusAction
 
     fn scope_binding(&self) -> StatusMutationScope {
         StatusMutationScope::new(
-            IdentityIdField::reference(),
+            IdentityIdField::at("IdentityIdField"),
             "platform.pulse.status".to_owned(),
         )
     }
@@ -131,13 +122,16 @@ impl OperationHandler<WorthUiApplicationSchema, WorthUiStatusActionBinding>
         WorthUiStatusUpdateDenial,
     > {
         let entity = match reader.resolve_entity(
-            IdentityIdField::reference(),
+            IdentityIdField::at("IdentityIdField"),
             "platform.pulse.status".to_owned(),
         ) {
             Ok(entity) => entity,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        let current = match reader.field(&entity, QueryRevisionValueField::reference()) {
+        let current = match reader.field(
+            &entity,
+            QueryRevisionValueField::at("QueryRevisionValueField"),
+        ) {
             Ok(Some(current)) => current,
             Ok(None) => {
                 return HandlerResult::DomainDenied(WorthUiStatusUpdateDenial::RevisionMismatch);
@@ -147,7 +141,8 @@ impl OperationHandler<WorthUiApplicationSchema, WorthUiStatusActionBinding>
         if input.source_revision() != current {
             return HandlerResult::DomainDenied(WorthUiStatusUpdateDenial::RevisionMismatch);
         }
-        if let Err(error) = reader.field(&entity, QueryTextStatusField::reference()) {
+        if let Err(error) = reader.field(&entity, QueryTextStatusField::at("QueryTextStatusField"))
+        {
             return HandlerResult::ExecutionDenied(error);
         }
         match reader.mutation_target(&entity) {
@@ -170,7 +165,7 @@ impl OperationHandler<WorthUiApplicationSchema, WorthUiStatusActionBinding>
         };
         if let Err(error) = writer.write_field(
             &entity,
-            QueryTextStatusField::reference(),
+            QueryTextStatusField::at("QueryTextStatusField"),
             input.status().to_owned(),
         ) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
@@ -201,10 +196,13 @@ pub(crate) fn declare_status_action(
         )
         .operation_projection_work_budget(operation, 16)
         .operation_read_entity(operation, WorthUiRecord::reference())
-        .operation_read_field(operation, IdentityIdField::reference())
-        .operation_read_field(operation, QueryTextStatusField::reference())
-        .operation_read_field(operation, QueryRevisionValueField::reference())
-        .operation_write(operation, QueryTextStatusField::reference())
+        .operation_read_field(operation, IdentityIdField::at("IdentityIdField"))
+        .operation_read_field(operation, QueryTextStatusField::at("QueryTextStatusField"))
+        .operation_read_field(
+            operation,
+            QueryRevisionValueField::at("QueryRevisionValueField"),
+        )
+        .operation_write(operation, QueryTextStatusField::at("QueryTextStatusField"))
         .operation_emit(operation, WorthUiStatusChangedEffect::reference())
         .application_mutation_binding::<WorthUiStatusActionBinding>()
 }

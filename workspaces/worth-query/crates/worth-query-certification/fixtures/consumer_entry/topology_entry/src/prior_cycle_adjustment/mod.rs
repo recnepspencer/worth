@@ -9,8 +9,7 @@ pub use handler::PriorCycleAdjustmentHandler;
 use super::{Body, BodyKey, PositionY, TopologySchemaBinding};
 use worth_query_consumer_values::PositiveLength;
 use worth_query_decl::facade::{
-    worth_query_operation, worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation, worth_query_operation_reads, worth_query_structured_value_binding,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
@@ -42,5 +41,4 @@ worth_query_structured_value_binding!(pub PriorCycleAdjustmentDenialBinding for 
     identity: "worth.query.certification.prior-cycle-adjustment-denial.v1"
 });
 worth_query_operation!(pub AdjustPriorCycle for Schema: TopologySchemaBinding, input PriorCycleAdjustmentInputBinding);
-worth_query_operation_reads!(AdjustPriorCycle => [Body, BodyKey, PositionY]);
-worth_query_operation_writes!(AdjustPriorCycle => [PositionY]);
+worth_query_operation_reads!(AdjustPriorCycle => [Body]);

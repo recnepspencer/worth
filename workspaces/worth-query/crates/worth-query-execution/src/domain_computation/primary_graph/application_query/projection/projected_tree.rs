@@ -10,7 +10,6 @@ use worth_query_declaration::facade::application_query::{
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableType;
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, OptionalApplicationFieldValue, RequiredApplicationFieldValue,
     WorthQueryInstalledGraphProjection, WorthQueryInstalledGraphRelation,
 };
 use worth_relational::facade::identity::{EntityId, RelationId};

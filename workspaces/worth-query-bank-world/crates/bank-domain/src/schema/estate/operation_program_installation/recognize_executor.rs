@@ -12,10 +12,22 @@ pub(super) fn install(
     let operation = RecognizeEstateExecutorOperation::reference();
     schema
         .operation_projection_work_budget(operation, 48)
-        .operation_read_field(operation, EstateCaseIdentityField::reference())
-        .operation_read_field(operation, LegalAuthorityIdentityField::reference())
-        .operation_read_field(operation, LegalAuthorityRecognizedField::reference())
-        .operation_read_field(operation, PrincipalIdentityField::reference())
+        .operation_read_field(
+            operation,
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
+        )
+        .operation_read_field(
+            operation,
+            LegalAuthorityIdentityField::at("LegalAuthorityIdentityField"),
+        )
+        .operation_read_field(
+            operation,
+            LegalAuthorityRecognizedField::at("LegalAuthorityRecognizedField"),
+        )
+        .operation_read_field(
+            operation,
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+        )
         .operation_read_relation(operation, LegalAuthorityEstate::reference())
         .operation_read_relation(operation, LegalAuthorityHolder::reference())
         .operation_read_relation(operation, EstateExecutor::reference())

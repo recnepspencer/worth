@@ -105,8 +105,11 @@ pub fn install(first: Rule, second: Rule) -> World {
                     Account::reference(),
                     WorthQueryApplicationEntityKey::new("account-1").unwrap(),
                 )
-                .field(AccountIdentity::reference(), "account-1".to_owned())
-                .field(AccountStatus::reference(), "open".to_owned()),
+                .field(
+                    AccountIdentity::at("AccountIdentity"),
+                    "account-1".to_owned(),
+                )
+                .field(AccountStatus::at("AccountStatus"), "open".to_owned()),
             )
             .unwrap();
         bootstrap

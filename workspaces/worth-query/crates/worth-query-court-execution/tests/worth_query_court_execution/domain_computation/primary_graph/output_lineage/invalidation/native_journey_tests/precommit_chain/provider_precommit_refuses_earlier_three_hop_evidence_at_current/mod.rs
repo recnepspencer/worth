@@ -15,7 +15,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
             let entity = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -35,8 +35,8 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
-    let status_ref = AccountStatus::reference();
-    let label_ref = AccountLabel::reference();
+    let status_ref = AccountStatus::at("AccountStatus");
+    let label_ref = AccountLabel::at("AccountLabel");
     let status = graph
         .layout_for_test()
         .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
@@ -201,7 +201,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
                 let account = selected
                     .resolve_entity(
                         &phase,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         "closed".to_owned(),
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -229,7 +229,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
                         &admission,
                         |reader, account| {
                             reader
-                                .require_decision_field(account, AccountStatus::reference())
+                                .require_decision_field(account, AccountStatus::at("AccountStatus"))
                                 .unwrap();
                         },
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -254,7 +254,11 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
                     .begin_effect_program();
                 let account = effects.existing_entity(&account).unwrap();
                 effects
-                    .write_field(&account, AccountStatus::reference(), replacement.to_owned())
+                    .write_field(
+                        &account,
+                        AccountStatus::at("AccountStatus"),
+                        replacement.to_owned(),
+                    )
                     .unwrap();
                 effects.finish().unwrap()
             })

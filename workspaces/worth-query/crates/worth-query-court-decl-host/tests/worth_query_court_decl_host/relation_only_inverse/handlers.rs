@@ -8,7 +8,7 @@ impl OperationHandler<Schema, SpawnBinding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, SpawnBinding>,
     ) -> HandlerResult<Target, Refused> {
         let result = (|| {
-            let scope = reader.resolve_entity(Id::reference(), SCOPE)?;
+            let scope = reader.resolve_entity(Id::at("Id"), SCOPE)?;
             // The scope's own links are an ordinary admitted read. They cannot
             // describe the spawned node, which does not exist before this action.
             reader
@@ -35,7 +35,7 @@ impl OperationHandler<Schema, SpawnBinding> for Handler {
                     Node::reference(),
                     WorthQueryApplicationEntityKey::new(format!("node-{id}")).unwrap(),
                 )?;
-                writer.initialize_field(&node, Id::reference(), id)?;
+                writer.initialize_field(&node, Id::at("Id"), id)?;
                 Ok::<_, WorthQueryApplicationAttemptDenial>(node)
             };
             let spawned = born(writer, input.id)?;
@@ -50,7 +50,7 @@ impl OperationHandler<Schema, SpawnBinding> for Handler {
             if input.link {
                 writer.link(
                     Holds::reference(),
-                    &format!("holds-{}", input.id),
+                    format!("holds-{}", input.id),
                     &spawned,
                     part.as_ref().unwrap_or(&scope),
                 )?;
@@ -70,10 +70,10 @@ impl OperationHandler<Schema, DespawnBinding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, DespawnBinding>,
     ) -> HandlerResult<DespawnTargets, Refused> {
         let result = (|| {
-            let spawned = reader.resolve_entity(Id::reference(), input.id)?;
+            let spawned = reader.resolve_entity(Id::at("Id"), input.id)?;
             reader.entity(&spawned, Node::reference())?;
             let foreign = match input.foreign {
-                Some(id) => Some(reader.resolve_entity(Id::reference(), id)?),
+                Some(id) => Some(reader.resolve_entity(Id::at("Id"), id)?),
                 None => None,
             };
             let mut links = Vec::new();
@@ -90,7 +90,7 @@ impl OperationHandler<Schema, DespawnBinding> for Handler {
             }
             let part = match input.part {
                 Some(id) => {
-                    let part = reader.resolve_entity(Id::reference(), id)?;
+                    let part = reader.resolve_entity(Id::at("Id"), id)?;
                     reader.entity(&part, Node::reference())?;
                     Some(reader.mutation_target(&part)?)
                 }

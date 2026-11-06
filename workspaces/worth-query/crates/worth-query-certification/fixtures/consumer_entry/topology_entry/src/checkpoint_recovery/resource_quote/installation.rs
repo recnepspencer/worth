@@ -10,7 +10,7 @@ pub(super) fn install_program(
     let program = ApplicationProgramAuthoring::<QuoteSchema, program::Program>::begin()
         .validated_program()
         .expect("the counted program is complete");
-    let declaration = QuoteSchema::declaration().expect("the counted schema is valid");
+    let declaration = <QuoteSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the counted schema is valid");
     application_installation::in_memory_program(
         program,
         declaration,
@@ -40,7 +40,7 @@ pub(super) fn install_ordinary(
     seed: impl FnOnce(&mut primary_graph::WorthQueryPrimaryGraphBootstrap<QuoteSchema>),
 ) -> primary_graph::WorthQueryPrimaryGraphApplicationRuntime<QuoteSchema> {
     application_installation::in_memory(
-        QuoteSchema::declaration().expect("the counted schema is valid"),
+        <QuoteSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the counted schema is valid"),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         support::limits(32, support::invalidation()),

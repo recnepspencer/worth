@@ -10,20 +10,14 @@ pub enum ApplicationMutationScopeResolutionMode {
 pub struct ApplicationMutationScopeContract {
     mode: ApplicationMutationScopeResolutionMode,
     field: ApplicationFieldBindingRecipe,
-    writable: bool,
 }
 
 impl ApplicationMutationScopeContract {
     pub(crate) fn new(
         mode: ApplicationMutationScopeResolutionMode,
         field: ApplicationFieldBindingRecipe,
-        writable: bool,
     ) -> Self {
-        Self {
-            mode,
-            field,
-            writable,
-        }
+        Self { mode, field }
     }
 
     pub const fn mode(&self) -> ApplicationMutationScopeResolutionMode {
@@ -32,9 +26,5 @@ impl ApplicationMutationScopeContract {
 
     pub fn field(&self) -> &ApplicationFieldBindingRecipe {
         &self.field
-    }
-
-    pub const fn writable(&self) -> bool {
-        self.writable
     }
 }

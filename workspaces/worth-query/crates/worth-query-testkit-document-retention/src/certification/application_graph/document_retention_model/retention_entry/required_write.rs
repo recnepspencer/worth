@@ -8,8 +8,8 @@ pub use worth_query_host::facade::{
             NoApplicationMutationSource,
         },
         application_schema::{
-            ApplicationFieldRef, ApplicationPrincipalBindingRef, EqualityPredicate,
-            NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
+            ApplicationPrincipalBindingRef, EqualityPredicate, NoApplicationUnit, ReadOnly,
+            U64ApplicationValueBinding,
         },
     },
     primary_graph::WorthQueryInvariantMutationTarget,
@@ -62,17 +62,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ExplicitReviewedSet
         ApplicationWorkflowExecutionRequirements::requiring_approval::<WorkflowApprovalCapability>()
     }
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -96,7 +87,7 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for ExplicitReviewedSetR
 
     fn scope_binding(&self) -> SetRetentionScope {
         SetRetentionScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.input.identity.clone(),
         )
     }

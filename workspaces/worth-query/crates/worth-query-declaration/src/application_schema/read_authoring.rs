@@ -1,12 +1,10 @@
+use super::fragment;
 use std::marker::PhantomData;
 
 use worth_foundational::facade::AspectValue;
 
 use super::authoring_context::ApplicationFieldAdmission;
-use super::capabilities::{ApplicationFieldUnit, EqualityCapable, EqualityPredicate};
-use super::field_reference::ApplicationFieldRef;
 use super::references::{ApplicationEntityRef, ApplicationRelationRef};
-use super::values::DeclaredApplicationFieldValue;
 use super::ApplicationEncodedScalarValue;
 use super::{
     ApplicationSchemaAuthoringContext, ApplicationSchemaAuthoringDenial,
@@ -206,14 +204,19 @@ impl<Schema, Entity> TypedReadDeclarationBuilder<Schema, Entity> {
         self
     }
 
-    pub fn project<Aspect, Field, Value, Write, Equality, Unit>(
-        mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Self
+    pub fn project<Aspect, Field, Value>(mut self, field: Field) -> Self
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: fragment::RecordSelection<Entity = Entity, Aspect = Aspect, Value = Value>,
     {
+        if self.denial.is_none() {
+            self.denial = field.checked().err().map(|_| {
+                ApplicationSchemaAuthoringDenial::new(
+                    super::ApplicationSchemaAuthoringDenialKind::UnknownField,
+                    field.field(),
+                )
+            });
+        }
+
         if self.denial.is_none() {
             self.denial = self.context.as_ref().and_then(|context| {
                 context
@@ -227,6 +230,7 @@ impl<Schema, Entity> TypedReadDeclarationBuilder<Schema, Entity> {
                         requires_write: false,
                         requires_equality: false,
                     })
+                    .and_then(|()| context.admit_record_selection(field))
                     .err()
             });
         }
@@ -237,25 +241,23 @@ impl<Schema, Entity> TypedReadDeclarationBuilder<Schema, Entity> {
         self
     }
 
-    pub fn where_equal<Aspect, Field, Value, Write, Unit>(
+    pub fn where_equal<Aspect, Field, Value>(
         mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Self
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-        EqualityPredicate: EqualityCapable,
+        Field: fragment::RecordSelection<Entity = Entity, Aspect = Aspect, Value = Value>,
     {
+        if self.denial.is_none() {
+            self.denial = field.checked().err().map(|_| {
+                ApplicationSchemaAuthoringDenial::new(
+                    super::ApplicationSchemaAuthoringDenialKind::UnknownField,
+                    field.field(),
+                )
+            });
+        }
+
         if self.denial.is_none() {
             self.denial = self.context.as_ref().and_then(|context| {
                 context
@@ -269,6 +271,7 @@ impl<Schema, Entity> TypedReadDeclarationBuilder<Schema, Entity> {
                         requires_write: false,
                         requires_equality: true,
                     })
+                    .and_then(|()| context.admit_record_selection(field))
                     .err()
             });
         }

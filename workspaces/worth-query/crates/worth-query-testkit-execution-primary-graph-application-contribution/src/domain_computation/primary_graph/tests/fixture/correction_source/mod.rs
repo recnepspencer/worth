@@ -8,7 +8,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::application
 use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::commit_causality::ApplicationCommitCausality;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
 use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
-use worth_query_execution::facade::domain_computation::HandlerResult;
 use worth_query_execution::facade::domain_computation::WorthQueryAdmittedApplicationOperation;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt;

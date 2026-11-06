@@ -104,7 +104,7 @@ pub fn principal_seeds(
 
 pub fn request_scope(duration: Duration) -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
-    WorthQueryRequestScope::new(Some(Instant::now() + duration), cancellation.token())
+    WorthQueryRequestScope::new(Some(Instant::now() + duration), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 
 pub fn configuration(

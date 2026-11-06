@@ -2,8 +2,6 @@
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::aftermath_causality::correction_history::page_allocation::Denial;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::aftermath_causality::canonical_record::WorthQueryCanonicalCorrectionFact;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::aftermath_causality::correction_history::page_allocation::WorthQueryCorrectionHistoryPageAllocation;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 

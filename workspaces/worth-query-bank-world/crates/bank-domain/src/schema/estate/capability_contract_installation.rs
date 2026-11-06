@@ -41,7 +41,10 @@ macro_rules! relation_dimension {
 
 macro_rules! field_dimension {
     (field) => {
-        ApplicationCapabilityFieldDimension::bound(CapabilityDisclosureField::reference())
+        ApplicationCapabilityFieldDimension::bound(CapabilityDisclosureField::at(
+            "CapabilityDisclosureField",
+        ))
+        .unwrap()
     };
     (no_field) => {
         ApplicationCapabilityFieldDimension::not_applicable()
@@ -50,7 +53,10 @@ macro_rules! field_dimension {
 
 macro_rules! magnitude_dimension {
     (magnitude) => {
-        ApplicationCapabilityMagnitudeDimension::bound(CapabilityAmountCeilingField::reference())
+        ApplicationCapabilityMagnitudeDimension::bound(CapabilityAmountCeilingField::at(
+            "CapabilityAmountCeilingField",
+        ))
+        .expect("owned record selection is valid")
     };
     (no_magnitude) => {
         ApplicationCapabilityMagnitudeDimension::not_applicable()
@@ -274,16 +280,18 @@ fn target(
 ) -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
-            CapabilityOperationField::reference(),
+            CapabilityOperationField::at("CapabilityOperationField"),
             crate::schema::encoded_bank_value(action),
-        ),
+        )
+        .unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityEstate::reference()),
         relation,
         field,
         ApplicationCapabilityValueBinding::new(
-            CapabilityPurposeField::reference(),
+            CapabilityPurposeField::at("CapabilityPurposeField"),
             crate::schema::encoded_bank_value(purpose),
-        ),
+        )
+        .unwrap(),
     )
 }
 
@@ -295,25 +303,30 @@ fn constraints(
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                CapabilityGrantStatusField::reference(),
+                CapabilityGrantStatusField::at("CapabilityGrantStatusField"),
                 crate::schema::encoded_bank_value(CapabilityGrantStatus::Active),
-            ),
+            )
+            .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
                 ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityWorkflowStageField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    EstateWorkflowStageField::reference(),
-                ),
+                    CapabilityWorkflowStageField::at("CapabilityWorkflowStageField"),
+                )
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(EstateWorkflowStageField::at(
+                    "EstateWorkflowStageField",
+                ))
+                .unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityValidFromField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityValidThroughField::reference(),
-                ),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityValidFromField::at(
+                    "CapabilityValidFromField",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityValidThroughField::at(
+                    "CapabilityValidThroughField",
+                ))
+                .unwrap(),
             ),
         ),
         EstateActionContext::reference(),
@@ -326,15 +339,15 @@ fn delegation() -> ApplicationCapabilityDelegationDefinition {
         ApplicationCapabilityRelationBinding::from_reference(CapabilityGrantor::reference()),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityGrantee::reference()),
         ApplicationCapabilityFieldBinding::from_reference(
-            CapabilityDelegationLimitField::reference(),
-        ),
+            CapabilityDelegationLimitField::at("CapabilityDelegationLimitField"),
+        ).unwrap(),
         EstateGrantChainProvenance::reference(),
     )
     .with_activation(ApplicationCapabilityDelegationActivationDefinition::new(
         DelegateEstateCapabilityOperation::reference(),
         ApplicationCapabilityFieldBinding::from_reference(
-            CapabilityGrantIdentityField::reference(),
-        ),
+            CapabilityGrantIdentityField::at("CapabilityGrantIdentityField"),
+        ).unwrap(),
     )
     .with_context_relations([
         ApplicationCapabilityRelationBinding::from_reference(
@@ -345,11 +358,11 @@ fn delegation() -> ApplicationCapabilityDelegationDefinition {
     .with_revocation(ApplicationCapabilityRevocationDefinition::new(
         RevokeEstateCapabilityOperation::reference(),
         ApplicationCapabilityFieldBinding::from_reference(
-            CapabilityGrantIdentityField::reference(),
-        ),
+            CapabilityGrantIdentityField::at("CapabilityGrantIdentityField"),
+        ).unwrap(),
         ApplicationCapabilityValueBinding::new(
-            CapabilityGrantStatusField::reference(),
+            CapabilityGrantStatusField::at("CapabilityGrantStatusField"),
             crate::schema::encoded_bank_value(CapabilityGrantStatus::Revoked),
-        ),
+        ).unwrap(),
     ))
 }

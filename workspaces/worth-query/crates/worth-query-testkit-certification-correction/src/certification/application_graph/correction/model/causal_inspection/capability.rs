@@ -7,7 +7,7 @@ use worth_query_host::facade::{
     *,
 };
 mod contract;
-worth_query_field!(pub Disclosure for NumericSchema, Grant, GrantFacts: String => StringApplicationValueBinding, read_only, equality);
+
 worth_query_capability!(pub Inspect in NumericSchema);
 #[derive(Clone, serde::Serialize)]
 pub struct Input {
@@ -21,7 +21,7 @@ impl Input {
 worth_query_portable_type!(Input => "numeric-correction.inspect-input.v2");
 worth_query_structured_value_binding!(pub InputBinding for Input { identity: "numeric-correction.inspect-input.v2" });
 worth_query_operation!(pub InspectCausalEvidence for NumericSchema, input InputBinding);
-worth_query_operation_reads!(InspectCausalEvidence => [Key]);
+
 impl ApplicationCapabilityRequest<NumericSchema, Inspect> for Input {
     type Scope = Number;
     type Context = AdoptContext;
@@ -32,7 +32,7 @@ impl ApplicationCapabilityRequest<NumericSchema, Inspect> for Input {
         ApplicationCapabilityRequestProjectionDenial,
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
-            ApplicationCapabilityEntitySelector::new(Key::reference(), text(&self.key)),
+            ApplicationCapabilityEntitySelector::new(Key::at("Key"), text(&self.key)).unwrap(),
             text("inspect"),
             text("audit"),
             ApplicationCapabilityRequestContext::new(AdoptContext::reference()),
@@ -47,7 +47,6 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
     schema
-        .field(Grant::reference(), Disclosure::reference())
         .operation(
             InspectCausalEvidence::reference()
                 .definition()
@@ -56,7 +55,7 @@ pub fn declare(
                 .finish(),
         )
         .operation_projection_work_budget(InspectCausalEvidence::reference(), 512)
-        .operation_read_field(InspectCausalEvidence::reference(), Key::reference())
+        .operation_read_field(InspectCausalEvidence::reference(), Key::at("Key"))
         .capability(contract::definition())
 }
 pub fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>) {
@@ -65,15 +64,18 @@ pub fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>) {
     graph
         .bind_entity(
             WorthQueryApplicationEntitySeed::new(Grant::reference(), grant())
-                .field(GrantIdentity::reference(), "inspection-grant".to_owned())
-                .field(GrantAction::reference(), "inspect".to_owned())
-                .field(GrantPurpose::reference(), "audit".to_owned())
-                .field(Disclosure::reference(), "calculation".to_owned())
-                .field(GrantStatus::reference(), "active".to_owned())
-                .field(GrantScopeKey::reference(), "numeric".to_owned())
-                .field(GrantNotBefore::reference(), 0_u64)
-                .field(GrantNotAfter::reference(), u64::MAX)
-                .field(GrantDepth::reference(), 0_u64),
+                .field(
+                    GrantIdentity::at("GrantIdentity"),
+                    "inspection-grant".to_owned(),
+                )
+                .field(GrantAction::at("GrantAction"), "inspect".to_owned())
+                .field(GrantPurpose::at("GrantPurpose"), "audit".to_owned())
+                .field(Disclosure::at("Disclosure"), "calculation".to_owned())
+                .field(GrantStatus::at("GrantStatus"), "active".to_owned())
+                .field(GrantScopeKey::at("GrantScopeKey"), "numeric".to_owned())
+                .field(GrantNotBefore::at("GrantNotBefore"), 0_u64)
+                .field(GrantNotAfter::at("GrantNotAfter"), u64::MAX)
+                .field(GrantDepth::at("GrantDepth"), 0_u64),
         )
         .unwrap();
     graph
@@ -103,3 +105,5 @@ pub fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>) {
         ))
         .unwrap();
 }
+
+pub use crate::facade::certification::application_graph::correction::model::schema::storage_model::Disclosure;

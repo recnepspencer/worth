@@ -33,7 +33,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
             let roots = ["open", "unrelated"].map(|status| {
                 old.resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     status.into(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -94,7 +94,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
             let first = WorthQueryDerivedPairReadPlans::new(admit(), admit());
             let graph = &(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
                 .graph_for_test());
-            let label = AccountLabel::reference();
+            let label = AccountLabel::at("AccountLabel");
             let locator = (*graph.layout_for_test())
                 .field_locator_for_test(label.entity(), label.aspect(), label.field())
                 .unwrap()

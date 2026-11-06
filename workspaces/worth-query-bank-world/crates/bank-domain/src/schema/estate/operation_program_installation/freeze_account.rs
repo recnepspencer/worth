@@ -13,9 +13,9 @@ impl ApplicationDeclaredOperation<BankSchema> for FreezeEstateAccountOperation {
         let operation = Self::reference();
         schema
             .operation_projection_work_budget(operation, 32)
-            .operation_read_field(operation, AccountIdentity::reference())
-            .operation_read_field(operation, Status::reference())
+            .operation_read_field(operation, AccountIdentity::at("AccountIdentity"))
+            .operation_read_field(operation, Status::at("Status"))
             .operation_read_relation(operation, EstateAccount::reference())
-            .operation_write(operation, Status::reference())
+            .operation_write(operation, Status::at("Status"))
     }
 }

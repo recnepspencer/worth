@@ -1,11 +1,9 @@
 //! A reconstructed presence obligation moves even when its field stays absent.
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::settlement::dependency::aspect_presence::decode;
-use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::settlement::dependency::aspect_presence::tests;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::evidence_dependency::WorkflowEvidenceDependencyKind;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::aspect_presence::observe_aspect_presence;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture;
 use worth_foundational::facade::ContractValidationInput;
 use worth_foundational::facade::PortableAspectContractBasis;
 use worth_foundational::facade::PortableAspectPatchOperation;
@@ -30,10 +28,19 @@ fn optional_aspect_initialization_reconstructed_presence_detects_present_empty()
         let entity = account.entity_id_for_test();
         let kind = account.entity_kind_for_test();
         let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
-        let field = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountAnnotation::reference();
+        let field = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountAnnotation::at("AccountAnnotation");
         let locator = (*graph.layout_for_test()).field_locator_for_test(field.entity(), field.aspect(), field.field()).unwrap();
         let aspect = locator.aspect().aspect_key().clone();
         let contract = (*graph.layout_for_test()).aspect_contract(field.entity(), &aspect).unwrap();
+        use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::storage_model::{Account, AccountAnnotations, AccountAnnotationsValue, ExecutionRecords, ExecutionRecordsBindings};
+        let definition = world.application.installed_schema().value_bindings().fragment(ExecutionRecords).unwrap()
+            .aspect::<Account, AccountAnnotations>().unwrap();
+        let encoded = definition.encode::<ExecutionRecordsBindings, _>(&AccountAnnotationsValue { account_annotation: None }).unwrap();
+        let initialized = StructAspectValue::new(definition.fields().iter().filter_map(|field| {
+            encoded.get(field.path()).map(|value| (
+                worth_foundational::facade::FieldKey::new(field.recipe().locus().field()).unwrap(), value.clone(),
+            ))
+        })).unwrap();
         let before = world.selected_product(&host);
         let handle = graph.integration_handle_for_test();
         let present = handle.with_runtime(&execution, |runtime| observe_aspect_presence(
@@ -56,7 +63,7 @@ fn optional_aspect_initialization_reconstructed_presence_detects_present_empty()
                     entity_id: entity,
                     aspect_patch: PortableRecordAspectPatch::new([PortableAspectPatchOperation::SetWhole {
                         basis: PortableAspectContractBasis::from_contract(contract),
-                        value: ContractValidationInput::Struct(StructAspectValue::new([]).unwrap()),
+                        value: ContractValidationInput::Struct(initialized),
                     }]),
                 }))));
         let after = world.selected_product(&host);

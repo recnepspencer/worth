@@ -13,7 +13,7 @@ crate::worth_query_query_binding!(@binding
     parameters Parameters, result RenameResultBinding,
     principal PrincipalBinding, mapping ExternalMapping, principal_entity Account,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope_binding ApplicationQueryFieldScope<MutationSchema, Account, AccountIdentity, AccountIdField, u64, ReadOnly, NoApplicationUnit>,
-    scope_field_type Account, AccountIdentity, AccountIdField, u64, ReadOnly, NoApplicationUnit,
-    scope_field AccountIdField::reference(), limits results 1
+    scope_binding ApplicationQueryFieldScope<AccountIdField>,
+    scope_field_type AccountIdField,
+    scope_field AccountIdField::at("AccountIdField"), limits results 1
 );

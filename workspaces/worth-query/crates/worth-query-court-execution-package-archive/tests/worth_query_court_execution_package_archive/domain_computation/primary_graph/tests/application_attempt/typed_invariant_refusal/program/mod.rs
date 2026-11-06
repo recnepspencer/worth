@@ -19,7 +19,7 @@ pub fn prepare(
         ChangeStatus::reference(),
         |effects, account| {
             effects
-                .write_field(account, AccountStatus::reference(), status)
+                .write_field(account, AccountStatus::at("AccountStatus"), status)
                 .unwrap();
         },
     )
@@ -66,7 +66,6 @@ where
         >,
     Input: 'static,
     Account: worth_query_installation::facade::OperationReads<Operation>,
-    AccountStatus: worth_query_installation::facade::OperationReads<Operation>,
 {
     world
         .application
@@ -101,7 +100,7 @@ where
             let account = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -132,7 +131,7 @@ where
                             .require_decision_entity(projected, Account::reference())
                             .unwrap();
                         reader
-                            .require_decision_field(projected, AccountStatus::reference())
+                            .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,

@@ -74,7 +74,7 @@ fn terminal_court(interference: Interference) {
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference::<ConsumerSchema>(),
+                    BodyKey::at("BodyKey"),
                     input.scope_key.clone(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Certification,
@@ -105,7 +105,7 @@ fn terminal_court(interference: Interference) {
             let mut reads = Vec::new();
             let winner = match interference {
                 Interference::NativeWrite => {
-                    application.publish_native_field_write_for_test(application.current_world(), record, PositionY::reference::<ConsumerSchema>(), length(4), &scope).unwrap();
+                    application.publish_native_field_write_for_test(application.current_world(), record, PositionY::at("PositionY"), length(4), &scope).unwrap();
                     request.retain_current_read().unwrap().selected_commit().clone()
                 }
                 Interference::ObservationCapacity => {

@@ -114,11 +114,15 @@ pub fn declare<const O: bool>(
         .application_query(
             builder(Empty::reference(), public())
                 .root_path(
-                    path().where_equal(
-                        Marked::reference(),
-                        ApplicationEncodedScalarValue::<BoolApplicationValueBinding>::try_new(true)
+                    path()
+                        .where_equal(
+                            Marked::at("Marked"),
+                            ApplicationEncodedScalarValue::<BoolApplicationValueBinding>::try_new(
+                                true,
+                            )
                             .unwrap(),
-                    ),
+                        )
+                        .expect("record field contract"),
                 )
                 .component_selection(selection::<OrbitSchema<O>, Empty>())
                 .build()
@@ -160,11 +164,13 @@ pub fn declare<const O: bool>(
                 disclosure::<OrbitSchema<O>, GuardDenied>(Some(0)),
             )
             .root_path(
-                path().where_equal(
-                    Marked::reference(),
-                    ApplicationEncodedScalarValue::<BoolApplicationValueBinding>::try_new(true)
-                        .unwrap(),
-                ),
+                path()
+                    .where_equal(
+                        Marked::at("Marked"),
+                        ApplicationEncodedScalarValue::<BoolApplicationValueBinding>::try_new(true)
+                            .unwrap(),
+                    )
+                    .expect("record field contract"),
             )
             .component_selection(selection::<OrbitSchema<O>, GuardDenied>())
             .build()
@@ -173,19 +179,23 @@ pub fn declare<const O: bool>(
         .application_query(
             builder(
                 GuardAllowed::reference(),
-                disclosure::<OrbitSchema<O>, GuardAllowed>(Some(0)).use_field_by(
-                    Marked::reference::<OrbitSchema<O>>(),
-                    ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(0)
-                        .unwrap(),
-                    ApplicationQueryInfluenceContract::permit_all(),
-                ),
+                disclosure::<OrbitSchema<O>, GuardAllowed>(Some(0))
+                    .use_field_by(
+                        Marked::at("Marked"),
+                        ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(0)
+                            .unwrap(),
+                        ApplicationQueryInfluenceContract::permit_all(),
+                    )
+                    .expect("record field contract"),
             )
             .root_path(
-                path().where_equal(
-                    Marked::reference(),
-                    ApplicationEncodedScalarValue::<BoolApplicationValueBinding>::try_new(true)
-                        .unwrap(),
-                ),
+                path()
+                    .where_equal(
+                        Marked::at("Marked"),
+                        ApplicationEncodedScalarValue::<BoolApplicationValueBinding>::try_new(true)
+                            .unwrap(),
+                    )
+                    .expect("record field contract"),
             )
             .component_selection(selection::<OrbitSchema<O>, GuardAllowed>())
             .build()

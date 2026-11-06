@@ -8,8 +8,7 @@ use std::time::{Duration, SystemTime};
 
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEntityMarkerIdentity, ApplicationEntityRef, ApplicationSchema,
-    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
 };
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity;
 use worth_query_installation::facade::{
@@ -38,8 +37,10 @@ mod lifecycle;
 struct TestSchema;
 struct Principal;
 
-impl ApplicationEntityMarkerIdentity<TestSchema> for Principal {
-    const IDENTIFIER: &'static str = "Principal";
+impl worth_query_declaration::facade::application_schema::fragment::Entity for Principal {
+    const NAME: &'static str = "Principal";
+    type Aspects = ();
+    type Relations = ();
 }
 
 impl ApplicationSchema for TestSchema {
@@ -52,9 +53,7 @@ impl ApplicationSchema for TestSchema {
         ApplicationSchemaDeclaration<Self>,
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(ApplicationEntityRef::<Self, Principal>::from_schema_identifier("Principal"))
-            .build()
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(FixtureRecords)?.build()
     }
 }
 
@@ -369,4 +368,11 @@ fn admitted_event_binds_exact_intent_principal_and_single_use() {
         Some(WorthQueryAuthenticationEventDenial::EventUnavailable)
     );
     assert_eq!(nonces.lock().unwrap().len(), 1);
+}
+
+struct FixtureRecords;
+impl worth_query_declaration::facade::application_schema::fragment::Fragment for FixtureRecords {
+    const NAME: &'static str = "fixture_records";
+    type Bindings = worth_query_declaration::facade::application_schema::fragment::NoBindings;
+    type Members = (Principal,);
 }

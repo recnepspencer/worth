@@ -12,9 +12,7 @@ use worth_query_host::facade::declaration::{
     application_operation::ApplicationMutationBinding,
     application_schema::{ApplicationEffectMarkerIdentity, OperationEmits},
 };
-use worth_query_host::facade::domain::{
-    OperationCreates, OperationLinks, OperationReads, OperationWrites,
-};
+use worth_query_host::facade::domain::{OperationCreates, OperationLinks};
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, HandlerExecutionDenial, WorthQueryApplicationEffectEntity,
     WorthQueryApplicationEntityKey,
@@ -29,17 +27,10 @@ pub(super) fn author_journal<Binding>(
 ) -> Result<WorthQueryApplicationEffectEntity<BankSchema, JournalEntry>, HandlerExecutionDenial>
 where
     Binding: ApplicationMutationBinding<BankSchema>,
-    AccountIdentity: OperationReads<Binding::Operation>,
+
     JournalEntry: OperationCreates<Binding::Operation>,
     Posting: OperationCreates<Binding::Operation>,
-    JournalIdentityField: OperationWrites<Binding::Operation>,
-    JournalInstitutionContext: OperationWrites<Binding::Operation>,
-    JournalPurpose: OperationWrites<Binding::Operation>,
-    PostingIdentityField: OperationWrites<Binding::Operation>,
-    PostingAmount: OperationWrites<Binding::Operation>,
-    PostingAccountSequence: OperationWrites<Binding::Operation>,
-    Purpose: OperationWrites<Binding::Operation>,
-    AccountingRevision: OperationWrites<Binding::Operation>,
+
     JournalPosting: OperationLinks<Binding::Operation>,
     PostingAccount: OperationLinks<Binding::Operation>,
     AccountActivityEffect:
@@ -66,21 +57,21 @@ where
     candidate
         .initialize_field(
             &journal_entity,
-            JournalIdentityField::reference(),
+            JournalIdentityField::at("JournalIdentityField"),
             journal.id(),
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .initialize_field(
             &journal_entity,
-            JournalInstitutionContext::reference(),
+            JournalInstitutionContext::at("JournalInstitutionContext"),
             institution,
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .initialize_field(
             &journal_entity,
-            JournalPurpose::reference(),
+            JournalPurpose::at("JournalPurpose"),
             journal.purpose(),
         )
         .map_err(HandlerExecutionDenial::new)?;
@@ -102,7 +93,7 @@ where
         candidate
             .write_field(
                 &account,
-                AccountingRevision::reference(),
+                AccountingRevision::at("AccountingRevision"),
                 sequence.final_revision,
             )
             .map_err(HandlerExecutionDenial::new)?;
@@ -120,12 +111,9 @@ fn author_posting<Binding>(
 ) -> Result<(), HandlerExecutionDenial>
 where
     Binding: ApplicationMutationBinding<BankSchema>,
-    AccountIdentity: OperationReads<Binding::Operation>,
+
     Posting: OperationCreates<Binding::Operation>,
-    PostingIdentityField: OperationWrites<Binding::Operation>,
-    PostingAmount: OperationWrites<Binding::Operation>,
-    PostingAccountSequence: OperationWrites<Binding::Operation>,
-    Purpose: OperationWrites<Binding::Operation>,
+
     JournalPosting: OperationLinks<Binding::Operation>,
     PostingAccount: OperationLinks<Binding::Operation>,
     AccountActivityEffect:
@@ -141,14 +129,14 @@ where
     candidate
         .initialize_field(
             &posting_entity,
-            PostingIdentityField::reference(),
+            PostingIdentityField::at("PostingIdentityField"),
             posting.id(),
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .initialize_field(
             &posting_entity,
-            PostingAmount::reference(),
+            PostingAmount::at("PostingAmount"),
             posting.amount(),
         )
         .map_err(HandlerExecutionDenial::new)?;
@@ -169,12 +157,12 @@ where
     candidate
         .initialize_field(
             &posting_entity,
-            PostingAccountSequence::reference(),
+            PostingAccountSequence::at("PostingAccountSequence"),
             account_sequence,
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .initialize_field(&posting_entity, Purpose::reference(), journal.purpose())
+        .initialize_field(&posting_entity, Purpose::at("Purpose"), journal.purpose())
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .link(
@@ -249,10 +237,9 @@ fn resolve_account<Binding>(
 ) -> Result<WorthQueryApplicationEffectEntity<BankSchema, Account>, HandlerExecutionDenial>
 where
     Binding: ApplicationMutationBinding<BankSchema>,
-    AccountIdentity: OperationReads<Binding::Operation>,
 {
     candidate
-        .resolve_entity(AccountIdentity::reference(), account)
+        .resolve_entity(AccountIdentity::at("AccountIdentity"), account)
         .map_err(HandlerExecutionDenial::new)
 }
 

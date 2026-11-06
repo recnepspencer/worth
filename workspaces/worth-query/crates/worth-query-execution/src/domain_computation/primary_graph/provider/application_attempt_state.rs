@@ -40,7 +40,6 @@ pub(in crate::domain_computation::primary_graph) use commit_preparation::{
 pub(crate) use commit_preparation::{
     WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal,
 };
-use phase::WorthQueryApplicationAttemptPhase;
 use phase::{WorthQueryApplicationAttemptState, WorthQueryPrimaryGraphOverlay};
 pub(super) use retained_basis::{
     WorthQueryAdmittedApplicationOverlay, WorthQueryApplicationIdempotencyBasis,

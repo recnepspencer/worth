@@ -245,7 +245,7 @@ async fn unauthorized_initial_custody_closes_lawfully_and_returns_capacity() {
     let account = AccountId::new(100).unwrap();
     let application = Arc::new(application(account));
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let reader = application.authenticate(&scope).await;
     let entries = || {
         application

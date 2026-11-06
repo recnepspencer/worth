@@ -120,48 +120,31 @@ pub fn document_retention_condition_query_definition() -> ApplicationQueryDefini
         .expect("the document condition query is canonical")
 }
 
-pub type ResultField<Slot, Field, Value, Write> = ApplicationQueryResultFieldRef<
-    DocumentRetentionQuery,
-    Slot,
-    DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
-    Field,
-    Value,
-    Write,
-    declaration::application_schema::EqualityPredicate,
-    declaration::application_schema::NoApplicationUnit,
->;
+pub type ResultField<Slot, Field> =
+    ApplicationQueryResultFieldRef<DocumentRetentionQuery, Slot, DocumentRetentionSchema, Field>;
 
-pub fn identity_result() -> ResultField<
-    DocumentIdentitySlot,
-    DocumentIdentityField,
-    String,
-    declaration::application_schema::ReadOnly,
-> {
-    ApplicationQueryResultFieldRef::new("identity", DocumentIdentityField::reference())
+pub fn identity_result() -> ResultField<DocumentIdentitySlot, DocumentIdentityField> {
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DocumentIdentityField::at("DocumentIdentityField"),
+    )
 }
 
-pub fn retention_result() -> ResultField<
-    DocumentRetentionSlot,
-    DocumentRetentionField,
-    u64,
-    declaration::application_schema::ReadWrite,
-> {
-    ApplicationQueryResultFieldRef::new("retention", DocumentRetentionField::reference())
+pub fn retention_result() -> ResultField<DocumentRetentionSlot, DocumentRetentionField> {
+    ApplicationQueryResultFieldRef::new(
+        "retention",
+        DocumentRetentionField::at("DocumentRetentionField"),
+    )
 }
 
 pub fn condition_retention_result() -> ApplicationQueryResultFieldRef<
     DocumentRetentionConditionQuery,
     DocumentConditionRetentionSlot,
     DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
     DocumentRetentionField,
-    u64,
-    declaration::application_schema::ReadWrite,
-    declaration::application_schema::EqualityPredicate,
-    declaration::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("retention", DocumentRetentionField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "retention",
+        DocumentRetentionField::at("DocumentRetentionField"),
+    )
 }

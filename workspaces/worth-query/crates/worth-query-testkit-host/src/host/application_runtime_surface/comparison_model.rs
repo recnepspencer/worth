@@ -87,8 +87,8 @@ worth_query_query_binding!(pub GovernedAccountReadBinding for GovernedAccountRea
     result AccountResultBinding,
     principal IdentityBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding worth_query_decl::facade::application_schema::U64ApplicationValueBinding,
-    scope Account, AccountIdentity, AccountNumber, String, ReadOnly, NoApplicationUnit,
-    field AccountNumber::reference(), value GovernedAccountRead::into_number, limits results 1
+    scope AccountNumber,
+    field AccountNumber::at("AccountNumber"), value GovernedAccountRead::into_number, limits results 1
 );
 pub(super) fn inspection_definition(
 ) -> ApplicationQueryInspectionDefinition<HostIdentitySchema, GovernedAccountReadBinding> {

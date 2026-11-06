@@ -55,8 +55,7 @@ fn member(content_format: Option<[u8; 32]>, frame: Option<String>) -> Applicatio
             scope: identity("Account"), scope_entity: "Account".to_owned(),
             scope_aspect: "State".to_owned(), scope_field: "id".to_owned(),
             scope_value: identity("worth.u64"),
-            scope_resolution: worth_query_declaration::facade::application_query::ApplicationQueryScopeResolutionMode::InputField,
-            scope_writable: false, principal_binding: "HistoryPrincipal".to_owned(),
+            scope_resolution: worth_query_declaration::facade::application_query::ApplicationQueryScopeResolutionMode::InputField, principal_binding: "HistoryPrincipal".to_owned(),
         }),
     });
     let contract = PortableApplicationAftermathContract::from_untrusted_fields(

@@ -83,13 +83,8 @@ pub(super) struct Contribution;
 impl ApplicationSchemaContribution<CheckpointSchema> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::IDENTITY;
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<CheckpointSchema>,
-    ) -> ApplicationSchemaDeclarationBuilder<CheckpointSchema> {
-        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::register_members(
-            builder,
-        )
-    }
+    type Members =
+        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::Members;
 }
 impl WorthQueryApplicationContribution<CheckpointSchema> for Contribution {
     type Configuration = TopologyConfiguration;

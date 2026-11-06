@@ -3,9 +3,9 @@ use super::{co_roles::*, lifecycle::*, *};
 pub struct Family;
 impl<S: Scenario> ApplicationAuthoredCorrectionFamily<S> for Family {
     const IDENTITY: &'static str = "ownership.authored.family.v1";
-    type Entity = Node;
-    fn logical_key() -> ApplicationAuthoredLogicalKey<S, Node> {
-        ApplicationAuthoredLogicalKey::from_field(Id::reference())
+    type Entity = Node<S>;
+    fn logical_key() -> ApplicationAuthoredLogicalKey<S, Node<S>> {
+        ApplicationAuthoredLogicalKey::from_field(schema::id::<S>()).expect("record output field")
     }
 }
 pub struct UndoCreate<S>(PhantomData<fn() -> S>);
@@ -47,7 +47,10 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoCreate<S> {
         DeclaredCorrectionMechanism::recorded_create_inverse_binding::<Self>()
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<S>> {
-        vec![ApplicationCorrectionOutput::<CreateBinding<S>, Created<S>>::field(Id::reference())]
+        vec![
+            ApplicationCorrectionOutput::<CreateBinding<S>, Created<S>>::field(schema::id::<S>())
+                .expect("record output field"),
+        ]
     }
     fn derive_correction(
         original: &Create,
@@ -61,8 +64,9 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoCreate<S> {
             fields
                 .field(
                     &ApplicationCorrectionOutput::<CreateBinding<S>, Created<S>>::field(
-                        Id::reference(),
-                    ),
+                        schema::id::<S>(),
+                    )
+                    .expect("record output field"),
                 )
                 .map_err(|_| UnsupportedSourceMeaning)?,
         )
@@ -134,13 +138,16 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
     }
     fn mechanism() -> DeclaredCorrectionMechanism<S> {
         let mut loci = vec![
-            DeclaredPreImageLocus::from_field(Id::reference::<S>()),
-            DeclaredPreImageLocus::from_field(Value::reference::<S>()),
+            DeclaredPreImageLocus::from_field(schema::id::<S>())
+                .expect("the inverse field is declared"),
+            DeclaredPreImageLocus::from_field(schema::value::<S>())
+                .expect("the inverse field is declared"),
         ];
         if heterogeneous::active::<S>() {
-            loci.push(DeclaredPreImageLocus::from_field(
-                heterogeneous::BodyKey::reference::<S>(),
-            ));
+            loci.push(
+                DeclaredPreImageLocus::from_field(heterogeneous::BodyKey::at("BodyKey"))
+                    .expect("the inverse field is declared"),
+            );
         }
         let demand = DeclaredPreImageDemand::new(
             loci,
@@ -176,13 +183,15 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
         };
         let id = U64ApplicationValueBinding::decode(
             fields
-                .field(&DeclaredPreImageLocus::from_field(Id::reference::<S>()))
+                .field(&DeclaredPreImageLocus::from_field(schema::id::<S>()).expect("record field"))
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;
         let value = U64ApplicationValueBinding::decode(
             fields
-                .field(&DeclaredPreImageLocus::from_field(Value::reference::<S>()))
+                .field(
+                    &DeclaredPreImageLocus::from_field(schema::value::<S>()).expect("record field"),
+                )
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;
@@ -198,7 +207,8 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
                 let value = fields
                     .field_for_output(
                         &roles[index],
-                        &DeclaredPreImageLocus::from_field(Value::reference::<S>()),
+                        &DeclaredPreImageLocus::from_field(schema::value::<S>())
+                            .expect("the inverse field is declared"),
                     )
                     .ok_or(MissingPreImage)?;
                 U64ApplicationValueBinding::decode(value).map_err(|_| InvalidPreImage)

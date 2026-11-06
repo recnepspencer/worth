@@ -1,5 +1,5 @@
 //! Complete feature members lower through the existing declaration and Host owners.
-/// Declares schema-only contributions or one complete static feature definition.
+/// Declares one complete static feature definition.
 /// Runtime constructor arguments are explicit values; no semantic default is inferred.
 /// A complete definition cannot substitute an operation-only roster for typed members.
 /// ```compile_fail
@@ -29,9 +29,7 @@ macro_rules! worth_query_application_contribution {
             [] [] []; $($members)*
         );
     };
-    ($($schema_only:tt)*) => {
-        $crate::facade::__worth_query_schema_contribution!($($schema_only)*);
-    };
+
 }
 
 #[doc(hidden)]

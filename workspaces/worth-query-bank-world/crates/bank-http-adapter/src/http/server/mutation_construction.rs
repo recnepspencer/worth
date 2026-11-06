@@ -87,7 +87,7 @@ pub(super) fn start(
                 .as_principal(principal);
             if let Some(expected) = expected_revision {
                 original = match original.expect_version(
-                    bank_domain::schema::AccountingRevision::reference(),
+                    bank_domain::schema::AccountingRevision::at("AccountingRevision"),
                     bank_domain::model::AccountJournalRevision::from_posting_count(expected),
                 ) {
                     Ok(original) => original,
@@ -96,7 +96,7 @@ pub(super) fn start(
             }
             if let Some(expected) = expected_status {
                 original = match original
-                    .expect_fact(bank_domain::schema::Status::reference(), expected.into())
+                    .expect_fact(bank_domain::schema::Status::at("Status"), expected.into())
                 {
                     Ok(original) => original,
                     Err(_) => return Err(denial(BankHttpDenialKind::MalformedRequest)),

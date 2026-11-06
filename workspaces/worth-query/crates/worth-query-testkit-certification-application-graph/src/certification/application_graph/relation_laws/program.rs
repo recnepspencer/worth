@@ -9,111 +9,7 @@ pub struct GraphContribution<L: LawPolicy>(pub PhantomData<fn() -> L>);
 impl<L: LawPolicy> ApplicationSchemaContribution<GraphSchema<L>> for GraphContribution<L> {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("worth.query.relation-laws.contribution.v1");
-    fn register_members(
-        schema: ApplicationSchemaDeclarationBuilder<GraphSchema<L>>,
-    ) -> ApplicationSchemaDeclarationBuilder<GraphSchema<L>> {
-        let schema = schema
-            .entity(ExternalMapping::reference())
-            .entity(Principal::reference())
-            .entity(Node::reference())
-            .entity(Leaf::reference())
-            .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-            .aspect(Principal::reference(), PrincipalFacts::reference())
-            .aspect(Node::reference(), NodeFacts::reference())
-            .aspect(Leaf::reference(), LeafFacts::reference())
-            .field(
-                ExternalMapping::reference(),
-                ExternalIdentityField::reference(),
-            )
-            .field(
-                ExternalMapping::reference(),
-                MappingStatusField::reference(),
-            )
-            .field(Principal::reference(), PrincipalKey::reference())
-            .field(Node::reference(), NodeKey::reference())
-            .field(Leaf::reference(), LeafKey::reference())
-            .relation(
-                MappingTarget::reference(),
-                ExternalMapping::reference(),
-                Principal::reference(),
-            )
-            .principal_binding(GraphPrincipal::reference())
-            .relation(Precedes::reference(), Node::reference(), Node::reference())
-            .relation(Feeds::reference(), Node::reference(), Leaf::reference())
-            .operation(
-                EditEdges::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish(),
-            )
-            .operation_read_field(EditEdges::reference(), NodeKey::reference())
-            .operation_read_relation(EditEdges::reference(), Precedes::reference())
-            .operation_link(EditEdges::reference(), Precedes::reference())
-            .operation_unlink(EditEdges::reference(), Precedes::reference())
-            .application_mutation_binding::<EditBinding<L>>()
-            .operation(
-                CreateNode::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish(),
-            )
-            .operation_read_field(CreateNode::reference(), NodeKey::reference())
-            .operation_link(CreateNode::reference(), Precedes::reference())
-            .operation_create(CreateNode::reference(), Node::reference())
-            .operation_write(CreateNode::reference(), NodeKey::reference())
-            .application_mutation_binding::<CreateBinding<L>>()
-            .operation(
-                EditFeeds::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish(),
-            )
-            .operation_read_field(EditFeeds::reference(), NodeKey::reference())
-            .operation_read_field(EditFeeds::reference(), LeafKey::reference())
-            .operation_read_relation(EditFeeds::reference(), Feeds::reference())
-            .operation_read_entity(EditFeeds::reference(), Node::reference())
-            .operation_read_entity(EditFeeds::reference(), Leaf::reference())
-            .operation_create(EditFeeds::reference(), Leaf::reference())
-            .operation_write(EditFeeds::reference(), LeafKey::reference())
-            .operation_link(EditFeeds::reference(), Feeds::reference())
-            .operation_unlink(EditFeeds::reference(), Feeds::reference())
-            .operation_delete(EditFeeds::reference(), Node::reference())
-            .operation_delete(EditFeeds::reference(), Leaf::reference())
-            .application_mutation_binding::<FeedsBinding<L>>();
-        let schema = if L::RELATION_PAYLOAD {
-            schema
-                .relation_aspect(
-                    ApplicationRelationAspectDefinition::new(
-                        Precedes::reference(),
-                        EdgeFacts::reference(),
-                        AbsenceLaw::Optional,
-                    )
-                    .field(EdgeWeight::reference())
-                    .finish()
-                    .unwrap(),
-                )
-                .operation_initialize_relation_field(
-                    EditEdges::reference(),
-                    EdgeWeight::reference(),
-                )
-        } else {
-            schema
-        };
-        let schema = if L::DERIVED_RELATIONS {
-            super::derived::declare(schema)
-        } else {
-            schema
-        };
-        let schema = if L::LOGICAL_RELATIONS {
-            super::logical::declare(schema)
-        } else {
-            schema
-        };
-        L::observation_members(schema)
-    }
+    type Members = (L::Model, GraphContracts<L>);
 }
 impl<L: LawPolicy> WorthQueryApplicationContribution<GraphSchema<L>> for GraphContribution<L> {
     type Configuration = ();
@@ -187,5 +83,82 @@ impl<L: LawPolicy> ApplicationProgramDefinition<GraphSchema<L>> for GraphProgram
             feature
         };
         vec![feature.finish()]
+    }
+}
+
+pub struct GraphContracts<L: LawPolicy>(PhantomData<fn() -> L>);
+impl<L: LawPolicy> Registration<GraphSchema<L>> for GraphContracts<L> {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<GraphSchema<L>>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<GraphSchema<L>>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok({
+            let schema = schema
+                .principal_binding(GraphPrincipal::reference())
+                .operation(
+                    EditEdges::reference()
+                        .definition()
+                        .no_external_effect()
+                        .no_aftermath()
+                        .finish(),
+                )
+                .operation_read_field(EditEdges::reference(), node_key::<GraphSchema<L>>())
+                .operation_read_relation(EditEdges::reference(), precedes::<GraphSchema<L>>())
+                .operation_link(EditEdges::reference(), precedes::<GraphSchema<L>>())
+                .operation_unlink(EditEdges::reference(), precedes::<GraphSchema<L>>())
+                .application_mutation_binding::<EditBinding<L>>()
+                .operation(
+                    CreateNode::reference()
+                        .definition()
+                        .no_external_effect()
+                        .no_aftermath()
+                        .finish(),
+                )
+                .operation_read_field(CreateNode::reference(), node_key::<GraphSchema<L>>())
+                .operation_link(CreateNode::reference(), precedes::<GraphSchema<L>>())
+                .operation_create(CreateNode::reference(), node::<GraphSchema<L>>())
+                .operation_write(CreateNode::reference(), node_key::<GraphSchema<L>>())
+                .application_mutation_binding::<CreateBinding<L>>()
+                .operation(
+                    EditFeeds::reference()
+                        .definition()
+                        .no_external_effect()
+                        .no_aftermath()
+                        .finish(),
+                )
+                .operation_read_field(EditFeeds::reference(), node_key::<GraphSchema<L>>())
+                .operation_read_field(EditFeeds::reference(), LeafKey::at("LeafKey"))
+                .operation_read_relation(EditFeeds::reference(), feeds::<GraphSchema<L>>())
+                .operation_read_entity(EditFeeds::reference(), node::<GraphSchema<L>>())
+                .operation_read_entity(EditFeeds::reference(), Leaf::reference())
+                .operation_create(EditFeeds::reference(), Leaf::reference())
+                .operation_write(EditFeeds::reference(), LeafKey::at("LeafKey"))
+                .operation_link(EditFeeds::reference(), feeds::<GraphSchema<L>>())
+                .operation_unlink(EditFeeds::reference(), feeds::<GraphSchema<L>>())
+                .operation_delete(EditFeeds::reference(), node::<GraphSchema<L>>())
+                .operation_delete(EditFeeds::reference(), Leaf::reference())
+                .application_mutation_binding::<FeedsBinding<L>>();
+            let schema = if L::RELATION_PAYLOAD {
+                schema.operation_initialize_relation_field(
+                    EditEdges::reference(),
+                    edge_weight::<GraphSchema<L>>().expect("payload record field"),
+                )
+            } else {
+                schema
+            };
+            let schema = if L::DERIVED_RELATIONS {
+                super::derived::declare(schema)
+            } else {
+                schema
+            };
+            let schema = if L::LOGICAL_RELATIONS {
+                super::logical::declare(schema)
+            } else {
+                schema
+            };
+            L::observation_members(schema)
+        })
     }
 }

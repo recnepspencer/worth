@@ -8,7 +8,7 @@ fn maximum_admitted_package_installs_and_one_more_byte_refuses_at_the_door() {
     // Package declaration meaning has a shared 64 MiB ceiling at this revision.
     // The 32,768 / 4 MiB admission identity is only the support metadata.
     const MAXIMUM: usize = 64 * 1024 * 1024;
-    let declaration = model::declaration::<40, 12>(false).unwrap();
+    let declaration = model::declaration::<40, 12, false>().unwrap();
     let package = |length| {
         model::package(&declaration).definition(WorthQueryPortableDefinition::invariant(
             "finite-definition",

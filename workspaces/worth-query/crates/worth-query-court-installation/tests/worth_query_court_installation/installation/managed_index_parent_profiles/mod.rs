@@ -38,7 +38,10 @@ worth_query_declaration::worth_query_value_binding!(pub OtherProbeBinding for Ot
 pub(crate) fn bind<const MODE: u8>() -> Result<
     WorthQueryInstalledApplicationSchema<model::ParentSchema<MODE>>,
     WorthQueryInstalledApplicationSchemaDenial,
-> {
+>
+where
+    model::ParentSchema<MODE>: model::ModelSchema,
+{
     let declaration = model::ParentSchema::<MODE>::declaration().unwrap();
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
         model::ParentSchema::<MODE>::OWNER,
@@ -279,7 +282,11 @@ fn content_managed_source_projection_installs_with_its_exact_field_recipe() {
     ));
     let binding = installed
         .value_bindings()
-        .field("Principal", "PrincipalFacts", "ContentSamples")
+        .field(
+            "Principal",
+            model::ContentSamples::<Content>::at("ContentSamples").aspect(),
+            "ContentSamples",
+        )
         .unwrap();
     assert!(binding.matches_content::<super::content_binding::codec::Good>());
 }

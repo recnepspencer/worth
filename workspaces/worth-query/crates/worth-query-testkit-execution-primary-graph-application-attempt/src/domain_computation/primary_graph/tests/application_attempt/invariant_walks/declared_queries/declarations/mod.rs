@@ -23,19 +23,8 @@ worth_query_application_query!(pub Forward for WalkSchema, identity "WalkClosure
 worth_query_application_query!(pub Reverse for WalkSchema, identity "WalkClosureReverse", parameters ParametersBinding, result RowsBinding, scope Node => "Node", name "walk_closure_reverse");
 worth_query_application_query!(pub Composed for WalkSchema, identity "WalkClosureComposed", parameters ParametersBinding, result RowsBinding, scope Node => "Node", name "walk_closure_composed");
 
-pub fn key<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    KeySlot,
-    WalkSchema,
-    Node,
-    NodeData,
-    NodeKey,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", NodeKey::reference())
+pub fn key<Q>() -> ApplicationQueryResultFieldRef<Q, KeySlot, WalkSchema, NodeKey> {
+    ApplicationQueryResultFieldRef::new("key", NodeKey::at("NodeKey"))
 }
 impl<Q: ApplicationQueryMarkerIdentity<WalkSchema>> WorthQueryApplicationProjection<WalkSchema, Q>
     for NodeRow
@@ -91,13 +80,15 @@ pub fn declare(
             ApplicationQueryRootPath::from(Node::reference())
                 .forward(Next::reference())
                 .where_equal(
-                    Blocked::reference(),
+                    Blocked::at("Blocked"),
                     ApplicationEncodedScalarValue::try_new(false).unwrap(),
                 )
+                .expect("record field contract")
                 .forward_closure(Next::reference())
                 .where_equal(
-                    Blocked::reference(),
+                    Blocked::at("Blocked"),
                     ApplicationEncodedScalarValue::try_new(false).unwrap(),
-                ),
+                )
+                .expect("record field contract"),
         ))
 }

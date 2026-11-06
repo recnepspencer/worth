@@ -56,7 +56,7 @@ impl ApplicationMutationIntent<CapabilitySchema> for Effect {
         &self,
     ) -> <GuardedBinding as ApplicationMutationBinding<CapabilitySchema>>::ScopeBinding {
         <GuardedBinding as ApplicationMutationBinding<CapabilitySchema>>::ScopeBinding::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.0.identity.clone(),
         )
     }
@@ -70,7 +70,7 @@ impl ApplicationMutationIntent<CapabilitySchema> for Control {
         &self,
     ) -> <ControlBinding as ApplicationMutationBinding<CapabilitySchema>>::ScopeBinding {
         <ControlBinding as ApplicationMutationBinding<CapabilitySchema>>::ScopeBinding::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.0.identity.clone(),
         )
     }
@@ -84,7 +84,7 @@ impl ApplicationMutationIntent<CapabilitySchema> for Advance {
         &self,
     ) -> <AdvanceBinding as ApplicationMutationBinding<CapabilitySchema>>::ScopeBinding {
         <AdvanceBinding as ApplicationMutationBinding<CapabilitySchema>>::ScopeBinding::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.0.identity.clone(),
         )
     }
@@ -98,7 +98,7 @@ impl ApplicationMutationIntent<CapabilitySchema> for Start {
         &self,
     ) -> <StartBinding as ApplicationMutationBinding<CapabilitySchema>>::ScopeBinding {
         <StartBinding as ApplicationMutationBinding<CapabilitySchema>>::ScopeBinding::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.0.identity.clone(),
         )
     }

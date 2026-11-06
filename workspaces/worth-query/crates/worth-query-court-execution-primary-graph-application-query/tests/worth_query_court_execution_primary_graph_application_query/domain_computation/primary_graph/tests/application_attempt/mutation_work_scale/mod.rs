@@ -272,14 +272,14 @@ pub fn no_demand_mutation_program(
             &admission,
             |reader, projected| {
                 reader
-                    .require_decision_field(projected, AccountStatus::reference())
+                    .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                     .unwrap();
                 if wide {
                     let other = reader
-                        .resolve_entity(AccountStatus::reference(), "unrelated".to_owned())
+                        .resolve_entity(AccountStatus::at("AccountStatus"), "unrelated".to_owned())
                         .unwrap();
                     reader
-                        .require_decision_field(&other, AccountLabel::reference())
+                        .require_decision_field(&other, AccountLabel::at("AccountLabel"))
                         .unwrap();
                 }
             },
@@ -305,12 +305,16 @@ pub fn no_demand_mutation_program(
         .begin_effect_program();
     let account = effects.existing_entity(&account).unwrap();
     effects
-        .write_field(&account, AccountStatus::reference(), "breadth".to_owned())
+        .write_field(
+            &account,
+            AccountStatus::at("AccountStatus"),
+            "breadth".to_owned(),
+        )
         .unwrap();
     if let Some(other) = other {
         let other = effects.existing_entity(&other).unwrap();
         effects
-            .write_field(&other, AccountLabel::reference(), "wide".to_owned())
+            .write_field(&other, AccountLabel::at("AccountLabel"), "wide".to_owned())
             .unwrap();
     }
     effects.finish().unwrap()

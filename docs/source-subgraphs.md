@@ -13,8 +13,9 @@ ordinary installed operations can change values, but cannot change membership.
 
 ## Declare and observe the complete source
 
-Use `decl::worth_query_entity!`, `decl::worth_query_field!` and
-`decl::worth_query_relation!` for independently mutable facts and actual links.
+Use `decl::application_schema::fragment::{Entity, Aspect, Relation, Record, Scalar}`.
+Fragments list entities, entities list aspects and outgoing relations, and binding
+sets supply each row’s columns.
 Unique semantic keys name the fixture's nodes; Native retains their physical
 occurrence and generation. A key stored inside a value does not replace a link.
 

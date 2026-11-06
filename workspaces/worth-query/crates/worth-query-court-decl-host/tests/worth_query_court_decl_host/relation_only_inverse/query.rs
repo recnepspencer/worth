@@ -17,19 +17,8 @@ worth_query_structured_value_binding!(pub InputBinding for Read { identity: "rel
 worth_query_application_query!(pub Query for Schema, identity "relation-only-inverse.read.v1", parameters ParametersBinding, result ResultBinding, scope Node => "Node", name "node");
 pub struct IdSlot;
 worth_query_portable_type!(IdSlot => "relation-only-inverse.id-slot.v1");
-fn id() -> ApplicationQueryResultFieldRef<
-    Query,
-    IdSlot,
-    Schema,
-    Node,
-    Facts,
-    Id,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("id", Id::reference())
+fn id() -> ApplicationQueryResultFieldRef<Query, IdSlot, Schema, Id> {
+    ApplicationQueryResultFieldRef::new("id", Id::at("Id"))
 }
 pub fn definition() -> ApplicationQueryDefinition<Schema, Query, Parameters, Row, Node> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
@@ -58,7 +47,7 @@ impl WorthQueryApplicationProjection<Schema, Query> for Row {
     }
 }
 pub struct Binding;
-type Scope = ApplicationQueryFieldScope<Schema, Node, Facts, Id, u64, ReadOnly, NoApplicationUnit>;
+type Scope = ApplicationQueryFieldScope<Id>;
 impl ApplicationQueryBinding<Schema> for Binding {
     type Input = Read;
     type InputBinding = InputBinding;
@@ -73,17 +62,8 @@ impl ApplicationQueryBinding<Schema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "relation-only-inverse.read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Node,
-        Facts,
-        Id,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        Id::reference()
+    fn scope_field() -> Id {
+        Id::at("Id")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -102,6 +82,6 @@ impl ApplicationQueryIntent<Schema> for Read {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> Scope {
-        Scope::new(Id::reference(), self.id)
+        Scope::new(Id::at("Id"), self.id)
     }
 }

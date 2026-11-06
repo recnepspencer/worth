@@ -33,11 +33,13 @@ impl OperationHandler<BankSchema, ReleaseEstateMutationBinding> for ReleaseEstat
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
             }
         };
-        let executor =
-            match reader.resolve_entity(PrincipalIdentityField::reference(), command.executor) {
-                Ok(executor) => executor,
-                Err(denial) => return HandlerResult::ExecutionDenied(denial),
-            };
+        let executor = match reader.resolve_entity(
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+            command.executor,
+        ) {
+            Ok(executor) => executor,
+            Err(denial) => return HandlerResult::ExecutionDenied(denial),
+        };
         let relations = match reader.relations_from(EstateExecutor::reference(), &executor) {
             Ok(relations) => relations,
             Err(denial) => {
@@ -65,16 +67,18 @@ impl OperationHandler<BankSchema, ReleaseEstateMutationBinding> for ReleaseEstat
         let EstateAction::ReleaseEstate { estate, .. } = decision else {
             return HandlerResult::DomainDenied(EstateMutationDenial::InputVariant);
         };
-        let estate_entity =
-            match candidate.resolve_entity(EstateCaseIdentityField::reference(), estate) {
-                Ok(entity) => entity,
-                Err(denial) => {
-                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
-                }
-            };
+        let estate_entity = match candidate.resolve_entity(
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
+            estate,
+        ) {
+            Ok(entity) => entity,
+            Err(denial) => {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
+            }
+        };
         if let Err(denial) = candidate.write_field(
             &estate_entity,
-            EstateCaseStatusField::reference(),
+            EstateCaseStatusField::at("EstateCaseStatusField"),
             EstateCaseStatus::Released,
         ) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial));

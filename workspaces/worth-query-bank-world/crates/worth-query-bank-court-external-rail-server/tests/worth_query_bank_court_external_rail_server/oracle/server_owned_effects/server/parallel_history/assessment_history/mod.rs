@@ -161,7 +161,7 @@ fn assessment_history_settles_at_each_request_width() {
         };
         let cancellation = WorthQueryCancellationSource::new();
         let expired =
-            WorthQueryRequestScope::new(Some(std::time::Instant::now()), cancellation.token());
+            WorthQueryRequestScope::new(Some(std::time::Instant::now()), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let stopped = fixture
             .world
             .runtime

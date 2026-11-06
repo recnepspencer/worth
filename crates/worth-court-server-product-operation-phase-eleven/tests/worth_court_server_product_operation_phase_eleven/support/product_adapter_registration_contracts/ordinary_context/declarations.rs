@@ -1,3 +1,6 @@
+#[path = "declarations/records.rs"]
+mod storage_model;
+pub use storage_model::*;
 #[allow(unused_imports)]
 pub(crate) use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
@@ -10,13 +13,6 @@ pub(crate) use {axum::http::Method, axum::http::Request, axum::http::StatusCode}
 pub(crate) use {
     worth_query_host::facade::domain, worth_query_host::facade::primary_graph,
     worth_query_host::facade::runtime,
-};
-pub(crate) use {
-    worth_query_host::facade::worth_query_application_schema,
-    worth_query_host::facade::worth_query_aspect, worth_query_host::facade::worth_query_entity,
-    worth_query_host::facade::worth_query_field,
-    worth_query_host::facade::worth_query_principal_binding,
-    worth_query_host::facade::worth_query_relation,
 };
 pub(crate) use {
     worth_server::CompatHttpSurface, worth_server::WorthNativeSurface, worth_server::WorthServer,
@@ -38,52 +34,74 @@ pub(crate) use {
     worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::EditorAdapter,
 };
 
-worth_query_application_schema! {
-    pub schema SessionBasisSchema {
-        owner: worth_server_session_basis_test,
-        version: (1, 0),
-        members: |schema| {
-            schema
-                .entity(SessionExternalMapping::reference())
-                .entity(SessionPrincipal::reference())
-                .entity(SessionBasisRecord::reference())
-                .aspect(SessionExternalMapping::reference(), SessionExternalIdentity::reference())
-                .aspect(SessionPrincipal::reference(), SessionPrincipalFacts::reference())
-                .aspect(SessionBasisRecord::reference(), SessionBasisFacts::reference())
-                .field(SessionExternalMapping::reference(), SessionExternalIdentityField::reference())
-                .field(SessionExternalMapping::reference(), SessionMappingStatusField::reference())
-                .field(SessionPrincipal::reference(), SessionPrincipalIdentityField::reference())
-                .field(SessionBasisRecord::reference(), SessionBasisValue::reference())
-                .relation(
-                    SessionMappingTarget::reference(),
-                    SessionExternalMapping::reference(),
-                    SessionPrincipal::reference(),
-                )
-                .principal_binding(SessionIdentityBinding::reference())
-        }
+use worth_query_host::facade::declaration::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy)]
+pub struct SessionBasisSchema;
+impl Fragment for SessionBasisSchema {
+    const NAME: &'static str = "SessionBasisSchema";
+    type Bindings = NoBindings;
+    type Members = (SessionRecords, Contracts);
+}
+impl ApplicationSchema for SessionBasisSchema {
+    const OWNER: &'static str = "worth_server_session_basis_test";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+}
+impl SessionBasisSchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+pub struct Contracts;
+impl Registration<SessionBasisSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<SessionBasisSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<SessionBasisSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema.principal_binding(SessionIdentityBinding::reference()))
     }
 }
 
-worth_query_entity!(pub SessionExternalMapping for SessionBasisSchema);
-worth_query_entity!(pub SessionPrincipal for SessionBasisSchema);
-worth_query_entity!(pub SessionBasisRecord for SessionBasisSchema);
-worth_query_aspect!(pub SessionExternalIdentity for SessionBasisSchema, SessionExternalMapping; identity = AspectIdentity(0x91611101), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub SessionPrincipalFacts for SessionBasisSchema, SessionPrincipal; identity = AspectIdentity(0x91611102), revision = AspectContractRevision(1),);
-worth_query_field!(pub SessionExternalIdentityField for SessionBasisSchema, SessionExternalMapping, SessionExternalIdentity: worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity => worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub SessionMappingStatusField for SessionBasisSchema, SessionExternalMapping, SessionExternalIdentity: worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus => worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub SessionPrincipalIdentityField for SessionBasisSchema, SessionPrincipal, SessionPrincipalFacts: u64 => worth_query_host::facade::declaration::application_schema::U64ApplicationValueBinding, read_only, equality);
-worth_query_relation!(pub SessionMappingTarget in SessionBasisSchema, SessionExternalMapping => SessionPrincipal; integrity = same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(
-    pub SessionIdentityBinding in SessionBasisSchema,
-    mapping SessionExternalMapping {
-        identity: SessionExternalIdentityField,
-        status: SessionMappingStatusField,
-        target: SessionMappingTarget => SessionPrincipal,
-        principal_identity: SessionPrincipalIdentityField
+pub struct SessionIdentityBinding;
+impl SessionIdentityBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        SessionBasisSchema,
+        Self,
+        SessionExternalMapping,
+        SessionPrincipal,
+        <SessionPrincipalIdentityField as RecordSelection>::Value,
+        <SessionPrincipalIdentityField as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "SessionIdentityBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    SessionExternalIdentityField::at("SessionExternalIdentityField"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    SessionMappingStatusField::at("SessionMappingStatusField"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    SessionMappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    SessionPrincipalIdentityField::at("SessionPrincipalIdentityField"),
+                ),
+            },
+        )
     }
-);
-worth_query_aspect!(pub SessionBasisFacts for SessionBasisSchema, SessionBasisRecord; identity = AspectIdentity(0x91611103), revision = AspectContractRevision(1),);
-worth_query_field!(pub SessionBasisValue for SessionBasisSchema, SessionBasisRecord, SessionBasisFacts: String => worth_query_host::facade::declaration::application_schema::StringApplicationValueBinding, read_only, equality);
+}
 
 pub(crate) fn primary_graph_application(
 ) -> worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<

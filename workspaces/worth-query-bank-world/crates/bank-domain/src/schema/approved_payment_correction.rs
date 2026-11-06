@@ -32,13 +32,15 @@ impl ApplicationDeclaredOperation<BankSchema> for ApprovePaymentOperation {
 }
 fn journal_field() -> ApplicationCorrectionOutputField<BankSchema> {
     ApplicationCorrectionOutput::<ApprovePaymentMutationBinding, ApprovedPaymentJournal>::field(
-        JournalIdentityField::reference(),
+        JournalIdentityField::at("JournalIdentityField"),
     )
+    .expect("owned record selection is valid")
 }
 fn institution_field() -> ApplicationCorrectionOutputField<BankSchema> {
     ApplicationCorrectionOutput::<ApprovePaymentMutationBinding, ApprovedPaymentJournal>::field(
-        JournalInstitutionContext::reference(),
+        JournalInstitutionContext::at("JournalInstitutionContext"),
     )
+    .expect("owned record selection is valid")
 }
 impl ApplicationCorrectionBinding<BankSchema> for ReverseApprovedPayment {
     const IDENTITY: &'static str = "bank.correction.reverse-approved-payment-journal.v1";

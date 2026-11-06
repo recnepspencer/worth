@@ -19,16 +19,16 @@ pub(super) fn resolve_rule(
             .typed_entity(JournalEntry::reference())
             .ok_or("missing bank journal entity")?,
         journal_purpose: resolver
-            .typed_field(JournalPurpose::reference())
+            .typed_field(JournalPurpose::at("JournalPurpose"))
             .ok_or("missing bank journal purpose field")?,
         journal_posting: resolver
             .typed_relation(JournalPosting::reference())
             .ok_or("missing bank journal-posting relation")?,
         posting_amount: resolver
-            .typed_field(PostingAmount::reference())
+            .typed_field(PostingAmount::at("PostingAmount"))
             .ok_or("missing bank posting amount field")?,
         posting_purpose: resolver
-            .typed_field(Purpose::reference())
+            .typed_field(Purpose::at("Purpose"))
             .ok_or("missing bank posting purpose field")?,
         posting_account: resolver
             .typed_relation(PostingAccount::reference())

@@ -1,5 +1,6 @@
 //! Admitted reads certify stored bytes through the production re-encoding check.
 //! Literal encodings are independent oracles; these are not raw-source observations.
+use super::super::model::schema::Counter;
 use super::*;
 use worth_query_host::facade::{
     declaration::application_schema::ApplicationScalarValueBinding,
@@ -24,7 +25,7 @@ impl CertifiedObservation {
                     &phase,
                     |reader| {
                         reader
-                            .resolve_entity(Key::reference(), key.to_owned())
+                            .resolve_entity(Key::at("Key"), key.to_owned())
                             .unwrap()
                     },
                     ExecutionAllocationPolicy::SystemAllocation,
@@ -45,7 +46,7 @@ impl CertifiedObservation {
                     .unwrap();
                 self.snapshot
                     .read_fields(&execution, |reader| {
-                        reader.field(&self.identity, Primary::reference())
+                        reader.field(&self.identity, Primary::at("Primary"))
                     })
                     .unwrap()
                     .unwrap()
@@ -65,7 +66,7 @@ impl CertifiedObservation {
                     .unwrap();
                 self.snapshot
                     .read_fields(&execution, |reader| {
-                        reader.field(&self.identity, DefinitionRevision::reference())
+                        reader.field(&self.identity, DefinitionRevision::at("DefinitionRevision"))
                     })
                     .unwrap()
                     .unwrap()
@@ -88,7 +89,7 @@ pub(super) fn current(application: &host::Host, key: &str) -> AspectValue {
         .execute()
         .unwrap();
     assert_eq!(result.rows().len(), 1);
-    InlineCounterBinding::encode(&result.rows()[0].primary).unwrap()
+    InlineCounterBinding::encode(&Counter(result.rows()[0].primary)).unwrap()
 }
 
 /// Exact whole-model equality detects any effect from an admitted read.

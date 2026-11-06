@@ -596,8 +596,12 @@ workflows, and aftermath with `worth-query-decl` macros and types. Nothing
 runs. A declaration cannot install, authenticate, authorize, execute, or
 publish.
 
-- Schema: `worth_query_application_schema`, `worth_query_entity`,
-  `worth_query_aspect`, `worth_query_field`, `worth_query_relation`.
+- Storage schemas: `Fragment::Members`, `Entity::Aspects` and
+  `Entity::Relations` declare membership through tuples. `Aspect::Row`,
+  `Record<T>` and `Scalar<T>` declare the stored form once per binding set;
+  `OneOf::Cases` declares exclusive case aspects. See
+  [native schema fragments](native-schema-fragments.md) for declarations and
+  typed field handles.
 - Operations: `worth_query_operation!(... access { ... })` declares a concrete
   schema operation's reads, effects and expectations once. Install those same
   facts with `schema.declared_operation::<Operation>(definition)`, retaining

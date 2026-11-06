@@ -19,19 +19,8 @@ worth_query_structured_value_binding!(pub Parameters for () {identity:"worth.que
 pub struct IdentitySlot;
 worth_query_portable_type!(IdentitySlot=>"worth.query.retiring.current-slot.v1");
 worth_query_application_query!(pub Query for Schema,identity "CurrentSnapshotQuery",parameters Parameters,result ResultBinding,scope Row=>"Row",name "current_snapshot");
-pub fn field() -> ApplicationQueryResultFieldRef<
-    Query,
-    IdentitySlot,
-    Schema,
-    Snapshot,
-    SnapshotFacts,
-    SnapshotIdentity,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", SnapshotIdentity::reference())
+pub fn field() -> ApplicationQueryResultFieldRef<Query, IdentitySlot, Schema, SnapshotIdentity> {
+    ApplicationQueryResultFieldRef::new("identity", SnapshotIdentity::at("SnapshotIdentity"))
 }
 pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Row> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference()).root(Snapshot::reference()).scope(Row::reference())
@@ -53,4 +42,4 @@ pub fn identity(read: Read) -> String {
 worth_query_query_binding!(pub ReadBinding for Read,schema Schema,
     identity "worth.query.retiring.current-read-binding.v1",input Input,query Query,parameters Parameters=>|_|ApplicationQueryParameterSet::new(),result ResultBinding,
     principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value identity,limits results 1);
+    scope RowIdentity, field RowIdentity::at("RowIdentity"),value identity,limits results 1);

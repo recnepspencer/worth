@@ -12,11 +12,11 @@ impl OperationHandler<NumericSchema, IssueBinding> for IssueHandler {
         input: &Issue,
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, IssueBinding>,
     ) -> HandlerResult<IssueDecision, MissingValue> {
-        let root = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+        let root = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
             Ok(root) => root,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
-        let serial = match reader.field(&root, Secondary::reference()) {
+        let serial = match reader.field(&root, Secondary::at("Secondary")) {
             Ok(Some(value)) => value,
             Ok(None) => return HandlerResult::DomainDenied(MissingValue),
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
@@ -60,7 +60,7 @@ pub fn issue(
         .create_output::<Actual>(&actual)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .write_field(&parent, Secondary::reference(), decision.serial + 1)
+        .write_field(&parent, Secondary::at("Secondary"), decision.serial + 1)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(Issued { key, decoy })
 }
@@ -78,22 +78,22 @@ pub fn create(
         )
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .initialize_field(&entity, Key::reference(), key.to_owned())
+        .initialize_field(&entity, Key::at("Key"), key.to_owned())
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .initialize_field(&entity, Primary::reference(), payload)
+        .initialize_field(&entity, Primary::at("Primary"), Counter(payload))
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .initialize_field(&entity, Secondary::reference(), 0)
+        .initialize_field(&entity, Secondary::at("Secondary"), 0)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .initialize_field(&entity, ReadEnabled::reference(), true)
+        .initialize_field(&entity, ReadEnabled::at("ReadEnabled"), true)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .initialize_field(&entity, Ceiling::reference(), 1000)
+        .initialize_field(&entity, Ceiling::at("Ceiling"), 1000)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .initialize_field(&entity, Calculated::reference(), 0)
+        .initialize_field(&entity, Calculated::at("Calculated"), 0)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(entity)
 }
@@ -109,11 +109,11 @@ impl OperationHandler<NumericSchema, RecordBinding> for RecordHandler {
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, RecordBinding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<NumericSchema, Number>, MissingValue> {
         RECORDS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let entity = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+        let entity = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
             Ok(e) => e,
             Err(e) => return HandlerResult::ExecutionDenied(e),
         };
-        match reader.field(&entity, Primary::reference()) {
+        match reader.field(&entity, Primary::at("Primary")) {
             Ok(Some(_)) => {}
             Ok(None) => return HandlerResult::DomainDenied(MissingValue),
             Err(e) => return HandlerResult::ExecutionDenied(e),
@@ -133,7 +133,7 @@ impl OperationHandler<NumericSchema, RecordBinding> for RecordHandler {
             Ok(e) => e,
             Err(e) => return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(e)),
         };
-        match writer.write_field(&entity, Primary::reference(), input.payload) {
+        match writer.write_field(&entity, Primary::at("Primary"), Counter(input.payload)) {
             Ok(()) => HandlerResult::Completed(Recorded {
                 original_key: input.original_key.clone(),
                 payload: input.payload,
@@ -149,13 +149,13 @@ impl OperationHandler<NumericSchema, RetireBinding> for RetireHandler {
         input: &Retire,
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, RetireBinding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<NumericSchema, Number>, MissingValue> {
-        let entity = match reader.resolve_entity(Key::reference(), input.output_key.clone()) {
+        let entity = match reader.resolve_entity(Key::at("Key"), input.output_key.clone()) {
             Ok(e) => e,
             Err(e) => return HandlerResult::ExecutionDenied(e),
         };
         macro_rules! read {
             ($Field:ty) => {
-                match reader.field(&entity, <$Field>::reference()) {
+                match reader.field(&entity, <$Field>::at(stringify!($Field))) {
                     Ok(Some(_)) => {}
                     Ok(None) => return HandlerResult::DomainDenied(MissingValue),
                     Err(e) => return HandlerResult::ExecutionDenied(e),

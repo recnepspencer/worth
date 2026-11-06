@@ -213,10 +213,8 @@ fn compare_binding(
         if old_field.codec().is_none() || new_field.codec().is_none() {
             return Err("codec transition has an unclassified field".into());
         }
-        if new.revision() <= old.revision() {
-            return Err(
-                "codec meaning changed without an advanced semantic aspect revision".into(),
-            );
+        if new.revision() == old.revision() {
+            return Err("codec meaning changed without a changed semantic aspect revision".into());
         }
         changes.push(CodecFieldLocus {
             kind_id,
@@ -284,3 +282,6 @@ fn same_contract_except_shape_revision(old: &AspectContract, new: &AspectContrac
         && old.equivalence() == new.equivalence()
         && old.evolution() == new.evolution()
 }
+
+#[cfg(test)]
+mod fingerprint_tests;

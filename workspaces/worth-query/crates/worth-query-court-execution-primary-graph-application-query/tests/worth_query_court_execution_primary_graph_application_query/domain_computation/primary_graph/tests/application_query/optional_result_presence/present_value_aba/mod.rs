@@ -20,7 +20,7 @@ fn present_optional_source_denies_equal_value_after_aba() {
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let note = AccountNote::reference();
+    let note = AccountNote::at("AccountNote");
     let locator = (*graph.layout_for_test())
         .field_locator_for_test(note.entity(), note.aspect(), note.field())
         .unwrap()

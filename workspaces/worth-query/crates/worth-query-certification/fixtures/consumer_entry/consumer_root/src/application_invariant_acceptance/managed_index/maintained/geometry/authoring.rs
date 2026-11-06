@@ -95,11 +95,11 @@ worth_query_structured_value_binding!(pub InputBinding for Edit { identity: "mai
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "maintained-geometry.changed.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-geometry.denial.v1" });
 worth_query_operation!(pub EditGeometry for Catalog, input InputBinding);
-worth_query_operation_reads!(EditGeometry => [Directory, DirectoryIdentity, Edge, EdgeIdentity, Vertex, VertexIdentity, VertexRegion, Starts, Ends, ContainsEdge]);
+worth_query_operation_reads!(EditGeometry => [Directory,Edge,Vertex,Starts,Ends,ContainsEdge]);
 worth_query_operation_creates!(EditGeometry => [Vertex, Edge]);
 worth_query_operation_links!(EditGeometry => [ContainsEdge, Starts, Ends]);
 worth_query_operation_unlinks!(EditGeometry => [Ends]);
-worth_query_operation_writes!(EditGeometry => [VertexIdentity, VertexRegion, EdgeIdentity]);
+
 fn scope(input: &Edit) -> String {
     input.directory().to_owned()
 }
@@ -109,7 +109,7 @@ worth_query_mutation_binding!(pub Binding for Edit, schema Catalog, identity "ma
     handler identity "maintained-geometry.edit-handler.v1", program required,
     workflow_requirements ApplicationWorkflowExecutionRequirements::not_applicable(), outputs NoApplicationMutationOutputs,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit, field DirectoryIdentity::reference(), value scope,);
+    scope DirectoryIdentity, field DirectoryIdentity::at("DirectoryIdentity"), value scope,);
 
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
@@ -119,12 +119,12 @@ pub(super) fn declare(
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 128)
         .operation_read_entity(op, Directory::reference())
-        .operation_read_field(op, DirectoryIdentity::reference())
+        .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
         .operation_read_entity(op, Edge::reference())
-        .operation_read_field(op, EdgeIdentity::reference())
+        .operation_read_field(op, EdgeIdentity::at("EdgeIdentity"))
         .operation_read_entity(op, Vertex::reference())
-        .operation_read_field(op, VertexIdentity::reference())
-        .operation_read_field(op, VertexRegion::reference())
+        .operation_read_field(op, VertexIdentity::at("VertexIdentity"))
+        .operation_read_field(op, VertexRegion::at("VertexRegion"))
         .operation_read_relation(op, ContainsEdge::reference())
         .operation_read_relation(op, Starts::reference())
         .operation_read_relation(op, Ends::reference())
@@ -134,9 +134,9 @@ pub(super) fn declare(
         .operation_link(op, Starts::reference())
         .operation_link(op, Ends::reference())
         .operation_unlink(op, Ends::reference())
-        .operation_write(op, VertexIdentity::reference())
-        .operation_write(op, VertexRegion::reference())
-        .operation_write(op, EdgeIdentity::reference())
+        .operation_write(op, VertexIdentity::at("VertexIdentity"))
+        .operation_write(op, VertexRegion::at("VertexRegion"))
+        .operation_write(op, EdgeIdentity::at("EdgeIdentity"))
         .operation_managed_index_read::<super::query::BoxBinding, _, _>(op)
         .application_mutation_binding::<Binding>()
 }

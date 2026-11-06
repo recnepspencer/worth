@@ -1,20 +1,13 @@
-use crate::domain_computation::primary_graph::application_output_demand::registry::tests::demand_key;
-use crate::domain_computation::primary_graph::application_output_demand::registry::tests::source_custody;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::interest;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::key;
-use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::occurrence;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::record;
 use std::sync::Arc;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
 
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
-use std::cmp::Ordering;
-use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::root_revision_order;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
@@ -109,17 +102,17 @@ pub fn custody_wait(superseded: bool, token: bool) {
     {
         let state = (*registry.state_for_test()).lock().unwrap();
         assert_eq!(state.source_custody.len(), 1);
-        assert!((*state.source_custody[&commit].cleanup_for_test()).queued);
+        assert!(state.source_custody[&commit].cleanup_for_test().queued);
     }
     if token {
         registry.release_prepared_token_for_test(&commit);
     } else {
         let notifications = Arc::clone(
-            &(*(*(*registry.state_for_test())
+            (*(*registry.state_for_test())
                 .lock()
                 .unwrap()
                 .records_for_test())[&selected]
-                .wake_for_test()),
+                .wake_for_test(),
         );
         drop(interest(&registry, selected.clone(), notifications));
     }

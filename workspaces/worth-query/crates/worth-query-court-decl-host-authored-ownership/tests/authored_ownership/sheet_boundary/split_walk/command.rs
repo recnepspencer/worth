@@ -6,7 +6,7 @@ pub struct Extend {
 }
 worth_query_structured_value_binding!(pub Input for Extend { identity: "ownership.split-walk.extend.v1" });
 worth_query_operation!(pub ExtendOp for S: Scenario, input Input);
-impl OperationReads<ExtendOp> for Id {}
+impl<const CONTENT: bool> OperationReads<ExtendOp> for RawId<CONTENT> {}
 impl OperationReads<ExtendOp> for ForkNumber {}
 impl OperationReads<ExtendOp> for Branch {}
 impl OperationCreates<ExtendOp> for Fork {}
@@ -27,7 +27,7 @@ impl<S: Scenario> ApplicationMutationOutputContract<S> for Outputs {
         &[<Created<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
 }
 type Targets<S> = (
-    WorthQueryInvariantMutationTarget<S, Node>,
+    WorthQueryInvariantMutationTarget<S, Node<S>>,
     WorthQueryInvariantMutationTarget<S, Fork>,
 );
 worth_query_mutation_binding!(
@@ -36,9 +36,9 @@ worth_query_mutation_binding!(
     result query::UnitBinding, idempotency String, identity "ownership.split-walk.key.v1",
     decision Targets<S>, denial query::UnitBinding, handler identity "ownership.split-walk.handler.v1",
     outputs Outputs, source NoApplicationMutationSource,
-    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
+    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node<S>,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit, field Id::reference(), value_field id,
+    scope Id<S>, field schema::id::<S>(), value_field id,
 );
 pub struct Handler;
 impl<S: Scenario> OperationHandler<S, ExtendBinding<S>> for Handler {
@@ -48,8 +48,8 @@ impl<S: Scenario> OperationHandler<S, ExtendBinding<S>> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, S, ExtendBinding<S>>,
     ) -> HandlerResult<Targets<S>, ()> {
         let result = (|| {
-            let source = reader.resolve_entity(Id::reference(), input.id)?;
-            let second = reader.resolve_entity(ForkNumber::reference(), 2)?;
+            let source = reader.resolve_entity(schema::id::<S>(), input.id)?;
+            let second = reader.resolve_entity(ForkNumber::at("ForkNumber"), 2)?;
             reader
                 .relations_from(Branch::reference(), &second)
                 .map_err(HandlerExecutionDenial::new)?;
@@ -77,7 +77,7 @@ impl<S: Scenario> OperationHandler<S, ExtendBinding<S>> for Handler {
                 Fork::reference(),
                 WorthQueryApplicationEntityKey::new("external-region-extension").unwrap(),
             )?;
-            writer.initialize_field(&added, ForkNumber::reference(), 3)?;
+            writer.initialize_field(&added, ForkNumber::at("ForkNumber"), 3)?;
             writer.link(Branch::reference(), "extend-second-region", &second, &added)?;
             writer.create_output::<Created<S>>(&added)
         })();
@@ -93,11 +93,11 @@ pub fn declare<S: Scenario>(
     let op = ExtendOp::reference();
     schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
-        .operation_read_field(op, Id::reference())
-        .operation_read_field(op, ForkNumber::reference())
+        .operation_read_field(op, schema::id::<S>())
+        .operation_read_field(op, ForkNumber::at("ForkNumber"))
         .operation_read_relation(op, Branch::reference())
         .operation_create(op, Fork::reference())
-        .operation_write(op, ForkNumber::reference())
+        .operation_write(op, ForkNumber::at("ForkNumber"))
         .operation_link(op, Branch::reference())
         .application_mutation_binding::<ExtendBinding<S>>()
 }

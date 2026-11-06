@@ -12,10 +12,8 @@ use worth_query_declaration::worth_query_application_query;
 use crate::domain_computation::primary_graph::tests::fixture::application_queries::AccountSummaryParameters;
 use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::AccountAnnotation;
-use crate::domain_computation::primary_graph::tests::fixture::AccountAnnotations;
 use crate::domain_computation::primary_graph::tests::fixture::AccountIdentity;
 use crate::domain_computation::primary_graph::tests::fixture::AccountNote;
-use crate::domain_computation::primary_graph::tests::fixture::AccountPolicy;
 use crate::domain_computation::primary_graph::tests::fixture::AccountScore;
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjection;
@@ -115,7 +113,7 @@ impl WorthQueryApplicationProjection<IdentityExecutionSchema, OptionalAccountFie
             account: row.field(account())?,
             note: row.optional_field(note())?,
             score: row.optional_field(score())?,
-            annotation: row.optional_field(annotation())?,
+            annotation: row.optional_field(annotation())?.map(Into::into),
         })
     }
 }
@@ -124,58 +122,37 @@ pub fn account() -> ApplicationQueryResultFieldRef<
     OptionalAccountFieldQuery,
     AccountSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("account", AccountIdentity::reference())
+    ApplicationQueryResultFieldRef::new("account", AccountIdentity::at("AccountIdentity"))
 }
 
 pub fn note() -> ApplicationQueryOptionalResultFieldRef<
     OptionalAccountFieldQuery,
     NoteSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountNote,
-    String,
-    worth_query_declaration::facade::application_schema::ReadWrite,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryOptionalResultFieldRef::new("note", AccountNote::reference())
+    ApplicationQueryOptionalResultFieldRef::new("note", AccountNote::at("AccountNote"))
 }
 
 pub fn score() -> ApplicationQueryOptionalResultFieldRef<
     OptionalAccountFieldQuery,
     ScoreSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountScore,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadWrite,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryOptionalResultFieldRef::new("score", AccountScore::reference())
+    ApplicationQueryOptionalResultFieldRef::new("score", AccountScore::at("AccountScore"))
 }
 
 pub fn annotation() -> ApplicationQueryOptionalResultFieldRef<
     OptionalAccountFieldQuery,
     AnnotationSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountAnnotations,
     AccountAnnotation,
-    String,
-    worth_query_declaration::facade::application_schema::ReadWrite,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryOptionalResultFieldRef::new("annotation", AccountAnnotation::reference())
+    ApplicationQueryOptionalResultFieldRef::new(
+        "annotation",
+        AccountAnnotation::at("AccountAnnotation"),
+    )
 }

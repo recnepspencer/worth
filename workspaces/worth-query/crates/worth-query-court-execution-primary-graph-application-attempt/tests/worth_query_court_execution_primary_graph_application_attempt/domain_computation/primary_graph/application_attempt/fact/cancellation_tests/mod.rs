@@ -178,7 +178,7 @@ pub fn with_indexed_fact<R>(
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let field = AccountStatus::reference();
+    let field = AccountStatus::at("AccountStatus");
     let layout = (*graph.layout_for_test())
         .equality_field_for_test(field.entity(), field.aspect(), field.field())
         .unwrap();

@@ -12,7 +12,7 @@ use worth_query_declaration::facade::application_program::{
     ValidatedApplicationProgram,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEntityRef, ApplicationInvariantCostPosture, ApplicationInvariantDefinition,
+    ApplicationInvariantCostPosture, ApplicationInvariantDefinition,
     ApplicationInvariantEnforcement, ApplicationInvariantExecutionPoint, ApplicationInvariantGroup,
     ApplicationInvariantMarkerIdentity, ApplicationInvariantOperationalContract,
     ApplicationInvariantScopeTarget, ApplicationOperationMarkerIdentity, ApplicationOperationRef,
@@ -46,12 +46,17 @@ pub(super) const AUDIT_RULE: &str = "AuditTrail";
 pub(super) const ADJUST_OPERATION: &str = "AdjustDimension";
 pub(super) const UNKNOWN_OPERATION: &str = "RetireDimension";
 
-impl
-    worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity<
-        SupportSchema,
-    > for SupportEntity
-{
-    const IDENTIFIER: &'static str = "SupportEntity";
+use worth_query_declaration::facade::application_schema::fragment;
+impl fragment::Entity for SupportEntity {
+    const NAME: &'static str = "SupportEntity";
+    type Aspects = ();
+    type Relations = ();
+}
+struct SupportRecords;
+impl fragment::Fragment for SupportRecords {
+    const NAME: &'static str = "support_records";
+    type Bindings = fragment::NoBindings;
+    type Members = (SupportEntity,);
 }
 
 impl ApplicationInvariantMarkerIdentity<SupportSchema> for BoundedDimension {
@@ -109,12 +114,7 @@ impl ApplicationSchema for SupportSchema {
 
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(
-                ApplicationEntityRef::<Self, SupportEntity>::from_schema_identifier(
-                    "SupportEntity",
-                ),
-            )
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(SupportRecords)?
             .operation(
                 ApplicationOperationRef::<Self, AdjustOperation, AdjustInput>::from_declaration()
                     .definition()

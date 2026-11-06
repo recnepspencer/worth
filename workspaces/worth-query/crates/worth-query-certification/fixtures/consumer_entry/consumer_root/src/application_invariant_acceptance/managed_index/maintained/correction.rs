@@ -13,16 +13,8 @@ pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
     state::declare(schema)
-        .correction::<recorded::Note>()
-        .correction::<recorded::Mover>()
-        .correction::<recorded::Motion>()
 }
-pub(super) fn visit<V: ApplicationCorrectionVisitor<Catalog>>(
-    source: std::any::TypeId,
-    visitor: V,
-) -> Result<V::Output, V> {
-    recorded::visit(source, visitor)
-}
+
 pub(super) fn configure(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Catalog>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {

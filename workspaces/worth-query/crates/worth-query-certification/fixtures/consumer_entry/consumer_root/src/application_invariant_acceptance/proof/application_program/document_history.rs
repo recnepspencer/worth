@@ -40,7 +40,7 @@ type Finish<'a> = WorthQueryHistoryEditFinish<
 
 fn install() -> World {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, HistoryProgram>::begin()
-        .with_schema(&ConsumerSchema::declaration().unwrap())
+        .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap())
         .validated_program()
         .unwrap();
     installation::install_selected_program(

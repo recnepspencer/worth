@@ -19,7 +19,6 @@ use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::AccountAllActivity;
 use crate::domain_computation::primary_graph::tests::fixture::AccountLabel;
 use crate::domain_computation::primary_graph::tests::fixture::Activity;
-use crate::domain_computation::primary_graph::tests::fixture::ActivityFacts;
 use crate::domain_computation::primary_graph::tests::fixture::ActivitySequence;
 use crate::domain_computation::primary_graph::tests::fixture::CapabilityDisclosureBinding;
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
@@ -122,10 +121,11 @@ where
         TouchAccountCapability::reference(),
     )
     .use_field_by(
-        AccountLabel::reference(),
+        AccountLabel::at("AccountLabel"),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
         guard_influence,
     )
+    .expect("record field contract")
     .disclose_field_by(
         sequence::<Query>(),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
@@ -143,12 +143,13 @@ where
         .root_path(
             ApplicationQueryRootPath::from(Account::reference())
                 .where_equal(
-                    AccountLabel::reference(),
+                    AccountLabel::at("AccountLabel"),
                     ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                         "guard-match".to_owned(),
                     )
                     .expect("fixture root guard must encode"),
                 )
+                .expect("record field contract")
                 .forward(AccountAllActivity::reference()),
         )
         .build()
@@ -178,15 +179,9 @@ pub fn sequence<
     Query,
     RootGuardSequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 pub fn encoded_disclosure(

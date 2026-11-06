@@ -11,25 +11,32 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use worth_query_declaration::facade::application_schema::*;
 pub use worth_query_declaration::*;
 pub use worth_query_installation::facade::*;
+#[path = "records.rs"]
+pub mod storage_model;
+use storage_model::ComponentRecords;
+pub use storage_model::{Node, NodeKey};
+
+mod principal_binding;
 
 #[derive(Debug)]
 pub struct Schema;
-worth_query_entity!(pub Node for Schema);
-worth_query_aspect!(pub NodeData for Schema, Node; identity = AspectIdentity(0x9181_5001), revision = AspectContractRevision(1));
-worth_query_field!(pub NodeKey for Schema, Node, NodeData: u64 => U64ApplicationValueBinding, read_only, equality);
+
 pub struct A;
 pub struct B;
 pub struct Shells;
 pub struct OnlyA;
+impl fragment::Relation for A {
+    const NAME: &'static str = "A";
+    type To = Node;
+}
 impl A {
     pub fn reference() -> ApplicationRelationRef<Schema, Self, Node, Node> {
-        ApplicationRelationRef::from_schema_identifiers(
-            "A",
-            "Node",
-            "Node",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        )
+        fragment::relation(ComponentRecords, Node, Self)
     }
+}
+impl fragment::Relation for B {
+    const NAME: &'static str = "B";
+    type To = Node;
 }
 impl B {
     pub fn reference() -> ApplicationRelationRef<Schema, Self, Node, Node> {
@@ -58,13 +65,8 @@ impl ApplicationSchema for Schema {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        crate::domain_computation::primary_graph::invariant_projection::component::tests::fixture::principal_binding::declare(
-            ApplicationSchemaDeclarationBuilder::for_schema()
-                .entity(Node::reference())
-                .aspect(Node::reference(), NodeData::reference())
-                .field(Node::reference(), NodeKey::reference())
-                .relation(A::reference(), Node::reference(), Node::reference())
-                .relation(B::reference(), Node::reference(), Node::reference())
+        principal_binding::declare(
+            ApplicationSchemaDeclarationBuilder::from_fragment(ComponentRecords)?
                 .components(
                     ApplicationComponentSetDefinition::new(Shells::reference())
                         .coupled_by(B::reference())
@@ -120,7 +122,7 @@ pub fn install() -> World {
             bootstrap
                 .bind_entity(
                     WorthQueryApplicationEntitySeed::new(Node::reference(), node_key(key))
-                        .field(NodeKey::reference(), key),
+                        .field(NodeKey::at("NodeKey"), key),
                 )
                 .unwrap();
         }
@@ -164,6 +166,3 @@ pub fn seed_edges<R>(
             .unwrap();
     }
 }
-
-#[path = "principal_binding/mod.rs"]
-pub mod principal_binding;

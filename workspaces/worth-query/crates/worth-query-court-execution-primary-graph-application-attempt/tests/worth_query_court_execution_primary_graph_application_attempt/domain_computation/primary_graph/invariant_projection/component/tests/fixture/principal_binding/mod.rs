@@ -1,16 +1,12 @@
 //! The application fixture installs and seeds its required real principal binding.
-use crate::domain_computation::primary_graph::invariant_projection::component::tests::fixture::*;
-use worth_query_declaration::facade::authentication::*;
+use super::*;
 
-worth_query_entity!(Mapping for Schema);
-worth_query_entity!(Principal for Schema);
-worth_query_aspect!(MappingData for Schema, Mapping; identity = AspectIdentity(0x9181_5002), revision = AspectContractRevision(1));
-worth_query_field!(ExternalIdentity for Schema, Mapping, MappingData: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(MappingStatus for Schema, Mapping, MappingData: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_aspect!(PrincipalData for Schema, Principal; identity = AspectIdentity(0x9181_5003), revision = AspectContractRevision(1));
-worth_query_field!(PrincipalKey for Schema, Principal, PrincipalData: u64 => U64ApplicationValueBinding, read_only, equality);
 pub struct MappingTarget;
-pub struct IdentityBinding;
+impl fragment::Relation for MappingTarget {
+    const NAME: &'static str = "MappingTarget";
+    type To = Principal;
+}
+pub(super) struct IdentityBinding;
 
 pub fn target() -> ApplicationRelationRef<Schema, MappingTarget, Mapping, Principal> {
     ApplicationRelationRef::from_schema_identifiers(
@@ -32,14 +28,14 @@ pub fn reference() -> ApplicationPrincipalBindingRef<
         "IdentityBinding",
         ApplicationPrincipalBindingRequirements {
             mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
-                ExternalIdentity::reference(),
+                ExternalIdentity::at("ExternalIdentity"),
             ),
             mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
-                MappingStatus::reference(),
+                MappingStatus::at("MappingStatus"),
             ),
             target: ApplicationPrincipalTargetRequirement::from_relation(target()),
             principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
-                PrincipalKey::reference(),
+                PrincipalKey::at("PrincipalKey"),
             ),
         },
     )
@@ -48,16 +44,7 @@ pub fn reference() -> ApplicationPrincipalBindingRef<
 pub fn declare(
     builder: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    builder
-        .entity(Mapping::reference())
-        .entity(Principal::reference())
-        .aspect(Mapping::reference(), MappingData::reference())
-        .field(Mapping::reference(), ExternalIdentity::reference())
-        .field(Mapping::reference(), MappingStatus::reference())
-        .aspect(Principal::reference(), PrincipalData::reference())
-        .field(Principal::reference(), PrincipalKey::reference())
-        .relation(target(), Mapping::reference(), Principal::reference())
-        .principal_binding(reference())
+    builder.principal_binding(reference())
 }
 
 pub fn seed(
@@ -75,3 +62,7 @@ pub fn seed(
         )
         .unwrap();
 }
+
+use crate::domain_computation::primary_graph::invariant_projection::component::tests::fixture::storage_model::{Mapping,Principal,ExternalIdentity,MappingStatus,PrincipalKey};
+
+use worth_query_declaration::facade::application_schema::fragment;

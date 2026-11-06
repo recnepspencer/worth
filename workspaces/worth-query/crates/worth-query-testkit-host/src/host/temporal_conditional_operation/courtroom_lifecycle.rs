@@ -58,7 +58,7 @@ pub fn reinstallation_reconstructs_active_authoritative_work(
     );
     assert_authoritative_value(
         &world,
-        IntentEffectField::reference(),
+        IntentEffectField::at("IntentEffectField"),
         "payload".to_string(),
     );
 }
@@ -142,7 +142,7 @@ pub fn reinstallation_after_commit_cannot_duplicate_effect(
     assert_eq!(world.contacts.snapshot(), contacts);
     assert_authoritative_value(
         &world,
-        IntentEffectField::reference(),
+        IntentEffectField::at("IntentEffectField"),
         "payload".to_string(),
     );
 }

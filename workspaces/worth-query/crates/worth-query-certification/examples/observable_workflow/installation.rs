@@ -136,10 +136,13 @@ fn seed_document(
                     .expect("the row key is valid"),
             )
             .field(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 DOCUMENT_IDENTITY.to_owned(),
             )
-            .field(DocumentRetentionField::reference(), SEED_RETENTION),
+            .field(
+                DocumentRetentionField::at("DocumentRetentionField"),
+                SEED_RETENTION,
+            ),
         )
         .expect("the document must seed");
     graph
@@ -150,10 +153,13 @@ fn seed_document(
                     .expect("the related row key is valid"),
             )
             .field(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 RELATED_DOCUMENT_IDENTITY.to_owned(),
             )
-            .field(DocumentRetentionField::reference(), SEED_RETENTION),
+            .field(
+                DocumentRetentionField::at("DocumentRetentionField"),
+                SEED_RETENTION,
+            ),
         )
         .expect("the related document must seed");
 }

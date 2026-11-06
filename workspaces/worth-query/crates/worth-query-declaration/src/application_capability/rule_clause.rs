@@ -1,7 +1,6 @@
 use crate::application_schema::ApplicationAuthorizationPath;
 use crate::application_schema::{
-    ApplicationEncodedScalarValue, ApplicationFieldRef, ApplicationFieldUnit,
-    DeclaredApplicationFieldValue, WritePosture,
+    fragment::RecordSelection, ApplicationEncodedScalarValue, ApplicationSchemaDeclarationDenial,
 };
 use worth_foundational::facade::AspectValue;
 
@@ -23,25 +22,18 @@ pub struct ApplicationCapabilityAcceptedValues {
 }
 
 impl ApplicationCapabilityAcceptedValues {
-    pub fn one_of<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>(
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+    pub fn one_of<Field: RecordSelection>(
+        field: Field,
         values: impl IntoIterator<Item = ApplicationEncodedScalarValue<Field::Binding>>,
-    ) -> Self
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
+    ) -> Result<Self, ApplicationSchemaDeclarationDenial> {
+        let field = ApplicationCapabilityFieldBinding::from_reference(field)?;
         let mut values = values
             .into_iter()
             .map(ApplicationEncodedScalarValue::into_foundational_value)
             .collect::<Vec<_>>();
         values.sort();
         values.dedup();
-        Self {
-            field: ApplicationCapabilityFieldBinding::from_reference(field),
-            values,
-        }
+        Ok(Self { field, values })
     }
 
     pub const fn field(&self) -> &ApplicationCapabilityFieldBinding {

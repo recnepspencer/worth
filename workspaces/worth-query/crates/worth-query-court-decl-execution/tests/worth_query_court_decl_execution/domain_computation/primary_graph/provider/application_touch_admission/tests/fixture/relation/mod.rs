@@ -1,62 +1,66 @@
-//! Actual relation contracts; Link-only and initialized-create grants differ explicitly.
+//! Link-only and initialized-create grants remain distinct for record payloads.
 use crate::domain_computation::primary_graph::provider::application_touch_admission::tests::fixture::*;
+use worth_query_decl::facade::application_schema::fragment::{self, *};
 pub struct Edge;
+impl Relation for Edge {
+    const NAME: &'static str = "Edge";
+    type To = Node;
+}
 impl Edge {
-    pub const fn reference() -> ApplicationRelationRef<TouchSchema, Self, Node, Node> {
-        ApplicationRelationRef::from_schema_identifiers(
-            "Edge",
-            "Node",
-            "Node",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        )
+    pub fn reference() -> ApplicationRelationRef<TouchSchema, Self, Node, Node> {
+        fragment::relation(TouchSchema, Node, Self)
     }
 }
-worth_query_aspect!(pub(super) Payload for TouchSchema, Edge;
-    identity = AspectIdentity(0x91811002), revision = AspectContractRevision(1));
-worth_query_decl::facade::worth_query_relation_field!(pub(super) Weight for TouchSchema,
-    Edge, Node, Node, Payload: u64 => U64ApplicationValueBinding, read_write);
-worth_query_operation!(pub(crate) LinkOnly for TouchSchema, input InputBinding);
-worth_query_operation!(pub(crate) Initialize for TouchSchema, input InputBinding);
+pub struct Payload;
+impl Aspect for Payload {
+    const NAME: &'static str = "Payload";
+    type Row = u64;
+}
+pub(crate) fn weight_field() -> RelationFieldSelection<TouchSchema, Node, Edge, Payload, u64> {
+    select_relation_field(TouchSchema, Node, Edge, Payload, "value")
+}
+worth_query_operation!(pub LinkOnly for TouchSchema, input InputBinding);
+worth_query_operation!(pub Initialize for TouchSchema, input InputBinding);
 worth_query_operation_reads!(LinkOnly => [Node]);
 worth_query_operation_reads!(Initialize => [Node]);
-worth_query_operation_writes!(Initialize => [Weight]);
 impl OperationLinks<LinkOnly> for Edge {}
 impl OperationLinks<Initialize> for Edge {}
-
-pub fn declare(
-    schema: ApplicationSchemaDeclarationBuilder<TouchSchema>,
-) -> ApplicationSchemaDeclarationBuilder<TouchSchema> {
-    let link = LinkOnly::reference();
-    let init = Initialize::reference();
-    schema
-        .relation(Edge::reference(), Node::reference(), Node::reference())
-        .relation_aspect(
-            ApplicationRelationAspectDefinition::new(
-                Edge::reference(),
-                Payload::reference(),
-                worth_foundational::facade::AbsenceLaw::Optional,
+impl Registration<TouchSchema> for LinkOnly {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<TouchSchema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<TouchSchema>, ApplicationSchemaDeclarationDenial>
+    {
+        let operation = Self::reference();
+        Ok(builder
+            .operation(
+                operation
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
             )
-            .field(Weight::reference())
-            .finish()
-            .unwrap(),
-        )
-        .operation(
-            link.definition()
-                .no_external_effect()
-                .no_aftermath()
-                .finish(),
-        )
-        .operation_projection_work_budget(link, 16)
-        .operation_read_entity(link, Node::reference())
-        .operation_link(link, Edge::reference())
-        .operation(
-            init.definition()
-                .no_external_effect()
-                .no_aftermath()
-                .finish(),
-        )
-        .operation_projection_work_budget(init, 16)
-        .operation_read_entity(init, Node::reference())
-        .operation_link(init, Edge::reference())
-        .operation_initialize_relation_field(init, Weight::reference())
+            .operation_projection_work_budget(operation, 16)
+            .operation_read_entity(operation, node())
+            .operation_link(operation, Edge::reference()))
+    }
+}
+impl Registration<TouchSchema> for Initialize {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<TouchSchema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<TouchSchema>, ApplicationSchemaDeclarationDenial>
+    {
+        let operation = Self::reference();
+        Ok(builder
+            .operation(
+                operation
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .operation_projection_work_budget(operation, 16)
+            .operation_read_entity(operation, node())
+            .operation_link(operation, Edge::reference())
+            .operation_initialize_relation_field(operation, weight_field()))
+    }
 }

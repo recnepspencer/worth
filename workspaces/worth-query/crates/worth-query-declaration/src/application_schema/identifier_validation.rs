@@ -4,7 +4,9 @@ use super::declaration_denial::ApplicationSchemaDeclarationDenial;
 use super::schema_member::ApplicationSchemaMember;
 
 mod application_query;
+mod field_path;
 mod operation_targets;
+pub(super) use field_path::{validate_field_identifier, validate_field_locus};
 use operation_targets::{
     validate_decision_read_target_identifiers, validate_program_target_identifiers,
 };
@@ -81,28 +83,22 @@ pub(super) fn validate_member_identifiers(
             ApplicationSchemaMember::OperationBody { operation, body } => {
                 validate_simple_identifier(operation)?;
                 for step in body.scope_fields() {
-                    for identifier in [
+                    validate_field_locus(
                         step.field().entity(),
                         step.field().aspect(),
                         step.field().field(),
-                    ] {
-                        validate_simple_identifier(identifier)?;
-                    }
+                    )?;
                 }
                 if let Some(creation) = body.creation() {
                     validate_simple_identifier(creation.entity())?;
                     for step in creation.fields() {
-                        for identifier in [
+                        validate_field_locus(
                             step.field().entity(),
                             step.field().aspect(),
                             step.field().field(),
-                        ] {
-                            validate_simple_identifier(identifier)?;
-                        }
+                        )?;
                         if let Some(source) = step.source_field() {
-                            for identifier in [source.entity(), source.aspect(), source.field()] {
-                                validate_simple_identifier(identifier)?;
-                            }
+                            validate_field_locus(source.entity(), source.aspect(), source.field())?;
                         }
                         if let Some(source) = step.related_source() {
                             for identifier in [&source.relation, &source.from, &source.to] {
@@ -167,7 +163,7 @@ pub(super) fn validate_member_identifiers(
                 aspect,
                 field,
             } => {
-                validate_identifiers([entity, aspect, field])?;
+                validate_field_locus(entity, aspect, field)?;
             }
             ApplicationSchemaMember::Field {
                 entity,
@@ -176,7 +172,7 @@ pub(super) fn validate_member_identifiers(
                 unit,
                 ..
             } => {
-                validate_identifiers([entity, aspect, field])?;
+                validate_field_locus(entity, aspect, field)?;
                 if let Some(unit) = unit {
                     validate_simple_identifier(unit)?;
                 }
@@ -285,7 +281,7 @@ pub(super) fn validate_member_identifiers(
                 validate_simple_identifier(operation)?;
                 validate_simple_identifier(target.entity())?;
                 validate_simple_identifier(target.aspect())?;
-                validate_simple_identifier(target.field_name())?;
+                validate_field_identifier(target.field_name())?;
             }
             ApplicationSchemaMember::OperationProjectionWorkBudget { operation, .. } => {
                 validate_simple_identifier(operation)?;
@@ -384,7 +380,7 @@ pub(super) fn validate_authorization_path(
     for predicate in path.predicates() {
         validate_simple_identifier(predicate.entity())?;
         validate_simple_identifier(predicate.aspect())?;
-        validate_simple_identifier(predicate.field())?;
+        validate_field_identifier(predicate.field())?;
     }
     Ok(())
 }

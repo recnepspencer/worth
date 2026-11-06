@@ -7,43 +7,104 @@ pub use schema::ApplicationSchema;
 pub use worth_query_declaration::facade::application_schema as schema;
 pub use worth_query_installation::facade as domain;
 
-pub trait Fixture: ApplicationSchema {}
-worth_query_declaration::worth_query_entity!(pub Output for S: Fixture);
-worth_query_declaration::worth_query_aspect!(Values for S: Fixture, Output;
-    identity = AspectIdentity(0x0071_9810), revision = AspectContractRevision(1));
-worth_query_declaration::worth_query_field!(Value for S: Fixture, Output, Values:
-    u64 => schema::U64ApplicationValueBinding, read_write, no_equality);
-worth_query_declaration::worth_query_field!(Sibling for S: Fixture, Output, Values:
-    u64 => schema::U64ApplicationValueBinding, read_write, no_equality);
-
-macro_rules! fixture {
-    ($S:ident, $aspect:path, $mode:ident) => {
-        worth_query_declaration::worth_query_application_schema!(schema $S {
-            owner: $S, version: (1,0), members: |schema| {
-                schema.entity(Output::reference())
-                    .optional_aspect(Output::reference(), <$aspect>::reference())
-                    .$mode(Output::reference(), Value::reference())
-            }
-        });
-        impl Fixture for $S {}
-    };
+use schema::fragment::{self, RecordSelection};
+#[path = "records.rs"]
+mod records;
+use records::*;
+trait Fixture: ApplicationSchema {
+    type Entity: fragment::Entity;
+    type Field: RecordSelection<
+        Entity = Self::Entity,
+        Value = u64,
+        Binding = schema::U64ApplicationValueBinding,
+    >;
+    fn field() -> Self::Field;
 }
-fixture!(Struct, Values, field);
-fixture!(Scalar, Values, scalar_aspect_field);
-fixture!(RevisionTwo, crate::domain_computation::primary_graph::application_contribution::producer::registry::tests::output_equivalence::changed::Values, field);
-worth_query_declaration::worth_query_application_schema!(schema Missing {
-    owner: Missing, version: (1,0), members: |schema| {
-        schema.entity(Output::reference())
-            .optional_aspect(Output::reference(), Values::reference())
-            .field(Output::reference(), Sibling::reference())
+struct Struct;
+impl schema::ApplicationSchema for Struct {
+    const OWNER: &'static str = "Struct";
+    const NAME: &'static str = "Struct";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        schema::ApplicationSchemaDeclaration<Self>,
+        schema::ApplicationSchemaDeclarationDenial,
+    > {
+        schema::ApplicationSchemaDeclarationBuilder::from_fragment(Model::<0>)?.build()
     }
-});
-impl Fixture for Missing {}
-pub struct Role<S>(std::marker::PhantomData<S>);
+}
+impl Fixture for Struct {
+    type Entity = Output<0>;
+    type Field = fragment::FieldSelection<Model<0>, Output<0>, Values<0>, u64>;
+    fn field() -> Self::Field {
+        Self::Field::at("Value")
+    }
+}
+struct Scalar;
+impl schema::ApplicationSchema for Scalar {
+    const OWNER: &'static str = "Scalar";
+    const NAME: &'static str = "Scalar";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        schema::ApplicationSchemaDeclaration<Self>,
+        schema::ApplicationSchemaDeclarationDenial,
+    > {
+        schema::ApplicationSchemaDeclarationBuilder::from_fragment(Model::<1>)?.build()
+    }
+}
+impl Fixture for Scalar {
+    type Entity = Output<1>;
+    type Field = fragment::FieldSelection<Model<1>, Output<1>, Values<1>, u64>;
+    fn field() -> Self::Field {
+        Self::Field::at("value")
+    }
+}
+struct ShapeChanged;
+impl schema::ApplicationSchema for ShapeChanged {
+    const OWNER: &'static str = "ShapeChanged";
+    const NAME: &'static str = "ShapeChanged";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        schema::ApplicationSchemaDeclaration<Self>,
+        schema::ApplicationSchemaDeclarationDenial,
+    > {
+        schema::ApplicationSchemaDeclarationBuilder::from_fragment(Model::<2>)?.build()
+    }
+}
+impl Fixture for ShapeChanged {
+    type Entity = Output<2>;
+    type Field = fragment::FieldSelection<Model<2>, Output<2>, Values<2>, u64>;
+    fn field() -> Self::Field {
+        Self::Field::at("Value")
+    }
+}
+struct Missing;
+impl schema::ApplicationSchema for Missing {
+    const OWNER: &'static str = "Missing";
+    const NAME: &'static str = "Missing";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        schema::ApplicationSchemaDeclaration<Self>,
+        schema::ApplicationSchemaDeclarationDenial,
+    > {
+        schema::ApplicationSchemaDeclarationBuilder::from_fragment(Model::<3>)?.build()
+    }
+}
+impl Fixture for Missing {
+    type Entity = Output<3>;
+    type Field = fragment::FieldSelection<Model<3>, Output<3>, Values<3>, u64>;
+    fn field() -> Self::Field {
+        Self::Field::at("Sibling")
+    }
+}
+struct Role<S>(std::marker::PhantomData<S>);
 impl<S: Fixture> WorthQueryApplicationOutputRole for Role<S> {
     type Schema = S;
     type Contract = NoApplicationMutationOutputs;
-    type Entity = Output;
+    type Entity = S::Entity;
     type Action = WorthQueryPreserveOutput;
     type Cardinality = WorthQueryExactlyOneOutput;
     const NAME: &'static str = "number";
@@ -71,9 +132,9 @@ pub fn installed<S: Fixture>() -> domain::WorthQueryInstalledApplicationSchema<S
 }
 pub fn declaration<S: Fixture>() -> DeclaredProducerBinding {
     let mut declaration = declared(TypeId::of_for_test::<InstalledProducer>());
-    let field =
-        WorthQueryProducerOutputEquivalence::<S, Role<S>>::exact_u64(Value::reference::<S>())
-            .into_field_for_test();
+    let field = WorthQueryProducerOutputEquivalence::<S, Role<S>>::exact_u64(S::field())
+        .expect("the equivalence field is declared")
+        .into_field_for_test();
     (*declaration.output_equivalence_mut_for_test()) = Some(field.clone());
     (*declaration.installed_output_equivalence_mut_for_test()) = Some(
         seal(
@@ -105,7 +166,7 @@ fn installed_output_equivalence_binds_field_shape_revision_role_and_opt_in() {
     for distinct in [
         declared(TypeId::of_for_test::<InstalledProducer>()),
         declaration::<Scalar>(),
-        declaration::<RevisionTwo>(),
+        declaration::<ShapeChanged>(),
     ] {
         assert!(!structure.has_same_meaning_as_for_test(&distinct));
         assert_ne!(edition(&structure), edition(&distinct));
@@ -123,15 +184,14 @@ fn installed_output_equivalence_binds_field_shape_revision_role_and_opt_in() {
 
 #[test]
 fn missing_output_field_refuses_instead_of_substituting_its_sibling() {
-    let field = WorthQueryProducerOutputEquivalence::<Missing, Role<Missing>>::exact_u64(
-        Value::reference::<Missing>(),
+    let denied = WorthQueryProducerOutputEquivalence::<Missing, Role<Missing>>::exact_u64(
+        fragment::FieldSelection::<Model<3>, Output<3>, Values<3>, u64>::at("Value"),
     )
-    .into_field_for_test();
-    let denied = seal("producer", "number", &field, &installed::<Missing>()).unwrap_err();
-    assert_eq!(denied.kind(), worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenialKind::ProducerBindingMeaningMismatch);
-    assert!(denied
-        .subject()
-        .contains("absent from the completed declaration"));
+    .err()
+    .expect("a sibling cannot replace the missing field");
+    assert!(
+        matches!(denied, schema::ApplicationSchemaDeclarationDenial::InvalidRecordField { field } if field.field() == "Value")
+    );
 }
 
 #[test]
@@ -141,9 +201,10 @@ fn edition_refuses_unsealed_or_substituted_output_equivalence() {
     (*unsealed.installed_output_equivalence_mut_for_test()) = None;
     let mut substituted = valid.clone();
     (*substituted.output_equivalence_mut_for_test()) = Some(
-        WorthQueryProducerOutputEquivalence::<Struct, Role<Struct>>::exact_u64(
-            Sibling::reference::<Struct>(),
+        WorthQueryProducerOutputEquivalence::<ShapeChanged, Role<ShapeChanged>>::exact_u64(
+            fragment::FieldSelection::<Model<2>, Output<2>, Values<2>, u64>::at("Sibling"),
         )
+        .expect("the equivalence field is declared")
         .into_field_for_test(),
     );
     assert!(!valid.has_same_meaning_as_for_test(&substituted));

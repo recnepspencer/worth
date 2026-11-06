@@ -109,7 +109,7 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &host_custody.phase_for_application_for_test(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -125,7 +125,7 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
             );
             let index_id = graph
                 .layout_for_test()
-                .equality_field_for_test("Account", "AccountPolicy", "AccountStatus")
+                .equality_field_for_test("Account", worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus::at("AccountStatus").aspect(), "AccountStatus")
                 .and_then(|field| (*field.equality_index_id_for_test()))
                 .unwrap();
 
@@ -191,14 +191,14 @@ let selected = world.selected_product(
         let resolved = truth
             .resolve_for_test(execution,
                 "Account",
-                "AccountPolicy",
+                AccountStatus::at("AccountStatus").aspect(),
                 "AccountStatus",
                 StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(),
             )
             .unwrap();
         let typed = resolved.into_application_identity_for_test::<IdentityExecutionSchema, worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account>();
         assert_eq!(typed.binding_identity(), graph.binding_identity());
-        assert_eq!(typed.identity_index_id_for_test(), (*graph.layout_for_test().equality_field_for_test("Account", "AccountPolicy", "AccountStatus").unwrap().equality_index_id_for_test()).unwrap());
+        assert_eq!(typed.identity_index_id_for_test(), (*graph.layout_for_test().equality_field_for_test("Account", worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus::at("AccountStatus").aspect(), "AccountStatus").unwrap().equality_index_id_for_test()).unwrap());
     });
 
 }).expect("the fixture block owns its installed host call")

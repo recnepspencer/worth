@@ -63,7 +63,7 @@ let recorded = || {
             assert_eq!(stopped.kind(), worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind::Superseded);
             assert!(!recorded(), "factless refusal cannot establish a verified row");
         }
-        let label = AccountLabel::reference();
+        let label = AccountLabel::at("AccountLabel");
         let locator = graph.layout_for_test().field_locator_for_test(label.entity(), label.aspect(), label.field()).unwrap().clone();
         let fact = field_fact(&host_custody.borrowed_request_for_test(), runtime, snapshot, entity, locator);
         (*read.facts_mut_for_test()) = RetainedSourceFacts::for_test_for_test(false, Arc::from([fact])).for_comparison();
@@ -224,7 +224,7 @@ pub fn primed_output(
         .selected_product(&(phase_custody).test_host_request_for_test())
         .resolve_entity(
             phase_custody,
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             "open".to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -234,7 +234,7 @@ pub fn primed_output(
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let label_ref = AccountLabel::reference();
+    let label_ref = AccountLabel::at("AccountLabel");
     let label = graph
         .layout_for_test()
         .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())

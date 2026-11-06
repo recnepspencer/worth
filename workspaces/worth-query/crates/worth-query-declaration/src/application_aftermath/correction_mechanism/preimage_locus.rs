@@ -1,8 +1,6 @@
 //! Schema-affine field locus for retained inverse material.
 use super::PortablePreImageLocus;
-use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, DeclaredApplicationFieldValue,
-};
+use crate::application_schema::{fragment::RecordSelection, ApplicationSchemaDeclarationDenial};
 use std::{
     cmp::Ordering,
     fmt,
@@ -19,21 +17,18 @@ pub struct DeclaredPreImageLocus<Schema> {
 }
 
 impl<Schema> DeclaredPreImageLocus<Schema> {
-    pub fn from_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Self
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-    {
-        Self {
+    pub fn from_field<Field: RecordSelection>(
+        field: Field,
+    ) -> Result<Self, ApplicationSchemaDeclarationDenial> {
+        field.checked()?;
+        Ok(Self {
             portable: PortablePreImageLocus {
                 entity: field.entity().to_owned(),
                 aspect: field.aspect().to_owned(),
                 field: field.field().to_owned(),
             },
             schema: PhantomData,
-        }
+        })
     }
 
     pub fn entity(&self) -> &str {

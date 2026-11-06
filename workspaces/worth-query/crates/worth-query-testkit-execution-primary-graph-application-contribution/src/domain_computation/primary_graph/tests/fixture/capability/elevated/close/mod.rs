@@ -17,7 +17,6 @@ use crate::domain_computation::primary_graph::tests::fixture::capability::elevat
 use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationClosedAt;
 use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationGrant;
 use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationIdentity;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationNotAfter;
 use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationNotBefore;
 use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationReason;
 use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationRequester;
@@ -49,7 +48,7 @@ worth_query_declaration::worth_query_portable_type!(
 
 worth_query_declaration::worth_query_structured_value_binding!(pub RevokeCapabilityElevationOperationInputBinding for CloseElevationInput { identity: "worth.query.test.close-elevation-input.v1" });
 worth_query_operation!(pub RevokeCapabilityElevationOperation for IdentityExecutionSchema, input RevokeCapabilityElevationOperationInputBinding);
-worth_query_operation_reads!(RevokeCapabilityElevationOperation => [CapabilityElevationIdentity, CapabilityElevationReason, CapabilityElevationStatusField, CapabilityElevationNotBefore, CapabilityElevationNotAfter, CapabilityElevationClosedAt, CapabilityReviewIdentity, CapabilityReviewKindField, CapabilityReviewStatusField, CapabilityElevationRequester, CapabilityElevationApprover, CapabilityElevationGrant, CapabilityElevationResource, CapabilityElevationReview, CapabilityReviewResource, CapabilityReviewer]);
+worth_query_operation_reads!(RevokeCapabilityElevationOperation => [CapabilityElevationIdentity, CapabilityElevationReason, CapabilityElevationStatusField, CapabilityElevationNotBefore, CapabilityReviewIdentity, CapabilityReviewKindField, CapabilityReviewStatusField, CapabilityElevationRequester, CapabilityElevationApprover, CapabilityElevationGrant, CapabilityElevationResource, CapabilityElevationReview, CapabilityReviewResource, CapabilityReviewer]);
 worth_query_operation_writes!(RevokeCapabilityElevationOperation => [CapabilityElevationStatusField, CapabilityElevationClosedAt]);
 
 impl ApplicationCapabilityRequest<IdentityExecutionSchema, RevokeElevationCapability>
@@ -70,12 +69,13 @@ impl ApplicationCapabilityRequest<IdentityExecutionSchema, RevokeElevationCapabi
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                AccountIdentity::reference(),
+                AccountIdentity::at("AccountIdentity"),
                 ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                     self.account.clone(),
                 )
                 .expect("fixture account identity must encode"),
-            ),
+            )
+            .expect("the native capability field is declared"),
             ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(
                 CapabilityAction::RevokeElevation,
             )
@@ -87,12 +87,13 @@ impl ApplicationCapabilityRequest<IdentityExecutionSchema, RevokeElevationCapabi
             ApplicationCapabilityRequestContext::new(CapabilityRequestContext::reference()).entity(
                 CapabilityElevationSlot::reference(),
                 ApplicationCapabilityEntitySelector::new(
-                    CapabilityElevationIdentity::reference(),
-                    ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
-                        self.elevation.clone(),
+                    CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+                    ApplicationEncodedScalarValue::<crate::domain_computation::primary_graph::tests::fixture::schema_types::storage_model::ElevationKeyBinding>::try_new(
+                        self.elevation.clone().into(),
                     )
                     .expect("fixture elevation identity must encode"),
-                ),
+                )
+                .expect("the native capability field is declared"),
             ),
         ))
     }

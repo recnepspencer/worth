@@ -30,14 +30,14 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
-                .execution_request_for_for_test(&(*(*runtime.runtime_for_test()).product_runtime_for_test()))
+                .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
                 .unwrap();
             let (_, product, _basis) = runtime
                 .on_branch(runtime.current_world())
                 .select(&phase)
                 .unwrap()
                 .into_parts_for_test();
-            let graph = &(*(*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test());
+            let graph = runtime.runtime_for_test().primary_provider_for_test().graph_for_test();
             let publisher = graph.application_publication.as_ref().unwrap();
             let roles: Vec<_> = settled
                 .output_correspondence
@@ -66,7 +66,7 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::ANCHOR.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -168,7 +168,7 @@ pub fn edit_source_to<Schema: BirthSchema>(
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
-                .execution_request_for_for_test(&(*(*runtime.runtime_for_test()).product_runtime_for_test()))
+                .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
                 .unwrap();
             let source = runtime
                 .on_branch(runtime.current_world())
@@ -176,7 +176,7 @@ pub fn edit_source_to<Schema: BirthSchema>(
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::ANCHOR.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -187,7 +187,7 @@ pub fn edit_source_to<Schema: BirthSchema>(
                 .primary_provider_for_test())
                 .graph_for_test())
                 .layout_for_test())
-                .field_locator_for_test("Body", "PlanarPosition", "PositionY")
+                .field_locator_for_test("Body", PositionY::at("PositionY").aspect(), "PositionY")
                 .unwrap()
                 .clone();
             let batch =

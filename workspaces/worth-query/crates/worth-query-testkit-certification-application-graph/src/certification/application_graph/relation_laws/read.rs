@@ -27,15 +27,19 @@ pub fn committed<L: LawPolicy>(world: &World<L>) -> Graph {
                         };
                         for source in 0..world.nodes {
                             let Some(node) = reader
-                                .resolve_optional_entity(NodeKey::reference(), source)
+                                .resolve_optional_entity(node_key::<GraphSchema<L>>(), source)
                                 .unwrap()
                             else {
                                 continue;
                             };
                             graph.identities.insert(source, node.entity_id());
-                            for edge in reader.relations_from(Precedes::reference(), &node).unwrap()
+                            for edge in reader
+                                .relations_from(precedes::<GraphSchema<L>>(), &node)
+                                .unwrap()
                             {
-                                let target = reader.field(edge.to(), NodeKey::reference()).unwrap();
+                                let target = reader
+                                    .field(edge.to(), node_key::<GraphSchema<L>>())
+                                    .unwrap();
                                 graph.edges.insert((source, target));
                                 *graph.multiplicity.entry((source, target)).or_default() += 1;
                             }
@@ -64,7 +68,7 @@ pub fn identity<L: LawPolicy>(world: &World<L>, key: u64) -> Option<EntityId> {
                     &phase,
                     |reader| {
                         reader
-                            .resolve_optional_entity(NodeKey::reference(), key)
+                            .resolve_optional_entity(node_key::<GraphSchema<L>>(), key)
                             .unwrap()
                             .map(|entity| entity.entity_id())
                     },

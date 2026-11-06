@@ -6,7 +6,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::full_verification::FullVerificationStop;
 use im::OrdSet;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::full_verification::root_source::tests;
 
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
@@ -34,7 +33,7 @@ fn retained_source_must_include_every_registered_upstream_edge() {
         .with_host_advancement(|phase| {
             selected.resolve_entity(
                 &phase,
-                AccountStatus::reference(),
+                AccountStatus::at("AccountStatus"),
                 "open".to_owned(),
                 &live_scope(),
                 WorthQueryPrincipalResolutionMode::Ordinary,

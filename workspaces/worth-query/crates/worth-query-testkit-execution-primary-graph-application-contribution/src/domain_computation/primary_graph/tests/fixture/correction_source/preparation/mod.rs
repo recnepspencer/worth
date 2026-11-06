@@ -1,5 +1,4 @@
 //! Fresh admission and installed handler execution for captured label input.
-use crate::domain_computation::primary_graph::tests::fixture::correction_source::label_edit::*;
 use crate::domain_computation::primary_graph::tests::fixture::correction_source::*;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_schema::*;

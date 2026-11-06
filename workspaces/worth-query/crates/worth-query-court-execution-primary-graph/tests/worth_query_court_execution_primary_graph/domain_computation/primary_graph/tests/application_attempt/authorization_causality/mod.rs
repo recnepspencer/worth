@@ -145,7 +145,7 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
                     &admission,
                     |reader, root| {
                         reader
-                            .require_decision_field(root, AccountStatus::reference())
+                            .require_decision_field(root, AccountStatus::at("AccountStatus"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -171,7 +171,7 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
                 .observe_field(
                     &host_custody.borrowed_request_for_test(),
                     &account,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                 )
                 .unwrap();
             reads
@@ -184,7 +184,7 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
     effects
         .write_field(
             &target,
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             "two-requirements-committed".to_string(),
         )
         .unwrap();

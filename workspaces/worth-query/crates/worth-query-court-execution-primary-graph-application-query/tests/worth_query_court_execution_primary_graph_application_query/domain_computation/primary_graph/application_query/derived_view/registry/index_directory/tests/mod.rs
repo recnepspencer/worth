@@ -40,7 +40,7 @@ fn registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_back
             let scope = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

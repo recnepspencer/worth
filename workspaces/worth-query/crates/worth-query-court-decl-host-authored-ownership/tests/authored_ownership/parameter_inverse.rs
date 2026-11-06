@@ -8,20 +8,20 @@ pub struct Edit {
 }
 worth_query_structured_value_binding!(pub InputBinding for Edit {identity:"ownership.parameter.input.v1"});
 worth_query_operation!(pub EditOp for S:Scenario,input InputBinding);
-impl OperationReads<EditOp> for Node {}
-impl OperationReads<EditOp> for Id {}
-impl OperationReads<EditOp> for Value {}
+impl<const CONTENT: bool> OperationReads<EditOp> for NativeNode<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<EditOp> for RawId<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<EditOp> for RawValue<CONTENT> {}
 impl OperationReads<EditOp> for Peer {}
-impl OperationWrites<EditOp> for Value {}
+impl<const CONTENT: bool> OperationWrites<EditOp> for RawValue<CONTENT> {}
 worth_query_mutation_binding!(
  pub Binding for Edit,schema generic S:Scenario,
  identity "ownership.parameter-edit.v1",input InputBinding,operation EditOp,
  result query::UnitBinding,idempotency String,identity "ownership.parameter.command.v1",
  decision Target<S>,denial query::UnitBinding,handler identity "ownership.parameter.handler.v1",
  outputs NoApplicationMutationOutputs,source NoApplicationMutationSource,
- principal binding actor(),binding_type Actor,mapping Mapping,principal_entity Node,
+ principal binding actor(),binding_type Actor,mapping Mapping,principal_entity Node<S>,
  principal_identity u64,identity_binding U64ApplicationValueBinding,
- scope Node,Facts,Id,u64,ReadOnly,NoApplicationUnit,field Id::reference(),value_field id,
+ scope Id<S>, field schema::id::<S>(),value_field id,
 );
 pub struct Handler;
 impl<S: Scenario> OperationHandler<S, Binding<S>> for Handler {
@@ -31,8 +31,8 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, S, Binding<S>>,
     ) -> HandlerResult<Target<S>, ()> {
         let result = (|| {
-            let target = reader.resolve_entity(Id::reference(), input.id)?;
-            reader.field(&target, Value::reference())?;
+            let target = reader.resolve_entity(schema::id::<S>(), input.id)?;
+            reader.field(&target, schema::value::<S>())?;
             reader
                 .relations_to(Peer::reference(), &target)
                 .map_err(HandlerExecutionDenial::new)?;
@@ -51,7 +51,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Handler {
     ) -> HandlerResult<(), ()> {
         let result = (|| {
             let target = writer.projected_entity(&target)?;
-            writer.write_field(&target, Value::reference(), input.value)
+            writer.write_field(&target, schema::value::<S>(), input.value)
         })();
         match result {
             Ok(()) => HandlerResult::Completed(()),
@@ -64,11 +64,11 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for EditOp {
         schema: ApplicationSchemaDeclarationBuilder<S>,
     ) -> ApplicationSchemaDeclarationBuilder<S> {
         schema
-            .operation_read_entity(Self::reference(), Node::reference())
-            .operation_read_field(Self::reference(), Id::reference())
-            .operation_read_field(Self::reference(), Value::reference())
+            .operation_read_entity(Self::reference(), schema::node::<S>())
+            .operation_read_field(Self::reference(), schema::id::<S>())
+            .operation_read_field(Self::reference(), schema::value::<S>())
             .operation_read_relation(Self::reference(), Peer::reference())
-            .operation_write(Self::reference(), Value::reference())
+            .operation_write(Self::reference(), schema::value::<S>())
     }
 }
 pub fn declare<S: Scenario>(
@@ -98,8 +98,12 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for Inverse<S> {
     }
     fn mechanism() -> DeclaredCorrectionMechanism<S> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new([DeclaredPreImageLocus::from_field(Value::reference())], 9)
-                .unwrap(),
+            DeclaredPreImageDemand::new(
+                [DeclaredPreImageLocus::from_field(schema::value::<S>())
+                    .expect("the inverse field is declared")],
+                9,
+            )
+            .unwrap(),
         )
     }
     fn derive_correction(
@@ -112,7 +116,10 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for Inverse<S> {
         };
         let value = U64ApplicationValueBinding::decode(
             fields
-                .field(&DeclaredPreImageLocus::from_field(Value::reference()))
+                .field(
+                    &DeclaredPreImageLocus::from_field(schema::value::<S>())
+                        .expect("the inverse field is declared"),
+                )
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;

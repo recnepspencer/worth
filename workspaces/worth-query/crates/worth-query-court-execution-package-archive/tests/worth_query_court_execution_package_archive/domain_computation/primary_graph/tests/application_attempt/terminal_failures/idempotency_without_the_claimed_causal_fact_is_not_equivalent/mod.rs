@@ -1,6 +1,5 @@
 //! A real correction command's ordinary commit cannot impersonate its causal commit.
 use crate::domain_computation::primary_graph::tests::application_attempt::terminal_failures::*;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source;
 
 #[test]
 fn idempotency_without_the_claimed_causal_fact_is_not_equivalent() {

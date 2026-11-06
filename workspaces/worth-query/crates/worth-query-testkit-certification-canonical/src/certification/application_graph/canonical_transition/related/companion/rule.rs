@@ -44,7 +44,7 @@ pub fn resolve(
 ) -> Result<Rule, String> {
     Ok(Rule {
         field: resolver
-            .typed_field(CompanionValueField::reference())
+            .typed_field(CompanionValueField::at("CompanionValueField"))
             .ok_or("companion value missing")?,
         edge: resolver
             .typed_relation(CompanionLink::reference())

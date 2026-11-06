@@ -31,7 +31,10 @@ pub(super) fn author_approval_grant(
     grantee: BankPrincipalId,
 ) -> Result<(), HandlerExecutionDenial> {
     let grantee_entity = candidate
-        .resolve_entity(PrincipalIdentityField::reference(), grantee)
+        .resolve_entity(
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+            grantee,
+        )
         .map_err(HandlerExecutionDenial::new)?;
     let key_text = payment_workflow_grant_key(payment.id(), grantee);
     let key = WorthQueryApplicationEntityKey::<BankSchema, ApprovedBusinessPaymentGrant>::new(
@@ -44,49 +47,51 @@ pub(super) fn author_approval_grant(
     candidate
         .initialize_field(
             &grant,
-            ApprovedBusinessPaymentGrantAction::reference(),
+            ApprovedBusinessPaymentGrantAction::at("ApprovedBusinessPaymentGrantAction"),
             "manage-approved-business-payment-workflow".to_owned(),
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .initialize_field(
             &grant,
-            ApprovedBusinessPaymentGrantPurpose::reference(),
+            ApprovedBusinessPaymentGrantPurpose::at("ApprovedBusinessPaymentGrantPurpose"),
             "business-payment-approval".to_owned(),
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .initialize_field(
             &grant,
-            ApprovedBusinessPaymentGrantStatus::reference(),
+            ApprovedBusinessPaymentGrantStatus::at("ApprovedBusinessPaymentGrantStatus"),
             "active".to_owned(),
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .initialize_field(
             &grant,
-            ApprovedBusinessPaymentGrantWorkflow::reference(),
+            ApprovedBusinessPaymentGrantWorkflow::at("ApprovedBusinessPaymentGrantWorkflow"),
             payment.id(),
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .initialize_field(
             &grant,
-            ApprovedBusinessPaymentGrantNotBefore::reference(),
+            ApprovedBusinessPaymentGrantNotBefore::at("ApprovedBusinessPaymentGrantNotBefore"),
             0,
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .initialize_field(
             &grant,
-            ApprovedBusinessPaymentGrantNotAfter::reference(),
+            ApprovedBusinessPaymentGrantNotAfter::at("ApprovedBusinessPaymentGrantNotAfter"),
             u64::MAX,
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .initialize_field(
             &grant,
-            ApprovedBusinessPaymentGrantDelegationLimit::reference(),
+            ApprovedBusinessPaymentGrantDelegationLimit::at(
+                "ApprovedBusinessPaymentGrantDelegationLimit",
+            ),
             0,
         )
         .map_err(HandlerExecutionDenial::new)?;

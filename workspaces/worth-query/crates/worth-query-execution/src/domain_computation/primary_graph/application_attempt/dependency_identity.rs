@@ -10,11 +10,9 @@ use super::retained_decision_facts::StorageControl;
 use super::retained_decision_facts::StoreDenial;
 pub(super) use canonical_encoding::authentication_observation_identity;
 use canonical_encoding::lineage_identity;
-use content_tree::dependency_identity;
 pub(in crate::domain_computation::primary_graph) use content_tree::CompletedFactRoutes;
 pub(in crate::domain_computation::primary_graph) use content_tree::FactContent;
 use output_postcondition::complete_content_currentness_facts;
-use output_postcondition::normalized_output_facts;
 pub(in crate::domain_computation::primary_graph) use output_postcondition::OutputCurrentnessFacts;
 
 #[derive(Clone, Debug, Eq, PartialEq)]

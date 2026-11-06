@@ -60,7 +60,7 @@ impl AggregateWorld {
                 |reader| {
                     let result = reader.summarize_exclusive_incoming(
                         AggregateContribution::reference(),
-                        SourceAmount::reference(),
+                        SourceAmount::at("SourceAmount"),
                         &self.target,
                     );
                     observed.set(Some(result.as_ref().map_or_else(
@@ -85,7 +85,9 @@ impl AggregateWorld {
             .authority
             .project(
                 phase_custody,
-                |reader| reader.resolve_entity(SourceIdentity::reference(), source.to_owned()),
+                |reader| {
+                    reader.resolve_entity(SourceIdentity::at("SourceIdentity"), source.to_owned())
+                },
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("source projection")

@@ -5,7 +5,8 @@ impl ApplicationAuthoredCorrectionFamily<Schema> for Family {
     const IDENTITY: &'static str = "relation-only-inverse.family.v1";
     type Entity = Node;
     fn logical_key() -> ApplicationAuthoredLogicalKey<Schema, Node> {
-        ApplicationAuthoredLogicalKey::from_field(Id::reference())
+        ApplicationAuthoredLogicalKey::from_field(Id::at("Id"))
+            .expect("the authored key is declared")
     }
 }
 pub struct UndoSpawn;

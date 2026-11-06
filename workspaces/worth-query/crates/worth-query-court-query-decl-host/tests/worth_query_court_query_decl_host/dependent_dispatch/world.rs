@@ -87,11 +87,11 @@ fn install_source(
                     Node::reference(),
                     WorthQueryApplicationEntityKey::new("root").unwrap(),
                 )
-                .field(Key::reference(), "root".to_string())
-                .field(ParentName::reference(), String::new())
-                .field(Value::reference(), 1)
-                .field(Width::reference(), width)
-                .field(Produced::reference(), 0),
+                .field(Key::at("Key"), "root".to_string())
+                .field(ParentName::at("ParentName"), String::new())
+                .field(Value::at("Value"), 1)
+                .field(Width::at("Width"), width)
+                .field(Produced::at("Produced"), 0),
             )?;
             if self_supersede {
                 graph.bind_entity(
@@ -99,7 +99,7 @@ fn install_source(
                         producer_cell::ProducerCell::reference(),
                         WorthQueryApplicationEntityKey::new("cell:root.0").unwrap(),
                     )
-                    .field(producer_cell::CellKey::reference(), "root.0".to_string()),
+                    .field(producer_cell::CellKey::at("CellKey"), "root.0".to_string()),
                 )?;
             }
             Ok(())

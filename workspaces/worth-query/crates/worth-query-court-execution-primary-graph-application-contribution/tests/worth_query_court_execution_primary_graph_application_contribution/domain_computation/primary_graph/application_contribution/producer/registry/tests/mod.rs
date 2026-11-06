@@ -166,7 +166,7 @@ fn checkpoint_may_omit_only_an_at_most_one_installed_role() {
         for role in std::sync::Arc::get_mut(&mut (*checkpoint.roles_mut_for_test()))
             .expect("unique fixture roles")
         {
-            (*role.entity_name_mut_for_test()) = Account::IDENTIFIER.into();
+            (*role.entity_name_mut_for_test()) = <Account as worth_query_declaration::facade::application_schema::fragment::Entity>::NAME.into();
         }
         checkpoint
     };
@@ -193,7 +193,9 @@ fn checkpoint_cannot_underfill_an_installed_role_family() {
     let mut checkpoint = checkpoint(vec![role("member.one")]);
     (*std::sync::Arc::get_mut(&mut (*checkpoint.roles_mut_for_test()))
         .expect("unique fixture roles")[0]
-        .entity_name_mut_for_test()) = Account::IDENTIFIER.into();
+        .entity_name_mut_for_test()) =
+        <Account as worth_query_declaration::facade::application_schema::fragment::Entity>::NAME
+            .into();
 
     assert!(validate_checkpoint_output_meaning(&installed, &checkpoint)
         .unwrap_err()

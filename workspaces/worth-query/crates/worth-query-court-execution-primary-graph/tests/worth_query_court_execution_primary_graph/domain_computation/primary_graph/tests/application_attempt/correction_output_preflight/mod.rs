@@ -56,16 +56,7 @@ impl ApplicationMutationBinding<S> for CreatedSource {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         Base::workflow_execution_requirements()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        S,
-        Account,
-        AccountPolicy,
-        AccountStatus,
-        String,
-        ReadWrite,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
+    fn scope_field() -> AccountStatus {
         Base::scope_field()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -103,30 +94,76 @@ impl ApplicationReadableScalarValueBinding for OtherNativeCodec {
         StringApplicationValueBinding::decode(value)
     }
 }
-pub struct SameNamedField;
-impl ApplicationFieldMarkerIdentity<S, Account, AccountPolicy> for SameNamedField {
-    const IDENTIFIER: &'static str =
-        <AccountStatus as ApplicationFieldMarkerIdentity<S, Account, AccountPolicy>>::IDENTIFIER;
+use worth_query_declaration::facade::application_schema::fragment::{self, *};
+struct HostileRecords;
+impl Fragment for HostileRecords {
+    const NAME: &'static str = <ExecutionRecords as Fragment>::NAME;
+    type Bindings = HostileBindings;
+    type Members = (Account,);
 }
-impl DeclaredApplicationFieldValue for SameNamedField {
-    type Value = String;
+struct HostileBindings;
+impl BindingSet for HostileBindings {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl Scalar<String> for HostileBindings {
     type Binding = OtherNativeCodec;
-    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
+    const EQUALITY_QUERYABLE: bool = true;
+}
+impl Scalar<u64> for HostileBindings {
+    type Binding = U64ApplicationValueBinding;
+}
+impl fragment::Record<AccountPolicyValue> for HostileBindings {
+    fn record() -> impl Shape<AccountPolicyValue, Self> {
+        fragment::field("AccountIdentity", |row: &AccountPolicyValue| {
+            row.account_identity.clone()
+        })
+        .read_only()
+        .and("AccountStatus", |row: &AccountPolicyValue| {
+            row.account_status.clone()
+        })
+        .and("AccountLabel", |row: &AccountPolicyValue| {
+            row.account_label.clone()
+        })
+        .and("AccountNote", |row: &AccountPolicyValue| {
+            row.account_note.clone()
+        })
+        .and("AccountScore", |row: &AccountPolicyValue| row.account_score)
+        .build(
+            |account_identity,
+             account_status,
+             account_label,
+             account_note,
+             account_score,
+             _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(AccountPolicyValue {
+                    account_identity,
+                    account_status,
+                    account_label,
+                    account_note,
+                    account_score,
+                })
+            },
+        )
+    }
 }
 pub fn field() -> ApplicationCorrectionOutputField<S> {
-    ApplicationCorrectionOutput::<CreatedSource, Created>::field(AccountStatus::reference())
+    ApplicationCorrectionOutput::<CreatedSource, Created>::field(AccountStatus::at("AccountStatus"))
+        .expect("the native output field is declared")
 }
 pub fn other_codec() -> ApplicationCorrectionOutputField<S> {
-    ApplicationCorrectionOutput::<CreatedSource, Created>::field(ApplicationFieldRef::<
-        S,
+    ApplicationCorrectionOutput::<CreatedSource, Created>::field(FieldSelection::<
+        HostileRecords,
         Account,
         AccountPolicy,
-        SameNamedField,
         String,
-        ReadWrite,
-        EqualityPredicate,
-        NoApplicationUnit,
-    >::from_schema_types())
+    >::at("AccountStatus"))
+    .expect("record field")
 }
 
 #[test]
@@ -144,8 +181,10 @@ fn correction_output_preflight_checks_source_manifest_and_native_codec() {
         validate_witness(TypeId::of::<Base>(), &manifest, catalog, &field),
         Err(D::ForeignWitness)
     ));
-    let undeclared =
-        ApplicationCorrectionOutput::<CreatedSource, Created>::field(AccountLabel::reference());
+    let undeclared = ApplicationCorrectionOutput::<CreatedSource, Created>::field(
+        AccountLabel::at("AccountLabel"),
+    )
+    .expect("record field");
     assert!(matches!(
         validate_witness(source, &manifest, catalog, &undeclared),
         Err(D::UndeclaredField)

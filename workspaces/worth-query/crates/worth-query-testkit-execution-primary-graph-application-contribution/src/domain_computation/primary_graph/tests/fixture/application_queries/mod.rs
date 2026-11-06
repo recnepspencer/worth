@@ -2,13 +2,11 @@ use crate::domain_computation::primary_graph::tests::fixture::capability::declar
 use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::AccountAllActivity;
 use crate::domain_computation::primary_graph::tests::fixture::AccountLabel;
-use crate::domain_computation::primary_graph::tests::fixture::AccountMembership;
 use crate::domain_computation::primary_graph::tests::fixture::AccountMembershipTag;
 use crate::domain_computation::primary_graph::tests::fixture::AccountPrimaryActivity;
 use crate::domain_computation::primary_graph::tests::fixture::AccountSecondaryActivity;
 use crate::domain_computation::primary_graph::tests::fixture::AccountStatus;
 use crate::domain_computation::primary_graph::tests::fixture::Activity;
-use crate::domain_computation::primary_graph::tests::fixture::ActivityFacts;
 use crate::domain_computation::primary_graph::tests::fixture::ActivitySequence;
 use crate::domain_computation::primary_graph::tests::fixture::CapabilityDisclosureBinding;
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
@@ -142,34 +140,15 @@ impl
     }
 }
 
-pub fn status_result_field<Query>() -> ApplicationQueryResultFieldRef<
-    Query,
-    StatusResultSlot,
-    IdentityExecutionSchema,
-    Account,
-    crate::domain_computation::primary_graph::tests::fixture::AccountPolicy,
-    AccountStatus,
-    String,
-    worth_query_declaration::facade::application_schema::ReadWrite,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("status", AccountStatus::reference())
+pub fn status_result_field<Query>(
+) -> ApplicationQueryResultFieldRef<Query, StatusResultSlot, IdentityExecutionSchema, AccountStatus>
+{
+    ApplicationQueryResultFieldRef::new("status", AccountStatus::at("AccountStatus"))
 }
 
-pub fn label_result_field<Query>() -> ApplicationQueryResultFieldRef<
-    Query,
-    LabelResultSlot,
-    IdentityExecutionSchema,
-    Account,
-    crate::domain_computation::primary_graph::tests::fixture::AccountPolicy,
-    AccountLabel,
-    String,
-    worth_query_declaration::facade::application_schema::ReadWrite,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("label", AccountLabel::reference())
+pub fn label_result_field<Query>(
+) -> ApplicationQueryResultFieldRef<Query, LabelResultSlot, IdentityExecutionSchema, AccountLabel> {
+    ApplicationQueryResultFieldRef::new("label", AccountLabel::at("AccountLabel"))
 }
 
 pub fn cross_root_definition(
@@ -201,17 +180,20 @@ pub fn cross_root_definition(
         .requires_ability(ViewAccount::reference())
         .root_path(
             ApplicationQueryRootPath::from(Account::reference())
-                .where_equal(AccountStatus::reference(), encoded_string(status))
+                .where_equal(AccountStatus::at("AccountStatus"), encoded_string(status))
+                .expect("record field contract")
                 .forward(AccountPrimaryActivity::reference()),
         )
         .root_path(
             ApplicationQueryRootPath::from(Account::reference())
-                .where_equal(AccountStatus::reference(), encoded_string(status))
+                .where_equal(AccountStatus::at("AccountStatus"), encoded_string(status))
+                .expect("record field contract")
                 .forward(AccountSecondaryActivity::reference()),
         )
         .root_path(
             ApplicationQueryRootPath::from(Account::reference())
-                .where_equal(AccountStatus::reference(), encoded_string(status))
+                .where_equal(AccountStatus::at("AccountStatus"), encoded_string(status))
+                .expect("record field contract")
                 .forward(AccountAllActivity::reference()),
         )
         .order_by(
@@ -292,7 +274,7 @@ where
             .public()
     }
     .parameter(status_parameter())
-    .where_equal(AccountStatus::reference(), status_parameter());
+    .where_equal(AccountStatus::at("AccountStatus"), status_parameter());
     let builder = if ordered {
         builder.order_by(
             label_result_field::<Query>(),
@@ -325,3 +307,8 @@ pub mod parameter_reference;
 pub mod public_membership;
 #[path = "public_scoped/mod.rs"]
 pub mod public_scoped;
+
+pub use account_summary::{
+    account_summary_definition, governed_account_summary_definition,
+    ordered_account_summary_definition, scoped_account_summary_definition,
+};

@@ -1,33 +1,24 @@
-use worth_query_decl::facade::worth_query_application_query;
-use worth_query_decl::facade::{
-    application_query::{
-        ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-        ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-        ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
-        ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-        ApplicationQueryResultShapeBuilder, ExactlyOneResult, ManyResults, OptionalOneResult,
-        ReverseResultTraversal,
-    },
-    application_schema::{
-        DeclaredApplicationUnit, EqualityPredicate, NoApplicationUnit, NoEqualityPredicate,
-        ReadOnly, ReadWrite,
-    },
+use worth_query_decl::facade::application_query::{
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultShapeBuilder, ExactlyOneResult, ManyResults, OptionalOneResult,
+    ReverseResultTraversal,
 };
+use worth_query_decl::facade::worth_query_application_query;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
     WorthQueryApplicationProjectionRow,
 };
 
 use crate::authorization::ViewAccount;
-use crate::model::{
-    AccountId, AccountJournalRevision, JournalEntryId, PostingId, SignedMoney, USD,
-};
+use crate::model::AccountId;
 use crate::reads::AccountActivityItem;
 use crate::schema::{
-    Account, AccountIdentity, BankSchema, Identity, JournalEntry, JournalIdentity,
-    JournalIdentityField, JournalPosting, JournalPurpose, JournalReversal, JournalState, Posting,
-    PostingAccount, PostingAccountSequence, PostingAmount, PostingIdentity, PostingIdentityField,
-    PostingPurpose, PostingValue, Purpose, UsdCurrency,
+    Account, AccountIdentity, BankSchema, JournalEntry, JournalIdentityField, JournalPosting,
+    JournalPurpose, JournalReversal, Posting, PostingAccount, PostingAccountSequence,
+    PostingAmount, PostingIdentityField, Purpose,
 };
 
 mod binding;
@@ -110,91 +101,41 @@ type AccountIdentitySelector = ApplicationQueryResultFieldRef<
     AccountActivityQuery,
     AccountIdentitySlot,
     BankSchema,
-    Account,
-    Identity,
     AccountIdentity,
-    AccountId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 >;
 
 type PostingSequenceSelector = ApplicationQueryResultFieldRef<
     AccountActivityQuery,
     PostingSequenceSlot,
     BankSchema,
-    Posting,
-    PostingValue,
     PostingAccountSequence,
-    AccountJournalRevision,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 >;
 
 type PostingIdentitySelector = ApplicationQueryResultFieldRef<
     AccountActivityQuery,
     PostingIdentitySlot,
     BankSchema,
-    Posting,
-    PostingIdentity,
     PostingIdentityField,
-    PostingId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 >;
 
 type PostingAmountSelector = ApplicationQueryResultFieldRef<
     AccountActivityQuery,
     PostingAmountSlot,
     BankSchema,
-    Posting,
-    PostingValue,
     PostingAmount,
-    SignedMoney<USD>,
-    ReadWrite,
-    NoEqualityPredicate,
-    DeclaredApplicationUnit<UsdCurrency, USD>,
 >;
 
-type PostingPurposeSelector = ApplicationQueryResultFieldRef<
-    AccountActivityQuery,
-    PostingPurposeSlot,
-    BankSchema,
-    Posting,
-    PostingValue,
-    Purpose,
-    PostingPurpose,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+type PostingPurposeSelector =
+    ApplicationQueryResultFieldRef<AccountActivityQuery, PostingPurposeSlot, BankSchema, Purpose>;
 
-type JournalIdentitySelector<Slot> = ApplicationQueryResultFieldRef<
-    AccountActivityQuery,
-    Slot,
-    BankSchema,
-    JournalEntry,
-    JournalIdentity,
-    JournalIdentityField,
-    JournalEntryId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+type JournalIdentitySelector<Slot> =
+    ApplicationQueryResultFieldRef<AccountActivityQuery, Slot, BankSchema, JournalIdentityField>;
 
 type JournalPurposeSelector = ApplicationQueryResultFieldRef<
     AccountActivityQuery,
     JournalPurposeSlot,
     BankSchema,
-    JournalEntry,
-    JournalState,
     JournalPurpose,
-    PostingPurpose,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 >;
 
 pub fn account_activity_definition() -> ApplicationQueryDefinition<
@@ -262,10 +203,7 @@ pub fn account_activity_definition() -> ApplicationQueryDefinition<
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(account_postings())
-        .live_by::<Posting, AccountActivityLiveCause, _, _, _, _, _, _, _, _>(
-            account_identity(),
-            posting_identity(),
-        )
+        .live_by::<Posting, AccountActivityLiveCause>(account_identity(), posting_identity())
         .build()
         .expect("bank account activity query is statically canonical")
 }
@@ -317,35 +255,41 @@ fn project_posting(
 }
 
 fn account_identity() -> AccountIdentitySelector {
-    ApplicationQueryResultFieldRef::new("account", AccountIdentity::reference())
+    ApplicationQueryResultFieldRef::new("account", AccountIdentity::at("AccountIdentity"))
 }
 
 fn posting_sequence() -> PostingSequenceSelector {
-    ApplicationQueryResultFieldRef::new("sequence", PostingAccountSequence::reference())
+    ApplicationQueryResultFieldRef::new(
+        "sequence",
+        PostingAccountSequence::at("PostingAccountSequence"),
+    )
 }
 
 fn posting_identity() -> PostingIdentitySelector {
-    ApplicationQueryResultFieldRef::new("posting", PostingIdentityField::reference())
+    ApplicationQueryResultFieldRef::new("posting", PostingIdentityField::at("PostingIdentityField"))
 }
 
 fn posting_amount() -> PostingAmountSelector {
-    ApplicationQueryResultFieldRef::new("amount", PostingAmount::reference())
+    ApplicationQueryResultFieldRef::new("amount", PostingAmount::at("PostingAmount"))
 }
 
 fn posting_purpose() -> PostingPurposeSelector {
-    ApplicationQueryResultFieldRef::new("purpose", Purpose::reference())
+    ApplicationQueryResultFieldRef::new("purpose", Purpose::at("Purpose"))
 }
 
 fn journal_identity() -> JournalIdentitySelector<JournalIdentitySlot> {
-    ApplicationQueryResultFieldRef::new("journal", JournalIdentityField::reference())
+    ApplicationQueryResultFieldRef::new("journal", JournalIdentityField::at("JournalIdentityField"))
 }
 
 fn reversal_identity() -> JournalIdentitySelector<ReversalIdentitySlot> {
-    ApplicationQueryResultFieldRef::new("reversal_of", JournalIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "reversal_of",
+        JournalIdentityField::at("JournalIdentityField"),
+    )
 }
 
 fn journal_purpose() -> JournalPurposeSelector {
-    ApplicationQueryResultFieldRef::new("purpose", JournalPurpose::reference())
+    ApplicationQueryResultFieldRef::new("purpose", JournalPurpose::at("JournalPurpose"))
 }
 
 fn account_postings() -> ApplicationQueryResultRelationRef<

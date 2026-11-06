@@ -45,68 +45,57 @@ where
         )
     }
 
-    pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
+    pub fn resolve_entity<Aspect, Entity, Field, Value>(
         &mut self,
 
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         let _execution = self.reader.execution;
         self.reader.resolve_entity(field, value)
     }
 
-    pub fn resolve_optional_entity<Aspect, Entity, Field, Value, Write, Unit>(
+    pub fn resolve_optional_entity<Aspect, Entity, Field, Value>(
         &mut self,
 
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
     ) -> Result<
         Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>,
         WorthQueryEntityResolutionDenial,
     >
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         let _execution = self.reader.execution;
         self.reader.resolve_optional_entity(field, value)
     }
 
-    pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    #[inline(always)]
+    pub fn field<Entity, Aspect, Field, Value>(
         &mut self,
 
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
     ) -> Option<Value>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         let _execution = self.reader.execution;
         self.reader.field(identity, field)
@@ -119,33 +108,21 @@ where
         WorthQueryInvariantMutationTarget<Schema, Entity>,
         WorthQueryInvariantProjectionTraversalDenial,
     > {
-        let admission_identity = self.admission_identity.ok_or_else(|| {
-            WorthQueryInvariantProjectionTraversalDenial::mutation_target_unavailable(
-                identity.entity_name(),
-            )
-        })?;
-        if identity.authority_identity != self.reader.authority_identity {
-            return Err(
-                WorthQueryInvariantProjectionTraversalDenial::foreign_identity(
-                    identity.entity_name(),
-                ),
-            );
-        }
-        Ok(WorthQueryInvariantMutationTarget {
-            entity_id: identity.entity_id,
-            phase: self
-                .reader
+        Ok(super::mutation_target::target(
+            identity.native_identity(),
+            self.reader.authority_identity,
+            self.reader
                 .native
                 .candidate_identity()
                 .map(|id| id.qualification()),
-            entity: Arc::clone(&identity.entity),
-            runtime_authority: self.runtime_authority,
-            binding_identity: self.binding_identity.clone(),
-            admission_identity,
-            _marker: PhantomData,
-        })
+            self.runtime_authority,
+            self.binding_identity,
+            self.admission_identity,
+        )?
+        .into_typed())
     }
 
+    #[inline(always)]
     pub fn relations_from<Relation, From, To>(
         &mut self,
 
@@ -162,6 +139,7 @@ where
         self.reader.relations_from(relation, from)
     }
 
+    #[inline(always)]
     pub fn relations_to<Relation, From, To>(
         &mut self,
 
@@ -178,29 +156,21 @@ where
         self.reader.relations_to(relation, to)
     }
 
-    pub fn summarize_exclusive_incoming<
-        Relation,
-        From,
-        To,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >(
+    pub fn summarize_exclusive_incoming<Relation, From, To, Aspect, Field, Value>(
         &mut self,
 
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
-        field: ApplicationFieldRef<Schema, From, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         target: &WorthQueryInvariantEntityIdentity<Schema, To>,
     ) -> Result<super::super::WorthQueryInvariantAggregate<Value>, WorthQueryInvariantAggregateDenial>
     where
         Relation: OperationReads<Operation>,
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = From,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationSignedAggregateValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         let _execution = self.reader.execution;
         self.reader

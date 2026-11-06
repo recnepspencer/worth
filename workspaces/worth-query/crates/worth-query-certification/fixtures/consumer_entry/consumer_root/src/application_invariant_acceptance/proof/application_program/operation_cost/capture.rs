@@ -37,10 +37,14 @@ fn ordinary_capture_refusal_returns_original_source_conditions_and_key_for_fresh
     let builder = request
         .mutate(Original(original))
         .expect_source(source)
-        .preconditions(TypedMutationPreconditions::new().expect_fact(
-            BodyKey::reference::<Schema>(),
-            ApplicationEncodedScalarValue::try_new("focus-a".to_owned()).unwrap(),
-        ));
+        .preconditions(
+            TypedMutationPreconditions::new()
+                .expect_fact(
+                    BodyKey::at("BodyKey"),
+                    ApplicationEncodedScalarValue::try_new("focus-a".to_owned()).unwrap(),
+                )
+                .expect("record field contract"),
+        );
     let key = 223_001;
     let payload = std::alloc::Layout::array::<PlanarSourceAdjustment>(1)
         .unwrap()

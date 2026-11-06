@@ -17,8 +17,8 @@ pub fn status_with_external_owner() -> DeclaredApplicationAftermathContract<
             "test-status-external-inverse",
             "test-status-external-lowering",
             [DeclaredPreImageLocus::from_field(
-                crate::domain_computation::primary_graph::tests::fixture::schema_types::AccountStatus::reference(),
-            )],
+                crate::domain_computation::primary_graph::tests::fixture::schema_types::AccountStatus::at("AccountStatus"),
+            ).expect("the inverse field is declared")],
         ),
         DeclaredReconciliationProcedure::new("confirm-test-status-effect").unwrap(),
     )
@@ -31,8 +31,8 @@ pub fn two_field_inverse() -> DeclaredApplicationAftermathContract<
         "test-two-field-inverse",
         "test-two-field-lowering",
         [
-            DeclaredPreImageLocus::from_field(crate::domain_computation::primary_graph::tests::fixture::schema_types::AccountStatus::reference()),
-            DeclaredPreImageLocus::from_field(crate::domain_computation::primary_graph::tests::fixture::schema_types::AccountLabel::reference()),
+            DeclaredPreImageLocus::from_field(crate::domain_computation::primary_graph::tests::fixture::schema_types::AccountStatus::at("AccountStatus")).expect("the inverse field is declared"),
+            DeclaredPreImageLocus::from_field(crate::domain_computation::primary_graph::tests::fixture::schema_types::AccountLabel::at("AccountLabel")).expect("the inverse field is declared"),
         ],
     ))
 }

@@ -33,7 +33,7 @@ Portable semantic meaning comes from `worth_foundational::facade`:
 
 Query authoring and installation use:
 
-- `worth_query_decl::facade::worth_query_aspect!`
+- `worth_query_decl::facade::application_schema::fragment::{Fragment, Entity, Aspect, Record, Scalar}`
 - `domain::WorthQueryInstalledApplicationSchema::native_contracts`
 - `domain::WorthQuerySemanticTruthDependency`
 - `domain::WorthQueryOperationNativeProjectionContract`
@@ -138,20 +138,25 @@ cross-runtime contract.
 
 ## Declare Application Aspect Identity Once
 
-Application schemas declare the same Foundational identity and revision at the
-Query entry boundary. Both values are mandatory in the stable macro form:
+Application schemas list each aspect in its entity’s `Aspects` tuple. The aspect
+supplies its name and row type; the fragment’s binding set supplies the row’s
+record shape. The SDK derives identity from the qualified name and revision
+from the lowered shape, bindings and integrity. Duplicate names and identity
+collisions are typed declaration refusals.
 
 ```rust
-use worth_query_decl::facade::{
-    application_schema::{AspectContractRevision, AspectIdentity},
-    worth_query_aspect,
-};
-
-worth_query_aspect!(
-    pub AccountFacts in BankingSchema, Account;
-    identity = AspectIdentity(0x9161_1001),
-    revision = AspectContractRevision(1),
-);
+use worth_query_decl::facade::application_schema::fragment::{Aspect, Entity};
+pub struct Entry;
+impl Entity for Entry {
+    const NAME: &'static str = "entry";
+    type Aspects = (Quantity,);
+    type Relations = ();
+}
+pub struct Quantity;
+impl Aspect for Quantity {
+    const NAME: &'static str = "quantity";
+    type Row = u64;
+}
 ```
 
 Installation validates that declaration and retains one exact native contract

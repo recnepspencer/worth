@@ -200,7 +200,7 @@ pub fn materialize_close(
     .unwrap()
 }
 
-pub(super) use crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_lifecycle_support::close_reads::close_reads;
+pub use crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_lifecycle_support::close_reads::close_reads;
 
 pub fn close_exact(
     world: &World,
@@ -281,10 +281,16 @@ pub fn review_reads(
             |reader, _| {
                 seal_lifecycle_facts(reader);
                 let review = reader
-                    .resolve_entity(CapabilityReviewIdentity::reference(), "review-2".to_owned())
+                    .resolve_entity(
+                        CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
+                        "review-2".to_owned(),
+                    )
                     .unwrap();
                 reader
-                    .require_decision_field(&review, CapabilityReviewReviewedAt::reference())
+                    .require_decision_field(
+                        &review,
+                        CapabilityReviewReviewedAt::at("CapabilityReviewReviewedAt"),
+                    )
                     .unwrap();
             },
             AllocationPolicy::SystemAllocation,
@@ -334,14 +340,6 @@ pub fn seal_lifecycle_facts<Operation>(
         Operation,
     >,
 ) where
-    CapabilityElevationIdentity: OperationReads<Operation>,
-    CapabilityElevationReason: OperationReads<Operation>,
-    CapabilityElevationStatusField: OperationReads<Operation>,
-    CapabilityElevationNotBefore: OperationReads<Operation>,
-    CapabilityElevationNotAfter: OperationReads<Operation>,
-    CapabilityReviewIdentity: OperationReads<Operation>,
-    CapabilityReviewKindField: OperationReads<Operation>,
-    CapabilityReviewStatusField: OperationReads<Operation>,
     CapabilityElevationRequester: OperationReads<Operation>,
     CapabilityElevationApprover: OperationReads<Operation>,
     CapabilityElevationGrant: OperationReads<Operation>,
@@ -352,12 +350,15 @@ pub fn seal_lifecycle_facts<Operation>(
 {
     let elevation = reader
         .resolve_entity(
-            CapabilityElevationIdentity::reference(),
-            "elevation-2".to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            "elevation-2".into(),
         )
         .unwrap();
     let review = reader
-        .resolve_entity(CapabilityReviewIdentity::reference(), "review-2".to_owned())
+        .resolve_entity(
+            CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
+            "review-2".to_owned(),
+        )
         .unwrap();
     seal_lifecycle_fields(reader, &elevation, &review);
     seal_lifecycle_relations(reader, &elevation, &review);

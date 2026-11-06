@@ -1,6 +1,6 @@
 use super::{
     ApplicationEffectMarkerIdentity, ApplicationEffectRef, ApplicationEntityRef,
-    ApplicationFieldRef, ApplicationRelationRef, EqualityPredicate, NoApplicationUnit, ReadOnly,
+    ApplicationRelationRef,
 };
 use crate::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
@@ -15,8 +15,6 @@ struct Root;
 struct Child;
 struct RootAspect;
 struct ChildAspect;
-struct RootIdentity;
-struct ChildIdentity;
 struct Relation;
 struct Parameters;
 struct OtherParameters;
@@ -103,24 +101,6 @@ impl ApplicationEffectMarkerIdentity<Schema> for Effect {
     const IDENTIFIER: &'static str = "Cause";
 }
 
-impl crate::application_schema::DeclaredApplicationFieldValue for RootIdentity {
-    type Value = u64;
-    type Binding = crate::application_schema::U64ApplicationValueBinding;
-    const PRESENCE: crate::application_schema::ApplicationFieldPresence =
-        crate::application_schema::ApplicationFieldPresence::Required;
-}
-
-impl crate::application_schema::RequiredApplicationFieldValue for RootIdentity {}
-
-impl crate::application_schema::DeclaredApplicationFieldValue for ChildIdentity {
-    type Value = u64;
-    type Binding = crate::application_schema::U64ApplicationValueBinding;
-    const PRESENCE: crate::application_schema::ApplicationFieldPresence =
-        crate::application_schema::ApplicationFieldPresence::Required;
-}
-
-impl crate::application_schema::RequiredApplicationFieldValue for ChildIdentity {}
-
 #[derive(Clone)]
 pub(super) struct Cause {
     root: u64,
@@ -174,18 +154,11 @@ where
 {
     let root = ApplicationEntityRef::<Schema, Root>::from_schema_identifier("Root");
     let scope = ApplicationEntityRef::<Schema, QueryMarker::Scope>::from_schema_identifier("Root");
-    let identity = ApplicationQueryResultFieldRef::<
-        QueryMarker,
-        RootIdentitySlot,
-        Schema,
-        Root,
-        RootAspect,
-        RootIdentity,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    >::new("root", root_identity_field());
+    let identity =
+        ApplicationQueryResultFieldRef::<QueryMarker, RootIdentitySlot, Schema, RootIdentity>::new(
+            "root",
+            root_identity_field(),
+        );
     let shape = ApplicationQueryResultShapeBuilder::<
         Schema,
         QueryMarker,
@@ -299,7 +272,7 @@ where
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(children())
-        .live_by::<Child, Binding, _, _, _, _, _, _, _, _>(root_identity(), child_identity())
+        .live_by::<Child, Binding>(root_identity(), child_identity())
         .build()
         .expect("live identity fixture must be lawful")
         .into_erased()
@@ -317,50 +290,18 @@ fn child_entity() -> ApplicationEntityRef<Schema, Child> {
     ApplicationEntityRef::from_schema_identifier("Child")
 }
 
-fn root_identity_field() -> ApplicationFieldRef<
-    Schema,
-    Root,
-    RootAspect,
-    RootIdentity,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationFieldRef::from_schema_identifiers("Root", "Identity", "Id")
+fn root_identity_field() -> RootIdentity {
+    RootIdentity::at("Id")
 }
 
-fn root_identity() -> ApplicationQueryResultFieldRef<
-    Query,
-    RootIdentitySlot,
-    Schema,
-    Root,
-    RootAspect,
-    RootIdentity,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
+fn root_identity() -> ApplicationQueryResultFieldRef<Query, RootIdentitySlot, Schema, RootIdentity>
+{
     ApplicationQueryResultFieldRef::new("root", root_identity_field())
 }
 
-fn child_identity() -> ApplicationQueryResultFieldRef<
-    Query,
-    ChildIdentitySlot,
-    Schema,
-    Child,
-    ChildAspect,
-    ChildIdentity,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new(
-        "child",
-        ApplicationFieldRef::from_schema_identifiers("Child", "Identity", "Id"),
-    )
+fn child_identity(
+) -> ApplicationQueryResultFieldRef<Query, ChildIdentitySlot, Schema, ChildIdentity> {
+    ApplicationQueryResultFieldRef::new("child", ChildIdentity::at("Id"))
 }
 
 fn children() -> ApplicationQueryResultRelationRef<
@@ -381,3 +322,56 @@ fn children() -> ApplicationQueryResultRelationRef<
         ),
     )
 }
+
+use super::fragment;
+struct QueryModel;
+impl fragment::Fragment for QueryModel {
+    const NAME: &'static str = "query_model";
+    type Bindings = QueryBindings;
+    type Members = (Root, Child);
+}
+struct QueryBindings;
+impl fragment::BindingSet for QueryBindings {
+    type Work<'a> = super::ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut super::ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl fragment::Scalar<u64> for QueryBindings {
+    type Binding = super::U64ApplicationValueBinding;
+    const WRITABLE: bool = false;
+    const EQUALITY_QUERYABLE: bool = true;
+}
+impl fragment::Entity for Root {
+    const NAME: &'static str = "Root";
+    type Aspects = (RootAspect,);
+    type Relations = ();
+}
+impl fragment::Entity for Child {
+    const NAME: &'static str = "Child";
+    type Aspects = (ChildAspect,);
+    type Relations = ();
+}
+impl fragment::Aspect for RootAspect {
+    const NAME: &'static str = "Identity";
+    type Row = QueryRow0;
+}
+impl fragment::Aspect for ChildAspect {
+    const NAME: &'static str = "Identity";
+    type Row = QueryRow0;
+}
+struct QueryRow0(u64);
+impl fragment::Record<QueryRow0> for QueryBindings {
+    fn record() -> impl fragment::Shape<QueryRow0, Self> {
+        fragment::field("Id", |row: &QueryRow0| row.0).build(
+            |value, _: &mut super::ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(QueryRow0(value))
+            },
+        )
+    }
+}
+type RootIdentity = fragment::FieldSelection<QueryModel, Root, RootAspect, u64>;
+type ChildIdentity = fragment::FieldSelection<QueryModel, Child, ChildAspect, u64>;

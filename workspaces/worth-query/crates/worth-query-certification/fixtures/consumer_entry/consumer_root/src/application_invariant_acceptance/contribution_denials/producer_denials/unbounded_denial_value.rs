@@ -9,7 +9,27 @@ use worth_query_host::facade::{
     domain::InternedString,
 };
 
-producer_schema!(UnboundedDenialSchema, UnboundedDenialContribution);
+struct UnboundedDenialSchema;
+impl TopologySchemaBinding for UnboundedDenialSchema {
+    type PrincipalFragment = worth_query_topology_entry::PrincipalRecords;
+}
+impl ParameterSchemaBinding for UnboundedDenialSchema {}
+impl worth_query_decl::facade::application_schema::fragment::Fragment for UnboundedDenialSchema {
+    const NAME: &'static str = "UnboundedDenialSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (UnboundedDenialContribution, ParameterContribution);
+}
+impl ApplicationSchema for UnboundedDenialSchema {
+    const OWNER: &'static str = "worth.query.certification.producer-denials";
+    const NAME: &'static str = "UnboundedDenialSchema";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+}
+impl ApplicationSchemaComposition for UnboundedDenialSchema {
+    type Contributions = (UnboundedDenialContribution, ParameterContribution);
+}
 
 pub(super) fn unbounded_denial_value_is_denied_before_initial_state() {
     let calls = Arc::new(AtomicUsize::new(0));
@@ -105,11 +125,7 @@ impl<Schema: TopologySchemaBinding> ApplicationSchemaContribution<Schema>
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<Schema>>::IDENTITY;
 
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        <TopologyContribution as ApplicationSchemaContribution<Schema>>::register_members(builder)
-    }
+    type Members = <TopologyContribution as ApplicationSchemaContribution<Schema>>::Members;
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>

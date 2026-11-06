@@ -103,9 +103,10 @@ fn employee_path(role: EmployeeRole) -> ApplicationAuthorizationPath {
     ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .reverse(AssignmentPrincipal::reference())
         .where_equal(
-            AssignmentRole::reference(),
+            AssignmentRole::at("AssignmentRole"),
             crate::schema::encoded_bank_value(role),
         )
+        .expect("owned record selection is valid")
         .reverse(InstitutionEmployee::reference())
         .allow(Institution::reference())
 }
@@ -129,9 +130,10 @@ fn estate_assignment_path(role: EmployeeRole) -> ApplicationAuthorizationPath {
     ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .reverse(AssignmentPrincipal::reference())
         .where_equal(
-            AssignmentRole::reference(),
+            AssignmentRole::at("AssignmentRole"),
             crate::schema::encoded_bank_value(role),
         )
+        .expect("owned record selection is valid")
         .forward(EstateAssignment::reference())
         .allow(EstateCase::reference())
 }
@@ -173,9 +175,10 @@ fn account_role_path(role: CustomerRole) -> ApplicationAuthorizationPath {
     ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .forward(AccountAuthorizedUser::reference())
         .where_equal(
-            AuthorizationRole::reference(),
+            AuthorizationRole::at("AuthorizationRole"),
             crate::schema::encoded_bank_value(role),
         )
+        .expect("owned record selection is valid")
         .forward(AuthorizationAccount::reference())
         .allow(Account::reference())
 }
@@ -195,9 +198,10 @@ fn business_paths(role: CustomerRole) -> Vec<ApplicationAuthorizationPath> {
         ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
             .forward(AccountAuthorizedUser::reference())
             .where_equal(
-                AuthorizationRole::reference(),
+                AuthorizationRole::at("AuthorizationRole"),
                 crate::schema::encoded_bank_value(role),
             )
+            .expect("owned record selection is valid")
             .forward(AuthorizationAccount::reference())
             .reverse(BusinessAccount::reference())
             .allow(Business::reference()),
@@ -209,9 +213,10 @@ fn approval_paths() -> Vec<ApplicationAuthorizationPath> {
         ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
             .forward(AccountAuthorizedUser::reference())
             .where_equal(
-                AuthorizationRole::reference(),
+                AuthorizationRole::at("AuthorizationRole"),
                 crate::schema::encoded_bank_value(CustomerRole::Approver),
             )
+            .expect("owned record selection is valid")
             .forward(AuthorizationAccount::reference())
             .reverse(PaymentSource::reference())
             .allow(PaymentIntent::reference()),
@@ -248,9 +253,10 @@ fn payment_view_paths() -> Vec<ApplicationAuthorizationPath> {
             ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
                 .forward(AccountAuthorizedUser::reference())
                 .where_equal(
-                    AuthorizationRole::reference(),
+                    AuthorizationRole::at("AuthorizationRole"),
                     crate::schema::encoded_bank_value(role),
                 )
+                .expect("owned record selection is valid")
                 .forward(AuthorizationAccount::reference())
                 .reverse(PaymentSource::reference())
                 .allow(PaymentIntent::reference())

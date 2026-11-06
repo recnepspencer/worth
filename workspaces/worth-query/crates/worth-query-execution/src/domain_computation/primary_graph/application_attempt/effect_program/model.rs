@@ -36,7 +36,7 @@ pub struct WorthQueryApplicationCreatedRelation<Schema, Relation, From, To> {
     pub(super) program: Arc<()>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOptionalFieldWrite {
+pub struct WorthQueryApplicationOptionalFieldWrite {
     pub(in crate::domain_computation::primary_graph::application_attempt) contract:
         PortableAspectContractBasis,
     pub(in crate::domain_computation::primary_graph::application_attempt) value:
@@ -157,6 +157,7 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) program: Arc<()>,
     pub(super) effects: Vec<WorthQueryApplicationRealizedEffect>,
     pub(super) field_write_positions: super::FieldWriteIndex,
+    pub(super) case_transitions: super::case_transition::CaseTransitions,
     pub(super) keys: BTreeSet<(KindId, String)>,
     pub(super) conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,

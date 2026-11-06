@@ -43,7 +43,7 @@ pub fn observed_document(host: &host::Host) -> EntityId {
                     &phase,
                     |reader| {
                         let principal = reader
-                            .resolve_entity(PrincipalIdentityField::reference(), 1)
+                            .resolve_entity(PrincipalIdentityField::at("PrincipalIdentityField"), 1)
                             .unwrap();
                         let root = reader.entity_member(&principal).unwrap();
                         let derived = reader
@@ -56,7 +56,7 @@ pub fn observed_document(host: &host::Host) -> EntityId {
                             .expect("an actual physical endpoint");
                         assert_eq!(
                             reader
-                                .field(document, DocumentIdentityField::reference())
+                                .field(document, DocumentIdentityField::at("DocumentIdentityField"))
                                 .unwrap(),
                             DOCUMENT_IDENTITY
                         );

@@ -13,11 +13,7 @@ pub struct Contribution;
 impl ApplicationSchemaContribution<Catalog> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("managed-catalog.refusing-contribution.v1");
-    fn register_members(
-        schema: ApplicationSchemaDeclarationBuilder<Catalog>,
-    ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
-        super::schema::declare(schema).invariant(rule::definition())
-    }
+    type Members = (CatalogRecords, ContributionContracts);
 }
 pub struct Configuration {
     pub(super) provider: Arc<prefix::Calls>,
@@ -103,7 +99,7 @@ pub(super) fn unrelated_attempt(
             Principal::reference(),
             WorthQueryApplicationEntityKey::new("unrelated-seed").unwrap(),
         )
-        .field(PrincipalIdentityField::reference(), 999u64),
+        .field(PrincipalIdentityField::at("PrincipalIdentityField"), 999u64),
     )?;
     graph.commit_seed_batch(phase)?;
     // The following ordinary batch must not inherit the unused selection.
@@ -129,7 +125,9 @@ pub(super) fn install(
     initialize: Initialize,
     names: [&str; 3],
 ) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
-    let declaration = Catalog::declaration().unwrap();
+    let declaration =
+        <Catalog as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<Catalog, Program>::begin()
             .with_schema(&declaration)
@@ -150,7 +148,7 @@ pub(super) fn install(
                         Directory::reference(),
                         WorthQueryApplicationEntityKey::new(name).unwrap(),
                     )
-                    .field(DirectoryIdentity::reference(), name.to_owned()),
+                    .field(DirectoryIdentity::at("DirectoryIdentity"), name.to_owned()),
                 )?;
             }
             for (identity, name) in ["shared", "a-only", "b-only"].into_iter().zip(names) {
@@ -159,9 +157,9 @@ pub(super) fn install(
                         Item::reference(),
                         WorthQueryApplicationEntityKey::new(identity).unwrap(),
                     )
-                    .field(ItemIdentity::reference(), identity.to_owned())
-                    .field(ItemName::reference(), name.to_owned())
-                    .field(ItemEnabled::reference(), true),
+                    .field(ItemIdentity::at("ItemIdentity"), identity.to_owned())
+                    .field(ItemName::at("ItemName"), name.to_owned().into())
+                    .field(ItemEnabled::at("ItemEnabled"), true),
                 )?;
             }
             for (directory, item) in [
@@ -180,4 +178,16 @@ pub(super) fn install(
             Ok(())
         },
     )
+}
+
+pub struct ContributionContracts;
+impl worth_query_decl::facade::application_schema::fragment::Registration<Catalog>
+    for ContributionContracts
+{
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<Catalog>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Catalog>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(super::schema::declare(schema).invariant(rule::definition()))
+    }
 }

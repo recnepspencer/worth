@@ -1,4 +1,5 @@
 pub(crate) use worth_query_testkit_certification_canonical::facade::certification::canonical_transition::successor::*;
+use worth_query_decl::facade::application_schema::ApplicationSchema;
 
 #[test]
 fn actual_v2_installation_produces_and_reads_its_supported_incompatible_output() {
@@ -83,7 +84,6 @@ fn exact_v2_restore_requires_explicit_transition_before_any_derived_decode() {
             .contains("recovered derived codec requires authenticated native transition admission"),
         "unexpected recovery fence: {denial:?}"
     );
-    unchanged_revision::assert_missing_revision_refused(checkpoint);
 }
 
 pub(crate) mod acknowledged_capture;

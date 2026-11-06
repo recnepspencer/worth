@@ -4,8 +4,7 @@ use std::marker::PhantomData;
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PositiveLength};
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation_reads, worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
@@ -19,8 +18,8 @@ pub(in crate::checkpoint_recovery::required_chain) struct ValueSourceInput {
 }
 worth_query_structured_value_binding!(pub(in crate::checkpoint_recovery::required_chain) ValueSourceInputBinding for ValueSourceInput { identity: "worth.query.certification.consumed-value-source-input.v1" });
 worth_query_operation!(pub(in crate::checkpoint_recovery::required_chain) PublishValueSource for Schema: TopologySchemaBinding, input ValueSourceInputBinding);
-worth_query_operation_reads!(PublishValueSource => [Body, BodyKey, Length]);
-worth_query_operation_writes!(PublishValueSource => [Length]);
+worth_query_operation_reads!(PublishValueSource => [Body]);
+
 pub(in crate::checkpoint_recovery::required_chain) struct ValueSourceBinding<Schema>(
     PhantomData<fn() -> Schema>,
 );
@@ -29,8 +28,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for ValueS
     fn input(&self) -> &Self {
         self
     }
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
@@ -52,7 +51,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Denial = PlanarMutationDenial;
     type DenialBinding = PlanarMutationDenialBinding;
     type Output = PlanarOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -65,17 +64,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.consumed-value-source-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -99,17 +89,17 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ValueSourceBinding<
         reader: &mut DecisionReader<'_, '_, '_, Schema, ValueSourceBinding<Schema>>,
     ) -> HandlerResult<(), PlanarMutationDenial> {
         let read = (|| {
-            let target = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
-            if reader.field(&target, Length::reference())? != Some(input.value) {
+            let target = reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())?;
+            if reader.field(&target, Length::at("Length"))? != Some(input.value) {
                 return Ok(false);
             }
-            let upstream = reader.resolve_entity(BodyKey::reference(), "anchor-a".to_owned())?;
+            let upstream = reader.resolve_entity(BodyKey::at("BodyKey"), "anchor-a".to_owned())?;
             let WorthQueryCurrentOutputSelection::Unique(output) =
                 reader.current_output::<PlanarOutputFamily, Body>(&upstream)?
             else {
                 return Ok(false);
             };
-            Ok(reader.field(&output, Length::reference())?.is_some())
+            Ok(reader.field(&output, Length::at("Length"))?.is_some())
         })();
         match read {
             Ok(true) => HandlerResult::Completed(()),
@@ -126,13 +116,13 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ValueSourceBinding<
     ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
         let written = (|| {
             let target = writer
-                .resolve_entity(BodyKey::reference(), input.scope_key.clone())
+                .resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .preserve_output::<PlanarAnchorOutput<Schema>>(&target)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .write_field(&target, Length::reference(), input.value)
+                .write_field(&target, Length::at("Length"), input.value)
                 .map_err(HandlerExecutionDenial::new)?;
             Ok(PlanarAdjustmentResult {
                 changed_vertices: 1,
@@ -158,8 +148,8 @@ pub(in crate::checkpoint_recovery::required_chain) fn declare<Schema: TopologySc
         )
         .operation_projection_work_budget(operation, 4096)
         .operation_read_entity(operation, Body::reference())
-        .operation_read_field(operation, BodyKey::reference())
-        .operation_read_field(operation, Length::reference())
-        .operation_write(operation, Length::reference())
+        .operation_read_field(operation, BodyKey::at("BodyKey"))
+        .operation_read_field(operation, Length::at("Length"))
+        .operation_write(operation, Length::at("Length"))
         .application_mutation_binding::<ValueSourceBinding<Schema>>()
 }

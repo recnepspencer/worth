@@ -1,6 +1,5 @@
 //! Spare capacity and the nested boxed payload are part of memory custody.
 use worth_execution::ChargedBytes;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::one_shot::denial::authorization_denial;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::one_shot::denial::denial;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::one_shot::denial::retain_reconstruction_result;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::one_shot::denial::OneShotDenialPayload;

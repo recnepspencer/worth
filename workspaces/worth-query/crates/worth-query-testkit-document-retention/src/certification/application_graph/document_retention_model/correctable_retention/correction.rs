@@ -39,9 +39,12 @@ impl ApplicationCorrectionBinding<Schema> for RestoreReviewedRetention {
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(
-                    DocumentRetentionField::reference(),
-                )],
+                [
+                    DeclaredPreImageLocus::from_field(DocumentRetentionField::at(
+                        "DocumentRetentionField",
+                    ))
+                    .unwrap(),
+                ],
                 U64ApplicationValueBinding::encode(&u64::MAX)
                     .unwrap()
                     .semantic_byte_width(),
@@ -59,9 +62,12 @@ impl ApplicationCorrectionBinding<Schema> for RestoreReviewedRetention {
         };
         let retention_days = U64ApplicationValueBinding::decode(
             preimage
-                .field(&DeclaredPreImageLocus::from_field(
-                    DocumentRetentionField::reference(),
-                ))
+                .field(
+                    &DeclaredPreImageLocus::from_field(DocumentRetentionField::at(
+                        "DocumentRetentionField",
+                    ))
+                    .unwrap(),
+                )
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;

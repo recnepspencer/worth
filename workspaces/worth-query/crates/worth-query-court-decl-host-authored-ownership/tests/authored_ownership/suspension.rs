@@ -84,9 +84,11 @@ fn run<const MODE: u8>() {
         _ => panic!("selected payload is generated"),
     };
     for (id, entity) in [(101, generated(a)), (102, generated(b))] {
-        reconstruction.field(&entity, Id::reference(), id).unwrap();
         reconstruction
-            .field(&entity, Value::reference(), 39)
+            .field(&entity, schema::id::<S<MODE>>(), id)
+            .unwrap();
+        reconstruction
+            .field(&entity, schema::value::<S<MODE>>(), 39)
             .unwrap();
     }
     let completed = reconstruction

@@ -14,19 +14,9 @@ worth_query_structured_value_binding!(pub ResultBinding for DerivedValue { ident
 worth_query_application_query!(pub ValueQuery for CanonicalSchema, identity "canonical-related.paired.read.v1",
     parameters ParametersBinding, result ResultBinding, scope Derived => "Derived", name "related_pair_second");
 
-pub fn value_field() -> ApplicationQueryResultFieldRef<
-    ValueQuery,
-    ValueSlot,
-    CanonicalSchema,
-    Derived,
-    DerivedFacts,
-    DerivedValueField,
-    DerivedValue,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", DerivedValueField::reference())
+pub fn value_field(
+) -> ApplicationQueryResultFieldRef<ValueQuery, ValueSlot, CanonicalSchema, DerivedValueField> {
+    ApplicationQueryResultFieldRef::new("value", DerivedValueField::at("DerivedValueField"))
 }
 
 pub fn definition(
@@ -73,15 +63,7 @@ pub struct ReadValue {
 }
 worth_query_structured_value_binding!(pub ReadInputBinding for ReadValue { identity: "canonical-related.paired.read-input.v1" });
 pub struct ReadBinding;
-pub type ReadScope = ApplicationQueryFieldScope<
-    CanonicalSchema,
-    Derived,
-    DerivedFacts,
-    DerivedIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReadScope = ApplicationQueryFieldScope<DerivedIdentityField>;
 impl ApplicationQueryBinding<CanonicalSchema> for ReadBinding {
     type Input = ReadValue;
     type InputBinding = ReadInputBinding;
@@ -96,17 +78,8 @@ impl ApplicationQueryBinding<CanonicalSchema> for ReadBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "canonical-related.paired.read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        CanonicalSchema,
-        Derived,
-        DerivedFacts,
-        DerivedIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DerivedIdentityField::reference()
+    fn scope_field() -> DerivedIdentityField {
+        DerivedIdentityField::at("DerivedIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CanonicalSchema,
@@ -125,6 +98,9 @@ impl ApplicationQueryIntent<CanonicalSchema> for ReadValue {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> ReadScope {
-        ReadScope::new(DerivedIdentityField::reference(), self.identity)
+        ReadScope::new(
+            DerivedIdentityField::at("DerivedIdentityField"),
+            self.identity,
+        )
     }
 }

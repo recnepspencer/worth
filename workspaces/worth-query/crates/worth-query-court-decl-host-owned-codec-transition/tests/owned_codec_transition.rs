@@ -1,5 +1,6 @@
 //! A real owned publication is retired by Native's authenticated codec transition.
 use v1::{successor as v2, *};
+use worth_query_decl::facade::application_schema::ApplicationSchema;
 use worth_query_testkit_certification_canonical::facade::certification::source_owned_transition as v1;
 
 #[test]

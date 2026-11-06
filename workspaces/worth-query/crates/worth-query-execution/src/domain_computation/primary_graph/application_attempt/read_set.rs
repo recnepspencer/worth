@@ -3,10 +3,7 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding, ApplicationSchema,
-    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads, WritePosture,
-};
+use worth_query_installation::facade::{ApplicationScalarValueBinding, ApplicationSchema};
 
 use super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
 use super::read_phase::{
@@ -72,6 +69,7 @@ pub(crate) mod structural_walk;
 pub(crate) mod unique_write_dependencies;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
+pub(super) use relation_observation::matching_relations;
 pub use relation_observation::WorthQueryObservedApplicationRelation;
 use source_facts::{merge_source_facts, validate_source_facts, SourceFacts};
 
@@ -242,13 +240,14 @@ where
     ///     WorthQueryAdmittedApplicationOperation,
     ///     WorthQueryApplicationOperationInvariantProjectionSnapshot,
     ///     WorthQueryPrimaryGraphApplicationRuntime,
-    /// };
+    ///};
     /// use worth_query_installation::facade::ApplicationSchema;
     ///
     /// struct FirstOperation;
     /// struct SecondOperation;
     ///
-    /// fn cannot_cross_operation_projection<Schema: ApplicationSchema, Input, Scope>(
+    /// fn cannot_cross_operation_projection<'a, Schema: ApplicationSchema, Input, Scope>(
+    ///     phase: &worth_query_execution::facade::primary_graph::WorthQueryAdvancementPhase<'a>,
     ///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ///     admission: WorthQueryAdmittedApplicationOperation<
     ///         Schema, FirstOperation, Input, Scope,
@@ -257,7 +256,7 @@ where
     ///         Schema, SecondOperation,
     ///     >,
     /// ) {
-    ///     let _ = runtime.begin_projected_application_read_attempt(admission, projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation);
+    ///     let _ = runtime.begin_projected_application_read_attempt(phase, admission, projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation);
     /// }
     /// ```
     pub fn begin_projected_application_read_attempt<'scope, Operation, Input, Scope>(

@@ -147,11 +147,11 @@ pub trait ApplicationSignedAggregateValueBinding: ApplicationReadableScalarValue
 
 pub type ErasedApplicationValueDecode =
     fn(&AspectValue) -> Result<Box<dyn Any>, ApplicationValueDecodeDenial>;
-pub type ErasedApplicationValueAdmittedDecode =
-    fn(
-        &AspectValue,
-        &mut super::ValueDecodeAdmission<'_>,
-    ) -> Result<Box<dyn Any>, ApplicationValueDecodeDenial>;
+pub type ErasedApplicationValueAdmittedDecode = fn(
+    &AspectValue,
+    &mut super::ValueDecodeAdmission<'_>,
+    Option<&mut dyn Any>,
+) -> Result<(), ApplicationValueDecodeDenial>;
 pub type ErasedApplicationSignedAggregateDecode =
     fn(i64) -> Result<Box<dyn Any>, ApplicationValueDecodeDenial>;
 

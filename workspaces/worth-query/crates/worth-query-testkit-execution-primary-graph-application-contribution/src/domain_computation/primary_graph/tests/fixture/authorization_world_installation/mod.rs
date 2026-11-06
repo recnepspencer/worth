@@ -51,7 +51,8 @@ pub struct AuthorizationWorld {
 
 impl AuthorizationWorld {
     pub fn declare_output_contract<Contract: 'static>(&self, identity: &str) {
-        (*(*(*self.application.runtime_for_test()).primary_provider_for_test()).graph_for_test())
+        (*(*self.application.runtime_for_test()).primary_provider_for_test())
+            .graph_for_test()
             .output_lineage
             .lock()
             .unwrap()
@@ -336,8 +337,8 @@ pub fn bind_activity(
                 Activity::reference(),
                 WorthQueryApplicationEntityKey::new(key).unwrap(),
             )
-            .field(ActivityIdentity::reference(), key.to_owned())
-            .field(ActivitySequence::reference(), sequence),
+            .field(ActivityIdentity::at("ActivityIdentity"), key.to_owned())
+            .field(ActivitySequence::at("ActivitySequence"), sequence),
         )
         .unwrap();
 }

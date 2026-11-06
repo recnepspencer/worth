@@ -7,12 +7,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::components::binding::Shells;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::components::read_selection;
 
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::program;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::*;
-use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::currentness;
-use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::identity;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::component_selection::ComponentSelection;
 use worth_execution::ExecutionRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
@@ -20,7 +15,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionTraversalDenialKind;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::components::binding::*;
 use std::collections::BTreeSet;
-use std::sync::Arc;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 #[test]
 fn admitted_component_of_and_complete_census_seal_original_native_bodies() {
@@ -32,7 +26,7 @@ fn admitted_component_of_and_complete_census_seal_original_native_bodies() {
         let (admission,_)=worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::program::authorize(&world,&phase,&execution,&request,0,CheckComponents::reference());
         let (_,snapshot,_)=world.invariant.project_admitted_operation(&phase,&admission,|reader,root| {
             let component=reader.component_of(Shells::reference(),root).unwrap();
-            let keys=component.members().map(|member|reader.field(&member,NodeKey::reference()).unwrap()).collect::<BTreeSet<_>>();
+            let keys=component.members().map(|member|reader.field(&member,NodeKey::at("NodeKey")).unwrap()).collect::<BTreeSet<_>>();
             assert_eq!(keys,BTreeSet::from([0,1,2]));
             let census=reader.components(Shells::reference()).unwrap();
             assert_eq!(census.len(),1);assert_eq!(census[0].identity(),component.identity());
@@ -67,7 +61,7 @@ fn partial_or_foreign_cohorts_refuse_and_swallowed_failures_cannot_seal() {
             let host=phase.test_host_request_for_test();let execution=host.execution_request_for_for_test(world.application.product_runtime()).unwrap();
             let (admission,_)=worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::program::authorize(&world,&phase,&execution,&request,0,CheckComponents::reference());
             let (_,snapshot,_)=world.invariant.project_admitted_operation(&phase,&admission,|reader,root| {
-                let error=if foreign {let other=reader.resolve_entity(NodeKey::reference(),3_u64).unwrap();reader.component_of(Shells::reference(),&other).unwrap_err()} else {reader.component_of(Focused::reference(),root).unwrap_err()};
+                let error=if foreign {let other=reader.resolve_entity(NodeKey::at("NodeKey"),3_u64).unwrap();reader.component_of(Shells::reference(),&other).unwrap_err()} else {reader.component_of(Focused::reference(),root).unwrap_err()};
                 assert_eq!(error.kind(),WorthQueryInvariantProjectionTraversalDenialKind::ComponentOutsideScope);
             },Allocation::SystemAllocation).unwrap().into_parts();
             let denial=world.application.begin_projected_application_read_attempt(&phase,admission,snapshot,Allocation::SystemAllocation).err().unwrap();

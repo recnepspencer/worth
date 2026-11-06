@@ -8,9 +8,9 @@ use std::num::NonZeroU64;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 
 use worth_query_decl::facade::{
-    application_operation::*, application_program::*, application_schema::*,
-    worth_query_application_contribution, worth_query_effect, worth_query_operation,
-    worth_query_operation_emits, worth_query_operation_reads, worth_query_structured_value_binding,
+    application_operation::*, application_program::*, application_schema::*, worth_query_effect,
+    worth_query_operation, worth_query_operation_emits, worth_query_operation_reads,
+    worth_query_structured_value_binding,
 };
 use worth_query_host::facade::{application_contribution::*, primary_graph::*};
 
@@ -68,21 +68,53 @@ pub fn inbound() -> ApplicationInboundOccurrenceBinding<ArchiveEffect> {
     )
     .unwrap()
 }
-worth_query_application_contribution! {
-    pub contribution ArchiveContribution in DocumentRetentionSchema {
-        identity: "neutral.observable.archive.v1",
-        members: |schema| { schema
-            .effect(ArchiveEffect::reference())
-            .operation(ArchiveOperation::reference().definition()
-            .external_effect_with_inbound(ArchiveEffect::reference(), WorthQueryExternalEffectCorrelationFamily::new(crate::archive::FAMILY).unwrap(), inbound())
-            .no_aftermath().finish())
-            .operation_projection_work_budget(ArchiveOperation::reference(), 8)
-            .operation_read_field(ArchiveOperation::reference(), DocumentIdentityField::reference())
-            .operation_read_field(ArchiveOperation::reference(), DocumentRetentionField::reference())
-            .operation_emit(ArchiveOperation::reference(), ArchiveEffect::reference())
-            .application_mutation_binding::<ArchiveBinding>() }
+pub struct ArchiveContribution;
+impl ApplicationSchemaContribution<DocumentRetentionSchema> for ArchiveContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("neutral.observable.archive.v1");
+    type Members = (ArchiveContributionContracts,);
+}
+impl ArchiveContribution {
+    pub const fn reference() -> ApplicationSchemaContributionRef<DocumentRetentionSchema, Self> {
+        ApplicationSchemaContributionRef::from_contribution()
     }
 }
+pub struct ArchiveContributionContracts;
+impl fragment::Registration<DocumentRetentionSchema> for ArchiveContributionContracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema
+            .effect(ArchiveEffect::reference())
+            .operation(
+                ArchiveOperation::reference()
+                    .definition()
+                    .external_effect_with_inbound(
+                        ArchiveEffect::reference(),
+                        WorthQueryExternalEffectCorrelationFamily::new(crate::archive::FAMILY)
+                            .unwrap(),
+                        inbound(),
+                    )
+                    .no_aftermath()
+                    .finish(),
+            )
+            .operation_projection_work_budget(ArchiveOperation::reference(), 8)
+            .operation_read_field(
+                ArchiveOperation::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
+            )
+            .operation_read_field(
+                ArchiveOperation::reference(),
+                DocumentRetentionField::at("DocumentRetentionField"),
+            )
+            .operation_emit(ArchiveOperation::reference(), ArchiveEffect::reference())
+            .application_mutation_binding::<ArchiveBinding>())
+    }
+}
+
 impl WorthQueryApplicationContribution<DocumentRetentionSchema> for ArchiveContribution {
     type Configuration = ();
     fn configure(
@@ -131,16 +163,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ArchiveBinding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::requiring_approval::<WorkflowApprovalCapability>()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
+    fn scope_field() -> DocumentIdentityField {
         SetRetentionBinding::scope_field()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -164,7 +187,7 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for ArchiveIntent {
     }
     fn scope_binding(&self) -> Scope {
         Scope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.input.identity.clone(),
         )
     }

@@ -70,7 +70,7 @@ impl BankHttpApplicationAuthenticator for ExpiringAuthenticationApplication {
                 let deadline = scope
                     .deadline()
                     .expect("an armed expiring request carries a deadline");
-                tokio::time::sleep_until((deadline + Duration::from_millis(1)).into()).await;
+                tokio::time::sleep(deadline.remaining() + Duration::from_millis(1)).await;
                 assert!(scope.interruption().is_some(), "the deadline has elapsed");
             }
             Ok(principal)

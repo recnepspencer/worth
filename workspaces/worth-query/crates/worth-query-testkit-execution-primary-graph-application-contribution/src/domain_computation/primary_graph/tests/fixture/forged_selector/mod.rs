@@ -17,7 +17,6 @@ use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::AccountPrimaryActivity;
 use crate::domain_computation::primary_graph::tests::fixture::AccountStatus;
 use crate::domain_computation::primary_graph::tests::fixture::Activity;
-use crate::domain_computation::primary_graph::tests::fixture::ActivityFacts;
 use crate::domain_computation::primary_graph::tests::fixture::ActivitySequence;
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
 
@@ -99,17 +98,17 @@ pub fn forged_selector_definition() -> ApplicationQueryDefinition<
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .parameter(status_parameter())
-        .where_equal(AccountStatus::reference(), status_parameter())
+        .where_equal(AccountStatus::at("AccountStatus"), status_parameter())
         .build()
         .unwrap()
 }
 
 pub fn declared_sequence() -> SequenceSelector {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 pub fn forged_sequence() -> SequenceSelector {
-    ApplicationQueryResultFieldRef::new("invented_output", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("invented_output", ActivitySequence::at("ActivitySequence"))
 }
 
 pub fn activity() -> ApplicationQueryResultRelationRef<
@@ -132,11 +131,5 @@ pub type SequenceSelector = ApplicationQueryResultFieldRef<
     ForgedSelectorQuery,
     ForgedSequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 >;

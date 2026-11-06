@@ -34,7 +34,7 @@ fn absent_aspect_read_stales_when_other_field_materializes_before_commit() {
             let source = selected
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::ANCHOR.to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -62,7 +62,7 @@ fn absent_aspect_read_stales_when_other_field_materializes_before_commit() {
                     |reader, root| {
                         assert_eq!(
                             reader
-                                .decision_field(root, SourceSelection::reference())
+                                .decision_field(root, SourceSelection::at("SourceSelection"))
                                 .unwrap(),
                             None
                         );
@@ -71,7 +71,7 @@ fn absent_aspect_read_stales_when_other_field_materializes_before_commit() {
                             reader
                                 .decision_field_with_predecode_admission_for_test(
                                     root,
-                                    SourceSelection::reference(),
+                                    SourceSelection::at("SourceSelection"),
                                     |_, _| {
                                         called.set(true);
                                         Ok::<_, ()>(())
@@ -116,7 +116,7 @@ fn absent_aspect_read_stales_when_other_field_materializes_before_commit() {
                 )
                 .unwrap();
             let execution = phase
-                .execution_request_for_for_test(&(*(*runtime.runtime_for_test()).product_runtime_for_test()))
+                .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
                 .unwrap();
             // This is the real installed conditional-program entry, which checks the
             // current occurrence/program and registered operation before fact comparison.

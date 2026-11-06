@@ -7,8 +7,7 @@ pub struct Input {
 }
 worth_query_structured_value_binding!(pub InputBinding for Input { identity: "canonical-companion.preserve.input.v1" });
 worth_query_operation!(pub PreserveCompanion for CanonicalSchema, input InputBinding);
-worth_query_operation_reads!(PreserveCompanion => [DocumentIdentityField, DocumentValueField, Companion, CompanionValueField]);
-worth_query_operation_writes!(PreserveCompanion => [CompanionValueField]);
+worth_query_operation_reads!(PreserveCompanion => [Companion]);
 
 pub struct Binding;
 pub struct Decision {
@@ -39,17 +38,8 @@ impl ApplicationMutationBinding<CanonicalSchema> for Binding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        CanonicalSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CanonicalSchema,
@@ -68,7 +58,10 @@ impl ApplicationMutationIntent<CanonicalSchema> for Input {
         self
     }
     fn scope_binding(&self) -> Scope {
-        Scope::new(DocumentIdentityField::reference(), self.identity.clone())
+        Scope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity.clone(),
+        )
     }
 }
 
@@ -79,13 +72,14 @@ impl OperationHandler<CanonicalSchema, Binding> for Handler {
         input: &Input,
         reader: &mut DecisionReader<'_, '_, '_, CanonicalSchema, Binding>,
     ) -> HandlerResult<Decision, Denied> {
-        let source = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
-        {
+        let source = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            input.identity.clone(),
+        ) {
             Ok(source) => source,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        let _source = match reader.field(&source, DocumentValueField::reference()) {
+        let _source = match reader.field(&source, DocumentValueField::at("DocumentValueField")) {
             Ok(Some(source)) => source,
             Ok(None) => return HandlerResult::DomainDenied(Denied),
             Err(error) => return HandlerResult::ExecutionDenied(error),
@@ -99,7 +93,7 @@ impl OperationHandler<CanonicalSchema, Binding> for Handler {
                 Ok(target) => target,
                 Err(error) => return HandlerResult::ExecutionDenied(error),
             };
-            match reader.field(&target, CompanionValueField::reference()) {
+            match reader.field(&target, CompanionValueField::at("CompanionValueField")) {
                 Ok(Some(value)) => {
                     writes[index] = value
                         != if index == 0 {
@@ -134,7 +128,7 @@ impl OperationHandler<CanonicalSchema, Binding> for Handler {
                 }
                 writer.write_field(
                     target,
-                    CompanionValueField::reference(),
+                    CompanionValueField::at("CompanionValueField"),
                     if index == 0 {
                         "companion-left"
                     } else {

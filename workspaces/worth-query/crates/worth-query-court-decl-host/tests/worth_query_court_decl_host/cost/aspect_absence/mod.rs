@@ -11,22 +11,78 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
     host::host_limits, operator_identity::*,
 };
 
-macro_rules! fixture {
-    ($name:ident, $count:literal) => {
-        mod $name {
-            use super::*;
-            const CLASSES: usize = $count;
-            include!("schema.rs");
-            include!("operation.rs");
-            mod readback {
-                include!("readback.rs");
-            }
-            include!("world.rs");
-        }
-    };
+mod classes;
+use classes::*;
+
+mod three {
+    use super::*;
+    const CLASSES: usize = 3;
+    type Classes = (
+        Option<classes::Class1>,
+        Option<classes::Class2>,
+        Option<classes::Class3>,
+    );
+    include!("schema.rs");
+    include!("operation.rs");
+    mod readback {
+        include!("readback.rs");
+    }
+    include!("world.rs");
+    mod class_access {
+        include!("class_access.rs");
+    }
 }
-fixture!(three, 3);
-fixture!(six, 6);
-fixture!(twelve, 12);
+mod six {
+    use super::*;
+    const CLASSES: usize = 6;
+    type Classes = (
+        Option<classes::Class1>,
+        Option<classes::Class2>,
+        Option<classes::Class3>,
+        Option<classes::Class4>,
+        Option<classes::Class5>,
+        Option<classes::Class6>,
+    );
+    include!("schema.rs");
+    include!("operation.rs");
+    mod readback {
+        include!("readback.rs");
+    }
+    include!("world.rs");
+    mod class_access {
+        include!("class_access.rs");
+    }
+}
+mod twelve {
+    use super::*;
+    const CLASSES: usize = 12;
+    type Classes = (
+        (
+            Option<classes::Class1>,
+            Option<classes::Class2>,
+            Option<classes::Class3>,
+            Option<classes::Class4>,
+            Option<classes::Class5>,
+            Option<classes::Class6>,
+            Option<classes::Class7>,
+            Option<classes::Class8>,
+        ),
+        (
+            Option<classes::Class9>,
+            Option<classes::Class10>,
+            Option<classes::Class11>,
+            Option<classes::Class12>,
+        ),
+    );
+    include!("schema.rs");
+    include!("operation.rs");
+    mod readback {
+        include!("readback.rs");
+    }
+    include!("world.rs");
+    mod class_access {
+        include!("class_access.rs");
+    }
+}
 
 mod court;

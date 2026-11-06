@@ -1,13 +1,15 @@
 pub use std::collections::BTreeSet;
+use worth_query_decl::facade::application_schema::fragment::RecordSelection;
 
 pub use super::*;
 
 pub fn assert_portable_contract_spine(package: &WorthQueryValidatedPortableDomainPackage) {
     let spine = package.application_contract_spine();
     assert_eq!(spine.native_aspects().len(), 2);
-    let state = native_aspect(spine, "AccountState");
-    assert_eq!(state.contract().identity(), AspectIdentity(0x9161_1051));
-    assert_eq!(state.contract().revision(), AspectContractRevision(2));
+    let state = native_aspect(spine, status_field().aspect());
+    let (identity, revision) = declared_aspect_contract(status_field().aspect());
+    assert_eq!(state.contract().identity(), identity);
+    assert_eq!(state.contract().revision(), revision);
     assert_eq!(
         state
             .fields()
@@ -15,8 +17,11 @@ pub fn assert_portable_contract_spine(package: &WorthQueryValidatedPortableDomai
             .collect::<BTreeSet<_>>(),
         BTreeSet::from(["AccountBalance", "AccountLimit", "AccountStatus"])
     );
-    let audit = native_aspect(spine, "AccountAudit");
-    assert_eq!(audit.contract().identity(), AspectIdentity(0x9161_1052));
+    let audit = native_aspect(spine, sequence_field().aspect());
+    assert_eq!(
+        audit.contract().identity(),
+        declared_aspect_contract(sequence_field().aspect()).0
+    );
     assert_eq!(
         audit.fields().map(FieldKey::as_str).collect::<Vec<_>>(),
         ["AuditSequence"]

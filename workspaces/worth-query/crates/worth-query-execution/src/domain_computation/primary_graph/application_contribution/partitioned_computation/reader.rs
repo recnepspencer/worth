@@ -7,9 +7,8 @@ mod output_availability;
 mod structural_walk;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
-    ApplicationRelationRef, ApplicationSchema, DeclaredApplicationFieldValue, OperationReads,
-    WritePosture,
+    ApplicationReadableScalarValueBinding, ApplicationRelationRef, ApplicationSchema,
+    OperationReads,
 };
 
 use crate::domain_computation::primary_graph::{
@@ -66,16 +65,18 @@ where
     }
 
     /// Reads a field's value.
-    pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn field<Entity, Aspect, Field, Value>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
     ) -> Result<Option<Value>, WorthQueryComputationReadDenial>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         self.reader
             .decision_field(identity, field)

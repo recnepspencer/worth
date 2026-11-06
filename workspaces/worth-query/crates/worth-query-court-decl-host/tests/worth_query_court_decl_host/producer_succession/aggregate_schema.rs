@@ -1,6 +1,10 @@
 //! A distinct typed profile gives child realizations actual Native memberships.
 use super::*;
-struct RealizationPeers;
+pub struct RealizationPeers;
+impl worth_query_decl::facade::application_schema::fragment::Relation for RealizationPeers {
+    const NAME: &'static str = "RealizationPeers";
+    type To = realization::Realization;
+}
 struct RealizationComponents;
 fn peers() -> ApplicationRelationRef<
     Schema,
@@ -23,16 +27,5 @@ pub fn declare(
             "RealizationComponents",
             realization::Realization::reference(),
         );
-    let schema = schema.relation(
-        realization::output_next(),
-        realization::Realization::reference(),
-        realization::Realization::reference(),
-    );
-    schema
-        .relation(
-            peers(),
-            realization::Realization::reference(),
-            realization::Realization::reference(),
-        )
-        .components(ApplicationComponentSetDefinition::new(set).coupled_by(peers()))
+    schema.components(ApplicationComponentSetDefinition::new(set).coupled_by(peers()))
 }

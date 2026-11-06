@@ -1,4 +1,5 @@
 pub(crate) use worth_query_testkit_certification_canonical::facade::certification::canonical_transition::*;
+use worth_query_decl::facade::application_schema::ApplicationSchema;
 
 #[test]
 fn accepted_created_canonical_output_refuses_unsupported_transition_without_changing_source() {

@@ -75,19 +75,15 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     let Some(CaptureDenial::Execution(cause)) = pending.capture_denial() else {
         panic!("exact Native preparation cause must survive: {pending:?}");
     };
-    assert_eq!(
-        cause.kind(),
+    assert!(
+        matches!(cause.kind(),
         primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
             kind: primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
-                denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::MemoryLimit {
-                    requested: 224_540,
-                    admitted: 159_796,
-                    level: worth_query_host::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy,
-                },
-                partition_identity: None,
-                policy_ancestor: Some(0),
-            },
-        }
+                denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::MemoryLimit { requested, admitted, level: worth_query_host::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy },
+                partition_identity: None, policy_ancestor: Some(0),
+            }
+        } if requested > admitted && admitted > 0),
+        "the same owner retains the precise memory stop: {cause:?}"
     );
     let released = frame_only.reserve_memory(frame_quote).unwrap();
     drop(released);

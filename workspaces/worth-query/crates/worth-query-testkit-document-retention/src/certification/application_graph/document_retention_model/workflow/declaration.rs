@@ -1,3 +1,6 @@
+#[path = "declaration/records.rs"]
+mod storage_model;
+pub use storage_model::*;
 pub use worth_query_decl::facade::{
     worth_query_capability, worth_query_capability_context, worth_query_capability_provenance,
     worth_query_operation_reads,
@@ -19,8 +22,7 @@ pub use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphBootstrap,
 };
 pub use worth_query_host::facade::{
-    worth_query_aspect, worth_query_entity, worth_query_field, worth_query_operation,
-    worth_query_portable_type, worth_query_relation, worth_query_structured_value_binding,
+    worth_query_operation, worth_query_portable_type, worth_query_structured_value_binding,
 };
 
 pub use super::super::{
@@ -51,24 +53,6 @@ impl ApplicationWorkflowSpec for ReviewedDocumentWorkflow {
     );
 }
 
-worth_query_entity!(pub WorkflowAuthoringGrant for DocumentRetentionSchema);
-worth_query_aspect!(pub WorkflowAuthoringGrantFacts for DocumentRetentionSchema, WorkflowAuthoringGrant; identity = AspectIdentity(0x91750601), revision = AspectContractRevision(1),);
-worth_query_field!(pub WorkflowGrantIdentityField for DocumentRetentionSchema, WorkflowAuthoringGrant, WorkflowAuthoringGrantFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub WorkflowGrantActionField for DocumentRetentionSchema, WorkflowAuthoringGrant, WorkflowAuthoringGrantFacts: String => StringApplicationValueBinding, read_only, no_equality);
-worth_query_field!(pub WorkflowGrantPurposeField for DocumentRetentionSchema, WorkflowAuthoringGrant, WorkflowAuthoringGrantFacts: String => StringApplicationValueBinding, read_only, no_equality);
-worth_query_field!(pub WorkflowGrantStatusField for DocumentRetentionSchema, WorkflowAuthoringGrant, WorkflowAuthoringGrantFacts: String => StringApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub WorkflowGrantWorkflowField for DocumentRetentionSchema, WorkflowAuthoringGrant, WorkflowAuthoringGrantFacts: String => StringApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub WorkflowGrantNotBeforeField for DocumentRetentionSchema, WorkflowAuthoringGrant, WorkflowAuthoringGrantFacts: u64 => worth_query_host::facade::declaration::application_schema::U64ApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub WorkflowGrantNotAfterField for DocumentRetentionSchema, WorkflowAuthoringGrant, WorkflowAuthoringGrantFacts: u64 => worth_query_host::facade::declaration::application_schema::U64ApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub WorkflowGrantDelegationLimitField for DocumentRetentionSchema, WorkflowAuthoringGrant, WorkflowAuthoringGrantFacts: u64 => worth_query_host::facade::declaration::application_schema::U64ApplicationValueBinding, read_write, no_equality);
-
-worth_query_relation!(pub WorkflowDocumentOwner in DocumentRetentionSchema, Principal => Document; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub WorkflowGrantResource in DocumentRetentionSchema, WorkflowAuthoringGrant => Document; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub WorkflowGrantRelated in DocumentRetentionSchema, WorkflowAuthoringGrant => Document; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub WorkflowGrantParent in DocumentRetentionSchema, WorkflowAuthoringGrant => WorkflowAuthoringGrant; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub WorkflowGrantGrantor in DocumentRetentionSchema, Principal => WorkflowAuthoringGrant; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub WorkflowGrantGrantee in DocumentRetentionSchema, Principal => WorkflowAuthoringGrant; integrity = same_context_unbounded_retain_dangling);
-
 worth_query_capability_context!(pub WorkflowDefinitionAuthoringContext in DocumentRetentionSchema);
 worth_query_capability_provenance!(pub WorkflowDefinitionAuthoringProvenance in DocumentRetentionSchema);
 worth_query_capability!(pub WorkflowDefinitionAuthoringCapability in DocumentRetentionSchema);
@@ -79,7 +63,6 @@ worth_query_capability!(pub WorkflowInstanceStartCapability in DocumentRetention
 pub type WorkflowDefinitionAuthoringInput = SetRetentionInput;
 pub type WorkflowDefinitionAuthoringInputBinding = SetRetentionInputBinding;
 worth_query_operation!(pub WorkflowDefinitionAuthoringOperation for DocumentRetentionSchema, input WorkflowDefinitionAuthoringInputBinding);
-worth_query_operation_reads!(WorkflowDefinitionAuthoringOperation => [DocumentIdentityField]);
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct WorkflowInstanceStartInput {
@@ -91,7 +74,6 @@ worth_query_structured_value_binding!(pub WorkflowInstanceStartInputBinding for 
     identity: "worth.query.certification.workflow-instance-start-input.v1"
 });
 worth_query_operation!(pub WorkflowInstanceStartOperation for DocumentRetentionSchema, input WorkflowInstanceStartInputBinding);
-worth_query_operation_reads!(WorkflowInstanceStartOperation => [DocumentIdentityField]);
 
 impl ApplicationCapabilityRequest<DocumentRetentionSchema, WorkflowDefinitionAuthoringCapability>
     for WorkflowDefinitionAuthoringInput
@@ -111,9 +93,10 @@ impl ApplicationCapabilityRequest<DocumentRetentionSchema, WorkflowDefinitionAut
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 encoded(self.identity.clone()),
-            ),
+            )
+            .unwrap(),
             encoded("author-workflow-definition".to_owned()),
             encoded("reviewed-document".to_owned()),
             ApplicationCapabilityRequestContext::new(
@@ -123,9 +106,10 @@ impl ApplicationCapabilityRequest<DocumentRetentionSchema, WorkflowDefinitionAut
         .related_entity(ApplicationCapabilityRelatedEntitySelector::new(
             WorkflowGrantRelated::reference(),
             ApplicationCapabilityEntitySelector::new(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 encoded(RELATED_DOCUMENT_IDENTITY.to_owned()),
-            ),
+            )
+            .unwrap(),
         )))
     }
 }
@@ -148,9 +132,10 @@ impl ApplicationCapabilityRequest<DocumentRetentionSchema, WorkflowInstanceStart
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 encoded(self.document_identity.clone()),
-            ),
+            )
+            .unwrap(),
             encoded("start-workflow-instance".to_owned()),
             encoded("reviewed-document".to_owned()),
             ApplicationCapabilityRequestContext::new(WorkflowInstanceStartContext::reference()),
@@ -162,73 +147,6 @@ pub fn install_members(
     schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema> {
     schema
-        .entity(WorkflowAuthoringGrant::reference())
-        .aspect(
-            WorkflowAuthoringGrant::reference(),
-            WorkflowAuthoringGrantFacts::reference(),
-        )
-        .field(
-            WorkflowAuthoringGrant::reference(),
-            WorkflowGrantIdentityField::reference(),
-        )
-        .field(
-            WorkflowAuthoringGrant::reference(),
-            WorkflowGrantActionField::reference(),
-        )
-        .field(
-            WorkflowAuthoringGrant::reference(),
-            WorkflowGrantPurposeField::reference(),
-        )
-        .field(
-            WorkflowAuthoringGrant::reference(),
-            WorkflowGrantStatusField::reference(),
-        )
-        .field(
-            WorkflowAuthoringGrant::reference(),
-            WorkflowGrantWorkflowField::reference(),
-        )
-        .field(
-            WorkflowAuthoringGrant::reference(),
-            WorkflowGrantNotBeforeField::reference(),
-        )
-        .field(
-            WorkflowAuthoringGrant::reference(),
-            WorkflowGrantNotAfterField::reference(),
-        )
-        .field(
-            WorkflowAuthoringGrant::reference(),
-            WorkflowGrantDelegationLimitField::reference(),
-        )
-        .relation(
-            WorkflowDocumentOwner::reference(),
-            Principal::reference(),
-            Document::reference(),
-        )
-        .relation(
-            WorkflowGrantResource::reference(),
-            WorkflowAuthoringGrant::reference(),
-            Document::reference(),
-        )
-        .relation(
-            WorkflowGrantRelated::reference(),
-            WorkflowAuthoringGrant::reference(),
-            Document::reference(),
-        )
-        .relation(
-            WorkflowGrantParent::reference(),
-            WorkflowAuthoringGrant::reference(),
-            WorkflowAuthoringGrant::reference(),
-        )
-        .relation(
-            WorkflowGrantGrantor::reference(),
-            Principal::reference(),
-            WorkflowAuthoringGrant::reference(),
-        )
-        .relation(
-            WorkflowGrantGrantee::reference(),
-            Principal::reference(),
-            WorkflowAuthoringGrant::reference(),
-        )
         .capability_context(WorkflowDefinitionAuthoringContext::reference())
         .capability_provenance(WorkflowDefinitionAuthoringProvenance::reference())
         .capability_context(WorkflowInstanceStartContext::reference())
@@ -243,7 +161,7 @@ pub fn install_members(
         .operation_projection_work_budget(WorkflowDefinitionAuthoringOperation::reference(), 512)
         .operation_read_field(
             WorkflowDefinitionAuthoringOperation::reference(),
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
         )
         .operation(
             WorkflowInstanceStartOperation::reference()
@@ -255,7 +173,7 @@ pub fn install_members(
         .operation_projection_work_budget(WorkflowInstanceStartOperation::reference(), 512)
         .operation_read_field(
             WorkflowInstanceStartOperation::reference(),
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
         )
 }
 
@@ -267,25 +185,37 @@ pub fn seed_authoring(graph: &mut WorthQueryPrimaryGraphBootstrap<DocumentRetent
                 entity_key("workflow-authoring-grant"),
             )
             .field(
-                WorkflowGrantIdentityField::reference(),
-                "workflow-authoring-grant".to_owned(),
+                WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+                "workflow-authoring-grant".to_owned().into(),
             )
             .field(
-                WorkflowGrantActionField::reference(),
+                WorkflowGrantActionField::at("WorkflowGrantActionField"),
                 "author-workflow-definition".to_owned(),
             )
             .field(
-                WorkflowGrantPurposeField::reference(),
+                WorkflowGrantPurposeField::at("WorkflowGrantPurposeField"),
                 "reviewed-document".to_owned(),
             )
-            .field(WorkflowGrantStatusField::reference(), "active".to_owned())
             .field(
-                WorkflowGrantWorkflowField::reference(),
+                WorkflowGrantStatusField::at("WorkflowGrantStatusField"),
+                "active".to_owned(),
+            )
+            .field(
+                WorkflowGrantWorkflowField::at("WorkflowGrantWorkflowField"),
                 DOCUMENT_IDENTITY.to_owned(),
             )
-            .field(WorkflowGrantNotBeforeField::reference(), 0_u64)
-            .field(WorkflowGrantNotAfterField::reference(), u64::MAX)
-            .field(WorkflowGrantDelegationLimitField::reference(), 0_u64),
+            .field(
+                WorkflowGrantNotBeforeField::at("WorkflowGrantNotBeforeField"),
+                0_u64,
+            )
+            .field(
+                WorkflowGrantNotAfterField::at("WorkflowGrantNotAfterField"),
+                u64::MAX,
+            )
+            .field(
+                WorkflowGrantDelegationLimitField::at("WorkflowGrantDelegationLimitField"),
+                0_u64,
+            ),
         )
         .expect("workflow authoring grant must seed");
     graph
@@ -336,25 +266,37 @@ pub fn seed_authoring(graph: &mut WorthQueryPrimaryGraphBootstrap<DocumentRetent
                 entity_key("workflow-instance-start-grant"),
             )
             .field(
-                WorkflowGrantIdentityField::reference(),
-                "workflow-instance-start-grant".to_owned(),
+                WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+                "workflow-instance-start-grant".to_owned().into(),
             )
             .field(
-                WorkflowGrantActionField::reference(),
+                WorkflowGrantActionField::at("WorkflowGrantActionField"),
                 "start-workflow-instance".to_owned(),
             )
             .field(
-                WorkflowGrantPurposeField::reference(),
+                WorkflowGrantPurposeField::at("WorkflowGrantPurposeField"),
                 "reviewed-document".to_owned(),
             )
-            .field(WorkflowGrantStatusField::reference(), "active".to_owned())
             .field(
-                WorkflowGrantWorkflowField::reference(),
+                WorkflowGrantStatusField::at("WorkflowGrantStatusField"),
+                "active".to_owned(),
+            )
+            .field(
+                WorkflowGrantWorkflowField::at("WorkflowGrantWorkflowField"),
                 DOCUMENT_IDENTITY.to_owned(),
             )
-            .field(WorkflowGrantNotBeforeField::reference(), 0_u64)
-            .field(WorkflowGrantNotAfterField::reference(), u64::MAX)
-            .field(WorkflowGrantDelegationLimitField::reference(), 0_u64),
+            .field(
+                WorkflowGrantNotBeforeField::at("WorkflowGrantNotBeforeField"),
+                0_u64,
+            )
+            .field(
+                WorkflowGrantNotAfterField::at("WorkflowGrantNotAfterField"),
+                u64::MAX,
+            )
+            .field(
+                WorkflowGrantDelegationLimitField::at("WorkflowGrantDelegationLimitField"),
+                0_u64,
+            ),
         )
         .expect("workflow instance-start grant must seed");
     graph

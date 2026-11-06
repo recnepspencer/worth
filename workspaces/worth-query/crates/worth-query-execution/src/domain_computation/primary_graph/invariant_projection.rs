@@ -14,6 +14,7 @@ pub(crate) mod consumed_output;
 mod entity_resident;
 #[path = "invariant_projection/field_projection.rs"]
 mod field_projection;
+mod fragment_identity;
 mod identity_encoding;
 pub(crate) mod pending_output_read;
 pub(in crate::domain_computation::primary_graph) use pending_output_read::RequestedOutputRead;
@@ -22,6 +23,7 @@ mod lineage;
 mod orbit;
 pub use orbit::WorthQueryInvariantProjectionOrbit;
 mod locked_reader;
+mod native_read;
 mod operation_projection_denial;
 pub(crate) mod operation_reader;
 pub(in crate::domain_computation::primary_graph) use operation_reader::native_index_decision_cause;
@@ -53,9 +55,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
-    ApplicationSchema, ApplicationSchemaBindingIdentity, DeclaredApplicationFieldValue,
-    WritePosture,
+    ApplicationReadableScalarValueBinding, ApplicationSchema, ApplicationSchemaBindingIdentity,
 };
 use worth_relational::facade::identity::{EntityId, KindId, VersionId};
 
@@ -154,15 +154,8 @@ pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
 ///
 /// It is valid only with readers from the same projection authority; any other
 /// reader refuses it as foreign.
-#[derive(Clone, Debug)]
-pub struct WorthQueryInvariantEntityIdentity<Schema, Entity> {
-    entity_id: EntityId,
-    kind: KindId,
-    entity: Arc<str>,
-    authority_identity: u64,
-    phase: Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
-    _marker: PhantomData<fn() -> (Schema, Entity)>,
-}
+pub use entity_identity::WorthQueryInvariantEntityIdentity;
+mod entity_identity;
 
 /// An exact projected entity admitted for the later application effect phase.
 /// It is minted only by the operation-typed invariant reader after validating

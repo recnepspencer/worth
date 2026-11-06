@@ -45,7 +45,7 @@ pub(super) fn observe_prior_cycle<Schema: TopologySchemaBinding>(
     }
     let mut members = Vec::with_capacity(prior.len());
     for (role, identity) in prior {
-        let current_y = match reader.field(&identity, PositionY::reference()) {
+        let current_y = match reader.field(&identity, PositionY::at("PositionY")) {
             Ok(Some(value)) => value,
             Ok(None) => {
                 return HandlerResult::DomainDenied(PriorCycleAdjustmentDenial::MissingCoordinate)

@@ -38,7 +38,7 @@ macro_rules! settle {
 #[test]
 fn fixed_action_instances_deliver_only_their_canonical_contract() {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, ActionInstanceProgram>::begin()
-        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let grants = [

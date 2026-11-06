@@ -25,7 +25,6 @@ fn an_ordinary_body_revision_settles_after_checkpoint_and_cold_reopen() {
             .unwrap()
         })
         .unwrap();
-    drop(request);
     drop(host);
     let host = reopen::<S>(checkpoint);
     let principal = authenticate_operator(host.installed_schema(), &scope);

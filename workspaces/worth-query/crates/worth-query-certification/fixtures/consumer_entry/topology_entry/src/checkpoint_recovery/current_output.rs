@@ -64,9 +64,9 @@ mod serial {
     fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_source_change() {
         let _guard = checkpoint_recovery_test_guard();
         let provider_observation = crate::producer::ProviderContacts::default();
-        // facc9d1197 expanded one read to 8193 while leaving the old 8M host grant.
-        // Fund the complete repeated-read journey; its old grant is tested below.
-        let restored = restore(&provider_observation, 16_000_000);
+        // Fund all 8193 reads, including their record and lineage metadata.
+        // The original finite 8M grant is tested separately below.
+        let restored = restore(&provider_observation, 32_000_000);
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         let verify = |command| {

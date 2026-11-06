@@ -1,39 +1,86 @@
 //! Owner-local portable readmission uses real validated and installed contracts.
 use super::*;
 use crate::facade::*;
+use worth_query_declaration::facade::application_schema::fragment as records;
 use worth_query_declaration::facade::application_schema::*;
 struct Schema;
-worth_query_declaration::worth_query_entity!(Entity for Schema);
-worth_query_declaration::worth_query_aspect!(Input for Schema, Entity; identity = AspectIdentity(0x91800200), revision = AspectContractRevision(1));
-worth_query_declaration::worth_query_field!(Left for Schema, Entity, Input: u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_declaration::worth_query_field!(Right for Schema, Entity, Input: u64 => U64ApplicationValueBinding, read_write, equality);
+impl records::Fragment for Schema {
+    const NAME: &'static str = "Schema";
+    type Bindings = Bindings;
+    type Members = (Entity, Remove);
+}
+struct Bindings;
+impl records::BindingSet for Bindings {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        f: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        f(work)
+    }
+}
+impl records::Scalar<u64> for Bindings {
+    type Binding = U64ApplicationValueBinding;
+    const EQUALITY_QUERYABLE: bool = true;
+}
+struct Entity;
+impl records::Entity for Entity {
+    const NAME: &'static str = "Entity";
+    type Aspects = (Option<Input>,);
+    type Relations = ();
+}
+struct Input;
+impl records::Aspect for Input {
+    const NAME: &'static str = "Input";
+    type Row = Pair;
+}
+impl Input {
+    fn reference() -> records::AspectSelection<Schema, Entity, Self> {
+        records::aspect(Schema, Entity, Self)
+    }
+}
+struct Pair {
+    left: u64,
+    right: u64,
+}
+impl records::Record<Pair> for Bindings {
+    fn record() -> impl records::Shape<Pair, Self> {
+        records::field("Left", |r: &Pair| r.left)
+            .and("Right", |r: &Pair| r.right)
+            .build(|left, right, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(Pair { left, right })
+            })
+    }
+}
+type Left = records::FieldSelection<Schema, Entity, Input, u64>;
+type Right = records::FieldSelection<Schema, Entity, Input, u64>;
 worth_query_declaration::worth_query_structured_value_binding!(InputBinding for () { identity: "worth.rust.unit" });
 worth_query_declaration::worth_query_operation!(Remove for Schema, input InputBinding);
-worth_query_declaration::worth_query_operation_reads!(Remove => [Left, Right]);
 worth_query_declaration::worth_query_operation_removes_aspects!(Remove => [Input]);
-impl ApplicationSchema for Schema {
-    const OWNER: &'static str = "removal-court";
-    const NAME: &'static str = "Schema";
-    const MAJOR: u32 = 1;
-    const MINOR: u32 = 0;
-    fn declaration(
-    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(Entity::reference())
-            .optional_aspect(Entity::reference(), Input::reference())
-            .field(Entity::reference(), Left::reference())
-            .field(Entity::reference(), Right::reference())
+impl records::Registration<Schema> for Remove {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(builder
             .operation(
-                Remove::reference()
+                Self::reference()
                     .definition()
                     .no_external_effect()
                     .no_aftermath()
                     .finish(),
             )
-            .operation_read_field(Remove::reference(), Left::reference())
-            .operation_read_field(Remove::reference(), Right::reference())
-            .operation_remove_aspect(Remove::reference(), Input::reference())
-            .build()
+            .operation_read_field(Self::reference(), Left::at("Left"))
+            .operation_read_field(Self::reference(), Right::at("Right"))
+            .operation_remove_aspect(Self::reference(), Input::reference()))
+    }
+}
+impl ApplicationSchema for Schema {
+    const OWNER: &'static str = "removal-court";
+    const NAME: &'static str = <Self as records::Fragment>::NAME;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        records::declare(Self)
     }
 }
 fn installed() -> WorthQueryInstalledApplicationSchema<Schema> {
@@ -65,7 +112,7 @@ fn installed_parent_removal_readmission_requires_complete_same_binding_native_re
     let binding = schema.binding_identity();
     let contract = schema
         .native_contracts()
-        .aspect("Entity", "Input")
+        .aspect("Entity", Input::reference().name())
         .unwrap()
         .contract()
         .clone();

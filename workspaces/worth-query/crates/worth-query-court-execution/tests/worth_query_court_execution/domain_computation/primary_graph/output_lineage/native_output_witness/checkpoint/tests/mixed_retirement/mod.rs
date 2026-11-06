@@ -25,7 +25,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 selected
                     .resolve_entity(
                         &phase,
-                        AccountIdentity::reference(),
+                        AccountIdentity::at("AccountIdentity"),
                         key.to_owned(),
                         &live_scope(),
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -206,7 +206,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 assert!(wrong_posture
                     .finish_for_test(&correspondence, runtime, &committed)
                     .is_none());
-                let label_ref = AccountLabel::reference();
+                let label_ref = AccountLabel::at("AccountLabel");
                 let label = layout
                     .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
                     .unwrap()

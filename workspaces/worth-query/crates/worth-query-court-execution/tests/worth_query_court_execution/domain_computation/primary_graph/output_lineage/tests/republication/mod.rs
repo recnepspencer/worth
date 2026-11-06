@@ -84,7 +84,7 @@ pub fn staged(
     let output = world
         .selected_product(&(phase_custody).test_host_request_for_test(), )
         .resolve_entity(phase_custody,
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             "open".to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -95,7 +95,7 @@ pub fn staged(
     let layout = graph.layout_for_test();
     // Two World publications put the restoration two product generations
     // after the occurrence's first, so earlier records have an address.
-    let label = AccountLabel::reference();
+    let label = AccountLabel::at("AccountLabel");
     let label = layout
         .field_locator_for_test(label.entity(), label.aspect(), label.field())
         .unwrap();

@@ -25,7 +25,7 @@ fn correction_disclosure_requires_the_original_native_root_after_filtering() {
             let account = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -118,7 +118,7 @@ fn correction_disclosure_never_calls_the_application_projector() {
             &phase, &world.binding, &external, &request, WorthQueryPrincipalResolutionMode::Ordinary,
         ).unwrap();
         let account = selected.resolve_entity(
-            &phase, AccountStatus::reference(), "open".to_owned(), &request,
+            &phase, AccountStatus::at("AccountStatus"), "open".to_owned(), &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         ).unwrap();
         let subject = account.entity_id_for_test();

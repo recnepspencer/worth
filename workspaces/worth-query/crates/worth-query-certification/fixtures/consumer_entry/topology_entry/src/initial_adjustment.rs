@@ -3,8 +3,7 @@
 use worth_query_consumer_values::PositiveLength;
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_mutation_binding,
-    worth_query_operation, worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation, worth_query_operation_reads, worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget;
 
@@ -26,8 +25,7 @@ worth_query_structured_value_binding!(pub PlanarInitialAdjustmentInputBinding fo
     identity: "worth.query.certification.planar-initial-adjustment-input.v1"
 });
 worth_query_operation!(pub AdjustInitialPlanar for Schema: TopologySchemaBinding, input PlanarInitialAdjustmentInputBinding);
-worth_query_operation_reads!(AdjustInitialPlanar => [Body, BodyKey, PositionY]);
-worth_query_operation_writes!(AdjustInitialPlanar => [PositionY]);
+worth_query_operation_reads!(AdjustInitialPlanar => [Body]);
 
 worth_query_mutation_binding! {
     pub PlanarInitialAdjustmentBinding for PlanarInitialAdjustment,
@@ -45,8 +43,8 @@ worth_query_mutation_binding! {
         binding_type ConsumerPrincipalBinding, mapping ExternalPrincipalMapping,
         principal_entity Principal, principal_identity u64,
         identity_binding U64ApplicationValueBinding,
-    scope Body, PlanarPosition, BodyKey, String, ReadOnly, NoApplicationUnit,
-    field BodyKey::reference(), value_field scope_key,
+    scope BodyKey,
+    field BodyKey::at("BodyKey"), value_field scope_key,
 }
 
 pub(crate) fn declare_initial_adjustment<Schema: TopologySchemaBinding>(
@@ -63,8 +61,8 @@ pub(crate) fn declare_initial_adjustment<Schema: TopologySchemaBinding>(
         )
         .operation_projection_work_budget(operation, 16)
         .operation_read_entity(operation, Body::reference())
-        .operation_read_field(operation, BodyKey::reference())
-        .operation_read_field(operation, PositionY::reference())
-        .operation_write(operation, PositionY::reference())
+        .operation_read_field(operation, BodyKey::at("BodyKey"))
+        .operation_read_field(operation, PositionY::at("PositionY"))
+        .operation_write(operation, PositionY::at("PositionY"))
         .application_mutation_binding::<PlanarInitialAdjustmentBinding<Schema>>()
 }

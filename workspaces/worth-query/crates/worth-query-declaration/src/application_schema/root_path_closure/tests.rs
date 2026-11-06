@@ -6,8 +6,10 @@ struct Schema;
 struct Node;
 struct Edge;
 struct Live;
-impl ApplicationEntityMarkerIdentity<Schema> for Node {
-    const IDENTIFIER: &'static str = "Node";
+impl fragment::Entity for Node {
+    type Aspects = ();
+    type Relations = (Edge,);
+    const NAME: &'static str = "Node";
 }
 fn node() -> ApplicationEntityRef<Schema, Node> {
     ApplicationEntityRef::from_schema_identifier("Node")
@@ -30,9 +32,7 @@ impl ApplicationSchema for Schema {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(node())
-            .relation(edge(), node(), node())
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(Nodes)?
             .derived_relation(
                 live(),
                 ApplicationDerivedRelation::compose(edge(), edge()),
@@ -153,4 +153,15 @@ fn entity_final_recipe_with_projected_intermediate_is_explicitly_refused() {
         .into_meaning();
     assert!(path.is_well_formed());
     assert!(!is_closed(&path, &members));
+}
+
+struct Nodes;
+impl fragment::Fragment for Nodes {
+    const NAME: &'static str = "nodes";
+    type Bindings = fragment::NoBindings;
+    type Members = (Node,);
+}
+impl fragment::Relation for Edge {
+    const NAME: &'static str = "Edges";
+    type To = Node;
 }

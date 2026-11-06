@@ -20,7 +20,7 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
                     .selected_product(&host_phase.test_host_request_for_test())
                     .resolve_entity(
                         &host_phase,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         "2".to_owned(),
                         &live_scope(),
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -29,7 +29,7 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
                     .entity_id_for_test()
             })
             .expect("installed host call opens");
-        let status = AccountStatus::reference();
+        let status = AccountStatus::at("AccountStatus");
         let status = graph
             .layout_for_test()
             .field_locator_for_test(status.entity(), status.aspect(), status.field())

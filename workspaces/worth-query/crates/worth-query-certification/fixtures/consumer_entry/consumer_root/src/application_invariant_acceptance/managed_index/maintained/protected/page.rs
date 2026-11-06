@@ -23,19 +23,8 @@ pub struct RootSlot;
 pub struct ChildrenSlot;
 worth_query_portable_type!(RootSlot=>"maintained-catalog.protected-page-root.v1");
 worth_query_portable_type!(ChildrenSlot=>"maintained-catalog.protected-page-children.v1");
-fn root<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    RootSlot,
-    Catalog,
-    Directory,
-    DirectoryFacts,
-    DirectoryIdentity,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("directory", DirectoryIdentity::reference())
+fn root<Q>() -> ApplicationQueryResultFieldRef<Q, RootSlot, Catalog, DirectoryIdentity> {
+    ApplicationQueryResultFieldRef::new("directory", DirectoryIdentity::at("DirectoryIdentity"))
 }
 fn children<Q>() -> ApplicationQueryResultRelationRef<
     Q,
@@ -67,12 +56,19 @@ fn builder<
         access::ReadBoxes::reference(),
     )
     .use_field_by(
-        DirectoryIdentity::reference(),
+        DirectoryIdentity::at("DirectoryIdentity"),
         access::encoded(),
         all.clone(),
     )
-    .use_field_by(ItemIdentity::reference(), access::encoded(), all.clone())
-    .use_field_by(ItemName::reference(), access::encoded(), name_influence)
+    .expect("record field contract")
+    .use_field_by(
+        ItemIdentity::at("ItemIdentity"),
+        access::encoded(),
+        all.clone(),
+    )
+    .expect("record field contract")
+    .use_field_by(ItemName::at("ItemName"), access::encoded(), name_influence)
+    .expect("record field contract")
     .disclose_relation_by(children::<Q>(), access::encoded(), all.clone())
     .disclose_field_by(root::<Q>(), access::encoded(), all.clone())
     .disclose_field_by(source::identity::<Q>(), access::encoded(), all.clone())
@@ -137,7 +133,14 @@ impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection
         for child in row.many(children())?.iter() {
             values.push(Child {
                 identity: child.field(source::identity())?,
-                name: child.disclosed_field(source::name())?,
+                name: match child.disclosed_field(source::name())? {
+                    WorthQueryApplicationDisclosed::Disclosed(value) => {
+                        WorthQueryApplicationDisclosed::Disclosed(value.into())
+                    }
+                    WorthQueryApplicationDisclosed::Omitted(omission) => {
+                        WorthQueryApplicationDisclosed::Omitted(omission)
+                    }
+                },
             });
         }
         Ok(Self {
@@ -165,11 +168,11 @@ fn blocked_scope(input: ReadBlockedPage) -> String {
 worth_query_query_binding!(pub Binding for ReadPage,schema Catalog,identity "maintained-catalog.protected-page-binding.v1",input InputBinding,
     query Query,parameters source::ParametersBinding=>|_|ApplicationQueryParameterSet::new(),result ResultBinding,
     principal CatalogPrincipal,mapping ExternalMapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Directory,DirectoryFacts,DirectoryIdentity,String,ReadOnly,NoApplicationUnit,field DirectoryIdentity::reference(),value scope,limits results 16);
+    scope DirectoryIdentity, field DirectoryIdentity::at("DirectoryIdentity"),value scope,limits results 16);
 worth_query_query_binding!(pub BlockedBinding for ReadBlockedPage,schema Catalog,identity "maintained-catalog.blocked-page-binding.v1",input BlockedInputBinding,
     query BlockedQuery,parameters source::ParametersBinding=>|_|ApplicationQueryParameterSet::new(),result ResultBinding,
     principal CatalogPrincipal,mapping ExternalMapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Directory,DirectoryFacts,DirectoryIdentity,String,ReadOnly,NoApplicationUnit,field DirectoryIdentity::reference(),value blocked_scope,limits results 16);
+    scope DirectoryIdentity, field DirectoryIdentity::at("DirectoryIdentity"),value blocked_scope,limits results 16);
 
 #[cfg(test)]
 #[test]

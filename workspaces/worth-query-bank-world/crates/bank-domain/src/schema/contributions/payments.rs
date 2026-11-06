@@ -1,9 +1,5 @@
-use worth_query_decl::facade::{
-    application_schema::{
-        ApplicationOperationDefinition, ApplicationOperationRef,
-        ApplicationSchemaDeclarationBuilder,
-    },
-    worth_query_application_contribution,
+use worth_query_decl::facade::application_schema::{
+    ApplicationOperationDefinition, ApplicationOperationRef, ApplicationSchemaDeclarationBuilder,
 };
 
 use crate::authorization::{
@@ -13,16 +9,13 @@ use crate::authorization::{
 
 use super::super::{
     decision_read_manifest::install_payment_decision_reads,
-    entities::*,
-    fields::*,
-    governance::{AccountActivityEffect, DistinctApproverPolicy, UsdCurrency},
+    governance::{AccountActivityEffect, DistinctApproverPolicy},
     install_approved_business_payment_authority, install_approved_payment_assessment,
     install_payment_approval_grant_minting,
     operations::*,
     posting_integrity::posting_integrity_invariant,
     precondition_manifest::install_payment_preconditions,
     program_manifest::{install_money_programs, install_payment_program},
-    relations::*,
     ApprovedBusinessPaymentAdvanceBinding, ApprovedBusinessPaymentAdvanceOperation,
     ApprovedBusinessPaymentApprovalBinding, ApprovedBusinessPaymentApprovalOperation,
     ApprovedBusinessPaymentAuthoringBinding, ApprovedBusinessPaymentAuthoringOperation,
@@ -30,11 +23,30 @@ use super::super::{
     ApprovedPaymentSettlementEffect, BankSchema,
 };
 
-worth_query_application_contribution! {
-    pub contribution BankPayments in BankSchema {
-        identity: "worth.bank.payments.v1",
-        corrections: [super::super::ReverseSentMoney, super::super::ReverseApprovedPayment],
-        members: |schema| {
+use worth_query_decl::facade::application_schema::{fragment::*, *};
+pub struct BankPayments;
+impl ApplicationSchemaContribution<BankSchema> for BankPayments {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("worth.bank.payments.v1");
+    type Members = (
+        crate::schema::PaymentRecords,
+        Contracts,
+        super::super::ReverseSentMoney,
+        super::super::ReverseApprovedPayment,
+    );
+}
+impl BankPayments {
+    pub const fn reference() -> ApplicationSchemaContributionRef<BankSchema, Self> {
+        ApplicationSchemaContributionRef::from_contribution()
+    }
+}
+pub struct Contracts;
+impl Registration<BankSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<BankSchema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok({
             let schema = install_payment_members(schema)
                 .ability(ViewPayment::reference())
                 .ability(SendPersonalFunds::reference())
@@ -44,9 +56,13 @@ worth_query_application_contribution! {
                     ApplyOpeningFundingOperation::reference(),
                 ))
                 .application_mutation_binding::<ApplyOpeningFundingMutationBinding>()
-                .operation(without_external_effect_or_aftermath(DepositOperation::reference()))
+                .operation(without_external_effect_or_aftermath(
+                    DepositOperation::reference(),
+                ))
                 .application_mutation_binding::<DepositMutationBinding>()
-                .operation(without_external_effect_or_aftermath(WithdrawOperation::reference()))
+                .operation(without_external_effect_or_aftermath(
+                    WithdrawOperation::reference(),
+                ))
                 .application_mutation_binding::<WithdrawMutationBinding>()
                 .operation(without_external_effect_or_aftermath(
                     InitiateBusinessPaymentOperation::reference(),
@@ -83,7 +99,6 @@ worth_query_application_contribution! {
             let schema = install_payment_decision_reads(schema)
                 .invariant(posting_integrity_invariant())
                 .policy(DistinctApproverPolicy::reference())
-                .unit(UsdCurrency::reference())
                 .effect(AccountActivityEffect::reference())
                 .effect(ApprovedPaymentSettlementEffect::reference())
                 .application_query(crate::queries::payment_detail_definition())
@@ -95,7 +110,7 @@ worth_query_application_contribution! {
                 .application_query(crate::queries::pending_payments_definition())
                 .application_query_binding::<crate::queries::PendingPaymentsQueryBinding>();
             install_payment_operation_abilities(install_payment_ability_policies(schema))
-        }
+        })
     }
 }
 
@@ -103,78 +118,6 @@ fn install_payment_members(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     schema
-        .entity(PaymentIntent::reference())
-        .entity(Approval::reference())
-        .entity(JournalEntry::reference())
-        .entity(Posting::reference())
-        .aspect(PaymentIntent::reference(), PaymentIdentity::reference())
-        .aspect(Posting::reference(), PostingValue::reference())
-        .aspect(Posting::reference(), PostingIdentity::reference())
-        .aspect(JournalEntry::reference(), JournalIdentity::reference())
-        .aspect(JournalEntry::reference(), JournalState::reference())
-        .aspect(PaymentIntent::reference(), PaymentState::reference())
-        .aspect(PaymentIntent::reference(), PaymentValue::reference())
-        .field(
-            PaymentIntent::reference(),
-            PaymentIdentityField::reference(),
-        )
-        .field(Posting::reference(), PostingAmount::reference())
-        .field(Posting::reference(), PostingAccountSequence::reference())
-        .field(Posting::reference(), PostingIdentityField::reference())
-        .field(Posting::reference(), Purpose::reference())
-        .field(JournalEntry::reference(), JournalIdentityField::reference())
-        .field(
-            JournalEntry::reference(),
-            JournalInstitutionContext::reference(),
-        )
-        .field(JournalEntry::reference(), JournalPurpose::reference())
-        .field(PaymentIntent::reference(), PaymentStatusField::reference())
-        .field(PaymentIntent::reference(), PaymentAmount::reference())
-        .relation(
-            PaymentSource::reference(),
-            PaymentIntent::reference(),
-            Account::reference(),
-        )
-        .relation(
-            PaymentDestination::reference(),
-            PaymentIntent::reference(),
-            Account::reference(),
-        )
-        .relation(
-            PaymentBusiness::reference(),
-            PaymentIntent::reference(),
-            Business::reference(),
-        )
-        .relation(
-            PaymentInitiator::reference(),
-            Principal::reference(),
-            PaymentIntent::reference(),
-        )
-        .relation(
-            PaymentApproval::reference(),
-            PaymentIntent::reference(),
-            Approval::reference(),
-        )
-        .relation(
-            ApprovalPrincipal::reference(),
-            Approval::reference(),
-            Principal::reference(),
-        )
-        .relation(
-            JournalPosting::reference(),
-            JournalEntry::reference(),
-            Posting::reference(),
-        )
-        .relation(
-            JournalReversal::reference(),
-            JournalEntry::reference(),
-            JournalEntry::reference(),
-        )
-        .relation(
-            PostingAccount::reference(),
-            Posting::reference(),
-            Account::reference(),
-        )
 }
 
 fn install_payment_operation_abilities(

@@ -3,32 +3,27 @@ use super::CandidateWriter;
 use crate::domain_computation::primary_graph::{
     ContentWriteDenial, WorthQueryApplicationEffectEntity,
 };
-use worth_foundational::facade::ContentRefId;
+
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,
-    application_schema::{
-        ApplicationContentBinding, ApplicationContentFieldRef, ContentRefApplicationValueBinding,
-    },
+    application_schema::{ApplicationContentBinding, ApplicationContentFieldRef},
 };
-use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationSchema, DeclaredApplicationFieldValue, OperationCreates,
-    OperationWrites, WritableCapability,
-};
+use worth_query_installation::facade::{ApplicationSchema, OperationCreates};
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> CandidateWriter<'_, S, B> {
-    pub fn initialize_content<E, A, F, W, Q, U, C>(
+    pub fn initialize_content<E, F, C>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<S, E>,
-        field: ApplicationContentFieldRef<S, E, A, F, W, Q, U, C>,
+        field: ApplicationContentFieldRef<F, C>,
         value: &C::Value,
     ) -> Result<(), ContentWriteDenial>
     where
         E: OperationCreates<B::Operation>,
-        F: OperationWrites<B::Operation>
-            + DeclaredApplicationFieldValue<
-                Value = ContentRefId,
-                Binding = ContentRefApplicationValueBinding,
-            >,
-        U: ApplicationFieldUnit,
+        F: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = E,
+        >,
+
+        F::Binding:
+            worth_query_declaration::facade::application_schema::ApplicationContentReferenceBinding,
         C: ApplicationContentBinding,
     {
         self.candidate.initialize_content(
@@ -39,20 +34,19 @@ impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> CandidateWriter<'_,
             value,
         )
     }
-    pub fn write_content<E, A, F, W, Q, U, C>(
+    pub fn write_content<E, F, C>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<S, E>,
-        field: ApplicationContentFieldRef<S, E, A, F, W, Q, U, C>,
+        field: ApplicationContentFieldRef<F, C>,
         value: &C::Value,
     ) -> Result<(), ContentWriteDenial>
     where
-        F: OperationWrites<B::Operation>
-            + DeclaredApplicationFieldValue<
-                Value = ContentRefId,
-                Binding = ContentRefApplicationValueBinding,
-            >,
-        W: WritableCapability,
-        U: ApplicationFieldUnit,
+        F: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = E,
+        >,
+
+        F::Binding:
+            worth_query_declaration::facade::application_schema::ApplicationContentReferenceBinding,
         C: ApplicationContentBinding,
     {
         self.candidate

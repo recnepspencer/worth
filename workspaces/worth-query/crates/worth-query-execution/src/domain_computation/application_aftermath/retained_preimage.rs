@@ -5,10 +5,7 @@
 //! carrier — it must never live-re-read the graph and call the result original.
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, CanonicalFieldPath, FieldKey};
-use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, DeclaredApplicationFieldValue,
-    InstalledPreImageLocus,
-};
+use worth_query_installation::facade::InstalledPreImageLocus;
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::transactions::RecordRef;
 
@@ -165,14 +162,12 @@ impl WorthQueryRetainedPreImage {
         self.fields.iter().find(|field| field.locus() == locus)
     }
 
-    pub fn field_for<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn field_for<
+        F: worth_query_declaration::facade::application_schema::fragment::RecordSelection,
+    >(
         &self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Option<&WorthQueryRetainedPreImageField>
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-    {
+        field: F,
+    ) -> Option<&WorthQueryRetainedPreImageField> {
         self.fields.iter().find(|retained| {
             retained.locus().entity() == field.entity()
                 && retained.locus().aspect() == field.aspect()

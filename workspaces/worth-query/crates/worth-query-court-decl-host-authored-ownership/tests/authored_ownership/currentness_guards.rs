@@ -6,7 +6,7 @@
 //! which a fraction of launches is refused before `main`.
 use super::*;
 use coupled::producer::{Binding as Preserve, Operation as PreserveOp};
-use sheet_boundary::{split_walk, Number, Occurrence, Position};
+use sheet_boundary::{split_walk, Number, Occurrence};
 pub type GuardModel = Model<70, heterogeneous::Absent, Guards>;
 /// Source parameter values; each edit addresses exactly one owned structure.
 pub const JOIN_ORBIT: u64 = 1;
@@ -22,26 +22,39 @@ pub fn declare<S: Scenario>(
         ApplicationOperationRef::<S, producer::Operation, query::Input>::from_declaration();
     let preserve = PreserveOp::reference();
     let schema = schema
-        .entity(Occurrence::reference())
-        .aspect(Occurrence::reference(), Position::reference())
-        .unique_field(Occurrence::reference(), Number::reference())
-        .operation_create(initial, Occurrence::reference())
-        .operation_write(initial, Number::reference())
-        .operation_read_entity(preserve, Occurrence::reference())
-        .operation_read_field(preserve, Number::reference())
-        .operation_delete(preserve, Occurrence::reference());
+        .operation_create(initial, Occurrence::<S::Boundary>::reference())
+        .operation_write(initial, Number::<S::Boundary>::at("Number"))
+        .operation_read_entity(preserve, Occurrence::<S::Boundary>::reference())
+        .operation_read_field(preserve, Number::<S::Boundary>::at("Number"))
+        .operation_delete(preserve, Occurrence::<S::Boundary>::reference());
     split_walk::declare(foreign_aggregate::declare(schema))
 }
-pub struct Decision<S> {
+pub struct Decision<S: Scenario> {
     orbit: foreign_aggregate::Decision<S>,
     fork: split_walk::Decision<S>,
 }
 pub struct Guards;
 impl sheet_boundary::Profile for Guards {
+    type Relations = (foreign_aggregate::Next,);
+    const UNIQUE: bool = true;
+    fn declaration<S: Scenario<Boundary = Self>>(
+    ) -> Result<ApplicationSchemaDeclaration<S>, ApplicationSchemaDeclarationDenial> {
+        if S::MODE == 43 {
+            ApplicationSchemaDeclarationBuilder::from_fragment(schema::OwnershipRoot::<S, true>(
+                PhantomData,
+            ))?
+            .build()
+        } else {
+            ApplicationSchemaDeclarationBuilder::from_fragment(schema::OwnershipRoot::<S, false>(
+                PhantomData,
+            ))?
+            .build()
+        }
+    }
     type Decision<S: Scenario> = Decision<S>;
     fn initial<S: Scenario>(
         writer: &mut CandidateWriter<'_, S, producer::Binding<S>>,
-        source: &WorthQueryApplicationEffectEntity<S, Node>,
+        source: &WorthQueryApplicationEffectEntity<S, Node<S>>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         foreign_aggregate::initial(writer, source)?;
         split_walk::initial(writer, source)
@@ -49,8 +62,8 @@ impl sheet_boundary::Profile for Guards {
     fn read<S: Scenario>(
         reader: &mut DecisionReader<'_, '_, '_, S, Preserve<S>>,
     ) -> Result<Option<Decision<S>>, HandlerExecutionDenial> {
-        let source = reader.resolve_entity(Id::reference(), 10)?;
-        let value = reader.field(&source, Value::reference())?;
+        let source = reader.resolve_entity(schema::id::<S>(), 10)?;
+        let value = reader.field(&source, schema::value::<S>())?;
         Ok(Some(Decision {
             orbit: foreign_aggregate::read(reader, value)?,
             fork: split_walk::read(reader, value)?,
@@ -59,7 +72,7 @@ impl sheet_boundary::Profile for Guards {
     fn trim<S: Scenario>(
         writer: &mut CandidateWriter<'_, S, Preserve<S>>,
         decision: Option<Decision<S>>,
-        _: &WorthQueryApplicationEffectEntity<S, Node>,
+        _: &WorthQueryApplicationEffectEntity<S, Node<S>>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         let decision = decision.expect("currentness guard decision");
         foreign_aggregate::trim(writer, decision.orbit)?;

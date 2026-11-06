@@ -35,33 +35,13 @@ impl<S: TopologySchemaBinding> ApplicationQueryMarkerIdentity<S> for OutputQuery
     const QUERY_TYPE_NAME: &'static str = "quote-total.query";
     const SCOPE_TYPE_NAME: &'static str = "Body";
 }
-fn key<S: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    OutputQuery,
-    KeySlot,
-    S,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", BodyKey::reference())
+fn key<S: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<OutputQuery, KeySlot, S, BodyKey> {
+    ApplicationQueryResultFieldRef::new("key", BodyKey::at("BodyKey"))
 }
-fn total<S: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    OutputQuery,
-    TotalSlot,
-    S,
-    Body,
-    QuoteOutputFacts,
-    CountedTotal,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("total", CountedTotal::reference())
+fn total<S: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<OutputQuery, TotalSlot, S, CountedTotal> {
+    ApplicationQueryResultFieldRef::new("total", CountedTotal::at("CountedTotal"))
 }
 pub(super) fn definition<S: TopologySchemaBinding>(
 ) -> ApplicationQueryDefinition<S, OutputQuery, Parameters, OutputTotal, Body> {
@@ -96,7 +76,7 @@ impl<S: TopologySchemaBinding> WorthQueryApplicationProjection<S, OutputQuery> f
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
             key: row.field(key())?,
-            total: row.field(total())?,
+            total: row.field(total())?.into(),
         })
     }
 }
@@ -107,7 +87,7 @@ impl<S: TopologySchemaBinding> ApplicationQueryBinding<S> for OutputReadBinding<
     type Query = OutputQuery;
     type ParameterBinding = ParameterValue;
     type ResultBinding = ResultValue;
-    type ScopeBinding = PlanarReadScope<S>;
+    type ScopeBinding = PlanarReadScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -115,17 +95,8 @@ impl<S: TopologySchemaBinding> ApplicationQueryBinding<S> for OutputReadBinding<
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "quote-total.read";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        S,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         S,
@@ -143,7 +114,7 @@ impl<S: TopologySchemaBinding> ApplicationQueryIntent<S> for OutputRead {
     fn parameters(&self) -> ApplicationQueryParameterSet<OutputQuery> {
         ApplicationQueryParameterSet::new()
     }
-    fn into_scope(self) -> PlanarReadScope<S> {
-        PlanarReadScope::new(BodyKey::reference(), self.key)
+    fn into_scope(self) -> PlanarReadScope {
+        PlanarReadScope::new(BodyKey::at("BodyKey"), self.key)
     }
 }

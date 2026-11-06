@@ -18,6 +18,9 @@ pub(in crate::http::server) fn commit_denial(
 ) -> BankHttpDenial {
     use WorthQueryApplicationCommitDenialKind as Denial;
     match kind {
+        Denial::Content(cause) => super::super::relational_execution_denial::content(cause.into()),
+        Denial::ContentInconsistency => operator_denial(),
+        Denial::DomainValueRejected => BankHttpDenial::new(BankHttpDenialKind::MalformedRequest, BankHttpNextAction::CorrectRequest),
         Denial::StorageUnavailable(failure) => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::StorageUnavailable(failure)),
         Denial::SignedCreationAuthentication {
             kind: Authentication::Cancelled,
@@ -153,7 +156,7 @@ pub(in crate::http::server) fn execution_resource(denial: Resource) -> BankHttpD
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,
         ),
-        Resource::ForeignAdvancementPhase => (
+        Resource::ForeignAdvancementPhase | Resource::ForeignAdmissionClock => (
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,
         ),

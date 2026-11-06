@@ -1,6 +1,5 @@
 //! Actual mutation walk sites stay local when another occurrence grows.
 
-use crate::domain_computation::primary_graph::application_output_demand::registry::tests as registry_tests;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::key;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::occurrence;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::record;
@@ -106,11 +105,11 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
                     state.follow_newest_for_test(&dependent, &old);
                 }
                 2 => {
-                    assert!(newest_ready(&(*state.records_for_test()), &old));
+                    assert!(newest_ready(state.records_for_test(), &old));
                 }
                 3 => {
                     assert!(held(
-                        &(*state.records_for_test()),
+                        state.records_for_test(),
                         &newest,
                         &(*state.records_for_test())[&newest]
                     ));

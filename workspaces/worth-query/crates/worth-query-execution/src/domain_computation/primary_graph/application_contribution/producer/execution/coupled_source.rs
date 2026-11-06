@@ -187,3 +187,5 @@ where
         source: Box::new(source),
     }))
 }
+
+use worth_query_declaration::facade::application_schema::fragment::RecordSelection;

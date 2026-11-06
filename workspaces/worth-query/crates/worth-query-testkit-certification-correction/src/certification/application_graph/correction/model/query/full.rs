@@ -26,11 +26,8 @@ macro_rules! result_field {
     ($name:ident, $Slot:ident, $Field:ty, $Value:ty, $Write:ty, $Equality:ty, $id:literal) => {
         pub struct $Slot;
         worth_query_portable_type!($Slot => $id);
-        fn $name() -> ApplicationQueryResultFieldRef<
-            FullQuery, $Slot, NumericSchema, Number, NumberFacts,
-            $Field, $Value, $Write, $Equality, NoApplicationUnit,
-        > {
-            ApplicationQueryResultFieldRef::new(stringify!($name), <$Field>::reference())
+        fn $name() -> ApplicationQueryResultFieldRef<FullQuery, $Slot, NumericSchema, $Field> {
+            ApplicationQueryResultFieldRef::new(stringify!($name), <$Field>::at(stringify!($Field)))
         }
     };
 }
@@ -124,7 +121,7 @@ impl WorthQueryApplicationProjection<NumericSchema, FullQuery> for Row {
         Ok(Self {
             entity_id: row.entity_id(),
             key: row.field(key())?,
-            primary: row.field(primary())?,
+            primary: row.field(primary())?.0,
             secondary: row.field(secondary())?,
             read_enabled: row.field(read_enabled())?,
             ceiling: row.field(ceiling())?,
@@ -138,15 +135,7 @@ pub struct Read {
     pub key: String,
 }
 worth_query_structured_value_binding!(pub InputBinding for Read { identity: "numeric-full-read.input.v1" });
-type Scope = ApplicationQueryFieldScope<
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Key,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+type Scope = ApplicationQueryFieldScope<Key>;
 pub struct Binding;
 impl ApplicationQueryBinding<NumericSchema> for Binding {
     type Input = Read;
@@ -162,17 +151,8 @@ impl ApplicationQueryBinding<NumericSchema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "numeric-full-read.binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        NumericSchema,
-        Number,
-        NumberFacts,
-        Key,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        Key::reference()
+    fn scope_field() -> Key {
+        Key::at("Key")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         NumericSchema,
@@ -191,6 +171,6 @@ impl ApplicationQueryIntent<NumericSchema> for Read {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> Scope {
-        Scope::new(Key::reference(), self.key)
+        Scope::new(Key::at("Key"), self.key)
     }
 }

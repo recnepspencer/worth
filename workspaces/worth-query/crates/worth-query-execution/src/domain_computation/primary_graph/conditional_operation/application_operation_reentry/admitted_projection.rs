@@ -1,8 +1,6 @@
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationReadableScalarValueBinding, ApplicationSchema,
-    DeclaredApplicationFieldValue, OperationReads, OperationWrites,
-    WorthQueryInstalledApplicationOperation, WorthQueryTemporalIntentCandidate, WritableCapability,
-    WritePosture,
+    ApplicationReadableScalarValueBinding, ApplicationSchema,
+    WorthQueryInstalledApplicationOperation, WorthQueryTemporalIntentCandidate,
 };
 
 use super::isolate_invoker;
@@ -34,30 +32,21 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) struct W
 }
 
 #[rustfmt::skip]
-impl<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityAspect, IdentityField, IdentityValue, IdentityWrite, IdentityUnit, RevisionAspect, RevisionField, RevisionValue, RevisionWrite, RevisionEquality, RevisionUnit, LifecycleAspect, LifecycleField, LifecycleValue, LifecycleWrite, LifecycleEquality, LifecycleUnit, Authorization>
-    WorthQueryTemporalOperationExecution<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityAspect, IdentityField, IdentityValue, IdentityWrite, IdentityUnit, RevisionAspect, RevisionField, RevisionValue, RevisionWrite, RevisionEquality, RevisionUnit, LifecycleAspect, LifecycleField, LifecycleValue, LifecycleWrite, LifecycleEquality, LifecycleUnit, Authorization>
+impl<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization>
+    WorthQueryTemporalOperationExecution<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization>
 where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
-    IdentityField: OperationReads<Operation>,
-    IdentityField: DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Entity = IntentEntity, Value = IdentityValue>,
     IdentityField::Binding: ApplicationReadableScalarValueBinding<Value = IdentityValue>,
     IdentityValue: Clone,
-    IdentityWrite: WritePosture,
-    IdentityUnit: ApplicationFieldUnit,
-    RevisionField: OperationReads<Operation> + OperationWrites<Operation>,
-    RevisionField: DeclaredApplicationFieldValue<Value = RevisionValue>,
+    RevisionField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Entity = IntentEntity, Value = RevisionValue>,
     RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue> + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
     RevisionValue: Clone,
-    RevisionWrite: WritableCapability,
-    RevisionUnit: ApplicationFieldUnit,
-    LifecycleField: OperationReads<Operation> + OperationWrites<Operation>,
-    LifecycleField: DeclaredApplicationFieldValue<Value = LifecycleValue>,
+    LifecycleField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Entity = IntentEntity, Value = LifecycleValue>,
     LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
     LifecycleValue: Clone,
-    LifecycleWrite: WritableCapability,
-    LifecycleUnit: ApplicationFieldUnit,
     Authorization: WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
 {
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn admit_current_projection<Principal, PrincipalIdentity, Clock>(

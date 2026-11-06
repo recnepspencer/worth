@@ -5,7 +5,7 @@ use worth_query_declaration::facade::{
         ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeBinding,
         ApplicationQueryScopeResolution,
     },
-    application_schema::{ApplicationScalarValueBinding, DeclaredApplicationFieldValue},
+    application_schema::{fragment::RecordSelection, ApplicationScalarValueBinding},
 };
 pub(super) type Family<S, C> = <<C as WorthQueryApplicationRequiredOutputConnection<S>>::Demand as WorthQueryApplicationOutputDemand<S>>::OutputFamily;
 pub(super) type Source<S, C> = <Family<S, C> as WorthQueryProducerOutputFamily<S>>::Source;
@@ -43,9 +43,8 @@ where
     let intent = demand.source_intent();
     let parameters = intent.parameters();
     let (field, value) = intent.into_scope().into_field_parts(principal);
-    let value =
-        <Field<Schema, Connection> as DeclaredApplicationFieldValue>::Binding::encode(&value)
-            .map_err(|_| denied())?;
+    let value = <Field<Schema, Connection> as RecordSelection>::Binding::encode(&value)
+        .map_err(|_| denied())?;
     Ok(CoupledSourceArguments {
         parameters: Box::new(parameters),
         entity: field.entity(),

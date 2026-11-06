@@ -213,7 +213,11 @@ mod tests {
 
     #[test]
     fn bank_payments_contribution_owns_the_workflow_control_binding() {
-        let declaration = BankSchema::declaration().expect("the Bank schema declares");
+        let declaration =
+            worth_query_host::facade::declaration::application_schema::fragment::declare(
+                BankSchema,
+            )
+            .expect("the Bank schema declares");
         let erased = declaration.erased();
         let payments = declaration
             .contributions()

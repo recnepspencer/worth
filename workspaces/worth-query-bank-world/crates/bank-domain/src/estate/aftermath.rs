@@ -61,12 +61,12 @@ pub fn declared_aftermath_for(
         EstateCapabilityOperation::RevokeCapability => Some(runtime_alone_inverse(
             "restore-revoked-capability",
             "estate-revoke-inverse",
-            DeclaredPreImageLocus::from_field(CapabilityGrantStatusField::reference()),
+            DeclaredPreImageLocus::from_field(CapabilityGrantStatusField::at("CapabilityGrantStatusField")).expect("owned record selection is valid"),
         )),
         EstateCapabilityOperation::ApproveEmergencyAccess => Some(runtime_alone_inverse(
             "revoke-emergency-access",
             "estate-emergency-inverse",
-            DeclaredPreImageLocus::from_field(EmergencyAccessStatusField::reference()),
+            DeclaredPreImageLocus::from_field(EmergencyAccessStatusField::at("EmergencyAccessStatusField")).expect("owned record selection is valid"),
         )),
         EstateCapabilityOperation::DisburseEstate => {
             Some(DeclaredApplicationAftermathContract::runtime_alone(

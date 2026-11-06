@@ -19,13 +19,13 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
                 .chain(&input.descendants)
                 .enumerate()
             {
-                let entity = reader.resolve_entity(Id::reference(), *id)?;
-                reader.entity(&entity, Node::reference())?;
+                let entity = reader.resolve_entity(schema::id::<S>(), *id)?;
+                reader.entity(&entity, schema::node::<S>())?;
                 // The authored inverse demands only its distinguished source's
                 // pre-image. Native owns all derived publication payloads.
                 if index <= input.co_anchors.len() {
-                    reader.field(&entity, Id::reference())?;
-                    reader.field(&entity, Value::reference())?;
+                    reader.field(&entity, schema::id::<S>())?;
+                    reader.field(&entity, schema::value::<S>())?;
                 }
                 if matches!(S::MODE, 5 | 13 | 19 | 20) {
                     for edge in reader
@@ -34,7 +34,7 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
                     {
                         if matches!(S::MODE, 19 | 20) {
                             let from = reader
-                                .field(edge.from(), Id::reference())?
+                                .field(edge.from(), schema::id::<S>())?
                                 .expect("business peer has its logical key");
                             if !input.descendants.contains(&from) {
                                 continue;
@@ -80,10 +80,10 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
                 targets.push(reader.mutation_target(&entity)?);
             }
             let body = if heterogeneous::active::<S>() {
-                let body =
-                    reader.resolve_entity(heterogeneous::BodyKey::reference(), 10000 + input.id)?;
+                let body = reader
+                    .resolve_entity(heterogeneous::BodyKey::at("BodyKey"), 10000 + input.id)?;
                 reader.entity(&body, heterogeneous::Body::reference())?;
-                reader.field(&body, heterogeneous::BodyKey::reference())?;
+                reader.field(&body, heterogeneous::BodyKey::at("BodyKey"))?;
                 Some(reader.mutation_target(&body)?)
             } else {
                 None
@@ -131,7 +131,7 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
             }
             for (index, target) in targets.nodes.into_iter().enumerate() {
                 let entity = writer.projected_entity(&target)?;
-                writer.delete_entity(Node::reference(), &entity)?;
+                writer.delete_entity(schema::node::<S>(), &entity)?;
                 if index > 0 && index <= input.co_anchors.len() {
                     match index {
                         1 => writer.retire_output::<CoRetired<S, 0>>(&entity)?,
@@ -171,13 +171,13 @@ impl<S: Scenario> OperationHandler<S, PlainBinding<S>> for Handler {
                 .chain(&input.descendants)
                 .enumerate()
             {
-                let entity = reader.resolve_entity(Id::reference(), *id)?;
-                reader.entity(&entity, Node::reference())?;
+                let entity = reader.resolve_entity(schema::id::<S>(), *id)?;
+                reader.entity(&entity, schema::node::<S>())?;
                 // The authored inverse demands only its distinguished source's
                 // pre-image. Native owns all derived publication payloads.
                 if index == 0 {
-                    reader.field(&entity, Id::reference())?;
-                    reader.field(&entity, Value::reference())?;
+                    reader.field(&entity, schema::id::<S>())?;
+                    reader.field(&entity, schema::value::<S>())?;
                 }
                 targets.push(reader.mutation_target(&entity)?);
             }
@@ -200,14 +200,14 @@ impl<S: Scenario> OperationHandler<S, PlainBinding<S>> for Handler {
                 if index == 0 && input.replacement {
                     let created = writer.create_entity_in_context(
                         &entity,
-                        Node::reference(),
+                        schema::node::<S>(),
                         WorthQueryApplicationEntityKey::new("mixed-replacement").unwrap(),
                     )?;
-                    writer.initialize_field(&created, Id::reference(), 999)?;
-                    writer.initialize_field(&created, Value::reference(), 0)?;
+                    writer.initialize_field(&created, schema::id::<S>(), 999)?;
+                    writer.initialize_field(&created, schema::value::<S>(), 0)?;
                     writer.create_output::<Extra<S>>(&created)?;
                 }
-                writer.delete_entity(Node::reference(), &entity)?;
+                writer.delete_entity(schema::node::<S>(), &entity)?;
                 match index {
                     0 => writer.retire_output::<Retired<S>>(&entity)?,
                     1 => writer.retire_output::<Descendant<S, 0>>(&entity)?,

@@ -35,7 +35,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
             selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -50,7 +50,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
             selected
                 .resolve_entity(
                     &phase,
-                    PrincipalIdentityField::reference(),
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
                     1,
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -74,7 +74,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
         .relation(AccountBlocked::reference().name())
         .unwrap()
         .kind_for_test());
-    let label_ref = AccountLabel::reference();
+    let label_ref = AccountLabel::at("AccountLabel");
     let label = graph
         .layout_for_test()
         .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())

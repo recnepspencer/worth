@@ -108,7 +108,7 @@ pub fn derive<S: Scenario>(
 }
 pub fn read_retirement<S: Scenario>(
     reader: &mut DecisionReader<'_, '_, '_, S, RetireBinding<S>>,
-    stage: &WorthQueryInvariantEntityIdentity<S, Node>,
+    stage: &WorthQueryInvariantEntityIdentity<S, Node<S>>,
     removed: &mut Vec<(Target<S>, Target<S>)>,
     replacement: &mut Vec<(Target<S>, Target<S>)>,
     case: u8,
@@ -150,13 +150,13 @@ pub fn read_restoration<S: Scenario>(
     input: &Restore,
     reader: &mut DecisionReader<'_, '_, '_, S, RestoreBinding<S>>,
 ) -> Result<Restoration<S>, HandlerExecutionDenial> {
-    let scope = reader.resolve_entity(Id::reference(), input.scope)?;
+    let scope = reader.resolve_entity(schema::id::<S>(), input.scope)?;
     let scope = reader.mutation_target(&scope)?;
     let mut relations = Vec::new();
     for material in &input.relation_material {
         let remove = if let Some(Ends { from, to }) = material.after {
-            let from = reader.resolve_historical_entity(Node::reference(), historical(from))?;
-            let to = reader.resolve_historical_entity(Node::reference(), historical(to))?;
+            let from = reader.resolve_historical_entity(schema::node::<S>(), historical(from))?;
+            let to = reader.resolve_historical_entity(schema::node::<S>(), historical(to))?;
             reader
                 .relations_from(PreviousStage::reference(), &from)
                 .map_err(HandlerExecutionDenial::new)?;
@@ -168,7 +168,7 @@ pub fn read_restoration<S: Scenario>(
             if Some(id) == input.retired_entity {
                 return Ok(None);
             }
-            let identity = reader.resolve_historical_entity(Node::reference(), historical(id))?;
+            let identity = reader.resolve_historical_entity(schema::node::<S>(), historical(id))?;
             reader.mutation_target(&identity).map(Some)
         };
         let restore = match material.before {
@@ -181,7 +181,7 @@ pub fn read_restoration<S: Scenario>(
 }
 pub fn write_restoration<S: Scenario>(
     relations: Vec<RelationTargets<S>>,
-    created: &WorthQueryApplicationEffectEntity<S, Node>,
+    created: &WorthQueryApplicationEffectEntity<S, Node<S>>,
     writer: &mut CandidateWriter<'_, S, RestoreBinding<S>>,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     for (index, relation) in relations.into_iter().enumerate() {

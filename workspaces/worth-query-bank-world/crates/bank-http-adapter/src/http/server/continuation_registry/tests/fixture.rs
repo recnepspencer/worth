@@ -23,8 +23,7 @@ pub(super) fn scope(
     use worth_query_host::facade::admission::authenticated_principal::*;
     WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(30)),
-        WorthQueryCancellationSource::new().token(),
-    )
+        WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 pub(super) fn limits() -> WorthQueryCorrectionHistoryLimits {
     WorthQueryCorrectionHistoryLimits::new(

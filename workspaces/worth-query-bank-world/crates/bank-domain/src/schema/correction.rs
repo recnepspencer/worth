@@ -21,14 +21,16 @@ pub struct ReverseSentMoney;
 
 fn journal_field() -> ApplicationCorrectionOutputField<BankSchema> {
     ApplicationCorrectionOutput::<SendMoneyMutationBinding, SendMoneyJournal>::field(
-        JournalIdentityField::reference(),
+        JournalIdentityField::at("JournalIdentityField"),
     )
+    .expect("owned record selection is valid")
 }
 
 fn institution_field() -> ApplicationCorrectionOutputField<BankSchema> {
     ApplicationCorrectionOutput::<SendMoneyMutationBinding, SendMoneyJournal>::field(
-        JournalInstitutionContext::reference(),
+        JournalInstitutionContext::at("JournalInstitutionContext"),
     )
+    .expect("owned record selection is valid")
 }
 
 impl ApplicationCorrectionBinding<BankSchema> for ReverseSentMoney {

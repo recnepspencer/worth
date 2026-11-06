@@ -108,7 +108,9 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
 }
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
 pub fn install() -> Host {
-    let declaration = Schema::declaration().unwrap();
+    let declaration =
+        <Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .unwrap();
     let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
         .with_schema(&declaration)
         .validated_program()
@@ -136,7 +138,7 @@ pub fn install() -> Host {
                     Registry::reference(),
                     WorthQueryApplicationEntityKey::new("models").unwrap(),
                 )
-                .field(RegistryName::reference(), "models".to_owned()),
+                .field(RegistryName::at("RegistryName"), "models".to_owned()),
             )?;
             Ok(())
         },

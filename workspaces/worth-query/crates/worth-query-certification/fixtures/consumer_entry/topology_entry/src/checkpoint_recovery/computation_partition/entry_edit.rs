@@ -8,7 +8,7 @@ use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
     worth_query_operation_creates, worth_query_operation_deletes, worth_query_operation_links,
-    worth_query_operation_reads, worth_query_operation_unlinks, worth_query_operation_writes,
+    worth_query_operation_reads, worth_query_operation_unlinks,
     worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
@@ -143,13 +143,8 @@ worth_query_structured_value_binding!(pub(super) EntryEditInputBinding for Entry
     identity: "worth.query.certification.entry-edit-input.v1"
 });
 worth_query_operation!(pub(super) EditEntry for Schema: TopologySchemaBinding, input EntryEditInputBinding);
-worth_query_operation_reads!(EditEntry => [
-    Body, BodyKey, EntrySet, EntrySetKey, EntrySetWeight, EntrySetMember, SetEntry, EntryNumber,
-    EntryRegion, EntryValueBits, EntryWork, EntryFault,
-]);
-worth_query_operation_writes!(EditEntry => [
-    EntrySetWeight, EntryNumber, EntryRegion, EntryValueBits, EntryWork, EntryFault,
-]);
+worth_query_operation_reads!(EditEntry =>[Body,EntrySet,EntrySetMember,SetEntry]);
+
 worth_query_operation_creates!(EditEntry => [SetEntry]);
 worth_query_operation_deletes!(EditEntry => [SetEntry]);
 worth_query_operation_links!(EditEntry => [EntrySetMember]);
@@ -164,8 +159,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for EntryE
         self
     }
 
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 
@@ -205,7 +200,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Denial = PlanarMutationDenial;
     type DenialBinding = PlanarMutationDenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -219,17 +214,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.entry-edit-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.entry-edit-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -255,7 +241,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryEditBinding<Sc
         reader: &mut DecisionReader<'_, '_, '_, Schema, EntryEditBinding<Schema>>,
     ) -> HandlerResult<EditTarget<Schema>, PlanarMutationDenial> {
         let decided = (|| {
-            reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
+            reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())?;
             // A write lowers to the replacement of a fact the attempt
             // observed, and one nothing read is refused at proposal binding,
             // so the edit reads the fact it writes.
@@ -267,17 +253,22 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryEditBinding<Sc
                 return membership::decide(input, fact, reader);
             }
             if fact == EntryFact::Weight {
-                let set = reader.resolve_entity(EntrySetKey::reference(), input.set.clone())?;
-                reader.field(&set, EntrySetWeight::reference())?;
+                let set =
+                    reader.resolve_entity(EntrySetKey::at("EntrySetKey"), input.set.clone())?;
+                reader.field(&set, EntrySetWeight::at("EntrySetWeight"))?;
                 return Ok(EditTarget::Set(reader.mutation_target(&set)?));
             }
-            let entry = reader.resolve_entity(EntryNumber::reference(), input.entry)?;
+            let entry = reader.resolve_entity(EntryNumber::at("EntryNumber"), input.entry)?;
             match fact {
-                EntryFact::Region => reader.field(&entry, EntryRegion::reference()).map(|_| ())?,
-                EntryFact::Value => reader
-                    .field(&entry, EntryValueBits::reference())
+                EntryFact::Region => reader
+                    .field(&entry, EntryRegion::at("EntryRegion"))
                     .map(|_| ())?,
-                _ => reader.field(&entry, EntryFault::reference()).map(|_| ())?,
+                EntryFact::Value => reader
+                    .field(&entry, EntryValueBits::at("EntryValueBits"))
+                    .map(|_| ())?,
+                _ => reader
+                    .field(&entry, EntryFault::at("EntryFault"))
+                    .map(|_| ())?,
             }
             Ok(EditTarget::Entry(reader.mutation_target(&entry)?))
         })();
@@ -294,19 +285,21 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryEditBinding<Sc
         writer: &mut CandidateWriter<'_, Schema, EntryEditBinding<Schema>>,
     ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
         let written = match target {
-            EditTarget::Set(set) => writer
-                .projected_entity(&set)
-                .and_then(|set| writer.write_field(&set, EntrySetWeight::reference(), input.value)),
+            EditTarget::Set(set) => writer.projected_entity(&set).and_then(|set| {
+                writer.write_field(&set, EntrySetWeight::at("EntrySetWeight"), input.value)
+            }),
             EditTarget::Entry(entry) => writer.projected_entity(&entry).and_then(|entry| {
                 match EntryFact::of_code(input.fact) {
                     EntryFact::Region => {
-                        writer.write_field(&entry, EntryRegion::reference(), input.value)
+                        writer.write_field(&entry, EntryRegion::at("EntryRegion"), input.value)
                     }
-                    EntryFact::Value => {
-                        writer.write_field(&entry, EntryValueBits::reference(), input.value)
-                    }
+                    EntryFact::Value => writer.write_field(
+                        &entry,
+                        EntryValueBits::at("EntryValueBits"),
+                        input.value,
+                    ),
                     EntryFact::Fault => {
-                        writer.write_field(&entry, EntryFault::reference(), input.value)
+                        writer.write_field(&entry, EntryFault::at("EntryFault"), input.value)
                     }
                     _ => unreachable!("an entry edit changes one of its facts"),
                 }

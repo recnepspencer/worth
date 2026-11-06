@@ -63,29 +63,8 @@ use crate::domain_computation::primary_graph::tests::fixture::capability::declar
 use crate::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityStatusField;
 use crate::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityWorkflowField;
 use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::ApproveCapabilityElevationOperation;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevation;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationApprover;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationClosedAt;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationFacts;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationGrant;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationIdentity;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationNotAfter;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationNotBefore;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationReason;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationRequester;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationResource;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationReview;
 use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationSlot;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationStatusField;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityReview;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityReviewFacts;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityReviewIdentity;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityReviewKindField;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityReviewResource;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityReviewReviewedAt;
 use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityReviewSlot;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityReviewStatusField;
-use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityReviewer;
 use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::CompleteCapabilityReviewOperation;
 use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::ElevatedCapabilityTouchInput;
 use crate::domain_computation::primary_graph::tests::fixture::capability::elevated::ElevatedCapabilityTouchOperation;
@@ -106,91 +85,6 @@ pub fn install(
     schema: ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema> {
     let schema = schema
-        .entity(CapabilityElevation::reference())
-        .aspect(
-            CapabilityElevation::reference(),
-            CapabilityElevationFacts::reference(),
-        )
-        .field(
-            CapabilityElevation::reference(),
-            CapabilityElevationIdentity::reference(),
-        )
-        .field(
-            CapabilityElevation::reference(),
-            CapabilityElevationReason::reference(),
-        )
-        .field(
-            CapabilityElevation::reference(),
-            CapabilityElevationStatusField::reference(),
-        )
-        .field(
-            CapabilityElevation::reference(),
-            CapabilityElevationNotBefore::reference(),
-        )
-        .field(
-            CapabilityElevation::reference(),
-            CapabilityElevationNotAfter::reference(),
-        )
-        .field(
-            CapabilityElevation::reference(),
-            CapabilityElevationClosedAt::reference(),
-        )
-        .entity(CapabilityReview::reference())
-        .aspect(
-            CapabilityReview::reference(),
-            CapabilityReviewFacts::reference(),
-        )
-        .field(
-            CapabilityReview::reference(),
-            CapabilityReviewIdentity::reference(),
-        )
-        .field(
-            CapabilityReview::reference(),
-            CapabilityReviewKindField::reference(),
-        )
-        .field(
-            CapabilityReview::reference(),
-            CapabilityReviewStatusField::reference(),
-        )
-        .field(
-            CapabilityReview::reference(),
-            CapabilityReviewReviewedAt::reference(),
-        )
-        .relation(
-            CapabilityElevationRequester::reference(),
-            Principal::reference(),
-            CapabilityElevation::reference(),
-        )
-        .relation(
-            CapabilityElevationApprover::reference(),
-            Principal::reference(),
-            CapabilityElevation::reference(),
-        )
-        .relation(
-            CapabilityElevationGrant::reference(),
-            CapabilityElevation::reference(),
-            CapabilityGrant::reference(),
-        )
-        .relation(
-            CapabilityElevationResource::reference(),
-            CapabilityElevation::reference(),
-            Account::reference(),
-        )
-        .relation(
-            CapabilityElevationReview::reference(),
-            CapabilityElevation::reference(),
-            CapabilityReview::reference(),
-        )
-        .relation(
-            CapabilityReviewResource::reference(),
-            CapabilityReview::reference(),
-            Account::reference(),
-        )
-        .relation(
-            CapabilityReviewer::reference(),
-            Principal::reference(),
-            CapabilityReview::reference(),
-        )
         .capability_context_entity_slot(CapabilityElevationSlot::reference())
         .capability_context_entity_slot(CapabilityReviewSlot::reference())
         .operation(without_external_effect_or_aftermath(
@@ -211,15 +105,15 @@ pub fn install(
         .operation_projection_work_budget(ElevatedCapabilityTouchOperation::reference(), 32)
         .operation_read_field(
             ElevatedCapabilityTouchOperation::reference(),
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
         )
         .operation_read_field(
             ElevatedCapabilityTouchOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation_write(
             ElevatedCapabilityTouchOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .capability(elevated_contract());
     let schema = crate::domain_computation::primary_graph::tests::fixture::capability::elevated::contract::request::install(schema);
@@ -231,71 +125,88 @@ pub fn install(
 pub fn target() -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
-            CapabilityActionField::reference(),
+            CapabilityActionField::at("CapabilityActionField"),
             ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(
                 CapabilityAction::Touch,
             )
             .expect("fixture capability action must encode"),
-        ),
+        )
+        .expect("the native capability field is declared"),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
-        ApplicationCapabilityFieldDimension::bound(CapabilityDisclosureField::reference()),
+        ApplicationCapabilityFieldDimension::bound(CapabilityDisclosureField::at(
+            "CapabilityDisclosureField",
+        ))
+        .expect("the native capability field is declared"),
         ApplicationCapabilityValueBinding::new(
-            CapabilityPurposeField::reference(),
+            CapabilityPurposeField::at("CapabilityPurposeField"),
             ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
                 CapabilityPurpose::AccountMaintenance,
             )
             .expect("fixture capability purpose must encode"),
-        ),
+        )
+        .expect("the native capability field is declared"),
     )
 }
 
 pub fn command_target(action: CapabilityAction) -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
-            CapabilityActionField::reference(),
+            CapabilityActionField::at("CapabilityActionField"),
             ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(action)
                 .expect("fixture capability action must encode"),
-        ),
+        )
+        .expect("the native capability field is declared"),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(
-            CapabilityPurposeField::reference(),
+            CapabilityPurposeField::at("CapabilityPurposeField"),
             ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
                 CapabilityPurpose::AccountMaintenance,
             )
             .expect("fixture capability purpose must encode"),
-        ),
+        )
+        .expect("the native capability field is declared"),
     )
 }
 
 pub fn constraints() -> ApplicationCapabilityConstraintDefinition {
     ApplicationCapabilityConstraintDefinition::new(
-        ApplicationCapabilityMagnitudeDimension::bound(CapabilityAmountField::reference()),
+        ApplicationCapabilityMagnitudeDimension::bound(CapabilityAmountField::at(
+            "CapabilityAmountField",
+        ))
+        .expect("the native capability field is declared"),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                CapabilityStatusField::reference(),
+                CapabilityStatusField::at("CapabilityStatusField"),
                 ApplicationEncodedScalarValue::<CapabilityStatusBinding>::try_new(
                     CapabilityStatus::Active,
                 )
                 .expect("fixture capability status must encode"),
-            ),
+            )
+            .expect("the native capability field is declared"),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityWorkflowField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(AccountStatus::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityWorkflowField::at(
+                    "CapabilityWorkflowField",
+                ))
+                .expect("the native capability field is declared"),
+                ApplicationCapabilityFieldBinding::from_reference(AccountStatus::at(
+                    "AccountStatus",
+                ))
+                .expect("the native capability field is declared"),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityNotBeforeField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityNotAfterField::reference(),
-                ),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityNotBeforeField::at(
+                    "CapabilityNotBeforeField",
+                ))
+                .expect("the native capability field is declared"),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityNotAfterField::at(
+                    "CapabilityNotAfterField",
+                ))
+                .expect("the native capability field is declared"),
             ),
         ),
         CapabilityRequestContext::reference(),
@@ -308,26 +219,33 @@ pub fn command_constraints() -> ApplicationCapabilityConstraintDefinition {
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                CapabilityStatusField::reference(),
+                CapabilityStatusField::at("CapabilityStatusField"),
                 ApplicationEncodedScalarValue::<CapabilityStatusBinding>::try_new(
                     CapabilityStatus::Active,
                 )
                 .expect("fixture capability status must encode"),
-            ),
+            )
+            .expect("the native capability field is declared"),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityWorkflowField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(AccountStatus::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityWorkflowField::at(
+                    "CapabilityWorkflowField",
+                ))
+                .expect("the native capability field is declared"),
+                ApplicationCapabilityFieldBinding::from_reference(AccountStatus::at(
+                    "AccountStatus",
+                ))
+                .expect("the native capability field is declared"),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityNotBeforeField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityNotAfterField::reference(),
-                ),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityNotBeforeField::at(
+                    "CapabilityNotBeforeField",
+                ))
+                .expect("the native capability field is declared"),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityNotAfterField::at(
+                    "CapabilityNotAfterField",
+                ))
+                .expect("the native capability field is declared"),
             ),
         ),
         CapabilityRequestContext::reference(),
@@ -339,9 +257,10 @@ pub fn delegation() -> ApplicationCapabilityDelegationDefinition {
         ApplicationCapabilityRelationBinding::from_reference(CapabilityParent::reference()),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityGrantor::reference()),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityGrantee::reference()),
-        ApplicationCapabilityFieldBinding::from_reference(
-            CapabilityDelegationLimitField::reference(),
-        ),
+        ApplicationCapabilityFieldBinding::from_reference(CapabilityDelegationLimitField::at(
+            "CapabilityDelegationLimitField",
+        ))
+        .expect("the native capability field is declared"),
         CapabilityProvenance::reference(),
     )
 }

@@ -23,6 +23,13 @@ pub use operation::{Input as CountInput, Intent as CountIntent};
 #[derive(Clone, Debug)]
 pub struct Derived;
 impl LawPolicy for Derived {
+    type Model = DerivedRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
     const DERIVED_RELATIONS: bool = true;
@@ -30,6 +37,13 @@ impl LawPolicy for Derived {
 #[derive(Clone, Debug)]
 pub struct CustomDerivedOwner;
 impl LawPolicy for CustomDerivedOwner {
+    type Model = CustomDerivedOwnerRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
     const DERIVED_RELATIONS: bool = true;
@@ -37,8 +51,12 @@ impl LawPolicy for CustomDerivedOwner {
 }
 pub struct TwoSteps;
 impl TwoSteps {
-    pub fn reference<L: LawPolicy>(
-    ) -> ApplicationDerivedRelationRef<GraphSchema<L>, Self, Node, Node> {
+    pub fn reference<L: LawPolicy>() -> ApplicationDerivedRelationRef<
+        GraphSchema<L>,
+        Self,
+        GraphNode<GraphSchema<L>>,
+        GraphNode<GraphSchema<L>>,
+    > {
         ApplicationDerivedRelationRef::from_schema_identifiers("TwoSteps", "Node", "Node")
     }
 }
@@ -57,8 +75,11 @@ pub fn declare<L: LawPolicy>(
     schema
         .derived_relation(
             TwoSteps::reference(),
-            ApplicationDerivedRelation::compose(Precedes::reference(), Precedes::reference())
-                .without_self_edges(),
+            ApplicationDerivedRelation::compose(
+                precedes::<GraphSchema<L>>(),
+                precedes::<GraphSchema<L>>(),
+            )
+            .without_self_edges(),
             ApplicationRelationGraphLaws::unbounded(),
         )
         .operation(
@@ -68,7 +89,7 @@ pub fn declare<L: LawPolicy>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(CountTwoSteps::reference(), NodeKey::reference())
+        .operation_read_field(CountTwoSteps::reference(), node_key::<GraphSchema<L>>())
         .operation_read_derived_relation(CountTwoSteps::reference(), TwoSteps::reference())
         .application_mutation_binding::<CountBinding<L>>()
         .rule_readable_collection::<GraphFeature, CountCollection, _, _, _>(TwoSteps::reference())

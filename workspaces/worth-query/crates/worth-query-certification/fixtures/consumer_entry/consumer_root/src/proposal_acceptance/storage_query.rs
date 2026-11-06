@@ -22,33 +22,11 @@ pub struct KeySlot;
 pub struct DataSlot;
 worth_query_portable_type!(KeySlot => "proposal-application.proposal-key-slot.v1");
 worth_query_portable_type!(DataSlot => "proposal-application.proposal-data-slot.v1");
-fn key() -> ApplicationQueryResultFieldRef<
-    ProposalQuery,
-    KeySlot,
-    Schema,
-    Proposal,
-    ProposalFacts,
-    ProposalName,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", ProposalName::reference())
+fn key() -> ApplicationQueryResultFieldRef<ProposalQuery, KeySlot, Schema, ProposalName> {
+    ApplicationQueryResultFieldRef::new("key", ProposalName::at("ProposalName"))
 }
-fn data() -> ApplicationQueryResultFieldRef<
-    ProposalQuery,
-    DataSlot,
-    Schema,
-    Proposal,
-    ProposalFacts,
-    ProposalData,
-    StoredProposal,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("data", ProposalData::reference())
+fn data() -> ApplicationQueryResultFieldRef<ProposalQuery, DataSlot, Schema, ProposalData> {
+    ApplicationQueryResultFieldRef::new("data", ProposalData::at("ProposalData"))
 }
 impl WorthQueryApplicationProjection<Schema, ProposalQuery> for ProposalRow {
     fn project(
@@ -79,8 +57,8 @@ worth_query_query_binding!(pub Binding for ReadProposals,schema Schema,
     query ProposalQuery,parameters ParametersBinding=>|_| ApplicationQueryParameterSet::new(),result ResultBinding,
     principal PrincipalBinding,mapping ExternalMapping,principal_entity Principal,
     principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Model,ModelFacts,ModelName,String,ReadOnly,NoApplicationUnit,
-    field ModelName::reference(),value scope,limits results 32);
+    scope ModelName,
+    field ModelName::at("ModelName"),value scope,limits results 32);
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
@@ -91,15 +69,17 @@ pub fn declare(
         access::ReadDomain::reference(),
     )
     .use_field_by(
-        ModelName::reference(),
+        ModelName::at("ModelName"),
         access::encoded(1),
         influence.clone(),
     )
+    .expect("owned record field matches its declaration")
     .use_field_by(
-        ProposalName::reference(),
+        ProposalName::at("ProposalName"),
         access::encoded(1),
         influence.clone(),
     )
+    .expect("owned record field matches its declaration")
     .disclose_field_by(key(), access::encoded(1), influence.clone())
     .disclose_field_by(data(), access::encoded(1), influence);
     let definition = ApplicationQueryDefinitionBuilder::declare(ProposalQuery::reference())

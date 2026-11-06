@@ -58,12 +58,10 @@ worth_query_structured_value_binding!(pub RetireInput for Retire { identity: "so
 worth_query_operation!(pub IssueOperation for NumericSchema, input IssueInput);
 worth_query_operation!(pub RecordOperation for NumericSchema, input RecordInput);
 worth_query_operation!(pub RetireOperation for NumericSchema, input RetireInput);
-worth_query_operation_reads!(IssueOperation => [Key, Secondary]);
-worth_query_operation_writes!(IssueOperation => [Key, Primary, Secondary, ReadEnabled, Ceiling, Calculated]);
+
 impl OperationCreates<IssueOperation> for Number {}
-worth_query_operation_reads!(RecordOperation => [Key, Primary]);
-worth_query_operation_writes!(RecordOperation => [Primary]);
-worth_query_operation_reads!(RetireOperation => [Number, Key, Primary, Secondary, ReadEnabled, Ceiling, Calculated]);
+
+worth_query_operation_reads!(RetireOperation => [Number]);
 impl OperationDeletes<RetireOperation> for Number {}
 
 pub struct IssueDecision {
@@ -117,8 +115,8 @@ macro_rules! worlds_certification_application_graph_correction_model_source_outp
             handler identity $id, outputs $Output,
             principal ActorBinding, mapping ExternalMapping, principal_entity Principal,
             principal_identity u64, identity_binding U64ApplicationValueBinding,
-            scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-            field Key::reference(), value $Input::scope_key,
+            scope Key,
+            field Key::at("Key"), value $Input::scope_key,
         );
     }
 }
@@ -141,14 +139,14 @@ impl ApplicationDeclaredOperation<NumericSchema> for IssueOperation {
         schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,
     ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
         schema
-            .operation_read_field(Self::reference(), Key::reference())
-            .operation_read_field(Self::reference(), Secondary::reference())
-            .operation_write(Self::reference(), Key::reference())
-            .operation_write(Self::reference(), Primary::reference())
-            .operation_write(Self::reference(), Secondary::reference())
-            .operation_write(Self::reference(), ReadEnabled::reference())
-            .operation_write(Self::reference(), Ceiling::reference())
-            .operation_write(Self::reference(), Calculated::reference())
+            .operation_read_field(Self::reference(), Key::at("Key"))
+            .operation_read_field(Self::reference(), Secondary::at("Secondary"))
+            .operation_write(Self::reference(), Key::at("Key"))
+            .operation_write(Self::reference(), Primary::at("Primary"))
+            .operation_write(Self::reference(), Secondary::at("Secondary"))
+            .operation_write(Self::reference(), ReadEnabled::at("ReadEnabled"))
+            .operation_write(Self::reference(), Ceiling::at("Ceiling"))
+            .operation_write(Self::reference(), Calculated::at("Calculated"))
             .operation_create(Self::reference(), Number::reference())
     }
 }
@@ -163,9 +161,9 @@ pub fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(RecordOperation::reference(), Key::reference())
-        .operation_read_field(RecordOperation::reference(), Primary::reference())
-        .operation_write(RecordOperation::reference(), Primary::reference())
+        .operation_read_field(RecordOperation::reference(), Key::at("Key"))
+        .operation_read_field(RecordOperation::reference(), Primary::at("Primary"))
+        .operation_write(RecordOperation::reference(), Primary::at("Primary"))
         .application_mutation_binding::<RecordBinding>()
         .operation(
             RetireOperation::reference()
@@ -175,12 +173,12 @@ pub fn declare(
                 .finish(),
         )
         .operation_read_entity(RetireOperation::reference(), Number::reference())
-        .operation_read_field(RetireOperation::reference(), Key::reference())
-        .operation_read_field(RetireOperation::reference(), Primary::reference())
-        .operation_read_field(RetireOperation::reference(), Secondary::reference())
-        .operation_read_field(RetireOperation::reference(), ReadEnabled::reference())
-        .operation_read_field(RetireOperation::reference(), Ceiling::reference())
-        .operation_read_field(RetireOperation::reference(), Calculated::reference())
+        .operation_read_field(RetireOperation::reference(), Key::at("Key"))
+        .operation_read_field(RetireOperation::reference(), Primary::at("Primary"))
+        .operation_read_field(RetireOperation::reference(), Secondary::at("Secondary"))
+        .operation_read_field(RetireOperation::reference(), ReadEnabled::at("ReadEnabled"))
+        .operation_read_field(RetireOperation::reference(), Ceiling::at("Ceiling"))
+        .operation_read_field(RetireOperation::reference(), Calculated::at("Calculated"))
         .operation_delete(RetireOperation::reference(), Number::reference())
         .application_mutation_binding::<RetireBinding>()
 }

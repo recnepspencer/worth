@@ -7,8 +7,8 @@ pub struct Input {
 worth_query_structured_value_binding!(pub InputBinding for Input { identity: "ownership.relation-splice-inspection.input.v1" });
 worth_query_structured_value_binding!(pub CasesBinding for Vec<String> { identity: "ownership.relation-splice-inspection.result.v1" });
 worth_query_operation!(pub InspectStageLinks for S: Scenario, input InputBinding);
-impl OperationReads<InspectStageLinks> for Node {}
-impl OperationReads<InspectStageLinks> for Id {}
+impl<const CONTENT: bool> OperationReads<InspectStageLinks> for NativeNode<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<InspectStageLinks> for RawId<CONTENT> {}
 impl OperationReads<InspectStageLinks> for PreviousStage {}
 worth_query_mutation_binding!(
     pub Binding for Input, schema generic S: Scenario,
@@ -16,10 +16,9 @@ worth_query_mutation_binding!(
     result CasesBinding, idempotency String, identity "ownership.relation-splice-inspection.key.v1",
     decision Vec<String>, denial query::UnitBinding, handler identity "ownership.relation-splice-inspection.handler.v1",
     outputs NoApplicationMutationOutputs, source NoApplicationMutationSource,
-    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
+    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node<S>,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit,
-    field Id::reference(), value_field id,
+    scope Id<S>, field schema::id::<S>(), value_field id,
 );
 pub fn declare<S: Scenario>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
@@ -27,8 +26,8 @@ pub fn declare<S: Scenario>(
     let op = InspectStageLinks::reference();
     schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
-        .operation_read_entity(op, Node::reference())
-        .operation_read_field(op, Id::reference())
+        .operation_read_entity(op, schema::node::<S>())
+        .operation_read_field(op, schema::id::<S>())
         .operation_read_relation(op, PreviousStage::reference())
         .application_mutation_binding::<Binding<S>>()
 }
@@ -42,7 +41,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Handler {
         let result = (|| {
             let mut names = Vec::new();
             for id in [10, 20, 30] {
-                let Some(from) = reader.resolve_optional_entity(Id::reference(), id)? else {
+                let Some(from) = reader.resolve_optional_entity(schema::id::<S>(), id)? else {
                     continue;
                 };
                 if id == 20 {
@@ -58,7 +57,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Handler {
                     .relations_from(PreviousStage::reference(), &from)
                     .map_err(HandlerExecutionDenial::new)?
                 {
-                    let to = reader.field(edge.to(), Id::reference())?.unwrap();
+                    let to = reader.field(edge.to(), schema::id::<S>())?.unwrap();
                     let record = edge.relation_id();
                     names.push(format!(
                         "{id}->{to}#{}:{}:{}",

@@ -27,9 +27,9 @@ pub enum Action {
 }
 worth_query_structured_value_binding!(pub InputBinding for AspectEdit { identity: "numeric-aspect.edit-input.v1" });
 worth_query_operation!(pub EditInputAspect for NumericSchema, input InputBinding);
-worth_query_operation_reads!(EditInputAspect => [Key, Ceiling, Bias, Sibling]);
-worth_query_operation_writes!(EditInputAspect => [Bias, Sibling]);
-worth_query_decl::facade::worth_query_operation_removes_aspects!(EditInputAspect => [InputFacts]);
+
+worth_query_decl::facade::// Deliberately overclaims a Rust capability: the installed program still grants only InputFacts.
+worth_query_operation_removes_aspects!(EditInputAspect => [InputFacts, NumberFacts]);
 fn key(input: &AspectEdit) -> String {
     input.key.clone()
 }
@@ -45,8 +45,8 @@ worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal ActorBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-    field Key::reference(), value key,
+    scope Key,
+    field Key::at("Key"), value key,
 );
 
 pub struct Disclosure;
@@ -76,12 +76,12 @@ pub fn declare(
                 .finish(),
         )
         .operation_projection_work_budget(EditInputAspect::reference(), 8)
-        .operation_read_field(EditInputAspect::reference(), Key::reference())
-        .operation_read_field(EditInputAspect::reference(), Ceiling::reference())
-        .operation_read_field(EditInputAspect::reference(), Bias::reference())
-        .operation_read_field(EditInputAspect::reference(), Sibling::reference())
-        .operation_write(EditInputAspect::reference(), Bias::reference())
-        .operation_write(EditInputAspect::reference(), Sibling::reference())
+        .operation_read_field(EditInputAspect::reference(), Key::at("Key"))
+        .operation_read_field(EditInputAspect::reference(), Ceiling::at("Ceiling"))
+        .operation_read_field(EditInputAspect::reference(), Bias::at("Bias"))
+        .operation_read_field(EditInputAspect::reference(), Sibling::at("Sibling"))
+        .operation_write(EditInputAspect::reference(), Bias::at("Bias"))
+        .operation_write(EditInputAspect::reference(), Sibling::at("Sibling"))
         .operation_remove_aspect(EditInputAspect::reference(), InputFacts::reference())
         .application_mutation_binding::<Binding>()
 }
@@ -93,21 +93,21 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         input: &AspectEdit,
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<NumericSchema, Number>, MissingValue> {
-        let root = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+        let root = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
             Ok(root) => root,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&root, Ceiling::reference()) {
+        match reader.field(&root, Ceiling::at("Ceiling")) {
             Ok(Some(_)) => {}
             Ok(None) => return HandlerResult::DomainDenied(MissingValue),
             Err(error) => return HandlerResult::ExecutionDenied(error),
         }
         // Complete the actual optional read before writing; propagate unavailable reads.
-        if let Err(error) = reader.field(&root, Bias::reference()) {
+        if let Err(error) = reader.field(&root, Bias::at("Bias")) {
             return HandlerResult::ExecutionDenied(error);
         }
         if !matches!(input.action, Action::IncompleteRemoval)
-            && let Err(error) = reader.field(&root, Sibling::reference())
+            && let Err(error) = reader.field(&root, Sibling::at("Sibling"))
         {
             return HandlerResult::ExecutionDenied(error);
         }
@@ -130,22 +130,17 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         };
         let effect = match input.action {
             Action::Set { bias, sibling } => writer
-                .write_field(&target, Bias::reference(), bias)
-                .and_then(|()| writer.write_field(&target, Sibling::reference(), sibling)),
+                .write_field(&target, Bias::at("Bias"), bias)
+                .and_then(|()| writer.write_field(&target, Sibling::at("Sibling"), sibling)),
             Action::Remove | Action::IncompleteRemoval => {
                 writer.remove_aspect(&target, InputFacts::reference())
             }
             Action::ClearThenWrite => writer
                 .remove_aspect(&target, InputFacts::reference())
-                .and_then(|()| writer.write_field(&target, Bias::reference(), 99)),
-            Action::WrongAspect => writer.remove_aspect(
-                &target,
-                ApplicationAspectRef::<NumericSchema, Number, InputFacts>::from_schema_identifier(
-                    "NumberFacts",
-                ),
-            ),
+                .and_then(|()| writer.write_field(&target, Bias::at("Bias"), 99)),
+            Action::WrongAspect => writer.remove_aspect(&target, NumberFacts::reference()),
             Action::WriteThenClear => writer
-                .write_field(&target, Bias::reference(), 99)
+                .write_field(&target, Bias::at("Bias"), 99)
                 .and_then(|()| writer.remove_aspect(&target, InputFacts::reference())),
         };
         match effect {

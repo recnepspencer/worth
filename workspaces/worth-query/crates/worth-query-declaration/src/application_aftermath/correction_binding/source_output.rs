@@ -5,10 +5,8 @@ use crate::{
         WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
     },
     application_schema::{
-        ApplicationAspectMarkerIdentity, ApplicationCanonicalValueContract,
-        ApplicationEntityMarkerIdentity, ApplicationFieldBindingRecipe,
-        ApplicationFieldMarkerIdentity, ApplicationFieldPresence, ApplicationFieldRef,
-        ApplicationFieldUnit, ApplicationSchemaMember,
+        ApplicationCanonicalValueContract, ApplicationEntityMarkerIdentity,
+        ApplicationFieldBindingRecipe, ApplicationFieldPresence, ApplicationSchemaMember,
     },
     portable_identity::WorthQueryPortableTypeIdentity,
 };
@@ -153,55 +151,41 @@ where
     >,
     Source: ApplicationMutationBinding<Role::Schema, Output = Role::Contract>,
 {
-    pub fn content_field<Aspect, Field, Write, Equality, Unit, C>(
-        field: crate::application_schema::ApplicationContentFieldRef<
-            Role::Schema,
-            Role::Entity,
-            Aspect,
-            Field,
-            Write,
-            Equality,
-            Unit,
-            C,
-        >,
-    ) -> ApplicationCorrectionOutputField<Role::Schema>
+    pub fn content_field<Field, C>(
+        field: crate::application_schema::ApplicationContentFieldRef<Field, C>,
+    ) -> Result<
+        ApplicationCorrectionOutputField<Role::Schema>,
+        crate::application_schema::ApplicationSchemaDeclarationDenial,
+    >
     where
-        Aspect: ApplicationAspectMarkerIdentity<Role::Schema, Role::Entity>,
-        Field: ApplicationFieldMarkerIdentity<
-            Role::Schema,
-            Role::Entity,
-            Aspect,
-            Value = worth_foundational::facade::ContentRefId,
-        >,
-        Unit: ApplicationFieldUnit,
+        Field::Binding: crate::application_schema::ApplicationContentReferenceBinding,
+        Field: crate::application_schema::fragment::RecordSelection<Entity = Role::Entity>,
         C: crate::application_schema::ApplicationContentBinding,
     {
-        let mut witness = Self::field(field.field());
-        let recipe = crate::application_schema::ApplicationContentBindingRecipe::of::<C>();
-        witness.declaration.parts.content_format = Some(recipe.declaration().identity);
-        witness.content = Some(recipe);
-        witness
+        let witness = Self::field(field.field())?;
+        let requested = crate::application_schema::ApplicationContentBindingRecipe::of::<C>();
+        if witness.content.as_ref() != Some(&requested) {
+            return Err(
+                crate::application_schema::ApplicationSchemaDeclarationDenial::InvalidRecordField {
+                    field: witness.recipe.locus().clone(),
+                },
+            );
+        }
+        Ok(witness)
     }
-    pub fn field<Aspect, Field, Value, Write, Equality, Unit>(
-        field: ApplicationFieldRef<
-            Role::Schema,
-            Role::Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
-    ) -> ApplicationCorrectionOutputField<Role::Schema>
+    pub fn field<Field>(
+        field: Field,
+    ) -> Result<
+        ApplicationCorrectionOutputField<Role::Schema>,
+        crate::application_schema::ApplicationSchemaDeclarationDenial,
+    >
     where
-        Aspect: ApplicationAspectMarkerIdentity<Role::Schema, Role::Entity>,
-        Field: ApplicationFieldMarkerIdentity<Role::Schema, Role::Entity, Aspect, Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: crate::application_schema::fragment::RecordSelection<Entity = Role::Entity>,
     {
+        let checked = field.checked()?;
         const { <Role as WorthQueryApplicationDeclaredOutputRole>::DECLARED };
-        let recipe = field.binding_recipe();
-        ApplicationCorrectionOutputField {
+        let recipe = checked.recipe().clone();
+        Ok(ApplicationCorrectionOutputField {
             declaration: DeclaredCorrectionOutputField::from_untrusted_parts(
                 DeclaredCorrectionOutputFieldParts {
                     source_binding: Source::descriptor()
@@ -214,14 +198,16 @@ where
                             .to_owned(),
                     aspect: field.aspect().to_owned(),
                     field: field.field().to_owned(),
-                    presence: Field::PRESENCE,
+                    presence: checked.presence(),
                     scalar_family: recipe.scalar_family(),
                     value_binding: recipe.binding_identity().clone(),
-                    unit: field.unit().map(str::to_owned),
+                    unit: recipe.unit().map(|unit| unit.as_str().to_owned()),
                     binding_unit: recipe.unit().map(|unit| unit.as_str().to_owned()),
                     frame: recipe.frame().map(|frame| frame.as_str().to_owned()),
                     canonical: recipe.canonical_contract().cloned(),
-                    content_format: None,
+                    content_format: checked
+                        .content_format()
+                        .map(|recipe| recipe.declaration().identity),
                 },
             ),
             source: TypeId::of::<Source>(),
@@ -230,8 +216,8 @@ where
             entity_name:
                 <Role::Entity as ApplicationEntityMarkerIdentity<Role::Schema>>::IDENTIFIER,
             recipe,
-            content: None,
+            content: checked.content_format().cloned(),
             schema: PhantomData,
-        }
+        })
     }
 }

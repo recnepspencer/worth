@@ -6,9 +6,6 @@ mod court;
 pub use command::{Extend, ExtendBinding, Handler};
 // The orbit anchor's `ForeignNext` cardinality binds every `Occurrence`, so the
 // fork lives in its own entity kind.
-worth_query_entity!(pub Fork for S: Scenario);
-worth_query_aspect!(pub ForkPosition for S: Scenario, Fork; identity = AspectIdentity(0x919B3971), revision = AspectContractRevision(1));
-worth_query_field!(pub ForkNumber for S: Scenario, Fork, ForkPosition: u64 => U64ApplicationValueBinding, read_only, equality);
 family!(
     InitialFork,
     Fork,
@@ -57,15 +54,11 @@ pub fn declare<S: Scenario>(
     let preserve = PreserveOp::reference();
     command::declare(
         schema
-            .entity(Fork::reference())
-            .aspect(Fork::reference(), ForkPosition::reference())
-            .unique_field(Fork::reference(), ForkNumber::reference())
-            .relation(Branch::reference(), Fork::reference(), Fork::reference())
             .operation_create(initial, Fork::reference())
-            .operation_write(initial, ForkNumber::reference())
+            .operation_write(initial, ForkNumber::at("ForkNumber"))
             .operation_link(initial, Branch::reference())
             .operation_read_entity(preserve, Fork::reference())
-            .operation_read_field(preserve, ForkNumber::reference())
+            .operation_read_field(preserve, ForkNumber::at("ForkNumber"))
             .operation_read_relation(preserve, Branch::reference())
             .operation_delete(preserve, Fork::reference())
             .operation_unlink(preserve, Branch::reference()),
@@ -73,7 +66,7 @@ pub fn declare<S: Scenario>(
 }
 pub fn initial<S: Scenario>(
     writer: &mut CandidateWriter<'_, S, producer::Binding<S>>,
-    source: &WorthQueryApplicationEffectEntity<S, Node>,
+    source: &WorthQueryApplicationEffectEntity<S, Node<S>>,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     let mut nodes = Vec::new();
     for index in 0..3u64 {
@@ -82,7 +75,7 @@ pub fn initial<S: Scenario>(
             Fork::reference(),
             WorthQueryApplicationEntityKey::new(format!("fork-{index}")).unwrap(),
         )?;
-        writer.initialize_field(&node, ForkNumber::reference(), index)?;
+        writer.initialize_field(&node, ForkNumber::at("ForkNumber"), index)?;
         writer.create_member::<InitialFork<S>>(&index.to_string(), &node)?;
         nodes.push(node);
     }
@@ -126,7 +119,9 @@ pub fn read<S: Scenario>(
     let mut numbered = Vec::new();
     for member in members {
         numbered.push((
-            reader.field(&member, ForkNumber::reference())?.unwrap(),
+            reader
+                .field(&member, ForkNumber::at("ForkNumber"))?
+                .unwrap(),
             member,
         ));
     }
@@ -188,3 +183,7 @@ pub fn shrink<S: Scenario>(
     }
     Ok(())
 }
+
+pub struct Fork;
+pub struct ForkPosition;
+pub use super::super::native_boundary::ForkNumber;

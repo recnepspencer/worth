@@ -126,7 +126,7 @@ pub fn resolve(
             .typed_entity(Node::reference())
             .ok_or("node kind missing")?,
         key: resolver
-            .typed_field(NodeKey::reference())
+            .typed_field(NodeKey::at("NodeKey"))
             .ok_or("node key missing")?,
         membership: resolver
             .typed_relation(GroupRoot::reference())

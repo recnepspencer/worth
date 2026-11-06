@@ -7,8 +7,8 @@ pub struct Input {
 worth_query_structured_value_binding!(pub InputBinding for Input { identity: "ownership.case-inspection.input.v1" });
 worth_query_structured_value_binding!(pub CasesBinding for Vec<String> { identity: "ownership.case-inspection.result.v1" });
 worth_query_operation!(pub Operation for S: Scenario, input InputBinding);
-impl OperationReads<Operation> for Node {}
-impl OperationReads<Operation> for Id {}
+impl<const CONTENT: bool> OperationReads<Operation> for NativeNode<CONTENT> {}
+impl<const CONTENT: bool> OperationReads<Operation> for RawId<CONTENT> {}
 impl OperationReads<Operation> for CaseRoots {}
 impl OperationReads<Operation> for CaseAdjacency {}
 worth_query_mutation_binding!(
@@ -17,10 +17,9 @@ worth_query_mutation_binding!(
     result CasesBinding, idempotency String, identity "ownership.case-inspection.key.v1",
     decision Vec<String>, denial query::UnitBinding, handler identity "ownership.case-inspection.handler.v1",
     outputs NoApplicationMutationOutputs, source NoApplicationMutationSource,
-    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
+    principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node<S>,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit,
-    field Id::reference(), value_field id,
+    scope Id<S>, field schema::id::<S>(), value_field id,
 );
 pub fn declare<S: Scenario>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
@@ -28,8 +27,8 @@ pub fn declare<S: Scenario>(
     let op = Operation::reference();
     schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
-        .operation_read_entity(op, Node::reference())
-        .operation_read_field(op, Id::reference())
+        .operation_read_entity(op, schema::node::<S>())
+        .operation_read_field(op, schema::id::<S>())
         .operation_read_derived_relation(op, CaseRoots::reference())
         .operation_read_derived_relation(op, CaseAdjacency::reference())
         .application_mutation_binding::<Binding<S>>()
@@ -42,7 +41,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, S, Binding<S>>,
     ) -> HandlerResult<Vec<String>, ()> {
         let result = (|| {
-            let carrier = reader.resolve_entity(Id::reference(), input.id)?;
+            let carrier = reader.resolve_entity(schema::id::<S>(), input.id)?;
             let root = reader
                 .entity_member(&carrier)
                 .map_err(HandlerExecutionDenial::new)?;

@@ -63,8 +63,7 @@ impl BankUserNodeBinding {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
             Some(Instant::now() + configuration.maximum_deadline),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let oidc = AuthentikOidcAdapter::discover(oidc_configuration, &scope)
             .await
             .map_err(BankUserNodeInstallError::OidcDiscovery)?;

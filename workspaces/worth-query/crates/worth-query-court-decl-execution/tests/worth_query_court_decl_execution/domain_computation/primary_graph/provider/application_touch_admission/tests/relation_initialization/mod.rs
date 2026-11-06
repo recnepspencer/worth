@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::provider::application_touch_admission::tests::*;
 use crate::domain_computation::primary_graph::provider::application_touch_admission::tests::fixture::relation::Initialize;
 use crate::domain_computation::primary_graph::provider::application_touch_admission::tests::fixture::relation::LinkOnly;
-use worth_query_decl::facade::application_schema::ApplicationScalarValueBinding;
+use super::fixture::{Bindings, TouchSchema};
 #[test]
 fn native_initialized_relation_requires_link_and_actual_field_authority() {
     check(|execution| {
@@ -79,15 +79,23 @@ fn field_locus_preserves_legacy_entity_sequence_and_explicit_relation_owner() {
 }
 
 pub fn initialized_batch(world: &World) -> WorkerIntentBatch {
-    let mut fields = std::collections::BTreeMap::new();
-    fields.insert(
-        world
-            .layout
-            .relation_field_locator_for_test("Edge", "Payload", "Weight")
-            .unwrap()
-            .clone(),
-        worth_query_decl::facade::application_schema::U64ApplicationValueBinding::encode(&7)
-            .unwrap(),
+    let definition = world
+        .schema
+        .value_bindings()
+        .fragment(TouchSchema)
+        .unwrap()
+        .relation_aspect::<super::fixture::relation::Edge, super::fixture::relation::Payload>()
+        .unwrap();
+    let fields = super::fixture::record_initialization::values::<Bindings, _>(
+        |locus| {
+            world
+                .layout
+                .relation_field_locator_for_test(locus.entity(), locus.aspect(), locus.field())
+                .unwrap()
+                .clone()
+        },
+        definition,
+        &7_u64,
     );
     WorkerIntentBatch::new("raw-initialized-relation").push(MutationIntent::Create(
         CreateIntent::Relation(RelationSpec {

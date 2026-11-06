@@ -21,7 +21,7 @@ impl<S: Scenario> OperationHandler<S, RestoreBinding<S>> for Handler {
             let scope = writer.projected_entity(&target.scope)?;
             let created = writer.create_entity_in_context(
                 &scope,
-                Node::reference(),
+                schema::node::<S>(),
                 WorthQueryApplicationEntityKey::new(if S::MODE == 12 {
                     "WORTH.coupled.0.0.19:body-cell-successor".to_owned()
                 } else {
@@ -29,11 +29,15 @@ impl<S: Scenario> OperationHandler<S, RestoreBinding<S>> for Handler {
                 })
                 .unwrap(),
             )?;
-            writer.initialize_field(&created, Id::reference(), input.id)?;
-            writer.initialize_field(&created, Value::reference(), input.value)?;
+            writer.initialize_field(&created, schema::id::<S>(), input.id)?;
+            writer.initialize_field(&created, schema::value::<S>(), input.value)?;
             if S::MODE == 43 {
                 writer
-                    .initialize_content(&created, content::field(), &(input.id * 100))
+                    .initialize_content(
+                        &created,
+                        content::field::<S>().expect("the content scenario declares its field"),
+                        &(input.id * 100),
+                    )
                     .expect("valid installed word content");
             }
             writer.create_output::<Created<S>>(&created)?;
@@ -42,11 +46,11 @@ impl<S: Scenario> OperationHandler<S, RestoreBinding<S>> for Handler {
             for (index, &id) in input.co_anchors.iter().enumerate() {
                 let co = writer.create_entity_in_context(
                     &scope,
-                    Node::reference(),
+                    schema::node::<S>(),
                     WorthQueryApplicationEntityKey::new(format!("authored-{id}")).unwrap(),
                 )?;
-                writer.initialize_field(&co, Id::reference(), id)?;
-                writer.initialize_field(&co, Value::reference(), input.co_values[index])?;
+                writer.initialize_field(&co, schema::id::<S>(), id)?;
+                writer.initialize_field(&co, schema::value::<S>(), input.co_values[index])?;
                 match index {
                     0 => writer.create_output::<CoCreated<S, 0>>(&co)?,
                     1 => writer.create_output::<CoCreated<S, 1>>(&co)?,

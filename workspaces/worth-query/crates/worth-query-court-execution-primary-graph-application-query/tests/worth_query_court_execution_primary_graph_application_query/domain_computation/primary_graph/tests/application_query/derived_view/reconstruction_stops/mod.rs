@@ -7,10 +7,9 @@ use worth_query_execution::facade::WorthQueryDerivedPairReadPlans;
 use worth_execution::ExecutionRequest;
 use WorthQueryManagedDerivedViewDenial as Denial;
 
-use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind;
-use worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::PinControlGuardForTest;
 use worth_query_declaration::facade::application_query::ApplicationDerivedViewDefinition;
 use worth_query_declaration::facade::application_query::ApplicationDerivedViewLimits;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind;
 
 #[test]
 fn reconstruction_missing_predicate_snapshot_names_its_query_projection() {
@@ -51,7 +50,7 @@ pub fn check(case: usize) {
             let root = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".into(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

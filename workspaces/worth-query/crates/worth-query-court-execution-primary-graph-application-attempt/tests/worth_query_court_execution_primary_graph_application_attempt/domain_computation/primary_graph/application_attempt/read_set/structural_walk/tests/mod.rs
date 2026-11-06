@@ -3,10 +3,8 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::denial;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::program::authorization::authorize;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::*;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionTraversalDenialKind;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_query_declaration::facade::application_schema::RelationDirection::Forward;
@@ -46,7 +44,7 @@ fn sealing_keeps_the_one_original_issued_body_and_requires_explicit_relation_fac
             &(*completed.facts_for_test()),worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(Allocation::SystemAllocation,Some(&request))).is_err(),
             "live walk facts deliberately have no checkpoint reconstruction door");
         let selected=world.application.select_product_branch_for_test(&execution,world.application.product_runtime().default_branch_for_test()).unwrap();
-        let target=selected.resolve_entity(&phase,NodeKey::reference(),1,&request,WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
+        let target=selected.resolve_entity(&phase,NodeKey::at("NodeKey"),1,&request,WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
         let denied=completed.projected_relation(Next::reference(),&root,&target).err().unwrap();
         assert_eq!(denied.kind(),WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
             "physical walk metadata does not manufacture the explicit pair fact");
@@ -186,7 +184,7 @@ fn failed_calls_veto_sealing_before_a_key_exists_and_after_a_successful_duplicat
                 .invariant
                 .project(
                     &phase,
-                    |reader| reader.resolve_entity(NodeKey::reference(), 0).unwrap(),
+                    |reader| reader.resolve_entity(NodeKey::at("NodeKey"), 0).unwrap(),
                     Allocation::SystemAllocation,
                 )
                 .unwrap()

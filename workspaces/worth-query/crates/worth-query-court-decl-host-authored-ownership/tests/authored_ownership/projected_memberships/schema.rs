@@ -7,8 +7,8 @@ pub struct CaseRoots;
 pub struct CaseAdjacency;
 pub struct CaseComponents;
 impl Uses {
-    pub fn reference<S: Scenario>() -> ApplicationProjectedMemberDomainRef<S, Self, Node> {
-        ApplicationProjectedMemberDomainRef::new("NodeUses", Node::reference())
+    pub fn reference<S: Scenario>() -> ApplicationProjectedMemberDomainRef<S, Self, Node<S>> {
+        ApplicationProjectedMemberDomainRef::new("NodeUses", schema::node::<S>())
     }
 }
 impl Alpha {
@@ -22,7 +22,7 @@ impl Omega {
     }
 }
 impl CaseRoots {
-    pub fn reference<S: Scenario>() -> ApplicationDerivedRelationRef<S, Self, Node, Uses> {
+    pub fn reference<S: Scenario>() -> ApplicationDerivedRelationRef<S, Self, Node<S>, Uses> {
         ApplicationDerivedRelationRef::from_member_identifiers(
             "CaseRoots",
             ApplicationGraphMemberSelector::Entity("Node"),

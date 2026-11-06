@@ -23,7 +23,7 @@ pub(in crate::checkpoint_recovery::required_chain) fn install(
         producer_domain_denial: Arc::new(AtomicBool::new(false)),
         producer_contacts: None,
     },);
-    let declaration = ValueSourceSchema::declaration().expect("the checkpoint schema is valid");
+    let declaration = <ValueSourceSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the checkpoint schema is valid");
     let program = ApplicationProgramAuthoring::<ValueSourceSchema, ValueSourceProgram>::begin()
         .with_schema(&declaration)
         .validated_program()

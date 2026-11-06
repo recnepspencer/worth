@@ -57,9 +57,9 @@ pub fn run(
             .unwrap()
             .clone()
     };
-    let i = AccountIdentity::reference();
-    let s = AccountStatus::reference();
-    let l = AccountLabel::reference();
+    let i = AccountIdentity::at("AccountIdentity");
+    let s = AccountStatus::at("AccountStatus");
+    let l = AccountLabel::at("AccountLabel");
     let identity = locator(i.entity(), i.aspect(), i.field());
     let status = locator(s.entity(), s.aspect(), s.field());
     let label = locator(l.entity(), l.aspect(), l.field());

@@ -277,7 +277,7 @@ fn shared_basis_real_query_completes_without_claiming_physical_release() {
                 .selected_product(&(phase).test_host_request_for_test())
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

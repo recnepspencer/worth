@@ -1,6 +1,5 @@
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::decision_facts::comparison::indexed::PreparedSelections;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
-use crate::domain_computation::primary_graph::provider::decision_facts::comparison::tests;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
@@ -45,7 +44,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
             let graph = (*world.application.runtime_for_test())
                 .primary_graph_for_test()
                 .unwrap();
-            let field = AccountStatus::reference();
+            let field = AccountStatus::at("AccountStatus");
             let layout = (*graph.layout_for_test())
                 .equality_field_for_test(field.entity(), field.aspect(), field.field())
                 .unwrap();
@@ -232,7 +231,7 @@ fn prepared_indexed_comparison_keeps_a_native_cancellation() {
         let selected = world.selected_product(&phase.test_host_request_for_test());
         let snapshot = selected.application_basis_for_test().snapshot_handle();
         let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
-        let field = (*graph.layout_for_test()).equality_field_for_test("Account", "AccountPolicy", "AccountStatus").unwrap();
+        let field = (*graph.layout_for_test()).equality_field_for_test("Account", worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus::at("AccountStatus").aspect(), "AccountStatus").unwrap();
         let (answer, seen) = graph.integration_handle_for_test().with_runtime(&execution, |runtime| {
             let fact = observe_indexed_entity_selection(runtime, &execution, snapshot,
                 (*field.equality_index_id_for_test()).unwrap(), (*field.entity_kind_for_test()), (*field.locator_for_test()).clone(),

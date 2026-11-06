@@ -1,8 +1,43 @@
 //! Two effects of one relation derive one membership, not duplicate declarations.
 use crate::application_schema::*;
 struct Schema;
-crate::worth_query_entity!(Node for Schema);
-crate::worth_query_relation!(Children in Schema, Node => Node; integrity = same_context_unbounded_retain_dangling);
+use crate::application_schema::fragment::{self, *};
+struct Node;
+impl Entity for Node {
+    const NAME: &'static str = "Node";
+    type Aspects = ();
+    type Relations = (Children,);
+}
+impl Node {
+    fn reference() -> ApplicationEntityRef<Schema, Self> {
+        entity(Schema, Self)
+    }
+}
+impl Fragment for Schema {
+    const NAME: &'static str = "creation";
+    type Bindings = NoBindings;
+    type Members = (Node,);
+}
+impl ApplicationSchema for Schema {
+    const OWNER: &'static str = "tests";
+    const NAME: &'static str = "creation";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+}
+
+struct Children;
+impl Relation for Children {
+    const NAME: &'static str = "Children";
+    type To = Node;
+}
+impl Children {
+    fn reference() -> ApplicationRelationRef<Schema, Self, Node, Node> {
+        relation(Schema, Node, Self)
+    }
+}
+
 crate::worth_query_structured_value_binding!(Input for () { identity: "worth.tests.links-input.v1" });
 crate::worth_query_operation!(Spawn for Schema, input Input);
 crate::worth_query_operation_reads!(Spawn => [Node]);
@@ -23,9 +58,8 @@ fn repeated_relation_effects_derive_one_link_membership_and_keep_both_edges() {
         .unwrap()
         .finish()
         .unwrap();
-    let schema = ApplicationSchemaDeclarationBuilder::<Schema>::from_test_members(vec![])
-        .entity(Node::reference())
-        .relation(Children::reference(), Node::reference(), Node::reference())
+    let schema = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(Schema)
+        .unwrap()
         .operation(
             Spawn::reference()
                 .definition()

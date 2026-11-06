@@ -72,7 +72,7 @@ impl BankRailCompletionContinuation {
         let route = Arc::clone(&self.route);
         let batch = tokio::task::spawn_blocking(move || {
             let cancellation = WorthQueryCancellationSource::new();
-            let request = WorthQueryRequestScope::new(Some(deadline), cancellation.token());
+            let request = WorthQueryRequestScope::new(Some(deadline), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
             route.maintain_custody(&request)
         })
         .await;

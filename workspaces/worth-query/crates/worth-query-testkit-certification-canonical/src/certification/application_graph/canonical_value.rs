@@ -28,7 +28,11 @@ pub fn assert_installed_contract(application: &host::Host) {
     let installed = application
         .installed_schema()
         .value_bindings()
-        .field("Document", "DocumentFacts", "DocumentValueField")
+        .field(
+            "Document",
+            schema::DocumentValueField::at("DocumentValueField").aspect(),
+            "DocumentValueField",
+        )
         .expect("exact installed field retains its value binding");
     let contract = installed
         .canonical_contract()

@@ -33,39 +33,30 @@ pub fn identity() -> ApplicationQueryResultFieldRef<
     Query,
     IdentitySlot,
     DocumentRetentionSchema,
-    WorkflowAuthoringGrant,
-    WorkflowAuthoringGrantFacts,
     WorkflowGrantIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("identity", WorkflowGrantIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+    )
 }
-fn parameter(
-) -> ApplicationQueryParameterRef<Query, IdentityParameter, StringApplicationValueBinding> {
+fn parameter() -> ApplicationQueryParameterRef<Query, IdentityParameter, WorkflowGrantKeyBinding> {
     ApplicationQueryParameterRef::from_query_identifier("identity")
 }
-type Scope = ApplicationQueryFieldScope<
-    DocumentRetentionSchema,
-    WorkflowAuthoringGrant,
-    WorkflowAuthoringGrantFacts,
-    WorkflowGrantIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+type Scope = ApplicationQueryFieldScope<WorkflowGrantIdentityField>;
 pub struct Binding;
 impl ApplicationQueryIntent<DocumentRetentionSchema> for Input {
     type Binding = Binding;
     fn parameters(&self) -> ApplicationQueryParameterSet<Query> {
         ApplicationQueryParameterSet::new()
-            .bind(parameter(), self.identity.clone())
+            .bind(parameter(), self.identity.clone().into())
             .unwrap()
     }
     fn into_scope(self) -> Scope {
-        Scope::new(WorkflowGrantIdentityField::reference(), self.identity)
+        Scope::new(
+            WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+            self.identity.into(),
+        )
     }
 }
 impl ApplicationQueryBinding<DocumentRetentionSchema> for Binding {
@@ -82,17 +73,8 @@ impl ApplicationQueryBinding<DocumentRetentionSchema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.control-history.read.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        WorkflowAuthoringGrant,
-        WorkflowAuthoringGrantFacts,
-        WorkflowGrantIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        WorkflowGrantIdentityField::reference()
+    fn scope_field() -> WorkflowGrantIdentityField {
+        WorkflowGrantIdentityField::at("WorkflowGrantIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema,
@@ -127,7 +109,10 @@ pub fn definition(
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .parameter(parameter())
-        .where_equal(WorkflowGrantIdentityField::reference(), parameter())
+        .where_equal(
+            WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+            parameter(),
+        )
         .build()
         .unwrap()
 }
@@ -136,7 +121,7 @@ impl WorthQueryApplicationProjection<DocumentRetentionSchema, Query> for Row {
         row: &WorthQueryApplicationProjectionRow<'_, DocumentRetentionSchema, Query>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
-            identity: row.field(identity())?,
+            identity: row.field(identity())?.into(),
         })
     }
 }

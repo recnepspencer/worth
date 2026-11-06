@@ -10,9 +10,7 @@ use worth_query_host::facade::{
         WorthQueryOperationAuthorizationRefusalKind as Refusal,
     },
 };
-use worth_query_testkit_document_retention::facade::document_retention_model::{
-    document_history::GovernedRetentionHistory as History, record_history::capability,
-};
+use worth_query_testkit_document_retention::facade::document_retention_model::record_history::capability;
 
 fn input() -> capability::Input {
     capability::Input {

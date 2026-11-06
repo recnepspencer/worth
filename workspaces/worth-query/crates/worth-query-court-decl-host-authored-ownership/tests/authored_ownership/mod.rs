@@ -56,11 +56,11 @@ fn install<const MODE: u8>() -> Result<
             for (key, id) in [("source", 2), ("peer", 3)] {
                 graph.bind_entity(
                     WorthQueryApplicationEntitySeed::new(
-                        Node::reference(),
+                        schema::node::<Model<MODE>>(),
                         WorthQueryApplicationEntityKey::new(key).unwrap(),
                     )
-                    .field(Id::reference(), id)
-                    .field(Value::reference(), 0),
+                    .field(schema::id::<Model<MODE>>(), id)
+                    .field(schema::value::<Model<MODE>>(), 0),
                 )?;
             }
             graph.bind_relation(WorthQueryApplicationRelationSeed::new(
@@ -118,3 +118,5 @@ mod foreign_aggregate;
 mod currentness_guards;
 
 mod support_currentness;
+
+mod native_boundary;

@@ -24,7 +24,22 @@ fn current_custody_contacts_only_the_touched_publication_and_leaves_other_region
         .entity_id();
     let count = host
         .runtime()
-        .probe_current_ownership_locality_for_test(created.product_branch(), owner, &scope)
+        .probe_current_ownership_locality_for_test(
+            created.product_branch(),
+            owner,
+            &scope,
+            |id| {
+                let mut fields = native_values(&host, &FactsValue { id });
+                fields.extend(native_values(&host, &ValuesValue { value: 0 }));
+                worth_relational::facade::transactions::AspectFieldPatch::from(fields)
+            },
+            |value| {
+                worth_relational::facade::transactions::AspectFieldPatch::from(native_values(
+                    &host,
+                    &ValuesValue { value },
+                ))
+            },
+        )
         .unwrap();
     assert_eq!(
         count.cold_before, 63,
@@ -43,4 +58,47 @@ fn current_custody_contacts_only_the_touched_publication_and_leaves_other_region
     assert!(
         matches!(count.owned_refusal.authored_retirement_refusal(),Some(AuthoredRetirementRefusal::OwnedPublicationRequiresCascade{owner:actual,..}) if actual==owner)
     );
+}
+
+fn native_values<T: 'static>(
+    host: &WorthQueryProgramApplicationRuntime<Model<6>, TwoProgram>,
+    row: &T,
+) -> std::collections::BTreeMap<
+    worth_foundational::facade::AspectFieldLocator,
+    worth_foundational::facade::AspectValue,
+>
+where
+    OwnershipModelBindings: worth_query_decl::facade::application_schema::fragment::Record<T>,
+{
+    let fragment = host
+        .installed_schema()
+        .value_bindings()
+        .fragment(OwnershipModel::<false>)
+        .unwrap();
+    let definition = fragment
+        .aspects()
+        .find(|aspect| aspect.binding().value_type() == std::any::TypeId::of::<T>())
+        .unwrap();
+    let mut encoded = definition.encode::<OwnershipModelBindings, T>(row).unwrap();
+    let layout = host
+        .runtime()
+        .runtime_for_test()
+        .primary_graph_for_test()
+        .unwrap()
+        .layout_for_test();
+    definition
+        .fields()
+        .iter()
+        .filter_map(|field| {
+            let value = encoded.remove(field.path())?;
+            let locus = field.recipe().locus();
+            Some((
+                layout
+                    .field_locator_for_test(locus.entity(), locus.aspect(), locus.field())
+                    .unwrap()
+                    .clone(),
+                value,
+            ))
+        })
+        .collect()
 }

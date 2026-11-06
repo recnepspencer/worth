@@ -3,16 +3,10 @@
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::components::binding::Empty;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::components::binding::Shells;
 
-use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::program;
-use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::*;
-use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::currentness;
-use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::identity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::component_selection::ComponentSelection;
-use worth_execution::ExecutionRequest;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::components::binding::*;
-use std::collections::BTreeSet;
 use std::sync::Arc;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 pub struct Read {

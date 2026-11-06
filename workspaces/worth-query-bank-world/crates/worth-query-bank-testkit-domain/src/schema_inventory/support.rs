@@ -1,3 +1,6 @@
+#[path = "aspect_names.rs"]
+mod aspect_names;
+pub use aspect_names::native_aspect;
 pub use std::collections::BTreeSet;
 
 pub use worth_query_decl::facade::application_schema::{
@@ -122,7 +125,7 @@ pub fn assert_program(
     let expected = expected_targets
         .iter()
         .copied()
-        .map(str::to_string)
+        .map(expected_target)
         .collect::<BTreeSet<_>>();
     assert_eq!(actual, expected, "operation program drift: {operation}");
 }
@@ -145,7 +148,7 @@ pub fn assert_decision_reads(
     let expected = expected_targets
         .iter()
         .copied()
-        .map(str::to_string)
+        .map(expected_target)
         .collect::<BTreeSet<_>>();
     assert_eq!(
         actual, expected,
@@ -155,6 +158,9 @@ pub fn assert_decision_reads(
 
 pub fn decision_read_target(target: &ApplicationOperationDecisionReadTarget) -> String {
     match target {
+        ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => {
+            format!("managed-index:{}", parent.parts().binding.as_str())
+        }
         ApplicationOperationDecisionReadTarget::Entity { entity } => {
             format!("entity:{entity}")
         }
@@ -202,4 +208,20 @@ pub fn program_target(target: &ApplicationOperationProgramTarget) -> String {
 
 pub fn expected<'a>(values: &'a [&'a str]) -> BTreeSet<&'a str> {
     values.iter().copied().collect()
+}
+
+fn expected_target(target: &str) -> String {
+    if let Some((kind, locus)) = target.split_once(':')
+        && matches!(kind, "field" | "write" | "remove-aspect")
+    {
+        let mut parts = locus.split('/');
+        let entity = parts.next().unwrap();
+        let meaning = parts.next().unwrap();
+        let aspect = native_aspect(entity, meaning);
+        return match parts.next() {
+            Some(field) => format!("{kind}:{entity}/{aspect}/{field}"),
+            None => format!("{kind}:{entity}/{aspect}"),
+        };
+    }
+    target.to_owned()
 }

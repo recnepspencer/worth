@@ -1,5 +1,4 @@
 //! Sealed correction metadata survives real optional history retirement.
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyResolution;
 use worth_query_execution::facade::domain_computation::WorthQueryCorrectionSelectionDenial;
 use worth_runtime_world::facade::CompositeAncestorSelectionDenial;

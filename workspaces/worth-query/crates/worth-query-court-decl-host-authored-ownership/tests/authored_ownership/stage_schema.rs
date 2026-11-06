@@ -6,7 +6,7 @@ pub struct OwnCell;
 pub struct DerivedCell;
 pub struct SourceLink;
 impl SourceLink {
-    pub fn reference<S: Scenario>() -> ApplicationRelationRef<S, Self, Node, Node> {
+    pub fn reference<S: Scenario>() -> ApplicationRelationRef<S, Self, Node<S>, Node<S>> {
         ApplicationRelationRef::from_schema_identifiers(
             "SourceLink",
             "Node",
@@ -17,13 +17,13 @@ impl SourceLink {
 }
 impl OperationLinks<lifecycle::CreateOp> for SourceLink {}
 impl DerivedCell {
-    pub fn reference<S: Scenario>() -> ApplicationDerivedRelationRef<S, Self, Node, Node> {
+    pub fn reference<S: Scenario>() -> ApplicationDerivedRelationRef<S, Self, Node<S>, Node<S>> {
         ApplicationDerivedRelationRef::from_schema_identifiers("DerivedCell", "Node", "Node")
     }
 }
 impl OperationReads<coupled::producer::Operation> for DerivedCell {}
 impl OwnCell {
-    pub fn reference<S: Scenario>() -> ApplicationRelationRef<S, Self, Node, Node> {
+    pub fn reference<S: Scenario>() -> ApplicationRelationRef<S, Self, Node<S>, Node<S>> {
         ApplicationRelationRef::from_schema_identifiers(
             "OwnCell",
             "Node",
@@ -33,7 +33,7 @@ impl OwnCell {
     }
 }
 impl PreviousStage {
-    pub fn reference<S: Scenario>() -> ApplicationRelationRef<S, Self, Node, Node> {
+    pub fn reference<S: Scenario>() -> ApplicationRelationRef<S, Self, Node<S>, Node<S>> {
         ApplicationRelationRef::from_schema_identifiers(
             "PreviousStage",
             "Node",
@@ -43,7 +43,7 @@ impl PreviousStage {
     }
 }
 impl StageVisible {
-    pub fn reference<S: Scenario>() -> ApplicationRelationRef<S, Self, Node, Node> {
+    pub fn reference<S: Scenario>() -> ApplicationRelationRef<S, Self, Node<S>, Node<S>> {
         ApplicationRelationRef::from_schema_identifiers(
             "StageVisible",
             "Node",
@@ -68,7 +68,6 @@ pub fn declare<S: Scenario>(
 ) -> ApplicationSchemaDeclarationBuilder<S> {
     if matches!(S::MODE, 42 | 64) {
         return schema
-            .relation(OwnCell::reference(), Node::reference(), Node::reference())
             .operation_link(
                 ApplicationOperationRef::<S, producer::Operation, query::Input>::from_declaration(),
                 OwnCell::reference(),
@@ -88,12 +87,6 @@ pub fn declare<S: Scenario>(
     }
     if S::MODE == 26 {
         return schema
-            .relation(OwnCell::reference(), Node::reference(), Node::reference())
-            .relation(
-                StageVisible::reference(),
-                Node::reference(),
-                Node::reference(),
-            )
             .derived_relation(
                 DerivedCell::reference(),
                 ApplicationDerivedRelation::relation(OwnCell::reference()),
@@ -152,44 +145,33 @@ pub fn declare<S: Scenario>(
             schema
         };
         let schema = if S::MODE == 27 {
-            schema
-                .relation(
-                    SourceLink::reference(),
-                    Node::reference(),
-                    Node::reference(),
-                )
-                .operation_link(lifecycle::CreateOp::reference(), SourceLink::reference())
+            schema.operation_link(lifecycle::CreateOp::reference(), SourceLink::reference())
         } else {
             schema
         };
         let path = if S::MODE == 28 {
-            ApplicationQueryRootPath::from(Node::reference())
+            ApplicationQueryRootPath::from(schema::node::<S>())
                 .forward_closure(StageVisible::reference())
                 .reverse_closure(OwnCell::reference())
         } else if S::MODE == 27 {
-            ApplicationQueryRootPath::from(Node::reference())
+            ApplicationQueryRootPath::from(schema::node::<S>())
                 .forward(SourceLink::reference())
                 .forward(StageVisible::reference())
                 .where_equal(
-                    Value::reference(),
+                    schema::value::<S>(),
                     ApplicationEncodedScalarValue::try_new(39u64).unwrap(),
                 )
+                .expect("the native path guard is declared")
                 .reverse(StageVisible::reference())
                 .reverse(SourceLink::reference())
                 .forward(StageVisible::reference())
                 .reverse_closure(OwnCell::reference())
         } else {
-            ApplicationQueryRootPath::from(Node::reference())
+            ApplicationQueryRootPath::from(schema::node::<S>())
                 .forward(StageVisible::reference())
                 .reverse_closure(OwnCell::reference())
         };
         return schema
-            .relation(OwnCell::reference(), Node::reference(), Node::reference())
-            .relation(
-                StageVisible::reference(),
-                Node::reference(),
-                Node::reference(),
-            )
             .components(
                 ApplicationComponentSetDefinition::new(Components::reference())
                     .coupled_by(OwnCell::reference()),
@@ -245,16 +227,6 @@ pub fn declare<S: Scenario>(
         schema
     };
     schema
-        .relation(
-            PreviousStage::reference(),
-            Node::reference(),
-            Node::reference(),
-        )
-        .relation(
-            StageVisible::reference(),
-            Node::reference(),
-            Node::reference(),
-        )
         .components(
             ApplicationComponentSetDefinition::new(Components::reference())
                 .coupled_by(PreviousStage::reference()),
@@ -263,11 +235,11 @@ pub fn declare<S: Scenario>(
             coupled::producer::Operation::reference(),
             Components::reference(),
             if matches!(S::MODE, 30 | 39 | 40 | 41 | 60) {
-                ApplicationQueryRootPath::from(Node::reference())
+                ApplicationQueryRootPath::from(schema::node::<S>())
                     .forward(StageVisible::reference())
                     .forward_closure(PreviousStage::reference())
             } else {
-                ApplicationQueryRootPath::from(Node::reference())
+                ApplicationQueryRootPath::from(schema::node::<S>())
                     .forward(StageVisible::reference())
                     .reverse_closure(PreviousStage::reference())
             },
@@ -278,3 +250,23 @@ impl OperationLinks<producer::Operation> for PreviousStage {}
 impl OperationReads<coupled::producer::Operation> for PreviousStage {}
 impl OperationLinks<coupled::producer::Operation> for PreviousStage {}
 impl OperationUnlinks<coupled::producer::Operation> for PreviousStage {}
+
+impl fragment::Relation for PreviousStage {
+    const NAME: &'static str = "PreviousStage";
+    type To = NativeNode<true>;
+}
+
+impl fragment::Relation for StageVisible {
+    const NAME: &'static str = "StageVisible";
+    type To = NativeNode<true>;
+}
+
+impl fragment::Relation for OwnCell {
+    const NAME: &'static str = "OwnCell";
+    type To = NativeNode<true>;
+}
+
+impl fragment::Relation for SourceLink {
+    const NAME: &'static str = "SourceLink";
+    type To = NativeNode<true>;
+}

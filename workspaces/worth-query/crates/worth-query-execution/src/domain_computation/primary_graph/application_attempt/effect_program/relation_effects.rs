@@ -1,13 +1,12 @@
-use worth_query_installation::facade::{
-    ApplicationOperationProgramTarget, ApplicationRelationRef, OperationLinks, OperationReads,
-    OperationUnlinks,
-};
+use worth_query_installation::facade::ApplicationOperationProgramTarget;
+use worth_query_installation::facade::ApplicationRelationRef;
+use worth_query_installation::facade::OperationLinks;
+use worth_query_installation::facade::OperationReads;
+use worth_query_installation::facade::OperationUnlinks;
 
-use super::{
-    canonical_key, denial, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEffectEntity,
-    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationRealizedEffect,
-};
+use super::WorthQueryApplicationAttemptDenial;
+use super::WorthQueryApplicationEffectEntity;
+use super::WorthQueryApplicationEffectProgramBuilder;
 use crate::domain_computation::primary_graph::WorthQueryObservedApplicationRelation;
 
 impl<Schema, Operation, Input, Scope>
@@ -39,42 +38,8 @@ impl<Schema, Operation, Input, Scope>
         from: &WorthQueryApplicationEffectEntity<Schema, From>,
         to: &WorthQueryApplicationEffectEntity<Schema, To>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        let ApplicationOperationProgramTarget::Unlink {
-            relation,
-            from: source,
-            to: destination,
-        } = target
-        else {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                "relation unlink",
-            ));
-        };
-        use worth_relational::facade::transactions::EntityReference;
-        self.validate_target(from, source)?;
-        self.validate_target(to, destination)?;
-        let (EntityReference::Existing(from_id), EntityReference::Existing(to_id)) =
-            (&from.reference, &to.reference)
-        else {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                relation,
-            ));
-        };
-        let kind = self
-            .layout
-            .relation(relation)
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,
-                    relation,
-                )
-            })?
-            .kind;
-        let observed: WorthQueryObservedApplicationRelation<Schema, (), From, To> =
-            self.read_set
-                .relation_observation(relation, kind, *from_id, *to_id)?;
-        self.unlink_at_observation(target, observed)
+        self.native_effects()
+            .unlink_at_target(target, from.borrowed(), to.borrowed())
     }
 
     pub fn link<Relation, From, To>(
@@ -117,49 +82,13 @@ impl<Schema, Operation, Input, Scope>
         from: &WorthQueryApplicationEffectEntity<Schema, From>,
         to: &WorthQueryApplicationEffectEntity<Schema, To>,
     ) -> Result<usize, WorthQueryApplicationAttemptDenial> {
-        let ApplicationOperationProgramTarget::Link {
-            relation,
-            from: from_name,
-            to: to_name,
-        } = target
-        else {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                "relation link",
-            ));
-        };
-        self.validate_target(from, from_name)?;
-        self.validate_target(to, to_name)?;
-        self.admit_program_target(target)?;
-        let kind = self
-            .layout
-            .relation(relation)
-            .map(|layout| layout.kind)
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                    relation,
-                )
-            })?;
-        let key = canonical_key(key.into(), relation)?;
-        if self.keys.contains(&(kind, key.clone())) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DuplicateEffectKey,
-                relation,
-            ));
-        }
-        self.reserve_effects(1)?;
-        self.keys.insert((kind, key.clone()));
-        let position = self.effects.len();
-        self.effects
-            .push(WorthQueryApplicationRealizedEffect::CreateRelation {
-                fields: Default::default(),
-                kind,
-                key,
-                from: from.reference.clone(),
-                to: to.reference.clone(),
-            });
-        Ok(position)
+        let mut key = Some(key);
+        self.native_effects().link_at_target_index(
+            target,
+            &mut || key.take().expect("one admitted key conversion").into(),
+            from.borrowed(),
+            to.borrowed(),
+        )
     }
 
     pub fn unlink<Relation, From, To>(
@@ -184,13 +113,8 @@ impl<Schema, Operation, Input, Scope>
         target: &ApplicationOperationProgramTarget,
         observed: WorthQueryObservedApplicationRelation<Schema, Relation, From, To>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        self.admit_program_target(target)?;
-        self.reserve_effects(observed.matching_relations.len())?;
-        self.effects
-            .extend(observed.matching_relations.into_iter().map(|relation_id| {
-                WorthQueryApplicationRealizedEffect::DeleteRelation { relation_id }
-            }));
-        Ok(())
+        self.native_effects()
+            .unlink_at_observation(target, observed.matching_relations)
     }
 }
 

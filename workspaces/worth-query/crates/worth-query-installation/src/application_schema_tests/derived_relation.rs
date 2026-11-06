@@ -26,13 +26,11 @@ impl<const L: bool> ApplicationSchema for DerivedSchema<L> {
                 ApplicationProjectedMemberCaseRef, ApplicationProjectedMemberDomainDefinition,
                 ApplicationProjectedMemberDomainRef,
             };
-            let carrier = ApplicationEntityRef::<Self, FixtureEntity<Self>>::from_schema_identifier(
-                "TestEntity",
+            let carrier =
+                ApplicationEntityRef::<Self, FixtureEntity>::from_schema_identifier("TestEntity");
+            let domain = ApplicationProjectedMemberDomainRef::<Self, Uses, FixtureEntity>::new(
+                "Uses", carrier,
             );
-            let domain =
-                ApplicationProjectedMemberDomainRef::<Self, Uses, FixtureEntity<Self>>::new(
-                    "Uses", carrier,
-                );
             let side = ApplicationProjectedMemberCaseRef::<Self, Uses, Side>::new(domain, "Side");
             let relation = ApplicationDerivedRelationRef::<Self, TwoSteps, Uses, Uses>::projected(
                 "TwoSteps", domain,
@@ -43,15 +41,15 @@ impl<const L: bool> ApplicationSchema for DerivedSchema<L> {
                 .operation_read_derived_relation(ApplicationOperationRef::<Self,TestOperation<Self>,TestInput>::from_declaration(),relation)
                 .rule_readable_collection::<Feature,Collection,_,_,_>(relation).build();
         }
-        let edge = ApplicationRelationRef::<Self, MappingTarget, FixtureEntity<Self>, FixtureEntity<Self>>::from_schema_identifiers(
+        let edge = ApplicationRelationRef::<Self, MappingTarget, FixtureEntity, FixtureEntity>::from_schema_identifiers(
             "MappingTarget", "TestEntity", "TestEntity",
             worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
         );
         let derived = ApplicationDerivedRelationRef::<
             Self,
             TwoSteps,
-            FixtureEntity<Self>,
-            FixtureEntity<Self>,
+            FixtureEntity,
+            FixtureEntity,
         >::from_schema_identifiers("TwoSteps", "TestEntity", "TestEntity");
         test_schema_members::<Self>(None)
             .derived_relation(

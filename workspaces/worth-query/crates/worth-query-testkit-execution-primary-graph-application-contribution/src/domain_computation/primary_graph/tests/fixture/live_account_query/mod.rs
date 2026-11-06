@@ -22,9 +22,7 @@ use crate::domain_computation::primary_graph::tests::fixture::application_querie
 use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::AccountAllActivity;
 use crate::domain_computation::primary_graph::tests::fixture::AccountIdentity;
-use crate::domain_computation::primary_graph::tests::fixture::AccountPolicy;
 use crate::domain_computation::primary_graph::tests::fixture::Activity;
-use crate::domain_computation::primary_graph::tests::fixture::ActivityFacts;
 use crate::domain_computation::primary_graph::tests::fixture::ActivityIdentity;
 use crate::domain_computation::primary_graph::tests::fixture::ActivitySequence;
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
@@ -154,16 +152,16 @@ pub fn live_account_activity_definition() -> ApplicationQueryDefinition<
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())
         .requires_ability(ViewAccount::reference())
         .parameter(live_account_parameter())
-        .where_equal(AccountIdentity::reference(), live_account_parameter())
+        .where_equal(
+            AccountIdentity::at("AccountIdentity"),
+            live_account_parameter(),
+        )
         .order_by(
             activity_sequence(),
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(activities())
-        .live_by::<Activity, LiveAccountActivityCause, _, _, _, _, _, _, _, _>(
-            account_identity(),
-            activity_identity(),
-        )
+        .live_by::<Activity, LiveAccountActivityCause>(account_identity(), activity_identity())
         .build()
         .unwrap()
 }
@@ -245,45 +243,27 @@ pub fn account_identity() -> ApplicationQueryResultFieldRef<
     LiveAccountActivityQuery,
     AccountIdentitySlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("account", AccountIdentity::reference())
+    ApplicationQueryResultFieldRef::new("account", AccountIdentity::at("AccountIdentity"))
 }
 
 pub fn activity_identity() -> ApplicationQueryResultFieldRef<
     LiveAccountActivityQuery,
     ActivityIdentitySlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivityIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("activity", ActivityIdentity::reference())
+    ApplicationQueryResultFieldRef::new("activity", ActivityIdentity::at("ActivityIdentity"))
 }
 
 pub fn activity_sequence() -> ApplicationQueryResultFieldRef<
     LiveAccountActivityQuery,
     ActivitySequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 pub fn activities() -> ApplicationQueryResultRelationRef<

@@ -38,7 +38,7 @@ pub fn commit<Schema: BirthSchema>(
             let root = selected
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     key.to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -162,7 +162,7 @@ pub fn required_read_refuses(
             let root = selected
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::ANCHOR.to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -227,7 +227,7 @@ pub fn required_read_refuses(
                         .prior_output::<OrdinaryBinding<Schema>, BornNode<Schema>>()
                         .expect("actual ordinary correspondence supplies the real live member");
                     assert_eq!(
-                        reader.decision_field(&node, Note::reference()).unwrap(),
+                        reader.decision_field(&node, Note::at("Note")).unwrap(),
                         None
                     );
                 },

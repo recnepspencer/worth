@@ -1,9 +1,9 @@
 //! Caller cancellation during real invariant preparation must not fail a shared row.
 
+use super::{BodyKey, RegionOutputFamily, WorthQueryAdvancementPhase};
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::PlanarQuery;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::PlanarReadBinding;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::PlanarReadResult;
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::principal;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::principal::ConsumerPrincipalBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationOutputDemandSource;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
@@ -13,7 +13,6 @@ use worth_query_execution::facade::domain_computation::WorthQueryProductQueryCon
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::Application;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::OwnerSchema;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::ANCHOR;
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::*;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
@@ -54,7 +53,7 @@ pub fn source(
     let entity = selected
         .resolve_entity(
             phase,
-            BodyKey::reference(),
+            BodyKey::at("BodyKey"),
             ANCHOR.to_owned(),
             scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -149,8 +148,6 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandAdvance;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
 
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::*;
-
 #[test]
 fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live() {
     let interruption = Interruption::default();
@@ -172,7 +169,7 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
         .with_application_advancement(&scope, |phase| {
             use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
             let execution = phase
-                .execution_request_for_for_test(&(*(*runtime.runtime_for_test()).product_runtime_for_test()))
+                .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
                 .unwrap();
             let admit = || {
                 runtime
@@ -226,7 +223,7 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
         .with_application_advancement(&fresh, |phase| {
             let execution = phase
                 .execution_request_for_for_test(
-                    &(*(*runtime.runtime_for_test()).product_runtime_for_test()),
+                    (*runtime.runtime_for_test()).product_runtime_for_test(),
                 )
                 .unwrap();
             let advanced = runtime

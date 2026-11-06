@@ -9,8 +9,6 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provisional_attempt::state;
 
 use std::sync::Arc;
-use std::sync::Mutex;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provisional_attempt_fixture::*;
 use worth_query_execution::facade::domain_computation::WorthQueryProposedFactOrigin;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionRecoveryPosture;
 use worth_query_execution::facade::domain_computation::WorthQueryProvisionalEffectAction;

@@ -1,10 +1,8 @@
-use worth_query_decl::facade::application_schema::{NoApplicationUnit, ReadOnly};
-
 use crate::{
-    model::{AccountId, BankPrincipalId},
+    model::BankPrincipalId,
     schema::{
-        Account, AccountIdentity, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
-        ExternalPrincipalMapping, Identity, Principal,
+        AccountIdentity, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
+        ExternalPrincipalMapping, Principal,
     },
 };
 
@@ -28,8 +26,8 @@ worth_query_decl::facade::worth_query_query_binding!(
     result AccountActivityQueryResultBinding,
     principal BankPrincipalBinding, mapping ExternalPrincipalMapping, principal_entity Principal,
         principal_identity BankPrincipalId, identity_binding BankPrincipalIdBinding,
-    scope Account, Identity, AccountIdentity, AccountId, ReadOnly, NoApplicationUnit,
-    field AccountIdentity::reference(),
+    scope AccountIdentity,
+    field AccountIdentity::at("AccountIdentity"),
     value AccountActivityRequest::account,
     limits results 1_024
 );

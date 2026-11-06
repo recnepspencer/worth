@@ -20,7 +20,7 @@ pub(super) fn install(
         producer_domain_denial: Arc::new(AtomicBool::new(false)),
         producer_contacts: None,
     },);
-    let declaration = MixedSchema::declaration().expect("the checkpoint schema is valid");
+    let declaration = <MixedSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the checkpoint schema is valid");
     let program = ApplicationProgramAuthoring::<MixedSchema, MixedProgram>::begin()
         .with_schema(&declaration)
         .validated_program()

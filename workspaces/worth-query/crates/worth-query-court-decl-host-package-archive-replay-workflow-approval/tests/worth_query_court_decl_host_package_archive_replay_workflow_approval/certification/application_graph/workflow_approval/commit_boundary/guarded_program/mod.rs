@@ -41,7 +41,7 @@ fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_au
             selected
                 .resolve_entity(
                     &host_phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     DOCUMENT_IDENTITY.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

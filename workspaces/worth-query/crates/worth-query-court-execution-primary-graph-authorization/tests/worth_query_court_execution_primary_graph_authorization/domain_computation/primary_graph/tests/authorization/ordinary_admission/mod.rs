@@ -67,7 +67,7 @@ fn current_installed_membership_mints_exact_operation_admission() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -205,7 +205,7 @@ fn caller_marker_cannot_widen_the_installed_precondition_contract() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -218,13 +218,15 @@ fn caller_marker_cannot_widen_the_installed_precondition_contract() {
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
-    let caller_only = TypedMutationPreconditions::new().expect_fact(
-        AccountLabel::reference(),
-        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
-            "forged-contract-widening".to_owned(),
+    let caller_only = TypedMutationPreconditions::new()
+        .expect_fact(
+            AccountLabel::at("AccountLabel"),
+            ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                "forged-contract-widening".to_owned(),
+            )
+            .expect("fixture account label must encode"),
         )
-        .expect("fixture account label must encode"),
-    );
+        .expect("record field contract");
 
     let denial = world
         .application
@@ -299,7 +301,7 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -354,7 +356,7 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

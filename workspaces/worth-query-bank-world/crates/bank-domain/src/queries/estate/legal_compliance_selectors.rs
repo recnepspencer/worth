@@ -1,20 +1,12 @@
-use worth_query_decl::facade::{
-    application_query::{
-        ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef, ExactlyOneResult,
-        ForwardResultTraversal, ManyResults, ReverseResultTraversal,
-    },
-    application_schema::{EqualityPredicate, NoApplicationUnit, ReadOnly, ReadWrite},
+use worth_query_decl::facade::application_query::{
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef, ExactlyOneResult,
+    ForwardResultTraversal, ManyResults, ReverseResultTraversal,
 };
 
-use crate::{
-    estate::{EstateCaseId, LegalAuthorityId, LegalAuthorityKind},
-    model::BankPrincipalId,
-    schema::{
-        BankSchema, EstateCase, EstateCaseIdentityField, EstateCaseRecord, LegalAuthority,
-        LegalAuthorityEstate, LegalAuthorityHolder, LegalAuthorityIdentityField,
-        LegalAuthorityKindField, LegalAuthorityRecognizedField, LegalAuthorityRecord, Principal,
-        PrincipalIdentity, PrincipalIdentityField,
-    },
+use crate::schema::{
+    BankSchema, EstateCase, EstateCaseIdentityField, LegalAuthority, LegalAuthorityEstate,
+    LegalAuthorityHolder, LegalAuthorityIdentityField, LegalAuthorityKindField,
+    LegalAuthorityRecognizedField, Principal, PrincipalIdentityField,
 };
 
 use super::legal_compliance::EstateLegalComplianceQuery;
@@ -36,19 +28,9 @@ worth_query_decl::facade::worth_query_portable_type!(AuthorityHolderIdentitySlot
 
 macro_rules! selector {
     ($name:ident, $slot:ty, $entity:ty, $aspect:ty, $field:ty, $value:ty, $write:ty, $alias:literal) => {
-        pub(super) fn $name() -> ApplicationQueryResultFieldRef<
-            EstateLegalComplianceQuery,
-            $slot,
-            BankSchema,
-            $entity,
-            $aspect,
-            $field,
-            $value,
-            $write,
-            EqualityPredicate,
-            NoApplicationUnit,
-        > {
-            ApplicationQueryResultFieldRef::new($alias, <$field>::reference())
+        pub(super) fn $name(
+        ) -> ApplicationQueryResultFieldRef<EstateLegalComplianceQuery, $slot, BankSchema, $field> {
+            ApplicationQueryResultFieldRef::new($alias, <$field>::at(stringify!($field)))
         }
     };
 }

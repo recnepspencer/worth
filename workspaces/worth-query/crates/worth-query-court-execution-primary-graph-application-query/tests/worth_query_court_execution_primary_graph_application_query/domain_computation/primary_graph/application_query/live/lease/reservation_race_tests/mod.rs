@@ -58,7 +58,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
                 .selected_product(&(phase).test_host_request_for_test())
                 .resolve_entity(
                     &phase,
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -159,7 +159,7 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
                 .selected_product(&(phase).test_host_request_for_test())
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

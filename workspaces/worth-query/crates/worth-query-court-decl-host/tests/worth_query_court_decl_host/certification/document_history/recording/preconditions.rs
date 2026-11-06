@@ -18,10 +18,14 @@ fn conditioned<'a>(host: &App, document: Document<'a>, expected: u64) -> Edit<'a
                 retention_days: 3,
             },
         })
-        .preconditions(TypedMutationPreconditions::new().expect_fact(
-            DocumentRetentionField::reference(),
-            ApplicationEncodedScalarValue::try_new(expected).unwrap(),
-        ))
+        .preconditions(
+            TypedMutationPreconditions::new()
+                .expect_fact(
+                    DocumentRetentionField::at("DocumentRetentionField"),
+                    ApplicationEncodedScalarValue::try_new(expected).unwrap(),
+                )
+                .expect("record precondition"),
+        )
         .idempotency_owned(&host.runtime().request(&principal, &scope), 0x9182_0450)
         .unwrap()
         .retain_in_program::<RetentionProgramP0, Action>(host)

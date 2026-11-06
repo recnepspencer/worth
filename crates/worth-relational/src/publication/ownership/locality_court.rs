@@ -5,9 +5,6 @@ use crate::{
     runtime::RelationalRuntime, storage::overlay::CurrentPartitionAccess, transactions::data::*,
 };
 use worth_execution::ExecutionRequest;
-use worth_foundational::facade::{
-    AspectFieldLocator, AspectKey, AspectValue, CanonicalFieldPath, FieldKey, LocatorAuthority,
-};
 #[derive(Debug)]
 pub struct CurrentOwnershipLocalityForTest {
     pub unrelated_roster_records: usize,
@@ -24,6 +21,8 @@ impl RelationalRuntime {
         execution: &ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         owner: EntityId,
+        seed_fields: impl Fn(u64) -> AspectFieldPatch,
+        value_fields: impl Fn(u64) -> AspectFieldPatch,
     ) -> Result<CurrentOwnershipLocalityForTest, TransactionCommitError> {
         let fail = |detail| {
             crate::mvcc::origin_denial(format!("current ownership locality court: {detail}"))
@@ -67,13 +66,7 @@ impl RelationalRuntime {
                 partition_id: partition,
                 kind_id: kind,
                 client_key: key,
-                fields: AspectFieldPatch::from(std::collections::BTreeMap::from([
-                    (
-                        locus("Facts", "Id"),
-                        AspectValue::UInt64(50_000 + u64::from(part)),
-                    ),
-                    (locus("Values", "Value"), AspectValue::UInt64(0)),
-                ])),
+                fields: seed_fields(50_000 + u64::from(part)),
             })));
         }
         tx.push_batch(batch, execution.allocation_policy())
@@ -96,10 +89,7 @@ impl RelationalRuntime {
                 WorkerIntentBatch::new("ordinary-source-head").push(MutationIntent::Entity(
                     EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                         entity_id: owner,
-                        fields: AspectFieldPatch::from(std::collections::BTreeMap::from([(
-                            locus("Values", "Value"),
-                            AspectValue::UInt64(11),
-                        )])),
+                        fields: value_fields(11),
                     }),
                 )),
                 execution.allocation_policy(),
@@ -181,12 +171,7 @@ impl RelationalRuntime {
                                 MutationIntent::Entity(EntityMutationIntent::UpdateFields(
                                     UpdateEntityFieldsIntent {
                                         entity_id: unrelated,
-                                        fields: AspectFieldPatch::from(
-                                            std::collections::BTreeMap::from([(
-                                                locus("Values", "Value"),
-                                                AspectValue::UInt64(7),
-                                            )]),
-                                        ),
+                                        fields: value_fields(7),
                                     },
                                 )),
                             ),
@@ -246,11 +231,4 @@ impl RelationalRuntime {
             .map_err(|cause| TransactionCommitError::execution(cause.into()))?
             .0
     }
-}
-fn locus(aspect: &str, field: &str) -> AspectFieldLocator {
-    AspectFieldLocator::new(
-        LocatorAuthority::Planned,
-        AspectKey::new(aspect).unwrap(),
-        CanonicalFieldPath::single(FieldKey::new(field).unwrap()),
-    )
 }

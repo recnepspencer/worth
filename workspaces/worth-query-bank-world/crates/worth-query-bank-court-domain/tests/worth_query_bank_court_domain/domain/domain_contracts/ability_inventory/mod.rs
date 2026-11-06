@@ -2,7 +2,8 @@ pub(crate) use worth_query_bank_testkit_domain::facade::domain_contracts::abilit
 
 #[test]
 fn bank_ability_inventory_and_operation_requirements_are_exact() {
-    let declaration = BankSchema::declaration().expect("bank schema must declare");
+    let declaration = worth_query_decl::facade::application_schema::fragment::declare(BankSchema)
+        .expect("bank schema must declare");
     let members = declaration.erased().members();
     let abilities = members
         .iter()
@@ -107,7 +108,8 @@ fn bank_ability_inventory_and_operation_requirements_are_exact() {
 
 #[test]
 fn bank_ability_policies_are_closed_over_declared_graph_paths() {
-    let declaration = BankSchema::declaration().expect("bank schema must declare");
+    let declaration = worth_query_decl::facade::application_schema::fragment::declare(BankSchema)
+        .expect("bank schema must declare");
     let policies = declaration
         .erased()
         .members()

@@ -18,15 +18,16 @@ impl ApplicationEffectMarkerIdentity<TestSchema> for ImpostorEffect {
 
 impl OperationEmits<TestOperation<TestSchema>> for ImpostorEffect {}
 impl OperationRequiresAbility<ImpostorOperation> for TestAbility {}
-impl OperationCreates<ImpostorOperation> for FixtureEntity<TestSchema> {}
-impl OperationReads<ImpostorOperation> for FixturePrincipalIdentityField<TestSchema> {}
-impl OperationExpectsFact<ImpostorOperation> for FixturePrincipalIdentityField<TestSchema> {}
+impl OperationCreates<ImpostorOperation> for FixtureEntity {}
 
 #[test]
 fn foreign_builder_cannot_replace_the_owner_declared_operation_marker() {
-    let impostor_declaration = test_schema_members_for::<TestSchema, ImpostorOperation>(None)
-        .build()
-        .unwrap();
+    let impostor_declaration = test_schema_members_for::<TestSchema, ImpostorOperation>(
+        None,
+        ApplicationSchemaDeclarationBuilder::from_fragment(InstallationFields).unwrap(),
+    )
+    .build()
+    .unwrap();
 
     let denial = installed_index()
         .bind_application_schema(impostor_declaration)

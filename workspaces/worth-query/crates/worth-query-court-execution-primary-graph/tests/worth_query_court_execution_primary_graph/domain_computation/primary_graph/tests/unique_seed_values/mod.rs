@@ -18,20 +18,6 @@ use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphBoo
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenialKind;
 
 pub struct UniqueSeedSchema;
-worth_query_declaration::worth_query_entity!(Member for UniqueSeedSchema);
-worth_query_declaration::worth_query_aspect!(
-    MemberProfile for UniqueSeedSchema, Member;
-    identity = AspectIdentity(0x5EED_0001),
-    revision = AspectContractRevision(1),
-);
-worth_query_declaration::worth_query_field!(
-    MemberHandle for UniqueSeedSchema, Member, MemberProfile:
-    u64 => U64ApplicationValueBinding, read_only, equality
-);
-worth_query_declaration::worth_query_field!(
-    MemberTier for UniqueSeedSchema, Member, MemberProfile:
-    u64 => U64ApplicationValueBinding, read_write, equality
-);
 
 impl ApplicationSchema for UniqueSeedSchema {
     const OWNER: &'static str = "unique-seed-values";
@@ -43,11 +29,8 @@ impl ApplicationSchema for UniqueSeedSchema {
         ApplicationSchemaDeclaration<Self>,
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(Member::reference())
-            .aspect(Member::reference(), MemberProfile::reference())
-            .unique_field(Member::reference(), MemberHandle::reference())
-            .field(Member::reference(), MemberTier::reference())
+        ApplicationSchemaDeclarationBuilder::from_fragment(UniqueRecords)
+            .expect("owned record model is valid")
             .build()
     }
 }
@@ -84,8 +67,8 @@ pub fn member(
         Member::reference(),
         WorthQueryApplicationEntityKey::new(key).unwrap(),
     )
-    .field(MemberHandle::reference(), handle)
-    .field(MemberTier::reference(), tier)
+    .field(MemberHandle::at("MemberHandle"), handle)
+    .field(MemberTier::at("MemberTier"), tier)
 }
 
 pub fn prepared_bootstrap() -> WorthQueryPrimaryGraphBootstrap<UniqueSeedSchema> {
@@ -122,3 +105,6 @@ pub fn prepared_bootstrap() -> WorthQueryPrimaryGraphBootstrap<UniqueSeedSchema>
             .unwrap()
     })
 }
+
+mod records;
+use records::*;

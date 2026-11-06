@@ -24,8 +24,8 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityElevationStatusField;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
 
-pub(super) use crate::domain_computation::primary_graph::tests::authorization::capability_elevation::review_support_mutation::complete_review_out_of_band;
-pub(super) use crate::domain_computation::primary_graph::tests::authorization::capability_elevation::review_support_mutation::replace_support_grantor_with_custodian;
+pub use crate::domain_computation::primary_graph::tests::authorization::capability_elevation::review_support_mutation::complete_review_out_of_band;
+pub use crate::domain_computation::primary_graph::tests::authorization::capability_elevation::review_support_mutation::replace_support_grantor_with_custodian;
 
 pub fn set_status(
     phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
@@ -46,13 +46,13 @@ pub fn set_status(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            CapabilityElevationIdentity::reference(),
-            elevation_identity.to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            elevation_identity.into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let field = CapabilityElevationStatusField::reference();
+    let field = CapabilityElevationStatusField::at("CapabilityElevationStatusField");
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
@@ -96,8 +96,8 @@ pub fn add_self_approver(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            CapabilityElevationIdentity::reference(),
-            elevation_identity.to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            elevation_identity.into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -145,8 +145,8 @@ pub fn replace_elevation_resource(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            CapabilityElevationIdentity::reference(),
-            elevation_identity.to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            elevation_identity.into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -164,7 +164,7 @@ pub fn replace_elevation_resource(
             .expect("the selected product branch remains admitted")
             .resolve_entity(
                 &phase_custody.phase_for_application_for_test(&world.application),
-                AccountIdentity::reference(),
+                AccountIdentity::at("AccountIdentity"),
                 identity.to_owned(),
                 &live_scope(),
                 WorthQueryPrincipalResolutionMode::Ordinary,
@@ -233,8 +233,8 @@ pub fn add_elevation_resource(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            CapabilityElevationIdentity::reference(),
-            elevation_identity.to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            elevation_identity.into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -251,7 +251,7 @@ pub fn add_elevation_resource(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
             account_identity.to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,

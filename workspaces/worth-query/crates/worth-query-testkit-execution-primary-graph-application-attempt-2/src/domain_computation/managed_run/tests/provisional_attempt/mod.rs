@@ -4,10 +4,8 @@ use crate::domain_computation::managed_run::tests::provisional_attempt_fixture::
 use crate::domain_computation::managed_run::tests::provisional_attempt_fixture::staged_with_fresh_read_set;
 use crate::domain_computation::managed_run::tests::provisional_attempt_fixture::ProvisionalProviderState;
 
-use crate::domain_computation::managed_run::tests::provisional_attempt_fixture::*;
 use std::sync::Arc;
 use std::sync::Mutex;
-use worth_query_execution::facade::domain_computation::WorthQueryProposedFactOrigin;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionRecoveryPosture;
 use worth_query_execution::facade::domain_computation::WorthQueryProvisionalEffectAction;
 #[derive(Clone, Copy)]

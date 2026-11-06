@@ -13,19 +13,8 @@ use super::super::query::UnitBinding;
 worth_query_application_query!(pub Query for Schema: Scenario, identity "authored-ownership.body.read.v1", parameters UnitBinding, result RowBinding, scope Body => "Body", name "authored_body");
 pub struct Slot;
 worth_query_portable_type!(Slot => "authored-ownership.body.id-slot.v1");
-fn id<S: Scenario>() -> ApplicationQueryResultFieldRef<
-    Query,
-    Slot,
-    S,
-    Body,
-    BodyIdentity,
-    BodyKey,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("id", BodyKey::reference())
+fn id<S: Scenario>() -> ApplicationQueryResultFieldRef<Query, Slot, S, BodyKey> {
+    ApplicationQueryResultFieldRef::new("id", BodyKey::at("BodyKey"))
 }
 pub fn definition<S: Scenario>() -> ApplicationQueryDefinition<S, Query, (), Row, Body> {
     let query = ApplicationQueryDefinitionBuilder::declare(Query::reference())
@@ -55,11 +44,10 @@ impl<S: Scenario> WorthQueryApplicationProjection<S, Query> for Row {
 pub struct Scope<S>(pub u64, pub PhantomData<fn() -> S>);
 impl<S: Scenario> ApplicationQueryScopeBinding<S> for Scope<S> {
     type Scope = Body;
-    type Aspect = BodyIdentity;
+
     type Field = BodyKey;
     type Value = u64;
-    type Write = ReadOnly;
-    type Unit = NoApplicationUnit;
+
     const RESOLUTION_MODE: ApplicationQueryScopeResolutionMode = if S::MODE == 1 {
         ApplicationQueryScopeResolutionMode::PrincipalIdentity
     } else {
@@ -67,24 +55,9 @@ impl<S: Scenario> ApplicationQueryScopeBinding<S> for Scope<S> {
     };
 }
 impl<S: Scenario> ApplicationQueryScopeResolution<S, u64> for Scope<S> {
-    fn into_field_parts(
-        self,
-        principal: &u64,
-    ) -> (
-        ApplicationFieldRef<
-            S,
-            Body,
-            BodyIdentity,
-            BodyKey,
-            u64,
-            ReadOnly,
-            EqualityPredicate,
-            NoApplicationUnit,
-        >,
-        u64,
-    ) {
+    fn into_field_parts(self, principal: &u64) -> (BodyKey, u64) {
         (
-            BodyKey::reference(),
+            BodyKey::at("BodyKey"),
             if S::MODE == 1 { *principal } else { self.0 },
         )
     }
@@ -99,25 +72,16 @@ impl<S: Scenario> ApplicationQueryBinding<S> for Binding<S> {
     type ScopeBinding = Scope<S>;
     type PrincipalBinding = Actor;
     type Mapping = Mapping;
-    type Principal = Node;
+    type Principal = Node<S>;
     type PrincipalIdentity = u64;
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "authored-ownership.body.source.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(16);
-    fn scope_field() -> ApplicationFieldRef<
-        S,
-        Body,
-        BodyIdentity,
-        BodyKey,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding(
-    ) -> ApplicationPrincipalBindingRef<S, Actor, Mapping, Node, u64, U64ApplicationValueBinding>
+    ) -> ApplicationPrincipalBindingRef<S, Actor, Mapping, Node<S>, u64, U64ApplicationValueBinding>
     {
         actor()
     }

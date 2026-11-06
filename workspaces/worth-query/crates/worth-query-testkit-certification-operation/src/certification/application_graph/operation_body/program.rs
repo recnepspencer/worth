@@ -23,177 +23,7 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
 {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("worth.query.body-court.contribution.v1");
-    fn register_members(
-        schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<DESTINATION>>,
-    ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<DESTINATION>> {
-        let body = super::retention_body::body::<DESTINATION>();
-        let schema = schema
-            .unit::<FixtureDays>(ApplicationUnitRef::from_schema_identifier("days"))
-            .entity(ExternalMapping::reference())
-            .entity(Principal::reference())
-            .entity(Document::reference())
-            .entity(Audit::reference())
-            .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-            .aspect(Principal::reference(), PrincipalFacts::reference())
-            .aspect(Document::reference(), DocumentFacts::reference())
-            .optional_aspect(Document::reference(), DocumentDraftFacts::reference())
-            .aspect(Audit::reference(), AuditFacts::reference())
-            .field(
-                ExternalMapping::reference(),
-                ExternalIdentityField::reference(),
-            )
-            .field(
-                ExternalMapping::reference(),
-                MappingStatusField::reference(),
-            )
-            .field(Principal::reference(), PrincipalIdentityField::reference())
-            .field(Document::reference(), DocumentIdentityField::reference())
-            .field(Document::reference(), DocumentRetentionField::reference())
-            .field(Document::reference(), DocumentAuditSourceField::reference())
-            .field(Document::reference(), DocumentDraftNoteField::reference())
-            .field(Audit::reference(), AuditIdentityField::reference())
-            .field(Audit::reference(), AuditRetentionField::reference())
-            .field(Audit::reference(), AuditPriorRetentionField::reference())
-            .relation(
-                MappingTarget::reference(),
-                ExternalMapping::reference(),
-                Principal::reference(),
-            )
-            .principal_binding(DocumentPrincipalBinding::reference())
-            .relation(
-                DocumentMembers::reference(),
-                Document::reference(),
-                Audit::reference(),
-            )
-            .operation(
-                SetRetention::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish()
-                    .with_body(body)
-                    .unwrap(),
-            )
-            .operation(
-                SetAuditSource::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish()
-                    .with_body(
-                        SetAuditSource::reference()
-                            .body()
-                            .assign(DocumentAuditSourceField::reference(), 8)
-                            .unwrap()
-                            .finish()
-                            .unwrap(),
-                    )
-                    .unwrap(),
-            )
-            .operation(
-                SetDraftNote::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish()
-                    .with_body(
-                        SetDraftNote::reference()
-                            .body()
-                            .set_optional_input(DocumentDraftNoteField::reference(), "note")
-                            .unwrap()
-                            .finish()
-                            .unwrap(),
-                    )
-                    .unwrap(),
-            )
-            .operation(
-                ClearDraftNote::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish()
-                    .with_body(
-                        ClearDraftNote::reference()
-                            .body()
-                            .clear_optional(DocumentDraftNoteField::reference())
-                            .finish()
-                            .unwrap(),
-                    )
-                    .unwrap(),
-            )
-            .operation(
-                RequireDraftNote::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish()
-                    .with_body(require_draft_note_body::<DESTINATION>())
-                    .unwrap(),
-            )
-            .operation(
-                UnlinkMember::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish(),
-            )
-            .operation_projection_work_budget(UnlinkMember::reference(), 32)
-            .operation_read_field(
-                UnlinkMember::reference(),
-                DocumentIdentityField::reference(),
-            )
-            .operation_read_relation(UnlinkMember::reference(), DocumentMembers::reference())
-            .operation_unlink(UnlinkMember::reference(), DocumentMembers::reference())
-            .operation_projection_work_budget(SetAuditSource::reference(), 8)
-            .operation_projection_work_budget(SetDraftNote::reference(), 8)
-            .operation_projection_work_budget(ClearDraftNote::reference(), 8)
-            .operation_read_field(
-                SetRetention::reference(),
-                DocumentIdentityField::reference(),
-            )
-            .operation_read_field(
-                SetAuditSource::reference(),
-                DocumentIdentityField::reference(),
-            )
-            .operation_read_field(
-                SetDraftNote::reference(),
-                DocumentIdentityField::reference(),
-            )
-            .operation_read_field(
-                ClearDraftNote::reference(),
-                DocumentIdentityField::reference(),
-            )
-            .operation_read_field(
-                RequireDraftNote::reference(),
-                DocumentIdentityField::reference(),
-            )
-            .application_mutation_binding::<SourceBinding<DESTINATION>>()
-            .application_mutation_binding::<DraftBinding<DESTINATION, SetDraftNote>>()
-            .application_mutation_binding::<DraftBinding<DESTINATION, ClearDraftNote>>()
-            .application_mutation_binding::<DraftBinding<DESTINATION, RequireDraftNote>>()
-            .application_mutation_binding::<super::requirement_control::UnlinkBinding<DESTINATION>>(
-            )
-            .application_query(document_retention_query_definition::<DESTINATION>())
-            .application_query_binding::<DocumentRetentionQueryBinding<DESTINATION>>()
-            .application_query(super::audit_query::audit_query_definition::<DESTINATION>())
-            .application_query_binding::<super::audit_query::AuditQueryBinding<DESTINATION>>()
-            .application_query(super::draft_query::draft_query_definition::<DESTINATION>())
-            .application_query_binding::<super::draft_query::DraftQueryBinding<DESTINATION>>();
-        let schema = if matches!(DESTINATION, 37 | 38) {
-            schema.application_mutation_binding::<super::output::related::binding::RelatedBinding<DESTINATION>>()
-        } else {
-            schema.application_mutation_binding::<BodyBinding<DESTINATION>>()
-        };
-        let schema = if DESTINATION == 36 {
-            schema
-                .aspect(Audit::reference(), AuditActorFacts::reference())
-                .field(Audit::reference(), AuditActorField::reference())
-        } else {
-            schema
-        };
-        let schema = super::retirement::declaration::declare::<DESTINATION>(schema);
-        super::genesis::declaration::declare::<DESTINATION>(schema)
-    }
+    type Members = (BodyModel, Contracts<DESTINATION>);
 }
 
 pub fn require_draft_note_body<const DESTINATION: u64>() -> ApplicationOperationBody<
@@ -205,7 +35,10 @@ pub fn require_draft_note_body<const DESTINATION: u64>() -> ApplicationOperation
     let body = if matches!(DESTINATION, 25..=27 | 29) {
         let operands = RequireDraftNote::reference::<DocumentRetentionSchema<DESTINATION>>()
             .requirement_operands()
-            .presence("active", DocumentDraftNoteField::reference())
+            .presence(
+                "active",
+                DocumentDraftNoteField::at("DocumentDraftNoteField"),
+            )
             .unwrap()
             .outgoing_item_count("members", DocumentMembers::reference())
             .unwrap();
@@ -231,7 +64,7 @@ pub fn require_draft_note_body<const DESTINATION: u64>() -> ApplicationOperation
     } else if DESTINATION == 28 {
         let operands = RequireDraftNote::reference::<DocumentRetentionSchema<DESTINATION>>()
             .requirement_operands()
-            .field("note", DocumentDraftNoteField::reference())
+            .field("note", DocumentDraftNoteField::at("DocumentDraftNoteField"))
             .unwrap();
         let reader = worth_foundational::expression_api::expressions()
             .reading_within(ApplicationOperationBodyRequirementExpression::PROFILE);
@@ -247,9 +80,10 @@ pub fn require_draft_note_body<const DESTINATION: u64>() -> ApplicationOperation
     } else if DESTINATION == 24 {
         body
     } else {
-        body.require_present(DocumentDraftNoteField::reference())
+        body.require_present(DocumentDraftNoteField::at("DocumentDraftNoteField"))
+            .unwrap()
     };
-    body.assign(DocumentAuditSourceField::reference(), 12)
+    body.assign(DocumentAuditSourceField::at("DocumentAuditSourceField"), 12)
         .unwrap()
         .finish()
         .unwrap()
@@ -358,16 +192,174 @@ impl<const DESTINATION: u64> ApplicationProgramDefinition<DocumentRetentionSchem
 
 pub fn schema<const DESTINATION: u64>(
 ) -> ApplicationSchemaDeclaration<DocumentRetentionSchema<DESTINATION>> {
-    ApplicationSchemaDeclarationBuilder::<DocumentRetentionSchema<DESTINATION>>::for_schema()
-        .contributions()
-        .register::<BodyContribution<DESTINATION>>()
-        .unwrap()
-        .build()
-        .unwrap()
+    <DocumentRetentionSchema<DESTINATION> as ApplicationSchema>::declaration().unwrap()
 }
 pub fn validated<const DESTINATION: u64>(
     schema: &ApplicationSchemaDeclaration<DocumentRetentionSchema<DESTINATION>>,
 ) -> ValidatedApplicationProgram<DocumentRetentionSchema<DESTINATION>, BodyProgram<DESTINATION>> {
     ApplicationProgramAuthoring::<DocumentRetentionSchema<DESTINATION>, BodyProgram<DESTINATION>>::begin()
         .with_schema(schema).validated_program().unwrap()
+}
+
+pub struct Contracts<const DESTINATION: u64>;
+impl<const DESTINATION: u64>
+    worth_query_decl::facade::application_schema::fragment::Registration<
+        DocumentRetentionSchema<DESTINATION>,
+    > for Contracts<DESTINATION>
+{
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<DESTINATION>>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<DESTINATION>>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok({
+            let body = super::retention_body::body::<DESTINATION>();
+            let schema = schema
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            .principal_binding(DocumentPrincipalBinding::reference())
+
+            .operation(
+                SetRetention::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish()
+                    .with_body(body)
+                    .unwrap(),
+            )
+            .operation(
+                SetAuditSource::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish()
+                    .with_body(
+                        SetAuditSource::reference()
+                            .body()
+                            .assign(DocumentAuditSourceField::at("DocumentAuditSourceField"), 8)
+                            .unwrap()
+                            .finish()
+                            .unwrap(),
+                    )
+                    .unwrap(),
+            )
+            .operation(
+                SetDraftNote::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish()
+                    .with_body(
+                        SetDraftNote::reference()
+                            .body()
+                            .set_optional_input(DocumentDraftNoteField::at("DocumentDraftNoteField"), "note")
+                            .unwrap()
+                            .finish()
+                            .unwrap(),
+                    )
+                    .unwrap(),
+            )
+            .operation(
+                ClearDraftNote::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish()
+                    .with_body(
+                        ClearDraftNote::reference()
+                            .body()
+                            .clear_optional(DocumentDraftNoteField::at("DocumentDraftNoteField")).unwrap()
+                            .finish()
+                            .unwrap(),
+                    )
+                    .unwrap(),
+            )
+            .operation(
+                RequireDraftNote::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish()
+                    .with_body(require_draft_note_body::<DESTINATION>())
+                    .unwrap(),
+            )
+            .operation(
+                UnlinkMember::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .operation_projection_work_budget(UnlinkMember::reference(), 32)
+            .operation_read_field(
+                UnlinkMember::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
+            )
+            .operation_read_relation(UnlinkMember::reference(), DocumentMembers::reference())
+            .operation_unlink(UnlinkMember::reference(), DocumentMembers::reference())
+            .operation_projection_work_budget(SetAuditSource::reference(), 8)
+            .operation_projection_work_budget(SetDraftNote::reference(), 8)
+            .operation_projection_work_budget(ClearDraftNote::reference(), 8)
+            .operation_read_field(
+                SetRetention::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
+            )
+            .operation_read_field(
+                SetAuditSource::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
+            )
+            .operation_read_field(
+                SetDraftNote::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
+            )
+            .operation_read_field(
+                ClearDraftNote::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
+            )
+            .operation_read_field(
+                RequireDraftNote::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
+            )
+            .application_mutation_binding::<SourceBinding<DESTINATION>>()
+            .application_mutation_binding::<DraftBinding<DESTINATION, SetDraftNote>>()
+            .application_mutation_binding::<DraftBinding<DESTINATION, ClearDraftNote>>()
+            .application_mutation_binding::<DraftBinding<DESTINATION, RequireDraftNote>>()
+            .application_mutation_binding::<super::requirement_control::UnlinkBinding<DESTINATION>>(
+            )
+            .application_query(document_retention_query_definition::<DESTINATION>())
+            .application_query_binding::<DocumentRetentionQueryBinding<DESTINATION>>()
+            .application_query(super::audit_query::audit_query_definition::<DESTINATION>())
+            .application_query_binding::<super::audit_query::AuditQueryBinding<DESTINATION>>()
+            .application_query(super::draft_query::draft_query_definition::<DESTINATION>())
+            .application_query_binding::<super::draft_query::DraftQueryBinding<DESTINATION>>();
+            let schema = if matches!(DESTINATION, 37 | 38) {
+                schema.application_mutation_binding::<super::output::related::binding::RelatedBinding<DESTINATION>>()
+            } else {
+                schema.application_mutation_binding::<BodyBinding<DESTINATION>>()
+            };
+            let schema = super::retirement::declaration::declare::<DESTINATION>(schema);
+            super::genesis::declaration::declare::<DESTINATION>(schema)
+        })
+    }
 }

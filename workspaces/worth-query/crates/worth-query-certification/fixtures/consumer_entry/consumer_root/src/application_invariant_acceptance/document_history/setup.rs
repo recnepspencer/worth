@@ -8,7 +8,7 @@ pub(super) fn install(
     >,
 ) -> installation::ConsumerWorld<FixedProgram> {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, FixedProgram>::begin()
-        .with_schema(&ConsumerSchema::declaration().unwrap())
+        .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap())
         .validated_program()
         .unwrap();
     // The executable owns two documents, four authored futures, transient

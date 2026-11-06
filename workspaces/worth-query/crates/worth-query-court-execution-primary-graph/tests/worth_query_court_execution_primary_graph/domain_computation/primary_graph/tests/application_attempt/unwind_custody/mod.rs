@@ -9,7 +9,6 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
-use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 #[test]

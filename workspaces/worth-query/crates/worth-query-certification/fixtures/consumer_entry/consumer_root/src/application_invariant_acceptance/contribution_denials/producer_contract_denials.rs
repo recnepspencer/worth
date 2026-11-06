@@ -7,9 +7,8 @@ use worth_query_host::facade::application_installation::ApplicationBuildIdentity
 
 use worth_query_decl::facade::application_schema::{
     ApplicationInvariantExecutionPoint, ApplicationSchema, ApplicationSchemaComposition,
-    ApplicationSchemaContribution, ApplicationSchemaContributionAuthoring,
-    ApplicationSchemaContributionIdentity, ApplicationSchemaDeclaration,
-    ApplicationSchemaDeclarationBuilder, ApplicationSchemaDeclarationDenial,
+    ApplicationSchemaContribution, ApplicationSchemaContributionIdentity,
+    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationDenial,
 };
 use worth_query_host::facade::{
     application_contribution::{
@@ -163,11 +162,7 @@ impl<Schema: TopologySchemaBinding> ApplicationSchemaContribution<Schema>
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<Schema>>::IDENTITY;
 
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        <TopologyContribution as ApplicationSchemaContribution<Schema>>::register_members(builder)
-    }
+    type Members = <TopologyContribution as ApplicationSchemaContribution<Schema>>::Members;
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
@@ -191,7 +186,9 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
 }
 
 struct MissingInvariantSchema;
-impl TopologySchemaBinding for MissingInvariantSchema {}
+impl TopologySchemaBinding for MissingInvariantSchema {
+    type PrincipalFragment = worth_query_topology_entry::PrincipalRecords;
+}
 impl ParameterSchemaBinding for MissingInvariantSchema {}
 impl ApplicationSchema for MissingInvariantSchema {
     const OWNER: &'static str = "worth.query.certification.producer-contract-denials";
@@ -201,12 +198,7 @@ impl ApplicationSchema for MissingInvariantSchema {
 
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaContributionAuthoring::contributions(
-            ApplicationSchemaDeclarationBuilder::<Self>::for_schema(),
-        )
-        .register::<MissingInvariantContribution>()?
-        .register::<ParameterContribution>()?
-        .build()
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
     }
 }
 impl ApplicationSchemaComposition for MissingInvariantSchema {
@@ -221,11 +213,7 @@ impl<Schema: ParameterSchemaBinding> ApplicationSchemaContribution<Schema>
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <ParameterContribution as ApplicationSchemaContribution<Schema>>::IDENTITY;
 
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        <ParameterContribution as ApplicationSchemaContribution<Schema>>::register_members(builder)
-    }
+    type Members = <ParameterContribution as ApplicationSchemaContribution<Schema>>::Members;
 }
 
 impl<Schema> WorthQueryApplicationContribution<Schema> for ForeignOperationContribution
@@ -250,7 +238,9 @@ where
 }
 
 struct ForeignOperationSchema;
-impl TopologySchemaBinding for ForeignOperationSchema {}
+impl TopologySchemaBinding for ForeignOperationSchema {
+    type PrincipalFragment = worth_query_topology_entry::PrincipalRecords;
+}
 impl ParameterSchemaBinding for ForeignOperationSchema {}
 impl ApplicationSchema for ForeignOperationSchema {
     const OWNER: &'static str = "worth.query.certification.foreign-operation-denial";
@@ -260,12 +250,7 @@ impl ApplicationSchema for ForeignOperationSchema {
 
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaContributionAuthoring::contributions(
-            ApplicationSchemaDeclarationBuilder::<Self>::for_schema(),
-        )
-        .register::<TopologyContribution>()?
-        .register::<ForeignOperationContribution>()?
-        .build()
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
     }
 }
 impl ApplicationSchemaComposition for ForeignOperationSchema {
@@ -322,4 +307,16 @@ fn foreign_source_selector_is_denied_before_initial_state() {
         Err(other) => panic!("expected foreign source contribution denial, got {other:?}"),
         Ok(_) => panic!("foreign producer source published an application"),
     }
+}
+
+impl worth_query_decl::facade::application_schema::fragment::Fragment for ForeignOperationSchema {
+    const NAME: &'static str = "ForeignOperationSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (TopologyContribution, ForeignOperationContribution);
+}
+
+impl worth_query_decl::facade::application_schema::fragment::Fragment for MissingInvariantSchema {
+    const NAME: &'static str = "MissingInvariantSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (MissingInvariantContribution, ParameterContribution);
 }

@@ -24,18 +24,22 @@ pub(super) fn rule(
     }
     ApplicationCapabilityElevationRule::governed(
         ApplicationCapabilityElevationDefinition::new(
-            ApplicationCapabilityFieldBinding::from_reference(
-                EmergencyAccessIdentityField::reference(),
-            ),
-            ApplicationCapabilityFieldBinding::from_reference(
-                EmergencyAccessReasonField::reference(),
-            ),
-            ApplicationCapabilityFieldBinding::from_reference(
-                EmergencyAccessStatusField::reference(),
-            ),
-            ApplicationCapabilityFieldBinding::from_reference(
-                EmergencyAccessClosedAtField::reference(),
-            ),
+            ApplicationCapabilityFieldBinding::from_reference(EmergencyAccessIdentityField::at(
+                "EmergencyAccessIdentityField",
+            ))
+            .unwrap(),
+            ApplicationCapabilityFieldBinding::from_reference(EmergencyAccessReasonField::at(
+                "EmergencyAccessReasonField",
+            ))
+            .unwrap(),
+            ApplicationCapabilityFieldBinding::from_reference(EmergencyAccessStatusField::at(
+                "EmergencyAccessStatusField",
+            ))
+            .unwrap(),
+            ApplicationCapabilityFieldBinding::from_reference(EmergencyAccessClosedAtField::at(
+                "EmergencyAccessClosedAtField",
+            ))
+            .unwrap(),
             ApplicationCapabilityElevationStates::new(
                 elevation_status(EmergencyAccessStatus::Requested),
                 elevation_status(EmergencyAccessStatus::Approved),
@@ -45,11 +49,13 @@ pub(super) fn rule(
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
                 ApplicationCapabilityFieldBinding::from_reference(
-                    EmergencyAccessIssuedAtField::reference(),
-                ),
+                    EmergencyAccessIssuedAtField::at("EmergencyAccessIssuedAtField"),
+                )
+                .unwrap(),
                 ApplicationCapabilityFieldBinding::from_reference(
-                    EmergencyAccessExpiresAtField::reference(),
-                ),
+                    EmergencyAccessExpiresAtField::at("EmergencyAccessExpiresAtField"),
+                )
+                .unwrap(),
             ),
             std::time::Duration::from_secs(20 * 60),
             ApplicationCapabilityRelationBinding::from_reference(EmergencyRequester::reference()),
@@ -82,20 +88,24 @@ pub(super) fn rule(
             ApplicationCapabilityMandatoryReviewDefinition::new(
                 ApplicationCapabilityRelationBinding::from_reference(EmergencyReview::reference()),
                 ApplicationCapabilityFieldBinding::from_reference(
-                    MandatoryReviewIdentityField::reference(),
-                ),
+                    MandatoryReviewIdentityField::at("MandatoryReviewIdentityField"),
+                )
+                .unwrap(),
                 ApplicationCapabilityValueBinding::new(
-                    MandatoryReviewKindField::reference(),
+                    MandatoryReviewKindField::at("MandatoryReviewKindField"),
                     crate::schema::encoded_bank_value(MandatoryReviewKind::EmergencyAccess),
-                ),
+                )
+                .unwrap(),
                 ApplicationCapabilityRelationBinding::from_reference(ReviewEstate::reference()),
                 ApplicationCapabilityRelationBinding::from_reference(ReviewPrincipal::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(MandatoryReviewStatusField::at(
+                    "MandatoryReviewStatusField",
+                ))
+                .unwrap(),
                 ApplicationCapabilityFieldBinding::from_reference(
-                    MandatoryReviewStatusField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    MandatoryReviewReviewedAtField::reference(),
-                ),
+                    MandatoryReviewReviewedAtField::at("MandatoryReviewReviewedAtField"),
+                )
+                .unwrap(),
                 review_status(MandatoryReviewStatus::Required),
                 review_status(MandatoryReviewStatus::Completed),
             ),
@@ -108,14 +118,16 @@ pub(super) fn rule(
 
 fn elevation_status(status: EmergencyAccessStatus) -> ApplicationCapabilityValueBinding {
     ApplicationCapabilityValueBinding::new(
-        EmergencyAccessStatusField::reference(),
+        EmergencyAccessStatusField::at("EmergencyAccessStatusField"),
         crate::schema::encoded_bank_value(status),
     )
+    .unwrap()
 }
 
 fn review_status(status: MandatoryReviewStatus) -> ApplicationCapabilityValueBinding {
     ApplicationCapabilityValueBinding::new(
-        MandatoryReviewStatusField::reference(),
+        MandatoryReviewStatusField::at("MandatoryReviewStatusField"),
         crate::schema::encoded_bank_value(status),
     )
+    .unwrap()
 }

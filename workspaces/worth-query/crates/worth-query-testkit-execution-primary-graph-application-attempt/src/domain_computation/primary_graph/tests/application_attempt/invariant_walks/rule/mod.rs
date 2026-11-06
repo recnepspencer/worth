@@ -82,13 +82,13 @@ pub fn resolve(
     Ok(Rule {
         observation,
         key: resolver
-            .typed_field(NodeKey::reference())
+            .typed_field(NodeKey::at("NodeKey"))
             .ok_or("node key missing")?,
         active: resolver
-            .typed_field(Active::reference())
+            .typed_field(Active::at("Active"))
             .ok_or("activation missing")?,
         blocked: resolver
-            .typed_field(Blocked::reference())
+            .typed_field(Blocked::at("Blocked"))
             .ok_or("blocked state missing")?,
         membership: resolver
             .typed_relation(GroupRoot::reference())

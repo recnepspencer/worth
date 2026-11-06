@@ -4,7 +4,6 @@ use std::num::NonZeroUsize;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::seeded_dispatch_orders::record_seeded_dispatch_for_test;
 use crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::member_result;
 use crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::run;
-use crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::*;
 use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test as place;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest as Placement;
 

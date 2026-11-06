@@ -112,7 +112,7 @@ pub fn parity_source_and_output_evaluation() {
             evaluation4.output_field().aspect(),
             evaluation4.output_field().field()
         ),
-        ("Number", "NumberFacts", "Calculated")
+        ("Number", crate::facade::certification::application_graph::correction::model::schema::NumberFacts::reference().name(), "Calculated")
     );
     assert_eq!(
         evaluation4.observed_output_revision(),

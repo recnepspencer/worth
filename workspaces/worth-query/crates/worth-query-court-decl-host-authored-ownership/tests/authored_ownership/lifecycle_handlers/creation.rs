@@ -7,19 +7,20 @@ impl<S: Scenario> OperationHandler<S, CreateBinding<S>> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, S, CreateBinding<S>>,
     ) -> HandlerResult<CreationTargets<S>, ()> {
         let result = (|| {
-            let scope = reader.resolve_entity(Id::reference(), input.scope)?;
+            let scope = reader.resolve_entity(schema::id::<S>(), input.scope)?;
             if S::MODE == 5 && input.scope != 1 {
                 let edges = reader
                     .relations_to(Peer::reference(), &scope)
                     .map_err(HandlerExecutionDenial::new)?;
                 if edges.len() != 1
-                    || reader.field(edges[0].from(), Id::reference())? != Some(input.scope * 10 + 1)
+                    || reader.field(edges[0].from(), schema::id::<S>())?
+                        != Some(input.scope * 10 + 1)
                 {
                     return Ok(None);
                 }
             }
             let previous = if S::MODE == 60 && input.id == 30 && input.scope == 10 {
-                let previous = reader.resolve_entity(Id::reference(), 20)?;
+                let previous = reader.resolve_entity(schema::id::<S>(), 20)?;
                 Some(reader.mutation_target(&previous)?)
             } else {
                 None
@@ -45,13 +46,13 @@ impl<S: Scenario> OperationHandler<S, CreateBinding<S>> for Handler {
             let scope = writer.projected_entity(&target.scope)?;
             let created = writer.create_entity_in_context(
                 &scope,
-                Node::reference(),
+                schema::node::<S>(),
                 WorthQueryApplicationEntityKey::new(format!("authored-{}", input.id)).unwrap(),
             )?;
-            writer.initialize_field(&created, Id::reference(), input.id)?;
+            writer.initialize_field(&created, schema::id::<S>(), input.id)?;
             writer.initialize_field(
                 &created,
-                Value::reference(),
+                schema::value::<S>(),
                 if S::COUPLED && input.scope != 1 {
                     input.scope
                 } else {
@@ -60,7 +61,11 @@ impl<S: Scenario> OperationHandler<S, CreateBinding<S>> for Handler {
             )?;
             if S::MODE == 43 {
                 writer
-                    .initialize_content(&created, content::field(), &(input.id * 100))
+                    .initialize_content(
+                        &created,
+                        content::field::<S>().expect("the content scenario declares its field"),
+                        &(input.id * 100),
+                    )
                     .expect("valid installed word content");
             }
             writer.create_output::<Created<S>>(&created)?;
@@ -83,18 +88,22 @@ impl<S: Scenario> OperationHandler<S, CreateBinding<S>> for Handler {
             {
                 let co = writer.create_entity_in_context(
                     &scope,
-                    Node::reference(),
+                    schema::node::<S>(),
                     WorthQueryApplicationEntityKey::new(format!("authored-{id}")).unwrap(),
                 )?;
-                writer.initialize_field(&co, Id::reference(), id)?;
+                writer.initialize_field(&co, schema::id::<S>(), id)?;
                 if S::MODE == 43 {
                     writer
-                        .initialize_content(&co, content::field(), &(id * 100))
+                        .initialize_content(
+                            &co,
+                            content::field::<S>().expect("the content scenario declares its field"),
+                            &(id * 100),
+                        )
                         .expect("valid installed stage content");
                 }
                 writer.initialize_field(
                     &co,
-                    Value::reference(),
+                    schema::value::<S>(),
                     if S::COUPLED { input.id } else { id },
                 )?;
                 match index {

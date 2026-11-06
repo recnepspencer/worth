@@ -1,9 +1,13 @@
+mod denial;
+pub use denial::{
+    WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
+};
+use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 mod orbit;
 use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationOperationDecisionReadTarget, ApplicationReadableScalarValueBinding,
-    ApplicationRelationRef, ApplicationSchema, DeclaredApplicationFieldValue, OperationReads,
-    WritePosture,
+    ApplicationEntityRef, ApplicationOperationDecisionReadTarget,
+    ApplicationReadableScalarValueBinding, ApplicationRelationRef, ApplicationSchema,
+    OperationReads,
 };
 
 use worth_relational::facade::identity::EntityId;
@@ -17,6 +21,7 @@ mod body_requirement;
 mod body_retirement;
 mod body_selection;
 pub(crate) mod field_presence;
+pub(super) mod native_decision;
 mod operation_body;
 mod predecode_admission;
 mod signed_evidence;
@@ -27,26 +32,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
     WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantRelation,
 };
-
-/// Why a decision read in an operation projection was refused.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryInvariantDecisionPlanDenialKind {
-    /// The operation does not declare this target as a decision read.
-    UndeclaredDecisionTarget,
-    /// The identity came from a different projection authority.
-    ForeignIdentity,
-    /// The field is not installed.
-    FieldNotInstalled,
-}
-
-/// Refusal of a decision read in an operation projection.
-///
-/// [`Self::kind`] says why and [`Self::subject`] names the target.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryInvariantDecisionPlanDenial {
-    kind: WorthQueryInvariantDecisionPlanDenialKind,
-    subject: String,
-}
 
 impl<'reader, 'runtime, Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
@@ -89,17 +74,20 @@ where
         Ok(())
     }
 
-    pub fn decision_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    #[inline(always)]
+    pub fn decision_field<Entity, Aspect, Field, Value>(
         &mut self,
 
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
     ) -> Result<Option<Value>, WorthQueryInvariantDecisionPlanDenial>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         let _execution = self.reader.execution;
         self.require_decision_field(identity, field)?;
@@ -169,102 +157,35 @@ where
     ) -> Result<Relations, Cause> {
         let before = self.reader.work_budget;
         let relations = read(self.reader);
-        let maximum_work_units = self
-            .reader
-            .work_budget
-            .adjacency_recomparison_limit_since(before);
-        self.decision_facts.record(
-            WorthQueryApplicationFactKey::Adjacency {
-                relation: target_relation_name(target),
-                anchor,
-                direction,
-                maximum_work_units,
-            },
-            if relations.is_ok() {
-                DecisionReadOutcome::Observed
-            } else {
-                DecisionReadOutcome::Failed
-            },
+        record_adjacency(
+            self.decision_facts,
+            target,
+            anchor,
+            direction,
+            self.reader
+                .work_budget
+                .adjacency_recomparison_limit_since(before),
+            relations.is_ok(),
         );
         relations
     }
 
-    pub fn require_decision_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    #[inline(always)]
+    pub fn require_decision_field<Entity, Aspect, Field, Value>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
     ) -> Result<(), WorthQueryInvariantDecisionPlanDenial>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
-        self.require_named_field(identity, field.entity(), field.aspect(), field.field())
-    }
-
-    fn require_named_field<Entity>(
-        &mut self,
-        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        entity: &str,
-        aspect: &str,
-        field: &str,
-    ) -> Result<(), WorthQueryInvariantDecisionPlanDenial> {
-        let target = ApplicationOperationDecisionReadTarget::Field {
-            entity: entity.to_string(),
-            aspect: aspect.to_string(),
-            field: field.to_string(),
-        };
-        self.admit_decision_target(&target)?;
-        if !self.reader.identity_is_local(identity, entity) {
-            return Err(WorthQueryInvariantDecisionPlanDenial::new(
-                WorthQueryInvariantDecisionPlanDenialKind::ForeignIdentity,
-                entity,
-            ));
-        }
-        let locator = self
-            .reader
-            .layout
-            .field_locator(entity, aspect, field)
-            .cloned()
-            .ok_or_else(|| {
-                WorthQueryInvariantDecisionPlanDenial::new(
-                    WorthQueryInvariantDecisionPlanDenialKind::FieldNotInstalled,
-                    field,
-                )
-            })?;
-        self.record_field_dependency(identity, entity, locator);
-        Ok(())
-    }
-
-    fn record_field_dependency<Entity>(
-        &mut self,
-        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        entity: &str,
-        locator: worth_foundational::facade::AspectFieldLocator,
-    ) {
-        if self.reader.layout.field_is_optional(entity, &locator)
-            && self.admitted_contracts.as_deref().is_some_and(|contract| {
-                field_presence::may_write(contract.touches(), entity, &locator)
-            })
-        {
-            self.decision_facts.record(
-                WorthQueryApplicationFactKey::AspectPresence {
-                    entity: entity.to_owned(),
-                    entity_id: identity.entity_id,
-                    locator: locator.clone(),
-                },
-                DecisionReadOutcome::Observed,
-            );
-        }
-        self.decision_facts.record(
-            WorthQueryApplicationFactKey::Field {
-                entity: entity.to_owned(),
-                entity_id: identity.entity_id,
-                locator,
-            },
-            DecisionReadOutcome::Observed,
-        );
+        self.native_decision()
+            .require_field(identity.native_identity(), field.identity())
     }
 
     pub fn require_decision_relation<Relation, From, To>(
@@ -305,23 +226,7 @@ where
         &self,
         target: &ApplicationOperationDecisionReadTarget,
     ) -> Result<(), WorthQueryInvariantDecisionPlanDenial> {
-        if self
-            .admitted_contracts
-            .as_deref()
-            .is_none_or(|contract| match target {
-                ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => {
-                    contract.managed_index_reads().contains(parent)
-                }
-                _ => graph_reads_admit_target(contract.graph_reads(), target),
-            })
-        {
-            Ok(())
-        } else {
-            Err(WorthQueryInvariantDecisionPlanDenial::new(
-                WorthQueryInvariantDecisionPlanDenialKind::UndeclaredDecisionTarget,
-                format!("{target:?}"),
-            ))
-        }
+        native_decision::admit_target(self.admitted_contracts.as_deref(), target)
     }
 }
 
@@ -351,38 +256,25 @@ fn decision_traversal_denial(
     )
 }
 
-impl WorthQueryInvariantDecisionPlanDenial {
-    pub const fn kind(&self) -> WorthQueryInvariantDecisionPlanDenialKind {
-        self.kind
-    }
-
-    pub fn subject(&self) -> &str {
-        &self.subject
-    }
-
-    fn new(kind: WorthQueryInvariantDecisionPlanDenialKind, subject: impl Into<String>) -> Self {
-        Self {
-            kind,
-            subject: subject.into(),
-        }
-    }
-}
-
-impl std::fmt::Display for WorthQueryInvariantDecisionPlanDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "invariant decision plan denied: {:?} ({})",
-            self.kind, self.subject
-        )
-    }
-}
-
-impl std::error::Error for WorthQueryInvariantDecisionPlanDenial {}
-
-impl worth_execution::ChargedBytes for WorthQueryInvariantDecisionPlanDenial {
-    fn additional_charged_bytes(&self) -> u64 {
-        let Self { kind: _, subject } = self;
-        subject.capacity() as u64
-    }
+fn record_adjacency(
+    facts: &mut super::DecisionReads,
+    target: &ApplicationOperationDecisionReadTarget,
+    anchor: EntityId,
+    direction: WorthQueryApplicationAdjacencyDirection,
+    maximum_work_units: usize,
+    observed: bool,
+) {
+    facts.record(
+        WorthQueryApplicationFactKey::Adjacency {
+            relation: target_relation_name(target),
+            anchor,
+            direction,
+            maximum_work_units,
+        },
+        if observed {
+            DecisionReadOutcome::Observed
+        } else {
+            DecisionReadOutcome::Failed
+        },
+    );
 }

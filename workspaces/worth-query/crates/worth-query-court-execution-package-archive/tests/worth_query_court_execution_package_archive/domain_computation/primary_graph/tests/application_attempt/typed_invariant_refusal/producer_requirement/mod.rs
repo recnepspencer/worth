@@ -1,8 +1,6 @@
 //! A producer's required rule holds over a publication Relational proves
 //! leaves the rule's closure. A deletion's footprint is not proven, so the
 //! same requirement refuses it, and the caller is told the receipt's basis.
-use crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::program;
-use crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::world;
 use crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::rule::Rule;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;

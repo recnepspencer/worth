@@ -56,10 +56,7 @@ fn continuation_ordering_must_be_a_direct_child_field() {
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(account_postings())
-        .live_by::<Posting, AccountActivityLiveCause, _, _, _, _, _, _, _, _>(
-            account_identity(),
-            posting_identity(),
-        )
+        .live_by::<Posting, AccountActivityLiveCause>(account_identity(), posting_identity())
         .build()
         .unwrap_err();
     assert_eq!(

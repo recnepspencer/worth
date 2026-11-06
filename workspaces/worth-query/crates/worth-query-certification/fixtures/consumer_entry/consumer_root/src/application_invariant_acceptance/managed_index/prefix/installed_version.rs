@@ -1,5 +1,3 @@
-use super::*;
-
 /// A genuine incompatible executable version for the installation boundary twin.
 pub struct IncompatibleVersion(pub Provider);
 impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for IncompatibleVersion {

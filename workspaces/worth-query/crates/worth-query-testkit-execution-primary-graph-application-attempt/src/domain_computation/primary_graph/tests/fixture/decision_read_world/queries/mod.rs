@@ -54,14 +54,10 @@ pub fn shape<Q: ApplicationQueryMarkerIdentity<DecisionReadSchema>>(
             Q,
             IdentitySlot,
             DecisionReadSchema,
-            Principal,
-            PrincipalFacts,
             PrincipalIdentity,
-            u64,
-            ReadOnly,
-            EqualityPredicate,
-            NoApplicationUnit,
-        >::new("identity", PrincipalIdentity::reference()))
+        >::new(
+            "identity", PrincipalIdentity::at("PrincipalIdentity")
+        ))
         .build()
 }
 
@@ -113,15 +109,7 @@ macro_rules! binding {
             type Query = $query;
             type ParameterBinding = UnitBinding;
             type ResultBinding = PrincipalRowBinding;
-            type ScopeBinding = ApplicationQueryPrincipalScope<
-                DecisionReadSchema,
-                Principal,
-                PrincipalFacts,
-                PrincipalIdentity,
-                u64,
-                ReadOnly,
-                NoApplicationUnit,
-            >;
+            type ScopeBinding = ApplicationQueryPrincipalScope<PrincipalIdentity>;
             type PrincipalBinding = DecisionPrincipalBinding;
             type Mapping = Mapping;
             type Principal = Principal;
@@ -129,17 +117,8 @@ macro_rules! binding {
             type PrincipalIdentityBinding = U64ApplicationValueBinding;
             const IDENTITY: &'static str = $identity;
             const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(8);
-            fn scope_field() -> ApplicationFieldRef<
-                DecisionReadSchema,
-                Principal,
-                PrincipalFacts,
-                PrincipalIdentity,
-                u64,
-                ReadOnly,
-                EqualityPredicate,
-                NoApplicationUnit,
-            > {
-                PrincipalIdentity::reference()
+            fn scope_field() -> PrincipalIdentity {
+                PrincipalIdentity::at("PrincipalIdentity")
             }
             fn principal_binding() -> ApplicationPrincipalBindingRef<
                 DecisionReadSchema,

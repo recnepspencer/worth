@@ -20,20 +20,12 @@ worth_query_structured_value_binding!(pub InputBinding for Input { identity: "ca
 worth_query_structured_value_binding!(pub PublishedBinding for Published { identity: "canonical-companion.produce.result.v1" });
 worth_query_structured_value_binding!(pub DeniedBinding for Denied { identity: "canonical-companion.produce.denial.v1" });
 worth_query_operation!(pub CreateCompanion for CanonicalSchema, input InputBinding);
-worth_query_operation_reads!(CreateCompanion => [DocumentIdentityField, DocumentValueField]);
+
 worth_query_operation_creates!(CreateCompanion => [Companion, Derived]);
 worth_query_operation_links!(CreateCompanion => [CompanionLink]);
-worth_query_operation_writes!(CreateCompanion => [CompanionIdentityField, CompanionValueField, DerivedIdentityField, DerivedValueField]);
+
 pub struct ProduceBinding;
-pub type Scope = ApplicationMutationFieldScope<
-    CanonicalSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope = ApplicationMutationFieldScope<DocumentIdentityField>;
 impl ApplicationMutationBinding<CanonicalSchema> for ProduceBinding {
     type Input = Input;
     type InputBinding = InputBinding;
@@ -58,17 +50,8 @@ impl ApplicationMutationBinding<CanonicalSchema> for ProduceBinding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        CanonicalSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CanonicalSchema,
@@ -87,7 +70,10 @@ impl ApplicationMutationIntent<CanonicalSchema> for Input {
         self
     }
     fn scope_binding(&self) -> Scope {
-        Scope::new(DocumentIdentityField::reference(), self.identity.clone())
+        Scope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity.clone(),
+        )
     }
 }
 pub struct Handler;
@@ -97,13 +83,14 @@ impl OperationHandler<CanonicalSchema, ProduceBinding> for Handler {
         input: &Input,
         reader: &mut DecisionReader<'_, '_, '_, CanonicalSchema, ProduceBinding>,
     ) -> HandlerResult<NestedValue, Denied> {
-        let source = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
-        {
+        let source = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            input.identity.clone(),
+        ) {
             Ok(source) => source,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&source, DocumentValueField::reference()) {
+        match reader.field(&source, DocumentValueField::at("DocumentValueField")) {
             Ok(Some(source)) => HandlerResult::Completed(source),
             Ok(None) => HandlerResult::DomainDenied(Denied),
             Err(error) => HandlerResult::ExecutionDenied(error),
@@ -127,12 +114,12 @@ impl OperationHandler<CanonicalSchema, ProduceBinding> for Handler {
             for (target, identity) in [(&root, "companion-left"), (&left, "companion-right")] {
                 writer.initialize_field(
                     target,
-                    CompanionIdentityField::reference(),
+                    CompanionIdentityField::at("CompanionIdentityField"),
                     identity.to_owned(),
                 )?;
                 writer.initialize_field(
                     target,
-                    CompanionValueField::reference(),
+                    CompanionValueField::at("CompanionValueField"),
                     if source.title == "invalid-companion" {
                         "invalid"
                     } else {
@@ -148,12 +135,12 @@ impl OperationHandler<CanonicalSchema, ProduceBinding> for Handler {
                 )?;
                 writer.initialize_field(
                     &mixed,
-                    DerivedIdentityField::reference(),
+                    DerivedIdentityField::at("DerivedIdentityField"),
                     "mixed-derived".to_owned(),
                 )?;
                 writer.initialize_field(
                     &mixed,
-                    DerivedValueField::reference(),
+                    DerivedValueField::at("DerivedValueField"),
                     super::super::output::calculate(&source),
                 )?;
                 writer.create_output::<MixedOutput>(&mixed)?;

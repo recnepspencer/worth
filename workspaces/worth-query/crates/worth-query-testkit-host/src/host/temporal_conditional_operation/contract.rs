@@ -109,7 +109,8 @@ pub fn temporal_node() -> domain::WorthQueryPortableConditionalNodeDeclaration {
         gate_contract(),
         gate_mask(),
         AspectBinding::EntityField {
-            field: FieldKey::new("IntentFacts").unwrap(),
+            field: FieldKey::new(super::schema::IntentGateField::at("IntentGateField").aspect())
+                .unwrap(),
         },
         domain::WorthQuerySemanticLocality::SourceRecord,
         [AuthoritativeAspectChangeKind::FieldSet],
@@ -150,31 +151,12 @@ pub fn temporal_node() -> domain::WorthQueryPortableConditionalNodeDeclaration {
 }
 
 pub fn gate_contract() -> AspectContract {
-    let required = |name: &str, family| {
-        FieldDeclaration::new(
-            FieldKey::new(name).unwrap(),
-            family,
-            FieldRequirement::Required,
-            AbsenceLaw::Required,
-            AspectEvolutionPolicy::AdditiveFieldsAllowed,
-        )
+    let field = super::schema::IntentGateField::at("IntentGateField");
+    let declaration = TemporalHostSchema::declaration().unwrap();
+    domain::declared_application_aspect(declaration.erased(), field.entity(), field.aspect())
         .unwrap()
-    };
-    AspectContract::struct_aspect(
-        AspectKey::new("IntentFacts").unwrap(),
-        AspectIdentity(0x9161_1044),
-        AspectContractRevision(1),
-        StructAspectShape::new([
-            required("IntentDueField", ScalarAspectType::UInt64),
-            required("IntentEffectField", ScalarAspectType::String),
-            required("IntentGateField", ScalarAspectType::String),
-            required("IntentIdentityField", ScalarAspectType::String),
-            required("IntentInputField", ScalarAspectType::String),
-            required("IntentLifecycleField", ScalarAspectType::String),
-            required("IntentRevisionField", ScalarAspectType::UInt64),
-        ])
-        .unwrap(),
-    )
+        .contract()
+        .clone()
 }
 
 pub fn gate_mask() -> AspectMask<ProjectionMask> {
@@ -184,22 +166,11 @@ pub fn gate_mask() -> AspectMask<ProjectionMask> {
 }
 
 pub fn native_projection() -> domain::WorthQueryOperationNativeProjectionContract {
-    let field = FieldDeclaration::new(
-        FieldKey::new("IntentIdentityField").unwrap(),
-        ScalarAspectType::String,
-        FieldRequirement::Required,
-        AbsenceLaw::Required,
-        AspectEvolutionPolicy::ExplicitBreakRequired,
-    )
-    .unwrap();
     domain::WorthQueryOperationNativeProjectionContract::new(
-        AspectContract::struct_aspect(
-            AspectKey::new("IntentFacts").unwrap(),
-            AspectIdentity(0x9160_0002),
-            AspectContractRevision(1),
-            StructAspectShape::new([field]).unwrap(),
-        ),
-        AspectMask::<ProjectionMask>::whole_aspect(),
+        gate_contract(),
+        AspectMask::new([domain::CanonicalFieldPath::single(
+            FieldKey::new("IntentIdentityField").unwrap(),
+        )]),
     )
     .unwrap()
 }
@@ -211,14 +182,24 @@ pub fn gate_projection() -> domain::WorthQueryOperationNativeProjectionContract 
 pub fn canonical_query(
 ) -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle {
     let query = DetailQueryBuilder::new(RootEntityKey::new("TemporalIntent").unwrap())
-        .project(AspectFieldSelector::new("IntentFacts", "IntentIdentityField").unwrap())
+        .project(
+            AspectFieldSelector::new(
+                super::schema::IntentIdentityField::at("IntentIdentityField").aspect(),
+                "IntentIdentityField",
+            )
+            .unwrap(),
+        )
         .build()
         .unwrap()
         .into_raw();
     let shape = DetailResultShapeBuilder::new()
         .field(
-            AuthoredResultShapeField::new("IntentFacts", "IntentIdentityField", "identity")
-                .unwrap(),
+            AuthoredResultShapeField::new(
+                super::schema::IntentIdentityField::at("IntentIdentityField").aspect(),
+                "IntentIdentityField",
+                "identity",
+            )
+            .unwrap(),
         )
         .build()
         .unwrap()

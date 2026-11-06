@@ -96,7 +96,7 @@ pub fn admitted_program_required_program(
             &admission,
             |reader, projected| {
                 reader
-                    .require_decision_field(projected, AccountStatus::reference())
+                    .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                     .unwrap();
             },
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -121,7 +121,11 @@ pub fn admitted_program_required_program(
         .begin_effect_program();
     let account = effects.existing_entity(account).unwrap();
     effects
-        .write_field(&account, AccountStatus::reference(), replacement.to_owned())
+        .write_field(
+            &account,
+            AccountStatus::at("AccountStatus"),
+            replacement.to_owned(),
+        )
         .unwrap();
     effects.finish().unwrap()
 }
@@ -268,13 +272,15 @@ pub fn admitted_program_with_expected_status(
         ProgramOptions {
             replacement: status_and_replacement.1,
             emissions: Vec::new(),
-            preconditions: Preconditions::new().expect_fact(
-                AccountStatus::reference(),
-                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
-                    status_and_replacement.0.to_owned(),
+            preconditions: Preconditions::new()
+                .expect_fact(
+                    AccountStatus::at("AccountStatus"),
+                    ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                        status_and_replacement.0.to_owned(),
+                    )
+                    .expect("fixture account status must encode"),
                 )
-                .expect("fixture account status must encode"),
-            ),
+                .expect("record field contract"),
         },
     )
 }

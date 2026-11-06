@@ -109,7 +109,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         // Add the declared upstream values once, in the first semantic partition.
         if part.key == 0 {
             for upstream in &input.upstream {
-                value += reader.field(upstream, Value::reference())?.unwrap();
+                value += reader.field(upstream, Value::at("Value"))?.unwrap();
             }
         }
         Ok(vec![part.key, value, part.work, u64::from(part.fails)])

@@ -20,8 +20,7 @@ worth_query_structured_value_binding!(pub InputBinding for Calculate { identity:
 worth_query_structured_value_binding!(pub ResultBinding for Published { identity: "retired-output.calculation-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for SourceChanged { identity: "retired-output.calculation-denial.v1" });
 worth_query_operation!(pub CalculateRetainedNumber for NumericSchema, input InputBinding);
-worth_query_operation_reads!(CalculateRetainedNumber => [Key, Primary, Calculated, Operand]);
-worth_query_operation_writes!(CalculateRetainedNumber => [Calculated]);
+
 pub struct Outputs;
 pub struct RetainedNumber;
 impl WorthQueryApplicationOutputRole for RetainedNumber {
@@ -36,15 +35,7 @@ impl ApplicationMutationOutputContract<NumericSchema> for Outputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[RetainedNumber::DESCRIPTOR];
 }
 pub struct Binding;
-type Scope = ApplicationMutationFieldScope<
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Key,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+type Scope = ApplicationMutationFieldScope<Key>;
 impl ApplicationMutationBinding<NumericSchema> for Binding {
     type Input = Calculate;
     type InputBinding = InputBinding;
@@ -69,17 +60,8 @@ impl ApplicationMutationBinding<NumericSchema> for Binding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        NumericSchema,
-        Number,
-        NumberFacts,
-        Key,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        Key::reference()
+    fn scope_field() -> Key {
+        Key::at("Key")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         NumericSchema,
@@ -98,7 +80,7 @@ impl ApplicationMutationIntent<NumericSchema> for Calculate {
         self
     }
     fn scope_binding(&self) -> Scope {
-        Scope::new(Key::reference(), self.key.clone())
+        Scope::new(Key::at("Key"), self.key.clone())
     }
 }
 pub struct Handler;
@@ -109,26 +91,26 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<NumericSchema, Number>, SourceChanged>
     {
-        let target = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+        let target = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
             Ok(target) => target,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
-        match reader.field(&target, Primary::reference()) {
-            Ok(Some(value)) if value == input.primary => {}
+        match reader.field(&target, Primary::at("Primary")) {
+            Ok(Some(value)) if value.0 == input.primary => {}
             Ok(_) => return HandlerResult::DomainDenied(SourceChanged),
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         }
-        match reader.field(&target, Operand::reference()) {
+        match reader.field(&target, Operand::at("Operand")) {
             Ok(value) if value == input.operand => {}
             Ok(_) => return HandlerResult::DomainDenied(SourceChanged),
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         }
         // The output is resolved independently; the source identity cannot stand in for it.
-        let target = match reader.resolve_entity(Key::reference(), "observer".to_owned()) {
+        let target = match reader.resolve_entity(Key::at("Key"), "observer".to_owned()) {
             Ok(target) => target,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
-        match reader.field(&target, Calculated::reference()) {
+        match reader.field(&target, Calculated::at("Calculated")) {
             Ok(Some(_)) => {}
             Ok(None) => return HandlerResult::DomainDenied(SourceChanged),
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
@@ -148,7 +130,7 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
             let target = writer.projected_entity(&target)?;
             writer.write_field(
                 &target,
-                Calculated::reference(),
+                Calculated::at("Calculated"),
                 input.primary * 2 + 1 + input.operand.unwrap_or(0),
             )?;
             writer.preserve_output::<RetainedNumber>(&target)
@@ -192,9 +174,7 @@ impl WorthQueryApplicationProducerBinding<NumericSchema> for Producer {
     const REUSE_POLICY: &'static str = "exact-source";
     fn output_equivalence(
     ) -> Option<WorthQueryProducerOutputEquivalence<NumericSchema, Self::OutputRole>> {
-        Some(WorthQueryProducerOutputEquivalence::exact_u64(
-            Calculated::reference(),
-        ))
+        Some(WorthQueryProducerOutputEquivalence::exact_u64(Calculated::at("Calculated")).unwrap())
     }
 }
 impl WorthQueryApplicationProducerProvider<NumericSchema, Producer> for Provider {
@@ -223,16 +203,16 @@ pub fn declare(
                 .finish(),
         )
         .operation_projection_work_budget(CalculateRetainedNumber::reference(), 8)
-        .operation_read_field(CalculateRetainedNumber::reference(), Key::reference())
-        .operation_read_field(CalculateRetainedNumber::reference(), Primary::reference())
+        .operation_read_field(CalculateRetainedNumber::reference(), Key::at("Key"))
+        .operation_read_field(CalculateRetainedNumber::reference(), Primary::at("Primary"))
         .operation_read_field(
             CalculateRetainedNumber::reference(),
-            Calculated::reference(),
+            Calculated::at("Calculated"),
         )
-        .operation_read_field(CalculateRetainedNumber::reference(), Operand::reference())
+        .operation_read_field(CalculateRetainedNumber::reference(), Operand::at("Operand"))
         .operation_write(
             CalculateRetainedNumber::reference(),
-            Calculated::reference(),
+            Calculated::at("Calculated"),
         )
         .application_mutation_binding::<Binding>()
 }

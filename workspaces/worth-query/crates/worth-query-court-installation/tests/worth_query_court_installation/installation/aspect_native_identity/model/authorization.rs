@@ -1,16 +1,8 @@
 //! Genuine declaration closure for principal-bound authorization identities.
 use super::*;
 use worth_query_declaration::facade::authentication::*;
-use worth_query_declaration::{worth_query_aspect, worth_query_entity, worth_query_field};
-
-worth_query_entity!(pub Mapping for Schema: ApplicationSchema);
-worth_query_entity!(pub Principal for Schema: ApplicationSchema);
-worth_query_aspect!(pub External for Schema: ApplicationSchema, Mapping; identity = AspectIdentity(0x372001), revision = AspectContractRevision(1));
-worth_query_aspect!(pub PrincipalFacts for Schema: ApplicationSchema, Principal; identity = AspectIdentity(0x372002), revision = AspectContractRevision(1));
-worth_query_field!(pub ExternalId for Schema: ApplicationSchema, Mapping, External: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub Status for Schema: ApplicationSchema, Mapping, External: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub Identity for Schema: ApplicationSchema, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-struct MappingTarget;
+mod records;
+use records::{Authorization, External, Mapping, MappingTarget, Principal, PrincipalFacts};
 struct PrincipalBinding;
 struct ApplyAbility;
 struct ApplyPolicy;
@@ -20,13 +12,7 @@ pub(super) fn declare<S: ApplicationSchema>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
     paths: Vec<ApplicationAuthorizationPath>,
 ) -> ApplicationSchemaDeclarationBuilder<S> {
-    let target =
-        ApplicationRelationRef::<S, MappingTarget, Mapping, Principal>::from_schema_identifiers(
-            "PrincipalTarget",
-            "Mapping",
-            "Principal",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        );
+    let target = fragment::relation(Authorization, Mapping, MappingTarget);
     let principal_binding = ApplicationPrincipalBindingRef::<
         S,
         PrincipalBinding,
@@ -37,16 +23,21 @@ pub(super) fn declare<S: ApplicationSchema>(
     >::from_requirements(
         "PrincipalBinding",
         ApplicationPrincipalBindingRequirements {
-            mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
-                ExternalId::reference(),
-            ),
-            mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
-                Status::reference(),
-            ),
+            mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_record(
+                fragment::record_field(Authorization, Mapping, External, "ExternalId").unwrap(),
+            )
+            .unwrap(),
+            mapping_status: ApplicationPrincipalMappingStatusRequirement::from_record(
+                fragment::record_field(Authorization, Mapping, External, "Status").unwrap(),
+            )
+            .unwrap(),
             target: ApplicationPrincipalTargetRequirement::from_relation(target),
-            principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
-                Identity::reference(),
-            ),
+            principal_identity: ApplicationPrincipalIdentityRequirement::from_record(
+                Authorization,
+                fragment::record_field(Authorization, Principal, PrincipalFacts, "Identity")
+                    .unwrap(),
+            )
+            .unwrap(),
         },
     );
     let ability = ApplicationAbilityRef::<S, ApplyAbility, Principal>::from_schema_identifiers(
@@ -55,14 +46,6 @@ pub(super) fn declare<S: ApplicationSchema>(
     );
     let policy = ApplicationPolicyRef::<S, ApplyPolicy>::from_schema_identifier("ApplyPolicy");
     schema
-        .entity(Mapping::reference())
-        .entity(Principal::reference())
-        .aspect(Mapping::reference(), External::reference())
-        .aspect(Principal::reference(), PrincipalFacts::reference())
-        .field(Mapping::reference(), ExternalId::reference())
-        .field(Mapping::reference(), Status::reference())
-        .field(Principal::reference(), Identity::reference())
-        .relation(target, Mapping::reference(), Principal::reference())
         .principal_binding(principal_binding)
         .policy(policy)
         .ability(ability)
@@ -83,7 +66,14 @@ impl<const MANY: bool> ApplicationSchema for Authorized<MANY> {
         } else {
             vec![path(0..900)]
         };
-        super::declaration_for::<Self, 2, 1>(false, paths)
+        let schema = ApplicationSchemaDeclarationBuilder::from_fragment(Authorization)?.operation(
+            operation()
+                .definition()
+                .no_external_effect()
+                .no_aftermath()
+                .finish(),
+        );
+        declare(schema, paths).build()
     }
 }
 
@@ -101,7 +91,16 @@ fn path(values: impl IntoIterator<Item = u64>) -> ApplicationAuthorizationPath {
                         WorthQueryPortableApplicationAuthorizationPredicateParts {
                             traversal_ordinal: 0,
                             entity: "Principal".into(),
-                            aspect: "PrincipalFacts".into(),
+                            aspect: fragment::record_field::<_, _, _, u64, _, _>(
+                                Authorization,
+                                Principal,
+                                PrincipalFacts,
+                                "Identity",
+                            )
+                            .unwrap()
+                            .locus()
+                            .aspect()
+                            .into(),
                             field: "Identity".into(),
                             value: AspectValue::UInt64(value),
                         },

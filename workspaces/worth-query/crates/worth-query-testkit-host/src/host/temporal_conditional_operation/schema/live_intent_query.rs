@@ -87,10 +87,7 @@ pub fn temporal_intent_live_query_definition() -> ApplicationQueryDefinition<
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(live_targets())
-        .live_by::<TemporalIntent, TemporalIntentLiveCause, _, _, _, _, _, _, _, _>(
-            scope_identity(),
-            target_identity(),
-        )
+        .live_by::<TemporalIntent, TemporalIntentLiveCause>(scope_identity(), target_identity())
         .build()
         .expect("the temporal live query is canonical")
 }
@@ -156,21 +153,18 @@ pub type IdentityResultField<Slot> = ApplicationQueryResultFieldRef<
     TemporalIntentLiveQuery,
     Slot,
     TemporalHostSchema,
-    TemporalIntent,
-    IntentFacts,
     IntentIdentityField,
-    String,
-    declaration::application_schema::ReadOnly,
-    declaration::application_schema::EqualityPredicate,
-    declaration::application_schema::NoApplicationUnit,
 >;
 
 pub fn scope_identity() -> IdentityResultField<IntentLiveIdentitySlot> {
-    ApplicationQueryResultFieldRef::new("identity", IntentIdentityField::reference())
+    ApplicationQueryResultFieldRef::new("identity", IntentIdentityField::at("IntentIdentityField"))
 }
 
 pub fn target_identity() -> IdentityResultField<IntentLiveTargetIdentitySlot> {
-    ApplicationQueryResultFieldRef::new("target_identity", IntentIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "target_identity",
+        IntentIdentityField::at("IntentIdentityField"),
+    )
 }
 
 pub fn live_targets() -> ApplicationQueryResultRelationRef<

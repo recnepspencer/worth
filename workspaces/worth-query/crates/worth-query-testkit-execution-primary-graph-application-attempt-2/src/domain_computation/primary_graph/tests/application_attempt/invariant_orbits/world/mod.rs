@@ -1,5 +1,4 @@
 //! Real package installation and bootstrap, with a matching static schema type.
-use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::probe;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::*;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntimeInstaller;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityKey;
@@ -157,8 +156,8 @@ pub fn install_with_visibility<const O: bool>(
             bootstrap
                 .bind_entity(
                     WorthQueryApplicationEntitySeed::new(Node::reference(), node_key::<O>(key))
-                        .field(NodeKey::reference(), key)
-                        .field(Marked::reference(), false),
+                        .field(NodeKey::at("NodeKey"), key)
+                        .field(Marked::at("Marked"), false),
                 )
                 .unwrap();
         }
@@ -238,11 +237,11 @@ impl<const O: bool> World<O> {
                     .map(|edge| {
                         (
                             snapshot
-                                .field(&execution, edge.from(), NodeKey::reference())
+                                .field(&execution, edge.from(), NodeKey::at("NodeKey"))
                                 .unwrap()
                                 .unwrap(),
                             snapshot
-                                .field(&execution, edge.to(), NodeKey::reference())
+                                .field(&execution, edge.to(), NodeKey::at("NodeKey"))
                                 .unwrap()
                                 .unwrap(),
                         )

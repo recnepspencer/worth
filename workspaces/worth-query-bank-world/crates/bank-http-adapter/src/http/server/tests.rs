@@ -285,8 +285,7 @@ async fn assert_live_fixture_admits(application: &CausalHttpApplication, account
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         Some(std::time::Instant::now() + Duration::from_secs(5)),
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = application.authenticate(&scope).await;
     let controls = WorthQueryApplicationLiveControls::bounded(scope, 16, 8).unwrap();
     match application

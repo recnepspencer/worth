@@ -9,15 +9,14 @@ use worth_query_installation::facade::WorthQueryArtifactFamily;
 use worth_query_installation::facade::WorthQueryInstallationGeneration;
 use worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority;
 
-use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::managed_run::tests::causal_fixture;
-use worth_query_execution::facade::domain_computation::WorthQueryExecutionCommitPosture;
-use worth_query_execution::facade::domain_computation::WorthQueryInstalledOperationExecutionSupport;
-use worth_query_execution::facade::integration::WorthQueryGraphProviderAnchor;
+use worth_query_execution::facade::convergence_epoch::WorthQueryIteratingDirectConvergenceEpoch;
 use worth_query_execution::facade::domain_computation::WorthQueryAdmittedDirectRun;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionBoundOperationAuthority;
+use worth_query_execution::facade::domain_computation::WorthQueryExecutionCommitPosture;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntime;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntimeInstaller;
-use worth_query_execution::facade::convergence_epoch::WorthQueryIteratingDirectConvergenceEpoch;
+use worth_query_execution::facade::domain_computation::WorthQueryInstalledOperationExecutionSupport;
+use worth_query_execution::facade::integration::WorthQueryGraphProviderAnchor;
 
 use crate::domain_computation::convergence_epoch::tests::fixture::admitted_basis::admitted_alternate_basis;
 use crate::domain_computation::convergence_epoch::tests::fixture::admitted_basis::admitted_basis;

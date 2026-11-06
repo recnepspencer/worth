@@ -133,6 +133,8 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         branch: WorthQueryProductBranch,
         owner: EntityId,
         request: &WorthQueryRequestScope,
+        seed_fields: impl Fn(u64) -> worth_relational::facade::transactions::AspectFieldPatch,
+        value_fields: impl Fn(u64) -> worth_relational::facade::transactions::AspectFieldPatch,
     ) -> Result<
         worth_relational::facade::runtime::CurrentOwnershipLocalityForTest,
         WorthQueryAdvancementDenial,
@@ -152,6 +154,8 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                         &execution,
                         product.relational_basis(),
                         owner,
+                        seed_fields,
+                        value_fields,
                     )
                 })
                 .expect("real cold ownership locality court"))

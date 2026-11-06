@@ -18,17 +18,44 @@ fn install_request(
     let operation = RequestEstateEmergencyAccessOperation::reference();
     schema
         .operation_projection_work_budget(operation, 32)
-        .operation_read_field(operation, EstateCaseIdentityField::reference())
+        .operation_read_field(
+            operation,
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
+        )
         .operation_create(operation, EmergencyAccess::reference())
         .operation_create(operation, MandatoryReview::reference())
-        .operation_write(operation, EmergencyAccessIdentityField::reference())
-        .operation_write(operation, EmergencyAccessReasonField::reference())
-        .operation_write(operation, EmergencyAccessStatusField::reference())
-        .operation_write(operation, EmergencyAccessIssuedAtField::reference())
-        .operation_write(operation, EmergencyAccessExpiresAtField::reference())
-        .operation_write(operation, MandatoryReviewIdentityField::reference())
-        .operation_write(operation, MandatoryReviewKindField::reference())
-        .operation_write(operation, MandatoryReviewStatusField::reference())
+        .operation_write(
+            operation,
+            EmergencyAccessIdentityField::at("EmergencyAccessIdentityField"),
+        )
+        .operation_write(
+            operation,
+            EmergencyAccessReasonField::at("EmergencyAccessReasonField"),
+        )
+        .operation_write(
+            operation,
+            EmergencyAccessStatusField::at("EmergencyAccessStatusField"),
+        )
+        .operation_write(
+            operation,
+            EmergencyAccessIssuedAtField::at("EmergencyAccessIssuedAtField"),
+        )
+        .operation_write(
+            operation,
+            EmergencyAccessExpiresAtField::at("EmergencyAccessExpiresAtField"),
+        )
+        .operation_write(
+            operation,
+            MandatoryReviewIdentityField::at("MandatoryReviewIdentityField"),
+        )
+        .operation_write(
+            operation,
+            MandatoryReviewKindField::at("MandatoryReviewKindField"),
+        )
+        .operation_write(
+            operation,
+            MandatoryReviewStatusField::at("MandatoryReviewStatusField"),
+        )
         .operation_link(operation, EmergencyRequester::reference())
         .operation_link(operation, EmergencyGrant::reference())
         .operation_link(operation, EmergencyReview::reference())
@@ -40,7 +67,10 @@ fn install_approval(
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let operation = ApproveEstateEmergencyAccessOperation::reference();
     install_lifecycle_reads(schema, operation)
-        .operation_write(operation, EmergencyAccessStatusField::reference())
+        .operation_write(
+            operation,
+            EmergencyAccessStatusField::at("EmergencyAccessStatusField"),
+        )
         .operation_link(operation, EmergencyApprover::reference())
 }
 
@@ -49,9 +79,18 @@ fn install_close(
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let operation = RevokeEstateEmergencyAccessOperation::reference();
     install_lifecycle_reads(schema, operation)
-        .operation_read_field(operation, EmergencyAccessClosedAtField::reference())
-        .operation_write(operation, EmergencyAccessStatusField::reference())
-        .operation_write(operation, EmergencyAccessClosedAtField::reference())
+        .operation_read_field(
+            operation,
+            EmergencyAccessClosedAtField::at("EmergencyAccessClosedAtField"),
+        )
+        .operation_write(
+            operation,
+            EmergencyAccessStatusField::at("EmergencyAccessStatusField"),
+        )
+        .operation_write(
+            operation,
+            EmergencyAccessClosedAtField::at("EmergencyAccessClosedAtField"),
+        )
 }
 
 fn install_review(
@@ -59,9 +98,18 @@ fn install_review(
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let operation = CompleteEstateMandatoryReviewOperation::reference();
     install_lifecycle_reads(schema, operation)
-        .operation_read_field(operation, MandatoryReviewReviewedAtField::reference())
-        .operation_write(operation, MandatoryReviewStatusField::reference())
-        .operation_write(operation, MandatoryReviewReviewedAtField::reference())
+        .operation_read_field(
+            operation,
+            MandatoryReviewReviewedAtField::at("MandatoryReviewReviewedAtField"),
+        )
+        .operation_write(
+            operation,
+            MandatoryReviewStatusField::at("MandatoryReviewStatusField"),
+        )
+        .operation_write(
+            operation,
+            MandatoryReviewReviewedAtField::at("MandatoryReviewReviewedAtField"),
+        )
         .operation_link(operation, ReviewPrincipal::reference())
 }
 
@@ -74,22 +122,6 @@ fn install_lifecycle_reads<Operation>(
     >,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema>
 where
-    EmergencyAccessIdentityField:
-        worth_query_decl::facade::application_schema::OperationReads<Operation>,
-    EmergencyAccessReasonField:
-        worth_query_decl::facade::application_schema::OperationReads<Operation>,
-    EmergencyAccessStatusField:
-        worth_query_decl::facade::application_schema::OperationReads<Operation>,
-    EmergencyAccessIssuedAtField:
-        worth_query_decl::facade::application_schema::OperationReads<Operation>,
-    EmergencyAccessExpiresAtField:
-        worth_query_decl::facade::application_schema::OperationReads<Operation>,
-    MandatoryReviewIdentityField:
-        worth_query_decl::facade::application_schema::OperationReads<Operation>,
-    MandatoryReviewKindField:
-        worth_query_decl::facade::application_schema::OperationReads<Operation>,
-    MandatoryReviewStatusField:
-        worth_query_decl::facade::application_schema::OperationReads<Operation>,
     EmergencyRequester: worth_query_decl::facade::application_schema::OperationReads<Operation>,
     EmergencyApprover: worth_query_decl::facade::application_schema::OperationReads<Operation>,
     EmergencyGrant: worth_query_decl::facade::application_schema::OperationReads<Operation>,
@@ -100,14 +132,38 @@ where
 {
     schema
         .operation_projection_work_budget(operation, 128)
-        .operation_read_field(operation, EmergencyAccessIdentityField::reference())
-        .operation_read_field(operation, EmergencyAccessReasonField::reference())
-        .operation_read_field(operation, EmergencyAccessStatusField::reference())
-        .operation_read_field(operation, EmergencyAccessIssuedAtField::reference())
-        .operation_read_field(operation, EmergencyAccessExpiresAtField::reference())
-        .operation_read_field(operation, MandatoryReviewIdentityField::reference())
-        .operation_read_field(operation, MandatoryReviewKindField::reference())
-        .operation_read_field(operation, MandatoryReviewStatusField::reference())
+        .operation_read_field(
+            operation,
+            EmergencyAccessIdentityField::at("EmergencyAccessIdentityField"),
+        )
+        .operation_read_field(
+            operation,
+            EmergencyAccessReasonField::at("EmergencyAccessReasonField"),
+        )
+        .operation_read_field(
+            operation,
+            EmergencyAccessStatusField::at("EmergencyAccessStatusField"),
+        )
+        .operation_read_field(
+            operation,
+            EmergencyAccessIssuedAtField::at("EmergencyAccessIssuedAtField"),
+        )
+        .operation_read_field(
+            operation,
+            EmergencyAccessExpiresAtField::at("EmergencyAccessExpiresAtField"),
+        )
+        .operation_read_field(
+            operation,
+            MandatoryReviewIdentityField::at("MandatoryReviewIdentityField"),
+        )
+        .operation_read_field(
+            operation,
+            MandatoryReviewKindField::at("MandatoryReviewKindField"),
+        )
+        .operation_read_field(
+            operation,
+            MandatoryReviewStatusField::at("MandatoryReviewStatusField"),
+        )
         .operation_read_relation(operation, EmergencyRequester::reference())
         .operation_read_relation(operation, EmergencyApprover::reference())
         .operation_read_relation(operation, EmergencyGrant::reference())

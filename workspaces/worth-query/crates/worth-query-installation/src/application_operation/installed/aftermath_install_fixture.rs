@@ -9,13 +9,11 @@ use worth_query_declaration::facade::application_aftermath::{
     DeclaredPreImageLocus, DeclaredRecordedInverse, PortableApplicationAftermathContract,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationAspectMarkerIdentity, ApplicationEntityMarkerIdentity,
-    ApplicationExternalEffectProtocol, ApplicationFieldMarkerIdentity, ApplicationFieldPresence,
-    ApplicationFieldRef, ApplicationOperationDecisionReadTarget,
+    ApplicationExternalEffectProtocol, ApplicationOperationDecisionReadTarget,
     ApplicationOperationMarkerIdentity, ApplicationOperationProgramTarget, ApplicationOperationRef,
     ApplicationSchema, ApplicationSchemaBindingIdentity, ApplicationSchemaDeclaration,
-    ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember, DeclaredApplicationFieldValue,
-    U64ApplicationValueBinding, WorthQueryExternalEffectCorrelationFamily,
+    ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember,
+    WorthQueryExternalEffectCorrelationFamily,
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -33,16 +31,9 @@ mod source;
 pub(crate) struct FixtureSchema;
 struct FixtureOperation;
 struct FixtureInput;
-pub(crate) struct Account;
-pub(crate) struct OtherAccount;
-pub(crate) struct State;
-pub(crate) struct OtherAccountState;
-pub(crate) struct OtherState;
-pub(crate) struct Balance;
-pub(crate) struct OtherAccountBalance;
-pub(crate) struct OtherStateBalance;
-pub(crate) struct SecretField;
-pub(crate) struct OtherBalance;
+mod records;
+pub(crate) use records::*;
+use worth_query_declaration::facade::application_schema::fragment::RecordSelection;
 
 worth_query_declaration::worth_query_portable_type!(
     FixtureInput => "worth.query.installation-test.aftermath-input"
@@ -55,57 +46,6 @@ impl ApplicationOperationMarkerIdentity<FixtureSchema> for FixtureOperation {
     type InputBinding = FixtureInputBinding;
     const IDENTIFIER: &'static str = "FixtureOperation";
 }
-
-macro_rules! entity_identity {
-    ($marker:ty, $identifier:literal) => {
-        impl ApplicationEntityMarkerIdentity<FixtureSchema> for $marker {
-            const IDENTIFIER: &'static str = $identifier;
-        }
-    };
-}
-
-macro_rules! aspect_identity {
-    ($marker:ty, $entity:ty, $identifier:literal, $identity:expr) => {
-        impl ApplicationAspectMarkerIdentity<FixtureSchema, $entity> for $marker {
-            const IDENTIFIER: &'static str = $identifier;
-            const ASPECT_IDENTITY:
-                worth_query_declaration::facade::application_schema::AspectIdentity =
-                worth_query_declaration::facade::application_schema::AspectIdentity($identity);
-            const CONTRACT_REVISION:
-                worth_query_declaration::facade::application_schema::AspectContractRevision =
-                worth_query_declaration::facade::application_schema::AspectContractRevision(1);
-        }
-    };
-}
-
-macro_rules! field_identity {
-    ($marker:ty, $entity:ty, $aspect:ty, $identifier:literal) => {
-        impl ApplicationFieldMarkerIdentity<FixtureSchema, $entity, $aspect> for $marker {
-            const IDENTIFIER: &'static str = $identifier;
-        }
-        impl DeclaredApplicationFieldValue for $marker {
-            type Value = u64;
-            type Binding = U64ApplicationValueBinding;
-            const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
-        }
-    };
-}
-
-entity_identity!(Account, "Account");
-entity_identity!(OtherAccount, "OtherAccount");
-aspect_identity!(State, Account, "State", 0x9161_2101);
-aspect_identity!(OtherAccountState, OtherAccount, "State", 0x9161_2102);
-aspect_identity!(OtherState, Account, "OtherState", 0x9161_2103);
-field_identity!(Balance, Account, State, "balance");
-field_identity!(
-    OtherAccountBalance,
-    OtherAccount,
-    OtherAccountState,
-    "balance"
-);
-field_identity!(OtherStateBalance, Account, OtherState, "balance");
-field_identity!(SecretField, Account, State, "secret-field");
-field_identity!(OtherBalance, Account, State, "other-balance");
 
 impl ApplicationSchema for FixtureSchema {
     const OWNER: &'static str = "worth-query-installation-tests";
@@ -156,20 +96,8 @@ impl AftermathInstall {
         }
     }
 
-    pub(crate) fn reads<Field>(self) -> Self
-    where
-        Field: ApplicationFieldMarkerIdentity<FixtureSchema, Account, State, Value = u64>,
-    {
-        self.reads_at::<Account, State, Field>()
-    }
-
-    pub(crate) fn reads_at<Entity, Aspect, Field>(mut self) -> Self
-    where
-        Entity: ApplicationEntityMarkerIdentity<FixtureSchema>,
-        Aspect: ApplicationAspectMarkerIdentity<FixtureSchema, Entity>,
-        Field: ApplicationFieldMarkerIdentity<FixtureSchema, Entity, Aspect, Value = u64>,
-    {
-        self.declared_reads = vec![decision_read_target::<Entity, Aspect, Field>()];
+    pub(crate) fn reads<Field: RecordSelection>(mut self, field: Field) -> Self {
+        self.declared_reads = vec![decision_read_target(field)];
         self
     }
 
@@ -303,30 +231,22 @@ pub(crate) fn binding(
     ApplicationSchemaBindingIdentity::from_installed_parts(1, generation, package, schema)
 }
 
-pub(crate) fn recorded_inverse<Field>() -> DeclaredCorrectionMechanism<FixtureSchema>
-where
-    Field: ApplicationFieldMarkerIdentity<FixtureSchema, Account, State, Value = u64>,
-{
-    recorded_inverse_at::<Account, State, Field>(256)
+pub(crate) fn recorded_inverse<Field: RecordSelection>(
+    field: Field,
+) -> DeclaredCorrectionMechanism<FixtureSchema> {
+    recorded_inverse_at(field, 256)
 }
-
-pub(crate) fn recorded_inverse_at<Entity, Aspect, Field>(
+pub(crate) fn recorded_inverse_at<Field: RecordSelection>(
+    field: Field,
     maximum_encoded_bytes: usize,
-) -> DeclaredCorrectionMechanism<FixtureSchema>
-where
-    Entity: ApplicationEntityMarkerIdentity<FixtureSchema>,
-    Aspect: ApplicationAspectMarkerIdentity<FixtureSchema, Entity>,
-    Field: ApplicationFieldMarkerIdentity<FixtureSchema, Entity, Aspect, Value = u64>,
-{
-    let field =
-        ApplicationFieldRef::<FixtureSchema, Entity, Aspect, Field, u64>::from_schema_types();
+) -> DeclaredCorrectionMechanism<FixtureSchema> {
     DeclaredCorrectionMechanism::RecordedInverse(
         DeclaredRecordedInverse::new(
             "unfreeze",
             DeclaredLoweringCorrespondenceRef::new("geometry-inverse").unwrap(),
             DeclaredAftermathPostcondition::ExactPriorTruth,
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(field)],
+                [DeclaredPreImageLocus::from_field(field).unwrap()],
                 maximum_encoded_bytes,
             )
             .unwrap(),
@@ -335,14 +255,9 @@ where
     )
 }
 
-fn decision_read_target<Entity, Aspect, Field>() -> ApplicationOperationDecisionReadTarget
-where
-    Entity: ApplicationEntityMarkerIdentity<FixtureSchema>,
-    Aspect: ApplicationAspectMarkerIdentity<FixtureSchema, Entity>,
-    Field: ApplicationFieldMarkerIdentity<FixtureSchema, Entity, Aspect, Value = u64>,
-{
-    let field =
-        ApplicationFieldRef::<FixtureSchema, Entity, Aspect, Field, u64>::from_schema_types();
+fn decision_read_target<Field: RecordSelection>(
+    field: Field,
+) -> ApplicationOperationDecisionReadTarget {
     ApplicationOperationDecisionReadTarget::Field {
         entity: field.entity().to_owned(),
         aspect: field.aspect().to_owned(),

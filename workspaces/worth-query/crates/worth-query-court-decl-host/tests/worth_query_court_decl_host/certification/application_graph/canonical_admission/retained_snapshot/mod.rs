@@ -12,7 +12,10 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
                 |reader| {
                     ["root", "child"].map(|name| {
                         reader
-                            .resolve_entity(DocumentIdentityField::reference(), name.to_owned())
+                            .resolve_entity(
+                                DocumentIdentityField::at("DocumentIdentityField"),
+                                name.to_owned(),
+                            )
                             .unwrap()
                     })
                 },
@@ -61,7 +64,7 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
                     .run(ExecutionWorkCeiling::new(Some(work)), |_| {
                         snapshot.read_fields(&request, |reader| {
                             let first = reader
-                                .field(&identities[0], DocumentValueField::reference())
+                                .field(&identities[0], DocumentValueField::at("DocumentValueField"))
                                 .expect("the first nested decode fits this native allowance")
                                 .expect("the pinned source has its root value");
                             assert_eq!(first.0, super::value());
@@ -70,7 +73,7 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
                             // the caller can also swallow the field error. The
                             // native completion owner must veto either case.
                             let second = reader
-                                .field(&identities[1], DocumentValueField::reference())
+                                .field(&identities[1], DocumentValueField::at("DocumentValueField"))
                                 .ok()
                                 .flatten();
                             if cancel_at_handoff {
@@ -137,7 +140,7 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
             assert_eq!(snapshot.version(), pinned_version);
             assert_eq!(
                 snapshot
-                    .field(&execution, &identities[0], CounterField::reference())
+                    .field(&execution, &identities[0], CounterField::at("CounterField"))
                     .unwrap(),
                 Some(0),
                 "the native retained pin keeps its old value after a committed source edit"

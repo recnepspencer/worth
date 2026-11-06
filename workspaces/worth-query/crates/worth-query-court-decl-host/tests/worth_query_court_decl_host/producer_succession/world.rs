@@ -165,11 +165,11 @@ where
                     Node::reference(),
                     WorthQueryApplicationEntityKey::new("root").unwrap(),
                 )
-                .field(Key::reference(), "root".to_string())
-                .field(ParentName::reference(), String::new())
-                .field(Value::reference(), 1)
-                .field(Width::reference(), width)
-                .field(Produced::reference(), 0),
+                .field(Key::at("Key"), "root".to_string())
+                .field(ParentName::at("ParentName"), String::new())
+                .field(Value::at("Value"), 1)
+                .field(Width::at("Width"), width)
+                .field(Produced::at("Produced"), 0),
             )?;
             for key in others {
                 graph.bind_entity(
@@ -177,11 +177,11 @@ where
                         Node::reference(),
                         WorthQueryApplicationEntityKey::new(*key).unwrap(),
                     )
-                    .field(Key::reference(), (*key).to_owned())
-                    .field(ParentName::reference(), String::new())
-                    .field(Value::reference(), 1)
-                    .field(Width::reference(), 0)
-                    .field(Produced::reference(), 0),
+                    .field(Key::at("Key"), (*key).to_owned())
+                    .field(ParentName::at("ParentName"), String::new())
+                    .field(Value::at("Value"), 1)
+                    .field(Width::at("Width"), 0)
+                    .field(Produced::at("Produced"), 0),
                 )?;
             }
             if super::PRIVATE_AGGREGATES {
@@ -190,11 +190,11 @@ where
                         Node::reference(),
                         WorthQueryApplicationEntityKey::new("observer").unwrap(),
                     )
-                    .field(Key::reference(), "observer".to_owned())
-                    .field(ParentName::reference(), String::new())
-                    .field(Value::reference(), 8)
-                    .field(Width::reference(), 0)
-                    .field(Produced::reference(), 0),
+                    .field(Key::at("Key"), "observer".to_owned())
+                    .field(ParentName::at("ParentName"), String::new())
+                    .field(Value::at("Value"), 8)
+                    .field(Width::at("Width"), 0)
+                    .field(Produced::at("Produced"), 0),
                 )?;
             }
             if matches!(fault, Fault::Extra | Fault::HiddenDeletion) {
@@ -204,10 +204,10 @@ where
                         WorthQueryApplicationEntityKey::new("unrelated").unwrap(),
                     )
                     .field(
-                        realization::RealizationKey::reference(),
+                        realization::RealizationKey::at("RealizationKey"),
                         "unrelated".to_owned(),
                     )
-                    .field(realization::RealizedValue::reference(), 1),
+                    .field(realization::RealizedValue::at("RealizedValue"), 1),
                 )?;
             }
             Ok(())

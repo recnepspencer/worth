@@ -16,10 +16,22 @@ use worth_query_host::facade::application_contribution::{
 /// ```compile_fail,E0271
 /// use worth_query_host::facade::application_contribution::*;
 /// use worth_query_topology_entry::*;
-/// worth_query_decl::facade::worth_query_application! {
-///     pub Schema { owner: "wrong-readiness", version: (1, 0), contributions: [TopologyContribution], }
+/// #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+/// pub struct Schema;
+/// impl worth_query_decl::facade::application_schema::fragment::Fragment for Schema {
+///  const NAME: &'static str = "Schema";
+///  type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+///  type Members = (TopologyContribution,);
 /// }
-/// impl TopologySchemaBinding for Schema {}
+/// impl worth_query_decl::facade::application_schema::ApplicationSchema for Schema {
+///  const OWNER: &'static str = "wrong-readiness"; const NAME: &'static str = "Schema";
+///  const MAJOR: u32 = 1; const MINOR: u32 = 0;
+///  fn declaration() -> Result<worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>, worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial> { worth_query_decl::facade::application_schema::fragment::declare(Self) }
+///  fn visit_correction<V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>>(source: std::any::TypeId, visitor: V) -> V::Output { worth_query_decl::facade::application_schema::fragment::visit_correction(Self, source, visitor) }
+/// }
+/// impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for Schema { type Contributions = (TopologyContribution,); }
+///
+/// impl TopologySchemaBinding for Schema { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 /// type Wrong = WorthQueryRequiredFeaturePair<Schema, PlanarFinalOutputFeature,
 ///     PlanarFinalOutputProducer<Schema>, PlanarFinalPreserveReadiness<Schema>,
 ///     PlanarFinalPreserveProducer<Schema>, PlanarFinalPreserveReadiness<Schema>>;

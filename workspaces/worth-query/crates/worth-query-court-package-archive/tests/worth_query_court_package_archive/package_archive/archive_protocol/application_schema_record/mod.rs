@@ -126,7 +126,8 @@ fn application_schema_unknown_member_and_trailing_payload_fail_closed() {
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
     let bytes = encode_record_frame(schema, limits).unwrap();
     let mut unknown = bytes.clone();
-    let member_tag_offset = 12 + 4 + Schema::OWNER.len() + 4 + Schema::NAME.len() + 4 + 4 + 4;
+    let member_tag_offset =
+        12 + 4 + Schema::OWNER.len() + 4 + <Schema as ApplicationSchema>::NAME.len() + 4 + 4 + 4;
     unknown[member_tag_offset..member_tag_offset + 2].copy_from_slice(&u16::MAX.to_be_bytes());
     let mut decoder = WorthQueryPackageArchiveRecordDecoder::new(limits);
     assert_eq!(

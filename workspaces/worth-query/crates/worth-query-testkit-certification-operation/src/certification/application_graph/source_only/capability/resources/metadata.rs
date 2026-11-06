@@ -1,12 +1,11 @@
 //! A real field-valued grant controls each resource facet independently of Close.
 pub use super::super::{grants, host::Host, schema::*};
 pub use worth_query_decl::facade::{
-    application_capability::*, application_schema::*, worth_query_capability, worth_query_field,
+    application_capability::*, application_schema::*, worth_query_capability,
     worth_query_operation, worth_query_operation_reads, worth_query_structured_value_binding,
 };
 pub use worth_query_host::facade::{admission::authenticated_principal::*, primary_graph::*};
 
-worth_query_field!(pub ResourceDisclosureField for CapabilitySchema, grants::Grant, grants::GrantFacts: u64 => U64ApplicationValueBinding, read_only, equality);
 worth_query_capability!(pub ResourceDisclosure in CapabilitySchema);
 #[derive(serde::Serialize)]
 pub struct MetadataInput {
@@ -14,7 +13,6 @@ pub struct MetadataInput {
 }
 worth_query_structured_value_binding!(pub MetadataInputBinding for MetadataInput { identity: "capability-retention.resource-metadata-input.v1" });
 worth_query_operation!(pub InspectResource for CapabilitySchema, input MetadataInputBinding);
-worth_query_operation_reads!(InspectResource => [DocumentIdentityField, ResourceDisclosureField]);
 
 impl ApplicationCapabilityRequest<CapabilitySchema, ResourceDisclosure> for MetadataInput {
     type Scope = Document;
@@ -35,10 +33,6 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<CapabilitySchema>,
 ) -> ApplicationSchemaDeclarationBuilder<CapabilitySchema> {
     schema
-        .field(
-            grants::Grant::reference(),
-            ResourceDisclosureField::reference(),
-        )
         .operation(
             InspectResource::reference()
                 .definition()
@@ -49,7 +43,7 @@ pub fn declare(
         .operation_projection_work_budget(InspectResource::reference(), 32)
         .operation_read_field(
             InspectResource::reference(),
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
         )
         .capability(grants::grant_contract_for_field(
             ResourceDisclosure::reference(),
@@ -57,16 +51,20 @@ pub fn declare(
             1,
             1,
             ApplicationCapabilityRecordedActorRule::not_applicable(),
-            ApplicationCapabilityFieldDimension::bound(ResourceDisclosureField::reference()),
+            ApplicationCapabilityFieldDimension::bound(ResourceDisclosureField::at(
+                "ResourceDisclosureField",
+            ))
+            .unwrap(),
             ApplicationCapabilityDisclosureRule::permit([
                 ApplicationCapabilityScopeGuard::requiring([
                     ApplicationCapabilityAcceptedValues::one_of(
-                        ResourceDisclosureField::reference(),
+                        ResourceDisclosureField::at("ResourceDisclosureField"),
                         [
                             ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(1)
                                 .unwrap(),
                         ],
-                    ),
+                    )
+                    .unwrap(),
                 ]),
             ]),
         ))
@@ -136,3 +134,5 @@ pub fn admit_on(
         })
         .unwrap()
 }
+
+pub use crate::facade::certification::application_graph::source_only::capability::schema::storage_model::{ResourceDisclosureField};

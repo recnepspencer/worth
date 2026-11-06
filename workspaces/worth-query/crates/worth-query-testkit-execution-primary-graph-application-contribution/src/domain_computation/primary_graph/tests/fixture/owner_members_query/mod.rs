@@ -3,13 +3,9 @@ use crate::domain_computation::primary_graph::tests::fixture::application_querie
 use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::AccountLabel;
 use crate::domain_computation::primary_graph::tests::fixture::AccountOwner;
-use crate::domain_computation::primary_graph::tests::fixture::AccountPolicy;
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
 use crate::domain_computation::primary_graph::tests::fixture::Principal;
 use worth_query_declaration::facade::application_query::*;
-use worth_query_declaration::facade::application_schema::EqualityPredicate;
-use worth_query_declaration::facade::application_schema::NoApplicationUnit;
-use worth_query_declaration::facade::application_schema::ReadWrite;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjection;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionRow;
@@ -47,15 +43,9 @@ pub fn label() -> ApplicationQueryResultFieldRef<
     OwnerMembersQuery,
     LabelSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountLabel,
-    String,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("label", AccountLabel::reference())
+    ApplicationQueryResultFieldRef::new("label", AccountLabel::at("AccountLabel"))
 }
 impl WorthQueryApplicationProjection<IdentityExecutionSchema, OwnerMembersQuery>
     for OwnerMembersResult

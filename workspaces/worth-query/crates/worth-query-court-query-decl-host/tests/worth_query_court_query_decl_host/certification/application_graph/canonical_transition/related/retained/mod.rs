@@ -14,7 +14,7 @@ fn changed_codec_retained_snapshot_keeps_original_pin_and_latched_completion() {
                     ["derived-report", "derived-left"].map(|name| {
                         reader
                             .resolve_entity(
-                                schema::DerivedIdentityField::reference(),
+                                schema::DerivedIdentityField::at("DerivedIdentityField"),
                                 name.to_owned(),
                             )
                             .unwrap()
@@ -66,13 +66,13 @@ fn changed_codec_retained_snapshot_keeps_original_pin_and_latched_completion() {
                     .run(ExecutionWorkCeiling::new(Some(work)), |_| {
                         snapshot.read_fields(&request, |reader| {
                             let first = reader
-                                .field(&identities[0], schema::DerivedValueField::reference())
+                                .field(&identities[0], schema::DerivedValueField::at("DerivedValueField"))
                                 .unwrap()
                                 .unwrap();
                             assert_eq!(output::literals(&first).1, 96);
                             first_read.set(true);
                             let second = reader
-                                .field(&identities[1], schema::DerivedValueField::reference())
+                                .field(&identities[1], schema::DerivedValueField::at("DerivedValueField"))
                                 .ok()
                                 .flatten();
                             if cancel {
@@ -145,7 +145,7 @@ fn changed_codec_retained_snapshot_keeps_original_pin_and_latched_completion() {
                 .field(
                     &execution,
                     &identities[0],
-                    schema::DerivedValueField::reference(),
+                    schema::DerivedValueField::at("DerivedValueField"),
                 )
                 .unwrap()
                 .unwrap();

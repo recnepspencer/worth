@@ -12,7 +12,6 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::record;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::retain_owned_key;
 
-use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
 pub fn ready() -> DemandState {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
@@ -39,7 +38,7 @@ pub fn claim_on_superseded(
         *base.prerequisites_mut_for_test() = vec![Arc::new(old.clone())];
         base
     };
-    let wake = Arc::clone(&(*dependent_record.wake_for_test()));
+    let wake = Arc::clone(dependent_record.wake_for_test());
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
         (*state.records_mut_for_test()).insert_for_test(old.clone(), {

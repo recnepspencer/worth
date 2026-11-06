@@ -28,7 +28,7 @@ fn authored_body_advanced_effects_cannot_replace_native_execution() {
             let document = selected
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     super::DOCUMENT_IDENTITY.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -55,7 +55,10 @@ fn authored_body_advanced_effects_cannot_replace_native_execution() {
                     |reader, target| {
                         assert_eq!(
                             reader
-                                .decision_field(target, DocumentRetentionField::reference())
+                                .decision_field(
+                                    target,
+                                    DocumentRetentionField::at("DocumentRetentionField")
+                                )
                                 .unwrap(),
                             Some(7)
                         );
@@ -82,7 +85,11 @@ fn authored_body_advanced_effects_cannot_replace_native_execution() {
             let target = effects.existing_entity(&document).unwrap();
             // Valid type, same admitted operation and footprint, wrong body value.
             effects
-                .write_field(&target, DocumentRetentionField::reference(), 99)
+                .write_field(
+                    &target,
+                    DocumentRetentionField::at("DocumentRetentionField"),
+                    99,
+                )
                 .unwrap();
             effects.finish().unwrap()
         })

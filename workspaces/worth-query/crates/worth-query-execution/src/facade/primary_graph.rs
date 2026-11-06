@@ -1,4 +1,9 @@
 //! Primary Graph application contracts.
+#[doc(hidden)]
+pub use crate::domain_computation::primary_graph::FragmentReadable;
+pub use crate::domain_computation::primary_graph::{
+    CandidateEntity, FragmentDenial, ObservedEntity, ObservedTarget, Reading, View, Writing,
+};
 mod managed_index;
 pub use crate::domain_computation::application_aftermath::{
     WorthQueryRelationPreImageDenial, WorthQueryRelationPreImageFailure,
@@ -44,6 +49,7 @@ pub use worth_relational::facade::{
     lineage::{LineageEventKind, LineageEventRecord},
     mvcc::{
         CompanionPreflightStop, RelationalOperationInterruption, RelationalPublicationDeferred,
+        RelationalPublicationReadDependencyDenial,
     },
     publication::{AuthoredRetirementRefusal, RecordStructuralChange},
     runtime::{
@@ -331,11 +337,11 @@ pub use crate::domain_computation::primary_graph::output_lineage::{
 pub use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSample;
 pub use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
 pub use worth_runtime_world::facade::{
-    CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, NoEffectCause,
-    ProductBranchAncestorSelectionDenial, ProductExactHistoryDenial, ProductUnpublishedNextAction,
-    ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
-    RuntimeWorldBranchAdmissionDenial, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial,
-    RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial,
+    CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial,
+    CurrentProductReadDependencyDenial, NoEffectCause, ProductBranchAncestorSelectionDenial,
+    ProductExactHistoryDenial, ProductUnpublishedNextAction, ProductUnpublishedRecoveryHandle,
+    RecoveryContinuationContract, RuntimeWorldBranchAdmissionDenial, RuntimeWorldRecoveryCursor,
+    RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial,
     RuntimeWorldSettledRelationalAdoptionDenial,
 };
 pub use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;

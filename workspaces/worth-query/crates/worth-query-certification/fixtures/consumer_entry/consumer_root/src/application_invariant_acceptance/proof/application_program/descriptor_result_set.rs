@@ -14,10 +14,12 @@ use worth_query_topology_entry::{
 type Conditions = TypedMutationPreconditions<ConsumerSchema, AdjustPlanarSource, Body>;
 
 fn conditions(expected: &str) -> Conditions {
-    TypedMutationPreconditions::new().expect_fact(
-        BodyKey::reference::<ConsumerSchema>(),
-        ApplicationEncodedScalarValue::try_new(expected.to_owned()).unwrap(),
-    )
+    TypedMutationPreconditions::new()
+        .expect_fact(
+            BodyKey::at("BodyKey"),
+            ApplicationEncodedScalarValue::try_new(expected.to_owned()).unwrap(),
+        )
+        .expect("record field contract")
 }
 
 // Domain input is retained once; the owning intent itself cannot be cloned.
@@ -27,7 +29,7 @@ impl ApplicationMutationIntent<ConsumerSchema> for OriginalAdjustment {
     fn input(&self) -> &PlanarSourceAdjustment {
         &self.0
     }
-    fn scope_binding(&self) -> PlanarMutationScope<ConsumerSchema> {
+    fn scope_binding(&self) -> PlanarMutationScope {
         <PlanarSourceAdjustment as ApplicationMutationIntent<ConsumerSchema>>::scope_binding(
             &self.0,
         )

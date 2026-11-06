@@ -1,16 +1,9 @@
-use worth_query_decl::facade::{
-    application_query::ApplicationQueryResultFieldRef,
-    application_schema::{EqualityPredicate, NoApplicationUnit, ReadOnly, ReadWrite},
-};
+use worth_query_decl::facade::application_query::ApplicationQueryResultFieldRef;
 
-use crate::{
-    estate::{EmergencyAccessId, EmergencyAccessReason, EmergencyAccessStatus, EstateMoment},
-    model::BankPrincipalId,
-    schema::{
-        BankSchema, EmergencyAccess, EmergencyAccessExpiresAtField, EmergencyAccessIdentityField,
-        EmergencyAccessIssuedAtField, EmergencyAccessReasonField, EmergencyAccessRecord,
-        EmergencyAccessStatusField, Principal, PrincipalIdentity, PrincipalIdentityField,
-    },
+use crate::schema::{
+    BankSchema, EmergencyAccessExpiresAtField, EmergencyAccessIdentityField,
+    EmergencyAccessIssuedAtField, EmergencyAccessReasonField, EmergencyAccessStatusField,
+    PrincipalIdentityField,
 };
 
 use super::super::governance::EstateGovernanceQuery;
@@ -38,19 +31,9 @@ slots!(
 
 macro_rules! selector {
     ($name:ident, $slot:ty, $entity:ty, $aspect:ty, $field:ty, $value:ty, $write:ty, $alias:literal) => {
-        pub(in crate::queries::estate) fn $name() -> ApplicationQueryResultFieldRef<
-            EstateGovernanceQuery,
-            $slot,
-            BankSchema,
-            $entity,
-            $aspect,
-            $field,
-            $value,
-            $write,
-            EqualityPredicate,
-            NoApplicationUnit,
-        > {
-            ApplicationQueryResultFieldRef::new($alias, <$field>::reference())
+        pub(in crate::queries::estate) fn $name(
+        ) -> ApplicationQueryResultFieldRef<EstateGovernanceQuery, $slot, BankSchema, $field> {
+            ApplicationQueryResultFieldRef::new($alias, <$field>::at(stringify!($field)))
         }
     };
 }

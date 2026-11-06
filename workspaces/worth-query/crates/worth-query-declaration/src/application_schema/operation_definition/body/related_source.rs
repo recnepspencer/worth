@@ -4,10 +4,8 @@ use super::{
     ApplicationOperationBodyCreatedField as Step, ApplicationOperationBodyCreationBuilder,
 };
 use crate::application_schema::{
-    ApplicationFieldBindingLocus, ApplicationFieldPresence, ApplicationFieldRef,
-    ApplicationFieldUnit, ApplicationOperationDecisionReadTarget as Read, ApplicationRelationRef,
-    ApplicationScalarValueBinding, DeclaredApplicationFieldValue, OperationReads, OperationWrites,
-    OptionalApplicationFieldValue, RequiredApplicationFieldValue,
+    fragment::RecordSelection, ApplicationFieldBindingLocus, ApplicationFieldPresence,
+    ApplicationOperationDecisionReadTarget as Read, ApplicationRelationRef, OperationReads,
 };
 
 /// Descriptive outgoing selection and source field; cold admission proves its declared closure.
@@ -58,206 +56,65 @@ impl ApplicationOperationBodyRelatedFieldSource {
         ]
     }
 }
-impl<Schema, Operation, Input, Entity>
-    ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Entity>
-{
-    /// Copy a required field of the single selected related subject at this native decision.
-    ///
-    /// A relation cannot select a different source entity, even with the same value codec:
-    /// ```compile_fail
-    /// use worth_query_declaration::facade::application_schema::*;
-    /// fn wrong_endpoint<S, O, I, Target, Root, Child, Other, R, A, F, TA, TF>(
-    ///     creation: ApplicationOperationBodyCreationBuilder<S, O, I, Target>,
-    ///     relation: ApplicationRelationRef<S, R, Root, Other>,
-    ///     source: ApplicationFieldRef<S, Child, A, F, String, ReadOnly, EqualityPredicate, NoApplicationUnit>,
-    ///     target: ApplicationFieldRef<S, Target, TA, TF, String, ReadOnly, EqualityPredicate, NoApplicationUnit>,
-    /// ) where Root: OperationReads<O>, Child: OperationReads<O>, Other: OperationReads<O>, R: OperationReads<O>,
-    ///     F: OperationReads<O> + RequiredApplicationFieldValue<Value = String>,
-    ///     TF: OperationWrites<O> + RequiredApplicationFieldValue<Value = String>,
-    /// {
-    ///     let _ = creation.initialize_from_related(relation, source, target);
-    /// }
-    /// ```
-    pub fn initialize_from_related<
-        Relation,
-        Root,
-        Related,
-        SourceAspect,
-        SourceField,
-        SourceWrite,
-        SourceEquality,
-        TargetAspect,
-        TargetField,
-        TargetWrite,
-        TargetEquality,
-        Value,
-        Unit,
-    >(
+impl<S, O, I, E> ApplicationOperationBodyCreationBuilder<S, O, I, E> {
+    /// Copy a required field from one selected related subject.
+    pub fn initialize_from_related<R, Root, Related, Source, Target>(
         self,
-        relation: ApplicationRelationRef<Schema, Relation, Root, Related>,
-        source: ApplicationFieldRef<
-            Schema,
-            Related,
-            SourceAspect,
-            SourceField,
-            Value,
-            SourceWrite,
-            SourceEquality,
-            Unit,
-        >,
-        target: ApplicationFieldRef<
-            Schema,
-            Entity,
-            TargetAspect,
-            TargetField,
-            Value,
-            TargetWrite,
-            TargetEquality,
-            Unit,
-        >,
+        relation: ApplicationRelationRef<S, R, Root, Related>,
+        source: Source,
+        target: Target,
     ) -> Result<Self, Denial>
     where
-        Root: OperationReads<Operation>,
-        Related: OperationReads<Operation>,
-        Relation: OperationReads<Operation>,
-        SourceField: OperationReads<Operation> + RequiredApplicationFieldValue<Value = Value>,
-        TargetField: OperationWrites<Operation> + RequiredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Root: OperationReads<O>,
+        Related: OperationReads<O>,
+        R: OperationReads<O>,
+        Source: RecordSelection<Entity = Related>,
+        Target: RecordSelection<Entity = E, Value = Source::Value, Binding = Source::Binding>,
     {
-        self.initialize_related(relation, source, target)
+        self.initialize_related(relation, source, target, ApplicationFieldPresence::Required)
     }
-    /// Preserve optional absence, present-empty and present values exactly. A missing subject still denies.
-    ///
-    /// Optional absence cannot initialize a required target:
-    /// ```compile_fail
-    /// use worth_query_declaration::facade::application_schema::*;
-    /// fn wrong_presence<S, O, I, Target, Root, Child, R, A, F, TA, TF>(
-    ///     creation: ApplicationOperationBodyCreationBuilder<S, O, I, Target>,
-    ///     relation: ApplicationRelationRef<S, R, Root, Child>,
-    ///     source: ApplicationFieldRef<S, Child, A, F, String, ReadOnly, EqualityPredicate, NoApplicationUnit>,
-    ///     target: ApplicationFieldRef<S, Target, TA, TF, String, ReadOnly, EqualityPredicate, NoApplicationUnit>,
-    /// ) where Root: OperationReads<O>, Child: OperationReads<O>, R: OperationReads<O>,
-    ///     F: OperationReads<O> + OptionalApplicationFieldValue<Value = String>,
-    ///     TF: OperationWrites<O> + RequiredApplicationFieldValue<Value = String>,
-    /// {
-    ///     let _ = creation.initialize_optional_from_related(relation, source, target);
-    /// }
-    /// ```
-    pub fn initialize_optional_from_related<
-        Relation,
-        Root,
-        Related,
-        SourceAspect,
-        SourceField,
-        SourceWrite,
-        SourceEquality,
-        TargetAspect,
-        TargetField,
-        TargetWrite,
-        TargetEquality,
-        Value,
-        Unit,
-    >(
+    /// Preserve optional absence, present-empty and present values exactly.
+    pub fn initialize_optional_from_related<R, Root, Related, Source, Target>(
         self,
-        relation: ApplicationRelationRef<Schema, Relation, Root, Related>,
-        source: ApplicationFieldRef<
-            Schema,
-            Related,
-            SourceAspect,
-            SourceField,
-            Value,
-            SourceWrite,
-            SourceEquality,
-            Unit,
-        >,
-        target: ApplicationFieldRef<
-            Schema,
-            Entity,
-            TargetAspect,
-            TargetField,
-            Value,
-            TargetWrite,
-            TargetEquality,
-            Unit,
-        >,
+        relation: ApplicationRelationRef<S, R, Root, Related>,
+        source: Source,
+        target: Target,
     ) -> Result<Self, Denial>
     where
-        Root: OperationReads<Operation>,
-        Related: OperationReads<Operation>,
-        Relation: OperationReads<Operation>,
-        SourceField: OperationReads<Operation> + OptionalApplicationFieldValue<Value = Value>,
-        TargetField: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Root: OperationReads<O>,
+        Related: OperationReads<O>,
+        R: OperationReads<O>,
+        Source: RecordSelection<Entity = Related>,
+        Target: RecordSelection<Entity = E, Value = Source::Value, Binding = Source::Binding>,
     {
-        self.initialize_related(relation, source, target)
+        self.initialize_related(relation, source, target, ApplicationFieldPresence::Optional)
     }
-    fn initialize_related<
-        Relation,
-        Root,
-        Related,
-        SourceAspect,
-        SourceField,
-        SourceWrite,
-        SourceEquality,
-        TargetAspect,
-        TargetField,
-        TargetWrite,
-        TargetEquality,
-        Value,
-        Unit,
-    >(
+    fn initialize_related<R, Root, Related, Source, Target>(
         mut self,
-        relation: ApplicationRelationRef<Schema, Relation, Root, Related>,
-        source: ApplicationFieldRef<
-            Schema,
-            Related,
-            SourceAspect,
-            SourceField,
-            Value,
-            SourceWrite,
-            SourceEquality,
-            Unit,
-        >,
-        target: ApplicationFieldRef<
-            Schema,
-            Entity,
-            TargetAspect,
-            TargetField,
-            Value,
-            TargetWrite,
-            TargetEquality,
-            Unit,
-        >,
+        relation: ApplicationRelationRef<S, R, Root, Related>,
+        source: Source,
+        target: Target,
+        presence: ApplicationFieldPresence,
     ) -> Result<Self, Denial>
     where
-        SourceField: DeclaredApplicationFieldValue<Value = Value>,
-        TargetField: DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Source: RecordSelection<Entity = Related>,
+        Target: RecordSelection<Entity = E, Value = Source::Value, Binding = Source::Binding>,
     {
-        if SourceField::Binding::IDENTITY != TargetField::Binding::IDENTITY
-            || SourceField::Binding::SCALAR_FAMILY != TargetField::Binding::SCALAR_FAMILY
-            || SourceField::PRESENCE != TargetField::PRESENCE
-        {
+        let source = super::record_authoring::resolve(source)?;
+        let target = super::record_authoring::resolve(target)?;
+        if source.presence() != presence || target.presence() != presence {
             return Err(Denial::IncompatibleSourceBinding);
         }
         self.fields.push(Step::RelatedField {
-            field: ApplicationFieldBindingLocus::new(
-                target.entity(),
-                target.aspect(),
-                target.field(),
-            ),
-            binding: TargetField::Binding::IDENTITY,
-            scalar_family: TargetField::Binding::SCALAR_FAMILY,
+            field: target.locus().clone(),
+            binding: target.recipe().binding_identity().clone(),
+            scalar_family: target.recipe().scalar_family(),
             source: ApplicationOperationBodyRelatedFieldSource {
                 relation: relation.name().into(),
                 from: relation.from().into(),
                 to: relation.to().into(),
-                field: ApplicationFieldBindingLocus::new(
-                    source.entity(),
-                    source.aspect(),
-                    source.field(),
-                ),
-                presence: SourceField::PRESENCE,
+                field: source.locus().clone(),
+                presence,
             },
         });
         Ok(self)

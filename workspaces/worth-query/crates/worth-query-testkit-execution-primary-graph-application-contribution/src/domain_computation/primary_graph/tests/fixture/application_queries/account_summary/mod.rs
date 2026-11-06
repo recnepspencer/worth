@@ -61,10 +61,11 @@ pub fn governed_account_summary_definition() -> ApplicationQueryDefinition<
             TouchAccountCapability::reference(),
         )
         .use_field_by(
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             encoded_disclosure(CapabilityDisclosure::AccountActivity),
             ApplicationQueryInfluenceContract::permit_all(),
         )
+        .expect("the native capability field is declared")
         .disclose_field_by(
             status_result_field::<GovernedAccountSummaryQuery>(),
             encoded_disclosure(CapabilityDisclosure::AccountActivity),

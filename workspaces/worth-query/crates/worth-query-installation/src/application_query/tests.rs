@@ -10,9 +10,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationEntityRef, U64ApplicationValueBinding,
 };
 use worth_query_declaration::{
-    worth_query_application_query, worth_query_application_schema, worth_query_aspect,
-    worth_query_entity, worth_query_field, worth_query_portable_type, worth_query_relation,
-    worth_query_structured_value_binding,
+    worth_query_application_query, worth_query_portable_type, worth_query_structured_value_binding,
 };
 
 use crate::facade::{
@@ -24,67 +22,14 @@ use crate::facade::{
 
 use super::WorthQueryApplicationQueryInstallationDenialKind;
 
+mod records;
+use records::*;
+
 mod authority_validation_tests;
 mod canonical_basis_residue;
 mod installed_identity;
 mod selector_identity;
 mod shape_identity;
-
-worth_query_application_schema! {
-    pub schema QueryTestSchema {
-        owner: application_query_installation_test,
-        version: (1, 0),
-        members: |schema| {
-            schema
-                .entity(Account::reference())
-                .entity(Activity::reference())
-                .aspect(Account::reference(), AccountFacts::reference())
-                .aspect(Activity::reference(), ActivityFacts::reference())
-                .field(Account::reference(), AccountId::reference())
-                .field(Activity::reference(), ActivitySequence::reference())
-                .field(Activity::reference(), ActivityKind::reference())
-                .field(Activity::reference(), ActivityStatus::reference())
-                .relation(
-                    AccountActivity::reference(),
-                    Account::reference(),
-                    Activity::reference(),
-                )
-                .application_query(definition(
-                    ApplicationQueryOrderingDirection::Descending,
-                    "sequence",
-                ))
-                .application_query(shape_identity::grouped_one_definition())
-                .application_query(shape_identity::grouped_two_definition())
-        }
-    }
-}
-
-worth_query_entity!(pub Account for QueryTestSchema);
-worth_query_entity!(pub Activity for QueryTestSchema);
-worth_query_aspect!(pub AccountFacts for QueryTestSchema, Account; identity = AspectIdentity(0x9161104a), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub ActivityFacts for QueryTestSchema, Activity; identity = AspectIdentity(0x9161104b), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub AccountId for QueryTestSchema, Account, AccountFacts:
-    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
-    read_only, equality
-);
-worth_query_field!(
-    pub ActivitySequence for QueryTestSchema, Activity, ActivityFacts:
-    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
-    read_only, equality
-);
-worth_query_field!(
-    pub ActivityKind for QueryTestSchema, Activity, ActivityFacts:
-    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
-    read_only, equality
-);
-worth_query_field!(
-    pub ActivityStatus for QueryTestSchema, Activity, ActivityFacts:
-    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
-    read_only, equality
-);
-worth_query_relation!(
-    pub AccountActivity in QueryTestSchema, Account => Activity; integrity = same_context_unbounded_retain_dangling);
 
 pub(super) struct ActivityQueryParameters;
 pub(super) struct ActivityQueryResult;
@@ -208,11 +153,10 @@ where
         ResultBinding = ActivityQueryResultBinding,
     >,
 {
-    let sequence =
-        ApplicationQueryResultFieldRef::<Query, SequenceSlot, _, _, _, _, _, _, _, _>::new(
-            output_name,
-            ActivitySequence::reference(),
-        );
+    let sequence = ApplicationQueryResultFieldRef::<Query, SequenceSlot, _, _>::new(
+        output_name,
+        ActivitySequence::at("ActivitySequence"),
+    );
     let nested = ApplicationQueryResultShapeBuilder::<
         QueryTestSchema,
         Query,
@@ -228,18 +172,12 @@ where
         ActivityQueryResult,
         ActivityQueryResultBinding,
     >::new(Account::reference())
-    .field(ApplicationQueryResultFieldRef::<
-        Query,
-        AccountIdSlot,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >::new("account_id", AccountId::reference()))
+    .field(
+        ApplicationQueryResultFieldRef::<Query, AccountIdSlot, _, _>::new(
+            "account_id",
+            AccountId::at("AccountId"),
+        ),
+    )
     .relation(
         ApplicationQueryResultRelationRef::<
             Query,
@@ -266,7 +204,7 @@ where
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_historical())
         .public()
         .parameter(account_parameter::<Query>())
-        .where_equal(AccountId::reference(), account_parameter::<Query>())
+        .where_equal(AccountId::at("AccountId"), account_parameter::<Query>())
         .order_by(sequence, direction)
         .build()
         .unwrap()

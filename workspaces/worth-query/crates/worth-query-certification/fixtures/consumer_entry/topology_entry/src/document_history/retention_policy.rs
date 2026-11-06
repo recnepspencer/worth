@@ -60,7 +60,7 @@ pub(super) fn declare<S: TopologySchemaBinding>(
         .operation_projection_work_budget(ChangePlanarHistoryWindowOperation::reference::<S>(), 512)
         .operation_read_field(
             ChangePlanarHistoryWindowOperation::reference::<S>(),
-            BodyKey::reference(),
+            BodyKey::at("BodyKey"),
         )
         .capability(contract::<
             S,
@@ -80,7 +80,7 @@ pub(super) fn declare<S: TopologySchemaBinding>(
         )
         .operation_read_field(
             ChangePlanarHistoryBookmarkOperation::reference::<S>(),
-            BodyKey::reference(),
+            BodyKey::at("BodyKey"),
         )
         .capability(contract::<
             S,

@@ -15,14 +15,7 @@ pub struct WorthQueryApplicationEntityKey<Schema, Entity> {
 
 impl<Schema, Entity> WorthQueryApplicationEntityKey<Schema, Entity> {
     pub fn new(value: impl Into<String>) -> Result<Self, WorthQueryApplicationEntityKeyDenial> {
-        let value = value.into();
-        let invalid = value.is_empty()
-            || value.trim() != value
-            || value.chars().any(char::is_control)
-            || value.len() > MAX_ENTITY_KEY_BYTES;
-        if invalid {
-            return Err(WorthQueryApplicationEntityKeyDenial);
-        }
+        let value = validate_entity_key(value.into())?;
         Ok(Self {
             value,
             _marker: PhantomData,
@@ -63,3 +56,14 @@ impl std::fmt::Display for WorthQueryApplicationEntityKeyDenial {
 }
 
 impl std::error::Error for WorthQueryApplicationEntityKeyDenial {}
+
+fn validate_entity_key(value: String) -> Result<String, WorthQueryApplicationEntityKeyDenial> {
+    let invalid = value.is_empty()
+        || value.trim() != value
+        || value.chars().any(char::is_control)
+        || value.len() > MAX_ENTITY_KEY_BYTES;
+    if invalid {
+        return Err(WorthQueryApplicationEntityKeyDenial);
+    }
+    Ok(value)
+}

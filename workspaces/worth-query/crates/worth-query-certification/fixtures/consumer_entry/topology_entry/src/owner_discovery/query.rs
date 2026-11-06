@@ -2,8 +2,7 @@
 use super::*;
 use std::marker::PhantomData;
 use worth_query_decl::facade::{
-    application_query::*, application_schema::*, worth_query_portable_type,
-    worth_query_structured_value_binding,
+    application_query::*, worth_query_portable_type, worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
@@ -37,7 +36,7 @@ impl<S: TopologySchemaBinding> ApplicationQueryBinding<S> for OwnerDiscoveryBind
     type Query = OwnerDiscoveryQuery;
     type ParameterBinding = PlanarReadParametersBinding;
     type ResultBinding = PlanarReadResultBinding;
-    type ScopeBinding = PlanarReadScope<S>;
+    type ScopeBinding = PlanarReadScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -45,17 +44,8 @@ impl<S: TopologySchemaBinding> ApplicationQueryBinding<S> for OwnerDiscoveryBind
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.certification.owner-discovery-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        S,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         S,
@@ -73,37 +63,17 @@ impl<S: TopologySchemaBinding> ApplicationQueryIntent<S> for OwnerDiscoveryRead 
     fn parameters(&self) -> ApplicationQueryParameterSet<OwnerDiscoveryQuery> {
         ApplicationQueryParameterSet::new()
     }
-    fn into_scope(self) -> PlanarReadScope<S> {
-        PlanarReadScope::new(BodyKey::reference(), self.body_key)
+    fn into_scope(self) -> PlanarReadScope {
+        PlanarReadScope::new(BodyKey::at("BodyKey"), self.body_key)
     }
 }
-fn body<S: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    OwnerDiscoveryQuery,
-    OwnerBodyKeySlot,
-    S,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("body_key", BodyKey::reference())
+fn body<S: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<OwnerDiscoveryQuery, OwnerBodyKeySlot, S, BodyKey> {
+    ApplicationQueryResultFieldRef::new("body_key", BodyKey::at("BodyKey"))
 }
-fn y<S: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    OwnerDiscoveryQuery,
-    OwnerPositionYSlot,
-    S,
-    Body,
-    PlanarPosition,
-    PositionY,
-    PositiveLength,
-    ReadWrite,
-    EqualityPredicate,
-    DeclaredApplicationUnit<Metre, <TopologyLengthBinding as ApplicationScalarValueBinding>::Unit>,
-> {
-    ApplicationQueryResultFieldRef::new("y", PositionY::reference())
+fn y<S: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<OwnerDiscoveryQuery, OwnerPositionYSlot, S, PositionY> {
+    ApplicationQueryResultFieldRef::new("y", PositionY::at("PositionY"))
 }
 pub(super) fn definition<S: TopologySchemaBinding>(
 ) -> ApplicationQueryDefinition<S, OwnerDiscoveryQuery, PlanarReadParameters, PlanarReadResult, Body>

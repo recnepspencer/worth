@@ -7,25 +7,20 @@ use super::contribution::{
 use super::declaration_denial::ApplicationSchemaDeclarationDenial;
 use super::member_provenance::ApplicationSchemaMemberProvenance;
 use super::principal_binding_reference::ApplicationPrincipalBindingRef;
-use super::references::{
-    ApplicationEffectRef, ApplicationEntityRef, ApplicationOperationRef, ApplicationRelationRef,
-    ApplicationUnitRef,
-};
+use super::references::{ApplicationEffectRef, ApplicationOperationRef, ApplicationUnitRef};
 use super::schema_identity::ApplicationSchemaIdentity;
 use super::schema_member::ApplicationSchemaMember;
 
-mod aspects;
 mod authorization;
 mod components;
-mod content;
-mod fields;
 mod finalization;
+mod selected_aspect;
 
 pub trait ApplicationSchema: Sized + 'static {
-    const OWNER: &'static str;
+    const OWNER: &'static str = "WORTH.application";
     const NAME: &'static str;
-    const MAJOR: u32;
-    const MINOR: u32;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
 
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial>;
@@ -235,11 +230,13 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         &mut self,
         identity: ApplicationSchemaContributionIdentity,
         first_member: usize,
+        first_access: usize,
     ) {
         let members = self.members[first_member..].to_vec();
+        let access = self.member_provenance.fragments.access[first_access..].to_vec();
         self.contributions
             .push(AuthoredApplicationSchemaContribution::new(
-                identity, members,
+                identity, members, access,
             ));
     }
 
@@ -259,33 +256,6 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         }
     }
 
-    pub fn entity<Entity>(mut self, reference: ApplicationEntityRef<Schema, Entity>) -> Self
-    where
-        Entity: super::ApplicationEntityMarkerIdentity<Schema> + 'static,
-    {
-        self.member_provenance
-            .register_entity::<Entity>(reference.name());
-        self.members.push(ApplicationSchemaMember::Entity {
-            entity: reference.name().to_string(),
-        });
-        self
-    }
-
-    pub fn relation<Relation, From, To>(
-        mut self,
-        relation: ApplicationRelationRef<Schema, Relation, From, To>,
-        from: ApplicationEntityRef<Schema, From>,
-        to: ApplicationEntityRef<Schema, To>,
-    ) -> Self {
-        self.members.push(ApplicationSchemaMember::Relation {
-            relation: relation.name().to_string(),
-            from: from.name().to_string(),
-            to: to.name().to_string(),
-            integrity: relation.integrity().into(),
-        });
-        self
-    }
-
     pub fn principal_binding<
         Binding,
         Mapping,
@@ -303,6 +273,12 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             PrincipalIdentityBinding,
         >,
     ) -> Self {
+        for field in binding.mapping_field_bindings() {
+            self.member_provenance.fragments.expect_field(field.clone());
+        }
+        self.member_provenance
+            .fragments
+            .expect_field(binding.principal_identity_binding_recipe().clone());
         self.members
             .push(ApplicationSchemaMember::PrincipalBinding {
                 binding: binding.name().to_string(),

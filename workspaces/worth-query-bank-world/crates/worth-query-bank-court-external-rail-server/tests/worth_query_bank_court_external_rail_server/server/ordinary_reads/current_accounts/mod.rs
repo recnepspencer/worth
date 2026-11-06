@@ -133,7 +133,7 @@ fn current_accounts_keep_actual_result_limit_and_cancellation() {
         .query(queries::current_accounts())
         .as_principal(&actor)
         .controls(
-            BankReadControls::current(WorthQueryRequestScope::new(None, cancellation.token()), 160)
+            BankReadControls::current(WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 160)
                 .unwrap(),
         )
         .execute();

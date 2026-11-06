@@ -22,15 +22,7 @@ pub struct RetireBinding;
 impl ApplicationMutationAdmissionBinding<CanonicalSchema> for RetireBinding {
     type Admission = ApplicationConventionalAdmission;
 }
-pub type Scope = ApplicationMutationFieldScope<
-    CanonicalSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope = ApplicationMutationFieldScope<DocumentIdentityField>;
 impl ApplicationMutationBinding<CanonicalSchema> for RetireBinding {
     type Input = Input;
     type InputBinding = InputBinding;
@@ -55,17 +47,8 @@ impl ApplicationMutationBinding<CanonicalSchema> for RetireBinding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        CanonicalSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CanonicalSchema,
@@ -84,7 +67,10 @@ impl ApplicationMutationIntent<CanonicalSchema> for Input {
         self
     }
     fn scope_binding(&self) -> Scope {
-        Scope::new(DocumentIdentityField::reference(), self.identity.clone())
+        Scope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity.clone(),
+        )
     }
 }
 pub struct Handler;
@@ -94,9 +80,10 @@ impl OperationHandler<CanonicalSchema, RetireBinding> for Handler {
         input: &Input,
         reader: &mut DecisionReader<'_, '_, '_, CanonicalSchema, RetireBinding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<CanonicalSchema, Document>, Denied> {
-        let root = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
-        {
+        let root = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            input.identity.clone(),
+        ) {
             Ok(root) => root,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };

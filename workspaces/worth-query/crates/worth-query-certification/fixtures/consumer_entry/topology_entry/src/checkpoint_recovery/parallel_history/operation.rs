@@ -28,11 +28,10 @@ worth_query_structured_value_binding!(pub InputBinding for Input {identity:"neut
 worth_query_structured_value_binding!(pub ResultBinding for Outcome {identity:"neutral.member.result"});
 worth_query_structured_value_binding!(pub DenialBinding for Denied {identity:"neutral.member.denial"});
 worth_query_operation!(pub Apply for Schema:SchemaBinding,input InputBinding);
-worth_query_operation_reads!(Apply=>[Node,NodeKey,Value,Applied]);
-worth_query_operation_writes!(Apply=>[Value,Applied]);
+worth_query_operation_reads!(Apply => [Node, NodeKey]);
+worth_query_operation_writes!(Apply => [Value]);
 pub struct Binding<S>(PhantomData<fn() -> S>);
-pub type Scope<S> =
-    ApplicationMutationFieldScope<S, Node, NodeFacts, NodeKey, u64, ReadOnly, NoApplicationUnit>;
+pub type Scope = ApplicationMutationFieldScope<NodeKey>;
 pub struct Decision<S> {
     target: WorthQueryInvariantMutationTarget<S, Node>,
     value: u64,
@@ -56,7 +55,7 @@ impl<S: SchemaBinding> ApplicationMutationBinding<S> for Binding<S> {
     type Denial = Denied;
     type DenialBinding = DenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = Scope<S>;
+    type ScopeBinding = Scope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -67,17 +66,8 @@ impl<S: SchemaBinding> ApplicationMutationBinding<S> for Binding<S> {
     const HANDLER_IDENTITY: &'static str = "neutral.apply.handler";
     const IDEMPOTENCY_IDENTITY: &'static str = "neutral.apply.command";
 
-    fn scope_field() -> ApplicationFieldRef<
-        S,
-        Node,
-        NodeFacts,
-        NodeKey,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        NodeKey::reference()
+    fn scope_field() -> NodeKey {
+        NodeKey::at("NodeKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         S,
@@ -95,8 +85,8 @@ impl<S: SchemaBinding> ApplicationMutationIntent<S> for Input {
     fn input(&self) -> &Self {
         self
     }
-    fn scope_binding(&self) -> Scope<S> {
-        Scope::new(NodeKey::reference(), self.key)
+    fn scope_binding(&self) -> Scope {
+        Scope::new(NodeKey::at("NodeKey"), self.key)
     }
 }
 pub struct Handler(
@@ -114,9 +104,9 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding<Schema>>,
     ) -> HandlerResult<Decision<Schema>, Denied> {
         let decided = (|| {
-            let node = reader.resolve_entity(NodeKey::reference(), input.key)?;
-            let value = reader.field(&node, Value::reference())?.unwrap();
-            let applied = reader.field(&node, Applied::reference())?.unwrap();
+            let node = reader.resolve_entity(NodeKey::at("NodeKey"), input.key)?;
+            let value = reader.field(&node, Value::at("Value"))?.unwrap();
+            let applied = reader.field(&node, Applied::at("Applied"))?.unwrap();
             Ok(Decision {
                 target: reader.mutation_target(&node)?,
                 value,
@@ -137,7 +127,7 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
         let upstream = match input
             .upstream
             .iter()
-            .map(|key| reader.resolve_entity(NodeKey::reference(), *key))
+            .map(|key| reader.resolve_entity(NodeKey::at("NodeKey"), *key))
             .collect::<Result<Vec<_>, _>>()
         {
             Ok(upstream) => upstream,
@@ -195,8 +185,8 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
         writer: &mut CandidateWriter<'_, Schema, Binding<Schema>>,
     ) -> HandlerResult<Outcome, Denied> {
         let written = writer.projected_entity(&decision.target).and_then(|node| {
-            writer.write_field(&node, Value::reference(), decision.value)?;
-            writer.write_field(&node, Applied::reference(), decision.applied)
+            writer.write_field(&node, Value::at("Value"), decision.value)?;
+            writer.write_field(&node, Applied::at("Applied"), decision.applied)
         });
         match written {
             Ok(()) => HandlerResult::Completed(Outcome {
@@ -221,10 +211,10 @@ pub fn declare<S: SchemaBinding>(
         )
         .operation_projection_work_budget(operation, 4096)
         .operation_read_entity(operation, Node::reference())
-        .operation_read_field(operation, NodeKey::reference())
-        .operation_read_field(operation, Value::reference())
-        .operation_read_field(operation, Applied::reference())
-        .operation_write(operation, Value::reference())
-        .operation_write(operation, Applied::reference())
+        .operation_read_field(operation, NodeKey::at("NodeKey"))
+        .operation_read_field(operation, Value::at("Value"))
+        .operation_read_field(operation, Applied::at("Applied"))
+        .operation_write(operation, Value::at("Value"))
+        .operation_write(operation, Applied::at("Applied"))
         .application_mutation_binding::<Binding<S>>()
 }

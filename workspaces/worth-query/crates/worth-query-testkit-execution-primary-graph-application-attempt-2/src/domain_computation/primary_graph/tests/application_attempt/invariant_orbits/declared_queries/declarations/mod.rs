@@ -28,19 +28,9 @@ worth_query_application_query!(pub Allowed for Schema: OrbitModel, identity "Dec
 worth_query_application_query!(pub Omitted for Schema: OrbitModel, identity "DeclaredOrbitOmitted", parameters ParametersBinding, result RowsBinding, scope Node => "Node", name "declared_orbit_omitted");
 worth_query_application_query!(pub Missing for Schema: OrbitModel, identity "DeclaredOrbitMissing", parameters ParametersBinding, result RowsBinding, scope Node => "Node", name "declared_orbit_missing");
 
-pub fn key<S: OrbitModel, Q: ApplicationQueryMarkerIdentity<S>>() -> ApplicationQueryResultFieldRef<
-    Q,
-    KeySlot,
-    S,
-    Node,
-    NodeData,
-    NodeKey,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", NodeKey::reference())
+pub fn key<S: OrbitModel, Q: ApplicationQueryMarkerIdentity<S>>(
+) -> ApplicationQueryResultFieldRef<Q, KeySlot, S, NodeKey> {
+    ApplicationQueryResultFieldRef::new("key", NodeKey::at("NodeKey"))
 }
 pub fn orbit<S: OrbitModel>() -> ApplicationQueryOrbitRef<S, Orbit, OrbitSlot, Next, Node> {
     ApplicationQueryOrbitRef::new("orbit", Next::reference())

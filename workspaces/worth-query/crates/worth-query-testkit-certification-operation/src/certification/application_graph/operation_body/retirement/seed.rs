@@ -14,9 +14,12 @@ pub fn seed<const M: u64>(
     }
     graph.bind_entity(
         Entity::new(Document::reference(), Key::new("outside-document").unwrap())
-            .field(DocumentIdentityField::reference(), "outside".to_string())
-            .field(DocumentRetentionField::reference(), 7)
-            .field(DocumentAuditSourceField::reference(), 7),
+            .field(
+                DocumentIdentityField::at("DocumentIdentityField"),
+                "outside".to_string(),
+            )
+            .field(DocumentRetentionField::at("DocumentRetentionField"), 7)
+            .field(DocumentAuditSourceField::at("DocumentAuditSourceField"), 7),
     )?;
     let holders: &[(&str, &str, Option<u64>)] = if M == 123 {
         &[("holder-outside", "outside-document", Some(999))]
@@ -37,9 +40,12 @@ pub fn seed<const M: u64>(
     for (holder, document, selected) in holders {
         graph.bind_entity(
             Entity::new(Audit::reference(), Key::new(*holder).unwrap())
-                .field(AuditIdentityField::reference(), holder.to_string())
-                .field(AuditRetentionField::reference(), 7)
-                .field(AuditPriorRetentionField::reference(), 7),
+                .field(
+                    AuditIdentityField::at("AuditIdentityField"),
+                    holder.to_string(),
+                )
+                .field(AuditRetentionField::at("AuditRetentionField"), 7)
+                .field(AuditPriorRetentionField::at("AuditPriorRetentionField"), 7),
         )?;
         graph.bind_relation(Relation::new(
             OwnedRows::reference(),
@@ -51,7 +57,7 @@ pub fn seed<const M: u64>(
             let snapshot = format!("snapshot-{value}");
             graph.bind_entity(
                 Entity::new(Snapshot::reference(), Key::new(&snapshot).unwrap())
-                    .field(SnapshotIdentity::reference(), *value),
+                    .field(SnapshotIdentity::at("SnapshotIdentity"), *value),
             )?;
             graph.bind_relation(Relation::new(
                 CurrentSelection::reference(),

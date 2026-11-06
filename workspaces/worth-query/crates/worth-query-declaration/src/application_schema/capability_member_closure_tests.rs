@@ -24,7 +24,6 @@ use crate::application_capability::{
     ApplicationCapabilityValueBinding, ApplicationCapabilityWorkflowDefinition,
 };
 use worth_foundational::facade::ScalarAspectType;
-#[macro_use]
 mod field_binding_fixture;
 use field_binding_fixture::{binding, encoded, field, resource_binding};
 pub(crate) struct Schema;
@@ -35,16 +34,6 @@ struct Resource;
 struct Principal;
 struct Facts;
 struct ResourceFacts;
-struct Action;
-struct Purpose;
-struct Field;
-struct Amount;
-struct Workflow;
-struct ResourceWorkflow;
-struct Status;
-struct ValidFrom;
-struct ValidThrough;
-struct DelegationLimit;
 struct ResourceRelation;
 struct WrongResourceRelation;
 struct ScopedRelation;
@@ -59,18 +48,6 @@ struct MissingResourceSlot;
 struct OtherContext;
 struct OtherResourceSlot;
 
-declare_u64_field!(
-    Action,
-    Purpose,
-    Field,
-    Amount,
-    Workflow,
-    ResourceWorkflow,
-    Status,
-    ValidFrom,
-    ValidThrough,
-    DelegationLimit,
-);
 crate::worth_query_structured_value_binding!(
     UnitOperationInputBinding for () {
         identity: "worth.rust.unit"
@@ -205,35 +182,36 @@ fn target_definition(
         relation::<ResourceRelation, Grant, Resource>("ResourceRelation", "Grant", "Resource")
     };
     ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(field::<Action>("Action"), encoded(1_u64)),
+        ApplicationCapabilityValueBinding::new(field("Action"), encoded(1_u64)).unwrap(),
         resource,
         ApplicationCapabilityRelationDimension::Bound(relation::<ScopedRelation, Grant, Resource>(
             "ScopedRelation",
             "Grant",
             "Resource",
         )),
-        ApplicationCapabilityFieldDimension::bound(field::<Field>("Field")),
+        ApplicationCapabilityFieldDimension::bound(field("Field")).unwrap(),
         ApplicationCapabilityValueBinding::new(
-            field::<Purpose>("Purpose"),
+            field("Purpose"),
             encoded(if changed_purpose { 2_u64 } else { 1_u64 }),
-        ),
+        )
+        .unwrap(),
     )
 }
 
 fn constraint_definition() -> ApplicationCapabilityConstraintDefinition {
     ApplicationCapabilityConstraintDefinition::new(
-        ApplicationCapabilityFieldDimension::bound(field::<Amount>("Amount")),
+        ApplicationCapabilityFieldDimension::bound(field("Amount")).unwrap(),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
-            ApplicationCapabilityValueBinding::new(field::<Status>("Status"), encoded(1_u64)),
+            ApplicationCapabilityValueBinding::new(field("Status"), encoded(1_u64)).unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                binding::<Workflow>("Workflow"),
-                resource_binding::<ResourceWorkflow>("ResourceWorkflow"),
+                binding("Workflow"),
+                resource_binding("ResourceWorkflow"),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                binding::<ValidFrom>("ValidFrom"),
-                binding::<ValidThrough>("ValidThrough"),
+                binding("ValidFrom"),
+                binding("ValidThrough"),
             ),
         ),
         ApplicationCapabilityContextRef::<Schema, Context>::from_schema_identifier("Context"),
@@ -245,7 +223,7 @@ fn delegation_definition() -> ApplicationCapabilityDelegationDefinition {
         relation::<Parent, Grant, Grant>("Parent", "Grant", "Grant"),
         relation::<Grantor, Principal, Grant>("Grantor", "Principal", "Grant"),
         relation::<Grantee, Principal, Grant>("Grantee", "Principal", "Grant"),
-        binding::<DelegationLimit>("DelegationLimit"),
+        binding("DelegationLimit"),
         ApplicationCapabilityProvenanceRef::<Schema, Provenance>::from_schema_identifier(
             "Provenance",
         ),
@@ -285,10 +263,8 @@ fn anchored_composition(
             ApplicationCapabilityDelegationRule::forbidden(),
             ApplicationCapabilityDisclosureRule::permit([
                 ApplicationCapabilityScopeGuard::requiring([
-                    ApplicationCapabilityAcceptedValues::one_of(
-                        field::<Field>("Field"),
-                        [encoded(1_u64)],
-                    ),
+                    ApplicationCapabilityAcceptedValues::one_of(field("Field"), [encoded(1_u64)])
+                        .unwrap(),
                 ]),
             ]),
         ),
@@ -301,7 +277,7 @@ fn composition(disclosure: bool) -> ApplicationCapabilityComposition {
     )]);
     let disclosure = if disclosure {
         ApplicationCapabilityDisclosureRule::permit([ApplicationCapabilityScopeGuard::requiring([
-            ApplicationCapabilityAcceptedValues::one_of(field::<Field>("Field"), [encoded(1_u64)]),
+            ApplicationCapabilityAcceptedValues::one_of(field("Field"), [encoded(1_u64)]).unwrap(),
         ])])
     } else {
         ApplicationCapabilityDisclosureRule::not_applicable()

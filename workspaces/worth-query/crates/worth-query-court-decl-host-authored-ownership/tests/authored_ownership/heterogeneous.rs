@@ -2,9 +2,6 @@
 use super::{lifecycle::*, *};
 mod courts;
 pub mod query;
-worth_query_entity!(pub Body for S: Scenario);
-worth_query_aspect!(pub BodyIdentity for S: Scenario, Body; identity = AspectIdentity(0x919B3958), revision = AspectContractRevision(1));
-worth_query_field!(pub BodyKey for S: Scenario, Body, BodyIdentity: u64 => U64ApplicationValueBinding, read_only, equality);
 pub struct BodyCreated<S>(PhantomData<fn() -> S>);
 pub struct BodyRetired<S>(PhantomData<fn() -> S>);
 impl<S: Scenario> WorthQueryApplicationOutputRole for BodyCreated<S> {
@@ -28,7 +25,8 @@ impl<S: Scenario> ApplicationAuthoredCorrectionFamily<S> for BodyFamily {
     const IDENTITY: &'static str = "ownership.authored.body-family.v1";
     type Entity = Body;
     fn logical_key() -> ApplicationAuthoredLogicalKey<S, Body> {
-        ApplicationAuthoredLogicalKey::from_field(BodyKey::reference())
+        ApplicationAuthoredLogicalKey::from_field(BodyKey::at("BodyKey"))
+            .expect("the body key is declared")
     }
 }
 impl OperationCreates<CreateOp> for Body {}
@@ -48,15 +46,12 @@ pub fn declare<S: Scenario>(
         return schema;
     }
     schema
-        .entity(Body::reference())
-        .aspect(Body::reference(), BodyIdentity::reference())
-        .unique_field(Body::reference(), BodyKey::reference())
         .operation_create(CreateOp::reference(), Body::reference())
-        .operation_write(CreateOp::reference(), BodyKey::reference())
+        .operation_write(CreateOp::reference(), BodyKey::at("BodyKey"))
         .operation_create(RestoreOp::reference(), Body::reference())
-        .operation_write(RestoreOp::reference(), BodyKey::reference())
+        .operation_write(RestoreOp::reference(), BodyKey::at("BodyKey"))
         .operation_read_entity(RetireOp::reference(), Body::reference())
-        .operation_read_field(RetireOp::reference(), BodyKey::reference())
+        .operation_read_field(RetireOp::reference(), BodyKey::at("BodyKey"))
         .operation_delete(RetireOp::reference(), Body::reference())
         .application_query(query::definition())
         .application_query_binding::<query::Binding<S>>()
@@ -77,7 +72,7 @@ pub trait Profile: Sized + 'static {
     }
     fn create<S: Scenario>(
         _: &Create,
-        _: &WorthQueryApplicationEffectEntity<S, Node>,
+        _: &WorthQueryApplicationEffectEntity<S, Node<S>>,
         _: &mut CandidateWriter<'_, S, CreateBinding<S>>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         Ok(())
@@ -90,7 +85,7 @@ pub trait Profile: Sized + 'static {
     }
     fn restore<S: Scenario>(
         _: &Restore,
-        _: &WorthQueryApplicationEffectEntity<S, Node>,
+        _: &WorthQueryApplicationEffectEntity<S, Node<S>>,
         _: &mut CandidateWriter<'_, S, RestoreBinding<S>>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         Ok(())
@@ -129,7 +124,8 @@ impl<const DECLARED: bool> Profile for Present<DECLARED> {
         let key = fields
             .field_for_output(
                 &<BodyRetired<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
-                &DeclaredPreImageLocus::from_field(BodyKey::reference::<S>()),
+                &DeclaredPreImageLocus::from_field(BodyKey::at("BodyKey"))
+                    .expect("the inverse field is declared"),
             )
             .ok_or(MissingPreImage)?;
         U64ApplicationValueBinding::decode(key)
@@ -138,7 +134,7 @@ impl<const DECLARED: bool> Profile for Present<DECLARED> {
     }
     fn create<S: Scenario>(
         input: &Create,
-        scope: &WorthQueryApplicationEffectEntity<S, Node>,
+        scope: &WorthQueryApplicationEffectEntity<S, Node<S>>,
         writer: &mut CandidateWriter<'_, S, CreateBinding<S>>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         let body = writer.create_entity_in_context(
@@ -146,7 +142,7 @@ impl<const DECLARED: bool> Profile for Present<DECLARED> {
             Body::reference(),
             WorthQueryApplicationEntityKey::new(format!("body-{}", input.id)).unwrap(),
         )?;
-        writer.initialize_field(&body, BodyKey::reference(), 10000 + input.id)?;
+        writer.initialize_field(&body, BodyKey::at("BodyKey"), 10000 + input.id)?;
         writer.create_output::<BodyCreated<S>>(&body)?;
         Ok(())
     }
@@ -163,7 +159,7 @@ impl<const DECLARED: bool> Profile for Present<DECLARED> {
     }
     fn restore<S: Scenario>(
         input: &Restore,
-        scope: &WorthQueryApplicationEffectEntity<S, Node>,
+        scope: &WorthQueryApplicationEffectEntity<S, Node<S>>,
         writer: &mut CandidateWriter<'_, S, RestoreBinding<S>>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         let body = writer.create_entity_in_context(
@@ -171,8 +167,38 @@ impl<const DECLARED: bool> Profile for Present<DECLARED> {
             Body::reference(),
             WorthQueryApplicationEntityKey::new(format!("restored-body-{}", input.id)).unwrap(),
         )?;
-        writer.initialize_field(&body, BodyKey::reference(), input.co_values[0])?;
+        writer.initialize_field(&body, BodyKey::at("BodyKey"), input.co_values[0])?;
         writer.create_output::<BodyCreated<S>>(&body)?;
         Ok(())
     }
 }
+
+use worth_query_decl::facade::application_schema::fragment::{self, *};
+pub struct Body;
+impl Entity for Body {
+    const NAME: &'static str = "Body";
+    type Aspects = (BodyIdentity,);
+    type Relations = ();
+}
+impl Body {
+    pub fn reference<S: Scenario>() -> ApplicationEntityRef<S, Self> {
+        entity(OwnershipModel::<true>, Self)
+    }
+}
+pub struct BodyIdentity;
+impl Aspect for BodyIdentity {
+    const NAME: &'static str = "BodyIdentity";
+    type Row = BodyKeyRow;
+}
+pub struct BodyKeyRow(u64);
+impl fragment::Record<BodyKeyRow> for OwnershipModelBindings {
+    fn record() -> impl Shape<BodyKeyRow, Self> {
+        fragment::field("BodyKey", |row: &BodyKeyRow| row.0)
+            .read_only()
+            .unique()
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(BodyKeyRow(value))
+            })
+    }
+}
+pub type BodyKey = FieldSelection<OwnershipModel, Body, BodyIdentity, u64>;

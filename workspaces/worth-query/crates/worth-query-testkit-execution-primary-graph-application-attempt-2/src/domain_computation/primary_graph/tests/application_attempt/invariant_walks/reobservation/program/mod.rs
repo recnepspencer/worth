@@ -75,7 +75,7 @@ pub fn change_node(
                     selected
                         .resolve_entity(
                             &phase,
-                            NodeKey::reference(),
+                            NodeKey::at("NodeKey"),
                             6,
                             request,
                             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -124,10 +124,10 @@ pub fn prepare_scope(
         .require_decision_entity(root, Node::reference())
         .unwrap();
     reader
-        .require_decision_field(root, NodeKey::reference())
+        .require_decision_field(root, NodeKey::at("NodeKey"))
         .unwrap();
     let member = reader
-        .resolve_optional_entity(NodeKey::reference(), 6)
+        .resolve_optional_entity(NodeKey::at("NodeKey"), 6)
         .unwrap();
     match change {
         Change::Create => assert!(member.is_none()),
@@ -137,7 +137,7 @@ pub fn prepare_scope(
                 .require_decision_entity(&member, Node::reference())
                 .unwrap();
             reader
-                .require_decision_field(&member, NodeKey::reference())
+                .require_decision_field(&member, NodeKey::at("NodeKey"))
                 .unwrap();
             reader
                 .require_decision_relation(GroupRoot::reference(), &member, root)
@@ -163,13 +163,13 @@ pub fn create_member(
         )
         .unwrap();
     effects
-        .initialize_field(&member, NodeKey::reference(), 6)
+        .initialize_field(&member, NodeKey::at("NodeKey"), 6)
         .unwrap();
     effects
-        .initialize_field(&member, Active::reference(), false)
+        .initialize_field(&member, Active::at("Active"), false)
         .unwrap();
     effects
-        .initialize_field(&member, Blocked::reference(), false)
+        .initialize_field(&member, Blocked::at("Blocked"), false)
         .unwrap();
     effects
         .link(

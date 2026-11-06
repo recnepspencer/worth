@@ -67,12 +67,12 @@ pub fn install_rings_configured<const ERASE: bool>(
     installation::WorthQueryInMemoryApplicationDenial,
 > {
     let program = ApplicationProgramAuthoring::<ExampleSchema, ExampleProgram<ERASE>>::begin()
-        .with_schema(&ExampleSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<ExampleSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     installation::in_memory_program(
         program,
-        ExampleSchema::declaration().unwrap(),
+        <ExampleSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
         (configuration,),
         build_identity,
         limits,
@@ -101,10 +101,10 @@ pub fn install_rings_configured<const ERASE: bool>(
                             Body::reference::<ExampleSchema>(),
                             entity_key(&key),
                         )
-                        .field(BodyKey::reference(), key)
-                        .field(Length::reference(), length(y + 1))
-                        .field(PositionX::reference(), length(x))
-                        .field(PositionY::reference(), length(y)),
+                        .field(BodyKey::at("BodyKey"), key)
+                        .field(Length::at("Length"), length(y + 1))
+                        .field(PositionX::at("PositionX"), length(x))
+                        .field(PositionY::at("PositionY"), length(y)),
                     )?;
                 }
                 for (from, to) in [("a", "b"), ("b", "c"), ("c", "a")] {

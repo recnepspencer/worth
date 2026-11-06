@@ -12,7 +12,7 @@ use super::{
     ApprovedPaymentAssessmentInput, ApprovedPaymentAssessmentProducer,
     PublishApprovedPaymentAssessment,
 };
-use crate::schema::BankSchema;
+use crate::schema::{BankSchema, PaymentStatusField};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ApprovedPaymentAssessmentReadinessDomain;
@@ -28,9 +28,16 @@ worth_query_host::facade::worth_query_conditional_node!(
 );
 
 pub struct ApprovedPaymentAssessmentReadiness;
+type ReadinessContract = application_contribution::WorthQueryOutputReadinessContract<
+    ApprovedPaymentAssessmentReadinessDomain,
+    ApprovedPaymentAssessmentReadinessOperation,
+    ApprovedPaymentAssessmentReadinessFamily,
+>;
 
 impl ApprovedPaymentAssessmentReadiness {
-    fn conditional_binding() -> domain::WorthQueryApplicationConditionalOperationBinding<
+    fn conditional_binding(
+        contract: &ReadinessContract,
+    ) -> domain::WorthQueryApplicationConditionalOperationBinding<
         BankSchema,
         PublishApprovedPaymentAssessment,
         ApprovedPaymentAssessmentInput,
@@ -40,7 +47,7 @@ impl ApprovedPaymentAssessmentReadiness {
     > {
         domain::WorthQueryApplicationConditionalOperationBinding::declare(
             PublishApprovedPaymentAssessment::reference(),
-            operation_definition().reference(),
+            contract.definition().reference(),
         )
     }
 }
@@ -51,24 +58,19 @@ impl application_contribution::WorthQueryApplicationConditionalBinding<BankSchem
     type Configuration = ();
     type Installed = ();
     type Operation = PublishApprovedPaymentAssessment;
-
     const IDENTITY: &'static str = "worth.bank.approved-payment-assessment.readiness.v1";
     const REQUIRED_PRODUCERS: &'static [&'static str] =
         &["worth.bank.approved-payment-assessment.producer.v1"];
 
     fn package_contract(
-        _: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+        declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
     ) -> Result<
         application_contribution::WorthQueryApplicationConditionalPackageContract,
         application_contribution::WorthQueryOutputReadinessContractDenial,
     > {
-        Ok(
-            application_contribution::WorthQueryApplicationConditionalPackageContract::new(
-                operation_definition().into_portable(),
-                Self::conditional_binding().portable().clone(),
-                ApprovedPaymentAssessmentReadyNode::reference().node_identity(),
-            ),
-        )
+        let contract = operation_definition(declaration)?;
+        let binding = Self::conditional_binding(&contract).portable().clone();
+        Ok(contract.into_package_contract(binding))
     }
 
     fn install(
@@ -82,100 +84,75 @@ impl application_contribution::WorthQueryApplicationConditionalBinding<BankSchem
         (),
         worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
     > {
+        let contract =
+            operation_definition(installation.installed_schema().installed_declaration())?;
+        let ordinal = contract.delivery_ordinal(
+            installation.installed_schema(),
+            &contract.definition().semantics().conditional_nodes[0],
+            PaymentStatusField::at("PaymentStatusField"),
+        )?;
         let operation = installation
             .installed_schema()
             .installed_operation(PublishApprovedPaymentAssessment::reference())
             .expect("the payment assessment publication operation is installed");
         let node = installation
             .installed_packages()
-            .bind_conditional_application_operation(operation, &Self::conditional_binding())
+            .bind_conditional_application_operation(
+                operation,
+                &Self::conditional_binding(&contract),
+            )
             .expect("the payment assessment conditional binding is installed")
             .bind_node(ApprovedPaymentAssessmentReadyNode::reference())
             .expect("the payment assessment readiness node is installed");
-        installation
-            .bind_output_readiness::<ApprovedPaymentAssessmentProducer, _, _, _, _, _, _>(node, 0)
+        installation.bind_output_readiness::<ApprovedPaymentAssessmentProducer, _, _, _, _, _, _>(
+            node, ordinal,
+        )
     }
 }
 
-fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
-    ApprovedPaymentAssessmentReadinessDomain,
-    ApprovedPaymentAssessmentReadinessOperation,
-    ApprovedPaymentAssessmentReadinessFamily,
-> {
-    let dependency = payment_status_dependency();
-    application_contribution::WorthQueryOutputReadinessContractBuilder::new(
+fn operation_definition(
+    declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+) -> Result<ReadinessContract, application_contribution::WorthQueryOutputReadinessContractDenial> {
+    application_contribution::WorthQueryOutputReadinessContractBuilder::for_field(
+        declaration,
+        PaymentStatusField::at("PaymentStatusField"),
         domain::WorthQueryDomainOperationIdentity::new("approved-payment-assessment-readiness", 1),
         "approved-payment-assessment-ready",
-        payment_status_projection(),
         canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("assessment").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("approved-payment-assessment-readiness")
             .unwrap(),
         "approved-payment-assessment-readiness-v1",
-    )
-    .semantic_reads([payment_status_projection()])
-    .dependencies([dependency.clone()])
-    .readiness_dependencies([dependency])
-    .build()
-    .expect("the payment assessment readiness declaration is canonical")
-}
-
-fn payment_status_dependency() -> domain::WorthQuerySemanticTruthDependency {
-    domain::WorthQuerySemanticTruthDependency::new(
-        domain::WorthQueryConditionalGraphReadRole::new("primary").unwrap(),
-        payment_state_contract(),
-        payment_status_mask(),
-        domain::AspectBinding::EntityField {
-            field: domain::FieldKey::new("PaymentStatusField").unwrap(),
-        },
-        domain::WorthQuerySemanticLocality::SourceRecord,
-        [domain::AuthoritativeAspectChangeKind::FieldSet],
-    )
-    .unwrap()
-}
-
-fn payment_state_contract() -> domain::AspectContract {
-    let status = domain::FieldDeclaration::new(
-        domain::FieldKey::new("PaymentStatusField").unwrap(),
-        domain::ScalarAspectType::String,
-        domain::FieldRequirement::Required,
-        domain::AbsenceLaw::Required,
-        domain::AspectEvolutionPolicy::AdditiveFieldsAllowed,
-    )
-    .unwrap();
-    domain::AspectContract::struct_aspect(
-        domain::AspectKey::new("PaymentState").unwrap(),
-        domain::AspectIdentity(0x9161_1017),
-        domain::AspectContractRevision(1),
-        domain::StructAspectShape::new([status]).unwrap(),
-    )
-}
-
-fn payment_status_mask() -> domain::AspectMask<domain::ProjectionMask> {
-    domain::AspectMask::new([domain::CanonicalFieldPath::single(
-        domain::FieldKey::new("PaymentStatusField").unwrap(),
-    )])
-}
-
-fn payment_status_projection() -> domain::WorthQueryOperationNativeProjectionContract {
-    domain::WorthQueryOperationNativeProjectionContract::new(
-        payment_state_contract(),
-        payment_status_mask(),
-    )
-    .unwrap()
+    )?
+    .field_dependency(
+        declaration,
+        PaymentStatusField::at("PaymentStatusField"),
+        application_contribution::WorthQueryReadinessFieldUse::DeliveryAndEligibility,
+    )?
+    .build_typed()
 }
 
 fn canonical_query() -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle
 {
     let query = DetailQueryBuilder::new(RootEntityKey::new("PaymentIntent").unwrap())
-        .project(AspectFieldSelector::new("PaymentState", "PaymentStatusField").unwrap())
+        .project(
+            AspectFieldSelector::new(
+                PaymentStatusField::at("PaymentStatusField").aspect(),
+                "PaymentStatusField",
+            )
+            .unwrap(),
+        )
         .build()
         .unwrap()
         .into_raw();
     let shape = DetailResultShapeBuilder::new()
         .field(
-            AuthoredResultShapeField::new("PaymentState", "PaymentStatusField", "payment_status")
-                .unwrap(),
+            AuthoredResultShapeField::new(
+                PaymentStatusField::at("PaymentStatusField").aspect(),
+                "PaymentStatusField",
+                "payment_status",
+            )
+            .unwrap(),
         )
         .build()
         .unwrap()

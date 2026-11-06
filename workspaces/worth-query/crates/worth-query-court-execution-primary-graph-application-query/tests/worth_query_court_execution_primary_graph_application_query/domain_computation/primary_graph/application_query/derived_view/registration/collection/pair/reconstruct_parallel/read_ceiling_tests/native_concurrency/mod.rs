@@ -45,7 +45,7 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
                 selected
                     .resolve_entity(
                         &phase,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         status.to_owned(),
                         &scope,
                         WorthQueryPrincipalResolutionMode::Ordinary,

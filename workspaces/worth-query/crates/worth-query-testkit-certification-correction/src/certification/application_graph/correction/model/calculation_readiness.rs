@@ -42,7 +42,7 @@ pub fn contract(
 ) -> Result<Contract, WorthQueryOutputReadinessContractDenial> {
     WorthQueryOutputReadinessContractBuilder::for_field(
         declaration,
-        Calculated::reference(),
+        Calculated::at("Calculated"),
         domain::WorthQueryDomainOperationIdentity::new("numeric-calculation-readiness", 1),
         "numeric-calculation-ready",
         canonical_query(),
@@ -52,7 +52,7 @@ pub fn contract(
     )?
     .field_dependency(
         declaration,
-        Calculated::reference(),
+        Calculated::at("Calculated"),
         WorthQueryReadinessFieldUse::DeliveryAndEligibility,
     )?
     .build_typed()
@@ -97,7 +97,7 @@ impl WorthQueryApplicationConditionalBinding<NumericSchema> for Readiness {
             .delivery_ordinal(
                 installation.installed_schema(),
                 node.declaration(),
-                Calculated::reference(),
+                Calculated::at("Calculated"),
             )
             .unwrap();
         installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)
@@ -106,13 +106,13 @@ impl WorthQueryApplicationConditionalBinding<NumericSchema> for Readiness {
 pub fn canonical_query(
 ) -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle {
     let query = DetailQueryBuilder::new(RootEntityKey::new("Number").unwrap())
-        .project(AspectFieldSelector::new("NumberFacts", "Calculated").unwrap())
+        .project(AspectFieldSelector::new(crate::facade::certification::application_graph::correction::model::schema::NumberFacts::reference().name(), "Calculated").unwrap())
         .build()
         .unwrap()
         .into_raw();
     let shape = DetailResultShapeBuilder::new()
         .field(
-            AuthoredResultShapeField::new("NumberFacts", "Calculated", "calculated_number")
+            AuthoredResultShapeField::new(crate::facade::certification::application_graph::correction::model::schema::NumberFacts::reference().name(), "Calculated", "calculated_number")
                 .unwrap(),
         )
         .build()

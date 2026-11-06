@@ -2,14 +2,9 @@ use worth_query_decl::facade::application_query::{
     ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef, ExactlyOneResult,
     ForwardResultTraversal, ManyResults, ReverseResultTraversal,
 };
-use worth_query_decl::facade::application_schema::{
-    EqualityPredicate, NoApplicationUnit, ReadOnly,
-};
 
-use crate::model::BankPrincipalId;
 use crate::schema::{
-    BankSchema, EstateBeneficiary, EstateCase, EstateDeceased, Principal, PrincipalIdentity,
-    PrincipalIdentityField,
+    BankSchema, EstateBeneficiary, EstateCase, EstateDeceased, Principal, PrincipalIdentityField,
 };
 
 use super::customer_disclosure::EstateCustomerDisclosureQuery;
@@ -53,28 +48,22 @@ pub(super) fn customer_identity() -> ApplicationQueryResultFieldRef<
     EstateCustomerDisclosureQuery,
     CustomerIdentitySlot,
     BankSchema,
-    Principal,
-    PrincipalIdentity,
     PrincipalIdentityField,
-    BankPrincipalId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("customer_identity", PrincipalIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "customer_identity",
+        PrincipalIdentityField::at("PrincipalIdentityField"),
+    )
 }
 
 pub(super) fn beneficiary_identity() -> ApplicationQueryResultFieldRef<
     EstateCustomerDisclosureQuery,
     BeneficiaryIdentitySlot,
     BankSchema,
-    Principal,
-    PrincipalIdentity,
     PrincipalIdentityField,
-    BankPrincipalId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("beneficiary_identity", PrincipalIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "beneficiary_identity",
+        PrincipalIdentityField::at("PrincipalIdentityField"),
+    )
 }

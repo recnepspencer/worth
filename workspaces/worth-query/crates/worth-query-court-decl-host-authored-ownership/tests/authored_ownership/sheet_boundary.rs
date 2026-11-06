@@ -2,12 +2,14 @@
 use super::*;
 use coupled::producer::{Binding as Preserve, Operation as PreserveOp};
 
-worth_query_entity!(pub Occurrence for S: Scenario);
-worth_query_aspect!(pub Position for S: Scenario, Occurrence; identity = AspectIdentity(0x919B3970), revision = AspectContractRevision(1));
-worth_query_field!(pub Number for S: Scenario, Occurrence, Position: u64 => U64ApplicationValueBinding, read_only, equality);
 pub struct Successor;
 impl Successor {
-    pub fn reference<S: Scenario>() -> ApplicationRelationRef<S, Self, Occurrence, Occurrence> {
+    pub fn reference<S: Scenario>() -> ApplicationRelationRef<
+        S,
+        Self,
+        Occurrence<<S as Scenario>::Boundary>,
+        Occurrence<<S as Scenario>::Boundary>,
+    > {
         ApplicationRelationRef::from_schema_identifiers(
             "BoundaryNext",
             "Occurrence",
@@ -29,12 +31,14 @@ impl Successor {
     }
 }
 macro_rules! family {
-    ($name:ident, $entity:ty, $contract:ty, $prefix:literal, $postures:expr) => {
+    (@entity Occurrence, $schema:ident) => { Occurrence<<$schema as Scenario>::Boundary> };
+    (@entity $entity:ident, $schema:ident) => { $entity };
+    ($name:ident, $entity:ident, $contract:ty, $prefix:literal, $postures:expr) => {
         pub struct $name<S>(PhantomData<fn() -> S>);
         impl<S: Scenario> WorthQueryApplicationOutputRoleFamily for $name<S> {
             type Schema = S;
             type Contract = $contract;
-            type Entity = $entity;
+            type Entity = family!(@entity $entity, S);
             const PREFIX: &'static str = $prefix;
             const POSTURES: ApplicationMutationOutputPostureSet = $postures;
             const MINIMUM: usize = 0;
@@ -62,15 +66,15 @@ family!(
     "retired-boundary.",
     ApplicationMutationOutputPostureSet::RETIRE
 );
-impl OperationCreates<producer::Operation> for Occurrence {}
-impl OperationWrites<producer::Operation> for Number {}
+impl<B: Profile> OperationCreates<producer::Operation> for Occurrence<B> {}
+impl<B: Profile> OperationWrites<producer::Operation> for Number<B> {}
 impl OperationLinks<producer::Operation> for Successor {}
-impl OperationReads<PreserveOp> for Occurrence {}
-impl OperationReads<PreserveOp> for Number {}
+impl<B: Profile> OperationReads<PreserveOp> for Occurrence<B> {}
+impl<B: Profile> OperationReads<PreserveOp> for Number<B> {}
 impl OperationReads<PreserveOp> for Successor {}
-impl OperationCreates<PreserveOp> for Occurrence {}
-impl OperationDeletes<PreserveOp> for Occurrence {}
-impl OperationWrites<PreserveOp> for Number {}
+impl<B: Profile> OperationCreates<PreserveOp> for Occurrence<B> {}
+impl<B: Profile> OperationDeletes<PreserveOp> for Occurrence<B> {}
+impl<B: Profile> OperationWrites<PreserveOp> for Number<B> {}
 impl OperationLinks<PreserveOp> for Successor {}
 impl OperationUnlinks<PreserveOp> for Successor {}
 
@@ -83,38 +87,30 @@ pub fn declare<S: Scenario>(
     let initial =
         ApplicationOperationRef::<S, producer::Operation, query::Input>::from_declaration();
     let preserve = PreserveOp::reference();
-    s.entity(Occurrence::reference())
-        .aspect(Occurrence::reference(), Position::reference())
-        .field(Occurrence::reference(), Number::reference())
-        .relation(
-            Successor::reference(),
-            Occurrence::reference(),
-            Occurrence::reference(),
-        )
-        .operation_create(initial, Occurrence::reference())
-        .operation_write(initial, Number::reference())
+    s.operation_create(initial, Occurrence::<S::Boundary>::reference())
+        .operation_write(initial, Number::<S::Boundary>::at("Number"))
         .operation_link(initial, Successor::reference())
-        .operation_read_entity(preserve, Occurrence::reference())
-        .operation_read_field(preserve, Number::reference())
+        .operation_read_entity(preserve, Occurrence::<S::Boundary>::reference())
+        .operation_read_field(preserve, Number::<S::Boundary>::at("Number"))
         .operation_read_relation(preserve, Successor::reference())
-        .operation_create(preserve, Occurrence::reference())
-        .operation_delete(preserve, Occurrence::reference())
-        .operation_write(preserve, Number::reference())
+        .operation_create(preserve, Occurrence::<S::Boundary>::reference())
+        .operation_delete(preserve, Occurrence::<S::Boundary>::reference())
+        .operation_write(preserve, Number::<S::Boundary>::at("Number"))
         .operation_link(preserve, Successor::reference())
         .operation_unlink(preserve, Successor::reference())
 }
 pub fn initial<S: Scenario>(
     w: &mut CandidateWriter<'_, S, producer::Binding<S>>,
-    source: &WorthQueryApplicationEffectEntity<S, Node>,
+    source: &WorthQueryApplicationEffectEntity<S, Node<S>>,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     let mut nodes = Vec::new();
     for index in 0..4u64 {
         let node = w.create_entity_in_context(
             source,
-            Occurrence::reference(),
+            Occurrence::<S::Boundary>::reference(),
             WorthQueryApplicationEntityKey::new(format!("boundary-{index}")).unwrap(),
         )?;
-        w.initialize_field(&node, Number::reference(), index)?;
+        w.initialize_field(&node, Number::<S::Boundary>::at("Number"), index)?;
         w.create_member::<InitialNodes<S>>(&index.to_string(), &node)?;
         nodes.push(node);
     }
@@ -128,11 +124,14 @@ pub fn initial<S: Scenario>(
     }
     Ok(())
 }
-pub struct Decision<S> {
-    nodes: Vec<(u64, WorthQueryInvariantMutationTarget<S, Occurrence>)>,
+pub struct Decision<S: Scenario> {
+    nodes: Vec<(
+        u64,
+        WorthQueryInvariantMutationTarget<S, Occurrence<<S as Scenario>::Boundary>>,
+    )>,
     edges: Vec<(
-        WorthQueryInvariantMutationTarget<S, Occurrence>,
-        WorthQueryInvariantMutationTarget<S, Occurrence>,
+        WorthQueryInvariantMutationTarget<S, Occurrence<<S as Scenario>::Boundary>>,
+        WorthQueryInvariantMutationTarget<S, Occurrence<<S as Scenario>::Boundary>>,
     )>,
 }
 pub fn read<S: Scenario>(
@@ -163,8 +162,10 @@ pub fn read<S: Scenario>(
     let mut nodes = Vec::new();
     let mut edges = Vec::new();
     for node in orbit.members() {
-        r.entity(&node, Occurrence::reference())?;
-        let index = r.field(&node, Number::reference())?.unwrap();
+        r.entity(&node, Occurrence::<S::Boundary>::reference())?;
+        let index = r
+            .field(&node, Number::<S::Boundary>::at("Number"))?
+            .unwrap();
         let next = r
             .related_one(Successor::reference(), &node)
             .map_err(HandlerExecutionDenial::new)?;
@@ -179,7 +180,7 @@ pub fn read<S: Scenario>(
 pub fn trim<S: Scenario>(
     w: &mut CandidateWriter<'_, S, Preserve<S>>,
     decision: Decision<S>,
-    source: &WorthQueryApplicationEffectEntity<S, Node>,
+    source: &WorthQueryApplicationEffectEntity<S, Node<S>>,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     if decision.nodes.len() == 3 {
         for (index, target) in decision.nodes {
@@ -197,7 +198,7 @@ pub fn trim<S: Scenario>(
     for (index, target) in decision.nodes {
         let node = w.projected_entity(&target)?;
         if index == 0 || index == 3 {
-            w.delete_entity(Occurrence::reference(), &node)?;
+            w.delete_entity(Occurrence::<S::Boundary>::reference(), &node)?;
             w.retire_member::<RetiredNodes<S>>(&index.to_string(), &node)?;
         } else {
             w.preserve_member::<SurvivingNodes<S>>(&index.to_string(), &node)?;
@@ -206,10 +207,10 @@ pub fn trim<S: Scenario>(
     }
     let node = w.create_entity_in_context(
         source,
-        Occurrence::reference(),
+        Occurrence::<S::Boundary>::reference(),
         WorthQueryApplicationEntityKey::new("diagonal-occurrence").unwrap(),
     )?;
-    w.initialize_field(&node, Number::reference(), 4)?;
+    w.initialize_field(&node, Number::<S::Boundary>::at("Number"), 4)?;
     w.create_member::<SurvivingNodes<S>>("4", &node)?;
     live.push(node);
     for i in 0..3 {
@@ -226,11 +227,15 @@ mod court;
 
 pub struct Absent;
 pub struct Owned;
-pub trait Profile: 'static {
+pub trait Profile: Sized + 'static {
+    type Relations: 'static;
+    const UNIQUE: bool = false;
+    fn declaration<S: Scenario<Boundary = Self>>(
+    ) -> Result<ApplicationSchemaDeclaration<S>, ApplicationSchemaDeclarationDenial>;
     type Decision<S: Scenario>;
     fn initial<S: Scenario>(
         _: &mut CandidateWriter<'_, S, producer::Binding<S>>,
-        _: &WorthQueryApplicationEffectEntity<S, Node>,
+        _: &WorthQueryApplicationEffectEntity<S, Node<S>>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         Ok(())
     }
@@ -242,20 +247,50 @@ pub trait Profile: 'static {
     fn trim<S: Scenario>(
         _: &mut CandidateWriter<'_, S, Preserve<S>>,
         decision: Option<Self::Decision<S>>,
-        _: &WorthQueryApplicationEffectEntity<S, Node>,
+        _: &WorthQueryApplicationEffectEntity<S, Node<S>>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         assert!(decision.is_none());
         Ok(())
     }
 }
 impl Profile for Absent {
+    type Relations = ();
+    fn declaration<S: Scenario<Boundary = Self>>(
+    ) -> Result<ApplicationSchemaDeclaration<S>, ApplicationSchemaDeclarationDenial> {
+        if S::MODE == 43 {
+            ApplicationSchemaDeclarationBuilder::from_fragment(schema::OwnershipRoot::<S, true>(
+                PhantomData,
+            ))?
+            .build()
+        } else {
+            ApplicationSchemaDeclarationBuilder::from_fragment(schema::OwnershipRoot::<S, false>(
+                PhantomData,
+            ))?
+            .build()
+        }
+    }
     type Decision<S: Scenario> = ();
 }
 impl Profile for Owned {
+    type Relations = (Successor,);
+    fn declaration<S: Scenario<Boundary = Self>>(
+    ) -> Result<ApplicationSchemaDeclaration<S>, ApplicationSchemaDeclarationDenial> {
+        if S::MODE == 43 {
+            ApplicationSchemaDeclarationBuilder::from_fragment(schema::OwnershipRoot::<S, true>(
+                PhantomData,
+            ))?
+            .build()
+        } else {
+            ApplicationSchemaDeclarationBuilder::from_fragment(schema::OwnershipRoot::<S, false>(
+                PhantomData,
+            ))?
+            .build()
+        }
+    }
     type Decision<S: Scenario> = Decision<S>;
     fn initial<S: Scenario>(
         writer: &mut CandidateWriter<'_, S, producer::Binding<S>>,
-        source: &WorthQueryApplicationEffectEntity<S, Node>,
+        source: &WorthQueryApplicationEffectEntity<S, Node<S>>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         initial(writer, source)
     }
@@ -267,10 +302,12 @@ impl Profile for Owned {
     fn trim<S: Scenario>(
         writer: &mut CandidateWriter<'_, S, Preserve<S>>,
         decision: Option<Self::Decision<S>>,
-        source: &WorthQueryApplicationEffectEntity<S, Node>,
+        source: &WorthQueryApplicationEffectEntity<S, Node<S>>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         trim(writer, decision.expect("owned boundary decision"), source)
     }
 }
 
 pub(super) mod split_walk;
+
+pub use super::native_boundary::{BoundaryOccurrence as Occurrence, Number};

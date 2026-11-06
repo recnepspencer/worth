@@ -19,7 +19,6 @@ use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::AccountAllActivity;
 use crate::domain_computation::primary_graph::tests::fixture::AccountStatus;
 use crate::domain_computation::primary_graph::tests::fixture::Activity;
-use crate::domain_computation::primary_graph::tests::fixture::ActivityFacts;
 use crate::domain_computation::primary_graph::tests::fixture::ActivityIdentity;
 use crate::domain_computation::primary_graph::tests::fixture::ActivitySequence;
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
@@ -115,7 +114,7 @@ pub fn selected_activity_definition() -> ApplicationQueryDefinition<
     .relation_where_equal(
         selected_activity_relation(),
         activity,
-        ActivityIdentity::reference(),
+        ActivityIdentity::at("ActivityIdentity"),
         selected_activity_parameter(),
     )
     .build();
@@ -130,7 +129,7 @@ pub fn selected_activity_definition() -> ApplicationQueryDefinition<
         .public()
         .parameter(status_parameter::<SelectedActivityQuery>())
         .parameter(selected_activity_parameter())
-        .where_equal(AccountStatus::reference(), status_parameter())
+        .where_equal(AccountStatus::at("AccountStatus"), status_parameter())
         .build()
         .unwrap()
 }
@@ -160,13 +159,7 @@ pub fn selected_activity_sequence() -> ApplicationQueryResultFieldRef<
     SelectedActivityQuery,
     SelectedActivitySequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }

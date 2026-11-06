@@ -18,7 +18,7 @@ pub(super) fn decide<Schema: TopologySchemaBinding>(
         EntryFact::Create => {
             let mut sets = Vec::with_capacity(input.sets.len());
             for set in &input.sets {
-                let set = reader.resolve_entity(EntrySetKey::reference(), set.clone())?;
+                let set = reader.resolve_entity(EntrySetKey::at("EntrySetKey"), set.clone())?;
                 sets.push(reader.mutation_target(&set)?);
             }
             Ok(EditTarget::Create(sets))
@@ -26,7 +26,7 @@ pub(super) fn decide<Schema: TopologySchemaBinding>(
         EntryFact::Delete => {
             let mut entries = Vec::with_capacity(input.count);
             for number in input.entry..input.entry + input.count as u64 {
-                let entry = reader.resolve_entity(EntryNumber::reference(), number)?;
+                let entry = reader.resolve_entity(EntryNumber::at("EntryNumber"), number)?;
                 reader
                     .reader()
                     .require_decision_entity(&entry, SetEntry::reference())
@@ -44,8 +44,8 @@ pub(super) fn decide<Schema: TopologySchemaBinding>(
         }
         _ => {
             let mut traded = |number: u64, takes: u64| {
-                let entry = reader.resolve_entity(EntryNumber::reference(), number)?;
-                reader.field(&entry, EntryNumber::reference())?;
+                let entry = reader.resolve_entity(EntryNumber::at("EntryNumber"), number)?;
+                reader.field(&entry, EntryNumber::at("EntryNumber"))?;
                 Ok::<_, HandlerExecutionDenial>((reader.mutation_target(&entry)?, takes))
             };
             let first = traded(input.entry, input.other)?;
@@ -78,7 +78,7 @@ pub(super) fn build<Schema: TopologySchemaBinding>(
                 .projected_entity(entry)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .write_field(&entry, EntryNumber::reference(), *number)
+                .write_field(&entry, EntryNumber::at("EntryNumber"), *number)
                 .map_err(HandlerExecutionDenial::new)
         }),
         EditTarget::Set(_) | EditTarget::Entry(_) => {
@@ -113,11 +113,11 @@ fn create<Schema: TopologySchemaBinding>(
         .create_entity_in_context(&sets[0], SetEntry::reference(), key)
         .map_err(HandlerExecutionDenial::new)?;
     for initialized in [
-        writer.initialize_field(&entry, EntryNumber::reference(), input.entry),
-        writer.initialize_field(&entry, EntryRegion::reference(), input.other),
-        writer.initialize_field(&entry, EntryValueBits::reference(), input.value),
-        writer.initialize_field(&entry, EntryWork::reference(), input.work),
-        writer.initialize_field(&entry, EntryFault::reference(), 0),
+        writer.initialize_field(&entry, EntryNumber::at("EntryNumber"), input.entry),
+        writer.initialize_field(&entry, EntryRegion::at("EntryRegion"), input.other),
+        writer.initialize_field(&entry, EntryValueBits::at("EntryValueBits"), input.value),
+        writer.initialize_field(&entry, EntryWork::at("EntryWork"), input.work),
+        writer.initialize_field(&entry, EntryFault::at("EntryFault"), 0),
     ] {
         initialized.map_err(HandlerExecutionDenial::new)?;
     }

@@ -4,7 +4,7 @@ use super::*;
 #[test]
 fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source() {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, Program<QueryDelivery>>::begin()
-        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let grants = [
@@ -95,10 +95,14 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
         construction_request
             .mutate(Original(input.clone()))
             .expect_source(source)
-            .preconditions(TypedMutationPreconditions::new().expect_fact(
-                BodyKey::reference::<ConsumerSchema>(),
-                ApplicationEncodedScalarValue::try_new("anchor-a".to_owned()).unwrap(),
-            ))
+            .preconditions(
+                TypedMutationPreconditions::new()
+                    .expect_fact(
+                        BodyKey::at("BodyKey"),
+                        ApplicationEncodedScalarValue::try_new("anchor-a".to_owned()).unwrap(),
+                    )
+                    .expect("record field contract"),
+            )
             .idempotency_owned(110_012)
             .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
             .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&constructing)

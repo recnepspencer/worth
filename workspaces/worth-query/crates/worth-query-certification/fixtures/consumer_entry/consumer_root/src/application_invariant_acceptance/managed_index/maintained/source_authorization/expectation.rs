@@ -1,9 +1,7 @@
 //! Expectations use the generic item handler, which never performs a Query READ.
 use super::super::mutation;
 use super::*;
-use worth_query_decl::facade::{
-    application_operation::*, application_query::*, application_schema::*, *,
-};
+use worth_query_decl::facade::application_operation::*;
 macro_rules! binding {
     ($binding:ident, $intent:ident, $query:ty, $identity:literal) => {
         pub struct $binding;
@@ -36,17 +34,8 @@ macro_rules! binding {
             fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
                 ApplicationWorkflowExecutionRequirements::not_applicable()
             }
-            fn scope_field() -> ApplicationFieldRef<
-                Catalog,
-                Directory,
-                DirectoryFacts,
-                DirectoryIdentity,
-                String,
-                ReadOnly,
-                EqualityPredicate,
-                NoApplicationUnit,
-            > {
-                DirectoryIdentity::reference()
+            fn scope_field() -> DirectoryIdentity {
+                DirectoryIdentity::at("DirectoryIdentity")
             }
             fn principal_binding() -> ApplicationPrincipalBindingRef<
                 Catalog,
@@ -85,7 +74,7 @@ macro_rules! binding {
                 &self,
             ) -> <$binding as ApplicationMutationBinding<Catalog>>::ScopeBinding {
                 ApplicationMutationFieldScope::new(
-                    DirectoryIdentity::reference(),
+                    DirectoryIdentity::at("DirectoryIdentity"),
                     self.0.directory.clone(),
                 )
             }

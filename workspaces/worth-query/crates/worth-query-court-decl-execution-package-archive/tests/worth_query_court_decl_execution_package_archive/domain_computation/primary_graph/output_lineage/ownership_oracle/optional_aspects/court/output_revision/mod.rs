@@ -89,7 +89,7 @@ pub fn observe<Schema: BirthSchema>(
     phase: &WorthQueryAdvancementPhase<'_>,
     receipt: &WorthQueryApplicationCommitReceipt,
 ) -> (EntityId, RelationalFieldRevision, Effect) {
-    let field = Value::reference::<Schema>();
+    let field = Value::at("Value");
     let mut roles = receipt
         .output_correspondence()
         .native_witness_roles_for_test()
@@ -99,14 +99,15 @@ pub fn observe<Schema: BirthSchema>(
         roles.next().is_none(),
         "one actual output of this installed kind"
     );
-    let graph = &(*(*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test());
+    let graph = runtime
+        .runtime_for_test()
+        .primary_provider_for_test()
+        .graph_for_test();
     let locator = (*graph.layout_for_test())
         .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap();
     let execution = phase
-        .execution_request_for_for_test(
-            &(*(*runtime.runtime_for_test()).product_runtime_for_test()),
-        )
+        .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
         .unwrap();
     assert_eq!(locator.aspect().authority(), LocatorAuthority::Planned);
     let (effect, native_locator) = run_retained_stage(&execution, &mut None, |context, _| {

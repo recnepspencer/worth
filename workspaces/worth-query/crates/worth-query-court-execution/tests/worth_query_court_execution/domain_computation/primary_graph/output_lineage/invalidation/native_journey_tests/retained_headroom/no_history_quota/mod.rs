@@ -28,16 +28,16 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
     world.application.with_host_advancement(|phase| {
         let custody = phase.test_host_request_for_test();
         let selected = world.selected_product(&custody);
-        let entity = selected.resolve_entity(&phase, AccountStatus::reference(),
+        let entity = selected.resolve_entity(&phase, AccountStatus::at("AccountStatus"),
             "open".into(), &live_scope(), WorthQueryPrincipalResolutionMode::Ordinary).unwrap().entity_id_for_test();
         let (_, product, _) = selected.into_parts_for_test();
         let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
         let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("StatusOutput"));
         let row = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
         let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
-        let status_ref = AccountStatus::reference();
+        let status_ref = AccountStatus::at("AccountStatus");
         let status = graph.layout_for_test().field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field()).unwrap().clone();
-        let label_ref = AccountLabel::reference();
+        let label_ref = AccountLabel::at("AccountLabel");
         let label = graph.layout_for_test().field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field()).unwrap().clone();
         let handle = graph.integration_handle_for_test();
         let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());

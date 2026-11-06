@@ -1,5 +1,9 @@
 //! Recovery describes the still-retained command; denial never discharges its owner.
 use super::*;
+use worth_query_host::facade::primary_graph::{
+    CurrentProductReadDependencyDenial, RelationalPublicationReadDependencyDenial,
+    RuntimeWorldBranchAdmissionDenial,
+};
 
 pub(super) fn managed(cause: WorthQueryManagedApplicationRecoveryDenial) -> BankHttpDenial {
     use WorthQueryManagedApplicationRecoveryDenial as D;
@@ -37,26 +41,7 @@ fn world(cause: RuntimeWorldRecoveryDenial) -> BankHttpDenial {
     }
 }
 
-fn companion(cause: CompanionPreflightStop) -> BankHttpDenial {
-    use CompanionPreflightStop as D;
-    match cause {
-        D::Execution(cause) => crate::http::server::relational_execution_denial::denial(cause),
-        D::Interrupted(cause) => match cause.interruption() {
-            RelationalOperationInterruption::Cancelled => {
-                BankHttpDenial::new(Kind::Cancelled, Next::Retry)
-            }
-            RelationalOperationInterruption::TimedOut => {
-                BankHttpDenial::new(Kind::DeadlineExceeded, Next::Retry)
-            }
-        },
-        D::TopologyPending => unavailable(),
-        D::SelectedSourceMismatch
-        | D::SelectedPositionUnavailable { .. }
-        | D::RegistrationChanged => BankHttpDenial::new(Kind::Stale, Next::Refresh),
-
-        D::ForeignCell | D::WorkCounterOverflow | D::PreparationMemoryCounterOverflow => operator(),
-    }
-}
+use crate::http::server::relational_execution_denial::companion;
 
 fn adoption(cause: NoEffectCause) -> BankHttpDenial {
     match cause {
@@ -65,6 +50,7 @@ fn adoption(cause: NoEffectCause) -> BankHttpDenial {
         NoEffectCause::DeadlineBeforeEffect => {
             BankHttpDenial::new(Kind::DeadlineExceeded, Next::Retry)
         }
+        NoEffectCause::CurrentReadDependency(cause) => current_read(cause),
         NoEffectCause::StaleExpectedProductHead => BankHttpDenial::new(Kind::Stale, Next::Refresh),
         NoEffectCause::CapacityExhausted => unavailable(),
         NoEffectCause::RelationalDeferred(RelationalPublicationDeferred::CompanionPreflight(
@@ -76,5 +62,64 @@ fn adoption(cause: NoEffectCause) -> BankHttpDenial {
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::OwnerUnavailable
         | NoEffectCause::PreEffectFailure => operator(),
+    }
+}
+
+fn current_read(cause: CurrentProductReadDependencyDenial) -> BankHttpDenial {
+    use CurrentProductReadDependencyDenial as Read;
+    use RelationalPublicationReadDependencyDenial as Native;
+    use RuntimeWorldBranchAdmissionDenial as Branch;
+    match cause {
+        Read::CutoverDeadlineElapsed | Read::Branch(Branch::DeadlineBeforeEffect) => {
+            BankHttpDenial::new(Kind::DeadlineExceeded, Next::Retry)
+        }
+        Read::Branch(Branch::CancelledBeforeEffect) => {
+            BankHttpDenial::new(Kind::Cancelled, Next::Retry)
+        }
+        Read::Branch(_) | Read::Native(Native::NotCurrent) => {
+            BankHttpDenial::new(Kind::Stale, Next::Refresh)
+        }
+        Read::WorldHeadUnavailable | Read::Native(Native::CandidateUnavailable) => unavailable(),
+        Read::AlreadyRequired
+        | Read::UnsupportedComponentPlan
+        | Read::CurrentReadRequired
+        | Read::CutoverNotPerformed
+        | Read::DurabilityUnsupported
+        | Read::Native(
+            Native::EmptySourceUnsupported
+            | Native::ForeignOwner
+            | Native::AlreadyRequired
+            | Native::ConflictingSource,
+        ) => operator(),
+    }
+}
+#[cfg(test)]
+mod current_read_tests {
+    use super::*;
+    #[test]
+    fn current_read_controls_keep_their_original_http_instruction() {
+        for (cause, kind) in [
+            (
+                CurrentProductReadDependencyDenial::CutoverDeadlineElapsed,
+                Kind::DeadlineExceeded,
+            ),
+            (
+                CurrentProductReadDependencyDenial::Branch(
+                    RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect,
+                ),
+                Kind::DeadlineExceeded,
+            ),
+            (
+                CurrentProductReadDependencyDenial::Branch(
+                    RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect,
+                ),
+                Kind::Cancelled,
+            ),
+        ] {
+            assert_eq!(
+                adoption(NoEffectCause::CurrentReadDependency(cause)),
+                BankHttpDenial::new(kind, Next::Retry)
+            );
+        }
     }
 }

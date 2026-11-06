@@ -166,8 +166,7 @@ impl BankUserSession {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
             Some(Instant::now() + self.maximum_deadline),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         match self
             .oidc
             .finish_authorization(pending, callback, &scope)
@@ -191,8 +190,7 @@ impl BankUserSession {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
             Some(Instant::now() + self.maximum_deadline),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         if self
             .oidc
             .revoke_credential(&credential, &scope)

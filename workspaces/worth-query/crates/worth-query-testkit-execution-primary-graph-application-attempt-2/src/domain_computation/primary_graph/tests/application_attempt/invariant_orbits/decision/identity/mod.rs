@@ -2,10 +2,7 @@
 
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::Next;
 
-use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::probe;
-use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::program;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::*;
-use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::world;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::world::World;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::aggregate_observation::AggregateObservation;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
@@ -55,7 +52,7 @@ pub fn read(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) -> Re
                 .project(
                     &phase,
                     |reader| {
-                        let root = reader.resolve_entity(NodeKey::reference(), key).unwrap();
+                        let root = reader.resolve_entity(NodeKey::at("NodeKey"), key).unwrap();
                         reader
                             .orbit(Next::reference(), &root)
                             .unwrap()

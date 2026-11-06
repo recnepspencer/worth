@@ -273,3 +273,10 @@ frontier = ["worth-query-execution"]
 area = "primary-graph-authorization"
 owners = ["domain_computation/primary_graph/tests/authorization", "domain_computation/primary_graph/tests/invariant_projection"]
 delegates = []
+
+[[splits]]
+court = "worth-query-court-decl-host-native-fragments"
+frontier = ["worth-query-decl", "worth-query-host"]
+area = "native-fragments"
+owners = ["native_fragments"]
+delegates = []

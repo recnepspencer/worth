@@ -1,6 +1,5 @@
 //! Real installed snapshot callbacks use the pinned Native complete walk.
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::*;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world;
 use worth_execution::ExecutionRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionTraversalDenialKind;
@@ -24,7 +23,9 @@ fn snapshot_walks_mint_local_identities_without_rereading_metadata() {
                 .project(
                     &phase,
                     |reader| {
-                        let root = reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap();
+                        let root = reader
+                            .resolve_entity(NodeKey::at("NodeKey"), 0_u64)
+                            .unwrap();
                         let before = reader.work();
                         let walk = reader
                             .walk(Next::reference(), RelationDirection::Forward, &root)
@@ -106,7 +107,7 @@ fn snapshot_walks_mint_local_identities_without_rereading_metadata() {
         .entities()
         .map(|id| {
             snapshot
-                .field(&execution, &id, NodeKey::reference())
+                .field(&execution, &id, NodeKey::at("NodeKey"))
                 .unwrap()
                 .unwrap()
         })
@@ -147,7 +148,7 @@ fn snapshot_walk_refuses_foreign_roots_and_a_swallowed_partial_stop() {
                 .invariant
                 .project(
                     &phase,
-                    |r| r.resolve_entity(NodeKey::reference(), 0_u64).unwrap(),
+                    |r| r.resolve_entity(NodeKey::at("NodeKey"), 0_u64).unwrap(),
                     Allocation::SystemAllocation,
                 )
                 .unwrap()
@@ -172,7 +173,9 @@ fn snapshot_walk_refuses_foreign_roots_and_a_swallowed_partial_stop() {
                             WorthQueryInvariantProjectionTraversalDenialKind::ForeignIdentity
                         );
                         assert_eq!(reader.work(), before);
-                        let local = reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap();
+                        let local = reader
+                            .resolve_entity(NodeKey::at("NodeKey"), 0_u64)
+                            .unwrap();
                         assert_eq!(
                             reader
                                 .walk(Next::reference(), RelationDirection::Forward, &local)
@@ -196,7 +199,9 @@ fn snapshot_walk_refuses_foreign_roots_and_a_swallowed_partial_stop() {
             Some(80),
             selected,
             |reader| {
-                let local = reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap();
+                let local = reader
+                    .resolve_entity(NodeKey::at("NodeKey"), 0_u64)
+                    .unwrap();
                 let error = reader
                     .walk(Next::reference(), RelationDirection::Forward, &local)
                     .unwrap_err();
@@ -230,7 +235,9 @@ fn snapshot_walk_refuses_foreign_roots_and_a_swallowed_partial_stop() {
                 None,
                 selected,
                 |reader| {
-                    let local = reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap();
+                    let local = reader
+                        .resolve_entity(NodeKey::at("NodeKey"), 0_u64)
+                        .unwrap();
                     before.set(Some(reader.work()));
                     cancellation.cancel();
                     let refusal = if reachability {
@@ -283,7 +290,9 @@ fn snapshot_walk_keeps_scope_payment_after_result_drop_and_spends_cumulative_ser
             None,
             selected.clone(),
             |reader| {
-                let root = reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap();
+                let root = reader
+                    .resolve_entity(NodeKey::at("NodeKey"), 0_u64)
+                    .unwrap();
                 reader
                     .walk(Next::reference(), RelationDirection::Forward, &root)
                     .unwrap()
@@ -308,7 +317,9 @@ fn snapshot_walk_keeps_scope_payment_after_result_drop_and_spends_cumulative_ser
                 None,
                 selected.clone(),
                 |reader| {
-                    let root = reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap();
+                    let root = reader
+                        .resolve_entity(NodeKey::at("NodeKey"), 0_u64)
+                        .unwrap();
                     let roots = vec![root; count];
                     reader
                         .closure(Next::reference(), RelationDirection::Forward, &roots)

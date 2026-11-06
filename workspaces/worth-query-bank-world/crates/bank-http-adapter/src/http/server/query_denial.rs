@@ -14,6 +14,7 @@ use super::super::protocol::{
 
 pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial {
     match denial {
+        BankApplicationQueryDenial::HistoryOutput(_) => internal_denied(),
         BankApplicationQueryDenial::ExecutionRequest(cause) => {
             super::advancement_denial::advancement(cause)
         }
@@ -24,7 +25,8 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         | BankApplicationQueryDenial::CapabilityInstallation(_)
         | BankApplicationQueryDenial::PreviewSession(_)
         | BankApplicationQueryDenial::ContinuationExecution(_)
-        | BankApplicationQueryDenial::LiveOpen(_) => unavailable(),
+        => unavailable(),
+        BankApplicationQueryDenial::LiveOpen(cause) => live_open(cause.kind()),
         BankApplicationQueryDenial::PrincipalResolution(
             worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind::Stopped(stop),
         ) => super::mutation_application::pending_execution_stop(stop),
@@ -45,6 +47,7 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
 
 mod managed_index;
 use managed_index::managed_index;
+pub(in crate::http::server) use managed_index::work as managed_work;
 
 fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
     use BankProductSelectionDenialKind as Selection;
@@ -136,6 +139,7 @@ fn execution(kind: BankApplicationOneShotDenialKind) -> BankHttpDenial {
         Execution::ExecutionRequest(kind) => {
             super::mutation_application::pending_execution_denial(kind)
         }
+        Execution::Content(cause) => super::relational_execution_denial::content(cause),
         Execution::Authorization(kind) => authorization_denial(kind),
         Execution::Cancelled => cancelled(),
         Execution::DeadlineExceeded => deadline(),
@@ -198,7 +202,7 @@ fn projection(kind: BankApplicationProjectionDenialKind) -> BankHttpDenial {
     }
 }
 
-fn value_decode(
+pub(in crate::http::server) fn value_decode(
     cause: worth_query_host::facade::primary_graph::WorthQueryValueDecodeDenial,
 ) -> BankHttpDenial {
     use worth_query_host::facade::{
@@ -206,6 +210,11 @@ fn value_decode(
         runtime::{LeaseDenial, WorkCeilingDenial as Request},
     };
     match cause {
+        Decode::Content(cause) => super::relational_execution_denial::content(cause),
+        Decode::ContentProjectionWorkExceeded => exhausted(),
+        Decode::RequiredContentFieldAbsent
+        | Decode::ContentBasisUnavailable
+        | Decode::ContentProjectionWorkOverflow => internal_denied(),
         Decode::Checkpoint(stop) => super::advancement_denial::request(Request::Stopped(stop)),
         Decode::Memory(limit) => super::advancement_denial::request(Request::Admission(
             LeaseDenial::MemoryExhausted(limit),
@@ -251,50 +260,8 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
     }
 }
 
-fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
-    use BankApplicationOutputSettlementDenialKind as Settlement;
-    match kind {
-        Settlement::ManagedCleanupRequired(_) => {
-            BankHttpDenial::new(Kind::ManagedCleanupRequired, Next::ContactOperator)
-        }
-        Settlement::BridgeConditional(_)
-        | Settlement::CorrespondenceDelivery(_)
-        | Settlement::ProductDelivery(_) => unavailable(),
-        Settlement::ExecutionRequest(cause) => super::advancement_denial::advancement(cause),
-        Settlement::RelationalExecution(cause) => super::relational_execution_denial::denial(cause),
-        Settlement::SourceQueryInstallation(_) => unavailable(),
-        Settlement::SourcePrincipal(_) => stale(),
-        Settlement::SourceScope(kind) => entity(kind),
-        Settlement::SourceQueryAdmission(kind) => admission(kind),
-        Settlement::SourceQueryExecution(kind) => execution(kind),
-        Settlement::RequestAuthorization(kind) => authorization_denial(kind),
-        Settlement::Cancelled => cancelled(),
-        Settlement::TimedOut => deadline(),
-        Settlement::ProducerDomainDenied => malformed(),
-        Settlement::Superseded
-        | Settlement::PublicationStale
-        | Settlement::ForeignSource
-        | Settlement::ForeignDemand
-        | Settlement::ForeignSettlement
-        | Settlement::RetainedBasisUnavailable
-        | Settlement::Closed => stale(),
-        Settlement::WorkBudgetExceeded
-        | Settlement::RetentionBudgetExceeded
-        | Settlement::PublicationCapacityExceeded => exhausted(),
-        Settlement::MissingApplicableProducer
-        | Settlement::AmbiguousApplicableProducer
-        | Settlement::ProducerUnavailable
-        | Settlement::SchedulingRejected
-        | Settlement::SchedulingDeferred
-        | Settlement::NoEffect => unavailable(),
-        Settlement::ProductSelection(kind) => product_selection(kind),
-        Settlement::RequiredSuccessorStateUnavailable
-        | Settlement::DuplicatePerformedSource
-        | Settlement::IncompleteDependencyCoverage
-        | Settlement::ManagedSourceExpansionUnsupported
-        | Settlement::UnobservedWrite(_) => internal_denied(),
-    }
-}
+mod output_settlement;
+use output_settlement::output_settlement;
 
 const fn malformed() -> BankHttpDenial {
     BankHttpDenial::new(Kind::MalformedRequest, Next::CorrectRequest)
@@ -339,3 +306,18 @@ mod producer_quote_tests;
 #[cfg(test)]
 #[path = "query_denial/request_stop_tests.rs"]
 mod request_stop_tests;
+
+fn live_open(kind: bank_server::BankApplicationLiveOpenDenialKind) -> BankHttpDenial {
+    use bank_server::BankApplicationLiveOpenDenialKind as Live;
+    match kind {
+        Live::Content(cause) => super::relational_execution_denial::content(cause),
+        Live::Admission(cause) => admission(cause),
+        Live::AuthorizationDenied(cause) => authorization_denial(cause),
+        Live::ForeignAdvancementPhase | Live::BindingMismatch => internal_denied(),
+        Live::LiveContractMissing
+        | Live::ScopeIdentityUnavailable
+        | Live::BasisReleaseFailed
+        | Live::ProviderVersionUnavailable
+        | Live::BridgeBasisRejected => unavailable(),
+    }
+}

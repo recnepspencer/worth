@@ -48,7 +48,7 @@ pub fn resume(
             let root = selected
                 .resolve_entity(
                     &phase,
-                    DerivedIdentityField::reference(),
+                    DerivedIdentityField::at("DerivedIdentityField"),
                     "derived-report".to_owned(),
                     scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

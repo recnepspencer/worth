@@ -8,7 +8,12 @@ mod court;
 pub use command::{Birth, BirthBinding};
 pub struct Next;
 impl Next {
-    pub fn reference<S: Scenario>() -> ApplicationRelationRef<S, Self, Occurrence, Occurrence> {
+    pub fn reference<S: Scenario>() -> ApplicationRelationRef<
+        S,
+        Self,
+        Occurrence<<S as Scenario>::Boundary>,
+        Occurrence<<S as Scenario>::Boundary>,
+    > {
         ApplicationRelationRef::from_schema_identifiers(
             "ForeignNext",
             "Occurrence",
@@ -43,20 +48,15 @@ pub fn declare<S: Scenario>(
     let preserve = PreserveOp::reference();
     command::declare(
         schema
-            .relation(
-                Next::reference(),
-                Occurrence::reference(),
-                Occurrence::reference(),
-            )
             .operation_link(initial, Next::reference())
             .operation_read_relation(preserve, Next::reference())
             .operation_link(preserve, Next::reference())
             .operation_unlink(preserve, Next::reference()),
     )
 }
-type Target<S> = WorthQueryInvariantMutationTarget<S, Occurrence>;
+type Target<S> = WorthQueryInvariantMutationTarget<S, Occurrence<<S as Scenario>::Boundary>>;
 /// `Keep` carries the anchor unchanged through edits addressed to the fork.
-pub enum Decision<S> {
+pub enum Decision<S: Scenario> {
     Keep(Option<Target<S>>),
     Edit {
         own: Option<Target<S>>,
@@ -67,14 +67,14 @@ pub enum Decision<S> {
 }
 pub fn initial<S: Scenario>(
     writer: &mut CandidateWriter<'_, S, producer::Binding<S>>,
-    source: &WorthQueryApplicationEffectEntity<S, Node>,
+    source: &WorthQueryApplicationEffectEntity<S, Node<S>>,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     let own = writer.create_entity_in_context(
         source,
-        Occurrence::reference(),
+        Occurrence::<S::Boundary>::reference(),
         WorthQueryApplicationEntityKey::new("own-orbit-member").unwrap(),
     )?;
-    writer.initialize_field(&own, Number::reference(), 0)?;
+    writer.initialize_field(&own, Number::<S::Boundary>::at("Number"), 0)?;
     writer.link(Next::reference(), "own-self-loop", &own, &own)?;
     writer.create_member::<InitialNodes<S>>("0", &own)
 }
@@ -101,7 +101,7 @@ pub fn read<S: Scenario>(
             own.map(|own| reader.mutation_target(own)).transpose()?,
         ));
     }
-    let foreign = reader.resolve_entity(Number::reference(), 1)?;
+    let foreign = reader.resolve_entity(Number::<S::Boundary>::at("Number"), 1)?;
     let join = value == Some(JOIN_ORBIT);
     if !join {
         let orbit = reader
@@ -167,7 +167,7 @@ pub fn trim<S: Scenario>(
         writer.link(Next::reference(), "mixed-reverse", &foreign, &own)?;
         writer.preserve_member::<SurvivingNodes<S>>(key, &own)?;
     } else {
-        writer.delete_entity(Occurrence::reference(), &own)?;
+        writer.delete_entity(Occurrence::<S::Boundary>::reference(), &own)?;
         writer.retire_member::<RetiredNodes<S>>(key, &own)?;
         writer.link(Next::reference(), "foreign-self-loop", &foreign, &foreign)?;
     }

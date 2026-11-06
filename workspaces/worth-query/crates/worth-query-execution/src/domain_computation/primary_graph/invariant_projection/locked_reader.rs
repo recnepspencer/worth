@@ -4,11 +4,7 @@ use std::marker::PhantomData;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::sync::Arc;
 
-use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
-    ApplicationScalarValueBinding, ApplicationSchema, DeclaredApplicationFieldValue,
-    EqualityPredicate, WritePosture,
-};
+use worth_query_installation::facade::{ApplicationReadableScalarValueBinding, ApplicationSchema};
 
 use super::read_basis::NativeProjectionRead;
 use super::work::WorthQueryInvariantProjectionWorkBudget;
@@ -18,9 +14,7 @@ use super::{
     WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionWork,
     WorthQueryRealizedProjectionScope,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
-};
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial;
 
 mod borrowed_snapshot;
 #[path = "locked_reader/content.rs"]
@@ -51,7 +45,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) native: NativeProjectionRead<'runtime>,
     pub(super) layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     pub(super) snapshot: &'runtime worth_relational::facade::snapshots::SnapshotHandle,
-    entity_resolution: &'runtime super::super::WorthQueryInstalledEntityResolutionContext,
+    pub(super) entity_resolution: &'runtime super::super::WorthQueryInstalledEntityResolutionContext,
     pub(super) observation: worth_relational::facade::mvcc::RelationalBranchObservation,
     pub(super) authority_identity: u64,
     pub(super) binding_identity: &'runtime worth_query_installation::facade::ApplicationSchemaBindingIdentity,

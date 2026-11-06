@@ -5,8 +5,8 @@ use super::{host, mutation, prefix, query, rule};
 use stats_alloc::Region;
 use std::sync::{atomic::Ordering, Arc, Mutex};
 use worth_query_host::facade::{
-    admission::authenticated_principal::*, application_contribution::*, application_entry::*,
-    primary_graph::*, runtime::ExecutionAllocationPolicy,
+    admission::authenticated_principal::*, application_entry::*, primary_graph::*,
+    runtime::ExecutionAllocationPolicy,
 };
 
 mod cancellation;

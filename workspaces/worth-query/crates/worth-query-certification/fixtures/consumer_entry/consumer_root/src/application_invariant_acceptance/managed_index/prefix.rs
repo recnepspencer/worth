@@ -13,11 +13,11 @@ use worth_query_host::facade::primary_graph::*;
 #[cfg(test)]
 #[path = "prefix/cost_stages.rs"]
 pub(super) mod cost_stages;
-#[path = "prefix/installed_version.rs"]
-mod installed_version;
+#[cfg(test)]
+include!("prefix/installed_version.rs");
 #[path = "prefix/storage.rs"]
 mod storage;
-pub use installed_version::IncompatibleVersion;
+
 #[path = "prefix/definition.rs"]
 mod definition;
 #[path = "prefix/predicate.rs"]

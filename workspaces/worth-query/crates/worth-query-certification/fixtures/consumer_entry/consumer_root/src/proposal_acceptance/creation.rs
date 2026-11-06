@@ -26,8 +26,7 @@ worth_query_structured_value_binding!(pub InputBinding for CreateModel { identit
 worth_query_structured_value_binding!(pub ResultBinding for Created { identity:"proposal-application.create.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity:"proposal-application.create.denial.v1" });
 worth_query_operation!(pub Create for Schema, input InputBinding);
-worth_query_operation_reads!(Create => [RegistryName,PrincipalIdentity]);
-worth_query_operation_writes!(Create => [ModelName, TargetName, Retention]);
+
 worth_query_operation_creates!(Create => [Model, Target]);
 worth_query_operation_links!(Create => [ModelTarget]);
 fn registry(_: &CreateModel) -> String {
@@ -42,8 +41,8 @@ worth_query_mutation_binding!(pub Binding for CreateModel, schema Schema,
     outputs NoApplicationMutationOutputs,
     principal PrincipalBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Registry, RegistryFacts, RegistryName, String, ReadOnly, NoApplicationUnit,
-    field RegistryName::reference(), value registry,
+    scope RegistryName,
+    field RegistryName::at("RegistryName"), value registry,
 );
 
 pub struct Handler;
@@ -54,12 +53,14 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<CreationTargets, Denial> {
         let observed = (|| -> Result<_, HandlerExecutionDenial> {
-            let registry = reader.resolve_entity(RegistryName::reference(), "models".to_owned())?;
-            reader.field(&registry, RegistryName::reference())?;
-            let author = reader.resolve_entity(PrincipalIdentity::reference(), 1u64)?;
-            let reviewer = reader.resolve_entity(PrincipalIdentity::reference(), 2u64)?;
-            reader.field(&author, PrincipalIdentity::reference())?;
-            reader.field(&reviewer, PrincipalIdentity::reference())?;
+            let registry =
+                reader.resolve_entity(RegistryName::at("RegistryName"), "models".to_owned())?;
+            reader.field(&registry, RegistryName::at("RegistryName"))?;
+            let author = reader.resolve_entity(PrincipalIdentity::at("PrincipalIdentity"), 1u64)?;
+            let reviewer =
+                reader.resolve_entity(PrincipalIdentity::at("PrincipalIdentity"), 2u64)?;
+            reader.field(&author, PrincipalIdentity::at("PrincipalIdentity"))?;
+            reader.field(&reviewer, PrincipalIdentity::at("PrincipalIdentity"))?;
             Ok(CreationTargets {
                 registry: reader.mutation_target(&registry)?,
                 principals: [
@@ -92,7 +93,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&model, ModelName::reference(), input.name.clone())
+                .initialize_field(&model, ModelName::at("ModelName"), input.name.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             let target = writer
                 .create_entity_in_context(
@@ -103,10 +104,10 @@ impl OperationHandler<Schema, Binding> for Handler {
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&target, TargetName::reference(), "feature".to_owned())
+                .initialize_field(&target, TargetName::at("TargetName"), "feature".to_owned())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&target, Retention::reference(), input.days)
+                .initialize_field(&target, Retention::at("Retention"), input.days)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .link(
@@ -134,13 +135,13 @@ pub fn declare(
         schema
             .operation(op.definition().no_external_effect().no_aftermath().finish())
             .operation_projection_work_budget(op, 16)
-            .operation_read_field(op, RegistryName::reference())
-            .operation_read_field(op, PrincipalIdentity::reference())
+            .operation_read_field(op, RegistryName::at("RegistryName"))
+            .operation_read_field(op, PrincipalIdentity::at("PrincipalIdentity"))
             .operation_create(op, Model::reference())
             .operation_create(op, Target::reference())
-            .operation_write(op, ModelName::reference())
-            .operation_write(op, TargetName::reference())
-            .operation_write(op, Retention::reference())
+            .operation_write(op, ModelName::at("ModelName"))
+            .operation_write(op, TargetName::at("TargetName"))
+            .operation_write(op, Retention::at("Retention"))
             .operation_link(op, ModelTarget::reference())
             .application_mutation_binding::<Binding>(),
     ))

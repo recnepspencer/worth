@@ -7,8 +7,8 @@ pub struct ExternalWrite {
 }
 worth_query_structured_value_binding!(pub Input for ExternalWrite { identity: "succession.destroy.input" });
 worth_query_operation!(pub Operation for Schema, input Input; access {
-    read_entities: [Node, Realization]; read_fields: [Key, RealizationKey, RealizedValue];
-    read_relations: [Realizes]; writes: [RealizedValue]; deletes: [Node, Realization]; unlinks: [Realizes];
+    read_entities: [Node, Realization]; read_fields: [Key::at("Key"), RealizationKey::at("RealizationKey"), RealizedValue::at("RealizedValue")];
+    read_relations: [Realizes]; writes: [RealizedValue::at("RealizedValue")]; deletes: [Node, Realization]; unlinks: [Realizes];
 });
 pub fn scope(input: &ExternalWrite) -> String {
     input.key.clone()
@@ -22,7 +22,7 @@ worth_query_mutation_binding!(pub Binding for ExternalWrite, schema Schema,
     idempotency u64, identity "succession.destroy.command", decision (Target, RealizationTarget), denial DenialBinding,
     handler identity "succession.destroy.handler", outputs Outputs,
     principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Key, String, ReadOnly, NoApplicationUnit, field Key::reference(), value scope,
+    scope Key, field Key::at("Key"), value scope,
 );
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
@@ -32,7 +32,7 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<(Target, RealizationTarget), Denial> {
         let result = (|| {
-            let node = reader.resolve_entity(Key::reference(), input.key.clone())?;
+            let node = reader.resolve_entity(Key::at("Key"), input.key.clone())?;
             reader.entity(&node, Node::reference())?;
             let edges = reader
                 .relations_to(Realizes::reference(), &node)
@@ -43,7 +43,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 .from();
             reader.entity(output, Realization::reference())?;
             if input.action == 3 {
-                reader.field(output, RealizedValue::reference())?;
+                reader.field(output, RealizedValue::at("RealizedValue"))?;
             }
             Ok((
                 reader.mutation_target(&node)?,
@@ -68,7 +68,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 0 => writer.unlink(Realizes::reference(), &output, &node),
                 1 => writer.delete_entity(Realization::reference(), &output),
                 2 => writer.delete_entity(Node::reference(), &node),
-                3 => writer.write_field(&output, RealizedValue::reference(), 42),
+                3 => writer.write_field(&output, RealizedValue::at("RealizedValue"), 42),
                 _ => unreachable!(),
             }
         })();

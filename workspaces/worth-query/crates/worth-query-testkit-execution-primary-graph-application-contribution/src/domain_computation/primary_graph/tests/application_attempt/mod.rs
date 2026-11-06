@@ -1,23 +1,10 @@
 use std::time::Duration;
-use crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
-use crate::domain_computation::primary_graph::tests::fixture::program_roster::installed_program_support;
-use crate::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 use crate::domain_computation::primary_graph::tests::fixture::AccountStatus;
-use crate::domain_computation::primary_graph::tests::fixture::program_required_binding::ProgramRequiredInput;
-use crate::domain_computation::primary_graph::tests::fixture::ProgramRequiredOperation;
 use crate::domain_computation::primary_graph::tests::fixture::TouchAccountOperation;
-use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind;
-use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage;
-use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
-use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitTerminalKind;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
 pub use crate::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_operation;
 pub use crate::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_program;
-use crate::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_mutation_free_program;
-use crate::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_program_on_selected;
-use crate::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_program_with_emit;
-use crate::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_program_with_expected_status;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::decision_currentness::assert_changed_decision;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::decision_currentness::assert_product_basis_stale;
 pub fn idempotency(key: u8, intent: u8) -> WorthQueryApplicationIdempotencyBinding {
@@ -79,7 +66,7 @@ pub fn resolved_account(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase.phase_for_application_for_test(&world.application),
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             status.to_string(),
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,

@@ -16,7 +16,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
     ) -> HandlerResult<Decision<S>, ()> {
         CONTACTS.with(|count| count.set(count.get() + 1));
         let result = (|| {
-            let source = reader.resolve_entity(Id::reference(), input.id)?;
+            let source = reader.resolve_entity(schema::id::<S>(), input.id)?;
             let body = match reader.prior_output_if_present::<Binding<S>, Body<S>>().map_err(HandlerExecutionDenial::new)? {
                 Some(body) => body,
                 None => reader.prior_output::<super::super::super::producer::Binding<S>, super::super::super::producer::Role<S>>().map_err(HandlerExecutionDenial::new)?,
@@ -26,7 +26,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                 None => reader.prior_output::<super::super::super::producer::Binding<S>, super::super::super::producer::Cell<S>>().map_err(HandlerExecutionDenial::new)?,
             };
             let mut next_cell = reader
-                .field(&cell, Id::reference())?
+                .field(&cell, schema::id::<S>())?
                 .and_then(|id| id.checked_add(1))
                 .ok_or_else(|| {
                     HandlerExecutionDenial::new(std::io::Error::other(
@@ -47,11 +47,11 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                     let word = super::super::super::content::read(reader, entity)?;
                     assert_eq!(
                         Some(word),
-                        reader.field(entity, Value::reference())?,
+                        reader.field(entity, schema::value::<S>())?,
                         "the immutable field's content must match its ordinary value"
                     );
                 }
-                let cell_id = reader.field(&cell, Id::reference())?.unwrap();
+                let cell_id = reader.field(&cell, schema::id::<S>())?.unwrap();
                 if cell_id != input.id * 10 + 2 {
                     assert_eq!(
                         super::super::super::content::read(reader, &cell)?,
@@ -61,12 +61,12 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                 }
                 source_value + next_cell
             } else if S::MODE == 7 && input.id == 10 {
-                let peer = reader.resolve_entity(Id::reference(), 111)?;
-                reader.field(&peer, Value::reference())?.unwrap_or(46)
+                let peer = reader.resolve_entity(schema::id::<S>(), 111)?;
+                reader.field(&peer, schema::value::<S>())?.unwrap_or(46)
             } else {
                 46
             };
-            reader.field(&body, Value::reference())?;
+            reader.field(&body, schema::value::<S>())?;
             let mut previous_edges = Vec::new();
             for edge in reader
                 .relations_from(Peer::reference(), &cell)
@@ -79,7 +79,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             }
             let mut own_edges = Vec::new();
             if matches!(S::MODE, 64) && input.id == 10 {
-                let foreign = reader.resolve_entity(Id::reference(), 111)?;
+                let foreign = reader.resolve_entity(schema::id::<S>(), 111)?;
                 let walked = reader
                     .walk(OwnCell::reference(), RelationDirection::Reverse, &foreign)
                     .map_err(HandlerExecutionDenial::new)?;
@@ -138,8 +138,8 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                         .derived_relations_from(DerivedCell::reference(), &body)
                         .map_err(HandlerExecutionDenial::new)?;
                     if cells.len() != 1
-                        || reader.field(cells[0].to(), Id::reference())?
-                            != reader.field(&cell, Id::reference())?
+                        || reader.field(cells[0].to(), schema::id::<S>())?
+                            != reader.field(&cell, schema::id::<S>())?
                     {
                         return Err(HandlerExecutionDenial::new(std::io::Error::other(
                             "derived predecessor cell is incomplete",
@@ -168,10 +168,10 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                 }
             }
             let selected_stage = reader
-                .resolve_optional_entity(Id::reference(), if S::MODE == 15 { 101 } else { 20 })?;
+                .resolve_optional_entity(schema::id::<S>(), if S::MODE == 15 { 101 } else { 20 })?;
             let selected_stage =
                 if matches!(S::MODE, 30 | 40 | 41 | 43 | 61) && selected_stage.is_none() {
-                    reader.resolve_optional_entity(Id::reference(), 30)?
+                    reader.resolve_optional_entity(schema::id::<S>(), 30)?
                 } else {
                     selected_stage
                 };
@@ -179,12 +179,12 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                 if let Some(stage) = &selected_stage {
                     assert_eq!(
                         super::super::super::content::read(reader, stage)?,
-                        reader.field(stage, Id::reference())?.unwrap() * 100,
+                        reader.field(stage, schema::id::<S>())?.unwrap() * 100,
                         "a freshly restored stage supplies its actual candidate bytes"
                     );
                 }
                 if input.id == 11 {
-                    let preceding_writer = reader.resolve_entity(Id::reference(), 101)?;
+                    let preceding_writer = reader.resolve_entity(schema::id::<S>(), 101)?;
                     assert_eq!(
                         super::super::super::content::read(reader, &preceding_writer)?,
                         u64::from(selected_stage.is_some()),
@@ -196,13 +196,13 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                 && input.id == 10
                 && selected_stage
                     .as_ref()
-                    .map(|stage| reader.field(stage, Id::reference()))
+                    .map(|stage| reader.field(stage, schema::id::<S>()))
                     .transpose()?
                     .flatten()
                     == Some(30)
             {
-                let foreign = reader.resolve_entity(Id::reference(), 113)?;
-                reader.entity(&foreign, Node::reference())?;
+                let foreign = reader.resolve_entity(schema::id::<S>(), 113)?;
+                reader.entity(&foreign, schema::node::<S>())?;
                 Some(reader.mutation_target(&foreign)?)
             } else {
                 None
@@ -212,7 +212,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                 .map(|stage| reader.mutation_target(&stage))
                 .transpose()?;
             if S::MODE == 21 {
-                let surviving_stage = reader.resolve_entity(Id::reference(), 30)?;
+                let surviving_stage = reader.resolve_entity(schema::id::<S>(), 30)?;
                 let component = reader
                     .component_of(Components::reference(), &surviving_stage)
                     .map_err(HandlerExecutionDenial::new)?;
@@ -225,7 +225,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             }
             let other_stage = if matches!(S::MODE, 60 | 61 | 64 | 30 | 40 | 41) && stage.is_some() {
                 reader
-                    .resolve_optional_entity(Id::reference(), 30)?
+                    .resolve_optional_entity(schema::id::<S>(), 30)?
                     .filter(|other| selected_stage_id != Some(other.entity_id()))
                     .map(|other| reader.mutation_target(&other))
                     .transpose()?
@@ -233,10 +233,10 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                 None
             };
             let visibility_target = if S::MODE == 64 && input.id == 10 && next_cell == 103 {
-                let foreign_body = reader.resolve_entity(Id::reference(), 111)?;
+                let foreign_body = reader.resolve_entity(schema::id::<S>(), 111)?;
                 Some(reader.mutation_target(&foreign_body)?)
             } else if S::MODE == 28 && input.id == 11 {
-                let foreign_body = reader.resolve_entity(Id::reference(), 10)?;
+                let foreign_body = reader.resolve_entity(schema::id::<S>(), 10)?;
                 Some(reader.mutation_target(&foreign_body)?)
             } else {
                 None
@@ -270,7 +270,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
         let result = (|| {
             if let Some(foreign) = decision.foreign_member {
                 let foreign = writer.projected_entity(&foreign)?;
-                writer.delete_entity(Node::reference(), &foreign)?;
+                writer.delete_entity(schema::node::<S>(), &foreign)?;
             }
             for (from, to) in decision.previous_edges {
                 let from = writer.projected_entity(&from)?;
@@ -287,19 +287,20 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                 }
             }
             let previous = writer.projected_entity(&decision.previous_cell)?;
-            writer.delete_entity(Node::reference(), &previous)?;
+            writer.delete_entity(schema::node::<S>(), &previous)?;
             writer.retire_output::<RetiredCell<S>>(&previous)?;
             let body = writer.projected_entity(&decision.body)?;
             writer.write_field(
                 &body,
-                Value::reference(),
+                schema::value::<S>(),
                 if decision.stage.is_some() { 1 } else { 0 },
             )?;
             if S::MODE == 43 {
                 writer
                     .write_content(
                         &body,
-                        super::super::super::content::field(),
+                        super::super::super::content::field::<S>()
+                            .expect("the content scenario declares its field"),
                         &(if decision.stage.is_some() { 1 } else { 0 }),
                     )
                     .expect("valid installed word content");
@@ -309,16 +310,17 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             <S::Boundary as sheet_boundary::Profile>::trim(writer, decision.boundary, &source)?;
             let cell = writer.create_entity_in_context(
                 &source,
-                Node::reference(),
+                schema::node::<S>(),
                 WorthQueryApplicationEntityKey::new("body-cell-successor").unwrap(),
             )?;
-            writer.initialize_field(&cell, Id::reference(), decision.next_cell)?;
-            writer.initialize_field(&cell, Value::reference(), decision.cell_value)?;
+            writer.initialize_field(&cell, schema::id::<S>(), decision.next_cell)?;
+            writer.initialize_field(&cell, schema::value::<S>(), decision.cell_value)?;
             if S::MODE == 43 {
                 writer
                     .initialize_content(
                         &cell,
-                        super::super::super::content::field(),
+                        super::super::super::content::field::<S>()
+                            .expect("the content scenario declares its field"),
                         &decision.cell_value,
                     )
                     .expect("valid installed word content");

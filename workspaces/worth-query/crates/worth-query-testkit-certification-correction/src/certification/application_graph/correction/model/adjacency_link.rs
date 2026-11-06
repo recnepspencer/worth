@@ -27,8 +27,8 @@ fn key(input: &Link) -> String {
 }
 worth_query_structured_value_binding!(pub Input for Link { identity: "adjacency-correction.link.input.v1" });
 worth_query_operation!(pub ConfigureAdjacencyLink for NumericSchema, input Input);
-worth_query_operation_reads!(ConfigureAdjacencyLink => [Number, Key, Primary, AuthoredReference]);
-worth_query_operation_writes!(ConfigureAdjacencyLink => [Primary]);
+worth_query_operation_reads!(ConfigureAdjacencyLink => [Number, AuthoredReference]);
+
 impl OperationLinks<ConfigureAdjacencyLink> for AuthoredReference {}
 impl OperationUnlinks<ConfigureAdjacencyLink> for AuthoredReference {}
 pub struct Decision {
@@ -43,8 +43,8 @@ worth_query_mutation_binding!(
     handler identity "adjacency-correction.link.v1", outputs NoApplicationMutationOutputs,
     principal ActorBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-    field Key::reference(), value key,
+    scope Key,
+    field Key::at("Key"), value key,
 );
 impl ApplicationDeclaredOperation<NumericSchema> for ConfigureAdjacencyLink {
     fn declare_access(
@@ -52,10 +52,10 @@ impl ApplicationDeclaredOperation<NumericSchema> for ConfigureAdjacencyLink {
     ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
         schema
             .operation_read_entity(Self::reference(), Number::reference())
-            .operation_read_field(Self::reference(), Key::reference())
-            .operation_read_field(Self::reference(), Primary::reference())
+            .operation_read_field(Self::reference(), Key::at("Key"))
+            .operation_read_field(Self::reference(), Primary::at("Primary"))
             .operation_read_relation(Self::reference(), AuthoredReference::reference())
-            .operation_write(Self::reference(), Primary::reference())
+            .operation_write(Self::reference(), Primary::at("Primary"))
             .operation_link(Self::reference(), AuthoredReference::reference())
             .operation_unlink(Self::reference(), AuthoredReference::reference())
     }
@@ -72,15 +72,15 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         input: &Link,
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, Binding>,
     ) -> HandlerResult<Decision, MissingValue> {
-        let from = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+        let from = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
             Ok(value) => value,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
-        let to = match reader.resolve_entity(Key::reference(), input.other.clone()) {
+        let to = match reader.resolve_entity(Key::at("Key"), input.other.clone()) {
             Ok(value) => value,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
-        match reader.field(&from, Primary::reference()) {
+        match reader.field(&from, Primary::at("Primary")) {
             Ok(Some(_)) => {}
             Ok(None) => return HandlerResult::DomainDenied(MissingValue),
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
@@ -130,7 +130,9 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
             }
         };
-        if let Err(cause) = writer.write_field(&from, Primary::reference(), input.primary) {
+        if let Err(cause) =
+            writer.write_field(&from, Primary::at("Primary"), Counter(input.primary))
+        {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
         }
         let result = if input.present {
@@ -176,8 +178,8 @@ impl ApplicationCorrectionBinding<NumericSchema> for ReverseLink {
     fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Primary::reference())],
-                InlineCounterBinding::encode(&u64::MAX)
+                [DeclaredPreImageLocus::from_field(Primary::at("Primary")).unwrap()],
+                InlineCounterBinding::encode(&Counter(u64::MAX))
                     .unwrap()
                     .semantic_byte_width(),
             )
@@ -196,10 +198,11 @@ impl ApplicationCorrectionBinding<NumericSchema> for ReverseLink {
         };
         let primary = InlineCounterBinding::decode(
             preimage
-                .field(&DeclaredPreImageLocus::from_field(Primary::reference()))
+                .field(&DeclaredPreImageLocus::from_field(Primary::at("Primary")).unwrap())
                 .ok_or(MissingPreImage)?,
         )
-        .map_err(|_| InvalidPreImage)?;
+        .map_err(|_| InvalidPreImage)?
+        .0;
         Ok(Link {
             key: original.key.clone(),
             other: original.other.clone(),

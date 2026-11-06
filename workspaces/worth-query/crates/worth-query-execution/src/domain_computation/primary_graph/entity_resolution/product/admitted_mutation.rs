@@ -2,82 +2,60 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use worth_query_declaration::facade::application_schema::fragment::RecordSelection;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub(in crate::domain_computation::primary_graph) fn resolve_entity_admitted_with_native_access<
-        Aspect,
-        Entity,
-        Field,
-        Value,
-        Write,
-        Unit,
+        Field: RecordSelection,
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-        value: Value,
+        field: Field,
+        value: Field::Value,
         request: &WorthQueryRequestScope,
 
         native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
-    ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
+    ) -> Result<
+        WorthQueryApplicationEntityIdentity<Schema, Field::Entity>,
+        WorthQueryEntityResolutionDenial,
+    > {
         self.resolve_entity_selector_admitted_with_native_access(
             execution, field, &value, request, native,
         )
     }
 
     pub(in crate::domain_computation::primary_graph) fn resolve_entity_selector_admitted_with_native_access<
-        Aspect,
-        Entity,
-        Field,
-        Value,
-        Write,
-        Unit,
+        Field: RecordSelection,
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-        value: &Value,
+        field: Field,
+        value: &Field::Value,
         request: &WorthQueryRequestScope,
-
         native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
-    ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
+    ) -> Result<
+        WorthQueryApplicationEntityIdentity<Schema, Field::Entity>,
+        WorthQueryEntityResolutionDenial,
+    > {
         admit_request(request, field.field())?;
+        let column = self.record_selection(field)?;
+        let locus = column.recipe().locus();
         // The declared field encoder is application-authored work. Its returned
         // value is moved through the framework lookup and identity construction.
+        Field::Binding::validate(value).map_err(|_| {
+            entity_denial(
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::ValueEncodingRejected,
+                ),
+                column.path(),
+            )
+        })?;
         let encoded = Field::Binding::encode(value).map_err(|_| {
             entity_denial(
                 WorthQueryEntityResolutionDenialKind::Refused(
                     ResolutionRefusal::ValueEncodingRejected,
                 ),
-                field.field(),
+                column.path(),
             )
         })?;
         let graph = self.application().runtime.primary_graph().ok_or_else(|| {
@@ -91,7 +69,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
 
         let installed_field = graph
             .layout
-            .equality_field(field.entity(), field.aspect(), field.field())
+            .equality_field(field.entity(), locus.aspect(), field.field())
             .ok_or_else(|| {
                 entity_denial(
                     WorthQueryEntityResolutionDenialKind::Refused(

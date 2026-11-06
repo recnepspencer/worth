@@ -1,24 +1,24 @@
 //! Explicit whole-parent removal, never inferred from child writes.
 use super::super::{
-    ApplicationAspectMarkerIdentity, ApplicationAspectRef, ApplicationEntityMarkerIdentity,
+    fragment::{Aspect, AspectSelection, Entity, Fragment},
     ApplicationOperationProgramTarget, ApplicationOperationRef,
     ApplicationSchemaDeclarationBuilder, OperationRemovesAspects,
 };
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
-    pub fn operation_remove_aspect<Operation, Input, Entity, Aspect>(
+    pub fn operation_remove_aspect<Operation, Input, F, E, A>(
         self,
         operation: ApplicationOperationRef<Schema, Operation, Input>,
-        aspect: ApplicationAspectRef<Schema, Entity, Aspect>,
+        aspect: AspectSelection<F, E, A>,
     ) -> Self
     where
-        Entity: ApplicationEntityMarkerIdentity<Schema>,
-        Aspect:
-            ApplicationAspectMarkerIdentity<Schema, Entity> + OperationRemovesAspects<Operation>,
+        F: Fragment,
+        E: Entity,
+        A: Aspect + OperationRemovesAspects<Operation>,
     {
         self.program(
             operation.name(),
             ApplicationOperationProgramTarget::RemoveAspect {
-                entity: Entity::IDENTIFIER.to_owned(),
+                entity: aspect.entity().to_owned(),
                 aspect: aspect.name().to_owned(),
             },
         )

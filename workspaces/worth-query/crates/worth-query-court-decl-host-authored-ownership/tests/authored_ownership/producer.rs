@@ -5,16 +5,16 @@ impl<S: Scenario> ApplicationOperationMarkerIdentity<S> for Operation {
     type InputBinding = InputBinding;
     const IDENTIFIER: &'static str = "CreateDerived";
 }
-impl OperationReads<Operation> for Id {}
-impl OperationCreates<Operation> for Node {}
+impl<const CONTENT: bool> OperationReads<Operation> for RawId<CONTENT> {}
+impl<const CONTENT: bool> OperationCreates<Operation> for NativeNode<CONTENT> {}
 impl OperationLinks<Operation> for Peer {}
-impl OperationWrites<Operation> for Id {}
-impl OperationWrites<Operation> for Value {}
+impl<const CONTENT: bool> OperationWrites<Operation> for RawId<CONTENT> {}
+impl<const CONTENT: bool> OperationWrites<Operation> for RawValue<CONTENT> {}
 pub struct Outputs;
 impl<S: Scenario> WorthQueryApplicationOutputRole for Role<S> {
     type Schema = S;
     type Contract = Outputs;
-    type Entity = Node;
+    type Entity = Node<S>;
     type Action = WorthQueryCreateOutput;
     type Cardinality = WorthQueryExactlyOneOutput;
     const NAME: &'static str = "derived";
@@ -23,7 +23,7 @@ pub struct Cell<S>(PhantomData<fn() -> S>);
 impl<S: Scenario> WorthQueryApplicationOutputRole for Cell<S> {
     type Schema = S;
     type Contract = Outputs;
-    type Entity = Node;
+    type Entity = Node<S>;
     type Action = WorthQueryCreateOutput;
     type Cardinality = WorthQueryExactlyOneOutput;
     const NAME: &'static str = "cell-or-child-source";
@@ -48,7 +48,7 @@ impl<S: Scenario> ApplicationMutationOutputContract<S> for Outputs {
         <Cell<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
     ];
 }
-type Scope<S> = ApplicationMutationFieldScope<S, Node, Facts, Id, u64, ReadOnly, NoApplicationUnit>;
+type Scope<S> = ApplicationMutationFieldScope<Id<S>>;
 pub struct Binding<S>(PhantomData<fn() -> S>);
 impl<S: Scenario> ApplicationMutationAdmissionBinding<S> for Binding<S> {
     type Admission = ApplicationConventionalAdmission;
@@ -67,7 +67,7 @@ impl<S: Scenario> ApplicationMutationBinding<S> for Binding<S> {
     type ScopeBinding = Scope<S>;
     type PrincipalBinding = Actor;
     type Mapping = Mapping;
-    type Principal = Node;
+    type Principal = Node<S>;
     type PrincipalIdentity = u64;
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     type SourceExpectation = ApplicationQueryMutationSource<query::Query>;
@@ -77,13 +77,11 @@ impl<S: Scenario> ApplicationMutationBinding<S> for Binding<S> {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field(
-    ) -> ApplicationFieldRef<S, Node, Facts, Id, u64, ReadOnly, EqualityPredicate, NoApplicationUnit>
-    {
-        Id::reference()
+    fn scope_field() -> Id<S> {
+        schema::id::<S>()
     }
     fn principal_binding(
-    ) -> ApplicationPrincipalBindingRef<S, Actor, Mapping, Node, u64, U64ApplicationValueBinding>
+    ) -> ApplicationPrincipalBindingRef<S, Actor, Mapping, Node<S>, u64, U64ApplicationValueBinding>
     {
         actor()
     }
@@ -94,13 +92,13 @@ impl<S: Scenario> ApplicationMutationIntent<S> for Input {
         self
     }
     fn scope_binding(&self) -> Scope<S> {
-        Scope::new(Id::reference(), self.id)
+        Scope::<S>::new(schema::id::<S>(), self.id)
     }
 }
 pub struct Family;
 impl<S: Scenario> WorthQueryProducerOutputFamily<S> for Family {
     type Source = query::Binding<S>;
-    type Entity = Node;
+    type Entity = Node<S>;
     const IDENTITY: &'static str = "authored-ownership.family.v1";
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = if S::COUPLED {
         &[
@@ -124,10 +122,10 @@ impl<S: Scenario> WorthQueryProducerOutputFamily<S> for Family {
     }
 }
 pub struct Producer<S>(PhantomData<fn() -> S>);
-pub struct InitialTargets<S> {
-    source: WorthQueryInvariantMutationTarget<S, Node>,
-    stage: Option<WorthQueryInvariantMutationTarget<S, Node>>,
-    other_stage: Option<WorthQueryInvariantMutationTarget<S, Node>>,
+pub struct InitialTargets<S: Scenario> {
+    source: WorthQueryInvariantMutationTarget<S, Node<S>>,
+    stage: Option<WorthQueryInvariantMutationTarget<S, Node<S>>>,
+    other_stage: Option<WorthQueryInvariantMutationTarget<S, Node<S>>>,
 }
 pub struct Provider;
 impl<S: Scenario> WorthQueryApplicationProducerBinding<S> for Producer<S> {
@@ -166,11 +164,11 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
         reader: &mut DecisionReader<'_, '_, '_, S, Binding<S>>,
     ) -> HandlerResult<InitialTargets<S>, ()> {
         let result = (|| {
-            let source = reader.resolve_entity(Id::reference(), input.id)?;
+            let source = reader.resolve_entity(schema::id::<S>(), input.id)?;
             let source = reader.mutation_target(&source)?;
             let stage = if S::COUPLED {
                 let stage = reader.resolve_entity(
-                    Id::reference(),
+                    schema::id::<S>(),
                     if S::MODE == 17 && input.id == 11 {
                         30
                     } else {
@@ -183,7 +181,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             };
             let other_stage = if matches!(S::MODE, 60 | 61 | 64 | 30 | 40 | 41) {
                 reader
-                    .resolve_optional_entity(Id::reference(), 30)?
+                    .resolve_optional_entity(schema::id::<S>(), 30)?
                     .map(|stage| reader.mutation_target(&stage))
                     .transpose()?
             } else {
@@ -213,14 +211,18 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             let source = writer.projected_entity(&target.source)?;
             let created = writer.create_entity_in_context(
                 &source,
-                Node::reference(),
+                schema::node::<S>(),
                 WorthQueryApplicationEntityKey::new(format!("derived-{id}")).unwrap(),
             )?;
-            writer.initialize_field(&created, Id::reference(), id)?;
-            writer.initialize_field(&created, Value::reference(), 39)?;
+            writer.initialize_field(&created, schema::id::<S>(), id)?;
+            writer.initialize_field(&created, schema::value::<S>(), 39)?;
             if S::MODE == 43 {
                 writer
-                    .initialize_content(&created, content::field(), &39)
+                    .initialize_content(
+                        &created,
+                        content::field::<S>().expect("the content scenario declares its field"),
+                        &39,
+                    )
                     .expect("valid installed word content");
             }
             writer.create_output::<Role<S>>(&created)?;
@@ -234,11 +236,11 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             }
             let cell = writer.create_entity_in_context(
                 &source,
-                Node::reference(),
+                schema::node::<S>(),
                 WorthQueryApplicationEntityKey::new(format!("derived-{}", id + 1)).unwrap(),
             )?;
-            writer.initialize_field(&cell, Id::reference(), id + 1)?;
-            writer.initialize_field(&cell, Value::reference(), 39)?;
+            writer.initialize_field(&cell, schema::id::<S>(), id + 1)?;
+            writer.initialize_field(&cell, schema::value::<S>(), 39)?;
             if S::MODE == 13 {
                 writer.link(
                     Peer::reference(),
@@ -281,7 +283,11 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             }
             if S::MODE == 43 {
                 writer
-                    .initialize_content(&cell, content::field(), &39)
+                    .initialize_content(
+                        &cell,
+                        content::field::<S>().expect("the content scenario declares its field"),
+                        &39,
+                    )
                     .expect("valid installed word content");
             }
             <S::Boundary as sheet_boundary::Profile>::initial(writer, &source)?;
@@ -305,10 +311,10 @@ pub fn declare<S: Scenario>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(operation, Id::reference())
-        .operation_create(operation, Node::reference())
+        .operation_read_field(operation, schema::id::<S>())
+        .operation_create(operation, schema::node::<S>())
         .operation_link(operation, Peer::reference())
-        .operation_write(operation, Id::reference())
-        .operation_write(operation, Value::reference())
+        .operation_write(operation, schema::id::<S>())
+        .operation_write(operation, schema::value::<S>())
         .application_mutation_binding::<Binding<S>>()
 }
