@@ -62,7 +62,7 @@ fn cutoff_journey(
                     .selected_product(&host_phase.test_host_request())
                     .resolve_entity(
                         &host_phase,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         "2".to_owned(),
                         &live_scope(),
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -71,13 +71,13 @@ fn cutoff_journey(
                     .entity_id()
             })
             .expect("installed host call opens");
-        let status = AccountStatus::reference();
+        let status = AccountStatus::at("AccountStatus");
         let status = graph
             .layout()
             .field_locator(status.entity(), status.aspect(), status.field())
             .unwrap()
             .clone();
-        let label = AccountLabel::reference();
+        let label = AccountLabel::at("AccountLabel");
         let label = graph
             .layout()
             .field_locator(label.entity(), label.aspect(), label.field())
@@ -292,7 +292,7 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
                     .selected_product(&host_phase.test_host_request())
                     .resolve_entity(
                         &host_phase,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         "2".to_owned(),
                         &live_scope(),
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -301,7 +301,7 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
                     .entity_id()
             })
             .expect("installed host call opens");
-        let status = AccountStatus::reference();
+        let status = AccountStatus::at("AccountStatus");
         let status = graph
             .layout()
             .field_locator(status.entity(), status.aspect(), status.field())

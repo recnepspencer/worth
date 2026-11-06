@@ -1,11 +1,10 @@
 use crate::application_query::{
     ApplicationQueryMarkerIdentity, ApplicationQueryParameterSet, ApplicationQueryReference,
 };
+use crate::application_schema::fragment::RecordSelection;
 use crate::application_schema::{
-    ApplicationAspectMarkerIdentity, ApplicationEntityMarkerIdentity,
-    ApplicationFieldMarkerIdentity, ApplicationFieldRef, ApplicationIdentityScalarValueBinding,
+    ApplicationEntityMarkerIdentity, ApplicationIdentityScalarValueBinding,
     ApplicationPrincipalBindingRef, ApplicationSchema, ApplicationStructuredValueBinding,
-    EqualityPredicate, WritePosture,
 };
 
 use super::{
@@ -14,16 +13,7 @@ use super::{
     ApplicationQueryScopeContract,
 };
 
-type QueryScopeFieldRef<Schema, Binding> = ApplicationFieldRef<
-    Schema,
-    <Binding as ApplicationQueryScopeBinding<Schema>>::Scope,
-    <Binding as ApplicationQueryScopeBinding<Schema>>::Aspect,
-    <Binding as ApplicationQueryScopeBinding<Schema>>::Field,
-    <Binding as ApplicationQueryScopeBinding<Schema>>::Value,
-    <Binding as ApplicationQueryScopeBinding<Schema>>::Write,
-    EqualityPredicate,
-    <Binding as ApplicationQueryScopeBinding<Schema>>::Unit,
->;
+type QueryScopeFieldRef<Schema, Binding> = <Binding as ApplicationQueryScopeBinding<Schema>>::Field;
 
 type QueryIntentReference<Schema, Binding> = ApplicationQueryReference<
     Schema,
@@ -39,18 +29,6 @@ where
     Schema: ApplicationSchema,
     <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope:
         ApplicationEntityMarkerIdentity<Schema>,
-    <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Aspect:
-        ApplicationAspectMarkerIdentity<
-            Schema,
-            <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope,
-        >,
-    <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Field:
-        ApplicationFieldMarkerIdentity<
-            Schema,
-            <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope,
-            <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Aspect,
-            Value = <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Value,
-        >,
 {
     type Input: 'static;
     type InputBinding: ApplicationStructuredValueBinding<Value = Self::Input>;
@@ -104,8 +82,7 @@ where
             reference.scope_type(),
             ApplicationQueryScopeContract::new(
                 Self::ScopeBinding::RESOLUTION_MODE,
-                field.binding_recipe(),
-                <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Write::WRITABLE,
+                field.expected_recipe(),
             ),
             ApplicationQueryPrincipalBindingContract::from_reference(Self::principal_binding()),
             Self::LIMITS,

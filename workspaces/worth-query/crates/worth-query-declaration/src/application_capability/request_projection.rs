@@ -3,9 +3,7 @@ use std::marker::PhantomData;
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
 use crate::application_schema::{
-    ApplicationEncodedScalarValue, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationRelationRef, ApplicationScalarValueBinding, DeclaredApplicationFieldValue,
-    EqualityCapable, EqualityPosture, WritePosture,
+    ApplicationEncodedScalarValue, ApplicationRelationRef, ApplicationScalarValueBinding,
 };
 
 use super::{
@@ -79,17 +77,19 @@ impl<Schema, Entity> Clone for ApplicationCapabilityEntitySelector<Schema, Entit
 }
 
 impl<Schema, Entity> ApplicationCapabilityEntitySelector<Schema, Entity> {
-    pub fn new<Aspect, Field, Value, Write, Equality, Unit>(
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+    pub fn new<Field: crate::application_schema::fragment::RecordSelection<Entity = Entity>>(
+        field: Field,
         value: ApplicationEncodedScalarValue<Field::Binding>,
-    ) -> Self
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Equality: EqualityPosture + EqualityCapable,
-        Unit: ApplicationFieldUnit,
-    {
-        Self {
+    ) -> Result<Self, ApplicationCapabilityRequestProjectionDenial> {
+        let checked = field.checked().map_err(|cause| {
+            ApplicationCapabilityRequestProjectionDenial::input_variant(cause.to_string())
+        })?;
+        if !checked.equality_queryable() {
+            return Err(ApplicationCapabilityRequestProjectionDenial::input_variant(
+                checked.locus().field(),
+            ));
+        }
+        Ok(Self {
             entity: field.entity(),
             aspect: field.aspect(),
             field: field.field(),
@@ -97,7 +97,7 @@ impl<Schema, Entity> ApplicationCapabilityEntitySelector<Schema, Entity> {
             value_type: field.value_type_name(),
             value: value.into_foundational_value(),
             _marker: PhantomData,
-        }
+        })
     }
 
     pub const fn entity(&self) -> &'static str {

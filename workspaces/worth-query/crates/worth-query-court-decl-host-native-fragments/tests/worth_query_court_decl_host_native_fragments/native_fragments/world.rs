@@ -203,10 +203,9 @@ impl World {
                     )
                     .unwrap();
                 let target = selected
-                    .resolve_record_entity(
+                    .resolve_entity(
                         &phase,
-                        Fixture,
-                        record_field(Fixture, Item, ItemIdentity, "id").unwrap(),
+                        select_field(Fixture, Item, ItemIdentity, "id"),
                         11u64,
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -271,10 +270,9 @@ impl World {
                     )
                     .unwrap();
                 let target = selected
-                    .resolve_record_entity(
+                    .resolve_entity(
                         &phase,
-                        Authentication,
-                        record_field(Authentication, OptionalItem, OptionalIdentity, "id").unwrap(),
+                        select_field(Authentication, OptionalItem, OptionalIdentity, "id"),
                         19u64,
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,

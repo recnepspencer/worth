@@ -8,10 +8,7 @@ use worth_query_declaration::facade::application_query::{
     ManyResults, OptionalOneResult,
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableType;
-use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationReadableScalarValueBinding, OptionalApplicationFieldValue,
-    RequiredApplicationFieldValue, WritePosture,
-};
+use worth_query_installation::facade::ApplicationReadableScalarValueBinding;
 use worth_relational::facade::identity::EntityId;
 
 mod denial;
@@ -72,26 +69,18 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
         self.node.entity_id()
     }
 
-    pub fn field<Slot, Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn field<Slot, Entity, Aspect, Field, Value>(
         &self,
-        selector: ApplicationQueryResultFieldRef<
-            Query,
-            Slot,
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
+        selector: ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>,
     ) -> Result<Value, WorthQueryApplicationProjectionDenial>
     where
-        Field: RequiredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+
         Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
@@ -99,26 +88,16 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
             .into_required(WorthQueryApplicationProjectionDenialKind::FieldOmitted)
     }
 
-    pub fn optional_field<Slot, Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn optional_field<Slot, Entity, Aspect, Field, Value>(
         &self,
-        selector: ApplicationQueryOptionalResultFieldRef<
-            Query,
-            Slot,
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
+        selector: ApplicationQueryOptionalResultFieldRef<Query, Slot, Schema, Field>,
     ) -> Result<Option<Value>, WorthQueryApplicationProjectionDenial>
     where
-        Field: OptionalApplicationFieldValue<Value = Value>,
-        Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {

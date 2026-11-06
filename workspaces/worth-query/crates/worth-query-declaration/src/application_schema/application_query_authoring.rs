@@ -65,6 +65,9 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         mut self,
         mut definition: ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
     ) -> Self {
+        for field in definition.take_field_expectations() {
+            self.member_provenance.fragments.expect_field(field);
+        }
         if let Some(recipe) = definition.take_managed_index_recipe() {
             self.member_provenance
                 .register_managed_index_selection(recipe);

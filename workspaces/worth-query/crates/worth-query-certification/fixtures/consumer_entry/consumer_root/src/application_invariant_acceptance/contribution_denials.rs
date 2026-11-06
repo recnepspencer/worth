@@ -13,8 +13,7 @@ use std::sync::{
 use worth_query_decl::facade::application_schema::{
     ApplicationInvariantExecutionPoint, ApplicationInvariantMarkerIdentity, ApplicationSchema,
     ApplicationSchemaComposition, ApplicationSchemaContribution,
-    ApplicationSchemaContributionAuthoring, ApplicationSchemaContributionIdentity,
-    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    ApplicationSchemaContributionIdentity, ApplicationSchemaDeclaration,
     ApplicationSchemaDeclarationDenial,
 };
 use worth_query_host::facade::{
@@ -47,52 +46,102 @@ pub(super) fn run() {
 
 // The same real entry declarations are retained while each fixture varies only
 // the contribution boundary under attack.
-macro_rules! boundary_schema {
-    ($Schema:ident, [$Topology:ty, $Parameter:ty], [$($Configured:ty),+]) => {
-        struct $Schema;
-        impl TopologySchemaBinding for $Schema {}
-        impl ParameterSchemaBinding for $Schema {}
-        impl ApplicationSchema for $Schema {
-            const OWNER: &'static str = "worth.query.certification.contribution-denials";
-            const NAME: &'static str = stringify!($Schema);
-            const MAJOR: u32 = 1;
-            const MINOR: u32 = 0;
-            fn declaration() -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-                ApplicationSchemaContributionAuthoring::contributions(
-                    ApplicationSchemaDeclarationBuilder::<Self>::for_schema(),
-                ).register::<$Topology>()?.register::<$Parameter>()?.build()
-            }
-        }
-        impl ApplicationSchemaComposition for $Schema {
-            type Contributions = ($($Configured,)+);
-        }
-    };
+
+struct MissingContributionSchema;
+impl TopologySchemaBinding for MissingContributionSchema {
+    type PrincipalFragment = worth_query_topology_entry::PrincipalRecords;
+}
+impl ParameterSchemaBinding for MissingContributionSchema {}
+impl worth_query_decl::facade::application_schema::fragment::Fragment
+    for MissingContributionSchema
+{
+    const NAME: &'static str = "MissingContributionSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (TopologyContribution, ParameterContribution);
+}
+impl ApplicationSchema for MissingContributionSchema {
+    const OWNER: &'static str = "worth.query.certification.contribution-denials";
+    const NAME: &'static str = "MissingContributionSchema";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+}
+impl ApplicationSchemaComposition for MissingContributionSchema {
+    type Contributions = (TopologyContribution,);
 }
 
-boundary_schema!(
-    MissingContributionSchema,
-    [TopologyContribution, ParameterContribution],
-    [TopologyContribution]
-);
-boundary_schema!(
-    DuplicateContributionSchema,
-    [TopologyContribution, ParameterContribution],
-    [
+struct DuplicateContributionSchema;
+impl TopologySchemaBinding for DuplicateContributionSchema {
+    type PrincipalFragment = worth_query_topology_entry::PrincipalRecords;
+}
+impl ParameterSchemaBinding for DuplicateContributionSchema {}
+impl worth_query_decl::facade::application_schema::fragment::Fragment
+    for DuplicateContributionSchema
+{
+    const NAME: &'static str = "DuplicateContributionSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (TopologyContribution, ParameterContribution);
+}
+impl ApplicationSchema for DuplicateContributionSchema {
+    const OWNER: &'static str = "worth.query.certification.contribution-denials";
+    const NAME: &'static str = "DuplicateContributionSchema";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+}
+impl ApplicationSchemaComposition for DuplicateContributionSchema {
+    type Contributions = (
         TopologyContribution,
         ParameterContribution,
-        ParameterContribution
-    ]
-);
-boundary_schema!(
-    MissingHandlerSchema,
-    [HandlerOmissionContribution, ParameterContribution],
-    [HandlerOmissionContribution, ParameterContribution]
-);
-boundary_schema!(
-    ForeignMemberSchema,
-    [TopologyContribution, ForeignMemberContribution],
-    [ForeignMemberContribution, TopologyContribution]
-);
+        ParameterContribution,
+    );
+}
+
+struct MissingHandlerSchema;
+impl TopologySchemaBinding for MissingHandlerSchema {
+    type PrincipalFragment = worth_query_topology_entry::PrincipalRecords;
+}
+impl ParameterSchemaBinding for MissingHandlerSchema {}
+impl worth_query_decl::facade::application_schema::fragment::Fragment for MissingHandlerSchema {
+    const NAME: &'static str = "MissingHandlerSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (HandlerOmissionContribution, ParameterContribution);
+}
+impl ApplicationSchema for MissingHandlerSchema {
+    const OWNER: &'static str = "worth.query.certification.contribution-denials";
+    const NAME: &'static str = "MissingHandlerSchema";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+}
+impl ApplicationSchemaComposition for MissingHandlerSchema {
+    type Contributions = (HandlerOmissionContribution, ParameterContribution);
+}
+
+struct ForeignMemberSchema;
+impl TopologySchemaBinding for ForeignMemberSchema {
+    type PrincipalFragment = worth_query_topology_entry::PrincipalRecords;
+}
+impl ParameterSchemaBinding for ForeignMemberSchema {}
+impl worth_query_decl::facade::application_schema::fragment::Fragment for ForeignMemberSchema {
+    const NAME: &'static str = "ForeignMemberSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (TopologyContribution, ForeignMemberContribution);
+}
+impl ApplicationSchema for ForeignMemberSchema {
+    const OWNER: &'static str = "worth.query.certification.contribution-denials";
+    const NAME: &'static str = "ForeignMemberSchema";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+}
+impl ApplicationSchemaComposition for ForeignMemberSchema {
+    type Contributions = (ForeignMemberContribution, TopologyContribution);
+}
 
 fn inventory_drift_precedes_callbacks() {
     let setup_calls = Arc::new(AtomicUsize::new(0));
@@ -213,11 +262,7 @@ impl<Schema: TopologySchemaBinding> ApplicationSchemaContribution<Schema>
 {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<Schema>>::IDENTITY;
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        <TopologyContribution as ApplicationSchemaContribution<Schema>>::register_members(builder)
-    }
+    type Members = <TopologyContribution as ApplicationSchemaContribution<Schema>>::Members;
 }
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
     for HandlerOmissionContribution
@@ -249,11 +294,7 @@ impl<Schema: ParameterSchemaBinding> ApplicationSchemaContribution<Schema>
 {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <ParameterContribution as ApplicationSchemaContribution<Schema>>::IDENTITY;
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        <ParameterContribution as ApplicationSchemaContribution<Schema>>::register_members(builder)
-    }
+    type Members = <ParameterContribution as ApplicationSchemaContribution<Schema>>::Members;
 }
 impl<Schema: ParameterSchemaBinding + TopologySchemaBinding>
     WorthQueryApplicationContribution<Schema> for ForeignMemberContribution

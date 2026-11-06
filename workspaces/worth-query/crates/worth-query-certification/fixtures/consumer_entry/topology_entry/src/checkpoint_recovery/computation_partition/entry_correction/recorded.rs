@@ -2,25 +2,7 @@
 use super::*;
 use worth_query_decl::facade::{application_aftermath::*, application_query::*};
 
-pub(in super::super) struct RecordedEntryCorrection<Schema>(PhantomData<fn() -> Schema>);
-
-/// The enclosing composition dispatches correction meaning without exporting its binding.
-pub(in crate::checkpoint_recovery) fn visit<
-    Visitor: ApplicationCorrectionVisitor<CheckpointSchema>,
->(
-    source_binding: std::any::TypeId,
-    visitor: Visitor,
-) -> Result<Visitor::Output, Visitor> {
-    if source_binding == std::any::TypeId::of::<EntryCorrectionBinding<CheckpointSchema>>() {
-        Ok(dispatch_application_correction::<
-            CheckpointSchema,
-            RecordedEntryCorrection<CheckpointSchema>,
-            Visitor,
-        >(visitor))
-    } else {
-        Err(visitor)
-    }
-}
+pub struct RecordedEntryCorrection<Schema>(PhantomData<fn() -> Schema>);
 
 impl<Schema: TopologySchemaBinding> ApplicationCorrectionBinding<Schema>
     for RecordedEntryCorrection<Schema>
@@ -50,9 +32,10 @@ impl<Schema: TopologySchemaBinding> ApplicationCorrectionBinding<Schema>
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(
-                    EntryValueBits::reference(),
-                )],
+                [
+                    DeclaredPreImageLocus::from_field(EntryValueBits::at("EntryValueBits"))
+                        .expect("declared entry-value preimage field"),
+                ],
                 U64ApplicationValueBinding::encode(&u64::MAX)
                     .unwrap()
                     .semantic_byte_width(),
@@ -70,9 +53,10 @@ impl<Schema: TopologySchemaBinding> ApplicationCorrectionBinding<Schema>
         };
         let prior = U64ApplicationValueBinding::decode(
             preimage
-                .field(&DeclaredPreImageLocus::from_field(
-                    EntryValueBits::reference(),
-                ))
+                .field(
+                    &DeclaredPreImageLocus::from_field(EntryValueBits::at("EntryValueBits"))
+                        .expect("declared entry-value preimage field"),
+                )
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;

@@ -34,7 +34,9 @@ fn records_lower_arrays_and_nested_records_to_existing_scalar_fields() {
         .members()
         .iter()
         .filter_map(|member| match member {
-            ApplicationSchemaMember::Field { aspect, field, .. } if aspect == "metrics" => {
+            ApplicationSchemaMember::Field { aspect, field, .. }
+                if aspect == "a58d034afa6a8a8df" =>
+            {
                 Some(field.as_str())
             }
             _ => None,
@@ -50,7 +52,7 @@ fn records_lower_arrays_and_nested_records_to_existing_scalar_fields() {
             "interval.start"
         ]
     );
-    assert!(schema.erased().members().iter().any(|member| matches!(member, ApplicationSchemaMember::Aspect { aspect, absence, .. } if aspect == "label" && format!("{absence:?}") == "Optional")));
+    assert!(schema.erased().members().iter().any(|member| matches!(member, ApplicationSchemaMember::Aspect { aspect, absence, .. } if aspect == "a6c57178f458971a8" && format!("{absence:?}") == "Optional")));
     assert!(schema.erased().members().iter().any(|member| matches!(member, ApplicationSchemaMember::OperationProgram { target: ApplicationOperationProgramTarget::Write { field, .. }, .. } if field == "components[1]")));
 }
 
@@ -102,7 +104,7 @@ struct RepeatedEntity;
 impl Fragment for RepeatedEntity {
     const NAME: &'static str = "repeated";
     type Bindings = Bindings;
-    type Members = (Item, Item);
+    type Members = (Item, (Item,));
 }
 
 #[test]
@@ -115,7 +117,7 @@ fn duplicate_members_refuse_even_without_a_membership_inference() {
 struct RepeatedAspectEntity;
 impl Entity for RepeatedAspectEntity {
     const NAME: &'static str = "repeated_aspect";
-    type Aspects = (Metrics, Metrics);
+    type Aspects = (Metrics, (Metrics,));
     type Relations = ();
 }
 struct RepeatedAspect;
@@ -177,13 +179,14 @@ fn one_of_cases_are_members_through_their_group() {
     }
     aspect(Item, Measured);
     aspect(Item, Named);
+    aspect(Item, Noted);
     aspect(Item, Form);
     let schema = declare(Fixture).unwrap();
     let catalog = schema.member_provenance().fragment_catalog();
     let fragment = catalog.fragment(Fixture).unwrap();
     let group = fragment.group::<Item, Form>().unwrap();
     assert!(!group.optional());
-    assert_eq!(group.cases().len(), 2);
+    assert_eq!(group.cases().len(), 3);
     assert!(group.contains::<Measured>());
     assert_eq!(
         catalog
@@ -224,7 +227,7 @@ fn group_optionality_is_part_of_its_derived_case_contract_revision() {
             .find_map(|member| match member {
                 ApplicationSchemaMember::Aspect {
                     aspect, revision, ..
-                } if aspect == "measured" => Some(*revision),
+                } if aspect == "ac9a7ff83b921347e" => Some(*revision),
                 _ => None,
             })
             .unwrap()
@@ -321,4 +324,25 @@ impl ApplicationSchema for OptionalFormSchema {
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
         declare(Self)
     }
+}
+
+struct RepeatedRegistration;
+impl Fragment for RepeatedRegistration {
+    const NAME: &'static str = "repeated_registration";
+    type Bindings = Bindings;
+    type Members = (Item, SetMetric, (SetMetric,));
+}
+impl ApplicationSchema for RepeatedRegistration {
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        declare(Self)
+    }
+}
+#[test]
+fn a_repeated_registration_is_a_typed_member_refusal() {
+    assert!(matches!(
+        declare(RepeatedRegistration),
+        Err(ApplicationSchemaDeclarationDenial::DuplicateFragmentMember { .. })
+    ));
 }

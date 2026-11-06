@@ -34,7 +34,7 @@ impl<S: Scenario> ApplicationMutationOutputContract<S> for Outputs {
         <Cell<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
     ];
 }
-type Scope<S> = ApplicationMutationFieldScope<S, Node, Facts, Id, u64, ReadOnly, NoApplicationUnit>;
+type Scope = ApplicationMutationFieldScope<Id>;
 pub struct Binding<S>(PhantomData<fn() -> S>);
 impl<S: Scenario> ApplicationMutationAdmissionBinding<S> for Binding<S> {
     type Admission = ApplicationConventionalAdmission;
@@ -50,7 +50,7 @@ impl<S: Scenario> ApplicationMutationBinding<S> for Binding<S> {
     type Denial = ();
     type DenialBinding = UnitBinding;
     type Output = Outputs;
-    type ScopeBinding = Scope<S>;
+    type ScopeBinding = Scope;
     type PrincipalBinding = Actor;
     type Mapping = Mapping;
     type Principal = Node;
@@ -63,10 +63,8 @@ impl<S: Scenario> ApplicationMutationBinding<S> for Binding<S> {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field(
-    ) -> ApplicationFieldRef<S, Node, Facts, Id, u64, ReadOnly, EqualityPredicate, NoApplicationUnit>
-    {
-        Id::reference()
+    fn scope_field() -> Id {
+        Id::at("Id")
     }
     fn principal_binding(
     ) -> ApplicationPrincipalBindingRef<S, Actor, Mapping, Node, u64, U64ApplicationValueBinding>
@@ -79,8 +77,8 @@ impl<S: Scenario> ApplicationMutationIntent<S> for Input {
     fn input(&self) -> &Self {
         self
     }
-    fn scope_binding(&self) -> Scope<S> {
-        Scope::new(Id::reference(), self.id)
+    fn scope_binding(&self) -> Scope {
+        Scope::new(Id::at("Id"), self.id)
     }
 }
 pub struct Family;
@@ -132,7 +130,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
         reader: &mut DecisionReader<'_, '_, '_, S, Binding<S>>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<S, Node>, ()> {
         let result = reader
-            .resolve_entity(Id::reference(), input.id)
+            .resolve_entity(Id::at("Id"), input.id)
             .and_then(|source| reader.mutation_target(&source));
         match result {
             Ok(target) => HandlerResult::Completed(target),
@@ -155,16 +153,16 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                 Node::reference(),
                 WorthQueryApplicationEntityKey::new(format!("derived-{id}")).unwrap(),
             )?;
-            writer.initialize_field(&created, Id::reference(), id)?;
-            writer.initialize_field(&created, Value::reference(), 39)?;
+            writer.initialize_field(&created, Id::at("Id"), id)?;
+            writer.initialize_field(&created, Value::at("Value"), 39)?;
             writer.create_output::<Role<S>>(&created)?;
             let cell = writer.create_entity_in_context(
                 &source,
                 Node::reference(),
                 WorthQueryApplicationEntityKey::new(format!("derived-{}", id + 1)).unwrap(),
             )?;
-            writer.initialize_field(&cell, Id::reference(), id + 1)?;
-            writer.initialize_field(&cell, Value::reference(), 39)?;
+            writer.initialize_field(&cell, Id::at("Id"), id + 1)?;
+            writer.initialize_field(&cell, Value::at("Value"), 39)?;
             writer.create_output::<Cell<S>>(&cell)
         })();
         match build {
@@ -185,9 +183,9 @@ pub fn declare<S: Scenario>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(operation, Id::reference())
+        .operation_read_field(operation, Id::at("Id"))
         .operation_create(operation, Node::reference())
-        .operation_write(operation, Id::reference())
-        .operation_write(operation, Value::reference())
+        .operation_write(operation, Id::at("Id"))
+        .operation_write(operation, Value::at("Value"))
         .application_mutation_binding::<Binding<S>>()
 }

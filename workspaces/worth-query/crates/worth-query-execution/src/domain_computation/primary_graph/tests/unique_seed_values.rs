@@ -1,9 +1,11 @@
 //! Installation seeds obey the unique law: one bootstrap writes each value of
 //! a unique field once, and a refused seed reserves no value.
 
+#[path = "unique_seed_values/records.rs"]
+mod storage_model;
+pub use storage_model::*;
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
-    U64ApplicationValueBinding,
 };
 use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
@@ -17,21 +19,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
-struct UniqueSeedSchema;
-worth_query_declaration::worth_query_entity!(Member for UniqueSeedSchema);
-worth_query_declaration::worth_query_aspect!(
-    MemberProfile for UniqueSeedSchema, Member;
-    identity = AspectIdentity(0x5EED_0001),
-    revision = AspectContractRevision(1),
-);
-worth_query_declaration::worth_query_field!(
-    MemberHandle for UniqueSeedSchema, Member, MemberProfile:
-    u64 => U64ApplicationValueBinding, read_only, equality
-);
-worth_query_declaration::worth_query_field!(
-    MemberTier for UniqueSeedSchema, Member, MemberProfile:
-    u64 => U64ApplicationValueBinding, read_write, equality
-);
+pub struct UniqueSeedSchema;
 
 impl ApplicationSchema for UniqueSeedSchema {
     const OWNER: &'static str = "unique-seed-values";
@@ -43,11 +31,8 @@ impl ApplicationSchema for UniqueSeedSchema {
         ApplicationSchemaDeclaration<Self>,
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(Member::reference())
-            .aspect(Member::reference(), MemberProfile::reference())
-            .unique_field(Member::reference(), MemberHandle::reference())
-            .field(Member::reference(), MemberTier::reference())
+        ApplicationSchemaDeclarationBuilder::from_fragment(UniqueRecords)
+            .expect("owned record model is valid")
             .build()
     }
 }
@@ -84,8 +69,8 @@ fn member(
         Member::reference(),
         WorthQueryApplicationEntityKey::new(key).unwrap(),
     )
-    .field(MemberHandle::reference(), handle)
-    .field(MemberTier::reference(), tier)
+    .field(MemberHandle::at("MemberHandle"), handle)
+    .field(MemberTier::at("MemberTier"), tier)
 }
 
 fn prepared_bootstrap() -> WorthQueryPrimaryGraphBootstrap<UniqueSeedSchema> {

@@ -10,8 +10,8 @@ impl<S: OrbitModel + Clone> OperationHandler<S, CheckOrbitBinding<S>> for CheckO
     ) -> HandlerResult<CheckOrbitDecision, CheckOrbitOutcome> {
         let result = (|| {
             let root = reader.scope().clone();
-            reader.field(&root, NodeKey::reference())?;
-            reader.field(&root, Marked::reference())?;
+            reader.field(&root, NodeKey::at("NodeKey"))?;
+            reader.field(&root, Marked::at("Marked"))?;
             let orbit = reader
                 .orbit(Next::reference(), &root)
                 .map_err(HandlerExecutionDenial::new)?;
@@ -48,10 +48,10 @@ impl<S: OrbitModel + Clone> OperationHandler<S, CheckOrbitBinding<S>> for CheckO
     ) -> HandlerResult<CheckOrbitOutcome, CheckOrbitOutcome> {
         let result = (|| {
             let root = candidate
-                .resolve_entity(NodeKey::reference(), decision.root)
+                .resolve_entity(NodeKey::at("NodeKey"), decision.root)
                 .map_err(HandlerExecutionDenial::new)?;
             candidate
-                .write_field(&root, Marked::reference(), true)
+                .write_field(&root, Marked::at("Marked"), true)
                 .map_err(HandlerExecutionDenial::new)?;
             Ok::<_, HandlerExecutionDenial>(CheckOrbitOutcome(decision.count))
         })();

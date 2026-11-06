@@ -1,6 +1,6 @@
 //! One checked collection uses the real graph-bound region producer and retained tree.
 use super::*;
-pub(in crate::checkpoint_recovery::computation_partition) mod lifecycle;
+pub(crate) mod lifecycle;
 use worth_query_decl::facade::application_program::{
     ApplicationCollectionCompleteness, ApplicationCollectionContributor,
     ApplicationCollectionGrouping, ApplicationCollectionIncompletePosture,

@@ -27,13 +27,13 @@ pub(super) fn elevation_status(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application(&world.application),
-            CapabilityElevationIdentity::reference(),
-            "elevation-2".to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            "elevation-2".to_owned().into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let field = CapabilityElevationStatusField::reference();
+    let field = CapabilityElevationStatusField::at("CapabilityElevationStatusField");
     let locator = world
         .application
         .runtime
@@ -59,7 +59,7 @@ pub(super) fn review_status(
     world: &World,
 ) -> CapabilityReviewStatus {
     let (review, kind) = resolved_review(phase_custody, execution, world);
-    let field = CapabilityReviewStatusField::reference();
+    let field = CapabilityReviewStatusField::at("CapabilityReviewStatusField");
     let locator = world
         .application
         .runtime
@@ -126,8 +126,8 @@ pub(super) fn has_exact_approver(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application(&world.application),
-            CapabilityElevationIdentity::reference(),
-            "elevation-2".to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            "elevation-2".to_owned().into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -177,7 +177,7 @@ fn resolved_review(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application(&world.application),
-            CapabilityReviewIdentity::reference(),
+            CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
             "review-2".to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,

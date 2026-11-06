@@ -20,19 +20,8 @@ pub struct ValueSlot;
 worth_query_portable_type!(ValueSlot => "worth.query.path-input.audit_query.slot.v1");
 worth_query_application_query!(pub Query for Schema, identity "AuditQuery", parameters Parameters,
     result ResultBinding, scope Audit => "Audit", name "audit_query");
-pub fn value() -> ApplicationQueryResultFieldRef<
-    Query,
-    ValueSlot,
-    Schema,
-    Audit,
-    AuditFacts,
-    AuditValue,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", AuditValue::reference())
+pub fn value() -> ApplicationQueryResultFieldRef<Query, ValueSlot, Schema, AuditValue> {
+    ApplicationQueryResultFieldRef::new("value", AuditValue::at("AuditValue"))
 }
 pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Audit> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
@@ -67,4 +56,4 @@ worth_query_query_binding!(pub ReadBinding for Read, schema Schema,
     identity "worth.query.path-input.audit_query.binding.v1", input Input, query Query,
     parameters Parameters => |_| ApplicationQueryParameterSet::new(), result ResultBinding,
     principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Audit, AuditFacts, AuditIdentity, String, ReadOnly, NoApplicationUnit, field AuditIdentity::reference(), value identity, limits results 1);
+    scope AuditIdentity, field AuditIdentity::at("AuditIdentity"), value identity, limits results 1);

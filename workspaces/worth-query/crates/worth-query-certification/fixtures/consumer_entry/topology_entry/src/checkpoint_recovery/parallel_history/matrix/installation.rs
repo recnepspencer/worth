@@ -18,7 +18,9 @@ pub(super) fn install(control: std::sync::Arc<Control>) -> Application {
     let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
         .validated_program()
         .unwrap();
-    let declaration = Schema::declaration().unwrap();
+    let declaration =
+        <Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .unwrap();
     let limits = crate::checkpoint_recovery::support::limits(
         32,
         crate::checkpoint_recovery::support::invalidation(),
@@ -46,10 +48,10 @@ pub(super) fn install(control: std::sync::Arc<Control>) -> Application {
                         Node::reference::<Schema>(),
                         WorthQueryApplicationEntityKey::new(format!("member-{}", key)).unwrap(),
                     )
-                    .field(NodeKey::reference(), format!("member-{:03}", key))
-                    .field(Revision::reference(), 0)
-                    .field(Value::reference(), 0)
-                    .field(Applied::reference(), 0),
+                    .field(NodeKey::at("NodeKey"), format!("member-{:03}", key))
+                    .field(Revision::at("Revision"), 0)
+                    .field(Value::at("Value"), 0)
+                    .field(Applied::at("Applied"), 0),
                 )?;
             }
             Ok(())

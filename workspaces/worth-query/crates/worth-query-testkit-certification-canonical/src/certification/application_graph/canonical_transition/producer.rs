@@ -20,19 +20,11 @@ worth_query_structured_value_binding!(pub InputBinding for Input { identity: "ca
 worth_query_structured_value_binding!(pub PublishedBinding for Published { identity: "canonical-transition.produce.result.v1" });
 worth_query_structured_value_binding!(pub DeniedBinding for Denied { identity: "canonical-transition.produce.denial.v1" });
 worth_query_operation!(pub Produce for CanonicalSchema, input InputBinding);
-worth_query_operation_reads!(Produce => [DocumentIdentityField, DocumentValueField]);
+
 worth_query_operation_creates!(Produce => [Derived]);
-worth_query_operation_writes!(Produce => [DerivedIdentityField, DerivedValueField]);
+
 pub struct ProduceBinding;
-pub type Scope = ApplicationMutationFieldScope<
-    CanonicalSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope = ApplicationMutationFieldScope<DocumentIdentityField>;
 impl ApplicationMutationBinding<CanonicalSchema> for ProduceBinding {
     type Input = Input;
     type InputBinding = InputBinding;
@@ -57,17 +49,8 @@ impl ApplicationMutationBinding<CanonicalSchema> for ProduceBinding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        CanonicalSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CanonicalSchema,
@@ -86,7 +69,10 @@ impl ApplicationMutationIntent<CanonicalSchema> for Input {
         self
     }
     fn scope_binding(&self) -> Scope {
-        Scope::new(DocumentIdentityField::reference(), self.identity.clone())
+        Scope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity.clone(),
+        )
     }
 }
 pub struct Handler;
@@ -96,13 +82,14 @@ impl OperationHandler<CanonicalSchema, ProduceBinding> for Handler {
         input: &Input,
         reader: &mut DecisionReader<'_, '_, '_, CanonicalSchema, ProduceBinding>,
     ) -> HandlerResult<NestedValue, Denied> {
-        let source = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
-        {
+        let source = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            input.identity.clone(),
+        ) {
             Ok(source) => source,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&source, DocumentValueField::reference()) {
+        match reader.field(&source, DocumentValueField::at("DocumentValueField")) {
             Ok(Some(source)) => HandlerResult::Completed(source),
             Ok(None) => HandlerResult::DomainDenied(Denied),
             Err(error) => HandlerResult::ExecutionDenied(error),
@@ -121,10 +108,14 @@ impl OperationHandler<CanonicalSchema, ProduceBinding> for Handler {
             )?;
             writer.initialize_field(
                 &target,
-                DerivedIdentityField::reference(),
+                DerivedIdentityField::at("DerivedIdentityField"),
                 "derived-report".to_owned(),
             )?;
-            writer.initialize_field(&target, DerivedValueField::reference(), calculate(&source))?;
+            writer.initialize_field(
+                &target,
+                DerivedValueField::at("DerivedValueField"),
+                calculate(&source),
+            )?;
             writer.create_output::<CreatedOutput>(&target)
         };
         match build(writer) {

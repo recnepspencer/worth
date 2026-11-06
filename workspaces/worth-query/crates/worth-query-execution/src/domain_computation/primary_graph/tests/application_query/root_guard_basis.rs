@@ -59,7 +59,7 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
                 .selected_product(&(phase).test_host_request())
                 .resolve_entity(
                     &phase,
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -240,7 +240,7 @@ fn change_account_status(
     status: &str,
 ) {
     let graph = world.application.runtime.primary_graph().unwrap();
-    let field = AccountStatus::reference();
+    let field = AccountStatus::at("AccountStatus");
     let locator = graph
         .layout
         .field_locator(field.entity(), field.aspect(), field.field())

@@ -13,7 +13,7 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
     let entity = selected
         .resolve_entity(
             &phase,
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             "open".to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -28,7 +28,7 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let status_ref = AccountStatus::reference();
+    let status_ref = AccountStatus::at("AccountStatus");
     let status = graph
         .layout()
         .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())

@@ -1,3 +1,6 @@
+#[path = "counted_read_stops/records.rs"]
+mod storage_model;
+pub use storage_model::*;
 mod custody;
 
 use super::*;
@@ -12,40 +15,100 @@ use crate::facade::application_installation::{
 };
 use worth_foundational::facade::ApplicationBuildIdentity;
 use worth_query_declaration::facade::application_program::*;
-use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
+
 use worth_query_declaration::facade::authentication::{
     WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
     WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
 };
 
-worth_query_declaration::worth_query_application! {
-    PreviewSchema { owner: "worth.query.test.preview", version: (1, 0), contributions: [PreviewMembers], }
+use worth_query_declaration::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy)]
+pub struct PreviewSchema;
+impl Fragment for PreviewSchema {
+    const NAME: &'static str = "PreviewSchema";
+    type Bindings = NoBindings;
+    type Members = (PreviewMembers,);
 }
-worth_query_declaration::worth_query_entity!(PreviewEntity for PreviewSchema);
-worth_query_declaration::worth_query_entity!(PreviewMapping for PreviewSchema);
-worth_query_declaration::worth_query_aspect!(MappingAspect for PreviewSchema, PreviewMapping; identity = AspectIdentity(0x720001), revision = AspectContractRevision(1),);
-worth_query_declaration::worth_query_aspect!(PrincipalAspect for PreviewSchema, PreviewEntity; identity = AspectIdentity(0x720002), revision = AspectContractRevision(1),);
-worth_query_declaration::worth_query_field!(MappingIdentity for PreviewSchema, PreviewMapping, MappingAspect: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_declaration::worth_query_field!(MappingStatus for PreviewSchema, PreviewMapping, MappingAspect: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_declaration::worth_query_field!(PrincipalIdentity for PreviewSchema, PreviewEntity, PrincipalAspect: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_declaration::worth_query_relation!(MappingTarget in PreviewSchema, PreviewMapping => PreviewEntity; integrity = same_context_unbounded_retain_dangling);
-worth_query_declaration::worth_query_principal_binding!(PreviewBinding in PreviewSchema, mapping PreviewMapping {
-    identity: MappingIdentity, status: MappingStatus, target: MappingTarget => PreviewEntity, principal_identity: PrincipalIdentity
-});
-worth_query_declaration::worth_query_application_contribution! {
-    contribution PreviewMembers in PreviewSchema {
-        identity: "worth.query.test.preview-members", members: |builder| {
-            builder.entity(PreviewEntity::reference()).entity(PreviewMapping::reference())
-                .aspect(PreviewMapping::reference(), MappingAspect::reference())
-                .aspect(PreviewEntity::reference(), PrincipalAspect::reference())
-                .field(PreviewMapping::reference(), MappingIdentity::reference())
-                .field(PreviewMapping::reference(), MappingStatus::reference())
-                .field(PreviewEntity::reference(), PrincipalIdentity::reference())
-                .relation(MappingTarget::reference(), PreviewMapping::reference(), PreviewEntity::reference())
-                .principal_binding(PreviewBinding::reference())
-        }
+impl ApplicationSchema for PreviewSchema {
+    const OWNER: &'static str = "worth.query.test.preview";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_declaration::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        fragment::visit_correction(Self, source, visitor)
     }
 }
+impl PreviewSchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+impl ApplicationSchemaComposition for PreviewSchema {
+    type Contributions = <Self as Fragment>::Members;
+}
+
+struct PreviewBinding;
+impl PreviewBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        PreviewSchema,
+        Self,
+        PreviewMapping,
+        PreviewEntity,
+        <PrincipalIdentity as RecordSelection>::Value,
+        <PrincipalIdentity as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "PreviewBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    MappingIdentity::at("MappingIdentity"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    MappingStatus::at("MappingStatus"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    MappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalIdentity::at("PrincipalIdentity"),
+                ),
+            },
+        )
+    }
+}
+
+pub struct PreviewMembers;
+impl ApplicationSchemaContribution<PreviewSchema> for PreviewMembers {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("worth.query.test.preview-members");
+    type Members = (PreviewRecords, Contracts);
+}
+
+pub struct Contracts;
+impl Registration<PreviewSchema> for Contracts {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<PreviewSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<PreviewSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(builder.principal_binding(PreviewBinding::reference()))
+    }
+}
+
 impl crate::domain_computation::primary_graph::WorthQueryApplicationContribution<PreviewSchema>
     for PreviewMembers
 {

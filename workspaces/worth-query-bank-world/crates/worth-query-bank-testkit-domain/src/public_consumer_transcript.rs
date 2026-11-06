@@ -4,7 +4,7 @@ pub use bank_domain::model::{
 };
 pub use bank_domain::schema::*;
 pub use worth_query_decl::facade::application_schema::{
-    ApplicationEncodedScalarValue, ApplicationFieldRef, ApplicationScalarValueBinding,
+    ApplicationEncodedScalarValue, ApplicationScalarValueBinding,
     ApplicationSchemaAuthoringDenialKind, EqualityPredicate, ReadWrite,
 };
 pub use worth_query_host::facade::domain::{
@@ -15,15 +15,7 @@ pub use worth_query_host::facade::domain::{
 };
 
 pub fn assert_forged_currency_denied(bank: &WorthQueryInstalledApplicationSchema<BankSchema>) {
-    let field = ApplicationFieldRef::<
-        BankSchema,
-        Posting,
-        PostingValue,
-        PostingAmount,
-        SignedMoney<USD>,
-        ReadWrite,
-        worth_query_decl::facade::application_schema::NoEqualityPredicate,
-    >::from_schema_types();
+    let field = foreign_unit::field();
     let denial = bank
         .query(Posting::reference())
         .project(field)
@@ -44,7 +36,9 @@ pub fn installed_bank() -> (
         1,
         0,
     ))
-    .application_schema(BankSchema::declaration().unwrap())
+    .application_schema(
+        worth_query_decl::facade::application_schema::fragment::declare(BankSchema).unwrap(),
+    )
     .validate()
     .unwrap();
     let admitted = WorthQueryInstallationAdmissionProfile::new("support-v1", "config-v1")
@@ -57,7 +51,9 @@ pub fn installed_bank() -> (
     )
     .unwrap();
     let bank = index
-        .bind_application_schema(BankSchema::declaration().unwrap())
+        .bind_application_schema(
+            worth_query_decl::facade::application_schema::fragment::declare(BankSchema).unwrap(),
+        )
         .unwrap();
     (index, bank)
 }
@@ -83,3 +79,6 @@ pub fn assert_denial(
 ) {
     assert_eq!(actual, expected);
 }
+
+#[path = "public_consumer_transcript/foreign_unit.rs"]
+mod foreign_unit;

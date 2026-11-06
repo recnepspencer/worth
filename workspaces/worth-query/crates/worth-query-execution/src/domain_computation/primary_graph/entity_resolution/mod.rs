@@ -23,10 +23,7 @@ use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
-use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding, ApplicationSchema,
-    EqualityPredicate, WritePosture,
-};
+use worth_query_installation::facade::{ApplicationScalarValueBinding, ApplicationSchema};
 use worth_relational::facade::indexes::{
     BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
 };

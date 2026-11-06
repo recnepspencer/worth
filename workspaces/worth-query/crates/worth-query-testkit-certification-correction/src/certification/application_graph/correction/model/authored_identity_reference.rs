@@ -29,8 +29,8 @@ impl Inspect {
 }
 worth_query_structured_value_binding!(pub Input for Inspect { identity: "authored-identity.inspect.input.v1" });
 worth_query_operation!(pub Operation for NumericSchema, input Input);
-worth_query_operation_reads!(Operation => [Number, Key, Primary, AuthoredReference]);
-worth_query_operation_writes!(Operation => [Primary]);
+worth_query_operation_reads!(Operation => [Number, AuthoredReference]);
+
 pub struct Decision {
     pub target: Target,
     pub value: u64,
@@ -43,8 +43,8 @@ worth_query_mutation_binding!(
     handler identity "authored-identity.inspect.v1", outputs NoApplicationMutationOutputs,
     principal ActorBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-    field Key::reference(), value Inspect::scope_key,
+    scope Key,
+    field Key::at("Key"), value Inspect::scope_key,
 );
 pub static STALE: AtomicUsize = AtomicUsize::new(0);
 pub struct Handler;
@@ -54,7 +54,7 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         input: &Inspect,
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, Binding>,
     ) -> HandlerResult<Decision, MissingValue> {
-        let parent = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+        let parent = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
             Ok(entity) => entity,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
@@ -79,18 +79,21 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
             input.original,
             "the live reference must name the full original receipt identity"
         );
-        let value = match reader.field(original.to(), Primary::reference()) {
+        let value = match reader.field(original.to(), Primary::at("Primary")) {
             Ok(Some(value)) => value,
             Ok(None) => return HandlerResult::DomainDenied(MissingValue),
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
-        match reader.field(&parent, Primary::reference()) {
+        match reader.field(&parent, Primary::at("Primary")) {
             Ok(Some(_)) => (),
             Ok(None) => return HandlerResult::DomainDenied(MissingValue),
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         }
         match reader.mutation_target(&parent) {
-            Ok(target) => HandlerResult::Completed(Decision { target, value }),
+            Ok(target) => HandlerResult::Completed(Decision {
+                target,
+                value: value.0,
+            }),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
     }
@@ -106,7 +109,7 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
             }
         };
-        match writer.write_field(&parent, Primary::reference(), decision.value) {
+        match writer.write_field(&parent, Primary::at("Primary"), Counter(decision.value)) {
             Ok(()) => HandlerResult::Completed(Edited),
             Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
         }
@@ -124,10 +127,10 @@ pub fn declare(
                 .finish(),
         )
         .operation_read_entity(Operation::reference(), Number::reference())
-        .operation_read_field(Operation::reference(), Key::reference())
-        .operation_read_field(Operation::reference(), Primary::reference())
+        .operation_read_field(Operation::reference(), Key::at("Key"))
+        .operation_read_field(Operation::reference(), Primary::at("Primary"))
         .operation_read_relation(Operation::reference(), AuthoredReference::reference())
-        .operation_write(Operation::reference(), Primary::reference())
+        .operation_write(Operation::reference(), Primary::at("Primary"))
         .application_mutation_binding::<Binding>()
 }
 pub struct Feature;

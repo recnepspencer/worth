@@ -50,7 +50,7 @@ impl OperationHandler<BankSchema, RestoreFrozenEstateAccountBinding>
             ));
         };
         let account = relation.to().clone();
-        match projection.decision_field(&account, AccountIdentity::reference()) {
+        match projection.decision_field(&account, AccountIdentity::at("AccountIdentity")) {
             Ok(Some(identity)) if identity == input.account => {}
             Ok(_) => {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(
@@ -61,7 +61,7 @@ impl OperationHandler<BankSchema, RestoreFrozenEstateAccountBinding>
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
             }
         }
-        match projection.decision_field(&account, Status::reference()) {
+        match projection.decision_field(&account, Status::at("Status")) {
             Ok(Some(AccountStatus::Frozen)) => HandlerResult::Completed(*input),
             Ok(_) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(
                 RestorationDenial::AccountNotFrozen,
@@ -76,7 +76,8 @@ impl OperationHandler<BankSchema, RestoreFrozenEstateAccountBinding>
         decision: RestoreFrozenEstateAccount,
         candidate: &mut CandidateWriter<'_, BankSchema, RestoreFrozenEstateAccountBinding>,
     ) -> HandlerResult<EstateMutationResult, EstateMutationDenial> {
-        let account = match candidate.resolve_entity(AccountIdentity::reference(), decision.account)
+        let account = match candidate
+            .resolve_entity(AccountIdentity::at("AccountIdentity"), decision.account)
         {
             Ok(account) => account,
             Err(denial) => {
@@ -84,7 +85,7 @@ impl OperationHandler<BankSchema, RestoreFrozenEstateAccountBinding>
             }
         };
         if let Err(denial) =
-            candidate.write_field(&account, Status::reference(), decision.prior_status)
+            candidate.write_field(&account, Status::at("Status"), decision.prior_status)
         {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial));
         }

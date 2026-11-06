@@ -18,7 +18,14 @@ fn whole_record_writes_derive_sibling_clears_but_single_fields_do_not() {
             _ => None,
         })
         .collect();
-    assert_eq!(clears, ["measured", "named"]);
+    assert_eq!(
+        clears,
+        [
+            "a517cf620c4627e67",
+            "a83ebc555df84f92e",
+            "ac9a7ff83b921347e"
+        ]
+    );
     assert!(!schema.erased().members().iter().any(|member| matches!(member,
         ApplicationSchemaMember::OperationProgram { operation, target: ApplicationOperationProgramTarget::RemoveAspect { .. } }
         if operation == FieldsOnly::reference().name())));
@@ -129,4 +136,17 @@ impl Record<IdentityRow> for NoEqualityBindings {
 fn principal_identity_requires_the_bindings_equality_posture() {
     let field = record_field(NoEquality, RoleOwner, RoleIdentity, "id").unwrap();
     assert!(ApplicationPrincipalIdentityRequirement::<Fixture, RoleOwner, u64, IdentityValueBinding>::from_record(NoEquality, field).is_err());
+}
+
+#[test]
+fn internal_presence_columns_are_not_user_field_handles() {
+    let selected: Result<RecordField<_, _, bool>, _> =
+        record_field(Fixture, Item, Noted, "__record_presence");
+    assert!(selected.is_err());
+    let declaration = declare(Fixture).unwrap();
+    let selection: FieldSelection<_, _, _, bool> =
+        select_field(Fixture, Item, Noted, "__record_presence");
+    assert!(selection
+        .installed(declaration.member_provenance().fragment_catalog())
+        .is_err());
 }

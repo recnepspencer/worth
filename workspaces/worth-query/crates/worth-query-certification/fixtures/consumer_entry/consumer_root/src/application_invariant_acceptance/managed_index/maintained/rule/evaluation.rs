@@ -1,10 +1,8 @@
 //! One rule evaluator consumes the real installed Native Source loan.
 use super::super::{prefix, query, schema::*};
-use super::ReservedName;
+
 use std::sync::{Arc, Mutex};
-use worth_query_decl::facade::{
-    application_query::ApplicationManagedIndexBinding, application_schema::*,
-};
+use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_host::facade::application_invariants::*;
 pub(crate) struct Calls {
     pub records: Mutex<Vec<Record>>,

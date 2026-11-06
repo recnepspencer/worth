@@ -7,7 +7,6 @@ use worth_query_declaration::facade::application_operation::{
     WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
     WorthQueryAtMostOneOutput, WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
 };
-use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 
 use crate::domain_computation::primary_graph::tests::fixture::{
     Account, IdentityExecutionSchema as Schema,
@@ -156,7 +155,7 @@ fn checkpoint_may_omit_only_an_at_most_one_installed_role() {
     let checkpoint_of = |names: &[&str]| {
         let mut checkpoint = checkpoint(names.iter().map(|name| role(name)).collect());
         for role in std::sync::Arc::get_mut(&mut checkpoint.roles).expect("unique fixture roles") {
-            role.entity_name = Account::IDENTIFIER.into();
+            role.entity_name = <Account as worth_query_declaration::facade::application_schema::fragment::Entity>::NAME.into();
         }
         checkpoint
     };
@@ -182,7 +181,8 @@ fn checkpoint_cannot_underfill_an_installed_role_family() {
     installed.output_role_families = vec![<Member as DeclaredFamily>::DESCRIPTOR];
     let mut checkpoint = checkpoint(vec![role("member.one")]);
     std::sync::Arc::get_mut(&mut checkpoint.roles).expect("unique fixture roles")[0].entity_name =
-        Account::IDENTIFIER.into();
+        <Account as worth_query_declaration::facade::application_schema::fragment::Entity>::NAME
+            .into();
 
     assert!(validate_checkpoint_output_meaning(&installed, &checkpoint)
         .unwrap_err()

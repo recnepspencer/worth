@@ -1,4 +1,5 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_declaration::facade::application_schema::fragment::RecordSelection;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationOutputContract,

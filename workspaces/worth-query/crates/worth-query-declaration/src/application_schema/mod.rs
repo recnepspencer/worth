@@ -7,7 +7,6 @@ mod application_managed_index_authoring;
 mod application_mutation_authoring;
 mod application_query_authoring;
 mod application_resource_authoring;
-mod aspect_contract_identity;
 mod authoring_context;
 mod authorization_path_components;
 mod authorization_policy;
@@ -88,10 +87,8 @@ mod relation_aspect;
 mod relation_integrity;
 mod resource_member_closure;
 pub use relation_aspect::{
-    ApplicationRelationAspectDefinition, ApplicationRelationAspectDefinitionBuilder,
     ApplicationRelationAspectDefinitionDenial, ApplicationRelationFieldDefinition,
-    ApplicationRelationFieldRef, ErasedApplicationRelationAspectDefinition,
-    WorthQueryPortableRelationAspectParts,
+    ErasedApplicationRelationAspectDefinition, WorthQueryPortableRelationAspectParts,
 };
 pub use relation_integrity::ApplicationRelationGraphLaws;
 
@@ -150,7 +147,6 @@ mod unique_field_tests;
 #[cfg(test)]
 mod value_binding_tests;
 
-pub use aspect_contract_identity::ApplicationAspectMarkerIdentity;
 pub use authoring_context::{
     ApplicationSchemaAuthoringContext, ApplicationSchemaAuthoringDenial,
     ApplicationSchemaAuthoringDenialKind,
@@ -182,8 +178,7 @@ pub use component_set::{
 };
 pub use contribution::{
     ApplicationSchemaComposition, ApplicationSchemaContribution,
-    ApplicationSchemaContributionAuthoring, ApplicationSchemaContributionDenial,
-    ApplicationSchemaContributionIdentity, ApplicationSchemaContributionMembership,
+    ApplicationSchemaContributionDenial, ApplicationSchemaContributionIdentity,
     ApplicationSchemaContributionProvenance, ApplicationSchemaContributionRef,
 };
 pub use declaration::{
@@ -200,9 +195,7 @@ pub use effect_marker_identity::ApplicationEffectMarkerIdentity;
 pub use external_effect_correlation_family::WorthQueryExternalEffectCorrelationFamily;
 pub use external_effect_protocol::ApplicationExternalEffectProtocol;
 pub use field_presence::ApplicationFieldPresence;
-pub use field_reference::{
-    ApplicationEntityMarkerIdentity, ApplicationFieldMarkerIdentity, ApplicationFieldRef,
-};
+pub use field_reference::ApplicationEntityMarkerIdentity;
 pub use inbound_occurrence::{
     ApplicationInboundOccurrenceBinding, ApplicationInboundOccurrenceLimits,
     ApplicationInboundOccurrenceProtocol,
@@ -274,8 +267,8 @@ pub use read_authoring::{
     TypedTraversal,
 };
 pub use references::{
-    ApplicationAbilityRef, ApplicationAspectRef, ApplicationEffectRef, ApplicationEntityRef,
-    ApplicationOperationRef, ApplicationPolicyRef, ApplicationRelationRef, ApplicationUnitRef,
+    ApplicationAbilityRef, ApplicationEffectRef, ApplicationEntityRef, ApplicationOperationRef,
+    ApplicationPolicyRef, ApplicationRelationRef, ApplicationUnitRef,
 };
 pub use relation_integrity::{
     ApplicationRelationCardinality, ApplicationRelationCrossContextPolicy,

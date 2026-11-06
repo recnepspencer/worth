@@ -139,7 +139,7 @@ fn source(
     let entity = selected
         .resolve_entity(
             phase,
-            BodyKey::reference(),
+            BodyKey::at("BodyKey"),
             ANCHOR.to_owned(),
             scope,
             WorthQueryPrincipalResolutionMode::Ordinary,

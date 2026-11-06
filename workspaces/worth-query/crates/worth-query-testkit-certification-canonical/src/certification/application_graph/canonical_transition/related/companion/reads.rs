@@ -84,7 +84,7 @@ where
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     "authored-nested".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

@@ -39,7 +39,10 @@ fn partial_adjacency_reservations_are_not_endpoint_acquisitions() {
                     &phase,
                     |reader| {
                         let principal = reader
-                            .resolve_entity(PrincipalIdentityField::reference(), 1_u64)
+                            .resolve_entity(
+                                PrincipalIdentityField::at("PrincipalIdentityField"),
+                                1_u64,
+                            )
                             .unwrap();
                         reader
                             .relations_from(AccountOwner::reference(), &principal)
@@ -84,7 +87,7 @@ fn read_partial_adjacency(
             product.observation().basis().relational_basis().clone(),
             |reader| {
                 let principal = reader
-                    .resolve_entity(PrincipalIdentityField::reference(), 1_u64)
+                    .resolve_entity(PrincipalIdentityField::at("PrincipalIdentityField"), 1_u64)
                     .unwrap();
                 let error = reader
                     .relations_from(AccountOwner::reference(), &principal)
@@ -114,7 +117,10 @@ fn acquired_endpoint_metadata_counts_even_when_its_kind_is_rejected() {
                     &phase,
                     |reader| {
                         let principal = reader
-                            .resolve_entity(PrincipalIdentityField::reference(), 1_u64)
+                            .resolve_entity(
+                                PrincipalIdentityField::at("PrincipalIdentityField"),
+                                1_u64,
+                            )
                             .unwrap();
                         let principal_kind = reader
                             .layout
@@ -187,7 +193,7 @@ fn cancellation_before_endpoint_acquisition_records_no_endpoint_read() {
         product.observation().basis().relational_basis().clone(),
         |reader| {
             let principal = reader
-                .resolve_entity(PrincipalIdentityField::reference(), 1_u64)
+                .resolve_entity(PrincipalIdentityField::at("PrincipalIdentityField"), 1_u64)
                 .unwrap();
             let kind = reader
                 .layout

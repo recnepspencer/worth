@@ -27,7 +27,8 @@ pub trait Columns<Row, Set: BindingSet, Kinds> {
 }
 
 fn path(prefix: &str, name: &str) -> Result<String, RecordRefusal> {
-    if name.is_empty()
+    if name == super::record_presence::COLUMN
+        || name.is_empty()
         || name
             .chars()
             .any(|c| c.is_control() || c.is_whitespace() || matches!(c, '.' | '[' | ']'))
@@ -97,27 +98,17 @@ macro_rules! field_posture {
         }
     };
 }
-field_posture!(0; A GA KA);
-field_posture!(1; A GA KA, B GB KB);
-field_posture!(2; A GA KA, B GB KB, C GC KC);
-field_posture!(3; A GA KA, B GB KB, C GC KC, D GD KD);
-field_posture!(4; A GA KA, B GB KB, C GC KC, D GD KD, E GE KE);
-field_posture!(5; A GA KA, B GB KB, C GC KC, D GD KD, E GE KE, F GF KF);
-field_posture!(6; A GA KA, B GB KB, C GC KC, D GD KD, E GE KE, F GF KF, G GG KG);
-field_posture!(7; A GA KA, B GB KB, C GC KC, D GD KD, E GE KE, F GF KF, G GG KG, H GH KH);
-
-columns!(A GA KA 0);
-columns!(A GA KA 0, B GB KB 1);
-columns!(A GA KA 0, B GB KB 1, C GC KC 2);
-columns!(A GA KA 0, B GB KB 1, C GC KC 2, D GD KD 3);
-columns!(A GA KA 0, B GB KB 1, C GC KC 2, D GD KD 3, E GE KE 4);
-columns!(A GA KA 0, B GB KB 1, C GC KC 2, D GD KD 3, E GE KE 4, F GF KF 5);
-columns!(A GA KA 0, B GB KB 1, C GC KC 2, D GD KD 3, E GE KE 4, F GF KF 5, G GG KG 6);
-columns!(A GA KA 0, B GB KB 1, C GC KC 2, D GD KD 3, E GE KE 4, F GF KF 5, G GG KG 6, H GH KH 7);
-append!(A GA KA 0);
-append!(A GA KA 0, B GB KB 1);
-append!(A GA KA 0, B GB KB 1, C GC KC 2);
-append!(A GA KA 0, B GB KB 1, C GC KC 2, D GD KD 3);
-append!(A GA KA 0, B GB KB 1, C GC KC 2, D GD KD 3, E GE KE 4);
-append!(A GA KA 0, B GB KB 1, C GC KC 2, D GD KD 3, E GE KE 4, F GF KF 5);
-append!(A GA KA 0, B GB KB 1, C GC KC 2, D GD KD 3, E GE KE 4, F GF KF 5, G GG KG 6);
+// Records accept at most sixteen constructor arguments; membership tuples remain eight.
+macro_rules! arities {
+    (@prefix [$($v:ident $get:ident $kind:ident $index:tt,)*] $next:ident $next_get:ident $next_kind:ident $next_index:tt, $($tail:tt)+) => {
+        columns!($($v $get $kind $index,)* $next $next_get $next_kind $next_index);
+        append!($($v $get $kind $index,)* $next $next_get $next_kind $next_index);
+        field_posture!($next_index; $($v $get $kind,)* $next $next_get $next_kind);
+        arities!(@prefix [$($v $get $kind $index,)* $next $next_get $next_kind $next_index,] $($tail)+);
+    };
+    (@prefix [$($v:ident $get:ident $kind:ident $index:tt,)*] $last:ident $last_get:ident $last_kind:ident $last_index:tt) => {
+        columns!($($v $get $kind $index,)* $last $last_get $last_kind $last_index);
+        field_posture!($last_index; $($v $get $kind,)* $last $last_get $last_kind);
+    };
+}
+arities!(@prefix [] A GA KA 0, B GB KB 1, C GC KC 2, D GD KD 3, E GE KE 4, F GF KF 5, G GG KG 6, H GH KH 7, I GI KI 8, J GJ KJ 9, K GK KK 10, L GL KL 11, M GM KM 12, N GN KN 13, O GO KO 14, P GP KP 15);

@@ -5,7 +5,7 @@ use worth_query_declaration::facade::{
     application_aftermath::*, application_query::*, application_schema::*,
 };
 
-pub(in crate::domain_computation::primary_graph) struct RecordedLabelEdit;
+pub struct RecordedLabelEdit;
 impl ApplicationCorrectionBinding<IdentityExecutionSchema> for RecordedLabelEdit {
     const IDENTITY: &'static str = "worth.query.test.recorded-label-edit.v1";
     type Source = LabelBinding;
@@ -36,7 +36,10 @@ impl ApplicationCorrectionBinding<IdentityExecutionSchema> for RecordedLabelEdit
     fn mechanism() -> DeclaredCorrectionMechanism<IdentityExecutionSchema> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(AccountLabel::reference())],
+                [
+                    DeclaredPreImageLocus::from_field(AccountLabel::at("AccountLabel"))
+                        .expect("record field contract"),
+                ],
                 512,
             )
             .unwrap(),
@@ -53,7 +56,10 @@ impl ApplicationCorrectionBinding<IdentityExecutionSchema> for RecordedLabelEdit
             return Err(UnsupportedSourceMeaning);
         };
         let prior = preimage
-            .field(&DeclaredPreImageLocus::from_field(AccountLabel::reference()))
+            .field(
+                &DeclaredPreImageLocus::from_field(AccountLabel::at("AccountLabel"))
+                    .expect("record field contract"),
+            )
             .ok_or(MissingPreImage)?;
         Ok(LabelEdit {
             status: original.status.clone(),

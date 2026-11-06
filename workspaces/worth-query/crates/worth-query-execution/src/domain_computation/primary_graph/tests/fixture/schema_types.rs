@@ -1,9 +1,19 @@
+#[path = "schema_types/records.rs"]
+pub(super) mod storage_model;
 use super::*;
+pub use storage_model::{
+    Account, AccountAllActivity, AccountAnnotation, AccountBlocked, AccountIdentity, AccountLabel,
+    AccountMembershipTag, AccountNote, AccountOwner, AccountPolicy, AccountPrimaryActivity,
+    AccountScore, AccountSecondaryActivity, AccountStatus, Activity, ActivityAccount,
+    ActivityIdentity, ActivitySequence, ElevationRecords, ExecutionRecords, ExternalIdentityField,
+    ExternalMapping, GrantRecords, MappingStatusField, MappingTarget, Principal,
+    PrincipalIdentityField, PrincipalRecords,
+};
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
     ApplicationStructuredValueBinding, ApplicationValueValidationDenial,
-    StringApplicationValueBinding, U64ApplicationValueBinding,
+    U64ApplicationValueBinding,
 };
 use worth_query_declaration::facade::authentication::{
     WorthQueryExternalPrincipalIdentityBinding, WorthQueryPrincipalMappingStatusBinding,
@@ -14,82 +24,36 @@ pub(super) mod exact_preimage_retention;
 #[path = "wrong_field_retention.rs"]
 pub(super) mod wrong_field_retention;
 
-worth_query_entity!(pub ExternalMapping for IdentityExecutionSchema);
-worth_query_entity!(pub Principal for IdentityExecutionSchema);
-worth_query_entity!(pub Account for IdentityExecutionSchema);
-worth_query_entity!(pub Activity for IdentityExecutionSchema);
-worth_query_aspect!(pub ExternalIdentity for IdentityExecutionSchema, ExternalMapping; identity = AspectIdentity(0x9161103a), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub ExternalIdentityField for IdentityExecutionSchema, ExternalMapping, ExternalIdentity:
-    WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality
-);
-worth_query_aspect!(pub PrincipalIdentity for IdentityExecutionSchema, Principal; identity = AspectIdentity(0x9161103b), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub PrincipalIdentityField for IdentityExecutionSchema, Principal, PrincipalIdentity:
-    u64 => U64ApplicationValueBinding, read_only, equality
-);
-worth_query_field!(
-    pub MappingStatusField for IdentityExecutionSchema, ExternalMapping, ExternalIdentity:
-    WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality
-);
-worth_query_relation!(
-    pub MappingTarget in IdentityExecutionSchema,
-    ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(
-    pub IdentityBinding in IdentityExecutionSchema,
-    mapping ExternalMapping {
-        identity: ExternalIdentityField,
-        status: MappingStatusField,
-        target: MappingTarget => Principal,
-        principal_identity: PrincipalIdentityField
+pub struct IdentityBinding;
+impl IdentityBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        IdentityExecutionSchema,
+        Self,
+        ExternalMapping,
+        Principal,
+        <PrincipalIdentityField as RecordSelection>::Value,
+        <PrincipalIdentityField as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "IdentityBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    ExternalIdentityField::at("ExternalIdentityField"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    MappingStatusField::at("MappingStatusField"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    MappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
+                ),
+            },
+        )
     }
-);
-worth_query_aspect!(pub AccountPolicy for IdentityExecutionSchema, Account; identity = AspectIdentity(0x9161103c), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub AccountIdentity for IdentityExecutionSchema, Account, AccountPolicy:
-    String => StringApplicationValueBinding, read_only, equality
-);
-worth_query_field!(
-    pub AccountStatus for IdentityExecutionSchema, Account, AccountPolicy:
-    String => StringApplicationValueBinding, read_write, equality
-);
-worth_query_field!(
-    pub AccountLabel for IdentityExecutionSchema, Account, AccountPolicy:
-    String => StringApplicationValueBinding, read_write, equality
-);
-worth_query_field!(
-    pub AccountNote for IdentityExecutionSchema, Account, AccountPolicy:
-    optional String => StringApplicationValueBinding, read_write, equality
-);
-worth_query_field!(
-    pub AccountScore for IdentityExecutionSchema, Account, AccountPolicy:
-    optional u64 => U64ApplicationValueBinding, read_write, no_equality
-);
-worth_query_aspect!(pub AccountAnnotations for IdentityExecutionSchema, Account; identity = AspectIdentity(0x9161103e), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub AccountMembership for IdentityExecutionSchema, Account; identity = AspectIdentity(0x9161103f), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub AccountMembershipTag for IdentityExecutionSchema, Account, AccountMembership:
-    String => StringApplicationValueBinding, read_only, equality
-);
-worth_query_field!(
-    pub AccountAnnotation for IdentityExecutionSchema, Account, AccountAnnotations:
-    optional String => StringApplicationValueBinding, read_write, no_equality
-);
-worth_query_aspect!(pub ActivityFacts for IdentityExecutionSchema, Activity; identity = AspectIdentity(0x9161103d), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub ActivityIdentity for IdentityExecutionSchema, Activity, ActivityFacts:
-    String => StringApplicationValueBinding, read_only, equality
-);
-worth_query_field!(
-    pub ActivitySequence for IdentityExecutionSchema, Activity, ActivityFacts:
-    u64 => U64ApplicationValueBinding, read_only, no_equality
-);
-worth_query_relation!(pub AccountOwner in IdentityExecutionSchema, Principal => Account; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub AccountBlocked in IdentityExecutionSchema, Principal => Account; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub AccountPrimaryActivity in IdentityExecutionSchema, Account => Activity; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub AccountSecondaryActivity in IdentityExecutionSchema, Account => Activity; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub AccountAllActivity in IdentityExecutionSchema, Account => Activity; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub ActivityAccount in IdentityExecutionSchema, Activity => Account; integrity = same_context_unbounded_retain_dangling);
+}
+
 worth_query_ability!(pub ViewAccount scoped_to Account, in IdentityExecutionSchema);
 worth_query_ability!(pub EditAccount scoped_to Account, in IdentityExecutionSchema);
 worth_query_ability!(pub ManageOwnership scoped_to Principal, in IdentityExecutionSchema);
@@ -226,32 +190,26 @@ worth_query_operation_requires!(TouchAccountOperation => [ViewAccount]);
 worth_query_operation_requires!(WrongFieldRetentionOperation => [ViewAccount]);
 worth_query_operation_requires!(ExactStatusRetentionOperation => [ViewAccount]);
 worth_query_operation_requires!(MultiFieldRetentionOperation => [ViewAccount]);
-worth_query_operation_expects_fact!(TouchAccountOperation => [AccountStatus]);
+
 worth_query_operation_requires!(MultiTouchOperation => [ViewAccount, EditAccount]);
 worth_query_operation_requires!(ChangeOwnershipOperation => [ManageOwnership]);
 worth_query_operation_requires!(PatchAccountDraftOperation => [ViewAccount]);
-worth_query_operation_writes!(TouchAccountOperation => [AccountStatus, AccountLabel]);
+
 worth_query_declaration::worth_query_operation_deletes!(TouchAccountOperation => [Account]);
-worth_query_operation_writes!(WrongFieldRetentionOperation => [AccountLabel]);
-worth_query_operation_writes!(ExactStatusRetentionOperation => [AccountStatus, AccountLabel]);
-worth_query_operation_writes!(MultiFieldRetentionOperation => [AccountStatus, AccountLabel]);
+
 // Deliberately wider than the installed contract so authority-ceiling tests
 // prove that compile-time capability cannot widen installed authority.
-worth_query_operation_writes!(MultiTouchOperation => [AccountStatus, AccountLabel]);
-worth_query_operation_writes!(PatchAccountDraftOperation => [AccountNote, AccountScore]);
+
 worth_query_operation_emits!(MultiTouchOperation => [AccountActivityEffect]);
 worth_query_operation_emits!(
     TouchAccountOperation => [AccountActivityEffect, LiveActivityEffect]
 );
 worth_query_operation_emits!(ExactStatusRetentionOperation => [RetainedStatusEffect]);
 worth_query_operation_emits!(MutationFreeEmitOperation => [MutationFreeExternalEffect]);
-worth_query_operation_reads!(TouchAccountOperation => [Account, AccountStatus, AccountLabel, AccountOwner]);
-worth_query_operation_reads!(WrongFieldRetentionOperation => [AccountStatus, AccountLabel]);
-worth_query_operation_reads!(ExactStatusRetentionOperation => [AccountStatus, AccountLabel]);
-worth_query_operation_reads!(MultiFieldRetentionOperation => [AccountStatus, AccountLabel]);
-worth_query_operation_reads!(MultiTouchOperation => [AccountStatus, AccountLabel]);
-worth_query_operation_reads!(ChangeOwnershipOperation => [AccountOwner, AccountStatus]);
-worth_query_operation_reads!(PatchAccountDraftOperation => [AccountNote, AccountScore]);
+worth_query_operation_reads!(TouchAccountOperation => [Account, AccountOwner]);
+
+worth_query_operation_reads!(ChangeOwnershipOperation => [AccountOwner]);
+
 worth_query_operation_links!(ChangeOwnershipOperation => [AccountOwner]);
 worth_query_operation_unlinks!(ChangeOwnershipOperation => [AccountOwner]);
 
@@ -285,3 +243,5 @@ pub(in crate::domain_computation::primary_graph) fn live_scope() -> WorthQueryRe
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     )
 }
+
+use worth_query_declaration::facade::application_schema::{fragment::RecordSelection, *};

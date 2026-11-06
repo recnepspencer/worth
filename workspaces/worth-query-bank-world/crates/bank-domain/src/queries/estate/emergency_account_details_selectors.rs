@@ -2,16 +2,9 @@ use worth_query_decl::facade::application_query::{
     ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef, ExactlyOneResult,
     ForwardResultTraversal,
 };
-use worth_query_decl::facade::application_schema::{
-    EqualityPredicate, NoApplicationUnit, ReadOnly, ReadWrite,
-};
 
-use crate::{
-    model::{AccountId, AccountName},
-    schema::{
-        Account, AccountDisplayName, AccountIdentity, AccountProfile, AccountState, AccountStatus,
-        BankSchema, EstateAccount, EstateCase, Identity, Status,
-    },
+use crate::schema::{
+    Account, AccountDisplayName, AccountIdentity, BankSchema, EstateAccount, EstateCase, Status,
 };
 
 use super::emergency_account_details::EstateEmergencyAccountDetailsQuery;
@@ -42,43 +35,28 @@ pub(super) fn account_identity() -> ApplicationQueryResultFieldRef<
     EstateEmergencyAccountDetailsQuery,
     AccountIdentitySlot,
     BankSchema,
-    Account,
-    Identity,
     AccountIdentity,
-    AccountId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("account", AccountIdentity::reference())
+    ApplicationQueryResultFieldRef::new("account", AccountIdentity::at("AccountIdentity"))
 }
 
 pub(super) fn account_name() -> ApplicationQueryResultFieldRef<
     EstateEmergencyAccountDetailsQuery,
     AccountNameSlot,
     BankSchema,
-    Account,
-    AccountProfile,
     AccountDisplayName,
-    AccountName,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("display_name", AccountDisplayName::reference())
+    ApplicationQueryResultFieldRef::new(
+        "display_name",
+        AccountDisplayName::at("AccountDisplayName"),
+    )
 }
 
 pub(super) fn account_status() -> ApplicationQueryResultFieldRef<
     EstateEmergencyAccountDetailsQuery,
     AccountStatusSlot,
     BankSchema,
-    Account,
-    AccountState,
     Status,
-    AccountStatus,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("status", Status::reference())
+    ApplicationQueryResultFieldRef::new("status", Status::at("Status"))
 }

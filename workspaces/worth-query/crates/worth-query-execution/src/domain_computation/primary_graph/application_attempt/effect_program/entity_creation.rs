@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -137,7 +136,7 @@ impl<Schema, Operation, Input, Scope>
             .push(WorthQueryApplicationRealizedEffect::CreateEntity {
                 kind,
                 key,
-                fields: BTreeMap::new(),
+                fields: std::collections::BTreeMap::new(),
                 partition,
             });
         Ok(WorthQueryApplicationEffectEntity {

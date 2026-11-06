@@ -1,23 +1,13 @@
-use worth_query_decl::facade::{
-    application_query::{
-        ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef, ExactlyOneResult,
-        ForwardResultTraversal, ManyResults, ReverseResultTraversal,
-    },
-    application_schema::{EqualityPredicate, NoApplicationUnit, ReadOnly, ReadWrite},
+use worth_query_decl::facade::application_query::{
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef, ExactlyOneResult,
+    ForwardResultTraversal, ManyResults, ReverseResultTraversal,
 };
 
-use crate::{
-    estate::{
-        EmergencyAccessId, EmergencyAccessReason, EmergencyAccessStatus, EstateCaseId,
-        EstateMoment, MandatoryReviewId, MandatoryReviewStatus,
-    },
-    schema::{
-        BankSchema, EmergencyAccess, EmergencyAccessExpiresAtField, EmergencyAccessIdentityField,
-        EmergencyAccessIssuedAtField, EmergencyAccessReasonField, EmergencyAccessRecord,
-        EmergencyAccessStatusField, EmergencyEstate, EmergencyReview, EstateCase,
-        EstateCaseIdentityField, EstateCaseRecord, MandatoryReview, MandatoryReviewIdentityField,
-        MandatoryReviewRecord, MandatoryReviewStatusField,
-    },
+use crate::schema::{
+    BankSchema, EmergencyAccess, EmergencyAccessExpiresAtField, EmergencyAccessIdentityField,
+    EmergencyAccessIssuedAtField, EmergencyAccessReasonField, EmergencyAccessStatusField,
+    EmergencyEstate, EmergencyReview, EstateCase, EstateCaseIdentityField, MandatoryReview,
+    MandatoryReviewIdentityField, MandatoryReviewStatusField,
 };
 
 use super::EstateEmergencyAccessActivityQuery;
@@ -49,15 +39,9 @@ macro_rules! selector {
             EstateEmergencyAccessActivityQuery,
             $slot,
             BankSchema,
-            $entity,
-            $aspect,
             $field,
-            $value,
-            $write,
-            EqualityPredicate,
-            NoApplicationUnit,
         > {
-            ApplicationQueryResultFieldRef::new($alias, <$field>::reference())
+            ApplicationQueryResultFieldRef::new($alias, <$field>::at(stringify!($field)))
         }
     };
 }

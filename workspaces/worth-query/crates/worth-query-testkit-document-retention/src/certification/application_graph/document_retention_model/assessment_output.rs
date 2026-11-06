@@ -17,9 +17,8 @@ pub use worth_query_host::facade::{
             WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
         },
         application_schema::{
-            ApplicationFieldRef, ApplicationPrincipalBindingRef,
-            ApplicationSchemaDeclarationBuilder, EqualityPredicate, NoApplicationUnit, ReadOnly,
-            U64ApplicationValueBinding,
+            ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder, EqualityPredicate,
+            NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
         },
     },
     primary_graph::{
@@ -90,7 +89,7 @@ worth_query_structured_value_binding!(pub RetentionAssessmentDenialBinding for R
     identity: "worth.query.certification.retention-assessment.denial.v1"
 });
 worth_query_operation!(pub PublishRetentionAssessment for DocumentRetentionSchema, input RetentionAssessmentInputBinding);
-worth_query_operation_reads!(PublishRetentionAssessment => [Document, DocumentIdentityField, DocumentRetentionField]);
+worth_query_operation_reads!(PublishRetentionAssessment => [Document]);
 
 pub struct RetentionAssessmentOutputs;
 
@@ -113,15 +112,7 @@ impl ApplicationMutationOutputContract<DocumentRetentionSchema> for RetentionAss
 }
 
 pub struct RetentionAssessmentBinding;
-pub type RetentionAssessmentScope = ApplicationMutationFieldScope<
-    DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type RetentionAssessmentScope = ApplicationMutationFieldScope<DocumentIdentityField>;
 
 impl ApplicationMutationBinding<DocumentRetentionSchema> for RetentionAssessmentBinding {
     fn workflow_execution_requirements(
@@ -154,17 +145,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for RetentionAssessment
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.retention-assessment.command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -187,7 +169,10 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for RetentionAssessmentI
     }
 
     fn scope_binding(&self) -> RetentionAssessmentScope {
-        RetentionAssessmentScope::new(DocumentIdentityField::reference(), self.identity.clone())
+        RetentionAssessmentScope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity.clone(),
+        )
     }
 }
 
@@ -211,13 +196,17 @@ impl OperationHandler<DocumentRetentionSchema, RetentionAssessmentBinding>
         RetentionAssessmentDenial,
     > {
         super::retention_entry::record_assessment_decision(input.retention_days);
-        let document = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
-        {
+        let document = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            input.identity.clone(),
+        ) {
             Ok(document) => document,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&document, DocumentRetentionField::reference()) {
+        match reader.field(
+            &document,
+            DocumentRetentionField::at("DocumentRetentionField"),
+        ) {
             // A zero-day source is lawful to save but has no assessable retention period.
             Ok(Some(0)) if input.retention_days == 0 => {
                 return HandlerResult::DomainDenied(RetentionAssessmentDenial::NoRetentionPeriod);
@@ -363,11 +352,11 @@ pub fn declare(
         .operation_projection_work_budget(PublishRetentionAssessment::reference(), 8)
         .operation_read_field(
             PublishRetentionAssessment::reference(),
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
         )
         .operation_read_field(
             PublishRetentionAssessment::reference(),
-            DocumentRetentionField::reference(),
+            DocumentRetentionField::at("DocumentRetentionField"),
         )
         .application_mutation_binding::<RetentionAssessmentBinding>();
     ordinary::declare(schema)

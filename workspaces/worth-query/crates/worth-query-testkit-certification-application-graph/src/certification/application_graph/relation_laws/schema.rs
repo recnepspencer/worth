@@ -1,9 +1,18 @@
 //! The same graph vocabulary with separately authored relation meaning.
 pub use std::marker::PhantomData;
-pub use worth_query_decl::facade::{worth_query_aspect, worth_query_entity, worth_query_field};
+pub use worth_query_decl::facade::application_schema::fragment::{self, *};
+#[path = "schema/records.rs"]
+mod records;
+pub use records::*;
+#[path = "schema/policy_models.rs"]
+mod policy_models;
+pub use policy_models::*;
 pub use worth_query_host::facade::declaration::{application_schema::*, authentication::*};
 
 pub trait LawPolicy: Clone + std::fmt::Debug + Send + Sync + 'static {
+    type Model: GraphModel;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>;
     const INTEGRITY: ApplicationRelationIntegrity;
     const RELATION_PAYLOAD: bool = false;
     const DERIVED_RELATIONS: bool = false;
@@ -34,6 +43,13 @@ pub trait LawPolicy: Clone + std::fmt::Debug + Send + Sync + 'static {
 #[derive(Clone, Debug)]
 pub struct Acyclic;
 impl LawPolicy for Acyclic {
+    type Model = AcyclicRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     // Self endpoints are permitted here so acyclicity itself must judge them.
     // compiled-example: begin
     const INTEGRITY: ApplicationRelationIntegrity =
@@ -43,6 +59,13 @@ impl LawPolicy for Acyclic {
 #[derive(Clone, Debug)]
 pub struct Unrestricted;
 impl LawPolicy for Unrestricted {
+    type Model = UnrestrictedRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
 }
@@ -50,6 +73,13 @@ impl LawPolicy for Unrestricted {
 #[derive(Clone, Debug)]
 pub struct Orbit;
 impl LawPolicy for Orbit {
+    type Model = OrbitRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     // compiled-orbit-example: begin
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().orbit();
@@ -58,6 +88,13 @@ impl LawPolicy for Orbit {
 #[derive(Clone, Debug)]
 pub struct NoSelfOrbit;
 impl LawPolicy for NoSelfOrbit {
+    type Model = NoSelfOrbitRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling()
             .orbit();
@@ -66,12 +103,26 @@ impl LawPolicy for NoSelfOrbit {
 #[derive(Clone, Debug)]
 pub struct Symmetric;
 impl LawPolicy for Symmetric {
+    type Model = SymmetricRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().symmetric();
 }
 #[derive(Clone, Debug)]
 pub struct DirectedUnique;
 impl LawPolicy for DirectedUnique {
+    type Model = DirectedUniqueRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
             .unique(ApplicationRelationUniquenessScope::DirectedSemanticEdge);
@@ -79,6 +130,13 @@ impl LawPolicy for DirectedUnique {
 #[derive(Clone, Debug)]
 pub struct NormalizedUnique;
 impl LawPolicy for NormalizedUnique {
+    type Model = NormalizedUniqueRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
             .unique(ApplicationRelationUniquenessScope::NormalizedSymmetricEdge);
@@ -88,12 +146,14 @@ pub mod paired_unique;
 pub use paired_unique::SymmetricDirectedUnique;
 
 pub trait GraphSchemaBinding: ApplicationSchema {
+    type Model: GraphModel;
     const INTEGRITY: ApplicationRelationIntegrity;
     const FEEDS_INTEGRITY: ApplicationRelationIntegrity;
 }
 #[derive(Clone, Debug)]
 pub struct GraphSchema<L: LawPolicy>(pub PhantomData<fn() -> L>);
 impl<L: LawPolicy> GraphSchemaBinding for GraphSchema<L> {
+    type Model = L::Model;
     const INTEGRITY: ApplicationRelationIntegrity = L::INTEGRITY;
     const FEEDS_INTEGRITY: ApplicationRelationIntegrity = L::FEEDS_INTEGRITY;
 }
@@ -104,36 +164,20 @@ impl<L: LawPolicy> ApplicationSchema for GraphSchema<L> {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .contributions()
-            .register::<super::program::GraphContribution<L>>()?
-            .build()
+        L::schema_declaration()
     }
+}
+impl<L: LawPolicy> Fragment for GraphSchema<L> {
+    const NAME: &'static str = "RelationGraph";
+    type Bindings = NoBindings;
+    type Members = (super::program::GraphContribution<L>,);
 }
 impl<L: LawPolicy> ApplicationSchemaComposition for GraphSchema<L> {
     type Contributions = (super::program::GraphContribution<L>,);
 }
 
-worth_query_entity!(pub ExternalMapping for S: GraphSchemaBinding);
-worth_query_entity!(pub Principal for S: GraphSchemaBinding);
-worth_query_entity!(pub Node for S: GraphSchemaBinding);
-worth_query_entity!(pub Leaf for S: GraphSchemaBinding);
-worth_query_aspect!(pub ExternalIdentity for S: GraphSchemaBinding, ExternalMapping; identity = AspectIdentity(0x91810101), revision = AspectContractRevision(1));
-worth_query_aspect!(pub PrincipalFacts for S: GraphSchemaBinding, Principal; identity = AspectIdentity(0x91810102), revision = AspectContractRevision(1));
-worth_query_aspect!(pub LeafFacts for S: GraphSchemaBinding, Leaf; identity = AspectIdentity(0x91810104), revision = AspectContractRevision(1));
-worth_query_field!(pub LeafKey for S: GraphSchemaBinding, Leaf, LeafFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_aspect!(pub NodeFacts for S: GraphSchemaBinding, Node; identity = AspectIdentity(0x91810103), revision = AspectContractRevision(1));
-worth_query_field!(pub ExternalIdentityField for S: GraphSchemaBinding, ExternalMapping, ExternalIdentity: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub MappingStatusField for S: GraphSchemaBinding, ExternalMapping, ExternalIdentity: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub PrincipalKey for S: GraphSchemaBinding, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub NodeKey for S: GraphSchemaBinding, Node, NodeFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-
 pub struct Precedes;
-impl Precedes {
-    pub const fn reference<S: GraphSchemaBinding>() -> ApplicationRelationRef<S, Self, Node, Node> {
-        ApplicationRelationRef::from_schema_identifiers("Precedes", "Node", "Node", S::INTEGRITY)
-    }
-}
+
 pub struct MappingTarget;
 impl MappingTarget {
     pub fn reference<S: GraphSchemaBinding>(
@@ -160,16 +204,16 @@ impl GraphPrincipal {
             "GraphPrincipal",
             ApplicationPrincipalBindingRequirements {
                 mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
-                    ExternalIdentityField::reference(),
+                    ExternalIdentityField::at("ExternalIdentityField"),
                 ),
                 mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
-                    MappingStatusField::reference(),
+                    MappingStatusField::at("MappingStatusField"),
                 ),
                 target: ApplicationPrincipalTargetRequirement::from_relation(
                     MappingTarget::reference(),
                 ),
                 principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
-                    PrincipalKey::reference(),
+                    PrincipalKey::at("PrincipalKey"),
                 ),
             },
         )
@@ -181,11 +225,7 @@ pub mod partition;
 pub use partition::{CrossPartition, Isolated};
 
 pub struct Feeds;
-impl Feeds {
-    pub const fn reference<S: GraphSchemaBinding>() -> ApplicationRelationRef<S, Self, Node, Leaf> {
-        ApplicationRelationRef::from_schema_identifiers("Feeds", "Node", "Leaf", S::FEEDS_INTEGRITY)
-    }
-}
+
 #[path = "schema/minimum.rs"]
 pub mod minimum;
 pub use minimum::{LeafAndPrincipalMinimumTwo, LeafMinimumTwo, MinimumTwo};
@@ -193,3 +233,7 @@ pub use minimum::{LeafAndPrincipalMinimumTwo, LeafMinimumTwo, MinimumTwo};
 #[path = "schema/payload.rs"]
 pub mod payload;
 pub use payload::{EdgeFacts, EdgeWeight, Payload};
+
+#[path = "schema/model.rs"]
+mod model;
+pub use model::*;

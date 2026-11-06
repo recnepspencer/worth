@@ -23,11 +23,11 @@ pub(super) fn install(
         )
         .operation_write(
             ProgramRequiredOperation::reference(),
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
         )
         .operation_read_field(
             ProgramRequiredOperation::reference(),
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
         )
         .operation(
             TouchAccountOperation::reference()
@@ -42,11 +42,11 @@ pub(super) fn install(
         .operation_requires_ability(TouchAccountOperation::reference(), ViewAccount::reference())
         .operation_write(
             TouchAccountOperation::reference(),
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
         )
         .operation_write(
             TouchAccountOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation_delete(TouchAccountOperation::reference(), Account::reference())
         .operation_emit(
@@ -59,15 +59,15 @@ pub(super) fn install(
         )
         .operation_read_field(
             TouchAccountOperation::reference(),
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
         )
         .operation_read_field(
             TouchAccountOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation_expected_fact(
             TouchAccountOperation::reference(),
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
         )
         .operation(
             PatchAccountDraftOperation::reference()
@@ -84,19 +84,19 @@ pub(super) fn install(
         )
         .operation_write(
             PatchAccountDraftOperation::reference(),
-            AccountNote::reference(),
+            AccountNote::at("AccountNote"),
         )
         .operation_write(
             PatchAccountDraftOperation::reference(),
-            AccountScore::reference(),
+            AccountScore::at("AccountScore"),
         )
         .operation_read_field(
             PatchAccountDraftOperation::reference(),
-            AccountNote::reference(),
+            AccountNote::at("AccountNote"),
         )
         .operation_read_field(
             PatchAccountDraftOperation::reference(),
-            AccountScore::reference(),
+            AccountScore::at("AccountScore"),
         )
         .operation(
             WrongFieldRetentionOperation::reference()
@@ -113,15 +113,15 @@ pub(super) fn install(
         )
         .operation_write(
             WrongFieldRetentionOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation_read_field(
             WrongFieldRetentionOperation::reference(),
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
         )
         .operation_read_field(
             WrongFieldRetentionOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation(
             ExactStatusRetentionOperation::reference()
@@ -144,19 +144,19 @@ pub(super) fn install(
         )
         .operation_write(
             ExactStatusRetentionOperation::reference(),
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
         )
         .operation_write(
             ExactStatusRetentionOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation_read_field(
             ExactStatusRetentionOperation::reference(),
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
         )
         .operation_read_field(
             ExactStatusRetentionOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation_emit(
             ExactStatusRetentionOperation::reference(),
@@ -177,19 +177,19 @@ pub(super) fn install(
         )
         .operation_write(
             MultiFieldRetentionOperation::reference(),
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
         )
         .operation_write(
             MultiFieldRetentionOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation_read_field(
             MultiFieldRetentionOperation::reference(),
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
         )
         .operation_read_field(
             MultiFieldRetentionOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation(
             MultiTouchOperation::reference()
@@ -202,8 +202,8 @@ pub(super) fn install(
         .operation_projection_work_budget(MultiTouchOperation::reference(), 32)
         .operation_requires_ability(MultiTouchOperation::reference(), ViewAccount::reference())
         .operation_requires_ability(MultiTouchOperation::reference(), EditAccount::reference())
-        .operation_write(MultiTouchOperation::reference(), AccountStatus::reference())
-        .operation_read_field(MultiTouchOperation::reference(), AccountStatus::reference())
+        .operation_write(MultiTouchOperation::reference(), AccountStatus::at("AccountStatus"))
+        .operation_read_field(MultiTouchOperation::reference(), AccountStatus::at("AccountStatus"))
         .operation(
             ChangeOwnershipOperation::reference()
                 .definition()
@@ -223,7 +223,7 @@ pub(super) fn install(
         )
         .operation_read_field(
             ChangeOwnershipOperation::reference(),
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
         )
         .operation_link(
             ChangeOwnershipOperation::reference(),

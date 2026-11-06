@@ -49,16 +49,19 @@ fn one_field_family_instance_cannot_satisfy_two_planned_entity_dependencies() {
                     &admission,
                     |reader, _| {
                         let open = reader
-                            .resolve_entity(AccountStatus::reference(), "open".to_string())
+                            .resolve_entity(AccountStatus::at("AccountStatus"), "open".to_string())
                             .unwrap();
                         let unrelated = reader
-                            .resolve_entity(AccountStatus::reference(), "unrelated".to_string())
+                            .resolve_entity(
+                                AccountStatus::at("AccountStatus"),
+                                "unrelated".to_string(),
+                            )
                             .unwrap();
                         reader
-                            .require_decision_field(&open, AccountStatus::reference())
+                            .require_decision_field(&open, AccountStatus::at("AccountStatus"))
                             .unwrap();
                         reader
-                            .require_decision_field(&unrelated, AccountStatus::reference())
+                            .require_decision_field(&unrelated, AccountStatus::at("AccountStatus"))
                             .unwrap();
                     },
                     AllocationPolicy::SystemAllocation,
@@ -75,7 +78,7 @@ fn one_field_family_instance_cannot_satisfy_two_planned_entity_dependencies() {
                 )
                 .unwrap();
             reads
-                .observe_field(execution, &account, AccountStatus::reference())
+                .observe_field(execution, &account, AccountStatus::at("AccountStatus"))
                 .unwrap();
 
             let denial = reads

@@ -6,14 +6,11 @@ use super::{DeclaredProducerBinding, DenialKind, WorthQueryApplicationContractCa
 use crate::domain_computation::primary_graph::application_contribution::{
     WorthQueryProducerApplicability, WorthQueryProducerLifecyclePosture,
 };
-use worth_query_declaration::facade::{
-    application_operation::{
-        ApplicationMutationOutputPostureSet, NoApplicationMutationOutputs,
-        WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationDeclaredOutputRoleFamily,
-        WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
-        WorthQueryAtMostOneOutput, WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
-    },
-    application_schema::ApplicationEntityMarkerIdentity,
+use worth_query_declaration::facade::application_operation::{
+    ApplicationMutationOutputPostureSet, NoApplicationMutationOutputs,
+    WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationDeclaredOutputRoleFamily,
+    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
+    WorthQueryAtMostOneOutput, WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
 };
 
 const INITIAL: WorthQueryProducerApplicability =
@@ -199,8 +196,10 @@ impl WorthQueryApplicationOutputRoleFamily for Created {
 struct TestSchema;
 struct TestEntity;
 
-impl ApplicationEntityMarkerIdentity<TestSchema> for TestEntity {
-    const IDENTIFIER: &'static str = "TestEntity";
+impl worth_query_declaration::facade::application_schema::fragment::Entity for TestEntity {
+    const NAME: &'static str = "TestEntity";
+    type Aspects = ();
+    type Relations = ();
 }
 
 impl worth_query_installation::facade::ApplicationSchema for TestSchema {

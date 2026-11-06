@@ -106,6 +106,7 @@ impl WorthQueryUniqueFieldFixture {
             equality_queryable: true,
             equality_index_id,
             unique: true,
+            record_presence: None,
         };
         let fields = BTreeMap::from([(name, field)]);
         Self {

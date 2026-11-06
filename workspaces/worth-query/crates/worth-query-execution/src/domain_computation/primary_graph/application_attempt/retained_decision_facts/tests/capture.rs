@@ -72,7 +72,7 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
                 |reader, _| {
                     // Ignoring the local error must not seal a partial/empty projection.
                     let _ = reader.decision_select_entities(
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         "unseen-retained-key".to_owned(),
                         2,
                     );
@@ -119,7 +119,7 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
                     |reader, _| {
                         assert!(reader
                             .decision_select_entities(
-                                AccountStatus::reference(),
+                                AccountStatus::at("AccountStatus"),
                                 "unseen-retained-key".to_owned(),
                                 2
                             )

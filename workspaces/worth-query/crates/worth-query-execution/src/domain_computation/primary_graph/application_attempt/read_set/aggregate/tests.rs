@@ -40,7 +40,7 @@ fn aggregate_sealing_keeps_original_bodies_without_granting_relation_write_facts
             &[Fact::Aggregate { observation: original.clone() }],super::super::super::retained_decision_facts::StorageControl::new(Allocation::SystemAllocation,Some(&request))).is_err(),
             "live aggregate facts deliberately have no checkpoint reconstruction door");
         let selected=world.application.select_product_branch(&execution,world.application.product_runtime().default_branch()).unwrap();
-        let target=selected.resolve_entity(&phase,NodeKey::reference(),1,&request,WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
+        let target=selected.resolve_entity(&phase,NodeKey::at("NodeKey"),1,&request,WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
         let denied=completed.projected_relation(Next::reference(),&root,&target).err().unwrap();
         assert_eq!(denied.kind(),WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
             "physical walk metadata does not manufacture the explicit pair fact");
@@ -176,7 +176,7 @@ fn failed_aggregate_calls_veto_sealing_before_a_key_exists_and_after_success() {
                 .invariant
                 .project(
                     &phase,
-                    |reader| reader.resolve_entity(NodeKey::reference(), 0).unwrap(),
+                    |reader| reader.resolve_entity(NodeKey::at("NodeKey"), 0).unwrap(),
                     Allocation::SystemAllocation,
                 )
                 .unwrap()

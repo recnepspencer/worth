@@ -9,8 +9,7 @@ pub struct Issue {
 }
 worth_query_structured_value_binding!(pub Input for Issue {identity:"created-content.input.v1"});
 worth_query_operation!(pub Create for Schema,input Input);
-worth_query_operation_reads!(Create=>[Key]);
-worth_query_operation_writes!(Create=>[Key,Values]);
+
 worth_query_operation_creates!(Create=>[Record]);
 worth_query_operation_links!(Create=>[ContainsSamples]);
 impl ApplicationDeclaredOperation<Schema> for Create {
@@ -18,9 +17,9 @@ impl ApplicationDeclaredOperation<Schema> for Create {
         schema: ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
         schema
-            .operation_read_field(Self::reference(), Key::reference())
-            .operation_write(Self::reference(), Key::reference())
-            .operation_write(Self::reference(), Values::reference())
+            .operation_read_field(Self::reference(), Key::at("Key"))
+            .operation_write(Self::reference(), Key::at("Key"))
+            .operation_write(Self::reference(), Values::at("Values"))
             .operation_create(Self::reference(), Record::reference())
             .operation_link(Self::reference(), ContainsSamples::reference())
     }
@@ -46,7 +45,7 @@ worth_query_mutation_binding!(pub Binding for Issue,schema Schema,
  idempotency String,identity "created-content.key.v1",decision WorthQueryInvariantMutationTarget<Schema,Record>,denial operation::DenialBinding,
  handler identity "created-content.handler.v1",program required,outputs Outputs,
  principal Actor,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
- scope Record,Identity,Key,String,ReadOnly,NoApplicationUnit,field Key::reference(),value scope,
+ scope Key, field Key::at("Key"),value scope,
 );
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
@@ -61,7 +60,7 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Record>, operation::Denial> {
         let result = reader
-            .resolve_entity(Key::reference(), "record".to_owned())
+            .resolve_entity(Key::at("Key"), "record".to_owned())
             .and_then(|root| reader.mutation_target(&root));
         match result {
             Ok(target) => HandlerResult::Completed(target),
@@ -86,7 +85,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&child, Key::reference(), input.key.clone())
+                .initialize_field(&child, Key::at("Key"), input.key.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             let grid = codec::Grid {
                 rows: 1,
@@ -121,6 +120,7 @@ impl OperationHandler<Schema, Binding> for Handler {
 pub struct Capture;
 fn output() -> ApplicationCorrectionOutputField<Schema> {
     ApplicationCorrectionOutput::<Binding, Actual>::content_field(samples())
+        .expect("record content field")
 }
 impl ApplicationCorrectionBinding<Schema> for Capture {
     const IDENTITY: &'static str = "created-content.capture.v1";

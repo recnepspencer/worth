@@ -11,7 +11,7 @@ fn unrelated_publications_keep_shared_upstream_and_consumer_without_hypothetical
         let custody = phase.test_host_request();
         let execution = &custody.borrowed_request_for_test();
         let selected = world.selected_product(&custody);
-        let entity = selected.resolve_entity(&phase, AccountStatus::reference(),
+        let entity = selected.resolve_entity(&phase, AccountStatus::at("AccountStatus"),
             "open".into(), &live_scope(), WorthQueryPrincipalResolutionMode::Ordinary)
             .unwrap().entity_id();
         let (_, product, _) = selected.into_parts();
@@ -28,10 +28,10 @@ fn unrelated_publications_keep_shared_upstream_and_consumer_without_hypothetical
         let upstream = RecordedSettlementIdentity::retain(&source("StatusOutput"), coordinate, 0);
         let consumer = RecordedSettlementIdentity::retain(&source("DownstreamOutput"), coordinate, 0);
         let graph = world.application.runtime.primary_graph().unwrap();
-        let status_ref = AccountStatus::reference();
+        let status_ref = AccountStatus::at("AccountStatus");
         let status = graph.layout().field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
             .unwrap().clone();
-        let label_ref = AccountLabel::reference();
+        let label_ref = AccountLabel::at("AccountLabel");
         let label = graph.layout().field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
             .unwrap().clone();
         let handle = graph.integration_handle();

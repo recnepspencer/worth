@@ -14,9 +14,9 @@ use super::{binding, compensation, digest, recorded_inverse, AftermathInstall, B
 fn runtime_alone_recorded_inverse_publishes_reversible() {
     let schema = digest(2);
     let installed = AftermathInstall::new(binding(digest(1), schema, 1), "freeze-account")
-        .reads::<Balance>()
+        .reads(Balance::at("balance"))
         .install(DeclaredApplicationAftermathContract::runtime_alone(
-            recorded_inverse::<Balance>(),
+            recorded_inverse(Balance::at("balance")),
         ))
         .expect("recorded inverse installs");
     assert!(installed.correction_disclosure().is_none());
@@ -150,13 +150,13 @@ fn mechanism_axis_drift_changes_installed_identity() {
     let package = digest(11);
     let schema = digest(12);
     let left = AftermathInstall::new(binding(package, schema, 1), "same-operation")
-        .reads::<Balance>()
+        .reads(Balance::at("balance"))
         .install(DeclaredApplicationAftermathContract::runtime_alone(
-            recorded_inverse::<Balance>(),
+            recorded_inverse(Balance::at("balance")),
         ))
         .unwrap();
     let right = AftermathInstall::new(binding(package, schema, 1), "same-operation")
-        .reads::<Balance>()
+        .reads(Balance::at("balance"))
         .install(DeclaredApplicationAftermathContract::runtime_alone(
             compensation(),
         ))
@@ -169,10 +169,10 @@ fn mechanism_axis_drift_changes_installed_identity() {
 fn external_effect_rejects_reversible_with_named_cause() {
     let schema = digest(14);
     let denial = AftermathInstall::new(binding(digest(13), schema, 1), "wire-instruction")
-        .reads::<Balance>()
+        .reads(Balance::at("balance"))
         .escaping()
         .install(DeclaredApplicationAftermathContract::runtime_alone(
-            recorded_inverse::<Balance>(),
+            recorded_inverse(Balance::at("balance")),
         ))
         .expect_err("escaping effect cannot install as reversible");
     assert_eq!(

@@ -41,7 +41,7 @@ pub(crate) fn project_payment_approval(
         accounts.source_revision(),
         reader.summarize_exclusive_incoming(
             bank_domain::schema::PostingAccount::reference(),
-            bank_domain::schema::PostingAmount::reference(),
+            bank_domain::schema::PostingAmount::at("PostingAmount"),
             accounts.source(),
         )?,
     )?;

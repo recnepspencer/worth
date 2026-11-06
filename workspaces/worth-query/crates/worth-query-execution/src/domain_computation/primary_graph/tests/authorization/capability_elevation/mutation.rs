@@ -35,13 +35,13 @@ pub(super) fn set_status(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application(&world.application),
-            CapabilityElevationIdentity::reference(),
-            elevation_identity.to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            elevation_identity.to_owned().into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let field = CapabilityElevationStatusField::reference();
+    let field = CapabilityElevationStatusField::at("CapabilityElevationStatusField");
     let graph = world.application.runtime.primary_graph().unwrap();
     let locator = graph
         .layout()
@@ -80,8 +80,8 @@ pub(super) fn add_self_approver(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application(&world.application),
-            CapabilityElevationIdentity::reference(),
-            elevation_identity.to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            elevation_identity.to_owned().into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -124,8 +124,8 @@ pub(super) fn replace_elevation_resource(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application(&world.application),
-            CapabilityElevationIdentity::reference(),
-            elevation_identity.to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            elevation_identity.to_owned().into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -140,7 +140,7 @@ pub(super) fn replace_elevation_resource(
             .expect("the selected product branch remains admitted")
             .resolve_entity(
                 &phase_custody.phase_for_application(&world.application),
-                AccountIdentity::reference(),
+                AccountIdentity::at("AccountIdentity"),
                 identity.to_owned(),
                 &live_scope(),
                 WorthQueryPrincipalResolutionMode::Ordinary,
@@ -204,8 +204,8 @@ pub(super) fn add_elevation_resource(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application(&world.application),
-            CapabilityElevationIdentity::reference(),
-            elevation_identity.to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            elevation_identity.to_owned().into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -219,7 +219,7 @@ pub(super) fn add_elevation_resource(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application(&world.application),
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
             account_identity.to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,

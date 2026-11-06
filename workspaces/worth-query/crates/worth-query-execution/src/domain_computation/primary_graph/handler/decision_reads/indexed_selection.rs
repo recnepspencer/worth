@@ -1,10 +1,6 @@
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
-use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
-    ApplicationSchema, DeclaredApplicationFieldValue, EqualityPredicate, OperationReads,
-    WritePosture,
-};
+use worth_query_installation::facade::{ApplicationReadableScalarValueBinding, ApplicationSchema};
 
 use super::DecisionReader;
 use crate::domain_computation::primary_graph::{
@@ -18,25 +14,18 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     /// Read the complete equality result under a finite candidate budget.
     /// Presence and absence are retained for publication-time comparison.
     /// An overflowing result denies; it never masquerades as a complete set.
-    pub fn select_entities<Entity, Aspect, Field, Value, Write, Unit>(
+    pub fn select_entities<Entity, Aspect, Field, Value>(
         &mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
         candidate_limit: usize,
     ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
     where
-        Field: OperationReads<Binding::Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
@@ -51,25 +40,18 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
 
     /// Resolve one identity while retaining both its field and complete
     /// equality selection, so a concurrent competing match makes it stale.
-    pub fn resolve_entity<Entity, Aspect, Field, Value, Write, Unit>(
+    pub fn resolve_entity<Entity, Aspect, Field, Value>(
         &mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, HandlerExecutionDenial>
     where
-        Field: OperationReads<Binding::Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         self.resolve_optional_entity(field, value)?.ok_or_else(|| {
             HandlerExecutionDenial::new(WorthQueryEntityResolutionDenial::new(
@@ -81,25 +63,18 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
 
     /// Resolve zero or one identity while retaining absence as a predicate
     /// dependency. Ambiguity and resource exhaustion remain denials.
-    pub fn resolve_optional_entity<Entity, Aspect, Field, Value, Write, Unit>(
+    pub fn resolve_optional_entity<Entity, Aspect, Field, Value>(
         &mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
     ) -> Result<Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
     where
-        Field: OperationReads<Binding::Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         let mut matches = self
             .select_entities(field, value, 2)

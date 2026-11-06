@@ -64,7 +64,7 @@ pub fn reconstruct(host: &host::Host, expected: i64, exercise_stops: bool) -> Re
                 selected
                     .resolve_entity(
                         &phase,
-                        DerivedIdentityField::reference(),
+                        DerivedIdentityField::at("DerivedIdentityField"),
                         id.to_owned(),
                         &scope,
                         WorthQueryPrincipalResolutionMode::Ordinary,

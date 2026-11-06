@@ -55,7 +55,7 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

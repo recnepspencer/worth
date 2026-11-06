@@ -21,7 +21,7 @@ macro_rules! worth_query_mutation_binding {
             binding_type $PrincipalBinding:ty, mapping $Mapping:ty,
             principal_entity $Principal:ty, principal_identity $PrincipalIdentity:ty,
             identity_binding $PrincipalIdentityBinding:ty,
-        scope $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
+        scope $Selected:ty,
         field $scope_field:expr_2021,
         value_field $scope_value:ident,
 
@@ -47,7 +47,7 @@ macro_rules! worth_query_mutation_binding {
             type DenialBinding = $DenialBinding;
             type Output = $Output;
             type ScopeBinding = $crate::facade::application_operation::ApplicationMutationFieldScope<
-                $Schema, $Scope, $Aspect, $Field, $Value, $Write, $Unit
+                $Selected
             >;
             type PrincipalBinding = $PrincipalBinding;
             type Mapping = $Mapping;
@@ -71,10 +71,7 @@ macro_rules! worth_query_mutation_binding {
                 $crate::worth_query_mutation_binding!(@inspection_disclosure visitor; $($InspectionDisclosure)?)
             }
 
-            fn scope_field() -> $crate::facade::application_schema::ApplicationFieldRef<
-                $Schema, $Scope, $Aspect, $Field, $Value, $Write,
-                $crate::facade::application_schema::EqualityPredicate, $Unit,
-            > {
+            fn scope_field() -> $Selected {
                 $scope_field
             }
 
@@ -120,7 +117,7 @@ macro_rules! worth_query_mutation_binding {
         outputs $Output:ty,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
-        scope $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
+        scope $Selected:ty,
         field $scope_field:expr_2021,
         value $scope_value:path,
 
@@ -139,9 +136,9 @@ macro_rules! worth_query_mutation_binding {
             principal $PrincipalBinding, mapping $Mapping, principal_entity $Principal,
             principal_identity $PrincipalIdentity, identity_binding $PrincipalIdentityBinding,
             scope_binding $crate::facade::application_operation::ApplicationMutationFieldScope<
-                $Schema, $Scope, $Aspect, $Field, $Value, $Write, $Unit
+                $Selected
             >,
-            scope_field_type $Scope, $Aspect, $Field, $Value, $Write, $Unit,
+            scope_field_type $Selected,
             scope_field $scope_field,
 
         );
@@ -180,7 +177,7 @@ macro_rules! worth_query_mutation_binding {
         outputs $Output:ty,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
-        scope $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
+        scope $Selected:ty,
         principal_field $scope_field:expr_2021,
 
     ) => {
@@ -198,9 +195,9 @@ macro_rules! worth_query_mutation_binding {
             principal $PrincipalBinding, mapping $Mapping, principal_entity $Principal,
             principal_identity $PrincipalIdentity, identity_binding $PrincipalIdentityBinding,
             scope_binding $crate::facade::application_operation::ApplicationMutationPrincipalScope<
-                $Schema, $Scope, $Aspect, $Field, $Value, $Write, $Unit
+                $Selected
             >,
-            scope_field_type $Scope, $Aspect, $Field, $Value, $Write, $Unit,
+            scope_field_type $Selected,
             scope_field $scope_field,
 
         );
@@ -236,7 +233,7 @@ macro_rules! worth_query_mutation_binding {
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
         principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
         scope_binding $ScopeBinding:ty,
-        scope_field_type $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
+        scope_field_type $Selected:ty,
         scope_field $scope_field:expr_2021,
 
     ) => {
@@ -281,10 +278,7 @@ macro_rules! worth_query_mutation_binding {
                 $crate::worth_query_mutation_binding!(@inspection_disclosure visitor; $($InspectionDisclosure)?)
             }
 
-            fn scope_field() -> $crate::facade::application_schema::ApplicationFieldRef<
-                $Schema, $Scope, $Aspect, $Field, $Value, $Write,
-                $crate::facade::application_schema::EqualityPredicate, $Unit,
-            > {
+            fn scope_field() -> $Selected {
                 $scope_field
             }
 

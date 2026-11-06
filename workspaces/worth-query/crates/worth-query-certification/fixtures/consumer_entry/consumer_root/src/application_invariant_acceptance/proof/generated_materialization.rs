@@ -138,7 +138,7 @@ fn claim_denials_preserve_session(
         .collect::<Vec<_>>();
     assert_eq!(
         reconstruction
-            .field(&entities[0], PositionY::reference(), length(9_999))
+            .field(&entities[0], PositionY::at("PositionY"), length(9_999))
             .expect_err("a denied duplicate field must not replace the admitted value"),
         WorthQueryGeneratedOutputReconstructionDenial::DuplicateField
     );

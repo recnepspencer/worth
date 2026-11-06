@@ -112,7 +112,7 @@ where
         TouchAccountCapability::reference(),
     )
     .use_field_by(
-        AccountStatus::reference(),
+        AccountStatus::at("AccountStatus"),
         value(),
         if policy == DiagnosticPolicy::DenyInternal {
             without_explanation()
@@ -120,7 +120,9 @@ where
             all()
         },
     )
-    .use_field_by(ActivitySequence::reference(), value(), all())
+    .expect("record field contract")
+    .use_field_by(ActivitySequence::at("ActivitySequence"), value(), all())
+    .expect("record field contract")
     .disclose_field_by(
         label::<Q>(),
         value(),
@@ -152,7 +154,7 @@ where
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .parameter(status_parameter())
-        .where_equal(AccountStatus::reference(), status_parameter())
+        .where_equal(AccountStatus::at("AccountStatus"), status_parameter())
         .order_by(sequence(), ApplicationQueryOrderingDirection::Ascending)
         .build()
         .unwrap()

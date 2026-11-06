@@ -1,8 +1,5 @@
 use super::*;
-use crate::{
-    ConsumerPrincipalBinding, ExternalPrincipalMapping, PlanarMutationScope, PlanarPosition,
-    Principal,
-};
+use crate::{ConsumerPrincipalBinding, ExternalPrincipalMapping, PlanarMutationScope, Principal};
 use std::marker::PhantomData;
 
 use worth_query_decl::facade::{application_operation::*, application_schema::*};
@@ -28,7 +25,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Denial = PlanarReplacementDenial;
     type DenialBinding = VertexReplacementDenialBinding;
     type Output = VertexReplacementOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -42,17 +39,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.vertex-replacement-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -72,8 +60,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Vertex
     fn input(&self) -> &Self {
         self
     }
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 

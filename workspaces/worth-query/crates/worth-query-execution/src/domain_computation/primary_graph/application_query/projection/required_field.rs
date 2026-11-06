@@ -1,26 +1,18 @@
 use super::*;
 
 impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query> {
-    pub fn disclosed_field<Slot, Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn disclosed_field<Slot, Entity, Aspect, Field, Value>(
         &self,
-        selector: ApplicationQueryResultFieldRef<
-            Query,
-            Slot,
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
+        selector: ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>,
     ) -> Result<WorthQueryApplicationDisclosed<Value>, WorthQueryApplicationProjectionDenial>
     where
-        Field: RequiredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+
         Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
@@ -47,29 +39,21 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
         Ok(WorthQueryApplicationDisclosed::Disclosed(value))
     }
 
-    fn disclosed_required_field<Slot, Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    fn disclosed_required_field<Slot, Entity, Aspect, Field, Value>(
         &self,
-        selector: ApplicationQueryResultFieldRef<
-            Query,
-            Slot,
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
+        selector: ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>,
     ) -> Result<
         WorthQueryApplicationDisclosed<&super::WorthQueryApplicationProjectedField>,
         WorthQueryApplicationProjectionDenial,
     >
     where
-        Field: RequiredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+
         Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
@@ -110,29 +94,18 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
         Aspect,
         Field,
         Value,
-        Write,
-        Equality,
-        Unit,
     >(
         &self,
-        selector: ApplicationQueryResultFieldRef<
-            Query,
-            Slot,
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
+        selector: ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>,
     ) -> Result<&super::WorthQueryApplicationProjectedField, WorthQueryApplicationProjectionDenial>
     where
-        Field: RequiredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+
         Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {

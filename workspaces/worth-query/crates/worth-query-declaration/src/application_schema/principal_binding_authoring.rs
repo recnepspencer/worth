@@ -6,9 +6,7 @@ use crate::authentication::{
 };
 
 use super::{
-    ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe, ApplicationFieldRef,
-    ApplicationFieldUnit, ApplicationIdentityScalarValueBinding, ApplicationRelationRef,
-    EqualityPosture, EqualityPredicate, ReadOnly, ReadWrite,
+    ApplicationFieldBindingRecipe, ApplicationIdentityScalarValueBinding, ApplicationRelationRef,
 };
 
 pub struct ApplicationPrincipalBindingRequirements<
@@ -31,31 +29,25 @@ pub struct ApplicationPrincipalBindingRequirements<
 
 pub struct ApplicationPrincipalMappingIdentityRequirement<Schema, Mapping> {
     pub(super) entity: &'static str,
-    pub(super) aspect: &'static str,
+    pub(super) recipe: ApplicationFieldBindingRecipe,
+    pub(super) aspect: String,
     pub(super) field: String,
     _marker: PhantomData<fn() -> (Schema, Mapping)>,
 }
 
 impl<Schema, Mapping> ApplicationPrincipalMappingIdentityRequirement<Schema, Mapping> {
     #[doc(hidden)]
-    pub fn from_field<Aspect, Field, Unit>(
-        field: ApplicationFieldRef<
-            Schema,
-            Mapping,
-            Aspect,
-            Field,
-            WorthQueryExternalPrincipalIdentity,
-            ReadOnly,
-            EqualityPredicate,
-            Unit,
-        >,
-    ) -> Self
+    pub fn from_field<Field>(field: Field) -> Self
     where
-        Unit: ApplicationFieldUnit,
+        Field: super::fragment::RecordSelection<
+            Entity = Mapping,
+            Value = WorthQueryExternalPrincipalIdentity,
+        >,
     {
         Self {
             entity: field.entity(),
-            aspect: field.aspect(),
+            recipe: field.expected_recipe(),
+            aspect: field.aspect().to_owned(),
             field: field.field().to_owned(),
             _marker: PhantomData,
         }
@@ -63,31 +55,24 @@ impl<Schema, Mapping> ApplicationPrincipalMappingIdentityRequirement<Schema, Map
 }
 
 pub struct ApplicationPrincipalMappingStatusRequirement<Schema, Mapping> {
-    pub(super) aspect: &'static str,
+    pub(super) recipe: ApplicationFieldBindingRecipe,
+    pub(super) aspect: String,
     pub(super) field: String,
     _marker: PhantomData<fn() -> (Schema, Mapping)>,
 }
 
 impl<Schema, Mapping> ApplicationPrincipalMappingStatusRequirement<Schema, Mapping> {
     #[doc(hidden)]
-    pub fn from_field<Aspect, Field, Equality, Unit>(
-        field: ApplicationFieldRef<
-            Schema,
-            Mapping,
-            Aspect,
-            Field,
-            WorthQueryPrincipalMappingStatus,
-            ReadWrite,
-            Equality,
-            Unit,
-        >,
-    ) -> Self
+    pub fn from_field<Field>(field: Field) -> Self
     where
-        Equality: EqualityPosture,
-        Unit: ApplicationFieldUnit,
+        Field: super::fragment::RecordSelection<
+            Entity = Mapping,
+            Value = WorthQueryPrincipalMappingStatus,
+        >,
     {
         Self {
-            aspect: field.aspect(),
+            recipe: field.expected_recipe(),
+            aspect: field.aspect().to_owned(),
             field: field.field().to_owned(),
             _marker: PhantomData,
         }
@@ -119,7 +104,7 @@ pub struct ApplicationPrincipalIdentityRequirement<
     PrincipalIdentity,
     PrincipalIdentityBinding,
 > {
-    pub(super) aspect: &'static str,
+    pub(super) aspect: String,
     pub(super) field: String,
     pub(super) scalar_family: worth_foundational::facade::ScalarAspectType,
     pub(super) value_type: &'static str,
@@ -143,34 +128,21 @@ impl<Schema, Principal, PrincipalIdentity, PrincipalIdentityBinding>
     >
 {
     #[doc(hidden)]
-    pub fn from_field<Aspect, Field, Unit>(
-        field: ApplicationFieldRef<
-            Schema,
-            Principal,
-            Aspect,
-            Field,
-            PrincipalIdentity,
-            ReadOnly,
-            EqualityPredicate,
-            Unit,
-        >,
-    ) -> Self
+    pub fn from_field<Field>(field: Field) -> Self
     where
-        Field: super::DeclaredApplicationFieldValue<
+        Field: super::fragment::RecordSelection<
+            Entity = Principal,
             Value = PrincipalIdentity,
             Binding = PrincipalIdentityBinding,
         >,
         PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
-        Unit: ApplicationFieldUnit,
     {
         Self {
-            aspect: field.aspect(),
+            aspect: field.aspect().to_owned(),
             field: field.field().to_owned(),
             scalar_family: field.scalar_family(),
             value_type: field.value_type_name(),
-            binding_recipe: ApplicationFieldBindingRecipe::of::<PrincipalIdentityBinding>(
-                ApplicationFieldBindingLocus::new(field.entity(), field.aspect(), field.field()),
-            ),
+            binding_recipe: field.expected_recipe(),
             _marker: PhantomData,
         }
     }

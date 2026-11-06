@@ -197,7 +197,11 @@ fn same_type_entity_outside_the_admitted_root_cannot_enter_an_unprojected_read_s
                 )
                 .unwrap();
             attempt
-                .resolve_entity(&phase, AccountStatus::reference(), "unrelated".to_string())
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::at("AccountStatus"),
+                    "unrelated".to_string(),
+                )
                 .expect_err("an unprojected read attempt must remain inside its admitted root")
         })
         .expect("the fixture read owns its installed host call");

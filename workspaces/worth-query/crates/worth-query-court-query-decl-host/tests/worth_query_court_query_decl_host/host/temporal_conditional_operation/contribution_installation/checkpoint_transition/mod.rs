@@ -25,7 +25,7 @@ fn checkpoint_transition_publishes_typed_effects_and_reopens_under_target_roster
                     UnrelatedRecord::reference(),
                     primary_graph::WorthQueryApplicationEntityKey::new("migrated-record").unwrap(),
                 )
-                .field(UnrelatedValueField::reference(), 73_u64),
+                .field(UnrelatedValueField::at("UnrelatedValueField"), 73_u64),
             )
         },
     )
@@ -73,7 +73,7 @@ fn checkpoint_transition_publishes_typed_effects_and_reopens_under_target_roster
         .with_host_advancement(|host_phase| selected
             .resolve_entity(
                 &host_phase,
-                UnrelatedValueField::reference(),
+                UnrelatedValueField::at("UnrelatedValueField"),
                 73_u64,
                 &request_scope(),
                 primary_graph::WorthQueryPrincipalResolutionMode::Ordinary
@@ -122,7 +122,7 @@ fn checkpoint_transition_cannot_swallow_authoring_resource_refusal() {
                     primary_graph::WorthQueryApplicationEntityKey::new("over-budget-record")
                         .unwrap(),
                 )
-                .field(UnrelatedValueField::reference(), 73_u64),
+                .field(UnrelatedValueField::at("UnrelatedValueField"), 73_u64),
             );
             Ok(())
         },
@@ -148,7 +148,7 @@ fn checkpoint_transition_bounds_retained_key_capacity_even_for_a_short_key() {
                     UnrelatedRecord::reference(),
                     primary_graph::WorthQueryApplicationEntityKey::new(key).unwrap(),
                 )
-                .field(UnrelatedValueField::reference(), 73_u64),
+                .field(UnrelatedValueField::at("UnrelatedValueField"), 73_u64),
             )
         },
     );
@@ -182,7 +182,7 @@ fn checkpoint_transition_retains_acknowledged_checkpoint_after_later_installatio
                         primary_graph::WorthQueryApplicationEntityKey::new("acknowledged-record")
                             .unwrap(),
                     )
-                    .field(UnrelatedValueField::reference(), 101_u64),
+                    .field(UnrelatedValueField::at("UnrelatedValueField"), 101_u64),
                 )
             },
         )
@@ -216,7 +216,7 @@ fn checkpoint_transition_retains_acknowledged_checkpoint_after_later_installatio
         .with_host_advancement(|host_phase| selected
             .resolve_entity(
                 &host_phase,
-                UnrelatedValueField::reference(),
+                UnrelatedValueField::at("UnrelatedValueField"),
                 101_u64,
                 &request_scope(),
                 primary_graph::WorthQueryPrincipalResolutionMode::Ordinary

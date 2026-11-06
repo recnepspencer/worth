@@ -3,18 +3,26 @@
 use super::super::{
     ApplicationSchemaDeclarationBuilder as Builder, ApplicationSchemaDeclarationDenial as Denial,
 };
-use super::declaration::{Aspect, Entity, Fragment, Registration, Relation};
+use super::declaration::{Aspect, Entity, Fragment, Registration};
 use super::identity::Names;
 use super::record::{Record, Shape};
 use std::marker::PhantomData;
 
 mod aspect;
+mod contribution;
+mod correction;
+mod relation_payload;
 
 #[doc(hidden)]
 #[derive(Default)]
 pub struct Lowering {
     names: Names,
     units: std::collections::BTreeSet<String>,
+    content_formats: std::collections::BTreeSet<(std::any::TypeId, [u8; 32])>,
+    registrations: std::collections::BTreeSet<(String, std::any::TypeId)>,
+    contributions: std::collections::BTreeSet<
+        crate::application_schema::ApplicationSchemaContributionIdentity,
+    >,
 }
 
 impl Lowering {
@@ -32,6 +40,8 @@ pub struct FragmentWitness<M>(PhantomData<M>);
 #[doc(hidden)]
 pub struct RegistrationWitness;
 #[doc(hidden)]
+pub struct NestedWitness<W>(PhantomData<W>);
+#[doc(hidden)]
 pub struct RequiredWitness;
 #[doc(hidden)]
 pub struct OptionalWitness;
@@ -43,13 +53,24 @@ pub trait FragmentMember<Schema, Set, Witness> {
         prefix: &str,
         state: &mut Lowering,
     ) -> Result<Builder<Schema>, Denial>;
+    fn visit_correction<Visitor>(
+        source: std::any::TypeId,
+        visitor: Visitor,
+    ) -> Result<Visitor::Output, Visitor>
+    where
+        Schema: crate::application_schema::ApplicationSchema,
+        Visitor: crate::application_aftermath::ApplicationCorrectionVisitor<Schema>,
+    {
+        let _ = source;
+        Err(visitor)
+    }
 }
 
 impl<S, Set, E, A, R> FragmentMember<S, Set, EntityWitness<A, R>> for E
 where
     E: Entity,
     E::Aspects: AspectMembers<S, Set, A>,
-    E::Relations: RelationMembers<S, R>,
+    E::Relations: RelationMembers<S, Set, R>,
 {
     fn lower(
         mut builder: Builder<S>,
@@ -67,8 +88,9 @@ where
         builder.push_member_in_place(super::super::ApplicationSchemaMember::Entity {
             entity: E::NAME.to_owned(),
         });
-        let builder = E::Aspects::lower(builder, &path, E::NAME, state)?;
-        E::Relations::lower(builder, &path, E::NAME, state)
+        let builder =
+            <E::Aspects as AspectMembers<S, Set, A>>::lower(builder, &path, E::NAME, state)?;
+        <E::Relations as RelationMembers<S, Set, R>>::lower(builder, &path, E::NAME, state)
     }
 }
 
@@ -82,6 +104,7 @@ where
         prefix: &str,
         state: &mut Lowering,
     ) -> Result<Builder<S>, Denial> {
+        super::super::identifier_validation::validate_simple_identifier(F::NAME)?;
         let path = format!("{prefix}.{}", F::NAME);
         state.names.insert(&path)?;
         builder
@@ -89,12 +112,34 @@ where
             .fragments
             .catalog
             .register::<F>(&path)?;
-        F::Members::lower(builder, &path, state)
+        <F::Members as FragmentMembers<S, F::Bindings, W>>::lower(builder, &path, state)
+    }
+    fn visit_correction<Visitor>(
+        source: std::any::TypeId,
+        visitor: Visitor,
+    ) -> Result<Visitor::Output, Visitor>
+    where
+        S: crate::application_schema::ApplicationSchema,
+        Visitor: crate::application_aftermath::ApplicationCorrectionVisitor<S>,
+    {
+        <F::Members as FragmentMembers<S, F::Bindings, W>>::visit_correction(source, visitor)
     }
 }
 
 impl<S, Set, T: Registration<S>> FragmentMember<S, Set, RegistrationWitness> for T {
-    fn lower(builder: Builder<S>, _: &str, _: &mut Lowering) -> Result<Builder<S>, Denial> {
+    fn lower(
+        builder: Builder<S>,
+        prefix: &str,
+        state: &mut Lowering,
+    ) -> Result<Builder<S>, Denial> {
+        if !state
+            .registrations
+            .insert((prefix.to_owned(), std::any::TypeId::of::<T>()))
+        {
+            return Err(Denial::DuplicateFragmentMember {
+                path: format!("{prefix}.{}", std::any::type_name::<T>()),
+            });
+        }
         T::register(builder)
     }
 }
@@ -146,6 +191,17 @@ pub trait FragmentMembers<Schema, Set, Witness> {
         prefix: &str,
         state: &mut Lowering,
     ) -> Result<Builder<Schema>, Denial>;
+    fn visit_correction<Visitor>(
+        source: std::any::TypeId,
+        visitor: Visitor,
+    ) -> Result<Visitor::Output, Visitor>
+    where
+        Schema: crate::application_schema::ApplicationSchema,
+        Visitor: crate::application_aftermath::ApplicationCorrectionVisitor<Schema>,
+    {
+        let _ = source;
+        Err(visitor)
+    }
 }
 #[doc(hidden)]
 pub trait AspectMembers<Schema, Set, Witness> {
@@ -157,7 +213,7 @@ pub trait AspectMembers<Schema, Set, Witness> {
     ) -> Result<Builder<Schema>, Denial>;
 }
 #[doc(hidden)]
-pub trait RelationMembers<Schema, Witness> {
+pub trait RelationMembers<Schema, Set, Witness> {
     fn lower(
         builder: Builder<Schema>,
         prefix: &str,
@@ -181,7 +237,7 @@ impl<S, Set> AspectMembers<S, Set, ()> for () {
         Ok(builder)
     }
 }
-impl<S> RelationMembers<S, ()> for () {
+impl<S, Set> RelationMembers<S, Set, ()> for () {
     fn lower(
         builder: Builder<S>,
         _: &str,
@@ -192,12 +248,55 @@ impl<S> RelationMembers<S, ()> for () {
     }
 }
 
+impl<S, Set, Members, W> FragmentMember<S, Set, NestedWitness<W>> for Members
+where
+    Members: FragmentMembers<S, Set, W>,
+{
+    fn lower(
+        builder: Builder<S>,
+        prefix: &str,
+        state: &mut Lowering,
+    ) -> Result<Builder<S>, Denial> {
+        <Members as FragmentMembers<S, Set, W>>::lower(builder, prefix, state)
+    }
+    fn visit_correction<Visitor>(
+        source: std::any::TypeId,
+        visitor: Visitor,
+    ) -> Result<Visitor::Output, Visitor>
+    where
+        S: crate::application_schema::ApplicationSchema,
+        Visitor: crate::application_aftermath::ApplicationCorrectionVisitor<S>,
+    {
+        <Members as FragmentMembers<S, Set, W>>::visit_correction(source, visitor)
+    }
+}
+impl<S, Set, Members, W> AspectMember<S, Set, NestedWitness<W>> for Members
+where
+    Members: AspectMembers<S, Set, W>,
+{
+    fn lower(
+        builder: Builder<S>,
+        prefix: &str,
+        entity: &str,
+        state: &mut Lowering,
+    ) -> Result<Builder<S>, Denial> {
+        <Members as AspectMembers<S, Set, W>>::lower(builder, prefix, entity, state)
+    }
+}
+
 macro_rules! tuples {
     ($($member:ident $witness:ident),+) => {
         impl<S, Set, $($member, $witness),+> FragmentMembers<S, Set, ($($witness,)+)> for ($($member,)+)
         where $($member: FragmentMember<S, Set, $witness>,)+ {
             fn lower(builder: Builder<S>, prefix: &str, state: &mut Lowering) -> Result<Builder<S>, Denial> {
                 $(let builder = $member::lower(builder, prefix, state)?;)+ Ok(builder)
+            }
+            fn visit_correction<Visitor>(source: std::any::TypeId, visitor: Visitor) -> Result<Visitor::Output, Visitor>
+            where S: crate::application_schema::ApplicationSchema, Visitor: crate::application_aftermath::ApplicationCorrectionVisitor<S> {
+                $(let visitor = match <$member as FragmentMember<S, Set, $witness>>::visit_correction(source, visitor) {
+                    Ok(output) => return Ok(output), Err(visitor) => visitor,
+                };)+
+                Err(visitor)
             }
         }
         impl<S, Set, $($member, $witness),+> AspectMembers<S, Set, ($($witness,)+)> for ($($member,)+)
@@ -210,13 +309,11 @@ macro_rules! tuples {
 }
 
 macro_rules! relations {
-    ($($relation:ident),+) => {
-        impl<S, $($relation: Relation),+> RelationMembers<S, ()> for ($($relation,)+) {
-            fn lower(mut builder: Builder<S>, prefix: &str, entity: &str, state: &mut Lowering) -> Result<Builder<S>, Denial> {
-                $(state.names.insert(&format!("{prefix}.{}", $relation::NAME))?;
-                builder.member_provenance.fragments.catalog.relation::<$relation>(prefix, entity)?;
-                builder.push_member_in_place(super::super::ApplicationSchemaMember::Relation { relation: $relation::NAME.to_owned(), from: entity.to_owned(), to: <$relation::To as Entity>::NAME.to_owned(), integrity: super::declaration::relation_integrity::<$relation>().into() });)+
-                Ok(builder)
+    ($($relation:ident $witness:ident),+) => {
+        impl<S, Set, $($relation, $witness),+> RelationMembers<S, Set, ($($witness,)+)> for ($($relation,)+)
+        where $($relation: relation_payload::RelationMember<S, Set, $witness>,)+ {
+            fn lower(builder: Builder<S>, prefix: &str, entity: &str, state: &mut Lowering) -> Result<Builder<S>, Denial> {
+                $(let builder = $relation::lower(builder, prefix, entity, state)?;)+ Ok(builder)
             }
         }
     };
@@ -258,11 +355,11 @@ tuples!(A WA, B WB, C WC, D WD, E WE);
 tuples!(A WA, B WB, C WC, D WD, E WE, F WF);
 tuples!(A WA, B WB, C WC, D WD, E WE, F WF, G WG);
 tuples!(A WA, B WB, C WC, D WD, E WE, F WF, G WG, H WH);
-relations!(A);
-relations!(A, B);
-relations!(A, B, C);
-relations!(A, B, C, D);
-relations!(A, B, C, D, E);
-relations!(A, B, C, D, E, F);
-relations!(A, B, C, D, E, F, G);
-relations!(A, B, C, D, E, F, G, H);
+relations!(A WA);
+relations!(A WA, B WB);
+relations!(A WA, B WB, C WC);
+relations!(A WA, B WB, C WC, D WD);
+relations!(A WA, B WB, C WC, D WD, E WE);
+relations!(A WA, B WB, C WC, D WD, E WE, F WF);
+relations!(A WA, B WB, C WC, D WD, E WE, F WF, G WG);
+relations!(A WA, B WB, C WC, D WD, E WE, F WF, G WG, H WH);

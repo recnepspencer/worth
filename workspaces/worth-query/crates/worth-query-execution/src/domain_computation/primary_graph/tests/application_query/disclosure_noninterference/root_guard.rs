@@ -169,7 +169,7 @@ fn root_guard_context(label: &str) -> RootGuardContext {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase_custody.phase_for_application(&world.application),
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

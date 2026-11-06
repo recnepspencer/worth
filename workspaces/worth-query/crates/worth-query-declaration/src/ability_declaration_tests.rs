@@ -1,4 +1,7 @@
+#[path = "ability_declaration_tests/records.rs"]
+mod storage_model;
 use crate::facade::application_schema::{ApplicationSchemaMember, OperationRequiresAbility};
+pub use storage_model::*;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TransferInput;
@@ -9,7 +12,6 @@ worth_query_structured_value_binding!(
     }
 );
 
-worth_query_entity!(pub Account for AbilitySchema);
 worth_query_operation!(
     pub TransferOperation for AbilitySchema,
     input TransferInputBinding
@@ -17,26 +19,51 @@ worth_query_operation!(
 worth_query_ability!(pub SendMoney scoped_to Account, in AbilitySchema);
 worth_query_operation_requires!(TransferOperation => [SendMoney]);
 
-worth_query_application_schema! {
-    pub schema AbilitySchema {
-        owner: "WORTH.tests.ability",
-        version: (1, 0),
-        members: |schema| {
-            schema
-                .entity(Account::reference())
-                .operation(
-                    TransferOperation::reference()
-                        .definition()
-                        .no_external_effect()
-                        .no_aftermath()
-                        .finish(),
-                )
-                .ability(SendMoney::reference())
-                .operation_requires_ability(
-                    TransferOperation::reference(),
-                    SendMoney::reference(),
-                )
-        }
+use crate::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy)]
+pub struct AbilitySchema;
+impl Fragment for AbilitySchema {
+    const NAME: &'static str = "AbilitySchema";
+    type Bindings = NoBindings;
+    type Members = (AbilityModel, Contracts);
+}
+impl ApplicationSchema for AbilitySchema {
+    const OWNER: &'static str = "WORTH.tests.ability";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+}
+impl AbilitySchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+pub struct Contracts;
+impl Registration<AbilitySchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<AbilitySchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<AbilitySchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema
+            .operation(
+                TransferOperation::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .ability(SendMoney::reference())
+            .operation_requires_ability(TransferOperation::reference(), SendMoney::reference()))
     }
 }
 

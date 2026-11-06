@@ -50,7 +50,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

@@ -1,24 +1,11 @@
 use crate::facade::application_schema::{
-    ApplicationAspectMarkerIdentity, ApplicationAspectRef, ApplicationEntityMarkerIdentity,
-    ApplicationEntityRef, ApplicationFieldMarkerIdentity, ApplicationFieldPresence,
-    ApplicationFieldRef, ApplicationOperationMarkerIdentity, ApplicationOperationRef,
-    ApplicationSchema, ApplicationSchemaAuthoringContext, ApplicationSchemaAuthoringDenialKind,
-    ApplicationSchemaBindingIdentity, ApplicationSchemaDeclaration,
-    ApplicationSchemaDeclarationBuilder, ApplicationSchemaDeclarationDenial, ApplicationUnitMarker,
-    DeclaredApplicationFieldValue, DeclaredApplicationUnit, EqualityPredicate, OperationCreates,
-    OperationExpectsFact, ReadOnly, TypedOperationBuilder,
+    fragment::{self, *},
+    *,
 };
-use worth_foundational::facade::{AspectValue, ScalarAspectType};
-
 struct Schema;
 struct Entity;
 struct Aspect;
-struct Field;
-struct CurrencyField;
-struct Usd;
-struct UsdCurrency;
-struct CurrencyValue;
-crate::worth_query_portable_type!(CurrencyValue => "worth.query.test.currency_value.v1");
+
 struct ProgramSchema;
 struct ProgramEntity;
 struct ProgramOperation;
@@ -57,89 +44,32 @@ impl ApplicationOperationMarkerIdentity<ProgramSchema> for ProgramOperation {
     const IDENTIFIER: &'static str = "ProgramOperation";
 }
 
-impl ApplicationAspectMarkerIdentity<Schema, Entity> for Aspect {
-    const IDENTIFIER: &'static str = "Aspect";
-    const ASPECT_IDENTITY: worth_foundational::facade::AspectIdentity =
-        worth_foundational::facade::AspectIdentity(0x9161_2301);
-    const CONTRACT_REVISION: worth_foundational::facade::AspectContractRevision =
-        worth_foundational::facade::AspectContractRevision(2);
+struct MacroNamespacedSchema;
+struct MacroNamespacedEntity;
+impl fragment::Entity for MacroNamespacedEntity {
+    const NAME: &'static str = "MacroNamespacedEntity";
+    type Aspects = ();
+    type Relations = ();
 }
-
-impl ApplicationEntityMarkerIdentity<Schema> for Entity {
-    const IDENTIFIER: &'static str = "Entity";
+impl Fragment for MacroNamespacedSchema {
+    const NAME: &'static str = "namespaced";
+    type Bindings = NoBindings;
+    type Members = (MacroNamespacedEntity,);
 }
-
-impl DeclaredApplicationFieldValue for Field {
-    type Value = u64;
-    type Binding = crate::facade::application_schema::U64ApplicationValueBinding;
-    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
-}
-
-impl DeclaredApplicationFieldValue for CurrencyField {
-    type Value = CurrencyValue;
-    type Binding = CurrencyValueBinding;
-    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
-}
-
-impl ApplicationFieldMarkerIdentity<Schema, Entity, Aspect> for Field {
-    const IDENTIFIER: &'static str = "Field";
-}
-
-impl ApplicationFieldMarkerIdentity<Schema, Entity, Aspect> for CurrencyField {
-    const IDENTIFIER: &'static str = "CurrencyField";
-}
-
-crate::worth_query_application_schema! {
-    schema MacroNamespacedSchema {
-        owner: "bank.world",
-        version: (1, 0),
-        members: |schema| {
-            schema.entity(MacroNamespacedEntity::reference())
-        }
+impl ApplicationSchema for MacroNamespacedSchema {
+    const OWNER: &'static str = "bank.world";
+    const NAME: &'static str = "MacroNamespacedSchema";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
     }
 }
-
-crate::worth_query_entity!(MacroNamespacedEntity for MacroNamespacedSchema);
-
 impl OperationCreates<ProgramOperation> for ProgramEntity {}
-impl OperationExpectsFact<SchemaOperation> for Field {}
 
 #[test]
-fn application_schema_macro_accepts_the_canonical_namespace_qualified_owner() {
+fn fragment_accepts_the_canonical_namespace_qualified_owner() {
     let declaration = MacroNamespacedSchema::declaration().unwrap();
     assert_eq!(declaration.erased().owner(), "bank.world");
-}
-
-impl ApplicationUnitMarker<Usd> for UsdCurrency {
-    const NAME: &'static str = "UsdCurrency";
-}
-
-struct CurrencyValueBinding;
-
-impl crate::facade::application_schema::ApplicationScalarValueBinding for CurrencyValueBinding {
-    type Value = CurrencyValue;
-    type Unit = Usd;
-    type Decode = crate::facade::application_schema::ApplicationValueDecodeUnavailable;
-    type Identity = crate::facade::application_schema::ApplicationValueIsNotIdentity;
-    type SignedAggregate =
-        crate::facade::application_schema::ApplicationValueSignedAggregateUnavailable;
-
-    const IDENTITY_NAME: &'static str = "worth.query.test.currency_value.v1";
-    const SCALAR_FAMILY: ScalarAspectType = ScalarAspectType::Int64;
-    const UNIT: Option<crate::facade::application_schema::ApplicationUnitIdentity> =
-        Some(crate::facade::application_schema::ApplicationUnitIdentity::declared("UsdCurrency"));
-
-    fn validate(
-        _: &Self::Value,
-    ) -> Result<(), crate::facade::application_schema::ApplicationValueValidationDenial> {
-        Ok(())
-    }
-
-    fn encode(
-        _: &Self::Value,
-    ) -> Result<AspectValue, crate::facade::application_schema::ApplicationValueEncodeDenial> {
-        Ok(AspectValue::Int64(0))
-    }
 }
 
 impl ApplicationSchema for Schema {
@@ -162,16 +92,17 @@ impl ApplicationSchema for ProgramSchema {
 
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(program_entity())
-            .operation(
-                program_operation()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish(),
-            )
-            .build()
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(
+            application_schema_marker_identity_tests::ProgramFixture,
+        )?
+        .operation(
+            program_operation()
+                .definition()
+                .no_external_effect()
+                .no_aftermath()
+                .finish(),
+        )
+        .build()
     }
 }
 
@@ -183,13 +114,10 @@ impl ApplicationSchema for NamespacedSchema {
 
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(
-                ApplicationEntityRef::<Self, IdentifierEntity>::from_schema_identifier(
-                    "IdentifierEntity",
-                ),
-            )
-            .build()
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(
+            application_schema_marker_identity_tests::Identifiers,
+        )?
+        .build()
     }
 }
 
@@ -201,13 +129,10 @@ impl ApplicationSchema for InvalidOwnerSchema {
 
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(
-                ApplicationEntityRef::<Self, IdentifierEntity>::from_schema_identifier(
-                    "IdentifierEntity",
-                ),
-            )
-            .build()
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(
+            application_schema_marker_identity_tests::Identifiers,
+        )?
+        .build()
     }
 }
 
@@ -219,13 +144,12 @@ impl ApplicationSchema for DottedMemberSchema {
 
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(
-                ApplicationEntityRef::<Self, IdentifierEntity>::from_schema_identifier(
-                    "Identifier.Entity",
-                ),
-            )
-            .build()
+        ApplicationSchemaDeclarationBuilder::<Self>::from_test_members(vec![
+            ApplicationSchemaMember::Entity {
+                entity: "Identifier.Entity".into(),
+            },
+        ])
+        .build()
     }
 }
 
@@ -252,9 +176,9 @@ fn application_schema_identity_converges_across_member_order() {
 
 #[test]
 fn field_without_its_exact_aspect_is_denied() {
-    let denial = ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .entity(entity())
-        .field(entity(), field())
+    let mut members = declaration(false).unwrap().erased().members().to_vec();
+    members.retain(|member| !matches!(member, ApplicationSchemaMember::Aspect { .. }));
+    let denial = ApplicationSchemaDeclarationBuilder::<Schema>::from_test_members(members)
         .build()
         .unwrap_err();
     assert_eq!(denial, ApplicationSchemaDeclarationDenial::MissingAspect);
@@ -262,10 +186,13 @@ fn field_without_its_exact_aspect_is_denied() {
 
 #[test]
 fn currency_field_without_its_declared_currency_is_denied() {
-    let denial = ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .entity(entity())
-        .aspect(entity(), aspect())
-        .field(entity(), currency_field())
+    let mut members = declaration(false).unwrap().erased().members().to_vec();
+    for member in &mut members {
+        if let ApplicationSchemaMember::Field { unit, .. } = member {
+            *unit = Some("UsdCurrency".into());
+        }
+    }
+    let denial = ApplicationSchemaDeclarationBuilder::<Schema>::from_test_members(members)
         .build()
         .unwrap_err();
     assert_eq!(denial, ApplicationSchemaDeclarationDenial::MissingUnit);
@@ -318,20 +245,23 @@ fn operation_program_with_missing_target_member_is_denied() {
 
 #[test]
 fn mutation_precondition_without_the_exact_decision_read_is_denied() {
-    let denial = ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .entity(entity())
-        .aspect(entity(), aspect())
-        .field(entity(), field())
-        .operation(
-            schema_operation()
-                .definition()
-                .no_external_effect()
-                .no_aftermath()
-                .finish(),
-        )
-        .operation_expected_fact(schema_operation(), field())
-        .build()
-        .unwrap_err();
+    let denial = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(
+        application_schema_marker_identity_tests::Fixture,
+    )
+    .unwrap()
+    .operation(
+        schema_operation()
+            .definition()
+            .no_external_effect()
+            .no_aftermath()
+            .finish(),
+    )
+    .operation_expected_fact(
+        schema_operation(),
+        application_schema_marker_identity_tests::selected_field(),
+    )
+    .build()
+    .unwrap_err();
     assert!(matches!(
         denial,
         ApplicationSchemaDeclarationDenial::MissingOperationMutationPreconditionDependency { .. }
@@ -341,49 +271,19 @@ fn mutation_precondition_without_the_exact_decision_read_is_denied() {
 fn declaration(
     reverse: bool,
 ) -> Result<ApplicationSchemaDeclaration<Schema>, ApplicationSchemaDeclarationDenial> {
-    let builder = ApplicationSchemaDeclarationBuilder::<Schema>::for_schema();
+    let declared = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(
+        application_schema_marker_identity_tests::Fixture,
+    )?
+    .build()?;
+    let mut members = declared.erased().members().to_vec();
     if reverse {
-        builder
-            .field(entity(), field())
-            .aspect(entity(), aspect())
-            .entity(entity())
-            .build()
-    } else {
-        builder
-            .entity(entity())
-            .aspect(entity(), aspect())
-            .field(entity(), field())
-            .build()
+        members.reverse();
     }
-}
-
-fn entity() -> ApplicationEntityRef<Schema, Entity> {
-    ApplicationEntityRef::from_schema_identifier("Entity")
-}
-
-fn aspect() -> ApplicationAspectRef<Schema, Entity, Aspect> {
-    ApplicationAspectRef::from_schema_identifier("Aspect")
-}
-
-fn field() -> ApplicationFieldRef<Schema, Entity, Aspect, Field, u64, ReadOnly, EqualityPredicate> {
-    ApplicationFieldRef::from_schema_identifiers("Entity", "Aspect", "Field")
+    ApplicationSchemaDeclarationBuilder::<Schema>::from_test_members(members).build()
 }
 
 fn schema_operation() -> ApplicationOperationRef<Schema, SchemaOperation, SchemaInput> {
     ApplicationOperationRef::from_declaration()
-}
-
-fn currency_field() -> ApplicationFieldRef<
-    Schema,
-    Entity,
-    Aspect,
-    CurrencyField,
-    CurrencyValue,
-    ReadOnly,
-    EqualityPredicate,
-    DeclaredApplicationUnit<UsdCurrency, Usd>,
-> {
-    ApplicationFieldRef::from_schema_identifiers("Entity", "Aspect", "CurrencyField")
 }
 
 fn program_entity() -> ApplicationEntityRef<ProgramSchema, ProgramEntity> {

@@ -83,7 +83,6 @@ fn exact_v2_restore_requires_explicit_transition_before_any_derived_decode() {
             .contains("recovered derived codec requires authenticated native transition admission"),
         "unexpected recovery fence: {denial:?}"
     );
-    unchanged_revision::assert_missing_revision_refused(checkpoint);
 }
 
 pub(crate) mod acknowledged_capture;

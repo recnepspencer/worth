@@ -40,7 +40,9 @@ fn later_grant_extension_cannot_extend_the_original_approval() {
                 "capability-1",
                 field(
                     &world,
-                    super::super::super::fixture::capability::CapabilityNotAfterField::reference(),
+                    super::super::super::fixture::capability::CapabilityNotAfterField::at(
+                        "CapabilityNotAfterField",
+                    ),
                 ),
                 worth_foundational::facade::AspectValue::UInt64(500),
             )

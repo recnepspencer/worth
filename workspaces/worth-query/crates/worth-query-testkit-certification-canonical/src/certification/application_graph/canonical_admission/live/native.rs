@@ -56,7 +56,7 @@ pub fn open(host: &host::Host) -> Lease<'_> {
             let root = selected
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     "root".to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

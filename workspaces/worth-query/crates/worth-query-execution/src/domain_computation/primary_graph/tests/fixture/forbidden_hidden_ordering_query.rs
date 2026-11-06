@@ -48,10 +48,11 @@ pub(super) fn forbidden_hidden_ordering_definition() -> ApplicationQueryDefiniti
         TouchAccountCapability::reference(),
     )
     .use_field_by(
-        AccountLabel::reference(),
+        AccountLabel::at("AccountLabel"),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::forbid_all(),
     )
+    .expect("record field contract")
     .disclose_field_by(
         status_result_field::<ForbiddenHiddenOrderingQuery>(),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),

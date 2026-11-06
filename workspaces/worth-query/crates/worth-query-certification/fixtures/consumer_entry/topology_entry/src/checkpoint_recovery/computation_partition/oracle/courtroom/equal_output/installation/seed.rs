@@ -17,12 +17,12 @@ pub(super) fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>) {
         graph
             .bind_entity(
                 WorthQueryApplicationEntitySeed::new(Body::reference::<Schema>(), entity_key(&key))
-                    .field(BodyKey::reference::<Schema>(), key)
+                    .field(BodyKey::at("BodyKey"), key)
                     // The initial performed publication writes an equal derived
                     // value; native revisions still decide whether it can reuse.
-                    .field(Length::reference::<Schema>(), length(y + 1))
-                    .field(PositionX::reference::<Schema>(), length(x))
-                    .field(PositionY::reference::<Schema>(), length(y)),
+                    .field(Length::at("Length"), length(y + 1))
+                    .field(PositionX::at("PositionX"), length(x))
+                    .field(PositionY::at("PositionY"), length(y)),
             )
             .unwrap();
     }

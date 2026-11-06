@@ -26,7 +26,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
         let graph = world.application.runtime.primary_graph().unwrap();
         let handle = graph.integration_handle();
         let owner = &handle.source_owner.invalidation_owner;
-        let status = AccountStatus::reference();
+        let status = AccountStatus::at("AccountStatus");
         let status = graph.layout().field_locator(status.entity(), status.aspect(), status.field())
             .unwrap().clone();
         let (snapshot_handle, basis, identity, _facts, first, second) = handle.with_runtime_mut(&execution, |runtime| {

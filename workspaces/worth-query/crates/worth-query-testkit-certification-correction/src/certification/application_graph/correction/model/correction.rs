@@ -23,12 +23,12 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
     }
     fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
         // Capture stores the binding's complete AspectValue representation.
-        let encoded_width = InlineCounterBinding::encode(&u64::MAX)
+        let encoded_width = InlineCounterBinding::encode(&Counter(u64::MAX))
             .unwrap()
             .semantic_byte_width();
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Primary::reference())],
+                [DeclaredPreImageLocus::from_field(Primary::at("Primary")).unwrap()],
                 encoded_width,
             )
             .unwrap(),
@@ -46,10 +46,11 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
             Value::Primary(_) | Value::AdjacentPrimary(_) => Value::Primary(
                 InlineCounterBinding::decode(
                     preimage
-                        .field(&DeclaredPreImageLocus::from_field(Primary::reference()))
+                        .field(&DeclaredPreImageLocus::from_field(Primary::at("Primary")).unwrap())
                         .ok_or(MissingPreImage)?,
                 )
-                .map_err(|_| InvalidPreImage)?,
+                .map_err(|_| InvalidPreImage)?
+                .0,
             ),
             _ => return Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning),
         };

@@ -99,7 +99,7 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &host_custody.phase_for_application(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -112,7 +112,11 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
             );
             let index_id = graph
                 .layout()
-                .equality_field("Account", "AccountPolicy", "AccountStatus")
+                .equality_field(
+                    "Account",
+                    AccountStatus::at("AccountStatus").aspect(),
+                    "AccountStatus",
+                )
                 .and_then(|field| field.equality_index_id)
                 .unwrap();
 
@@ -176,14 +180,14 @@ let selected = world.selected_product(
         let resolved = truth
             .resolve(execution,
                 "Account",
-                "AccountPolicy",
+                AccountStatus::at("AccountStatus").aspect(),
                 "AccountStatus",
                 StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(),
             )
             .unwrap();
         let typed = resolved.into_application_identity::<IdentityExecutionSchema, super::super::tests::fixture::Account>();
         assert_eq!(typed.binding_identity(), graph.binding_identity());
-        assert_eq!(typed.identity_index_id(), graph.layout().equality_field("Account", "AccountPolicy", "AccountStatus").unwrap().equality_index_id.unwrap());
+        assert_eq!(typed.identity_index_id(), graph.layout().equality_field("Account", AccountStatus::at("AccountStatus").aspect(), "AccountStatus").unwrap().equality_index_id.unwrap());
     });
 
 }).expect("the fixture block owns its installed host call")

@@ -26,13 +26,13 @@ pub(in crate::domain_computation::primary_graph) fn revoke_current_capability(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application(&world.application),
-            CapabilityIdentity::reference(),
-            "capability-1".to_owned(),
+            CapabilityIdentity::at("CapabilityIdentity"),
+            "capability-1".to_owned().into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let field = CapabilityStatusField::reference();
+    let field = CapabilityStatusField::at("CapabilityStatusField");
     let locator = installed_field(world, field.entity(), field.aspect(), field.field());
     let fields = AspectFieldPatch::from(BTreeMap::from([(
         locator,

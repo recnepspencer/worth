@@ -1,6 +1,6 @@
 //! Genuine grant population and installed capability declaration for these courts.
 mod contract;
-pub(super) mod declarations;
+pub(crate) mod declarations;
 use super::super::schema::*;
 use crate::domain_computation::primary_graph::*;
 use declarations::*;
@@ -23,14 +23,14 @@ pub(in crate::domain_computation::primary_graph::tests::application_attempt::inv
     bootstrap
         .bind_entity(
             WorthQueryApplicationEntitySeed::new(Grant::reference(), grant())
-                .field(GrantAction::reference(), false)
-                .field(GrantPurpose::reference(), false)
-                .field(GrantActive::reference(), true)
-                .field(GrantWorkflow::reference(), false)
-                .field(GrantDisclosure::reference(), 0)
-                .field(GrantFrom::reference(), 0)
-                .field(GrantUntil::reference(), 4_102_444_800_u64)
-                .field(GrantLimit::reference(), 1),
+                .field(GrantAction::at("GrantAction"), false)
+                .field(GrantPurpose::at("GrantPurpose"), false)
+                .field(GrantActive::at("GrantActive"), true)
+                .field(GrantWorkflow::at("GrantWorkflow"), false)
+                .field(GrantDisclosure::at("GrantDisclosure"), 0)
+                .field(GrantFrom::at("GrantFrom"), 0)
+                .field(GrantUntil::at("GrantUntil"), 4_102_444_800_u64)
+                .field(GrantLimit::at("GrantLimit"), 1),
         )
         .unwrap();
     bootstrap

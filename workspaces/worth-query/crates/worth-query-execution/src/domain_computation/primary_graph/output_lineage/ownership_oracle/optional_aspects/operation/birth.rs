@@ -60,13 +60,13 @@ impl<Schema: BirthSchema> OperationHandler<Schema, $binding> for Handler {
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             $writer
-                .initialize_field(&present, Value::reference(), "native-present".to_owned())
+                .initialize_field(&present, Value::at("Value"), "native-present".to_owned())
                 .map_err(HandlerExecutionDenial::new)?;
             if $input.incomplete {
                 $writer
                     .initialize_field(
                         &strict,
-                        Extra::reference(),
+                        Extra::at("Extra"),
                         "present-but-incomplete".to_owned(),
                     )
                     .map_err(HandlerExecutionDenial::new)?;
@@ -115,9 +115,9 @@ birth_handler!(
     _decision,
     {
         let root = reader
-            .resolve_entity(BodyKey::reference(), input.scope_key.clone())
+            .resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())
             .map_err(HandlerExecutionDenial::new)?;
-        let _key = reader.field(&root, BodyKey::reference())?;
+        let _key = reader.field(&root, BodyKey::at("BodyKey"))?;
         Ok(None)
     },
     {}

@@ -17,8 +17,7 @@ pub struct DisablePrincipal {
 }
 worth_query_structured_value_binding!(pub InputBinding for DisablePrincipal { identity: "numeric-correction.disable-principal.input.v1" });
 worth_query_operation!(pub Disable for NumericSchema, input InputBinding);
-worth_query_operation_reads!(Disable => [ExternalIdentityField, MappingStatusField]);
-worth_query_operation_writes!(Disable => [MappingStatusField]);
+
 pub fn identity(input: &DisablePrincipal) -> WorthQueryExternalPrincipalIdentity {
     if input.identity == 1 {
         operator_identity()
@@ -35,8 +34,8 @@ worth_query_mutation_binding!(
     handler identity "numeric-correction.disable-principal.handler.v1", outputs NoApplicationMutationOutputs,
     principal ActorBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope ExternalMapping, ExternalIdentity, ExternalIdentityField, WorthQueryExternalPrincipalIdentity, ReadOnly, NoApplicationUnit,
-    field ExternalIdentityField::reference(), value identity,
+    scope ExternalIdentityField,
+    field ExternalIdentityField::at("ExternalIdentityField"), value identity,
 );
 pub struct Handler;
 impl OperationHandler<NumericSchema, Binding> for Handler {
@@ -48,12 +47,14 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         WorthQueryInvariantMutationTarget<NumericSchema, ExternalMapping>,
         MissingValue,
     > {
-        let mapping =
-            match reader.resolve_entity(ExternalIdentityField::reference(), identity(input)) {
-                Ok(mapping) => mapping,
-                Err(cause) => return HandlerResult::ExecutionDenied(cause),
-            };
-        match reader.field(&mapping, MappingStatusField::reference()) {
+        let mapping = match reader.resolve_entity(
+            ExternalIdentityField::at("ExternalIdentityField"),
+            identity(input),
+        ) {
+            Ok(mapping) => mapping,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
+        match reader.field(&mapping, MappingStatusField::at("MappingStatusField")) {
             Ok(Some(WorthQueryPrincipalMappingStatus::Enabled)) => {}
             Ok(_) => return HandlerResult::DomainDenied(MissingValue),
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
@@ -77,7 +78,7 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         };
         match writer.write_field(
             &target,
-            MappingStatusField::reference(),
+            MappingStatusField::at("MappingStatusField"),
             WorthQueryPrincipalMappingStatus::Disabled,
         ) {
             Ok(()) => HandlerResult::Completed(Edited),

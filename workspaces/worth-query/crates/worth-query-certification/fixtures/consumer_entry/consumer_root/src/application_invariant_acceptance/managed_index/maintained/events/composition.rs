@@ -1,5 +1,5 @@
 //! Ordinary program installation; only the new capability opts into this Source.
-use super::{authoring, history, mutation, plain, prefix, query, rule, schema::*};
+use super::{authoring, history, mutation, plain, prefix, rule, schema::*};
 use std::sync::Arc;
 use worth_query_decl::facade::{application_program::*, application_schema::*};
 use worth_query_host::facade::{application_contribution::*, primary_graph::*};
@@ -7,11 +7,7 @@ pub struct Contribution;
 impl ApplicationSchemaContribution<Catalog> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("event-catalog.members.v1");
-    fn register_members(
-        schema: ApplicationSchemaDeclarationBuilder<Catalog>,
-    ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
-        super::schema::declare(schema)
-    }
+    type Members = (CatalogRecords, ContributionContracts);
 }
 pub struct Configuration {
     pub provider: Arc<prefix::Calls>,
@@ -67,5 +63,17 @@ impl ApplicationProgramDefinition<Catalog> for Program {
             .native_action::<mutation::Binding>()
             .finish_action()
             .finish()]
+    }
+}
+
+pub struct ContributionContracts;
+impl worth_query_decl::facade::application_schema::fragment::Registration<Catalog>
+    for ContributionContracts
+{
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<Catalog>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Catalog>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(super::schema::declare(schema))
     }
 }

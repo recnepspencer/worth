@@ -1,64 +1,59 @@
 //! Complete ordinary capability contract; no implicit diagnostic grant.
 use super::*;
 use worth_query_decl::facade::application_schema::{
+    fragment::Registration, ApplicationSchemaDeclarationDenial,
+};
+use worth_query_decl::facade::application_schema::{
     ApplicationAuthorizationPathBuilder, ApplicationSchemaDeclarationBuilder,
 };
-pub(in super::super) fn install(
-    schema: ApplicationSchemaDeclarationBuilder<HostIdentitySchema>,
-) -> ApplicationSchemaDeclarationBuilder<HostIdentitySchema> {
-    schema
-        .entity(InspectionGrant::reference())
-        .aspect(
-            InspectionGrant::reference(),
-            InspectionGrantFacts::reference(),
-        )
-        .field(InspectionGrant::reference(), GrantIdentity::reference())
-        .field(InspectionGrant::reference(), GrantAction::reference())
-        .field(InspectionGrant::reference(), GrantPurpose::reference())
-        .field(InspectionGrant::reference(), GrantDisclosure::reference())
-        .field(InspectionGrant::reference(), GrantActive::reference())
-        .field(InspectionGrant::reference(), GrantWorkflow::reference())
-        .field(InspectionGrant::reference(), GrantNotBefore::reference())
-        .field(InspectionGrant::reference(), GrantNotAfter::reference())
-        .field(
-            InspectionGrant::reference(),
-            GrantDelegationLimit::reference(),
-        )
-        .relation(
-            Grantor::reference(),
-            Principal::reference(),
-            InspectionGrant::reference(),
-        )
-        .relation(
-            Grantee::reference(),
-            Principal::reference(),
-            InspectionGrant::reference(),
-        )
-        .relation(
-            GrantResource::reference(),
-            InspectionGrant::reference(),
-            Account::reference(),
-        )
-        .relation(
-            GrantParent::reference(),
-            InspectionGrant::reference(),
-            InspectionGrant::reference(),
-        )
-        .capability_context(InspectionContext::reference())
-        .capability_provenance(InspectionProvenance::reference())
-        .operation(
-            InspectAccountOperation::reference()
-                .definition()
-                .no_external_effect()
-                .no_aftermath()
-                .finish(),
-        )
-        .operation_projection_work_budget(InspectAccountOperation::reference(), 32)
-        .operation_read_field(
-            InspectAccountOperation::reference(),
-            AccountNumber::reference(),
-        )
-        .capability(definition())
+impl Registration<HostIdentitySchema> for InspectionContext {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<HostIdentitySchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<HostIdentitySchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema.capability_context(Self::reference()))
+    }
+}
+impl Registration<HostIdentitySchema> for InspectionProvenance {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<HostIdentitySchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<HostIdentitySchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema.capability_provenance(Self::reference()))
+    }
+}
+impl Registration<HostIdentitySchema> for InspectAccountOperation {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<HostIdentitySchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<HostIdentitySchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema
+            .operation(
+                Self::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .operation_projection_work_budget(Self::reference(), 32)
+            .operation_read_field(Self::reference(), AccountNumber::at("AccountNumber")))
+    }
+}
+impl Registration<HostIdentitySchema> for InspectAccountCapability {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<HostIdentitySchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<HostIdentitySchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema.capability(definition()))
+    }
 }
 fn definition() -> ApplicationCapabilityContract<
     HostIdentitySchema,
@@ -76,29 +71,44 @@ fn definition() -> ApplicationCapabilityContract<
         InspectionGrant::reference(),
     )
     .target(ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(GrantAction::reference(), text("inspect")),
+        ApplicationCapabilityValueBinding::new(GrantAction::at("GrantAction"), text("inspect"))
+            .unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(GrantResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
-        ApplicationCapabilityFieldDimension::bound(GrantDisclosure::reference()),
-        ApplicationCapabilityValueBinding::new(GrantPurpose::reference(), text("audit")),
+        ApplicationCapabilityFieldDimension::bound(GrantDisclosure::at("GrantDisclosure")).unwrap(),
+        ApplicationCapabilityValueBinding::new(GrantPurpose::at("GrantPurpose"), text("audit"))
+            .unwrap(),
     ))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                GrantActive::reference(),
+                GrantActive::at("GrantActive"),
                 ApplicationEncodedScalarValue::<BoolApplicationValueBinding>::try_new(true)
                     .unwrap(),
-            ),
+            )
+            .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(GrantWorkflow::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(AccountNumber::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantWorkflow::at(
+                    "GrantWorkflow",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(AccountNumber::at(
+                    "AccountNumber",
+                ))
+                .unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(GrantNotBefore::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(GrantNotAfter::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantNotBefore::at(
+                    "GrantNotBefore",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(GrantNotAfter::at(
+                    "GrantNotAfter",
+                ))
+                .unwrap(),
             ),
         ),
         InspectionContext::reference(),
@@ -107,7 +117,10 @@ fn definition() -> ApplicationCapabilityContract<
         ApplicationCapabilityRelationBinding::from_reference(GrantParent::reference()),
         ApplicationCapabilityRelationBinding::from_reference(Grantor::reference()),
         ApplicationCapabilityRelationBinding::from_reference(Grantee::reference()),
-        ApplicationCapabilityFieldBinding::from_reference(GrantDelegationLimit::reference()),
+        ApplicationCapabilityFieldBinding::from_reference(GrantDelegationLimit::at(
+            "GrantDelegationLimit",
+        ))
+        .unwrap(),
         InspectionProvenance::reference(),
     ))
     .composition(ApplicationCapabilityComposition::new(
@@ -128,9 +141,10 @@ fn definition() -> ApplicationCapabilityContract<
             ApplicationCapabilityDisclosureRule::permit([
                 ApplicationCapabilityScopeGuard::requiring([
                     ApplicationCapabilityAcceptedValues::one_of(
-                        GrantDisclosure::reference(),
+                        GrantDisclosure::at("GrantDisclosure"),
                         [text("number")],
-                    ),
+                    )
+                    .unwrap(),
                 ]),
             ]),
         ),

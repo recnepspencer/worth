@@ -1,11 +1,9 @@
+use super::fragment;
 use std::marker::PhantomData;
 
 use worth_foundational::facade::AspectValue;
 
-use super::capabilities::{ApplicationFieldUnit, EqualityCapable, EqualityPredicate};
-use super::field_reference::ApplicationFieldRef;
 use super::references::{ApplicationEntityRef, ApplicationRelationRef};
-use super::values::DeclaredApplicationFieldValue;
 use super::ApplicationEncodedScalarValue;
 
 mod portable_parts;
@@ -205,25 +203,23 @@ impl<Schema, Current> ApplicationAuthorizationPathBuilder<Schema, Current> {
         Ok(self)
     }
 
-    pub fn where_equal<Aspect, Field, Value, Write, Unit>(
+    pub fn where_equal<Aspect, Field, Value>(
         mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Current,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: ApplicationEncodedScalarValue<Field::Binding>,
-    ) -> Self
+    ) -> Result<Self, super::ApplicationSchemaDeclarationDenial>
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-        EqualityPredicate: EqualityCapable,
+        Field: fragment::RecordSelection<Entity = Current, Aspect = Aspect, Value = Value>,
     {
+        let checked = field.checked()?;
+        if !checked.equality_queryable() {
+            return Err(
+                super::ApplicationSchemaDeclarationDenial::InvalidRecordField {
+                    field: checked.locus().clone(),
+                },
+            );
+        }
+
         self.predicates.push(ApplicationAuthorizationPredicate {
             traversal_ordinal: self.traversals.len(),
             entity: field.entity().to_string(),
@@ -231,7 +227,7 @@ impl<Schema, Current> ApplicationAuthorizationPathBuilder<Schema, Current> {
             field: field.field().to_string(),
             value: value.into_foundational_value(),
         });
-        self
+        Ok(self)
     }
 
     pub fn allow(

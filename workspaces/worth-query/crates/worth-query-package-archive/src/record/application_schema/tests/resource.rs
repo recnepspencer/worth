@@ -65,7 +65,6 @@ fn definition() -> ErasedApplicationResourceDefinition {
                     scope_field: "Key".to_owned(),
                     scope_value: identity("key"),
                     scope_resolution: ApplicationQueryScopeResolutionMode::InputField,
-                    scope_writable: false,
                     principal_binding: "ResourcePrincipal".to_owned(),
                 },
             ),

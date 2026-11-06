@@ -41,7 +41,6 @@ pub(super) fn validate(members: &[Member]) -> Result<(), Denial> {
                 binding.scope_value.as_str(),
             ],
             binding.scope_resolution,
-            binding.scope_writable,
         );
         if scopes
             .insert((invariant, execution_point), scope)

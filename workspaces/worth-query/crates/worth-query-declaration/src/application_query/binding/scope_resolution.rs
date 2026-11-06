@@ -1,70 +1,35 @@
+//! Scope resolution retains the field selection until installed access.
 use super::{
     ApplicationQueryFieldScope, ApplicationQueryPrincipalScope, ApplicationQueryScopeBinding,
 };
-use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, DeclaredApplicationFieldValue, EqualityPredicate,
-    WritePosture,
-};
+use crate::application_schema::fragment::RecordSelection;
 
-type QueryResolvedFieldParts<Schema, Binding> = (
-    ApplicationFieldRef<
-        Schema,
-        <Binding as ApplicationQueryScopeBinding<Schema>>::Scope,
-        <Binding as ApplicationQueryScopeBinding<Schema>>::Aspect,
-        <Binding as ApplicationQueryScopeBinding<Schema>>::Field,
-        <Binding as ApplicationQueryScopeBinding<Schema>>::Value,
-        <Binding as ApplicationQueryScopeBinding<Schema>>::Write,
-        EqualityPredicate,
-        <Binding as ApplicationQueryScopeBinding<Schema>>::Unit,
-    >,
+type ResolvedFieldParts<Schema, Binding> = (
+    <Binding as ApplicationQueryScopeBinding<Schema>>::Field,
     <Binding as ApplicationQueryScopeBinding<Schema>>::Value,
 );
-
-/// Resolves a declared scope strategy using the current borrowed request.
 pub trait ApplicationQueryScopeResolution<Schema, PrincipalIdentity>:
     ApplicationQueryScopeBinding<Schema>
 {
     fn into_field_parts(
         self,
         principal_identity: &PrincipalIdentity,
-    ) -> QueryResolvedFieldParts<Schema, Self>;
+    ) -> ResolvedFieldParts<Schema, Self>;
 }
-
-impl<Schema, Scope, Aspect, Field, Value, Write, Unit, PrincipalIdentity>
+impl<Schema, Field: RecordSelection, PrincipalIdentity>
     ApplicationQueryScopeResolution<Schema, PrincipalIdentity>
-    for ApplicationQueryFieldScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
+    for ApplicationQueryFieldScope<Field>
 {
-    fn into_field_parts(
-        self,
-        _principal_identity: &PrincipalIdentity,
-    ) -> (
-        ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, EqualityPredicate, Unit>,
-        Value,
-    ) {
-        (self.field, self.value)
+    fn into_field_parts(self, principal: &PrincipalIdentity) -> (Field, Field::Value) {
+        self.into_field_parts(principal)
     }
 }
-
-impl<Schema, Scope, Aspect, Field, Value, Write, Unit>
-    ApplicationQueryScopeResolution<Schema, Value>
-    for ApplicationQueryPrincipalScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
+impl<Schema, Field: RecordSelection> ApplicationQueryScopeResolution<Schema, Field::Value>
+    for ApplicationQueryPrincipalScope<Field>
 where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Value: Clone,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
+    Field::Value: Clone,
 {
-    fn into_field_parts(
-        self,
-        principal_identity: &Value,
-    ) -> (
-        ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, EqualityPredicate, Unit>,
-        Value,
-    ) {
-        (self.field, principal_identity.clone())
+    fn into_field_parts(self, principal: &Field::Value) -> (Field, Field::Value) {
+        self.into_field_parts(principal)
     }
 }

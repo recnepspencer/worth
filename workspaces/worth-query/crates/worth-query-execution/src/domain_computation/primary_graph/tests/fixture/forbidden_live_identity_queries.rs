@@ -16,9 +16,8 @@ use worth_query_declaration::worth_query_application_query;
 use super::application_queries::AccountSummaryParameters;
 use super::live_account_query::{LiveActivityEffect, LiveActivityEvent, LiveActivityEventBinding};
 use super::{
-    Account, AccountAllActivity, AccountIdentity, AccountPolicy, Activity, ActivityFacts,
-    ActivityIdentity, CapabilityDisclosure, CapabilityDisclosureBinding, IdentityExecutionSchema,
-    TouchAccountCapability,
+    Account, AccountAllActivity, AccountIdentity, Activity, ActivityIdentity, CapabilityDisclosure,
+    CapabilityDisclosureBinding, IdentityExecutionSchema, TouchAccountCapability,
 };
 
 worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
@@ -152,15 +151,17 @@ where
         TouchAccountCapability::reference(),
     )
     .use_field_by(
-        AccountIdentity::reference(),
+        AccountIdentity::at("AccountIdentity"),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
         scope_influence,
     )
+    .expect("record field contract")
     .use_field_by(
-        ActivityIdentity::reference(),
+        ActivityIdentity::at("ActivityIdentity"),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
         target_influence,
     )
+    .expect("record field contract")
     .disclose_field_by(
         account_identity::<Query>(),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
@@ -186,16 +187,16 @@ where
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())
         .public()
         .parameter(account_parameter::<Query>())
-        .where_equal(AccountIdentity::reference(), account_parameter::<Query>())
+        .where_equal(
+            AccountIdentity::at("AccountIdentity"),
+            account_parameter::<Query>(),
+        )
         .order_by(
             activity_identity::<Query>(),
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(activities::<Query>())
-        .live_by::<Activity, Cause, _, _, _, _, _, _, _, _>(
-            account_identity::<Query>(),
-            activity_identity::<Query>(),
-        )
+        .live_by::<Activity, Cause>(account_identity::<Query>(), activity_identity::<Query>())
         .build()
         .unwrap()
 }
@@ -275,15 +276,9 @@ fn account_identity<
     Query,
     AccountIdentitySlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("account", AccountIdentity::reference())
+    ApplicationQueryResultFieldRef::new("account", AccountIdentity::at("AccountIdentity"))
 }
 
 fn activity_identity<
@@ -294,15 +289,9 @@ fn activity_identity<
     Query,
     ActivityIdentitySlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivityIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("activity", ActivityIdentity::reference())
+    ApplicationQueryResultFieldRef::new("activity", ActivityIdentity::at("ActivityIdentity"))
 }
 
 fn activities<

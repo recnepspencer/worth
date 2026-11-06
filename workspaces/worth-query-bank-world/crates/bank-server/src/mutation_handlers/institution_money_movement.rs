@@ -91,28 +91,19 @@ fn author_movement<Binding>(
 ) -> Result<MoneyMovementResult, HandlerExecutionDenial>
 where
     Binding: ApplicationMutationBinding<BankSchema>,
-    bank_domain::schema::AccountIdentity:
-        worth_query_host::facade::domain::OperationReads<Binding::Operation>,
+
     bank_domain::schema::JournalEntry:
         worth_query_host::facade::domain::OperationCreates<Binding::Operation>,
     bank_domain::schema::Posting:
         worth_query_host::facade::domain::OperationCreates<Binding::Operation>,
-    bank_domain::schema::JournalIdentityField:
-        worth_query_host::facade::domain::OperationWrites<Binding::Operation>,
-    bank_domain::schema::JournalInstitutionContext:
-        worth_query_host::facade::domain::OperationWrites<Binding::Operation>,
-    bank_domain::schema::JournalPurpose:
-        worth_query_host::facade::domain::OperationWrites<Binding::Operation>,
-    bank_domain::schema::PostingIdentityField:
-        worth_query_host::facade::domain::OperationWrites<Binding::Operation>,
-    bank_domain::schema::PostingAmount:
-        worth_query_host::facade::domain::OperationWrites<Binding::Operation>,
-    bank_domain::schema::PostingAccountSequence:
-        worth_query_host::facade::domain::OperationWrites<Binding::Operation>,
-    bank_domain::schema::Purpose:
-        worth_query_host::facade::domain::OperationWrites<Binding::Operation>,
-    bank_domain::schema::AccountingRevision:
-        worth_query_host::facade::domain::OperationWrites<Binding::Operation>,
+
+
+
+
+
+
+
+
     bank_domain::schema::JournalPosting:
         worth_query_host::facade::domain::OperationLinks<Binding::Operation>,
     bank_domain::schema::PostingAccount:

@@ -23,42 +23,18 @@ impl ApplicationSchema for BodyOnlySchema {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .contributions()
-            .register::<BodyOnlyContribution>()?
-            .build()
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
     }
 }
 impl ApplicationSchemaComposition for BodyOnlySchema {
-    type Contributions = (BodyOnlyContribution,);
+    type Contributions =
+        <Self as worth_query_decl::facade::application_schema::fragment::Fragment>::Members;
 }
 pub struct BodyOnlyContribution;
 impl ApplicationSchemaContribution<BodyOnlySchema> for BodyOnlyContribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("worth.query.body-only-court.contribution.v1");
-    fn register_members(
-        schema: ApplicationSchemaDeclarationBuilder<BodyOnlySchema>,
-    ) -> ApplicationSchemaDeclarationBuilder<BodyOnlySchema> {
-        let body = SetRetention::reference::<BodyOnlySchema>()
-            .body()
-            .assign(DocumentRetentionField::reference(), 8)
-            .unwrap()
-            .finish()
-            .unwrap();
-        schema
-            .entity(Document::reference())
-            .aspect(Document::reference(), DocumentFacts::reference())
-            .field(Document::reference(), DocumentRetentionField::reference())
-            .operation(
-                SetRetention::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish()
-                    .with_body(body)
-                    .unwrap(),
-            )
-    }
+    type Members = (BodyModel, BodyOnlyContracts);
 }
 impl WorthQueryApplicationContribution<BodyOnlySchema> for BodyOnlyContribution {
     type Configuration = ();
@@ -67,5 +43,40 @@ impl WorthQueryApplicationContribution<BodyOnlySchema> for BodyOnlyContribution 
         _: &mut WorthQueryApplicationContributionSetup<'_, BodyOnlySchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         Ok(())
+    }
+}
+
+impl worth_query_decl::facade::application_schema::fragment::Fragment for BodyOnlySchema {
+    const NAME: &'static str = "BodyOnlySchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (BodyOnlyContribution,);
+}
+pub struct BodyOnlyContracts;
+impl worth_query_decl::facade::application_schema::fragment::Registration<BodyOnlySchema>
+    for BodyOnlyContracts
+{
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<BodyOnlySchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<BodyOnlySchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok({
+            let body = SetRetention::reference::<BodyOnlySchema>()
+                .body()
+                .assign(DocumentRetentionField::at("DocumentRetentionField"), 8)
+                .unwrap()
+                .finish()
+                .unwrap();
+            schema.operation(
+                SetRetention::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish()
+                    .with_body(body)
+                    .unwrap(),
+            )
+        })
     }
 }

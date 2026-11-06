@@ -8,7 +8,7 @@ impl<S: Scenario> OperationHandler<S, CreateBinding<S>> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, S, CreateBinding<S>>,
     ) -> HandlerResult<Target<S>, ()> {
         match reader
-            .resolve_entity(Id::reference(), input.scope)
+            .resolve_entity(Id::at("Id"), input.scope)
             .and_then(|entity| reader.mutation_target(&entity))
         {
             Ok(target) => HandlerResult::Completed(target),
@@ -28,8 +28,8 @@ impl<S: Scenario> OperationHandler<S, CreateBinding<S>> for Handler {
                 Node::reference(),
                 WorthQueryApplicationEntityKey::new(format!("authored-{}", input.id)).unwrap(),
             )?;
-            writer.initialize_field(&created, Id::reference(), input.id)?;
-            writer.initialize_field(&created, Value::reference(), 0)?;
+            writer.initialize_field(&created, Id::at("Id"), input.id)?;
+            writer.initialize_field(&created, Value::at("Value"), 0)?;
             writer.create_output::<Created<S>>(&created)
         })();
         match result {
@@ -45,7 +45,7 @@ impl<S: Scenario> OperationHandler<S, RestoreBinding<S>> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, S, RestoreBinding<S>>,
     ) -> HandlerResult<Target<S>, ()> {
         match reader
-            .resolve_entity(Id::reference(), input.scope)
+            .resolve_entity(Id::at("Id"), input.scope)
             .and_then(|entity| reader.mutation_target(&entity))
         {
             Ok(target) => HandlerResult::Completed(target),
@@ -65,8 +65,8 @@ impl<S: Scenario> OperationHandler<S, RestoreBinding<S>> for Handler {
                 Node::reference(),
                 WorthQueryApplicationEntityKey::new(format!("authored-{}", input.id)).unwrap(),
             )?;
-            writer.initialize_field(&created, Id::reference(), input.id)?;
-            writer.initialize_field(&created, Value::reference(), input.value)?;
+            writer.initialize_field(&created, Id::at("Id"), input.id)?;
+            writer.initialize_field(&created, Value::at("Value"), input.value)?;
             writer.create_output::<Created<S>>(&created)
         })();
         match result {
@@ -87,13 +87,13 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
                 .chain(&input.descendants)
                 .enumerate()
             {
-                let entity = reader.resolve_entity(Id::reference(), *id)?;
+                let entity = reader.resolve_entity(Id::at("Id"), *id)?;
                 reader.entity(&entity, Node::reference())?;
                 // The authored inverse demands only its distinguished source's
                 // pre-image. Native owns all derived publication payloads.
                 if index == 0 {
-                    reader.field(&entity, Id::reference())?;
-                    reader.field(&entity, Value::reference())?;
+                    reader.field(&entity, Id::at("Id"))?;
+                    reader.field(&entity, Value::at("Value"))?;
                 }
                 targets.push(reader.mutation_target(&entity)?);
             }
@@ -145,13 +145,13 @@ impl<S: Scenario> OperationHandler<S, PlainBinding<S>> for Handler {
                 .chain(&input.descendants)
                 .enumerate()
             {
-                let entity = reader.resolve_entity(Id::reference(), *id)?;
+                let entity = reader.resolve_entity(Id::at("Id"), *id)?;
                 reader.entity(&entity, Node::reference())?;
                 // The authored inverse demands only its distinguished source's
                 // pre-image. Native owns all derived publication payloads.
                 if index == 0 {
-                    reader.field(&entity, Id::reference())?;
-                    reader.field(&entity, Value::reference())?;
+                    reader.field(&entity, Id::at("Id"))?;
+                    reader.field(&entity, Value::at("Value"))?;
                 }
                 targets.push(reader.mutation_target(&entity)?);
             }
@@ -177,8 +177,8 @@ impl<S: Scenario> OperationHandler<S, PlainBinding<S>> for Handler {
                         Node::reference(),
                         WorthQueryApplicationEntityKey::new("mixed-replacement").unwrap(),
                     )?;
-                    writer.initialize_field(&created, Id::reference(), 999)?;
-                    writer.initialize_field(&created, Value::reference(), 0)?;
+                    writer.initialize_field(&created, Id::at("Id"), 999)?;
+                    writer.initialize_field(&created, Value::at("Value"), 0)?;
                     writer.create_output::<Extra<S>>(&created)?;
                 }
                 writer.delete_entity(Node::reference(), &entity)?;

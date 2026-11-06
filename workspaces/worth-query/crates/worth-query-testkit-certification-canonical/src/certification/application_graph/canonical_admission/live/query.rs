@@ -20,48 +20,21 @@ worth_query_portable_type!(ValueSlot => "canonical-admission.live-value-slot.v1"
 worth_query_application_query!(pub LiveQuery for AdmissionSchema, identity "canonical-admission.live-read.v1",
     parameters ParametersBinding, result ResultBinding, scope Document => "Document", name "live_nested_value");
 
-pub type IdentityField = ApplicationQueryResultFieldRef<
-    LiveQuery,
-    IdentitySlot,
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+pub type IdentityField =
+    ApplicationQueryResultFieldRef<LiveQuery, IdentitySlot, AdmissionSchema, DocumentIdentityField>;
 pub fn identity_field() -> IdentityField {
-    ApplicationQueryResultFieldRef::new("identity", DocumentIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DocumentIdentityField::at("DocumentIdentityField"),
+    )
 }
-pub fn value_field() -> ApplicationQueryResultFieldRef<
-    LiveQuery,
-    ValueSlot,
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentValueField,
-    SwallowingValue,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", DocumentValueField::reference())
+pub fn value_field(
+) -> ApplicationQueryResultFieldRef<LiveQuery, ValueSlot, AdmissionSchema, DocumentValueField> {
+    ApplicationQueryResultFieldRef::new("value", DocumentValueField::at("DocumentValueField"))
 }
-pub fn counter_field() -> ApplicationQueryResultFieldRef<
-    LiveQuery,
-    CounterSlot,
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    CounterField,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("counter", CounterField::reference())
+pub fn counter_field(
+) -> ApplicationQueryResultFieldRef<LiveQuery, CounterSlot, AdmissionSchema, CounterField> {
+    ApplicationQueryResultFieldRef::new("counter", CounterField::at("CounterField"))
 }
 
 pub fn definition(
@@ -86,7 +59,7 @@ pub fn definition(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())
         .public()
-        .live_root_by::<LiveCause, _, _, _, _, _, _, _, _>(identity_field(), identity_field())
+        .live_root_by::<LiveCause>(identity_field(), identity_field())
         .build()
         .unwrap()
 }
@@ -114,15 +87,7 @@ pub struct ReadLive {
 }
 worth_query_structured_value_binding!(pub LiveInputBinding for ReadLive { identity: "canonical-admission.live-input.v1" });
 pub struct LiveBinding;
-pub type ReadScope = ApplicationQueryFieldScope<
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReadScope = ApplicationQueryFieldScope<DocumentIdentityField>;
 impl ApplicationQueryBinding<AdmissionSchema> for LiveBinding {
     type Input = ReadLive;
     type InputBinding = LiveInputBinding;
@@ -137,17 +102,8 @@ impl ApplicationQueryBinding<AdmissionSchema> for LiveBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "canonical-admission.live-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        AdmissionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         AdmissionSchema,
@@ -166,7 +122,10 @@ impl ApplicationQueryIntent<AdmissionSchema> for ReadLive {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> ReadScope {
-        ReadScope::new(DocumentIdentityField::reference(), self.identity)
+        ReadScope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity,
+        )
     }
 }
 impl ApplicationLiveQueryIntent<AdmissionSchema> for ReadLive {

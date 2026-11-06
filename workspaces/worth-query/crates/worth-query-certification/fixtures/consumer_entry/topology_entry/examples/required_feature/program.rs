@@ -1,12 +1,41 @@
 use super::*;
 
-worth_query_decl::facade::worth_query_application! {
-    pub ExampleSchema {
-        owner: "worth.query.example.required-feature", version: (1, 0),
-        contributions: [TopologyContribution],
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ExampleSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for ExampleSchema {
+    const NAME: &'static str = "ExampleSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (TopologyContribution,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for ExampleSchema {
+    const OWNER: &'static str = "worth.query.example.required-feature";
+    const NAME: &'static str = "ExampleSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
     }
 }
-impl TopologySchemaBinding for ExampleSchema {}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for ExampleSchema {
+    type Contributions = (TopologyContribution,);
+}
+
+impl TopologySchemaBinding for ExampleSchema {
+    type PrincipalFragment = worth_query_topology_entry::PrincipalRecords;
+}
 
 pub type FinalConnection = ApplicationConnectionRef<
     ExampleSchema,
@@ -70,13 +99,7 @@ impl<const ERASE: bool> ApplicationSchemaContribution<ExampleSchema>
 {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<ExampleSchema>>::IDENTITY;
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<ExampleSchema>,
-    ) -> ApplicationSchemaDeclarationBuilder<ExampleSchema> {
-        <TopologyContribution as ApplicationSchemaContribution<ExampleSchema>>::register_members(
-            builder,
-        )
-    }
+    type Members = <TopologyContribution as ApplicationSchemaContribution<ExampleSchema>>::Members;
 }
 impl<const ERASE: bool> WorthQueryApplicationContribution<ExampleSchema>
     for ExampleContribution<ERASE>

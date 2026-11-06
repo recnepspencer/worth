@@ -45,7 +45,8 @@ impl ApplicationCorrectionBinding<BankSchema> for RestoreRecordedEstateFreeze {
         .unwrap();
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Status::reference())],
+                [DeclaredPreImageLocus::from_field(Status::at("Status"))
+                    .expect("owned record selection is valid")],
                 width,
             )
             .expect("account status codec has a finite declared representation"),
@@ -64,7 +65,10 @@ impl ApplicationCorrectionBinding<BankSchema> for RestoreRecordedEstateFreeze {
         };
         let prior_status = AccountStatusBinding::decode(
             preimage
-                .field(&DeclaredPreImageLocus::from_field(Status::reference()))
+                .field(
+                    &DeclaredPreImageLocus::from_field(Status::at("Status"))
+                        .expect("owned record selection is valid"),
+                )
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;

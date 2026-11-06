@@ -16,42 +16,8 @@ use crate::domain_computation::primary_graph::{
 /// This declares scope only. Missing pre-evaluation field presence, reuse and
 /// restoration cannot establish an equivalent-output evaluation.
 ///
-/// The field's entity is the role's entity (positive construction):
-/// ```
-/// use worth_query_execution::facade::application_contribution::WorthQueryProducerOutputEquivalence as Contract;
-/// use worth_query_declaration::facade::{application_operation::*, application_schema::*};
-/// fn declared<S, R, A, F, W, Q, U>(
-///     field: ApplicationFieldRef<S, R::Entity, A, F, u64, W, Q, U>,
-/// ) -> Contract<S, R>
-/// where R: WorthQueryApplicationOutputRole<Schema=S, Cardinality=WorthQueryExactlyOneOutput, Action=WorthQueryPreserveOutput>,
-/// F: RequiredApplicationFieldValue<Value=u64, Binding=U64ApplicationValueBinding>,
-/// U: ApplicationFieldUnit,
-/// { Contract::exact_u64(field) }
-/// ```
-/// A sibling entity cannot be substituted:
-/// ```compile_fail,E0308
-/// use worth_query_execution::facade::application_contribution::WorthQueryProducerOutputEquivalence as Contract;
-/// use worth_query_declaration::facade::{application_operation::*, application_schema::*};
-/// fn wrong_entity<S, R, E, A, F, W, Q, U>(
-///     field: ApplicationFieldRef<S, E, A, F, u64, W, Q, U>,
-/// ) -> Contract<S, R>
-/// where R: WorthQueryApplicationOutputRole<Schema=S, Cardinality=WorthQueryExactlyOneOutput, Action=WorthQueryPreserveOutput>,
-/// F: RequiredApplicationFieldValue<Value=u64, Binding=U64ApplicationValueBinding>,
-/// U: ApplicationFieldUnit,
-/// { Contract::exact_u64(field) }
-/// ```
-/// An optional field cannot acquire a present-field contract:
-/// ```compile_fail,E0277
-/// use worth_query_execution::facade::application_contribution::WorthQueryProducerOutputEquivalence as Contract;
-/// use worth_query_declaration::facade::{application_operation::*, application_schema::*};
-/// fn optional<S, R, A, F, W, Q, U>(
-///     field: ApplicationFieldRef<S, R::Entity, A, F, u64, W, Q, U>,
-/// ) -> Contract<S, R>
-/// where R: WorthQueryApplicationOutputRole<Schema=S, Cardinality=WorthQueryExactlyOneOutput, Action=WorthQueryPreserveOutput>,
-/// F: OptionalApplicationFieldValue<Value=u64, Binding=U64ApplicationValueBinding>,
-/// U: ApplicationFieldUnit,
-/// { Contract::exact_u64(field) }
-/// ```
+/// Its entity, value and scalar codec are checked by the selector type.
+/// Column presence is checked against the owning record before construction.
 pub struct WorthQueryProducerOutputEquivalence<Schema, Role> {
     field: NativeFieldBindingExpectation,
     marker: PhantomData<fn() -> (Schema, Role)>,
@@ -65,20 +31,26 @@ where
         Action = WorthQueryPreserveOutput,
     >,
 {
-    pub fn exact_u64<A, F, W, Q, U>(
-        field: schema::ApplicationFieldRef<Schema, Role::Entity, A, F, u64, W, Q, U>,
-    ) -> Self
+    pub fn exact_u64<F>(field: F) -> Result<Self, schema::ApplicationSchemaDeclarationDenial>
     where
-        F: schema::RequiredApplicationFieldValue<
+        F: schema::fragment::RecordSelection<
+            Entity = Role::Entity,
             Value = u64,
             Binding = schema::U64ApplicationValueBinding,
         >,
-        U: schema::ApplicationFieldUnit,
     {
-        Self {
-            field: NativeFieldBindingExpectation::of(field),
-            marker: PhantomData,
+        let metadata = field.checked()?;
+        if metadata.presence() != schema::ApplicationFieldPresence::Required {
+            return Err(
+                schema::ApplicationSchemaDeclarationDenial::InvalidRecordField {
+                    field: field.expected_recipe().locus().clone(),
+                },
+            );
         }
+        Ok(Self {
+            field: NativeFieldBindingExpectation::of(field)?,
+            marker: PhantomData,
+        })
     }
 }
 

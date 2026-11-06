@@ -7,8 +7,8 @@ use worth_query_declaration::facade::application_aftermath::{
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationAbilityRef, ApplicationOperationMarkerIdentity, ApplicationOperationRef,
-    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
-    ApplicationStructuredValueBinding, WorthQueryExternalEffectCorrelationFamily,
+    ApplicationSchemaDeclarationBuilder, ApplicationStructuredValueBinding,
+    WorthQueryExternalEffectCorrelationFamily,
 };
 
 use super::declaration::{
@@ -124,15 +124,11 @@ pub(super) fn bind_operations(
     schema: FixtureBuilder,
     ability: FixtureAbilityRef,
     reads: FixtureReads,
-) -> Result<
-    ApplicationSchemaDeclaration<AftermathFixtureSchema>,
-    worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
-> {
+) -> FixtureBuilder {
     let schema = bind_compensating_ops(schema, ability);
     let schema = bind_uncorrectable_ops(schema, ability);
     let schema = bind_escaping_ops(schema, ability);
-    let schema = bind_inverse_ops(schema, ability, reads);
-    schema.build()
+    bind_inverse_ops(schema, ability, reads)
 }
 
 /// Contained operations whose correction is a compensating action.
@@ -216,7 +212,8 @@ fn bind_inverse_ops(
                 .definition()
                 .no_external_effect()
                 .aftermath(inverse(
-                    [DeclaredPreImageLocus::from_field(reads.frozen)],
+                    [DeclaredPreImageLocus::from_field(reads.frozen)
+                        .expect("owned inverse field is valid")],
                     64,
                     "account-freeze-inverse",
                 ))
@@ -232,7 +229,8 @@ fn bind_inverse_ops(
                 .definition()
                 .no_external_effect()
                 .aftermath(inverse(
-                    [DeclaredPreImageLocus::from_field(reads.note)],
+                    [DeclaredPreImageLocus::from_field(reads.note)
+                        .expect("owned inverse field is valid")],
                     4,
                     "geometry-inverse",
                 ))
@@ -248,7 +246,8 @@ fn bind_inverse_ops(
                 .definition()
                 .no_external_effect()
                 .aftermath(inverse(
-                    [DeclaredPreImageLocus::from_field(reads.balance)],
+                    [DeclaredPreImageLocus::from_field(reads.balance)
+                        .expect("owned inverse field is valid")],
                     256,
                     "inverse-v2",
                 ))
@@ -265,8 +264,10 @@ fn bind_inverse_ops(
                 .no_external_effect()
                 .aftermath(inverse(
                     [
-                        DeclaredPreImageLocus::from_field(reads.note),
-                        DeclaredPreImageLocus::from_field(reads.frozen),
+                        DeclaredPreImageLocus::from_field(reads.note)
+                            .expect("owned inverse field is valid"),
+                        DeclaredPreImageLocus::from_field(reads.frozen)
+                            .expect("owned inverse field is valid"),
                     ],
                     256,
                     "account-fields-inverse",
@@ -285,8 +286,10 @@ fn bind_inverse_ops(
                 .no_external_effect()
                 .aftermath(inverse(
                     [
-                        DeclaredPreImageLocus::from_field(reads.frozen),
-                        DeclaredPreImageLocus::from_field(reads.note),
+                        DeclaredPreImageLocus::from_field(reads.frozen)
+                            .expect("owned inverse field is valid"),
+                        DeclaredPreImageLocus::from_field(reads.note)
+                            .expect("owned inverse field is valid"),
                     ],
                     256,
                     "account-fields-inverse",

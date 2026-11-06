@@ -1,33 +1,20 @@
 //! The original maintained catalog contribution, configuration and program.
 use super::*;
-worth_query_decl::facade::worth_query_operation_reads!(mutation::RenameItem => [ItemEnabled]);
-
 pub struct Contribution;
 impl ApplicationSchemaContribution<Catalog> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("managed-catalog.maintained-contribution.v1");
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<Catalog>,
-    ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
-        // Declare this root's typed Source, fields, index and public bindings.
-        // Its fixed contribution adds the rule and original decision reads.
-        correction::declare(geometry::generated::declare(generated::declare(
-            super::super::schema::declare(builder),
-        )))
-        .operation_managed_index_read::<query::PrefixBinding, _, _>(
-            mutation::RenameItem::reference(),
-        )
-        .operation_read_field(mutation::RenameItem::reference(), ItemEnabled::reference())
-        .invariant(rule::definition())
-    }
-    fn visit_correction<
-        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Catalog>,
-    >(
-        source_binding: std::any::TypeId,
-        visitor: V,
-    ) -> Result<V::Output, V> {
-        correction::visit(source_binding, visitor)
-    }
+    type Members = (
+        CatalogRecords,
+        super::super::protected::access::grants::BoxGrantRecords,
+        super::super::geometry::schema::GeometryRecords,
+        ContributionContracts,
+        (
+            correction::recorded::Note,
+            correction::recorded::Mover,
+            correction::recorded::Motion,
+        ),
+    );
 }
 pub struct Configuration {
     pub(super) prefix: Arc<prefix::Calls>,
@@ -166,5 +153,31 @@ impl ApplicationProgramDefinition<Catalog> for Program {
             generated::indexed::program::feature(),
             geometry::generated::program::feature(),
         ]
+    }
+}
+
+pub struct ContributionContracts;
+impl worth_query_decl::facade::application_schema::fragment::Registration<Catalog>
+    for ContributionContracts
+{
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<Catalog>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Catalog>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(
+            // Declare this root's typed Source, fields, index and public bindings.
+            // Its fixed contribution adds the rule and original decision reads.
+            correction::declare(geometry::generated::declare(generated::declare(
+                super::super::schema::declare(schema),
+            )))
+            .operation_managed_index_read::<query::PrefixBinding, _, _>(
+                mutation::RenameItem::reference(),
+            )
+            .operation_read_field(
+                mutation::RenameItem::reference(),
+                ItemEnabled::at("ItemEnabled"),
+            )
+            .invariant(rule::definition()),
+        )
     }
 }

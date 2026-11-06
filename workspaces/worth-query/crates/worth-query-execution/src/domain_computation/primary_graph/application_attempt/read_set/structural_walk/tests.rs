@@ -42,7 +42,7 @@ fn sealing_keeps_the_one_original_issued_body_and_requires_explicit_relation_fac
             &completed.facts,super::super::super::retained_decision_facts::StorageControl::new(Allocation::SystemAllocation,Some(&request))).is_err(),
             "live walk facts deliberately have no checkpoint reconstruction door");
         let selected=world.application.select_product_branch(&execution,world.application.product_runtime().default_branch()).unwrap();
-        let target=selected.resolve_entity(&phase,NodeKey::reference(),1,&request,WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
+        let target=selected.resolve_entity(&phase,NodeKey::at("NodeKey"),1,&request,WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
         let denied=completed.projected_relation(Next::reference(),&root,&target).err().unwrap();
         assert_eq!(denied.kind(),WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
             "physical walk metadata does not manufacture the explicit pair fact");
@@ -182,7 +182,7 @@ fn failed_calls_veto_sealing_before_a_key_exists_and_after_a_successful_duplicat
                 .invariant
                 .project(
                     &phase,
-                    |reader| reader.resolve_entity(NodeKey::reference(), 0).unwrap(),
+                    |reader| reader.resolve_entity(NodeKey::at("NodeKey"), 0).unwrap(),
                     Allocation::SystemAllocation,
                 )
                 .unwrap()

@@ -101,7 +101,7 @@ impl Rule {
                 .typed_relation(AccountOwner::reference())
                 .ok_or("owner missing")?,
             status: resolver
-                .typed_field(AccountStatus::reference())
+                .typed_field(AccountStatus::at("AccountStatus"))
                 .ok_or("status missing")?,
         })
     }

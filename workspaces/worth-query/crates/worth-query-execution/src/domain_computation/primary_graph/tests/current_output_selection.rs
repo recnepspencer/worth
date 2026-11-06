@@ -46,7 +46,7 @@ fn current_output_rejects_a_foreign_producer_identity_with_its_typed_cause() {
                     &phase,
                     |reader| {
                         reader
-                            .resolve_entity(AccountStatus::reference(), "open".to_owned())
+                            .resolve_entity(AccountStatus::at("AccountStatus"), "open".to_owned())
                             .unwrap()
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -141,7 +141,9 @@ fn current_output_exhaustion_denies_the_admitted_projection() {
                 &admission,
                 |reader, root| {
                     for _ in 0..31 {
-                        reader.field(root, AccountStatus::reference()).unwrap();
+                        reader
+                            .field(root, AccountStatus::at("AccountStatus"))
+                            .unwrap();
                     }
                     reader.current_output::<TestCurrentOutputFamily, Account>(root)
                 },
@@ -191,7 +193,7 @@ fn retire_open_account(world: &super::fixture::AuthorizationWorld) {
                             .require_decision_entity(account, Account::reference())
                             .unwrap();
                         reader
-                            .require_decision_field(account, AccountStatus::reference())
+                            .require_decision_field(account, AccountStatus::at("AccountStatus"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -279,7 +281,7 @@ fn admitted_touch_parts(
         .unwrap()
         .resolve_entity(
             phase_custody,
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             "open".to_owned(),
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,

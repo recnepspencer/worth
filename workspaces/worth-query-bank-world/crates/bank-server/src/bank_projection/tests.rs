@@ -53,7 +53,7 @@ fn bounded_send_projection_rejects_accounting_revision_drift() {
                 phase,
                 |reader| {
                     let source_entity = reader
-                        .resolve_entity(AccountIdentity::reference(), source)
+                        .resolve_entity(AccountIdentity::at("AccountIdentity"), source)
                         .unwrap();
                     project_send_money_decision(reader, &source_entity, &send(source))
                 },
@@ -84,7 +84,7 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
                 phase,
                 |reader| {
                     let source_entity = reader
-                        .resolve_entity(AccountIdentity::reference(), source)
+                        .resolve_entity(AccountIdentity::at("AccountIdentity"), source)
                         .unwrap();
                     project_send_money_decision(reader, &source_entity, &send(source))
                 },
@@ -109,7 +109,7 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
                 phase,
                 |reader| {
                     let source_entity = reader
-                        .resolve_entity(AccountIdentity::reference(), source)
+                        .resolve_entity(AccountIdentity::at("AccountIdentity"), source)
                         .unwrap();
                     project_send_money_decision(reader, &source_entity, &send(source))
                 },
@@ -138,7 +138,7 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
                     phase,
                     |reader| {
                         let source_entity = reader
-                            .resolve_entity(AccountIdentity::reference(), source)
+                            .resolve_entity(AccountIdentity::at("AccountIdentity"), source)
                             .unwrap();
                         project_send_money_decision(reader, &source_entity, &send(source))
                     },
@@ -182,7 +182,7 @@ fn bounded_send_projection_rejects_ambiguous_recipient_ownership() {
                 phase,
                 |reader| {
                     let source_entity = reader
-                        .resolve_entity(AccountIdentity::reference(), source)
+                        .resolve_entity(AccountIdentity::at("AccountIdentity"), source)
                         .unwrap();
                     project_send_money_decision(reader, &source_entity, &send(source))
                 },
@@ -210,7 +210,10 @@ impl ProjectionHarness {
         let mut projection = None;
         let runtime = in_memory_program(
             validated_bank_application().unwrap(),
-            BankSchema::declaration().unwrap(),
+            worth_query_host::facade::declaration::application_schema::fragment::declare(
+                BankSchema,
+            )
+            .unwrap(),
             (Default::default(), (), ()),
             ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             crate::identity_runtime::bank_application_limits(),

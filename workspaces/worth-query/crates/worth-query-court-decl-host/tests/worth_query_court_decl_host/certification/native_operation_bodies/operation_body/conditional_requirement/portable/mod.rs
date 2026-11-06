@@ -41,7 +41,7 @@ fn conditional_requirement_survives_checkpoint_and_fresh_schema_readmission() {
 fn non_boolean_requirement_is_refused_at_authoring() {
     let operands = RequireDraftNote::reference::<DocumentRetentionSchema<25>>()
         .requirement_operands()
-        .field("note", DocumentDraftNoteField::reference())
+        .field("note", DocumentDraftNoteField::at("DocumentDraftNoteField"))
         .unwrap();
     let reader = worth_foundational::expression_api::expressions()
         .reading_within(ApplicationOperationBodyRequirementExpression::PROFILE);

@@ -34,7 +34,7 @@ fn absent_aspect_read_stales_when_other_field_materializes_before_commit() {
             let source = selected
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     installation::ANCHOR.to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -62,7 +62,7 @@ fn absent_aspect_read_stales_when_other_field_materializes_before_commit() {
                     |reader, root| {
                         assert_eq!(
                             reader
-                                .decision_field(root, SourceSelection::reference())
+                                .decision_field(root, SourceSelection::at("SourceSelection"))
                                 .unwrap(),
                             None
                         );
@@ -71,7 +71,7 @@ fn absent_aspect_read_stales_when_other_field_materializes_before_commit() {
                             reader
                                 .decision_field_with_predecode_admission(
                                     root,
-                                    SourceSelection::reference(),
+                                    SourceSelection::at("SourceSelection"),
                                     |_, _| {
                                         called.set(true);
                                         Ok::<_, ()>(())

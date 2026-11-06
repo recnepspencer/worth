@@ -31,10 +31,8 @@ worth_query_structured_value_binding!(pub ActorLifecycleDenialBinding for ActorL
     identity: "worth.query.certification.actor-lifecycle-denial.v1"
 });
 worth_query_operation!(pub ActorLifecycle for DocumentRetentionSchema, input ActorLifecycleInputBinding);
-worth_query_operation_reads!(ActorLifecycle => [Document, Principal, ExternalMapping, WorkflowAuthoringGrant,
-    DocumentIdentityField, PrincipalIdentityField, ExternalIdentityField, MappingStatusField, WorkflowGrantIdentityField,
-    MappingTarget, WorkflowDocumentOwner, WorkflowGrantGrantor, WorkflowGrantGrantee]);
-worth_query_operation_writes!(ActorLifecycle => [PrincipalIdentityField, MappingStatusField]);
+worth_query_operation_reads!(ActorLifecycle => [Document, Principal, ExternalMapping, WorkflowAuthoringGrant, MappingTarget, WorkflowDocumentOwner, WorkflowGrantGrantor, WorkflowGrantGrantee]);
+
 worth_query_operation_creates!(ActorLifecycle => [Principal]);
 worth_query_operation_deletes!(ActorLifecycle => [Principal]);
 worth_query_operation_links!(ActorLifecycle => [MappingTarget, WorkflowDocumentOwner, WorkflowGrantGrantor, WorkflowGrantGrantee]);
@@ -51,19 +49,22 @@ pub fn declare(
         .operation_read_entity(op, Principal::reference())
         .operation_read_entity(op, ExternalMapping::reference())
         .operation_read_entity(op, WorkflowAuthoringGrant::reference())
-        .operation_read_field(op, DocumentIdentityField::reference())
-        .operation_read_field(op, PrincipalIdentityField::reference())
-        .operation_read_field(op, ExternalIdentityField::reference())
-        .operation_read_field(op, MappingStatusField::reference())
-        .operation_read_field(op, WorkflowGrantIdentityField::reference())
+        .operation_read_field(op, DocumentIdentityField::at("DocumentIdentityField"))
+        .operation_read_field(op, PrincipalIdentityField::at("PrincipalIdentityField"))
+        .operation_read_field(op, ExternalIdentityField::at("ExternalIdentityField"))
+        .operation_read_field(op, MappingStatusField::at("MappingStatusField"))
+        .operation_read_field(
+            op,
+            WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+        )
         .operation_read_relation(op, MappingTarget::reference())
         .operation_read_relation(op, WorkflowDocumentOwner::reference())
         .operation_read_relation(op, WorkflowGrantGrantor::reference())
         .operation_read_relation(op, WorkflowGrantGrantee::reference())
         .operation_create(op, Principal::reference())
         .operation_delete(op, Principal::reference())
-        .operation_write(op, PrincipalIdentityField::reference())
-        .operation_write(op, MappingStatusField::reference())
+        .operation_write(op, PrincipalIdentityField::at("PrincipalIdentityField"))
+        .operation_write(op, MappingStatusField::at("MappingStatusField"))
         .operation_link(op, MappingTarget::reference())
         .operation_unlink(op, MappingTarget::reference())
         .operation_link(op, WorkflowDocumentOwner::reference())

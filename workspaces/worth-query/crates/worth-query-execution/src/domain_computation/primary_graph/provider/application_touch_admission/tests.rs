@@ -22,8 +22,16 @@ fn optional_struct_initialization_uses_only_actual_field_grants() {
             .candidate(execution, [world.set(&[("A", "initial")])])
             .unwrap();
         let projection = candidate.mutation_touches(execution).unwrap();
-        assert_eq!(projection.struct_touches().len(), 1);
-        let actual = &projection.struct_touches()[0];
+        assert_eq!(
+            projection.struct_touches().len(),
+            2,
+            "the SDK also writes its structural presence scalar"
+        );
+        let actual = projection
+            .struct_touches()
+            .iter()
+            .find(|touch| touch.field().as_str() == "A")
+            .unwrap();
         assert!(!actual.before_present() && actual.after_present());
         assert_eq!(actual.field().as_str(), "A");
         world
@@ -117,7 +125,7 @@ fn whole_clear_requires_explicit_aspect_removal_grant() {
 }
 mod whole_sequence;
 #[test]
-fn presence_only_whole_struct_has_no_implicit_field_grant() {
+fn sdk_record_presence_requires_its_derived_field_write_grant() {
     check(|execution| {
         let world = World::new(execution, false, &[]);
         let before = world
@@ -127,9 +135,12 @@ fn presence_only_whole_struct_has_no_implicit_field_grant() {
             .0;
         let candidate = world.candidate(execution, [world.set(&[])]).unwrap();
         assert!(matches!(
-            world.admit(execution, &candidate, true),
+            world.admit_read_only(execution, &candidate),
             Err(TouchAdmissionFailure::Contract)
         ));
+        world
+            .admit(execution, &candidate, true)
+            .expect("record field writes explicitly derive the SDK presence grant");
         assert_eq!(
             world
                 .native
@@ -143,13 +154,9 @@ fn presence_only_whole_struct_has_no_implicit_field_grant() {
 #[test]
 fn required_present_replacement_is_distinct_from_native_clear_refusal() {
     check(|execution| {
-        let world = World::new(
-            execution,
-            true,
-            &[("RequiredA", "present"), ("RequiredB", "protected")],
-        );
+        let world = World::new(execution, true, &[("A", "present"), ("B", "protected")]);
         let candidate = world
-            .candidate(execution, [world.set(&[("RequiredA", "replacement")])])
+            .candidate(execution, [world.set(&[("A", "replacement")])])
             .unwrap();
         world
             .admit(execution, &candidate, true)

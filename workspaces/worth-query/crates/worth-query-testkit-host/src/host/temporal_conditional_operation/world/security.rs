@@ -40,7 +40,7 @@ impl CourtroomWorld {
                     .expect("the selected product branch remains admitted")
                     .resolve_entity(
                         &phase,
-                        ExternalIdentityField::reference(),
+                        ExternalIdentityField::at("ExternalIdentityField"),
                         declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
                             "https://issuer.example",
                             "temporal-host",
@@ -82,7 +82,7 @@ impl CourtroomWorld {
                 &phase, &admission,
                 |reader, mapping| {
                     reader
-                        .decision_field(mapping, MappingStatusField::reference())
+                        .decision_field(mapping, MappingStatusField::at("MappingStatusField"))
                         .expect("revocation admits the mapping status decision field")
                         .expect("an authenticated mapping retains its status");
                     reader
@@ -120,7 +120,7 @@ impl CourtroomWorld {
         effects
             .write_field(
                 &mapping,
-                MappingStatusField::reference(),
+                MappingStatusField::at("MappingStatusField"),
                 declaration::authentication::WorthQueryPrincipalMappingStatus::Disabled,
             )
             .unwrap();
@@ -179,7 +179,7 @@ pub fn projection_target_is_bound_to_exact_admission() {
                         .unwrap()
                         .resolve_entity(
                             &phase,
-                            ExternalIdentityField::reference(),
+                            ExternalIdentityField::at("ExternalIdentityField"),
                             declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
                                 "https://issuer.example",
                                 "temporal-host",
@@ -223,7 +223,7 @@ pub fn projection_target_is_bound_to_exact_admission() {
                     &prior_admission,
                     |reader, mapping| {
                         reader
-                            .decision_field(mapping, MappingStatusField::reference())
+                            .decision_field(mapping, MappingStatusField::at("MappingStatusField"))
                             .unwrap();
                         reader.mutation_target(mapping).unwrap()
                     },
@@ -246,7 +246,7 @@ pub fn projection_target_is_bound_to_exact_admission() {
                     &current_admission,
                     |reader, mapping| {
                         reader
-                            .decision_field(mapping, MappingStatusField::reference())
+                            .decision_field(mapping, MappingStatusField::at("MappingStatusField"))
                             .unwrap();
                         reader.mutation_target(mapping).unwrap()
                     },

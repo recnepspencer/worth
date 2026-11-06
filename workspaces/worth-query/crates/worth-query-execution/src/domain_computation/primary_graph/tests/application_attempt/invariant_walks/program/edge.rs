@@ -36,7 +36,7 @@ pub(in super::super) fn replace_next(
             let old = selected
                 .resolve_entity(
                     &phase,
-                    NodeKey::reference(),
+                    NodeKey::at("NodeKey"),
                     3,
                     request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -45,7 +45,7 @@ pub(in super::super) fn replace_next(
             let new = selected
                 .resolve_entity(
                     &phase,
-                    NodeKey::reference(),
+                    NodeKey::at("NodeKey"),
                     target,
                     request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -61,14 +61,15 @@ pub(in super::super) fn replace_next(
                             .require_decision_entity(subject, Node::reference())
                             .unwrap();
                         reader
-                            .require_decision_field(subject, NodeKey::reference())
+                            .require_decision_field(subject, NodeKey::at("NodeKey"))
                             .unwrap();
-                        let previous = reader.resolve_entity(NodeKey::reference(), 3).unwrap();
+                        let previous = reader.resolve_entity(NodeKey::at("NodeKey"), 3).unwrap();
                         reader
                             .require_decision_relation(Next::reference(), subject, &previous)
                             .unwrap();
-                        let replacement =
-                            reader.resolve_entity(NodeKey::reference(), target).unwrap();
+                        let replacement = reader
+                            .resolve_entity(NodeKey::at("NodeKey"), target)
+                            .unwrap();
                         reader
                             .require_decision_entity(&replacement, Node::reference())
                             .unwrap();

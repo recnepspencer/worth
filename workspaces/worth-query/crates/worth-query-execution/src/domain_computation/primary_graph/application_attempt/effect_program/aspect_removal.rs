@@ -1,26 +1,29 @@
 //! Author a whole-parent removal from the complete same-program decision closure.
 use super::*;
 use worth_foundational::facade::{AbsenceLaw, AspectKey, AspectShape, PortableAspectContractBasis};
-use worth_query_declaration::facade::application_schema::{
-    ApplicationAspectMarkerIdentity, ApplicationAspectRef, ApplicationEntityMarkerIdentity,
-    OperationRemovesAspects,
-};
+use worth_query_declaration::facade::application_schema::OperationRemovesAspects;
 use worth_relational::facade::identity::EntityId;
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
-    pub fn remove_aspect<Entity, Aspect>(
+    pub fn remove_aspect<F, Entity, Aspect>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-        aspect: ApplicationAspectRef<Schema, Entity, Aspect>,
+        aspect: worth_query_declaration::facade::application_schema::fragment::AspectSelection<
+            F,
+            Entity,
+            Aspect,
+        >,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
-        Entity: ApplicationEntityMarkerIdentity<Schema>,
-        Aspect:
-            ApplicationAspectMarkerIdentity<Schema, Entity> + OperationRemovesAspects<Operation>,
+        F: worth_query_declaration::facade::application_schema::fragment::Fragment,
+        Entity: worth_query_declaration::facade::application_schema::fragment::Entity,
+        Aspect: worth_query_declaration::facade::application_schema::fragment::Aspect
+            + OperationRemovesAspects<Operation>,
     {
         self.reserve_effects(1)?;
-        let entity = Entity::IDENTIFIER;
+        let entity = aspect.entity();
+        self.layout.aspect_selection(aspect)?;
         self.validate_target(target, entity)?;
         self.admit_program_target(&ApplicationOperationProgramTarget::RemoveAspect {
             entity: entity.into(),
@@ -44,10 +47,7 @@ impl<Schema, Operation, Input, Scope>
                 aspect.name(),
             )
         })?;
-        if contract.identity() != aspect.identity()
-            || contract.revision() != aspect.revision()
-            || contract.absence() != AbsenceLaw::Optional
-        {
+        if contract.absence() != AbsenceLaw::Optional {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
                 aspect.name(),

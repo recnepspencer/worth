@@ -19,7 +19,7 @@ macro_rules! output {
         impl WorthQueryApplicationOutputRole for $Role {
             type Schema = MutationSchema;
             type Contract = $Outputs;
-            type Entity = FixtureEntity<MutationSchema>;
+            type Entity = FixtureEntity;
             type Action = $Action;
             type Cardinality = WorthQueryExactlyOneOutput;
             const NAME: &'static str = $name;
@@ -37,7 +37,7 @@ mutation_binding!(
     MutationDecision,
     MutationDenialBinding,
     "fixture.authored.create-handler.v1",
-    FixturePrincipalIdentityField<MutationSchema>,
+    FixturePrincipalIdentityField::at("PrincipalIdentityField"),
     test_principal_binding::<MutationSchema>(),
     CreatedOutputs
 );
@@ -50,7 +50,7 @@ mutation_binding!(
     MutationDecision,
     MutationDenialBinding,
     "fixture.authored.retire-handler.v1",
-    FixturePrincipalIdentityField<MutationSchema>,
+    FixturePrincipalIdentityField::at("PrincipalIdentityField"),
     test_principal_binding::<MutationSchema>(),
     RetiredOutputs
 );
@@ -64,17 +64,14 @@ fn authored_family_rejects_missing_role_or_changed_logical_key_meaning() {
         (inverse.identity().to_owned(), &inverse),
     ]);
     let queries = [disclosure::HistoryBinding::descriptor()];
-    let field = ApplicationFieldRef::<
-        MutationSchema,
-        FixtureEntity<MutationSchema>,
-        FixtureIdentityAspect<MutationSchema>,
-        FixturePrincipalIdentityField<MutationSchema>,
+    let field = worth_query_declaration::facade::application_schema::fragment::FieldSelection::<
+        InstallationFields,
+        FixtureEntity,
+        FixtureIdentityAspect,
         u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    >::from_schema_types();
+    >::at("PrincipalIdentityField");
     let key = ApplicationCorrectionOutput::<CreatedBinding, Created>::field(field)
+        .unwrap()
         .declaration()
         .projected_value_member();
     for axis in [

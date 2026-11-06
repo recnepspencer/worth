@@ -24,10 +24,9 @@ worth_query_structured_value_binding!(pub InputBinding for Generate { identity: 
 worth_query_structured_value_binding!(pub ResultBinding for Generated { identity: "maintained-generated.operation-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-generated.operation-denial.v1" });
 worth_query_operation!(pub GenerateItem for Catalog, input InputBinding);
-worth_query_operation_reads!(GenerateItem => [Directory, DirectoryIdentity, DirectoryNote]);
+worth_query_operation_reads!(GenerateItem => [Directory]);
 worth_query_operation_creates!(GenerateItem => [Item]);
 worth_query_operation_links!(GenerateItem => [Contains]);
-worth_query_operation_writes!(GenerateItem => [ItemIdentity, ItemName, ItemEnabled, bounds::ItemBounds]);
 
 pub struct Outputs;
 pub struct ItemOutput;
@@ -58,15 +57,7 @@ impl ApplicationMutationBinding<Catalog> for Binding {
     type Denial = Denial;
     type DenialBinding = DenialBinding;
     type Output = Outputs;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        Catalog,
-        Directory,
-        DirectoryFacts,
-        DirectoryIdentity,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<DirectoryIdentity>;
     type PrincipalBinding = CatalogPrincipal;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -80,17 +71,8 @@ impl ApplicationMutationBinding<Catalog> for Binding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        Catalog,
-        Directory,
-        DirectoryFacts,
-        DirectoryIdentity,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DirectoryIdentity::reference()
+    fn scope_field() -> DirectoryIdentity {
+        DirectoryIdentity::at("DirectoryIdentity")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Catalog,
@@ -109,7 +91,10 @@ impl ApplicationMutationIntent<Catalog> for Generate {
         self
     }
     fn scope_binding(&self) -> <Binding as ApplicationMutationBinding<Catalog>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(DirectoryIdentity::reference(), self.directory.clone())
+        ApplicationMutationFieldScope::new(
+            DirectoryIdentity::at("DirectoryIdentity"),
+            self.directory.clone(),
+        )
     }
 }
 pub(super) fn declare(
@@ -120,13 +105,13 @@ pub(super) fn declare(
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 64)
         .operation_read_entity(op, Directory::reference())
-        .operation_read_field(op, DirectoryIdentity::reference())
-        .operation_read_field(op, DirectoryNote::reference())
+        .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
+        .operation_read_field(op, DirectoryNote::at("DirectoryNote"))
         .operation_create(op, Item::reference())
         .operation_link(op, Contains::reference())
-        .operation_write(op, ItemIdentity::reference())
-        .operation_write(op, ItemName::reference())
-        .operation_write(op, ItemEnabled::reference())
-        .operation_write(op, bounds::ItemBounds::reference())
+        .operation_write(op, ItemIdentity::at("ItemIdentity"))
+        .operation_write(op, ItemName::at("ItemName"))
+        .operation_write(op, ItemEnabled::at("ItemEnabled"))
+        .operation_write(op, bounds::ItemBounds::at("ItemBounds"))
         .application_mutation_binding::<Binding>()
 }

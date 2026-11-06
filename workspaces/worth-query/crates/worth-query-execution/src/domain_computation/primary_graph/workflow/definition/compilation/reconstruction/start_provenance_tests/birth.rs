@@ -7,10 +7,7 @@ use crate::domain_computation::primary_graph::{
     workflow::instance::visit_instance_birth_facts,
 };
 use std::collections::BTreeMap;
-use worth_query_declaration::facade::{
-    application_program::ApplicationWorkflowComponentLimits,
-    application_schema::ApplicationEntityMarkerIdentity,
-};
+use worth_query_declaration::facade::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
 use worth_relational::facade::symbols::ClientKey;
 
@@ -43,7 +40,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
         "birth-read",
         actor.entity().partition_id,
     );
-    let subject_kind = graph.layout.entity_kind(Account::IDENTIFIER).unwrap();
+    let subject_kind = graph.layout.entity_kind(<Account as worth_query_declaration::facade::application_schema::fragment::Entity>::NAME).unwrap();
     let before = selected(&world, &execution);
     let inventories = graph
         .integration_handle()

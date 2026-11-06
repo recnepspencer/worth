@@ -15,7 +15,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::fragment::{
-    AspectDefinition, RelationDefinition,
+    AspectDefinition, RecordFieldDefinition, RelationDefinition,
 };
 use worth_query_installation::facade::ApplicationOperationProgramTarget as Target;
 use worth_relational::facade::transactions::EntityReference;
@@ -89,6 +89,9 @@ impl<S, O, I, Scope> Builder<S, O, I, Scope> {
         }
         for field in definition.fields() {
             let locus = field.recipe().locus();
+            if created.is_none() && !field.writable() {
+                return Err(Denial::new(Kind::UndeclaredEffect, field.path()));
+            }
             self.admit_program_target(&Target::Write {
                 entity: locus.entity().to_owned(),
                 aspect: locus.aspect().to_owned(),
@@ -104,9 +107,6 @@ impl<S, O, I, Scope> Builder<S, O, I, Scope> {
                     self.require_parent_not_removed(locus.entity(), entity, &locator)?;
                 }
                 self.require_field_observation(entity, &locator)?;
-                if self.layout.field_is_optional(locus.entity(), &locator) {
-                    return Err(Denial::new(Kind::UndeclaredEffect, definition.path()));
-                }
                 if self
                     .layout
                     .aspect_contract(locus.entity(), locator.aspect().aspect_key())
@@ -160,12 +160,14 @@ impl<S, O, I, Scope> WritePort for Builder<S, O, I, Scope> {
         self.preflight_record(&native, definition, &[])?;
         // Resolve the complete encoded row before retaining its first effect.
         let prepared = prepare_fields(definition, fields)?;
-        for (locus, value) in prepared {
-            if native.created_effect.is_some() {
-                self.initialize_body_field(&native, locus, std::borrow::Cow::Owned(value))?;
-            } else {
-                self.write_body_input_field(&native, locus, value)?;
-            }
+        if let Some(index) = native.created_effect {
+            let Some(Effect::CreateEntity { fields, .. }) = self.effects.get_mut(index) else {
+                return Err(Denial::new(Kind::ForeignEffectTarget, definition.path()).into());
+            };
+            fields.retain(|field, _| field.aspect().aspect_key().as_str() != definition.name());
+        }
+        for (field, value) in prepared {
+            self.write_prepared_record_field(&native, field, value)?;
         }
         Ok(())
     }
@@ -214,13 +216,7 @@ pub(super) fn restore<S>(target: &ErasedCandidate) -> EffectEntity<S, ()> {
 pub(super) fn prepare_fields(
     definition: &AspectDefinition,
     mut fields: BTreeMap<String, AspectValue>,
-) -> Result<
-    Vec<(
-        &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
-        AspectValue,
-    )>,
-    Denial,
-> {
+) -> Result<Vec<(&RecordFieldDefinition, Option<AspectValue>)>, Denial> {
     let mut prepared = Vec::new();
     prepared
         .try_reserve(definition.fields().len())
@@ -228,13 +224,42 @@ pub(super) fn prepare_fields(
     for field in definition.fields() {
         let locus = field.recipe().locus();
         let path = format!("{}.{}", definition.path(), locus.field());
-        let value = fields
-            .remove(&path)
-            .ok_or_else(|| Denial::new(Kind::InvalidEffectValue, &path))?;
-        prepared.push((locus, value));
+        let value = fields.remove(&path);
+        if value
+            .as_ref()
+            .is_some_and(|value| value.value_family() != field.recipe().scalar_family())
+        {
+            return Err(Denial::new(Kind::InvalidEffectValue, &path));
+        }
+        if value.is_none() && field.presence() == worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Required {
+            return Err(Denial::new(Kind::InvalidEffectValue, &path));
+        }
+        prepared.push((field, value));
     }
     if let Some((path, _)) = fields.first_key_value() {
         return Err(Denial::new(Kind::InvalidEffectValue, path));
     }
     Ok(prepared)
+}
+
+impl<S, O, I, Scope> Builder<S, O, I, Scope> {
+    pub(super) fn write_prepared_record_field(
+        &mut self,
+        target: &EffectEntity<S, ()>,
+        field: &RecordFieldDefinition,
+        value: Option<AspectValue>,
+    ) -> Result<(), Denial> {
+        let locus = field.recipe().locus();
+        if target.created_effect.is_some() {
+            if let Some(value) = value {
+                self.initialize_body_field(target, locus, std::borrow::Cow::Owned(value))?;
+            }
+            return Ok(());
+        }
+        if field.presence() == worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Optional {
+            self.write_body_optional_field(target, locus, value)
+        } else {
+            self.write_body_input_field(target, locus, value.ok_or_else(|| Denial::new(Kind::InvalidEffectValue, locus.field()))?)
+        }
+    }
 }

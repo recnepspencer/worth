@@ -226,7 +226,6 @@ where
                 value_type,
                 unit,
                 frame,
-                writable,
                 equality_queryable,
                 ..
             } => {
@@ -237,7 +236,6 @@ where
                     && recipe.binding_identity().as_str() == value_type
                     && recipe.unit().map(|value| value.as_str()) == unit.as_deref()
                     && recipe.frame().map(|value| value.as_str()) == frame.as_deref()
-                    && descriptor.scope().writable() == *writable
                     && *equality_queryable
             }
             _ => false,

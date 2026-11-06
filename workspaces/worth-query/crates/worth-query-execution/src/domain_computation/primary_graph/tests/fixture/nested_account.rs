@@ -11,7 +11,7 @@ use worth_query_declaration::worth_query_application_query;
 use super::application_queries::{status_parameter, AccountSummaryParameters};
 use super::{
     Account, AccountAllActivity, AccountPrimaryActivity, AccountSecondaryActivity, AccountStatus,
-    Activity, ActivityAccount, ActivityFacts, ActivitySequence, IdentityExecutionSchema,
+    Activity, ActivityAccount, ActivitySequence, IdentityExecutionSchema,
 };
 
 pub struct PrimaryActivitySlot;
@@ -177,7 +177,7 @@ pub(super) fn nested_account_definition() -> ApplicationQueryDefinition<
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .parameter(status_parameter())
-        .where_equal(AccountStatus::reference(), status_parameter())
+        .where_equal(AccountStatus::at("AccountStatus"), status_parameter())
         .order_by(all_sequence(), ApplicationQueryOrderingDirection::Ascending)
         .build()
         .unwrap()
@@ -190,13 +190,7 @@ fn nested_shape<
         NestedAccountQuery,
         Slot,
         IdentityExecutionSchema,
-        Activity,
-        ActivityFacts,
         ActivitySequence,
-        u64,
-        worth_query_declaration::facade::application_schema::ReadOnly,
-        worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-        worth_query_declaration::facade::application_schema::NoApplicationUnit,
     >,
 ) -> ApplicationQueryResultShapeBuilder<
     IdentityExecutionSchema,
@@ -212,60 +206,36 @@ fn primary_sequence() -> ApplicationQueryResultFieldRef<
     NestedAccountQuery,
     PrimarySequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 fn secondary_sequence() -> ApplicationQueryResultFieldRef<
     NestedAccountQuery,
     SecondarySequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 fn all_sequence() -> ApplicationQueryResultFieldRef<
     NestedAccountQuery,
     AllSequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 fn reverse_sequence() -> ApplicationQueryResultFieldRef<
     NestedAccountQuery,
     ReverseSequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 fn primary_activity() -> ApplicationQueryResultRelationRef<

@@ -39,6 +39,7 @@ mod provider_aftermath_causality;
 mod provider_dispatch_outbox;
 mod provider_idempotency;
 mod provider_inbound_completion;
+mod record_selection;
 mod registry_lowering;
 mod relation_payload;
 mod signed_entities;
@@ -82,6 +83,8 @@ pub(in crate::domain_computation::primary_graph) use registry_lowering::{
 
 #[derive(Debug)]
 pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
+    value_bindings:
+        worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     principal_bindings: BTreeMap<String, WorthQueryPrimaryPrincipalBindingLayout>,
     live_control_entity_kinds: BTreeSet<KindId>,
     authorization_selectors: authorization_selectors::WorthQueryAuthorizationSelectors,
@@ -124,6 +127,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryRelationLayout {
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation) struct WorthQueryPrimaryFieldLayout {
+    pub(super) record_presence: Option<AspectFieldLocator>,
     pub(super) entity_kind: KindId,
     pub(super) locator: AspectFieldLocator,
     /// Whether the schema declares the field equality-queryable.
@@ -247,7 +251,7 @@ impl WorthQueryPrimaryGraphLayout {
             lower_continuation_orderings(schema, &entity_kinds, &relation_layouts)?;
         let capability_grant_joins =
             lower_capability_grant_joins(schema, &entity_kinds, &relation_layouts)?;
-        let fields = lower_fields(schema, &entity_kinds)?;
+        let fields = lower_fields(schema, &entity_kinds, value_bindings)?;
         let (registry, managed_sources) = managed_source::lower(
             registry,
             schema,
@@ -265,6 +269,7 @@ impl WorthQueryPrimaryGraphLayout {
 
         Ok((
             Self {
+                value_bindings: value_bindings.clone(),
                 principal_bindings,
                 live_control_entity_kinds,
                 authorization_selectors,

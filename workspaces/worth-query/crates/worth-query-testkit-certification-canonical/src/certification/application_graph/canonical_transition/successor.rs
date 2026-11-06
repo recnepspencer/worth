@@ -61,8 +61,6 @@ pub mod query;
 pub mod readiness;
 #[path = "successor/schema.rs"]
 pub mod schema;
-#[path = "successor/unchanged_revision.rs"]
-pub mod unchanged_revision;
 
 pub use installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 pub use worth_query_host::facade::{

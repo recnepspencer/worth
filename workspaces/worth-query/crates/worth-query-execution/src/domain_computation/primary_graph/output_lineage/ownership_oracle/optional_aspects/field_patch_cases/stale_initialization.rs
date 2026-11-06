@@ -34,7 +34,7 @@ fn sealed_absent_parent_initialization_stales_before_any_native_effect() {
             let root = selected
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     installation::ANCHOR.to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

@@ -59,7 +59,8 @@ fn main() -> Result<(), ExampleFailure> {
     reason = "async-runtime async-runtime=1: The example owns the callback transport executor while native computation stays Query-owned"
 )]
 fn run() -> Result<bank_http_adapter::BankRailCompletionClose, ExampleFailure> {
-    let _declared = BankSchema::declaration().expect("Bank publishes its Query schema");
+    let _declared = worth_query_decl::facade::application_schema::fragment::declare(BankSchema)
+        .expect("Bank publishes its Query schema");
     fn require_declared_effect<Operation, Effect: OperationEmits<Operation>>() {}
     require_declared_effect::<NotifyDeathEstateOperation, EstateDeathNotificationEffect>();
 

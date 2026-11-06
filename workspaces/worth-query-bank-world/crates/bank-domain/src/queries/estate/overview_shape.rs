@@ -112,13 +112,7 @@ fn principal_shape<Slot: worth_query_decl::facade::portable_identity::WorthQuery
         EstateCaseOverviewQuery,
         Slot,
         BankSchema,
-        Principal,
-        crate::schema::PrincipalIdentity,
         crate::schema::PrincipalIdentityField,
-        crate::model::BankPrincipalId,
-        worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::EqualityPredicate,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
     >,
 ) -> ApplicationQueryResultShapeBuilder<
     BankSchema,

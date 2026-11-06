@@ -1,8 +1,7 @@
 use super::{
-    Account, AccountAllActivity, AccountLabel, AccountMembership, AccountMembershipTag,
-    AccountPrimaryActivity, AccountSecondaryActivity, AccountStatus, Activity, ActivityFacts,
-    ActivitySequence, CapabilityDisclosure, CapabilityDisclosureBinding, IdentityExecutionSchema,
-    TouchAccountCapability, ViewAccount,
+    Account, AccountAllActivity, AccountLabel, AccountMembershipTag, AccountPrimaryActivity,
+    AccountSecondaryActivity, AccountStatus, Activity, ActivitySequence, CapabilityDisclosure,
+    CapabilityDisclosureBinding, IdentityExecutionSchema, TouchAccountCapability, ViewAccount,
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
@@ -125,35 +124,14 @@ impl
 }
 
 pub(in crate::domain_computation::primary_graph::tests) fn status_result_field<Query>(
-) -> ApplicationQueryResultFieldRef<
-    Query,
-    StatusResultSlot,
-    IdentityExecutionSchema,
-    Account,
-    super::AccountPolicy,
-    AccountStatus,
-    String,
-    worth_query_declaration::facade::application_schema::ReadWrite,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("status", AccountStatus::reference())
+) -> ApplicationQueryResultFieldRef<Query, StatusResultSlot, IdentityExecutionSchema, AccountStatus>
+{
+    ApplicationQueryResultFieldRef::new("status", AccountStatus::at("AccountStatus"))
 }
 
 pub(in crate::domain_computation::primary_graph::tests) fn label_result_field<Query>(
-) -> ApplicationQueryResultFieldRef<
-    Query,
-    LabelResultSlot,
-    IdentityExecutionSchema,
-    Account,
-    super::AccountPolicy,
-    AccountLabel,
-    String,
-    worth_query_declaration::facade::application_schema::ReadWrite,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("label", AccountLabel::reference())
+) -> ApplicationQueryResultFieldRef<Query, LabelResultSlot, IdentityExecutionSchema, AccountLabel> {
+    ApplicationQueryResultFieldRef::new("label", AccountLabel::at("AccountLabel"))
 }
 
 pub(super) fn account_summary_definition() -> ApplicationQueryDefinition<
@@ -231,17 +209,20 @@ pub(in crate::domain_computation::primary_graph::tests) fn cross_root_definition
         .requires_ability(ViewAccount::reference())
         .root_path(
             ApplicationQueryRootPath::from(Account::reference())
-                .where_equal(AccountStatus::reference(), encoded_string(status))
+                .where_equal(AccountStatus::at("AccountStatus"), encoded_string(status))
+                .expect("record field contract")
                 .forward(AccountPrimaryActivity::reference()),
         )
         .root_path(
             ApplicationQueryRootPath::from(Account::reference())
-                .where_equal(AccountStatus::reference(), encoded_string(status))
+                .where_equal(AccountStatus::at("AccountStatus"), encoded_string(status))
+                .expect("record field contract")
                 .forward(AccountSecondaryActivity::reference()),
         )
         .root_path(
             ApplicationQueryRootPath::from(Account::reference())
-                .where_equal(AccountStatus::reference(), encoded_string(status))
+                .where_equal(AccountStatus::at("AccountStatus"), encoded_string(status))
+                .expect("record field contract")
                 .forward(AccountAllActivity::reference()),
         )
         .order_by(
@@ -266,10 +247,11 @@ pub(super) fn governed_account_summary_definition() -> ApplicationQueryDefinitio
             TouchAccountCapability::reference(),
         )
         .use_field_by(
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             encoded_disclosure(CapabilityDisclosure::AccountActivity),
             ApplicationQueryInfluenceContract::permit_all(),
         )
+        .expect("record field contract")
         .disclose_field_by(
             status_result_field::<GovernedAccountSummaryQuery>(),
             encoded_disclosure(CapabilityDisclosure::AccountActivity),
@@ -372,7 +354,7 @@ where
             .public()
     }
     .parameter(status_parameter())
-    .where_equal(AccountStatus::reference(), status_parameter());
+    .where_equal(AccountStatus::at("AccountStatus"), status_parameter());
     let builder = if ordered {
         builder.order_by(
             label_result_field::<Query>(),

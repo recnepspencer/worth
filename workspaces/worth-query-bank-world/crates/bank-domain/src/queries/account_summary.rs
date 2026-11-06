@@ -12,8 +12,8 @@ use worth_query_host::facade::primary_graph::{
 use crate::authorization::ViewAccount;
 use crate::model::AccountId;
 use crate::reads::AccountSummary;
+use crate::schema::AccountIdentity;
 use crate::schema::{Account, BankSchema};
-use crate::schema::{AccountIdentity, Identity};
 
 use super::account_summary_projection::{account_summary_shape, project_account_summary};
 
@@ -59,10 +59,8 @@ worth_query_query_binding!(
     result AccountSummaryQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope Account, Identity, AccountIdentity, AccountId,
-        worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
-    field AccountIdentity::reference(),
+    scope AccountIdentity,
+    field AccountIdentity::at("AccountIdentity"),
     value AccountSummaryRequest::account,
     limits results 1_024
 

@@ -28,10 +28,10 @@ fn account_fields(world: &AuthorizationWorld) -> AspectFieldPatch {
             .unwrap()
             .clone()
     };
-    let identity = AccountIdentity::reference();
-    let status = AccountStatus::reference();
-    let label = AccountLabel::reference();
-    let membership = AccountMembershipTag::reference();
+    let identity = AccountIdentity::at("AccountIdentity");
+    let status = AccountStatus::at("AccountStatus");
+    let label = AccountLabel::at("AccountLabel");
+    let membership = AccountMembershipTag::at("AccountMembershipTag");
     let fields = [
         (
             (identity.entity(), identity.aspect(), identity.field()),
@@ -128,7 +128,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
             let fresh = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -138,7 +138,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
             let owner = selected
                 .resolve_entity(
                     &phase,
-                    PrincipalIdentityField::reference(),
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
                     1_u64,
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

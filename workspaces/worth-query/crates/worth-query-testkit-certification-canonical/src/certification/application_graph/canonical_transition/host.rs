@@ -97,10 +97,10 @@ pub fn install_owned(
                     WorthQueryApplicationEntityKey::new("nested-row").unwrap(),
                 )
                 .field(
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     "authored-nested".to_owned(),
                 )
-                .field(DocumentValueField::reference(), value),
+                .field(DocumentValueField::at("DocumentValueField"), value),
             )?;
             Ok(())
         },
@@ -214,7 +214,7 @@ pub fn source_id(host: &Host) -> worth_runtime_bridge::facade::RelationalBridgeR
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     "authored-nested".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

@@ -45,7 +45,8 @@ pub trait Relation: 'static {
     const REACHES_AT_LEAST: Option<super::super::ApplicationRelationMinimumReachability> = None;
 }
 
-pub(super) const fn relation_integrity<R: Relation>() -> ApplicationRelationIntegrity {
+/// Derives descriptive integrity from the relation declaration.
+pub const fn relation_integrity<R: Relation>() -> ApplicationRelationIntegrity {
     ApplicationRelationIntegrity {
         endpoints: super::super::ApplicationRelationEndpoints::new(R::SELF_EDGES, R::CROSS_CONTEXT),
         cardinality: R::CARDINALITY,
@@ -70,20 +71,69 @@ pub trait Registration<Schema>: 'static {
 /// Materializes a named installation root. The traversal witness is inferred
 /// within this call and never enters the declaration's public type.
 pub fn declare<F, Witness>(
-    _: F,
+    fragment: F,
 ) -> Result<ApplicationSchemaDeclaration<F>, ApplicationSchemaDeclarationDenial>
 where
     F: Fragment + ApplicationSchema,
     F::Members: FragmentMembers<F, F::Bindings, Witness>,
 {
-    let prefix = <F as Fragment>::NAME;
-    let mut lowering = Lowering::root(prefix)?;
-    let mut builder = ApplicationSchemaDeclarationBuilder::for_schema();
-    builder
-        .member_provenance
-        .fragments
-        .catalog
-        .register::<F>(prefix)?;
-    let builder = F::Members::lower(builder, prefix, &mut lowering)?;
-    builder.build()
+    declaration_builder(fragment).and_then(|builder| builder.build())
+}
+/// Lowers tuple membership before authoring additional operation/query contracts.
+/// Model membership is always supplied by `F::Members`.
+pub fn declaration_builder<F, Witness>(
+    fragment: F,
+) -> Result<ApplicationSchemaDeclarationBuilder<F>, ApplicationSchemaDeclarationDenial>
+where
+    F: Fragment + ApplicationSchema,
+    F::Members: FragmentMembers<F, F::Bindings, Witness>,
+{
+    ApplicationSchemaDeclarationBuilder::from_fragment(fragment)
+}
+
+impl<Schema: ApplicationSchema> ApplicationSchemaDeclarationBuilder<Schema> {
+    /// Compiles a fragment's declared membership into this installation root.
+    pub fn from_fragment<F, Witness>(_: F) -> Result<Self, ApplicationSchemaDeclarationDenial>
+    where
+        F: Fragment,
+        F::Members: FragmentMembers<Schema, F::Bindings, Witness>,
+    {
+        let prefix = F::NAME;
+        let mut lowering = Lowering::root(prefix)?;
+        let mut builder = Self::for_schema();
+        builder
+            .member_provenance
+            .fragments
+            .catalog
+            .register::<F>(prefix)?;
+        F::Members::lower(builder, prefix, &mut lowering)
+    }
+}
+
+/// Binding-free composition roots contain reusable fragment and registration members.
+pub struct NoBindings;
+impl super::BindingSet for NoBindings {
+    type Work<'a> = crate::application_schema::ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut crate::application_schema::ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+/// Correction dispatch follows the same membership tuple as declaration lowering.
+pub fn visit_correction<F, Witness, Visitor>(
+    _: F,
+    source: std::any::TypeId,
+    visitor: Visitor,
+) -> Visitor::Output
+where
+    F: Fragment + ApplicationSchema,
+    F::Members: FragmentMembers<F, F::Bindings, Witness>,
+    Visitor: crate::application_aftermath::ApplicationCorrectionVisitor<F>,
+{
+    match F::Members::visit_correction(source, visitor) {
+        Ok(output) => output,
+        Err(visitor) => visitor.unavailable(),
+    }
 }

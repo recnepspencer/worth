@@ -154,7 +154,7 @@ pub(super) fn resolve<const O: bool>(
             .typed_component_set(super::component_invariants::declaration::Spares::reference())
             .ok_or("spares missing read/applicability")?,
         key: resolver
-            .typed_field(NodeKey::reference())
+            .typed_field(NodeKey::at("NodeKey"))
             .ok_or("key missing")?,
         next: resolver
             .typed_relation(Next::reference())

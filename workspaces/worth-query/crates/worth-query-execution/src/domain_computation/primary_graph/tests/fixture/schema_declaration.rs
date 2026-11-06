@@ -1,75 +1,75 @@
 //! The existing native fixture schema and its typed correction contribution.
 use super::*;
 
-worth_query_declaration::worth_query_application! {
-    pub IdentityExecutionSchema {
-        owner: "identity_execution_test", version: (1, 0),
-        contributions: [IdentityExecutionContribution],
+use worth_query_declaration::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy)]
+pub struct IdentityExecutionSchema;
+impl Fragment for IdentityExecutionSchema {
+    const NAME: &'static str = "IdentityExecutionSchema";
+    type Bindings = NoBindings;
+    type Members = (IdentityExecutionContribution,);
+}
+impl ApplicationSchema for IdentityExecutionSchema {
+    const OWNER: &'static str = "identity_execution_test";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_declaration::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        fragment::visit_correction(Self, source, visitor)
     }
 }
-worth_query_declaration::worth_query_application_contribution! {
-    pub contribution IdentityExecutionContribution in IdentityExecutionSchema {
-        identity: "worth.query.test.identity-execution.members.v1",
-        corrections: [correction_source::recorded::RecordedLabelEdit],
-        members: |schema| {
+impl IdentityExecutionSchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+impl ApplicationSchemaComposition for IdentityExecutionSchema {
+    type Contributions = <Self as Fragment>::Members;
+}
+
+pub struct IdentityExecutionContribution;
+impl ApplicationSchemaContribution<IdentityExecutionSchema> for IdentityExecutionContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new(
+            "worth.query.test.identity-execution.members.v1",
+        );
+    type Members = (
+        ExecutionRecords,
+        PrincipalRecords,
+        GrantRecords,
+        ElevationRecords,
+        Contracts,
+        correction_source::recorded::RecordedLabelEdit,
+    );
+}
+impl IdentityExecutionContribution {
+    pub const fn reference() -> ApplicationSchemaContributionRef<IdentityExecutionSchema, Self> {
+        ApplicationSchemaContributionRef::from_contribution()
+    }
+}
+pub struct Contracts;
+impl Registration<IdentityExecutionSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok({
             let schema = schema
-                .entity(ExternalMapping::reference())
-                .entity(Principal::reference())
-                .entity(Account::reference())
-                .entity(Activity::reference())
-                .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-                .aspect(Principal::reference(), PrincipalIdentity::reference())
-                .field(ExternalMapping::reference(), ExternalIdentityField::reference())
-                .field(ExternalMapping::reference(), MappingStatusField::reference())
-                .field(Principal::reference(), PrincipalIdentityField::reference())
-                .aspect(Account::reference(), AccountPolicy::reference())
-                .field(Account::reference(), AccountIdentity::reference())
-                .field(Account::reference(), AccountStatus::reference())
-                .field(Account::reference(), AccountLabel::reference())
-                .field(Account::reference(), AccountNote::reference())
-                .field(Account::reference(), AccountScore::reference())
-                .aspect(Account::reference(), AccountMembership::reference())
-                .field(Account::reference(), AccountMembershipTag::reference())
-                .aspect(Account::reference(), AccountAnnotations::reference())
-                .field(Account::reference(), AccountAnnotation::reference())
-                .aspect(Activity::reference(), ActivityFacts::reference())
-                .field(Activity::reference(), ActivityIdentity::reference())
-                .field(Activity::reference(), ActivitySequence::reference())
-                .relation(
-                    MappingTarget::reference(),
-                    ExternalMapping::reference(),
-                    Principal::reference(),
-                )
-                .relation(
-                    AccountOwner::reference(),
-                    Principal::reference(),
-                    Account::reference(),
-                )
-                .relation(
-                    AccountBlocked::reference(),
-                    Principal::reference(),
-                    Account::reference(),
-                )
-                .relation(
-                    AccountPrimaryActivity::reference(),
-                    Account::reference(),
-                    Activity::reference(),
-                )
-                .relation(
-                    AccountSecondaryActivity::reference(),
-                    Account::reference(),
-                    Activity::reference(),
-                )
-                .relation(
-                    AccountAllActivity::reference(),
-                    Account::reference(),
-                    Activity::reference(),
-                )
-                .relation(
-                    ActivityAccount::reference(),
-                    Activity::reference(),
-                    Account::reference(),
-                )
                 .principal_binding(IdentityBinding::reference())
                 .ability(ViewAccount::reference())
                 .ability(EditAccount::reference())
@@ -186,6 +186,6 @@ worth_query_declaration::worth_query_application_contribution! {
                     invalid_disclosure_queries::result_rule_predicate_definition(),
                 );
             capability::install(schema)
-        }
+        })
     }
 }

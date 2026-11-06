@@ -20,7 +20,7 @@ fn retained_output_liveness_door_preserves_stops_at_every_consult() {
                 .remove(0);
             let entity = account.entity_id();
             assert!(snapshot
-                .field(&execution, &account, AccountStatus::reference())
+                .field(&execution, &account, AccountStatus::at("AccountStatus"))
                 .unwrap()
                 .is_some());
             let selected = world.selected_product(&phase.test_host_request());

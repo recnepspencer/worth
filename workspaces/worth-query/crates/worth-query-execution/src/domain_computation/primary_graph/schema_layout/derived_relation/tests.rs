@@ -6,12 +6,6 @@ use worth_relational::facade::schema::DerivedRelationNode as Native;
 struct Events;
 struct Event;
 struct Row;
-impl ApplicationEntityMarkerIdentity<Events> for Event {
-    const IDENTIFIER: &'static str = "Event";
-}
-impl ApplicationEntityMarkerIdentity<Events> for Row {
-    const IDENTIFIER: &'static str = "Row";
-}
 
 struct Previous;
 struct Introduces;
@@ -25,8 +19,6 @@ impl ApplicationSchema for Events {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        let event = ApplicationEntityRef::<Self, Event>::from_schema_identifier("Event");
-        let row = ApplicationEntityRef::<Self, Row>::from_schema_identifier("Row");
         let integrity = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
         let previous =
             ApplicationRelationRef::<Self, Previous, Event, Event>::from_schema_identifiers(
@@ -47,12 +39,7 @@ impl ApplicationSchema for Events {
         );
         let prior = ApplicationDerivedRelationRef::<Self,PreviousLive,Event,Row>::from_schema_identifiers("PreviousLive","Event","Row");
         let recipe = || ApplicationDerivedRelation::ordered_events(previous, introduces, retires);
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(event)
-            .entity(row)
-            .relation(previous, event, event)
-            .relation(introduces, event, row)
-            .relation(retires, event, row)
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(EventRecords)?
             .derived_relation(live, recipe(), ApplicationRelationGraphLaws::unbounded())
             .derived_relation(
                 prior,
@@ -142,4 +129,34 @@ fn typed_ordered_event_schema_installs_exact_native_roles_and_full_physical_rost
         composed.handle.parts().nodes[5],
         Native::Compose { left: 0, right: 4 }
     ));
+}
+
+use worth_query_declaration::facade::application_schema::fragment;
+struct EventRecords;
+impl fragment::Fragment for EventRecords {
+    const NAME: &'static str = "event_records";
+    type Bindings = fragment::NoBindings;
+    type Members = (Event, Row);
+}
+impl fragment::Entity for Event {
+    const NAME: &'static str = "Event";
+    type Aspects = ();
+    type Relations = (Previous, Introduces, Retires);
+}
+impl fragment::Entity for Row {
+    const NAME: &'static str = "Row";
+    type Aspects = ();
+    type Relations = ();
+}
+impl fragment::Relation for Previous {
+    const NAME: &'static str = "Previous";
+    type To = Event;
+}
+impl fragment::Relation for Introduces {
+    const NAME: &'static str = "Introduces";
+    type To = Row;
+}
+impl fragment::Relation for Retires {
+    const NAME: &'static str = "Retires";
+    type To = Row;
 }

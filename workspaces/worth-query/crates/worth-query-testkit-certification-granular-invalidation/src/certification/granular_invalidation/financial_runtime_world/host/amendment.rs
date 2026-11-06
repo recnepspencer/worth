@@ -114,7 +114,7 @@ impl FinancialCourtroomWorld {
                     .expect("the selected product branch remains admitted")
                     .resolve_entity(
                         &host_phase,
-                        MarketIdentityField::reference(),
+                        MarketIdentityField::at("MarketIdentityField"),
                         record_identity.to_string(),
                         &request,
                         primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
@@ -151,34 +151,34 @@ impl FinancialCourtroomWorld {
                 &host_phase, &admission,
                 |reader, scope| {
                     reader
-                        .decision_field(scope, MarketRevisionField::reference())
+                        .decision_field(scope, MarketRevisionField::at("MarketRevisionField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, MarketDueField::reference())
+                        .decision_field(scope, MarketDueField::at("MarketDueField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, MarketLifecycleField::reference())
+                        .decision_field(scope, MarketLifecycleField::at("MarketLifecycleField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, MarketInputField::reference())
+                        .decision_field(scope, MarketInputField::at("MarketInputField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, CurveZeroRateField::reference())
+                        .decision_field(scope, CurveZeroRateField::at("CurveZeroRateField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, QuoteMidField::reference())
+                        .decision_field(scope, QuoteMidField::at("QuoteMidField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, RiskValueField::reference())
+                        .decision_field(scope, RiskValueField::at("RiskValueField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, PortfolioValueField::reference())
+                        .decision_field(scope, PortfolioValueField::at("PortfolioValueField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, PortfolioDeskField::reference())
+                        .decision_field(scope, PortfolioDeskField::at("PortfolioDeskField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, PortfolioRankField::reference())
+                        .decision_field(scope, PortfolioRankField::at("PortfolioRankField"))
                         .unwrap();
                 },
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -210,54 +210,54 @@ impl FinancialCourtroomWorld {
                 effects
                     .write_field(
                         &record,
-                        MarketRevisionField::reference(),
+                        MarketRevisionField::at("MarketRevisionField"),
                         amendment.revision,
                     )
                     .unwrap();
                 effects
                     .write_field(
                         &record,
-                        MarketDueField::reference(),
+                        MarketDueField::at("MarketDueField"),
                         11 + u64::from(self.amendment_ordinal),
                     )
                     .unwrap();
                 effects
                     .write_field(
                         &record,
-                        MarketLifecycleField::reference(),
+                        MarketLifecycleField::at("MarketLifecycleField"),
                         "active".to_owned(),
                     )
                     .unwrap();
                 effects
                     .write_field(
                         &record,
-                        MarketInputField::reference(),
+                        MarketInputField::at("MarketInputField"),
                         amendment.risk_value.to_string(),
                     )
                     .unwrap();
                 if let Some(value) = amendment.curve_rate {
                     effects
-                        .write_field(&record, CurveZeroRateField::reference(), value)
+                        .write_field(&record, CurveZeroRateField::at("CurveZeroRateField"), value)
                         .unwrap();
                 }
                 if let Some(value) = amendment.quote_mid {
                     effects
-                        .write_field(&record, QuoteMidField::reference(), value)
+                        .write_field(&record, QuoteMidField::at("QuoteMidField"), value)
                         .unwrap();
                 }
                 if let Some(value) = amendment.portfolio_value {
                     effects
-                        .write_field(&record, PortfolioValueField::reference(), value)
+                        .write_field(&record, PortfolioValueField::at("PortfolioValueField"), value)
                         .unwrap();
                 }
                 if let Some(value) = amendment.portfolio_desk {
                     effects
-                        .write_field(&record, PortfolioDeskField::reference(), value)
+                        .write_field(&record, PortfolioDeskField::at("PortfolioDeskField"), value)
                         .unwrap();
                 }
                 if let Some(value) = amendment.portfolio_rank {
                     effects
-                        .write_field(&record, PortfolioRankField::reference(), value)
+                        .write_field(&record, PortfolioRankField::at("PortfolioRankField"), value)
                         .unwrap();
                 }
                 effects.finish().unwrap()

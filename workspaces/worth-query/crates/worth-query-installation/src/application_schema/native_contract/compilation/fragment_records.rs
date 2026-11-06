@@ -8,7 +8,16 @@ fn native_contract_compilation_retains_arrays_and_nested_records_as_scalar_leave
     let records = compile_portable_native_contract_records(schema.erased()).unwrap();
     let metrics = records
         .iter()
-        .find(|record| record.entity() == "item" && record.aspect().as_str() == "metrics")
+        .find(|record| {
+            record.entity() == "item"
+                && record.aspect().as_str()
+                    == worth_query_testkit_decl::fragment_fixture::aspect(
+                        Fixture,
+                        worth_query_testkit_decl::fragment_fixture::Item,
+                        worth_query_testkit_decl::fragment_fixture::Metrics,
+                    )
+                    .name()
+        })
         .unwrap();
     let worth_foundational::facade::AspectShape::Struct(shape) = metrics.contract().shape() else {
         panic!("records must remain ordinary scalar-field structs")

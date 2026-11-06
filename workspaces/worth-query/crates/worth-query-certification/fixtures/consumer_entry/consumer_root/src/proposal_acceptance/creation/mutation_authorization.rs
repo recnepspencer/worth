@@ -7,7 +7,7 @@ use super::{Binding, Create, CreateModel};
 use worth_query_decl::facade::{application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
 worth_query_operation_creates!(Create=>[MutationGrant]);
-worth_query_operation_writes!(Create=>[GrantIdentity,GrantAction,GrantPurpose,GrantStatus,GrantScope,GrantNotBefore,GrantNotAfter,GrantDepth]);
+
 worth_query_operation_links!(Create=>[MutationGrantResource,MutationGrantGrantee,MutationGrantGrantor]);
 pub(super) fn issue(
     input: &CreateModel,
@@ -33,28 +33,28 @@ pub(super) fn issue(
             )
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&grant, GrantIdentity::reference(), key.clone())
+            .initialize_field(&grant, GrantIdentity::at("GrantIdentity"), key.clone())
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&grant, GrantAction::reference(), 2)
+            .initialize_field(&grant, GrantAction::at("GrantAction"), 2)
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&grant, GrantPurpose::reference(), 1)
+            .initialize_field(&grant, GrantPurpose::at("GrantPurpose"), 1)
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&grant, GrantStatus::reference(), 1)
+            .initialize_field(&grant, GrantStatus::at("GrantStatus"), 1)
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&grant, GrantScope::reference(), input.name.clone())
+            .initialize_field(&grant, GrantScope::at("GrantScope"), input.name.clone())
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&grant, GrantNotBefore::reference(), 0)
+            .initialize_field(&grant, GrantNotBefore::at("GrantNotBefore"), 0)
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&grant, GrantNotAfter::reference(), u64::MAX)
+            .initialize_field(&grant, GrantNotAfter::at("GrantNotAfter"), u64::MAX)
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&grant, GrantDepth::reference(), 0)
+            .initialize_field(&grant, GrantDepth::at("GrantDepth"), 0)
             .map_err(HandlerExecutionDenial::new)?;
         writer
             .link(
@@ -89,14 +89,14 @@ pub(super) fn declare(
     let op = Create::reference();
     schema
         .operation_create(op, MutationGrant::reference())
-        .operation_write(op, GrantIdentity::reference())
-        .operation_write(op, GrantAction::reference())
-        .operation_write(op, GrantPurpose::reference())
-        .operation_write(op, GrantStatus::reference())
-        .operation_write(op, GrantScope::reference())
-        .operation_write(op, GrantNotBefore::reference())
-        .operation_write(op, GrantNotAfter::reference())
-        .operation_write(op, GrantDepth::reference())
+        .operation_write(op, GrantIdentity::at("GrantIdentity"))
+        .operation_write(op, GrantAction::at("GrantAction"))
+        .operation_write(op, GrantPurpose::at("GrantPurpose"))
+        .operation_write(op, GrantStatus::at("GrantStatus"))
+        .operation_write(op, GrantScope::at("GrantScope"))
+        .operation_write(op, GrantNotBefore::at("GrantNotBefore"))
+        .operation_write(op, GrantNotAfter::at("GrantNotAfter"))
+        .operation_write(op, GrantDepth::at("GrantDepth"))
         .operation_link(op, MutationGrantResource::reference())
         .operation_link(op, MutationGrantGrantee::reference())
         .operation_link(op, MutationGrantGrantor::reference())

@@ -62,10 +62,8 @@ worth_query_decl::facade::worth_query_query_binding!(
     result PaymentAmountQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope PaymentIntent, crate::schema::PaymentIdentity, crate::schema::PaymentIdentityField,
-        PaymentId, worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
-    field crate::schema::PaymentIdentityField::reference(),
+    scope crate::schema::PaymentIdentityField,
+    field crate::schema::PaymentIdentityField::at("PaymentIdentityField"),
     value PaymentAmountRequest::payment,
     limits results 1
 

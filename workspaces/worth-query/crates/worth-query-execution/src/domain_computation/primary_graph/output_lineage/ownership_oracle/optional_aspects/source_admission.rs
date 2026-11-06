@@ -67,7 +67,7 @@ fn check(fault: Fault, entry: Entry) {
             let root = selected
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     installation::ANCHOR.to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

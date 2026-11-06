@@ -31,7 +31,7 @@ struct AdmissionContext {
 #[test]
 fn contract_incompatible_projection_mask_denies_before_result_construction() {
     let context = admission_context();
-    let field = AccountLabel::reference();
+    let field = AccountLabel::at("AccountLabel");
     let field_key = FieldKey::new(field.field()).unwrap();
     let selector = ApplicationQueryDisclosureSelector::InternalField {
         entity: field.entity().to_owned(),
@@ -353,7 +353,7 @@ fn admission_context() -> AdmissionContext {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase_custody.phase_for_application(&world.application),
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

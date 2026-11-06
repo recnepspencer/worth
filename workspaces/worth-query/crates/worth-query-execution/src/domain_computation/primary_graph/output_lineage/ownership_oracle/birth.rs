@@ -45,7 +45,7 @@ pub(super) fn admit_genuine_all_create(runtime: &Application) {
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     installation::ANCHOR.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -69,7 +69,7 @@ pub(super) fn admit_genuine_all_create(runtime: &Application) {
                 let fields = AspectFieldPatch::from(BTreeMap::from([
                     (
                         layout
-                            .field_locator("EntrySet", "EntrySetFacts", "EntrySetKey")
+                            .field_locator("EntrySet", facts::EntrySetWeight::at("EntrySetWeight").aspect(), "EntrySetKey")
                             .unwrap()
                             .clone(),
                         StringApplicationValueBinding::encode(&"genuine-owner-birth".to_owned())
@@ -77,7 +77,7 @@ pub(super) fn admit_genuine_all_create(runtime: &Application) {
                     ),
                     (
                         layout
-                            .field_locator("EntrySet", "EntrySetFacts", "EntrySetWeight")
+                            .field_locator("EntrySet", facts::EntrySetWeight::at("EntrySetWeight").aspect(), "EntrySetWeight")
                             .unwrap()
                             .clone(),
                         U64ApplicationValueBinding::encode(&9).unwrap(),

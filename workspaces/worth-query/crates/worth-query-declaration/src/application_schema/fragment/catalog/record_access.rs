@@ -81,10 +81,11 @@ impl RecordAccess {
     }
 }
 
-pub(crate) fn expand_record_access(
+pub(in crate::application_schema) fn expand_record_access(
     catalog: &FragmentCatalog,
     requests: &[RecordAccess],
     members: &mut Vec<Member>,
+    contributions: &mut [crate::application_schema::contribution::AuthoredApplicationSchemaContribution],
 ) -> Result<(), Denial> {
     let mut seen = BTreeSet::new();
     for request in requests {
@@ -114,9 +115,10 @@ pub(crate) fn expand_record_access(
                             .any(|case| case.marker() == request.marker)
                     })
             });
+        let mut expansion = Vec::new();
         if request.write {
             let aspect = selected.ok_or_else(|| request.refusal())?;
-            columns(members, request, aspect);
+            columns(&mut expansion, request, aspect);
             if let Some(group) = group {
                 for case in group
                     .cases()
@@ -128,7 +130,7 @@ pub(crate) fn expand_record_access(
                         .get(&(request.entity, case.marker()))
                         .ok_or_else(|| request.refusal())?;
                     insert(
-                        members,
+                        &mut expansion,
                         Member::OperationProgram {
                             operation: request.operation.clone(),
                             target: WriteTarget::RemoveAspect {
@@ -142,7 +144,7 @@ pub(crate) fn expand_record_access(
         } else if let Some(group) = group {
             for case in group.cases() {
                 columns(
-                    members,
+                    &mut expansion,
                     request,
                     fragment
                         .aspects
@@ -151,7 +153,85 @@ pub(crate) fn expand_record_access(
                 );
             }
         } else {
-            columns(members, request, selected.ok_or_else(|| request.refusal())?);
+            columns(
+                &mut expansion,
+                request,
+                selected.ok_or_else(|| request.refusal())?,
+            );
+        }
+        for contribution in contributions.iter_mut() {
+            contribution.expand_record(request, &expansion);
+        }
+        for member in expansion {
+            insert(members, member);
+        }
+    }
+    // A scalar write also carries the SDK's structural parent column. The
+    // declaration never asks its owner to name that column.
+    let sources = members.clone();
+    for source in sources {
+        let derived: Vec<_> = match &source {
+            Member::OperationProgram {
+                operation,
+                target:
+                    WriteTarget::Write {
+                        entity,
+                        aspect,
+                        field,
+                    },
+            } if !catalog.internal_field(
+                &crate::application_schema::ApplicationFieldBindingLocus::new(
+                    entity, aspect, field,
+                ),
+            ) =>
+            {
+                catalog
+                    .presence_field(entity, aspect)
+                    .into_iter()
+                    .map(|presence| Member::OperationProgram {
+                        operation: operation.clone(),
+                        target: WriteTarget::Write {
+                            entity: entity.clone(),
+                            aspect: aspect.clone(),
+                            field: presence.recipe.locus().field().to_owned(),
+                        },
+                    })
+                    .collect()
+            }
+            Member::OperationDecisionRead {
+                operation,
+                target:
+                    ReadTarget::Field {
+                        entity,
+                        aspect,
+                        field,
+                    },
+            } if !catalog.internal_field(
+                &crate::application_schema::ApplicationFieldBindingLocus::new(
+                    entity, aspect, field,
+                ),
+            ) =>
+            {
+                catalog
+                    .presence_field(entity, aspect)
+                    .into_iter()
+                    .map(|presence| Member::OperationDecisionRead {
+                        operation: operation.clone(),
+                        target: ReadTarget::Field {
+                            entity: entity.clone(),
+                            aspect: aspect.clone(),
+                            field: presence.recipe.locus().field().to_owned(),
+                        },
+                    })
+                    .collect()
+            }
+            _ => Vec::new(),
+        };
+        for member in derived {
+            for contribution in contributions.iter_mut() {
+                contribution.expand_member(&source, &member);
+            }
+            insert(members, member);
         }
     }
     Ok(())

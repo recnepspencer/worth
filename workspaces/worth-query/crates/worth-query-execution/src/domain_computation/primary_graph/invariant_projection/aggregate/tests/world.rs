@@ -1,20 +1,18 @@
 //! Installed aggregate schema and causally complete primary-graph worlds.
 
+#[path = "world/records.rs"]
+mod storage_model;
 use std::cell::Cell;
 use std::collections::BTreeMap;
+pub use storage_model::*;
 
 use worth_foundational::facade::AspectValue;
-use worth_query_declaration::facade::application_schema::{
-    I64ApplicationValueBinding, StringApplicationValueBinding, U64ApplicationValueBinding,
-};
+
 use worth_query_declaration::facade::authentication::{
     WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
     WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
 };
-use worth_query_declaration::{
-    worth_query_application_schema, worth_query_aspect, worth_query_entity, worth_query_field,
-    worth_query_principal_binding, worth_query_relation,
-};
+
 use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
     WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
@@ -32,104 +30,72 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationPrincipalKey, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-worth_query_entity!(pub AggregateExternalMapping for AggregateSchema);
-worth_query_entity!(pub AggregatePrincipal for AggregateSchema);
-worth_query_entity!(pub AggregateSource for AggregateSchema);
-worth_query_entity!(pub AggregateTarget for AggregateSchema);
-worth_query_aspect!(pub AggregateExternalIdentity for AggregateSchema, AggregateExternalMapping; identity = AspectIdentity(0x9161102f), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub AggregateExternalIdentityField for AggregateSchema,
-    AggregateExternalMapping, AggregateExternalIdentity:
-    WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality
-);
-worth_query_field!(
-    pub AggregateMappingStatusField for AggregateSchema,
-    AggregateExternalMapping, AggregateExternalIdentity:
-    WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality
-);
-worth_query_aspect!(pub AggregatePrincipalIdentity for AggregateSchema, AggregatePrincipal; identity = AspectIdentity(0x91611030), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub AggregatePrincipalIdentityField for AggregateSchema,
-    AggregatePrincipal, AggregatePrincipalIdentity:
-    u64 => U64ApplicationValueBinding, read_only, equality
-);
-worth_query_relation!(
-    pub AggregateMappingTarget in AggregateSchema,
-    AggregateExternalMapping => AggregatePrincipal; integrity = same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(
-    pub AggregateIdentityBinding in AggregateSchema,
-    mapping AggregateExternalMapping {
-        identity: AggregateExternalIdentityField,
-        status: AggregateMappingStatusField,
-        target: AggregateMappingTarget => AggregatePrincipal,
-        principal_identity: AggregatePrincipalIdentityField
-    }
-);
-worth_query_aspect!(pub SourceFacts for AggregateSchema, AggregateSource; identity = AspectIdentity(0x91611031), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub TargetFacts for AggregateSchema, AggregateTarget; identity = AspectIdentity(0x91611032), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub SourceIdentity for AggregateSchema, AggregateSource, SourceFacts:
-    String => StringApplicationValueBinding, read_only, equality
-);
-worth_query_field!(
-    pub SourceAmount for AggregateSchema, AggregateSource, SourceFacts:
-    optional i64 => I64ApplicationValueBinding, read_write, no_equality
-);
-worth_query_field!(
-    pub TargetIdentity for AggregateSchema, AggregateTarget, TargetFacts:
-    String => StringApplicationValueBinding, read_only, equality
-);
-worth_query_relation!(
-    pub AggregateContribution in AggregateSchema,
-    AggregateSource => AggregateTarget; integrity = same_context_unbounded_retain_dangling);
-
-worth_query_application_schema! {
-    pub schema AggregateSchema {
-        owner: aggregate_execution_test,
-        version: (1, 0),
-        members: |schema| {
-            schema
-                .entity(AggregateExternalMapping::reference())
-                .entity(AggregatePrincipal::reference())
-                .entity(AggregateSource::reference())
-                .entity(AggregateTarget::reference())
-                .aspect(
-                    AggregateExternalMapping::reference(),
-                    AggregateExternalIdentity::reference(),
-                )
-                .aspect(
-                    AggregatePrincipal::reference(),
-                    AggregatePrincipalIdentity::reference(),
-                )
-                .field(
-                    AggregateExternalMapping::reference(),
-                    AggregateExternalIdentityField::reference(),
-                )
-                .field(
-                    AggregateExternalMapping::reference(),
-                    AggregateMappingStatusField::reference(),
-                )
-                .field(
-                    AggregatePrincipal::reference(),
-                    AggregatePrincipalIdentityField::reference(),
-                )
-                .aspect(AggregateSource::reference(), SourceFacts::reference())
-                .aspect(AggregateTarget::reference(), TargetFacts::reference())
-                .field(AggregateSource::reference(), SourceIdentity::reference())
-                .field(AggregateSource::reference(), SourceAmount::reference())
-                .field(AggregateTarget::reference(), TargetIdentity::reference())
-                .relation(
+pub struct AggregateIdentityBinding;
+impl AggregateIdentityBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        AggregateSchema,
+        Self,
+        AggregateExternalMapping,
+        AggregatePrincipal,
+        <AggregatePrincipalIdentityField as RecordSelection>::Value,
+        <AggregatePrincipalIdentityField as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "AggregateIdentityBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    AggregateExternalIdentityField::at("AggregateExternalIdentityField"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    AggregateMappingStatusField::at("AggregateMappingStatusField"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
                     AggregateMappingTarget::reference(),
-                    AggregateExternalMapping::reference(),
-                    AggregatePrincipal::reference(),
-                )
-                .relation(
-                    AggregateContribution::reference(),
-                    AggregateSource::reference(),
-                    AggregateTarget::reference(),
-                )
-                .principal_binding(AggregateIdentityBinding::reference())
-        }
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    AggregatePrincipalIdentityField::at("AggregatePrincipalIdentityField"),
+                ),
+            },
+        )
+    }
+}
+
+use worth_query_declaration::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy)]
+pub struct AggregateSchema;
+impl Fragment for AggregateSchema {
+    const NAME: &'static str = "AggregateSchema";
+    type Bindings = NoBindings;
+    type Members = (AggregateSchemaRecords, Contracts);
+}
+impl ApplicationSchema for AggregateSchema {
+    const OWNER: &'static str = "aggregate_execution_test";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+}
+impl AggregateSchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+pub struct Contracts;
+impl Registration<AggregateSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<AggregateSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<AggregateSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema.principal_binding(AggregateIdentityBinding::reference()))
     }
 }
 
@@ -191,7 +157,7 @@ impl AggregateWorld {
                 |reader| {
                     reader.summarize_exclusive_incoming(
                         AggregateContribution::reference(),
-                        SourceAmount::reference(),
+                        SourceAmount::at("SourceAmount"),
                         &self.target,
                     )
                 },
@@ -225,7 +191,7 @@ impl AggregateWorld {
             |reader| {
                 let result = reader.summarize_exclusive_incoming(
                     AggregateContribution::reference(),
-                    SourceAmount::reference(),
+                    SourceAmount::at("SourceAmount"),
                     &self.target,
                 );
                 denial.set(result.as_ref().err().map(|error| error.kind()));
@@ -268,7 +234,11 @@ impl AggregateWorld {
         let locator = self
             .authority
             .layout
-            .field_locator("AggregateSource", "SourceFacts", "SourceAmount")
+            .field_locator(
+                "AggregateSource",
+                SourceAmount::at("SourceAmount").aspect(),
+                "SourceAmount",
+            )
             .expect("amount field is installed")
             .clone();
         let fields =
@@ -354,7 +324,10 @@ impl AggregateWorld {
                 .project(
                     &active_phase.phase_for_application(&runtime),
                     |reader| {
-                        reader.resolve_entity(TargetIdentity::reference(), "target".to_owned())
+                        reader.resolve_entity(
+                            TargetIdentity::at("TargetIdentity"),
+                            "target".to_owned(),
+                        )
                     },
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )

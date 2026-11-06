@@ -74,10 +74,10 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
                     &admission,
                     |reader, projected| {
                         reader
-                            .decision_field(projected, AccountNote::reference())
+                            .decision_field(projected, AccountNote::at("AccountNote"))
                             .unwrap();
                         reader
-                            .decision_field(projected, AccountScore::reference())
+                            .decision_field(projected, AccountScore::at("AccountScore"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -108,16 +108,20 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
         .expect("the fixture read owns its installed host call");
     let account = effects.existing_entity(&account).unwrap();
     effects
-        .write_field(&account, AccountNote::reference(), "ordinary".to_owned())
+        .write_field(
+            &account,
+            AccountNote::at("AccountNote"),
+            "ordinary".to_owned(),
+        )
         .unwrap();
     effects
-        .write_optional_field(&account, AccountScore::reference(), Some(0))
+        .write_optional_field(&account, AccountScore::at("AccountScore"), Some(0))
         .unwrap();
     effects
-        .write_field(&account, AccountNote::reference(), "final".to_owned())
+        .write_field(&account, AccountNote::at("AccountNote"), "final".to_owned())
         .unwrap();
     effects
-        .write_optional_field(&account, AccountScore::reference(), Some(5))
+        .write_optional_field(&account, AccountScore::at("AccountScore"), Some(5))
         .unwrap();
 
     let outcome = world.application.compare_and_commit_application(
@@ -259,10 +263,10 @@ fn program(
             &admission,
             |reader, projected| {
                 reader
-                    .decision_field(projected, AccountNote::reference())
+                    .decision_field(projected, AccountNote::at("AccountNote"))
                     .unwrap();
                 reader
-                    .decision_field(projected, AccountScore::reference())
+                    .decision_field(projected, AccountScore::at("AccountScore"))
                     .unwrap();
             },
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -287,10 +291,10 @@ fn program(
         .begin_effect_program();
     let account = effects.existing_entity(account).unwrap();
     effects
-        .write_optional_field(&account, AccountNote::reference(), note)
+        .write_optional_field(&account, AccountNote::at("AccountNote"), note)
         .unwrap();
     effects
-        .write_optional_field(&account, AccountScore::reference(), score)
+        .write_optional_field(&account, AccountScore::at("AccountScore"), score)
         .unwrap();
     effects.finish().unwrap()
 }
@@ -312,7 +316,7 @@ fn query(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             phase_custody,
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
             account.to_owned(),
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,

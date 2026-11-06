@@ -77,10 +77,10 @@ fn reused_relation_key_is_denied_during_public_authoring() {
                             .decision_relations_from(AccountOwner::reference(), principal)
                             .unwrap();
                         let account = reader
-                            .resolve_entity(AccountStatus::reference(), "open".to_owned())
+                            .resolve_entity(AccountStatus::at("AccountStatus"), "open".to_owned())
                             .unwrap();
                         reader
-                            .require_decision_field(&account, AccountStatus::reference())
+                            .require_decision_field(&account, AccountStatus::at("AccountStatus"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,

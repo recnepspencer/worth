@@ -18,6 +18,9 @@ pub trait Scalar<T: 'static>: BindingSet {
     type Binding: ApplicationReadableScalarValueBinding<Value = T>;
     const WRITABLE: bool = true;
     const EQUALITY_QUERYABLE: bool = false;
+    fn content_format() -> Option<super::super::ApplicationContentBindingRecipe> {
+        None
+    }
 }
 
 pub trait Record<T: 'static>: BindingSet {
@@ -31,6 +34,28 @@ pub trait Shape<T, Bindings: BindingSet>: private::Sealed {
     fn bindings(&self) -> Vec<super::RecordBinding>;
     #[doc(hidden)]
     fn columns(&self, prefix: &str) -> Result<Vec<Column>, RecordRefusal>;
+    #[doc(hidden)]
+    fn columns_field(&self, prefix: &str) -> Result<Vec<Column>, RecordRefusal> {
+        self.columns(prefix)
+    }
+    #[doc(hidden)]
+    fn encode_field(
+        &self,
+        value: &T,
+        prefix: &str,
+    ) -> Result<BTreeMap<String, ApplicationValue>, RecordRefusal> {
+        self.encode(value, prefix)
+    }
+    #[doc(hidden)]
+    fn decode_field(
+        &self,
+        values: &BTreeMap<String, ApplicationValue>,
+        prefix: &str,
+        work: &mut Bindings::Work<'_>,
+        admission: &mut DecodeContext<'_, '_>,
+    ) -> Result<T, RecordRefusal> {
+        self.decode_fields(values, prefix, work, admission)
+    }
     fn encode(
         &self,
         value: &T,
@@ -98,10 +123,12 @@ pub struct DecodeContext<'loan, 'control> {
 
 #[derive(Clone, Debug)]
 pub struct Column {
+    pub(crate) content: Option<super::super::ApplicationContentBindingRecipe>,
     pub(crate) path: String,
     pub(crate) recipe: fn(
         super::super::ApplicationFieldBindingLocus,
     ) -> super::super::ApplicationFieldBindingRecipe,
+    pub(crate) presence: super::super::ApplicationFieldPresence,
     pub(crate) writable: bool,
     pub(crate) equality: bool,
     pub(crate) unique: bool,
@@ -231,6 +258,6 @@ where
     }
 }
 
-mod private {
+pub(super) mod private {
     pub trait Sealed {}
 }

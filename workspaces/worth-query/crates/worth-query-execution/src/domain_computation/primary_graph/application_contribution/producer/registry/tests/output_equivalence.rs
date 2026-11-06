@@ -8,47 +8,104 @@ use schema::ApplicationSchema;
 use worth_query_declaration::facade::application_schema as schema;
 use worth_query_installation::facade as domain;
 
-trait Fixture: ApplicationSchema {}
-worth_query_declaration::worth_query_entity!(Output for S: Fixture);
-worth_query_declaration::worth_query_aspect!(Values for S: Fixture, Output;
-    identity = AspectIdentity(0x0071_9810), revision = AspectContractRevision(1));
-worth_query_declaration::worth_query_field!(Value for S: Fixture, Output, Values:
-    u64 => schema::U64ApplicationValueBinding, read_write, no_equality);
-worth_query_declaration::worth_query_field!(Sibling for S: Fixture, Output, Values:
-    u64 => schema::U64ApplicationValueBinding, read_write, no_equality);
-mod changed {
-    use super::*;
-    worth_query_declaration::worth_query_aspect!(pub(super) Values for S: Fixture, Output;
-        identity = AspectIdentity(0x0071_9810), revision = AspectContractRevision(2));
+use schema::fragment::{self, RecordSelection};
+#[path = "output_equivalence/records.rs"]
+mod records;
+use records::*;
+trait Fixture: ApplicationSchema {
+    type Entity: fragment::Entity;
+    type Field: RecordSelection<
+        Entity = Self::Entity,
+        Value = u64,
+        Binding = schema::U64ApplicationValueBinding,
+    >;
+    fn field() -> Self::Field;
 }
-macro_rules! fixture {
-    ($S:ident, $aspect:path, $mode:ident) => {
-        worth_query_declaration::worth_query_application_schema!(schema $S {
-            owner: $S, version: (1,0), members: |schema| {
-                schema.entity(Output::reference())
-                    .optional_aspect(Output::reference(), <$aspect>::reference())
-                    .$mode(Output::reference(), Value::reference())
-            }
-        });
-        impl Fixture for $S {}
-    };
-}
-fixture!(Struct, Values, field);
-fixture!(Scalar, Values, scalar_aspect_field);
-fixture!(RevisionTwo, changed::Values, field);
-worth_query_declaration::worth_query_application_schema!(schema Missing {
-    owner: Missing, version: (1,0), members: |schema| {
-        schema.entity(Output::reference())
-            .optional_aspect(Output::reference(), Values::reference())
-            .field(Output::reference(), Sibling::reference())
+struct Struct;
+impl schema::ApplicationSchema for Struct {
+    const OWNER: &'static str = "Struct";
+    const NAME: &'static str = "Struct";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        schema::ApplicationSchemaDeclaration<Self>,
+        schema::ApplicationSchemaDeclarationDenial,
+    > {
+        schema::ApplicationSchemaDeclarationBuilder::from_fragment(Model::<0>)?.build()
     }
-});
-impl Fixture for Missing {}
+}
+impl Fixture for Struct {
+    type Entity = Output<0>;
+    type Field = fragment::FieldSelection<Model<0>, Output<0>, Values<0>, u64>;
+    fn field() -> Self::Field {
+        Self::Field::at("Value")
+    }
+}
+struct Scalar;
+impl schema::ApplicationSchema for Scalar {
+    const OWNER: &'static str = "Scalar";
+    const NAME: &'static str = "Scalar";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        schema::ApplicationSchemaDeclaration<Self>,
+        schema::ApplicationSchemaDeclarationDenial,
+    > {
+        schema::ApplicationSchemaDeclarationBuilder::from_fragment(Model::<1>)?.build()
+    }
+}
+impl Fixture for Scalar {
+    type Entity = Output<1>;
+    type Field = fragment::FieldSelection<Model<1>, Output<1>, Values<1>, u64>;
+    fn field() -> Self::Field {
+        Self::Field::at("value")
+    }
+}
+struct ShapeChanged;
+impl schema::ApplicationSchema for ShapeChanged {
+    const OWNER: &'static str = "ShapeChanged";
+    const NAME: &'static str = "ShapeChanged";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        schema::ApplicationSchemaDeclaration<Self>,
+        schema::ApplicationSchemaDeclarationDenial,
+    > {
+        schema::ApplicationSchemaDeclarationBuilder::from_fragment(Model::<2>)?.build()
+    }
+}
+impl Fixture for ShapeChanged {
+    type Entity = Output<2>;
+    type Field = fragment::FieldSelection<Model<2>, Output<2>, Values<2>, u64>;
+    fn field() -> Self::Field {
+        Self::Field::at("Value")
+    }
+}
+struct Missing;
+impl schema::ApplicationSchema for Missing {
+    const OWNER: &'static str = "Missing";
+    const NAME: &'static str = "Missing";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        schema::ApplicationSchemaDeclaration<Self>,
+        schema::ApplicationSchemaDeclarationDenial,
+    > {
+        schema::ApplicationSchemaDeclarationBuilder::from_fragment(Model::<3>)?.build()
+    }
+}
+impl Fixture for Missing {
+    type Entity = Output<3>;
+    type Field = fragment::FieldSelection<Model<3>, Output<3>, Values<3>, u64>;
+    fn field() -> Self::Field {
+        Self::Field::at("Sibling")
+    }
+}
 struct Role<S>(std::marker::PhantomData<S>);
 impl<S: Fixture> WorthQueryApplicationOutputRole for Role<S> {
     type Schema = S;
     type Contract = NoApplicationMutationOutputs;
-    type Entity = Output;
+    type Entity = S::Entity;
     type Action = WorthQueryPreserveOutput;
     type Cardinality = WorthQueryExactlyOneOutput;
     const NAME: &'static str = "number";
@@ -76,9 +133,9 @@ fn installed<S: Fixture>() -> domain::WorthQueryInstalledApplicationSchema<S> {
 }
 fn declaration<S: Fixture>() -> DeclaredProducerBinding {
     let mut declaration = declared(TypeId::of::<InstalledProducer>());
-    let field =
-        WorthQueryProducerOutputEquivalence::<S, Role<S>>::exact_u64(Value::reference::<S>())
-            .into_field();
+    let field = WorthQueryProducerOutputEquivalence::<S, Role<S>>::exact_u64(S::field())
+        .unwrap()
+        .into_field();
     declaration.output_equivalence = Some(field.clone());
     declaration.installed_output_equivalence = Some(
         seal(
@@ -110,7 +167,7 @@ fn installed_output_equivalence_binds_field_shape_revision_role_and_opt_in() {
     for distinct in [
         declared(TypeId::of::<InstalledProducer>()),
         declaration::<Scalar>(),
-        declaration::<RevisionTwo>(),
+        declaration::<ShapeChanged>(),
     ] {
         assert!(!structure.has_same_meaning_as(&distinct));
         assert_ne!(edition(&structure), edition(&distinct));
@@ -125,10 +182,10 @@ fn installed_output_equivalence_binds_field_shape_revision_role_and_opt_in() {
 
 #[test]
 fn missing_output_field_refuses_instead_of_substituting_its_sibling() {
-    let field = WorthQueryProducerOutputEquivalence::<Missing, Role<Missing>>::exact_u64(
-        Value::reference::<Missing>(),
-    )
-    .into_field();
+    let field =
+        WorthQueryProducerOutputEquivalence::<Struct, Role<Struct>>::exact_u64(Struct::field())
+            .unwrap()
+            .into_field();
     let denied = seal("producer", "number", &field, &installed::<Missing>()).unwrap_err();
     assert_eq!(denied.kind(), crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ProducerBindingMeaningMismatch);
     assert!(denied
@@ -142,12 +199,10 @@ fn edition_refuses_unsealed_or_substituted_output_equivalence() {
     let mut unsealed = valid.clone();
     unsealed.installed_output_equivalence = None;
     let mut substituted = valid.clone();
-    substituted.output_equivalence = Some(
-        WorthQueryProducerOutputEquivalence::<Struct, Role<Struct>>::exact_u64(
-            Sibling::reference::<Struct>(),
-        )
-        .into_field(),
-    );
+    let mut forged = valid.output_equivalence.clone().unwrap();
+    forged.locus =
+        schema::ApplicationFieldBindingLocus::new("Output", Struct::field().aspect(), "Sibling");
+    substituted.output_equivalence = Some(forged);
     assert!(!valid.has_same_meaning_as(&substituted));
     for invalid in [unsealed, substituted] {
         assert!(InstalledProducerEdition::from_declaration(

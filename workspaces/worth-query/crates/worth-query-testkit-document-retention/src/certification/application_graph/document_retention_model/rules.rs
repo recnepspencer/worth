@@ -196,7 +196,7 @@ pub fn resolve_retention(
     resolver: &WorthQueryApplicationInvariantSchemaResolver<'_, DocumentRetentionSchema>,
 ) -> Result<DocumentRetentionBinding, String> {
     resolver
-        .typed_field(DocumentRetentionField::reference())
+        .typed_field(DocumentRetentionField::at("DocumentRetentionField"))
         .ok_or_else(|| "the document retention field is not installed".to_owned())
 }
 

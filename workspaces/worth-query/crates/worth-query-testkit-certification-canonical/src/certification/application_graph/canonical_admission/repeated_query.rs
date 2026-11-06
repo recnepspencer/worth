@@ -18,19 +18,9 @@ worth_query_portable_type!(ValueSlot => "canonical-admission.repeated-value-slot
 worth_query_application_query!(pub RepeatedQuery for AdmissionSchema, identity "canonical-admission.repeated-read.v1",
     parameters ParametersBinding, result ResultBinding, scope Document => "Document", name "repeated_nested_value");
 
-pub fn value_field() -> ApplicationQueryResultFieldRef<
-    RepeatedQuery,
-    ValueSlot,
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentValueField,
-    SwallowingValue,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", DocumentValueField::reference())
+pub fn value_field(
+) -> ApplicationQueryResultFieldRef<RepeatedQuery, ValueSlot, AdmissionSchema, DocumentValueField> {
+    ApplicationQueryResultFieldRef::new("value", DocumentValueField::at("DocumentValueField"))
 }
 
 pub fn definition(
@@ -76,15 +66,7 @@ pub struct ReadRepeated {
 }
 worth_query_structured_value_binding!(pub RepeatedInputBinding for ReadRepeated { identity: "canonical-admission.repeated-read-input.v1" });
 pub struct RepeatedBinding;
-pub type ReadScope = ApplicationQueryFieldScope<
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReadScope = ApplicationQueryFieldScope<DocumentIdentityField>;
 impl ApplicationQueryBinding<AdmissionSchema> for RepeatedBinding {
     type Input = ReadRepeated;
     type InputBinding = RepeatedInputBinding;
@@ -99,17 +81,8 @@ impl ApplicationQueryBinding<AdmissionSchema> for RepeatedBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "canonical-admission.repeated-read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        AdmissionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         AdmissionSchema,
@@ -128,23 +101,16 @@ impl ApplicationQueryIntent<AdmissionSchema> for ReadRepeated {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> ReadScope {
-        ReadScope::new(DocumentIdentityField::reference(), self.identity)
+        ReadScope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity,
+        )
     }
 }
 
-pub fn counter_field() -> ApplicationQueryResultFieldRef<
-    RepeatedQuery,
-    CounterSlot,
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    CounterField,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("counter", CounterField::reference())
+pub fn counter_field(
+) -> ApplicationQueryResultFieldRef<RepeatedQuery, CounterSlot, AdmissionSchema, CounterField> {
+    ApplicationQueryResultFieldRef::new("counter", CounterField::at("CounterField"))
 }
 
 thread_local! { static RETURNED: std::cell::Cell<u32> = const { std::cell::Cell::new(0) }; }

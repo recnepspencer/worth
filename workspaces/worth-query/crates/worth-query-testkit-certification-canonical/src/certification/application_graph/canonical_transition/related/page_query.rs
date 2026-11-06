@@ -20,15 +20,12 @@ pub fn root_identity() -> ApplicationQueryResultFieldRef<
     PageQuery,
     RootIdentitySlot,
     CanonicalSchema,
-    Derived,
-    DerivedFacts,
     DerivedIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("root_identity", DerivedIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "root_identity",
+        DerivedIdentityField::at("DerivedIdentityField"),
+    )
 }
 worth_query_portable_type!(ChildIdentitySlot => "canonical-related.continuation.child-identity-slot.v1");
 worth_query_portable_type!(ChildValueSlot => "canonical-related.continuation.child-value-slot.v1");
@@ -43,29 +40,16 @@ pub fn child_identity() -> ApplicationQueryResultFieldRef<
     PageQuery,
     ChildIdentitySlot,
     CanonicalSchema,
-    Derived,
-    DerivedFacts,
     DerivedIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("identity", DerivedIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DerivedIdentityField::at("DerivedIdentityField"),
+    )
 }
-pub fn child_value() -> ApplicationQueryResultFieldRef<
-    PageQuery,
-    ChildValueSlot,
-    CanonicalSchema,
-    Derived,
-    DerivedFacts,
-    DerivedValueField,
-    DerivedValue,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", DerivedValueField::reference())
+pub fn child_value(
+) -> ApplicationQueryResultFieldRef<PageQuery, ChildValueSlot, CanonicalSchema, DerivedValueField> {
+    ApplicationQueryResultFieldRef::new("value", DerivedValueField::at("DerivedValueField"))
 }
 pub fn children() -> ApplicationQueryResultRelationRef<
     PageQuery,
@@ -150,15 +134,7 @@ pub struct ReadPage {
 }
 worth_query_structured_value_binding!(pub PageInputBinding for ReadPage { identity: "canonical-related.continuation.input.v1" });
 pub struct PageBinding;
-pub type ReadScope = ApplicationQueryFieldScope<
-    CanonicalSchema,
-    Derived,
-    DerivedFacts,
-    DerivedIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReadScope = ApplicationQueryFieldScope<DerivedIdentityField>;
 impl ApplicationQueryBinding<CanonicalSchema> for PageBinding {
     type Input = ReadPage;
     type InputBinding = PageInputBinding;
@@ -173,17 +149,8 @@ impl ApplicationQueryBinding<CanonicalSchema> for PageBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "canonical-related.continuation.binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        CanonicalSchema,
-        Derived,
-        DerivedFacts,
-        DerivedIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DerivedIdentityField::reference()
+    fn scope_field() -> DerivedIdentityField {
+        DerivedIdentityField::at("DerivedIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CanonicalSchema,
@@ -202,6 +169,9 @@ impl ApplicationQueryIntent<CanonicalSchema> for ReadPage {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> ReadScope {
-        ReadScope::new(DerivedIdentityField::reference(), self.identity)
+        ReadScope::new(
+            DerivedIdentityField::at("DerivedIdentityField"),
+            self.identity,
+        )
     }
 }

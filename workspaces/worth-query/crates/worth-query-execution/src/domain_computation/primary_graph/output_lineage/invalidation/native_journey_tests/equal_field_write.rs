@@ -19,7 +19,7 @@ fn equal_native_field_write_keeps_revision_and_downstream_clean_until_a_real_cha
             selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -36,13 +36,13 @@ fn equal_native_field_write_keeps_revision_and_downstream_clean_until_a_real_cha
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let status_ref = AccountStatus::reference();
+    let status_ref = AccountStatus::at("AccountStatus");
     let status = graph
         .layout()
         .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
-    let label_ref = AccountLabel::reference();
+    let label_ref = AccountLabel::at("AccountLabel");
     let label = graph
         .layout()
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())

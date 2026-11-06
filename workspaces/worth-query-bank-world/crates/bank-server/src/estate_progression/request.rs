@@ -35,7 +35,10 @@ impl BankIdentityRuntime {
                     self.invariant_projection(),
                     |reader, estate| {
                         reader
-                            .require_decision_field(estate, EstateCaseIdentityField::reference())
+                            .require_decision_field(
+                                estate,
+                                EstateCaseIdentityField::at("EstateCaseIdentityField"),
+                            )
                             .map(|_| ())
                     },
                 )

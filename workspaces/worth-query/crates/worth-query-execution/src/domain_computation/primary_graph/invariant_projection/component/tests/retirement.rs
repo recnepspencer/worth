@@ -18,8 +18,12 @@ fn member_retirement_preserves_component_name_and_invalidates_old_membership() {
                 .project(
                     &phase,
                     |reader| {
-                        let removed = reader.resolve_entity(NodeKey::reference(), 2_u64).unwrap();
-                        let root = reader.resolve_entity(NodeKey::reference(), 1_u64).unwrap();
+                        let removed = reader
+                            .resolve_entity(NodeKey::at("NodeKey"), 2_u64)
+                            .unwrap();
+                        let root = reader
+                            .resolve_entity(NodeKey::at("NodeKey"), 1_u64)
+                            .unwrap();
                         let component = reader.component_of(Shells::reference(), &root).unwrap();
                         (removed.entity_id(), component)
                     },
@@ -45,14 +49,14 @@ fn member_retirement_preserves_component_name_and_invalidates_old_membership() {
         .unwrap();
     world.application.with_host_advancement(|phase| {
         world.invariant.project(&phase, |reader| {
-            let root = reader.resolve_entity(NodeKey::reference(), 1_u64).unwrap();
+            let root = reader.resolve_entity(NodeKey::at("NodeKey"), 1_u64).unwrap();
             // Ordinary coupling excludes an audit-retained relation to a retired member.
             let kind = reader.layout.relation("B").unwrap().kind;
             let physical = reader.read_adjacency("B", root.entity_id(), kind,
                 worth_query_declaration::facade::application_schema::RelationDirection::Forward).unwrap();
             assert!(physical.into_records().is_empty(), "the authored B1->2 edge is no longer live coupling");
             let current = reader.component_of(Shells::reference(), &root).unwrap();
-            let keys = current.members().map(|member| reader.field(&member, NodeKey::reference()).unwrap())
+            let keys = current.members().map(|member| reader.field(&member, NodeKey::at("NodeKey")).unwrap())
                 .collect::<BTreeSet<_>>();
             assert_eq!(keys, BTreeSet::from([0, 1]));
             assert_eq!(current.identity(), prior.output().1.identity(), "retirement without a split preserves the persistent name");

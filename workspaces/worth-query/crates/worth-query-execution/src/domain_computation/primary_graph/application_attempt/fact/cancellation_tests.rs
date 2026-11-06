@@ -188,7 +188,7 @@ fn with_indexed_fact<R>(
         .unwrap();
     let snapshot = selected.application_basis().snapshot_handle();
     let graph = world.application.runtime.primary_graph().unwrap();
-    let field = AccountStatus::reference();
+    let field = AccountStatus::at("AccountStatus");
     let layout = graph
         .layout
         .equality_field(field.entity(), field.aspect(), field.field())

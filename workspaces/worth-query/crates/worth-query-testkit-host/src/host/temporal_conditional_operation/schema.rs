@@ -1,3 +1,6 @@
+#[path = "schema/records.rs"]
+mod storage_model;
+pub use storage_model::*;
 pub use worth_query_host::facade::declaration::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
@@ -6,11 +9,9 @@ pub use worth_query_host::facade::declaration::application_query::{
 };
 pub use worth_query_host::facade::{declaration, primary_graph};
 pub use worth_query_host::facade::{
-    worth_query_application, worth_query_application_contribution, worth_query_application_query,
-    worth_query_aspect, worth_query_effect, worth_query_entity, worth_query_field,
-    worth_query_operation, worth_query_operation_emits, worth_query_operation_reads,
-    worth_query_operation_writes, worth_query_portable_type, worth_query_principal_binding,
-    worth_query_relation, worth_query_structured_value_binding,
+    worth_query_application_query, worth_query_effect, worth_query_operation,
+    worth_query_operation_emits, worth_query_operation_reads, worth_query_operation_writes,
+    worth_query_portable_type, worth_query_structured_value_binding,
 };
 
 pub const SCALED_AMENDMENT_PROJECTION_WORK_BUDGET: usize = 256;
@@ -23,157 +24,9 @@ pub use live_intent_query::{
     TemporalIntentLiveCause, TemporalIntentLiveQuery,
 };
 
-worth_query_application_contribution! {
-    pub contribution TemporalHostContribution in TemporalHostSchema {
-        identity: "worth.query.host.courtroom.temporal.v1",
-        members: |schema| {
-            schema
-                .entity(ExternalMapping::reference())
-                .entity(Principal::reference())
-                .entity(TemporalIntent::reference())
-                .entity(UnrelatedRecord::reference())
-                .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-                .aspect(Principal::reference(), PrincipalFacts::reference())
-                .aspect(TemporalIntent::reference(), IntentFacts::reference())
-                .aspect(UnrelatedRecord::reference(), UnrelatedFacts::reference())
-                .field(ExternalMapping::reference(), ExternalIdentityField::reference())
-                .field(ExternalMapping::reference(), MappingStatusField::reference())
-                .field(Principal::reference(), PrincipalIdentityField::reference())
-                .field(TemporalIntent::reference(), IntentIdentityField::reference())
-                .field(TemporalIntent::reference(), IntentRevisionField::reference())
-                .field(TemporalIntent::reference(), IntentDueField::reference())
-                .field(TemporalIntent::reference(), IntentLifecycleField::reference())
-                .field(TemporalIntent::reference(), IntentInputField::reference())
-                .field(TemporalIntent::reference(), IntentGateField::reference())
-                .field(TemporalIntent::reference(), IntentEffectField::reference())
-                .field(UnrelatedRecord::reference(), UnrelatedValueField::reference())
-                .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
-                .relation(IntentLiveTarget::reference(), TemporalIntent::reference(), TemporalIntent::reference())
-                .principal_binding(TemporalPrincipalBinding::reference())
-                .effect(TemporalAmendmentEffect::reference())
-                .effect(TemporalExecutionEffect::reference())
-                .operation(
-                    ExecuteTemporal::reference()
-                        .definition()
-                        .no_external_effect()
-                        .no_aftermath()
-                        .finish(),
-                )
-                .operation(
-                    AmendTemporal::reference()
-                        .definition()
-                        .no_external_effect()
-                        .no_aftermath()
-                        .finish(),
-                )
-                .operation(
-                    AmendTemporalAndPublishDefinition::reference()
-                        .definition()
-                        .external_effect(
-                            TemporalAmendmentEffect::reference(),
-                            worth_query_host::facade::domain::WorthQueryExternalEffectCorrelationFamily::new(
-                                "temporal-amendment",
-                            )
-                            .unwrap(),
-                        )
-                        .no_aftermath()
-                        .finish(),
-                )
-                .operation(RevokeTemporalPrincipal::reference().definition().no_external_effect().no_aftermath().finish())
-
-                .operation_projection_work_budget(RevokeTemporalPrincipal::reference(), 3)
-                .operation_read_field(RevokeTemporalPrincipal::reference(), MappingStatusField::reference())
-                .operation_write(RevokeTemporalPrincipal::reference(), MappingStatusField::reference())
-
-                .operation_projection_work_budget(ExecuteTemporal::reference(), 16)
-                .operation_read_field(ExecuteTemporal::reference(), IntentIdentityField::reference())
-                .operation_read_field(ExecuteTemporal::reference(), IntentRevisionField::reference())
-                .operation_read_field(ExecuteTemporal::reference(), IntentLifecycleField::reference())
-                .operation_read_field(ExecuteTemporal::reference(), IntentEffectField::reference())
-                .operation_write(ExecuteTemporal::reference(), IntentRevisionField::reference())
-                .operation_write(ExecuteTemporal::reference(), IntentLifecycleField::reference())
-                .operation_write(ExecuteTemporal::reference(), IntentEffectField::reference())
-                .operation_emit(ExecuteTemporal::reference(), TemporalExecutionEffect::reference())
-
-                .operation_projection_work_budget(
-                    AmendTemporal::reference(),
-                    SCALED_AMENDMENT_PROJECTION_WORK_BUDGET,
-                )
-                .operation_read_field(AmendTemporal::reference(), IntentRevisionField::reference())
-                .operation_read_field(AmendTemporal::reference(), IntentLifecycleField::reference())
-                .operation_read_field(AmendTemporal::reference(), IntentGateField::reference())
-                .operation_read_field(AmendTemporal::reference(), IntentDueField::reference())
-                .operation_read_field(AmendTemporal::reference(), IntentInputField::reference())
-                .operation_write(AmendTemporal::reference(), IntentRevisionField::reference())
-                .operation_write(AmendTemporal::reference(), IntentLifecycleField::reference())
-                .operation_write(AmendTemporal::reference(), IntentGateField::reference())
-                .operation_write(AmendTemporal::reference(), IntentDueField::reference())
-                .operation_write(AmendTemporal::reference(), IntentInputField::reference())
-
-                .operation_projection_work_budget(AmendTemporalAndPublishDefinition::reference(), 12)
-                .operation_read_field(AmendTemporalAndPublishDefinition::reference(), IntentRevisionField::reference())
-                .operation_read_field(AmendTemporalAndPublishDefinition::reference(), IntentLifecycleField::reference())
-                .operation_read_field(AmendTemporalAndPublishDefinition::reference(), IntentGateField::reference())
-                .operation_read_field(AmendTemporalAndPublishDefinition::reference(), IntentDueField::reference())
-                .operation_read_field(AmendTemporalAndPublishDefinition::reference(), IntentInputField::reference())
-                .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentRevisionField::reference())
-                .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentLifecycleField::reference())
-                .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentGateField::reference())
-                .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentDueField::reference())
-                .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentInputField::reference())
-                .operation_emit(AmendTemporalAndPublishDefinition::reference(), TemporalAmendmentEffect::reference())
-                .application_query(temporal_intent_query_definition())
-                .application_query_binding::<TemporalIntentCurrentReadBinding>()
-                .application_query(temporal_intent_live_query_definition())
-        }
-    }
-}
-
-worth_query_application! {
-    pub TemporalHostSchema {
-        owner: "temporal_host_courtroom",
-        version: (1, 0),
-        contributions: [TemporalHostContribution],
-    }
-}
-
-worth_query_entity!(pub ExternalMapping for TemporalHostSchema);
-worth_query_entity!(pub Principal for TemporalHostSchema);
-worth_query_entity!(pub TemporalIntent for TemporalHostSchema);
-worth_query_entity!(pub UnrelatedRecord for TemporalHostSchema);
-worth_query_aspect!(pub ExternalIdentity for TemporalHostSchema, ExternalMapping; identity = AspectIdentity(0x91611042), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub PrincipalFacts for TemporalHostSchema, Principal; identity = AspectIdentity(0x91611043), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub IntentFacts for TemporalHostSchema, TemporalIntent; identity = AspectIdentity(0x91611044), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub UnrelatedFacts for TemporalHostSchema, UnrelatedRecord; identity = AspectIdentity(0x91611045), revision = AspectContractRevision(1),);
-worth_query_field!(pub ExternalIdentityField for TemporalHostSchema, ExternalMapping, ExternalIdentity: declaration::authentication::WorthQueryExternalPrincipalIdentity => declaration::authentication::WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub MappingStatusField for TemporalHostSchema, ExternalMapping, ExternalIdentity: declaration::authentication::WorthQueryPrincipalMappingStatus => declaration::authentication::WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub PrincipalIdentityField for TemporalHostSchema, Principal, PrincipalFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub IntentIdentityField for TemporalHostSchema, TemporalIntent, IntentFacts: String => declaration::application_schema::StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub IntentRevisionField for TemporalHostSchema, TemporalIntent, IntentFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_write, equality);
-worth_query_field!(pub IntentDueField for TemporalHostSchema, TemporalIntent, IntentFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_write, equality);
-worth_query_field!(pub IntentLifecycleField for TemporalHostSchema, TemporalIntent, IntentFacts: String => declaration::application_schema::StringApplicationValueBinding, read_write, equality);
-worth_query_field!(pub IntentInputField for TemporalHostSchema, TemporalIntent, IntentFacts: String => declaration::application_schema::StringApplicationValueBinding, read_write, equality);
-worth_query_field!(pub IntentGateField for TemporalHostSchema, TemporalIntent, IntentFacts: String => declaration::application_schema::StringApplicationValueBinding, read_write, equality);
-worth_query_field!(pub IntentEffectField for TemporalHostSchema, TemporalIntent, IntentFacts: String => declaration::application_schema::StringApplicationValueBinding, read_write, equality);
-worth_query_field!(pub UnrelatedValueField for TemporalHostSchema, UnrelatedRecord, UnrelatedFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_only, equality);
-worth_query_relation!(pub MappingTarget in TemporalHostSchema, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(
-    pub IntentLiveTarget in TemporalHostSchema, TemporalIntent => TemporalIntent;
-    integrity = declaration::application_schema::ApplicationRelationIntegrity::new(
-        declaration::application_schema::ApplicationRelationEndpoints::same_context(true),
-        declaration::application_schema::ApplicationRelationCardinality::unbounded(),
-        declaration::application_schema::ApplicationRelationDeletionPolicy::RetainDanglingForAudit,
-    )
-);
-worth_query_principal_binding!(
-    pub TemporalPrincipalBinding in TemporalHostSchema,
-    mapping ExternalMapping {
-        identity: ExternalIdentityField,
-        status: MappingStatusField,
-        target: MappingTarget => Principal,
-        principal_identity: PrincipalIdentityField
-    }
-);
+#[path = "schema/declaration.rs"]
+mod composition;
+pub use composition::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TemporalInput(pub String);
@@ -191,9 +44,6 @@ worth_query_portable_type!(AmendTemporalInput => "worth.query.test.host.temporal
 
 worth_query_structured_value_binding!(pub TemporalInputBinding for TemporalInput { identity: "worth.query.test.host.temporal.input.v1" });
 worth_query_operation!(pub ExecuteTemporal for TemporalHostSchema, input TemporalInputBinding);
-worth_query_operation_reads!(ExecuteTemporal => [IntentIdentityField, IntentRevisionField, IntentLifecycleField, IntentEffectField]);
-worth_query_operation_writes!(ExecuteTemporal => [IntentRevisionField, IntentLifecycleField, IntentEffectField]);
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TemporalExecutionNotice {
     pub identity: String,
@@ -206,11 +56,7 @@ worth_query_effect!(pub TemporalExecutionEffect for TemporalHostSchema, payload 
 worth_query_operation_emits!(ExecuteTemporal => [TemporalExecutionEffect]);
 worth_query_structured_value_binding!(pub AmendTemporalInputBinding for AmendTemporalInput { identity: "worth.query.test.host.temporal.amend_input.v1" });
 worth_query_operation!(pub AmendTemporal for TemporalHostSchema, input AmendTemporalInputBinding);
-worth_query_operation_reads!(AmendTemporal => [IntentIdentityField, IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
-worth_query_operation_writes!(AmendTemporal => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
 worth_query_operation!(pub AmendTemporalAndPublishDefinition for TemporalHostSchema, input AmendTemporalInputBinding);
-worth_query_operation_reads!(AmendTemporalAndPublishDefinition => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
-worth_query_operation_writes!(AmendTemporalAndPublishDefinition => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
 worth_query_operation_emits!(AmendTemporalAndPublishDefinition => [TemporalAmendmentEffect]);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -238,8 +84,6 @@ impl declaration::application_schema::ApplicationExternalEffectBinding
 
 worth_query_effect!(pub TemporalAmendmentEffect for TemporalHostSchema, payload TemporalAmendmentNoticeBinding);
 worth_query_operation!(pub RevokeTemporalPrincipal for TemporalHostSchema, input TemporalInputBinding);
-worth_query_operation_reads!(RevokeTemporalPrincipal => [MappingStatusField]);
-worth_query_operation_writes!(RevokeTemporalPrincipal => [MappingStatusField]);
 pub struct IntentQueryParameters;
 pub struct IntentIdentitySlot;
 pub struct IntentRevisionSlot;
@@ -330,52 +174,24 @@ impl primary_graph::WorthQueryApplicationProjection<TemporalHostSchema, Temporal
     }
 }
 
-pub type ResultField<Slot, Field, Value, Write> = ApplicationQueryResultFieldRef<
-    TemporalIntentQuery,
-    Slot,
-    TemporalHostSchema,
-    TemporalIntent,
-    IntentFacts,
-    Field,
-    Value,
-    Write,
-    declaration::application_schema::EqualityPredicate,
-    declaration::application_schema::NoApplicationUnit,
->;
+pub type ResultField<Slot, Field> =
+    ApplicationQueryResultFieldRef<TemporalIntentQuery, Slot, TemporalHostSchema, Field>;
 
-pub fn identity_result() -> ResultField<
-    IntentIdentitySlot,
-    IntentIdentityField,
-    String,
-    declaration::application_schema::ReadOnly,
-> {
-    ApplicationQueryResultFieldRef::new("identity", IntentIdentityField::reference())
+pub fn identity_result() -> ResultField<IntentIdentitySlot, IntentIdentityField> {
+    ApplicationQueryResultFieldRef::new("identity", IntentIdentityField::at("IntentIdentityField"))
 }
-pub fn revision_result() -> ResultField<
-    IntentRevisionSlot,
-    IntentRevisionField,
-    u64,
-    declaration::application_schema::ReadWrite,
-> {
-    ApplicationQueryResultFieldRef::new("revision", IntentRevisionField::reference())
+pub fn revision_result() -> ResultField<IntentRevisionSlot, IntentRevisionField> {
+    ApplicationQueryResultFieldRef::new("revision", IntentRevisionField::at("IntentRevisionField"))
 }
-pub fn due_result(
-) -> ResultField<IntentDueSlot, IntentDueField, u64, declaration::application_schema::ReadWrite> {
-    ApplicationQueryResultFieldRef::new("due", IntentDueField::reference())
+pub fn due_result() -> ResultField<IntentDueSlot, IntentDueField> {
+    ApplicationQueryResultFieldRef::new("due", IntentDueField::at("IntentDueField"))
 }
-pub fn lifecycle_result() -> ResultField<
-    IntentLifecycleSlot,
-    IntentLifecycleField,
-    String,
-    declaration::application_schema::ReadWrite,
-> {
-    ApplicationQueryResultFieldRef::new("lifecycle", IntentLifecycleField::reference())
+pub fn lifecycle_result() -> ResultField<IntentLifecycleSlot, IntentLifecycleField> {
+    ApplicationQueryResultFieldRef::new(
+        "lifecycle",
+        IntentLifecycleField::at("IntentLifecycleField"),
+    )
 }
-pub fn input_result() -> ResultField<
-    IntentInputSlot,
-    IntentInputField,
-    String,
-    declaration::application_schema::ReadWrite,
-> {
-    ApplicationQueryResultFieldRef::new("input", IntentInputField::reference())
+pub fn input_result() -> ResultField<IntentInputSlot, IntentInputField> {
+    ApplicationQueryResultFieldRef::new("input", IntentInputField::at("IntentInputField"))
 }

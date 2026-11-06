@@ -77,7 +77,7 @@ fn resolved_principal(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             phase_custody,
-            PrincipalIdentityField::reference(),
+            PrincipalIdentityField::at("PrincipalIdentityField"),
             identity,
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -129,10 +129,13 @@ fn link_program(
                     .decision_relations_from(AccountOwner::reference(), principal)
                     .unwrap();
                 let account = reader
-                    .resolve_entity(AccountStatus::reference(), account_status.to_string())
+                    .resolve_entity(
+                        AccountStatus::at("AccountStatus"),
+                        account_status.to_string(),
+                    )
                     .unwrap();
                 reader
-                    .require_decision_field(&account, AccountStatus::reference())
+                    .require_decision_field(&account, AccountStatus::at("AccountStatus"))
                     .unwrap();
             },
             AllocationPolicy::SystemAllocation,
@@ -206,10 +209,13 @@ fn assert_membership_absent(
                     .decision_relations_from(AccountOwner::reference(), principal)
                     .unwrap();
                 let account = reader
-                    .resolve_entity(AccountStatus::reference(), account_status.to_owned())
+                    .resolve_entity(
+                        AccountStatus::at("AccountStatus"),
+                        account_status.to_owned(),
+                    )
                     .unwrap();
                 reader
-                    .require_decision_field(&account, AccountStatus::reference())
+                    .require_decision_field(&account, AccountStatus::at("AccountStatus"))
                     .unwrap();
             },
             AllocationPolicy::SystemAllocation,

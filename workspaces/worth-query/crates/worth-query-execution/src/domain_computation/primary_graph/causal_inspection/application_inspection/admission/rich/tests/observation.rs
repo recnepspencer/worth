@@ -7,8 +7,8 @@ use crate::domain_computation::primary_graph::{
         diagnostic_comparison::{
             DiagnosticParametersBinding, DiagnosticResult, DiagnosticResultBinding,
         },
-        status_parameter, Account, AccountPolicy, AccountStatus, AccountSummaryParameters,
-        AuthorizationWorld, ExternalMapping, IdentityBinding, IdentityExecutionSchema, Principal,
+        status_parameter, AccountStatus, AccountSummaryParameters, AuthorizationWorld,
+        ExternalMapping, IdentityBinding, IdentityExecutionSchema, Principal,
     },
     WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryApplicationQueryAccessContext,
     WorthQueryPrincipalResolutionMode, WorthQueryProductQueryControls,
@@ -20,18 +20,10 @@ use worth_query_declaration::facade::{
     application_query::{
         ApplicationQueryBinding, ApplicationQueryFieldScope, ApplicationQueryParameterSet,
     },
-    application_schema::{NoApplicationUnit, ReadWrite, U64ApplicationValueBinding},
+    application_schema::U64ApplicationValueBinding,
 };
 
-type Scope = ApplicationQueryFieldScope<
-    IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
-    AccountStatus,
-    String,
-    ReadWrite,
-    NoApplicationUnit,
->;
+type Scope = ApplicationQueryFieldScope<AccountStatus>;
 
 pub(in super::super) trait DiagnosticBinding:
     ApplicationQueryBinding<
@@ -120,7 +112,7 @@ pub(in super::super) fn read<B: DiagnosticBinding>(
             let scope = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

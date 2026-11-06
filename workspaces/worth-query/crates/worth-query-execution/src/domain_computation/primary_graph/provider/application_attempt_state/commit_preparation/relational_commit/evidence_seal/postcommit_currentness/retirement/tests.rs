@@ -100,7 +100,7 @@ fn reads(
     let entity = selected
         .resolve_entity(
             phase_custody,
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
             key.to_owned(),
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -108,8 +108,8 @@ fn reads(
         .unwrap()
         .entity_id();
     let graph = world.application.runtime.primary_graph().unwrap();
-    let identity = AccountIdentity::reference();
-    let note = AccountNote::reference();
+    let identity = AccountIdentity::at("AccountIdentity");
+    let note = AccountNote::at("AccountNote");
     let kind = graph.layout.entity_kind(identity.entity()).unwrap();
     let locator = graph
         .layout

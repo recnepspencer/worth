@@ -1,86 +1,126 @@
-use super::{ApplicationSchemaContributionAuthoring, ApplicationSchemaContributionDenial};
 use crate::application_schema::{
-    validate_portable_application_schema_freshly, ApplicationSchemaContributionProvenance,
-    ApplicationSchemaDeclarationBuilder, ApplicationSchemaDeclarationDenial,
-    WorthQueryPortableApplicationSchemaRecord,
+    fragment::{self, *},
+    *,
 };
-
-crate::worth_query_application! {
-    ContributionSchema {
-        owner: "worth.query.contribution.tests",
-        version: (1, 0),
-        contributions: [TopologyContribution, MaterialContribution],
+#[derive(Debug)]
+struct ContributionSchema;
+impl Fragment for ContributionSchema {
+    const NAME: &'static str = "ContributionSchema";
+    type Bindings = NoBindings;
+    type Members = (TopologyContribution, MaterialContribution);
+}
+impl ApplicationSchema for ContributionSchema {
+    const OWNER: &'static str = "worth.query.contribution.tests";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
     }
 }
-
-crate::worth_query_entity!(TopologyNode for ContributionSchema);
-crate::worth_query_entity!(MaterialNode for ContributionSchema);
-
-crate::worth_query_application_contribution! {
-    contribution TopologyContribution in ContributionSchema {
-        identity: "worth.query.tests.topology-contribution.v1",
-        members: |schema| {
-            schema.entity(TopologyNode::reference())
-        }
-    }
+struct TopologyNode;
+impl Entity for TopologyNode {
+    const NAME: &'static str = "TopologyNode";
+    type Aspects = ();
+    type Relations = ();
 }
-
-crate::worth_query_application_contribution! {
-    contribution RenamedTopologyContribution in ContributionSchema {
-        identity: "worth.query.tests.renamed-topology-contribution.v1",
-        members: |schema| { schema.entity(TopologyNode::reference()) }
-    }
+struct MaterialNode;
+impl Entity for MaterialNode {
+    const NAME: &'static str = "MaterialNode";
+    type Aspects = ();
+    type Relations = ();
 }
-
-crate::worth_query_application_contribution! {
-    contribution SwappedTopologyContribution in ContributionSchema {
-        identity: "worth.query.tests.material-contribution.v1",
-        members: |schema| { schema.entity(TopologyNode::reference()) }
-    }
+struct TopologyContribution;
+impl ApplicationSchemaContribution<ContributionSchema> for TopologyContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("worth.query.tests.topology-contribution.v1");
+    type Members = (TopologyNode,);
 }
-
-crate::worth_query_application_contribution! {
-    contribution SwappedMaterialContribution in ContributionSchema {
-        identity: "worth.query.tests.topology-contribution.v1",
-        members: |schema| { schema.entity(MaterialNode::reference()) }
-    }
+struct RenamedTopologyContribution;
+impl ApplicationSchemaContribution<ContributionSchema> for RenamedTopologyContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new(
+            "worth.query.tests.renamed-topology-contribution.v1",
+        );
+    type Members = (TopologyNode,);
 }
-
-crate::worth_query_application_contribution! {
-    contribution MaterialContribution in ContributionSchema {
-        identity: "worth.query.tests.material-contribution.v1",
-        members: |schema| {
-            schema.entity(MaterialNode::reference())
-        }
-    }
+struct SwappedTopologyContribution;
+impl ApplicationSchemaContribution<ContributionSchema> for SwappedTopologyContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("worth.query.tests.material-contribution.v1");
+    type Members = (TopologyNode,);
 }
-
-crate::worth_query_application_contribution! {
-    contribution DuplicateTopologyIdentity in ContributionSchema {
-        identity: "worth.query.tests.topology-contribution.v1",
-        members: |schema| {
-            schema.entity(MaterialNode::reference())
-        }
-    }
+struct SwappedMaterialContribution;
+impl ApplicationSchemaContribution<ContributionSchema> for SwappedMaterialContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("worth.query.tests.topology-contribution.v1");
+    type Members = (MaterialNode,);
 }
-
-crate::worth_query_application_contribution! {
-    contribution InvalidIdentityContribution in ContributionSchema {
-        identity: " worth.query.tests.invalid.v1",
-        members: |schema| { schema }
-    }
+struct MaterialContribution;
+impl ApplicationSchemaContribution<ContributionSchema> for MaterialContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("worth.query.tests.material-contribution.v1");
+    type Members = (MaterialNode,);
+}
+struct DuplicateTopologyIdentity;
+impl ApplicationSchemaContribution<ContributionSchema> for DuplicateTopologyIdentity {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("worth.query.tests.topology-contribution.v1");
+    type Members = (TopologyNode,);
+}
+struct InvalidIdentityContribution;
+impl ApplicationSchemaContribution<ContributionSchema> for InvalidIdentityContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new(" worth.query.tests.invalid.v1");
+    type Members = ();
+}
+struct Reordered;
+impl Fragment for Reordered {
+    const NAME: &'static str = <ContributionSchema as Fragment>::NAME;
+    type Bindings = NoBindings;
+    type Members = (MaterialContribution, TopologyContribution);
+}
+struct Renamed;
+impl Fragment for Renamed {
+    const NAME: &'static str = <ContributionSchema as Fragment>::NAME;
+    type Bindings = NoBindings;
+    type Members = (RenamedTopologyContribution, MaterialContribution);
+}
+struct Reassigned;
+impl Fragment for Reassigned {
+    const NAME: &'static str = <ContributionSchema as Fragment>::NAME;
+    type Bindings = NoBindings;
+    type Members = (SwappedTopologyContribution, SwappedMaterialContribution);
+}
+struct Duplicate;
+impl Fragment for Duplicate {
+    const NAME: &'static str = <ContributionSchema as Fragment>::NAME;
+    type Bindings = NoBindings;
+    type Members = (TopologyContribution, DuplicateTopologyIdentity);
+}
+struct Invalid;
+impl Fragment for Invalid {
+    const NAME: &'static str = <ContributionSchema as Fragment>::NAME;
+    type Bindings = NoBindings;
+    type Members = (InvalidIdentityContribution,);
+}
+fn reference<C: ApplicationSchemaContribution<ContributionSchema>>(
+    _: C,
+) -> ApplicationSchemaContributionRef<ContributionSchema, C> {
+    ApplicationSchemaContributionRef::from_contribution()
 }
 
 #[test]
-fn macro_references_retain_generic_schema_affinity() {
+fn contribution_references_retain_schema_affinity() {
     let references = [
-        TopologyContribution::reference().identity(),
-        RenamedTopologyContribution::reference().identity(),
-        SwappedTopologyContribution::reference().identity(),
-        SwappedMaterialContribution::reference().identity(),
-        MaterialContribution::reference().identity(),
-        DuplicateTopologyIdentity::reference().identity(),
-        InvalidIdentityContribution::reference().identity(),
+        reference(TopologyContribution).identity(),
+        reference(RenamedTopologyContribution).identity(),
+        reference(SwappedTopologyContribution).identity(),
+        reference(SwappedMaterialContribution).identity(),
+        reference(MaterialContribution).identity(),
+        reference(DuplicateTopologyIdentity).identity(),
+        reference(InvalidIdentityContribution).identity(),
     ];
 
     assert_eq!(
@@ -92,14 +132,11 @@ fn macro_references_retain_generic_schema_affinity() {
 #[test]
 fn separately_named_contributions_compose_into_one_canonical_schema() {
     let declared = ContributionSchema::declaration().unwrap();
-    let reordered = ApplicationSchemaDeclarationBuilder::<ContributionSchema>::for_schema()
-        .contributions()
-        .register::<MaterialContribution>()
-        .unwrap()
-        .register::<TopologyContribution>()
-        .unwrap()
-        .build()
-        .unwrap();
+    let reordered =
+        ApplicationSchemaDeclarationBuilder::<ContributionSchema>::from_fragment(Reordered)
+            .unwrap()
+            .build()
+            .unwrap();
 
     assert_eq!(declared.identity(), reordered.identity());
     assert_eq!(declared.erased().members(), reordered.erased().members());
@@ -110,22 +147,15 @@ fn separately_named_contributions_compose_into_one_canonical_schema() {
 #[test]
 fn contribution_identity_and_member_ownership_are_schema_identity() {
     let original = ContributionSchema::declaration().unwrap();
-    let renamed = ApplicationSchemaDeclarationBuilder::<ContributionSchema>::for_schema()
-        .contributions()
-        .register::<RenamedTopologyContribution>()
-        .unwrap()
-        .register::<MaterialContribution>()
+    let renamed = ApplicationSchemaDeclarationBuilder::<ContributionSchema>::from_fragment(Renamed)
         .unwrap()
         .build()
         .unwrap();
-    let reassigned = ApplicationSchemaDeclarationBuilder::<ContributionSchema>::for_schema()
-        .contributions()
-        .register::<SwappedTopologyContribution>()
-        .unwrap()
-        .register::<SwappedMaterialContribution>()
-        .unwrap()
-        .build()
-        .unwrap();
+    let reassigned =
+        ApplicationSchemaDeclarationBuilder::<ContributionSchema>::from_fragment(Reassigned)
+            .unwrap()
+            .build()
+            .unwrap();
 
     assert_eq!(original.erased().members(), renamed.erased().members());
     assert_eq!(original.erased().members(), reassigned.erased().members());
@@ -186,27 +216,25 @@ fn portable_readmission_rejects_hostile_contribution_closures() {
 
 #[test]
 fn duplicate_contribution_identity_is_rejected_before_duplicate_membership() {
-    let denial = ApplicationSchemaDeclarationBuilder::<ContributionSchema>::for_schema()
-        .contributions()
-        .register::<TopologyContribution>()
-        .unwrap()
-        .register::<DuplicateTopologyIdentity>()
-        .unwrap_err();
+    let denial =
+        ApplicationSchemaDeclarationBuilder::<ContributionSchema>::from_fragment(Duplicate)
+            .unwrap_err();
 
     assert_eq!(
         denial,
-        ApplicationSchemaContributionDenial::DuplicateIdentity
+        ApplicationSchemaDeclarationDenial::DuplicateContributionIdentity
     );
 }
 
 #[test]
 fn contribution_identity_must_be_canonical_portable_text() {
-    let denial = ApplicationSchemaDeclarationBuilder::<ContributionSchema>::for_schema()
-        .contributions()
-        .register::<InvalidIdentityContribution>()
+    let denial = ApplicationSchemaDeclarationBuilder::<ContributionSchema>::from_fragment(Invalid)
         .unwrap_err();
 
-    assert_eq!(denial, ApplicationSchemaContributionDenial::InvalidIdentity);
+    assert_eq!(
+        denial,
+        ApplicationSchemaDeclarationDenial::InvalidContributionIdentity
+    );
 }
 
 fn contribution(identity: &str, ordinals: Vec<u32>) -> ApplicationSchemaContributionProvenance {

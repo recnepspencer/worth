@@ -1,21 +1,14 @@
 //! Native optional cells and ordered child rows use the ordinary typed projector.
 use super::super::application_queries::label_result_field;
-use super::super::{
-    AccountAllActivity, AccountNote, AccountPolicy, ActivityFacts, ActivityIdentity,
-};
+use super::super::{AccountAllActivity, AccountNote, ActivityIdentity};
 use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
     WorthQueryApplicationProjectionRow,
 };
-use worth_query_declaration::facade::{
-    application_query::{
-        ApplicationQueryOptionalResultFieldRef, ApplicationQueryResultFieldRef,
-        ApplicationQueryResultRelationRef, ForwardResultTraversal, ManyResults,
-    },
-    application_schema::{
-        EqualityPredicate, NoApplicationUnit, NoEqualityPredicate, ReadOnly, ReadWrite,
-    },
+use worth_query_declaration::facade::application_query::{
+    ApplicationQueryOptionalResultFieldRef, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ForwardResultTraversal, ManyResults,
 };
 
 pub struct NoteSlot;
@@ -41,30 +34,14 @@ pub(super) fn label<Q>() -> ApplicationQueryResultFieldRef<
     Q,
     super::super::application_queries::LabelResultSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     super::super::AccountLabel,
-    String,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
     label_result_field()
 }
 
-pub(super) fn note<Q>() -> ApplicationQueryOptionalResultFieldRef<
-    Q,
-    NoteSlot,
-    IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
-    AccountNote,
-    String,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryOptionalResultFieldRef::new("note", AccountNote::reference())
+pub(super) fn note<Q>(
+) -> ApplicationQueryOptionalResultFieldRef<Q, NoteSlot, IdentityExecutionSchema, AccountNote> {
+    ApplicationQueryOptionalResultFieldRef::new("note", AccountNote::at("AccountNote"))
 }
 
 pub(super) fn activities<Q>() -> ApplicationQueryResultRelationRef<
@@ -80,34 +57,14 @@ pub(super) fn activities<Q>() -> ApplicationQueryResultRelationRef<
     ApplicationQueryResultRelationRef::forward_many("activities", AccountAllActivity::reference())
 }
 
-pub(super) fn activity_identity<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    IdentitySlot,
-    IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
-    ActivityIdentity,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", ActivityIdentity::reference())
+pub(super) fn activity_identity<Q>(
+) -> ApplicationQueryResultFieldRef<Q, IdentitySlot, IdentityExecutionSchema, ActivityIdentity> {
+    ApplicationQueryResultFieldRef::new("identity", ActivityIdentity::at("ActivityIdentity"))
 }
 
-pub(super) fn sequence<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    SequenceSlot,
-    IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
-    ActivitySequence,
-    u64,
-    ReadOnly,
-    NoEqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+pub(super) fn sequence<Q>(
+) -> ApplicationQueryResultFieldRef<Q, SequenceSlot, IdentityExecutionSchema, ActivitySequence> {
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 impl<Q: ApplicationQueryMarkerIdentity<IdentityExecutionSchema>>

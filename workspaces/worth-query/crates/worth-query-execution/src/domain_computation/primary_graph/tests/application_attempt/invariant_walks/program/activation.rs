@@ -62,7 +62,7 @@ fn set_node_on_branch(
                             .require_decision_entity(subject, Node::reference())
                             .unwrap();
                         reader
-                            .require_decision_field(subject, Active::reference())
+                            .require_decision_field(subject, Active::at("Active"))
                             .unwrap();
                     },
                     Allocation::SystemAllocation,
@@ -84,7 +84,7 @@ fn set_node_on_branch(
                 .begin_effect_program();
             let root = effects.existing_entity(&root).unwrap();
             effects
-                .write_field(&root, Active::reference(), active)
+                .write_field(&root, Active::at("Active"), active)
                 .unwrap();
             effects.finish().unwrap()
         })

@@ -43,118 +43,12 @@ fn install_grant_facts(
     schema: ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema> {
     schema
-        .entity(CapabilityGrant::reference())
-        .aspect(CapabilityGrant::reference(), CapabilityFacts::reference())
-        .field(
-            CapabilityGrant::reference(),
-            CapabilityIdentity::reference(),
-        )
-        .field(
-            CapabilityGrant::reference(),
-            CapabilityActionField::reference(),
-        )
-        .field(
-            CapabilityGrant::reference(),
-            CapabilityPurposeField::reference(),
-        )
-        .field(
-            CapabilityGrant::reference(),
-            CapabilityDisclosureField::reference(),
-        )
-        .field(
-            CapabilityGrant::reference(),
-            CapabilityAmountField::reference(),
-        )
-        .field(
-            CapabilityGrant::reference(),
-            CapabilityStatusField::reference(),
-        )
-        .field(
-            CapabilityGrant::reference(),
-            CapabilityWorkflowField::reference(),
-        )
-        .field(
-            CapabilityGrant::reference(),
-            CapabilityNotBeforeField::reference(),
-        )
-        .field(
-            CapabilityGrant::reference(),
-            CapabilityNotAfterField::reference(),
-        )
-        .field(
-            CapabilityGrant::reference(),
-            CapabilityDelegationLimitField::reference(),
-        )
-        .entity(CapabilityActionRecord::reference())
-        .aspect(
-            CapabilityActionRecord::reference(),
-            CapabilityActionRecordFacts::reference(),
-        )
-        .field(
-            CapabilityActionRecord::reference(),
-            CapabilityActionRecordIdentity::reference(),
-        )
 }
 
 fn install_grant_relations(
     schema: ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema> {
     schema
-        .relation(
-            CapabilityGrantee::reference(),
-            Principal::reference(),
-            CapabilityGrant::reference(),
-        )
-        .relation(
-            CapabilityGrantor::reference(),
-            Principal::reference(),
-            CapabilityGrant::reference(),
-        )
-        .relation(
-            CapabilityCustodian::reference(),
-            Principal::reference(),
-            CapabilityGrant::reference(),
-        )
-        .relation(
-            CapabilityResource::reference(),
-            CapabilityGrant::reference(),
-            Account::reference(),
-        )
-        .relation(
-            CapabilityRelated::reference(),
-            CapabilityGrant::reference(),
-            Account::reference(),
-        )
-        .relation(
-            CapabilityParent::reference(),
-            CapabilityGrant::reference(),
-            CapabilityGrant::reference(),
-        )
-        .relation(
-            CapabilityExplicitDeny::reference(),
-            Principal::reference(),
-            Account::reference(),
-        )
-        .relation(
-            CapabilityConflictingBeneficiary::reference(),
-            Principal::reference(),
-            Account::reference(),
-        )
-        .relation(
-            CapabilityRequestActor::reference(),
-            Principal::reference(),
-            CapabilityActionRecord::reference(),
-        )
-        .relation(
-            CapabilityPriorActor::reference(),
-            Principal::reference(),
-            CapabilityActionRecord::reference(),
-        )
-        .relation(
-            CapabilityActionResource::reference(),
-            CapabilityActionRecord::reference(),
-            Account::reference(),
-        )
 }
 
 fn install_capability_operations(
@@ -175,15 +69,15 @@ fn install_capability_operations(
         .operation_projection_work_budget(CapabilityTouchOperation::reference(), 32)
         .operation_read_field(
             CapabilityTouchOperation::reference(),
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
         )
         .operation_read_field(
             CapabilityTouchOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation_write(
             CapabilityTouchOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation(
             ComposedCapabilityTouchOperation::reference()
@@ -195,19 +89,19 @@ fn install_capability_operations(
         .operation_projection_work_budget(ComposedCapabilityTouchOperation::reference(), 32)
         .operation_read_field(
             ComposedCapabilityTouchOperation::reference(),
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
         )
         .operation_read_field(
             ComposedCapabilityTouchOperation::reference(),
-            CapabilityActionRecordIdentity::reference(),
+            CapabilityActionRecordIdentity::at("CapabilityActionRecordIdentity"),
         )
         .operation_read_field(
             ComposedCapabilityTouchOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation_write(
             ComposedCapabilityTouchOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .capability(capability_contract())
         .capability(composed_capability_contract())
@@ -254,51 +148,66 @@ fn composed_capability_contract() -> ApplicationCapabilityContract<
 fn capability_target() -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
-            CapabilityActionField::reference(),
+            CapabilityActionField::at("CapabilityActionField"),
             ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(
                 CapabilityAction::Touch,
             )
             .unwrap(),
-        ),
+        )
+        .unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityResource::reference()),
         ApplicationCapabilityRelationDimension::bound(CapabilityRelated::reference()),
-        ApplicationCapabilityFieldDimension::bound(CapabilityDisclosureField::reference()),
+        ApplicationCapabilityFieldDimension::bound(CapabilityDisclosureField::at(
+            "CapabilityDisclosureField",
+        ))
+        .unwrap(),
         ApplicationCapabilityValueBinding::new(
-            CapabilityPurposeField::reference(),
+            CapabilityPurposeField::at("CapabilityPurposeField"),
             ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
                 CapabilityPurpose::AccountMaintenance,
             )
             .unwrap(),
-        ),
+        )
+        .unwrap(),
     )
 }
 
 fn capability_constraints() -> ApplicationCapabilityConstraintDefinition {
     ApplicationCapabilityConstraintDefinition::new(
-        ApplicationCapabilityMagnitudeDimension::bound(CapabilityAmountField::reference()),
+        ApplicationCapabilityMagnitudeDimension::bound(CapabilityAmountField::at(
+            "CapabilityAmountField",
+        ))
+        .expect("record field contract"),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                CapabilityStatusField::reference(),
+                CapabilityStatusField::at("CapabilityStatusField"),
                 ApplicationEncodedScalarValue::<CapabilityStatusBinding>::try_new(
                     CapabilityStatus::Active,
                 )
                 .unwrap(),
-            ),
+            )
+            .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityWorkflowField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(AccountStatus::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityWorkflowField::at(
+                    "CapabilityWorkflowField",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(AccountStatus::at(
+                    "AccountStatus",
+                ))
+                .unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityNotBeforeField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityNotAfterField::reference(),
-                ),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityNotBeforeField::at(
+                    "CapabilityNotBeforeField",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityNotAfterField::at(
+                    "CapabilityNotAfterField",
+                ))
+                .unwrap(),
             ),
         ),
         CapabilityRequestContext::reference(),
@@ -310,9 +219,10 @@ fn capability_delegation() -> ApplicationCapabilityDelegationDefinition {
         ApplicationCapabilityRelationBinding::from_reference(CapabilityParent::reference()),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityGrantor::reference()),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityGrantee::reference()),
-        ApplicationCapabilityFieldBinding::from_reference(
-            CapabilityDelegationLimitField::reference(),
-        ),
+        ApplicationCapabilityFieldBinding::from_reference(CapabilityDelegationLimitField::at(
+            "CapabilityDelegationLimitField",
+        ))
+        .unwrap(),
         CapabilityProvenance::reference(),
     )
 }

@@ -56,7 +56,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Digests> for DigestO
         input: &Value,
     ) -> Result<WorthQueryComputationPartitionPlan<Item>, WorthQueryComputationInputDenial<u32>>
     {
-        reader.field(&input.0, AccountStatus::reference())?;
+        reader.field(&input.0, AccountStatus::at("AccountStatus"))?;
         Ok(WorthQueryComputationPartitionPlan::keyed(
             (0..4).map(Item),
             |item| PartitionItemId(item.0),

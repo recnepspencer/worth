@@ -26,7 +26,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
             selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -44,8 +44,8 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
     let layout = graph.layout();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let status_ref = AccountStatus::reference();
-    let label_ref = AccountLabel::reference();
+    let status_ref = AccountStatus::at("AccountStatus");
+    let label_ref = AccountLabel::at("AccountLabel");
     let status = layout
         .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()

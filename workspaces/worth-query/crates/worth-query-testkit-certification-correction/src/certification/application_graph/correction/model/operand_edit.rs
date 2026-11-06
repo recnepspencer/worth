@@ -18,8 +18,7 @@ pub struct OperandEdit {
 }
 worth_query_structured_value_binding!(pub InputBinding for OperandEdit { identity: "numeric-correction.operand-input.v1" });
 worth_query_operation!(pub EditOperand for NumericSchema, input InputBinding);
-worth_query_operation_reads!(EditOperand => [Key, Ceiling, Operand]);
-worth_query_operation_writes!(EditOperand => [Operand]);
+
 fn key(input: &OperandEdit) -> String {
     input.key.clone()
 }
@@ -35,8 +34,8 @@ worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal ActorBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-    field Key::reference(), value key,
+    scope Key,
+    field Key::at("Key"), value key,
 );
 
 pub struct Disclosure;
@@ -66,10 +65,10 @@ pub fn declare(
                 .finish(),
         )
         .operation_projection_work_budget(EditOperand::reference(), 8)
-        .operation_read_field(EditOperand::reference(), Key::reference())
-        .operation_read_field(EditOperand::reference(), Ceiling::reference())
-        .operation_read_field(EditOperand::reference(), Operand::reference())
-        .operation_write(EditOperand::reference(), Operand::reference())
+        .operation_read_field(EditOperand::reference(), Key::at("Key"))
+        .operation_read_field(EditOperand::reference(), Ceiling::at("Ceiling"))
+        .operation_read_field(EditOperand::reference(), Operand::at("Operand"))
+        .operation_write(EditOperand::reference(), Operand::at("Operand"))
         .application_mutation_binding::<OperandBinding>()
 }
 
@@ -80,17 +79,17 @@ impl OperationHandler<NumericSchema, OperandBinding> for Handler {
         input: &OperandEdit,
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, OperandBinding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<NumericSchema, Number>, MissingValue> {
-        let root = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+        let root = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
             Ok(root) => root,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&root, Ceiling::reference()) {
+        match reader.field(&root, Ceiling::at("Ceiling")) {
             Ok(Some(_)) => {}
             Ok(None) => return HandlerResult::DomainDenied(MissingValue),
             Err(error) => return HandlerResult::ExecutionDenied(error),
         }
         // Complete the actual optional read before writing; propagate unavailable reads.
-        if let Err(error) = reader.field(&root, Operand::reference()) {
+        if let Err(error) = reader.field(&root, Operand::at("Operand")) {
             return HandlerResult::ExecutionDenied(error);
         }
         match reader.mutation_target(&root) {
@@ -110,7 +109,7 @@ impl OperationHandler<NumericSchema, OperandBinding> for Handler {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
             }
         };
-        match writer.write_optional_field(&target, Operand::reference(), input.value) {
+        match writer.write_optional_field(&target, Operand::at("Operand"), input.value) {
             Ok(()) => HandlerResult::Completed(Edited),
             Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)),
         }

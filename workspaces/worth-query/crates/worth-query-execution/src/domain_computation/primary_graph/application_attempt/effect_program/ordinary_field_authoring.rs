@@ -1,9 +1,7 @@
 use std::collections::BTreeMap;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationProgramTarget,
-    ApplicationScalarValueBinding, DeclaredApplicationFieldValue, OperationWrites,
-    WritableCapability,
+    ApplicationOperationProgramTarget, ApplicationScalarValueBinding,
 };
 use worth_relational::facade::transactions::EntityReference;
 
@@ -18,21 +16,34 @@ use crate::domain_computation::primary_graph::{
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
-    pub fn write_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn write_field<Entity, Field>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        value: Value,
+        field: Field,
+        value: Field::Value,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
-        Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritableCapability,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+        >,
     {
+        let column = self.layout.record_selection(field)?;
+        if !column.writable() {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
+                column.path(),
+            ));
+        }
+        Field::Binding::validate(&value).map_err(|_| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
+                column.path(),
+            )
+        })?;
         let value = Field::Binding::encode(&value).map_err(|_| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
-                field.field(),
+                column.path(),
             )
         })?;
         self.validate_target(target, field.entity())?;

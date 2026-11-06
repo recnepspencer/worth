@@ -18,7 +18,9 @@ fn failure_of_second_orbit_registration_vetoes_the_partial_pair() {
                 .project(
                     &phase,
                     |reader| {
-                        let root = reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap();
+                        let root = reader
+                            .resolve_entity(NodeKey::at("NodeKey"), 0_u64)
+                            .unwrap();
                         reader.orbit(Next::reference(), &root).unwrap()
                     },
                     Allocation::SystemAllocation,

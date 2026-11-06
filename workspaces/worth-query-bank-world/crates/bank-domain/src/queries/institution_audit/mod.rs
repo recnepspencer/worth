@@ -60,11 +60,8 @@ worth_query_decl::facade::worth_query_query_binding!(
     result InstitutionAuditQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope Institution, crate::schema::InstitutionIdentity,
-        crate::schema::InstitutionIdentityField, InstitutionId,
-        worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
-    field crate::schema::InstitutionIdentityField::reference(),
+    scope crate::schema::InstitutionIdentityField,
+    field crate::schema::InstitutionIdentityField::at("InstitutionIdentityField"),
     value InstitutionAuditRequest::institution,
     limits results 1_024
 

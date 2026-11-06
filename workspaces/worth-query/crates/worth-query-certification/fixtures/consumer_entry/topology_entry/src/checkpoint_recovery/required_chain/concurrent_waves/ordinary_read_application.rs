@@ -60,7 +60,7 @@ impl OperationHandler<CheckpointSchema, PlanarMutationBinding<CheckpointSchema>>
         }
         // This is an ordinary field read: it declares no producer prerequisite.
         let next = if let Some(key) = computation::ordinary_predecessor(&input.scope_key) {
-            let entity = match reader.resolve_entity(BodyKey::reference(), key) {
+            let entity = match reader.resolve_entity(BodyKey::at("BodyKey"), key) {
                 Ok(entity) => entity,
                 Err(error) => {
                     return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(
@@ -68,7 +68,7 @@ impl OperationHandler<CheckpointSchema, PlanarMutationBinding<CheckpointSchema>>
                     ));
                 }
             };
-            match reader.field(&entity, Length::reference()) {
+            match reader.field(&entity, Length::at("Length")) {
                 Ok(Some(value)) => PositiveLength::get(&value) + 1,
                 Ok(None) => {
                     return WorthQueryDecisionPlan::immediate(HandlerResult::DomainDenied(
@@ -132,13 +132,8 @@ pub(super) struct Contribution;
 impl ApplicationSchemaContribution<CheckpointSchema> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::IDENTITY;
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<CheckpointSchema>,
-    ) -> ApplicationSchemaDeclarationBuilder<CheckpointSchema> {
-        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::register_members(
-            builder,
-        )
-    }
+    type Members =
+        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::Members;
 }
 impl WorthQueryApplicationContribution<CheckpointSchema> for Contribution {
     type Configuration = TopologyConfiguration;

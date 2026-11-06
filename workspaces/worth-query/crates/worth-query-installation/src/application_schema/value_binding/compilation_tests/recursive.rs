@@ -11,15 +11,6 @@ enum Tree {
 worth_query_declaration::worth_query_value_binding! {
     TreeBinding for Tree { identity: "worth.tests.recursive.tree", scalar: String, canonical: BOUNDS }
 }
-schema!(
-    TreeSchema,
-    Node,
-    Facts,
-    Saved,
-    Tree,
-    TreeBinding,
-    0x9174_0013
-);
 
 #[test]
 fn recursive_installed_dispatch_has_exact_native_meaning_and_one_original_loan() {
@@ -28,7 +19,7 @@ fn recursive_installed_dispatch_has_exact_native_meaning_and_one_original_loan()
         .unwrap();
     let binding = installed
         .value_bindings()
-        .field("Node", "Facts", "Saved")
+        .field("Node", Saved::at("value").aspect(), "value")
         .unwrap();
     let value = Tree::Branch {
         children: vec![Tree::Leaf {
@@ -70,7 +61,7 @@ fn recursive_installed_dispatch_has_exact_native_meaning_and_one_original_loan()
     let codec = meanings[0].fields()[0].codec_digest().unwrap();
     let worth_foundational::facade::AspectShape::Struct(shape) = installed
         .native_contracts()
-        .aspect("Node", "Facts")
+        .aspect("Node", Saved::at("value").aspect())
         .unwrap()
         .contract()
         .shape()
@@ -103,15 +94,7 @@ enum Incomplete {
 worth_query_declaration::worth_query_value_binding! {
     IncompleteBinding for Incomplete { identity: "worth.tests.recursive.incomplete", scalar: String, canonical: BOUNDS }
 }
-schema!(
-    IncompleteSchema,
-    IncompleteNode,
-    IncompleteFacts,
-    IncompleteSaved,
-    Incomplete,
-    IncompleteBinding,
-    0x9174_0014
-);
+
 #[test]
 fn an_unselected_unadmitted_delegate_cannot_hide_inside_a_generated_seed() {
     let denial = index::<IncompleteSchema>()
@@ -123,3 +106,11 @@ fn an_unselected_unadmitted_delegate_cannot_hide_inside_a_generated_seed() {
     );
     let _ = Incomplete::Allowed;
 }
+
+#[path = "recursive/tree_schema.rs"]
+mod tree_schema;
+use tree_schema::*;
+
+#[path = "recursive/incomplete_schema.rs"]
+mod incomplete_schema;
+use incomplete_schema::*;

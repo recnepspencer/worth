@@ -55,10 +55,14 @@ pub fn operation(
             },
         })
         .without_source()
-        .preconditions(TypedMutationPreconditions::new().expect_fact(
-            DocumentIdentityField::reference(),
-            ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
-        ))
+        .preconditions(
+            TypedMutationPreconditions::new()
+                .expect_fact(
+                    DocumentIdentityField::at("DocumentIdentityField"),
+                    ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
+                )
+                .unwrap(),
+        )
         .idempotency_owned(key)
         .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<RetainedProgram, Action>(host)

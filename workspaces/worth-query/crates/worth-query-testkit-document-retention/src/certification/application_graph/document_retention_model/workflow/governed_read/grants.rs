@@ -79,17 +79,38 @@ pub fn seed_grant(
     graph
         .bind_entity(
             WorthQueryApplicationEntitySeed::new(WorkflowAuthoringGrant::reference(), key(grant))
-                .field(WorkflowGrantIdentityField::reference(), grant.to_owned())
-                .field(WorkflowGrantActionField::reference(), action.to_owned())
                 .field(
-                    WorkflowGrantPurposeField::reference(),
+                    WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+                    grant.to_owned().into(),
+                )
+                .field(
+                    WorkflowGrantActionField::at("WorkflowGrantActionField"),
+                    action.to_owned(),
+                )
+                .field(
+                    WorkflowGrantPurposeField::at("WorkflowGrantPurposeField"),
                     "reviewed-document".to_owned(),
                 )
-                .field(WorkflowGrantStatusField::reference(), "active".to_owned())
-                .field(WorkflowGrantWorkflowField::reference(), identity.to_owned())
-                .field(WorkflowGrantNotBeforeField::reference(), 0_u64)
-                .field(WorkflowGrantNotAfterField::reference(), u64::MAX)
-                .field(WorkflowGrantDelegationLimitField::reference(), 0_u64),
+                .field(
+                    WorkflowGrantStatusField::at("WorkflowGrantStatusField"),
+                    "active".to_owned(),
+                )
+                .field(
+                    WorkflowGrantWorkflowField::at("WorkflowGrantWorkflowField"),
+                    identity.to_owned(),
+                )
+                .field(
+                    WorkflowGrantNotBeforeField::at("WorkflowGrantNotBeforeField"),
+                    0_u64,
+                )
+                .field(
+                    WorkflowGrantNotAfterField::at("WorkflowGrantNotAfterField"),
+                    u64::MAX,
+                )
+                .field(
+                    WorkflowGrantDelegationLimitField::at("WorkflowGrantDelegationLimitField"),
+                    0_u64,
+                ),
         )
         .expect("independent read grant seeds");
     graph

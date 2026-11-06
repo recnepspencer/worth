@@ -42,7 +42,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
             );
             let snapshot = selected.application_basis().snapshot_handle();
             let graph = world.application.runtime.primary_graph().unwrap();
-            let field = AccountStatus::reference();
+            let field = AccountStatus::at("AccountStatus");
             let layout = graph
                 .layout
                 .equality_field(field.entity(), field.aspect(), field.field())
@@ -210,7 +210,7 @@ fn prepared_indexed_comparison_keeps_a_native_cancellation() {
         let selected = world.selected_product(&phase.test_host_request());
         let snapshot = selected.application_basis().snapshot_handle();
         let graph = world.application.runtime.primary_graph().unwrap();
-        let field = graph.layout.equality_field("Account", "AccountPolicy", "AccountStatus").unwrap();
+        let field = graph.layout.equality_field("Account", AccountStatus::at("AccountStatus").aspect(), "AccountStatus").unwrap();
         let (answer, seen) = graph.integration_handle().with_runtime(&execution, |runtime| {
             let fact = observe_indexed_entity_selection(runtime, &execution, snapshot,
                 field.equality_index_id.unwrap(), field.entity_kind, field.locator.clone(),

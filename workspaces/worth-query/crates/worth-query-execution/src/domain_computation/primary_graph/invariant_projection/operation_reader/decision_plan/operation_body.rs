@@ -166,7 +166,7 @@ impl<Schema: ApplicationSchema, Operation>
                     field.field(),
                 )
             })?;
-        self.record_field_dependency(identity, field.entity(), locator.clone());
+        self.record_field_dependency(identity, field, locator.clone());
         Ok(locator)
     }
 }

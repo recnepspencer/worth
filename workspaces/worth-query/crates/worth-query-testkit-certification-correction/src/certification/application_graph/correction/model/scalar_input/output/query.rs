@@ -20,19 +20,8 @@ pub struct Row {
 worth_query_structured_value_binding!(pub ResultBinding for Row { identity: "numeric-scalar.output-row.v1" });
 worth_query_application_query!(pub Query for NumericSchema, identity "numeric-scalar.output-query.v1",
     parameters ParametersBinding, result ResultBinding, scope Number => "Number", name "scalar-output");
-fn output() -> ApplicationQueryOptionalAspectFieldRef<
-    Query,
-    Slot,
-    NumericSchema,
-    Number,
-    ScalarResult,
-    Total,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryOptionalAspectFieldRef::new("total", Total::reference())
+fn output() -> ApplicationQueryOptionalAspectFieldRef<Query, Slot, NumericSchema, Total> {
+    ApplicationQueryOptionalAspectFieldRef::new("total", Total::at("Total"))
 }
 pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Parameters, Row, Number> {
     let shape = ApplicationQueryResultShapeBuilder::<
@@ -87,5 +76,5 @@ worth_query_structured_value_binding!(pub InputBinding for Read { identity: "num
 worth_query_query_binding!(pub Binding for Read, schema NumericSchema, identity "numeric-scalar.output-binding.v1",
     input InputBinding, query Query, parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(), result ResultBinding,
     principal ActorBinding, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-    field Key::reference(), value Read::into_key, limits results 1);
+    scope Key,
+    field Key::at("Key"), value Read::into_key, limits results 1);

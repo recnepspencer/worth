@@ -27,7 +27,7 @@ pub fn gather<L: LawPolicy>(
     input: &Input,
     reader: &mut DecisionReader<'_, '_, '_, GraphSchema<L>, CheckBinding<L>>,
 ) -> Result<Checked, HandlerExecutionDenial> {
-    let entity = reader.resolve_entity(NodeKey::reference(), input.root)?;
+    let entity = reader.resolve_entity(node_key::<GraphSchema<L>>(), input.root)?;
     let root = reader
         .entity_member(&entity)
         .map_err(HandlerExecutionDenial::new)?;

@@ -1,5 +1,5 @@
 //! An interrupted commit refresh must evict a previously materialized sum.
-use super::{AggregateWorld, AspectFieldPatch, AspectValue, BTreeMap};
+use super::{AggregateWorld, AspectFieldPatch, AspectValue, BTreeMap, SourceAmount};
 use worth_execution::{
     ExecutionMap, ExecutionWorkCeiling, KeylessPartition, MapKernelFailure, MapKernelStop,
     MapOutcome, MapStop, WorkCeilingDenial,
@@ -23,7 +23,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
             let locator = world
                 .authority
                 .layout
-                .field_locator("AggregateSource", "SourceFacts", "SourceAmount")
+                .field_locator("AggregateSource", SourceAmount::at("SourceAmount").aspect(), "SourceAmount")
                 .unwrap()
                 .clone();
             world.authority.graph.with_runtime_mut(&healthy, |runtime| {

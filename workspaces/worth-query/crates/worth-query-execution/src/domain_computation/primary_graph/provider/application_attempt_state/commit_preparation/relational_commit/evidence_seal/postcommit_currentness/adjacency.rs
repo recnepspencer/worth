@@ -152,7 +152,7 @@ mod tests {
                 selected
                     .resolve_entity(
                         &phase,
-                        PrincipalIdentityField::reference(),
+                        PrincipalIdentityField::at("PrincipalIdentityField"),
                         1,
                         &live_scope(),
                         WorthQueryPrincipalResolutionMode::Ordinary,

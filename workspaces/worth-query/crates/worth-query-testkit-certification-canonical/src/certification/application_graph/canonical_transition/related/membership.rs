@@ -26,15 +26,12 @@ pub fn identity() -> ApplicationQueryResultFieldRef<
     MembershipQuery,
     IdentitySlot,
     CanonicalSchema,
-    Derived,
-    DerivedFacts,
     DerivedIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("identity", DerivedIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DerivedIdentityField::at("DerivedIdentityField"),
+    )
 }
 
 pub fn children() -> ApplicationQueryResultRelationRef<
@@ -54,15 +51,12 @@ pub fn child_identity() -> ApplicationQueryResultFieldRef<
     MembershipQuery,
     ChildIdentitySlot,
     CanonicalSchema,
-    Derived,
-    DerivedFacts,
     DerivedIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("child_identity", DerivedIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "child_identity",
+        DerivedIdentityField::at("DerivedIdentityField"),
+    )
 }
 
 pub fn definition(
@@ -111,15 +105,7 @@ impl WorthQueryApplicationProjection<CanonicalSchema, MembershipQuery> for Membe
 }
 
 pub struct MembershipBinding;
-pub type ReadScope = ApplicationQueryFieldScope<
-    CanonicalSchema,
-    Derived,
-    DerivedFacts,
-    DerivedIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReadScope = ApplicationQueryFieldScope<DerivedIdentityField>;
 impl ApplicationQueryBinding<CanonicalSchema> for MembershipBinding {
     type Input = query::ReadValue;
     type InputBinding = query::ReadInputBinding;
@@ -134,17 +120,8 @@ impl ApplicationQueryBinding<CanonicalSchema> for MembershipBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "canonical-related.paired.membership-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        CanonicalSchema,
-        Derived,
-        DerivedFacts,
-        DerivedIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DerivedIdentityField::reference()
+    fn scope_field() -> DerivedIdentityField {
+        DerivedIdentityField::at("DerivedIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CanonicalSchema,

@@ -9,7 +9,7 @@ use worth_query_declaration::worth_query_application_query;
 
 use super::application_queries::{status_parameter, AccountSummaryParameters};
 use super::{
-    Account, AccountPrimaryActivity, AccountStatus, Activity, ActivityFacts, ActivitySequence,
+    Account, AccountPrimaryActivity, AccountStatus, Activity, ActivitySequence,
     IdentityExecutionSchema,
 };
 
@@ -89,17 +89,17 @@ pub(super) fn forged_selector_definition() -> ApplicationQueryDefinition<
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .parameter(status_parameter())
-        .where_equal(AccountStatus::reference(), status_parameter())
+        .where_equal(AccountStatus::at("AccountStatus"), status_parameter())
         .build()
         .unwrap()
 }
 
 fn declared_sequence() -> SequenceSelector {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 fn forged_sequence() -> SequenceSelector {
-    ApplicationQueryResultFieldRef::new("invented_output", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("invented_output", ActivitySequence::at("ActivitySequence"))
 }
 
 fn activity() -> ApplicationQueryResultRelationRef<
@@ -122,11 +122,5 @@ type SequenceSelector = ApplicationQueryResultFieldRef<
     ForgedSelectorQuery,
     ForgedSequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 >;

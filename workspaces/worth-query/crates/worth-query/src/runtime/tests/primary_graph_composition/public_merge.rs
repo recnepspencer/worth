@@ -171,7 +171,10 @@ fn create_duplicate_principal(
     let kind = principal_kind(relational);
     let locator = AspectFieldLocator::new(
         LocatorAuthority::Planned,
-        AspectKey::new("PrincipalIdentity").expect("aspect key admits"),
+        AspectKey::new(
+            super::schema::PrincipalIdentityField::at("PrincipalIdentityField").aspect(),
+        )
+        .expect("aspect key admits"),
         CanonicalFieldPath::single(FieldKey::new("PrincipalIdentityField").expect("field admits")),
     );
     let identity = relational

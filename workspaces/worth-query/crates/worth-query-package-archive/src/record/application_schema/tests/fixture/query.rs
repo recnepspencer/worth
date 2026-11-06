@@ -1,6 +1,5 @@
 use worth_foundational::facade::*;
 use worth_query_declaration::facade::application_query::*;
-use worth_query_declaration::facade::application_schema::ApplicationFieldPresence;
 
 use super::{text, type_id};
 

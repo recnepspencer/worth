@@ -1,48 +1,54 @@
+#[path = "schema/records.rs"]
+mod storage_model;
 use std::num::NonZeroU64;
+pub use storage_model::*;
 
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
     ApplicationInboundOccurrenceBinding, ApplicationInboundOccurrenceLimits,
-    ApplicationInboundOccurrenceProtocol, StringApplicationValueBinding,
-    U64ApplicationValueBinding,
+    ApplicationInboundOccurrenceProtocol,
 };
 use worth_query_declaration::facade::authentication::{
     WorthQueryExternalPrincipalIdentityBinding, WorthQueryPrincipalMappingStatusBinding,
 };
 use worth_query_declaration::{
-    worth_query_application_schema, worth_query_aspect, worth_query_effect, worth_query_entity,
-    worth_query_field, worth_query_operation, worth_query_operation_emits,
-    worth_query_principal_binding, worth_query_relation,
+    worth_query_effect, worth_query_operation, worth_query_operation_emits,
 };
 use worth_query_installation::facade::WorthQueryExternalEffectCorrelationFamily;
 
 pub(super) const SOURCE: &str = "inbound-test-source";
 pub(super) const PROTOCOL: &str = "inbound.test.protocol";
 
-worth_query_entity!(pub Mapping for InboundTestSchema);
-worth_query_entity!(pub Principal for InboundTestSchema);
-worth_query_entity!(pub Target for InboundTestSchema);
-worth_query_aspect!(pub MappingFacts for InboundTestSchema, Mapping; identity = AspectIdentity(0x93910001), revision = AspectContractRevision(1),);
-worth_query_field!(pub MappingIdentity for InboundTestSchema, Mapping, MappingFacts:
-    worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity
-    => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub MappingStatus for InboundTestSchema, Mapping, MappingFacts:
-    worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus
-    => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_aspect!(pub PrincipalFacts for InboundTestSchema, Principal; identity = AspectIdentity(0x93910002), revision = AspectContractRevision(1),);
-worth_query_field!(pub PrincipalIdentity for InboundTestSchema, Principal, PrincipalFacts:
-    u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_aspect!(pub TargetFacts for InboundTestSchema, Target; identity = AspectIdentity(0x93910003), revision = AspectContractRevision(1),);
-worth_query_field!(pub TargetKey for InboundTestSchema, Target, TargetFacts:
-    String => StringApplicationValueBinding, read_only, equality);
-worth_query_relation!(pub MappingTarget in InboundTestSchema, Mapping => Principal; integrity = same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(pub IdentityBinding in InboundTestSchema, mapping Mapping {
-    identity: MappingIdentity,
-    status: MappingStatus,
-    target: MappingTarget => Principal,
-    principal_identity: PrincipalIdentity
-});
+pub struct IdentityBinding;
+impl IdentityBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        InboundTestSchema,
+        Self,
+        Mapping,
+        Principal,
+        <PrincipalIdentity as RecordSelection>::Value,
+        <PrincipalIdentity as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "IdentityBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    MappingIdentity::at("MappingIdentity"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    MappingStatus::at("MappingStatus"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    MappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalIdentity::at("PrincipalIdentity"),
+                ),
+            },
+        )
+    }
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Notice(pub String);
@@ -117,23 +123,43 @@ fn wide_limits() -> ApplicationInboundOccurrenceLimits {
     limits
 }
 
-worth_query_application_schema! {
-    pub schema InboundTestSchema {
-        owner: inbound_admission_test,
-        version: (1, 0),
-        members: |schema| {
+use worth_query_declaration::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy)]
+pub struct InboundTestSchema;
+impl Fragment for InboundTestSchema {
+    const NAME: &'static str = "InboundTestSchema";
+    type Bindings = NoBindings;
+    type Members = (InboundModel, Contracts);
+}
+impl ApplicationSchema for InboundTestSchema {
+    const OWNER: &'static str = "inbound_admission_test";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+}
+impl InboundTestSchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+pub struct Contracts;
+impl Registration<InboundTestSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<InboundTestSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<InboundTestSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok({
             let schema = schema
-                .entity(Mapping::reference())
-                .entity(Principal::reference())
-                .entity(Target::reference())
-                .aspect(Mapping::reference(), MappingFacts::reference())
-                .aspect(Principal::reference(), PrincipalFacts::reference())
-                .aspect(Target::reference(), TargetFacts::reference())
-                .field(Mapping::reference(), MappingIdentity::reference())
-                .field(Mapping::reference(), MappingStatus::reference())
-                .field(Principal::reference(), PrincipalIdentity::reference())
-                .field(Target::reference(), TargetKey::reference())
-                .relation(MappingTarget::reference(), Mapping::reference(), Principal::reference())
                 .principal_binding(IdentityBinding::reference())
                 .effect(NoticeEffect::reference())
                 .operation(
@@ -141,7 +167,8 @@ worth_query_application_schema! {
                         .definition()
                         .external_effect_with_inbound(
                             NoticeEffect::reference(),
-                            WorthQueryExternalEffectCorrelationFamily::new("inbound-test-family").unwrap(),
+                            WorthQueryExternalEffectCorrelationFamily::new("inbound-test-family")
+                                .unwrap(),
                             ApplicationInboundOccurrenceBinding::new(
                                 ApplicationInboundOccurrenceProtocol::new(
                                     BoundaryProtocolIdentity::new(PROTOCOL),
@@ -149,12 +176,12 @@ worth_query_application_schema! {
                                 ),
                                 SOURCE,
                                 limits(),
-                            ).unwrap(),
+                            )
+                            .unwrap(),
                         )
                         .no_aftermath()
                         .finish(),
                 )
-
                 .operation_projection_work_budget(NotifyOperation::reference(), 8)
                 .operation_emit(NotifyOperation::reference(), NoticeEffect::reference())
                 .operation(
@@ -162,7 +189,8 @@ worth_query_application_schema! {
                         .definition()
                         .external_effect_with_inbound(
                             NoticeEffect::reference(),
-                            WorthQueryExternalEffectCorrelationFamily::new("inbound-test-family").unwrap(),
+                            WorthQueryExternalEffectCorrelationFamily::new("inbound-test-family")
+                                .unwrap(),
                             ApplicationInboundOccurrenceBinding::new(
                                 ApplicationInboundOccurrenceProtocol::new(
                                     BoundaryProtocolIdentity::new(PROTOCOL),
@@ -170,20 +198,22 @@ worth_query_application_schema! {
                                 ),
                                 SOURCE,
                                 limits(),
-                            ).unwrap(),
+                            )
+                            .unwrap(),
                         )
                         .no_aftermath()
                         .finish(),
                 )
-
                 .operation_projection_work_budget(OtherNotifyOperation::reference(), 8)
                 .operation_emit(OtherNotifyOperation::reference(), NoticeEffect::reference());
-            schema.operation(
+            schema
+                .operation(
                     WideNotifyOperation::reference()
                         .definition()
                         .external_effect_with_inbound(
                             NoticeEffect::reference(),
-                            WorthQueryExternalEffectCorrelationFamily::new("inbound-test-family").unwrap(),
+                            WorthQueryExternalEffectCorrelationFamily::new("inbound-test-family")
+                                .unwrap(),
                             ApplicationInboundOccurrenceBinding::new(
                                 ApplicationInboundOccurrenceProtocol::new(
                                     BoundaryProtocolIdentity::new(PROTOCOL),
@@ -191,14 +221,14 @@ worth_query_application_schema! {
                                 ),
                                 SOURCE,
                                 wide_limits(),
-                            ).unwrap(),
+                            )
+                            .unwrap(),
                         )
                         .no_aftermath()
                         .finish(),
                 )
-
                 .operation_projection_work_budget(WideNotifyOperation::reference(), 8)
                 .operation_emit(WideNotifyOperation::reference(), NoticeEffect::reference())
-        }
+        })
     }
 }

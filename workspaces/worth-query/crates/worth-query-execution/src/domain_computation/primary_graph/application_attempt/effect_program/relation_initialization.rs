@@ -1,13 +1,10 @@
 use super::*;
 use std::sync::Arc;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
-use worth_query_declaration::facade::application_schema::{
-    ApplicationAspectMarkerIdentity, ApplicationEncodedScalarValue, ApplicationFieldMarkerIdentity,
-};
+use worth_query_declaration::facade::application_schema::ApplicationEncodedScalarValue;
 use worth_query_installation::facade::{
-    AdmittedFieldBindingStop, ApplicationFieldUnit, ApplicationOperationProgramTarget as Target,
-    ApplicationRelationFieldRef, ApplicationRelationRef, OperationLinks, OperationWrites,
-    WorthQueryInstalledApplicationValueBindingCatalog,
+    AdmittedFieldBindingStop, ApplicationOperationProgramTarget as Target, ApplicationRelationRef,
+    OperationLinks, WorthQueryInstalledApplicationValueBindingCatalog,
 };
 
 impl<Schema, Operation, Input, Scope>
@@ -55,30 +52,34 @@ impl<Schema, Operation, Input, Scope>
         Relation,
         From,
         To,
-        Aspect,
         Field,
-        Write,
-        Unit,
     >(
         &mut self,
         original: ExecutionRequest<'_, '_>,
         bindings: &WorthQueryInstalledApplicationValueBindingCatalog,
         target: &WorthQueryApplicationCreatedRelation<Schema, Relation, From, To>,
-        field: ApplicationRelationFieldRef<Schema, Relation, From, To, Aspect, Field, Write, Unit>,
+        field: Field,
         value: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
         Relation: OperationLinks<Operation>,
-        Aspect: ApplicationAspectMarkerIdentity<Schema, Relation>,
-        Field:
-            ApplicationFieldMarkerIdentity<Schema, Relation, Aspect> + OperationWrites<Operation>,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RelationSelection<
+            Entity = Relation,
+            From = From,
+            To = To,
+        >,
     {
-        let failed = |kind| denial(kind, field.field());
+        let column = field.installed(bindings.fragments()).map_err(|_| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
+                field.field(),
+            )
+        })?;
+        let failed = |kind| denial(kind, column.path());
         if !Arc::ptr_eq(&self.program, &target.program)
-            || target.relation.name() != field.relation().name()
-            || target.relation.from() != field.relation().from()
-            || target.relation.to() != field.relation().to()
+            || target.relation.name() != field.entity()
+            || target.relation.from() != field.from()
+            || target.relation.to() != field.to()
         {
             return Err(failed(
                 WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
@@ -86,11 +87,11 @@ impl<Schema, Operation, Input, Scope>
         }
         let locator = self
             .layout
-            .relation_field_locator(field.relation().name(), field.aspect(), field.field())
+            .relation_field_locator(field.entity(), field.aspect(), field.field())
             .ok_or_else(|| failed(WorthQueryApplicationAttemptDenialKind::UndeclaredEffect))?;
         let kind = self
             .layout
-            .relation(field.relation().name())
+            .relation(field.entity())
             .ok_or_else(|| failed(WorthQueryApplicationAttemptDenialKind::UndeclaredEffect))?
             .kind;
         let Some(WorthQueryApplicationRealizedEffect::CreateRelation {
@@ -124,7 +125,7 @@ impl<Schema, Operation, Input, Scope>
                     .map_err(|cause| scope_denied(WorkCeilingDenial::Stopped(cause)))?;
                 bindings
                     .relation_field_admitted(
-                        field.relation().name(),
+                        field.entity(),
                         field.aspect(),
                         field.field(),
                         &mut |_, _| context.poll(),
@@ -142,9 +143,9 @@ impl<Schema, Operation, Input, Scope>
                         failed(WorthQueryApplicationAttemptDenialKind::InvalidEffectValue)
                     })?;
                 self.admit_program_target(&Target::InitializeRelationField {
-                    relation: field.relation().name().to_owned(),
-                    from: field.relation().from().to_owned(),
-                    to: field.relation().to().to_owned(),
+                    relation: field.entity().to_owned(),
+                    from: field.from().to_owned(),
+                    to: field.to().to_owned(),
                     aspect: field.aspect().to_owned(),
                     field: field.field().to_owned(),
                 })?;
@@ -165,7 +166,7 @@ impl<Schema, Operation, Input, Scope>
         // Finish the original request handoff before installing the field value.
         let locator = self
             .layout
-            .relation_field_locator(field.relation().name(), field.aspect(), field.field())
+            .relation_field_locator(field.entity(), field.aspect(), field.field())
             .expect("validated installed relation field")
             .clone();
         let Some(WorthQueryApplicationRealizedEffect::CreateRelation { fields, .. }) =

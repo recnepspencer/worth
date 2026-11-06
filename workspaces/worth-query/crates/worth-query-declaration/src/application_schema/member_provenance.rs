@@ -152,6 +152,8 @@ impl ApplicationSchemaMemberProvenance {
     }
 
     pub(super) fn register_query_binding(&mut self, descriptor: ApplicationQueryBindingDescriptor) {
+        self.fragments
+            .expect_field(descriptor.scope().field().clone());
         self.query_bindings.push(descriptor);
     }
 
@@ -234,6 +236,8 @@ impl ApplicationSchemaMemberProvenance {
         &mut self,
         descriptor: ApplicationMutationBindingDescriptor,
     ) {
+        self.fragments
+            .expect_field(descriptor.scope().field().clone());
         self.mutation_bindings.push(descriptor);
     }
 

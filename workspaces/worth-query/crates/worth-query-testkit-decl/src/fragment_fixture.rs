@@ -1,5 +1,6 @@
 //! Generic record declarations shared by the declaration courts.
 
+pub use super::fragment_optional_fixture::{Note, Noted, OptionalText, RequiredNote};
 use std::any::{Any, TypeId};
 pub use worth_query_decl::facade::application_schema::{fragment::*, *};
 
@@ -10,8 +11,11 @@ impl Fragment for Fixture {
     type Members = (
         Item,
         SetMetric,
-        super::fragment_context_fixture::Contextual,
-        super::fragment_auth_fixture::Authentication,
+        super::fragment_relation_fixture::Linked,
+        (
+            super::fragment_context_fixture::Contextual,
+            super::fragment_auth_fixture::Authentication,
+        ),
     );
 }
 
@@ -20,8 +24,8 @@ impl Entity for Item {
     const NAME: &'static str = "item";
     type Aspects = (
         Metrics,
-        Option<Label>,
-        Exclusive<Form>,
+        RequiredNote,
+        (Option<Label>, Option<Note>, Exclusive<Form>),
         super::fragment_auth_fixture::ItemIdentity,
     );
     type Relations = (Next,);
@@ -47,7 +51,7 @@ impl Relation for Next {
 pub struct Form;
 impl OneOf for Form {
     type Row = FormValue;
-    type Cases = (Measured, Named);
+    type Cases = (Measured, Named, Noted);
 }
 pub struct Measured;
 impl Aspect for Measured {
@@ -63,6 +67,7 @@ impl Aspect for Named {
 pub enum FormValue {
     Measured(Measurements),
     Named(Caption),
+    Noted(OptionalText),
 }
 impl From<Measurements> for FormValue {
     fn from(value: Measurements) -> Self {
@@ -122,6 +127,9 @@ impl Scalar<u64> for Bindings {
     type Binding = U64ApplicationValueBinding;
     const EQUALITY_QUERYABLE: bool = true;
 }
+impl Scalar<bool> for Bindings {
+    type Binding = BoolApplicationValueBinding;
+}
 impl Scalar<String> for Bindings {
     type Binding = StringApplicationValueBinding;
 }
@@ -167,8 +175,8 @@ impl<S> Registration<S> for SetMetric {
         builder: ApplicationSchemaDeclarationBuilder<S>,
     ) -> Result<ApplicationSchemaDeclarationBuilder<S>, ApplicationSchemaDeclarationDenial> {
         let operation = ApplicationOperationRef::<S, Self, ()>::from_declaration();
-        let selected: RecordField<_, _, u64> =
-            record_field(Fixture, Item, Metrics, "components[1]")?;
+        let selected: FieldSelection<_, _, _, u64> =
+            select_field(Fixture, Item, Metrics, "components[1]");
         Ok(builder
             .operation(
                 operation
@@ -177,8 +185,8 @@ impl<S> Registration<S> for SetMetric {
                     .no_aftermath()
                     .finish(),
             )
-            .operation_read_record_field(operation, selected.clone())
-            .operation_write_record_field(operation, selected))
+            .operation_read_field(operation, selected)
+            .operation_write(operation, selected))
     }
 }
 
@@ -264,6 +272,17 @@ pub fn samples(binding: &RecordBinding) -> Vec<Box<dyn BindingSample>> {
         return super::fragment_context_fixture::samples(binding.value_type());
     }
     let value = binding.value_type();
+    if value == TypeId::of::<bool>() {
+        return vec![scalar_sample(false), scalar_sample(true)];
+    }
+    if value == TypeId::of::<OptionalText>() {
+        return vec![
+            row_sample(OptionalText { text: None }),
+            row_sample(OptionalText {
+                text: Some("note".to_owned()),
+            }),
+        ];
+    }
     if let Some(samples) = super::fragment_auth_fixture::samples(value) {
         return samples;
     }

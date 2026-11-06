@@ -201,13 +201,13 @@ pub(super) fn revoke_grant(
         .selected_product(&(phase_custody).test_host_request())
         .resolve_entity(
             phase_custody,
-            CapabilityIdentity::reference(),
-            "capability-1".to_owned(),
+            CapabilityIdentity::at("CapabilityIdentity"),
+            "capability-1".to_owned().into(),
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let field = CapabilityStatusField::reference();
+    let field = CapabilityStatusField::at("CapabilityStatusField");
     let locator = installed_field(world, field.entity(), field.aspect(), field.field());
     update_field(
         &phase_custody.borrowed_request_for_test(),
@@ -269,7 +269,7 @@ fn change_account_status(
     key: &str,
     status: &str,
 ) {
-    let field = AccountStatus::reference();
+    let field = AccountStatus::at("AccountStatus");
     change_account_field(
         phase_custody,
         world,
@@ -286,7 +286,7 @@ fn change_account_label(
     key: &str,
     label: &str,
 ) {
-    let field = AccountLabel::reference();
+    let field = AccountLabel::at("AccountLabel");
     change_account_field(
         phase_custody,
         world,
@@ -310,7 +310,7 @@ fn change_account_field(
         .selected_product(&(phase_custody).test_host_request())
         .resolve_entity(
             phase_custody,
-            super::super::fixture::AccountIdentity::reference(),
+            super::super::fixture::AccountIdentity::at("AccountIdentity"),
             key.to_owned(),
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,

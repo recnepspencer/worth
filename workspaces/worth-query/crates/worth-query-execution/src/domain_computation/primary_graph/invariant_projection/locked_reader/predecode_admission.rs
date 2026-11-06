@@ -5,10 +5,7 @@ use crate::domain_computation::primary_graph::{
     HandlerInterruption, WorthQueryInvariantEntityIdentity,
 };
 use worth_foundational::facade::AspectValue as ApplicationValue;
-use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
-    ApplicationSchema, DeclaredApplicationFieldValue, WritePosture,
-};
+use worth_query_installation::facade::{ApplicationReadableScalarValueBinding, ApplicationSchema};
 
 #[path = "predecode_admission/decoding.rs"]
 mod decoding;
@@ -23,14 +20,11 @@ where
         Aspect,
         Field,
         Value,
-        Write,
-        Equality,
-        Unit,
         Denied,
     >(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         admit: impl for<'raw, 'checkpoint> FnOnce(
             &'raw ApplicationValue,
             &'checkpoint dyn Fn() -> Result<(), HandlerInterruption>,
@@ -38,11 +32,17 @@ where
         checkpoint: &dyn Fn() -> Result<(), HandlerInterruption>,
     ) -> Result<Result<Option<Value>, Denied>, HandlerExecutionDenial>
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
+        if field.installed(self.value_bindings.fragments()).is_err() {
+            self.value_decode.refuse_content(crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial::BindingContractMismatch);
+            return Ok(Ok(None));
+        }
         if self.native_read_stop.is_some()
             || self.value_decode.stopped()
             || !self.identity_is_local(identity, field.entity())

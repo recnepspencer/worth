@@ -1,11 +1,11 @@
 //! Ordinary installed bindings retain each actual query and scope meaning.
-use super::super::{AccountPolicy, ExternalMapping, IdentityBinding, Principal};
+use super::super::{ExternalMapping, IdentityBinding, Principal};
 use super::*;
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationQueryBinding, ApplicationQueryBindingLimits, ApplicationQueryFieldScope,
     },
-    application_schema::{NoApplicationUnit, ReadWrite, U64ApplicationValueBinding},
+    application_schema::U64ApplicationValueBinding,
 };
 
 macro_rules! binding {
@@ -17,8 +17,7 @@ macro_rules! binding {
             type Query = $query;
             type ParameterBinding = DiagnosticParametersBinding;
             type ResultBinding = DiagnosticResultBinding;
-            type ScopeBinding = ApplicationQueryFieldScope<IdentityExecutionSchema, Account,
-                AccountPolicy, AccountStatus, String, ReadWrite, NoApplicationUnit>;
+            type ScopeBinding = ApplicationQueryFieldScope<AccountStatus>;
             type PrincipalBinding = IdentityBinding;
             type Mapping = ExternalMapping;
             type Principal = Principal;
@@ -26,10 +25,8 @@ macro_rules! binding {
             type PrincipalIdentityBinding = U64ApplicationValueBinding;
             const IDENTITY: &'static str = $identity;
             const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(4);
-            fn scope_field() -> worth_query_declaration::facade::application_schema::ApplicationFieldRef<
-                IdentityExecutionSchema, Account, AccountPolicy, AccountStatus, String, ReadWrite,
-                worth_query_declaration::facade::application_schema::EqualityPredicate, NoApplicationUnit> {
-                AccountStatus::reference()
+            fn scope_field() -> AccountStatus {
+                AccountStatus::at("AccountStatus")
             }
             fn principal_binding() -> worth_query_declaration::facade::application_schema::ApplicationPrincipalBindingRef<
                 IdentityExecutionSchema, IdentityBinding, ExternalMapping, Principal, u64, U64ApplicationValueBinding> {

@@ -3,7 +3,7 @@
 use super::{CandidateEntity, FragmentDenial, ObservedTarget, View, Writing};
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_schema::fragment::{
-    Aspect, BindingSet, Entity, Fragment, In, Record, Relation, Shape,
+    Aspect, BindingSet, Entity, Fragment, In, Record, Relation,
 };
 
 impl<F: Fragment> View<'_, F, Writing<'_>> {
@@ -61,13 +61,13 @@ impl<F: Fragment> View<'_, F, Writing<'_>> {
                     member: A::NAME,
                 })?;
         if target.erased.created_effect.is_none()
-            && definition.fields().iter().any(|field| !field.writable())
+            && let Some(field) = definition.fields().iter().find(|field| !field.writable())
         {
             return Err(FragmentDenial::ReadOnly {
-                path: definition.path().to_owned(),
+                path: field.path().to_owned(),
             });
         }
-        let encoded = <F::Bindings as Record<A::Row>>::record().encode(value, definition.path())?;
+        let encoded = definition.encode::<F::Bindings, A::Row>(value)?;
         if let Some(group) = self.definition.case_group::<E, A>() {
             let cases = group
                 .cases()

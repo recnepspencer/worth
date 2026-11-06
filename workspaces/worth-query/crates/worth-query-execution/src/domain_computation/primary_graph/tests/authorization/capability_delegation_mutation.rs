@@ -13,22 +13,12 @@ use super::super::fixture::capability::CapabilityParent;
 use super::super::fixture::{live_scope, AccountIdentity, AuthorizationWorld, CapabilityIdentity};
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
-pub(super) fn field<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>(
+pub(super) fn field<
+    F: worth_query_declaration::facade::application_schema::fragment::RecordSelection,
+>(
     world: &AuthorizationWorld,
-    field: worth_query_declaration::facade::application_schema::ApplicationFieldRef<
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >,
-) -> AspectFieldLocator
-where
-    Unit: worth_query_declaration::facade::application_schema::ApplicationFieldUnit,
-{
+    field: F,
+) -> AspectFieldLocator {
     installed_field(world, field.entity(), field.aspect(), field.field())
 }
 
@@ -64,8 +54,8 @@ pub(super) fn grant(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application(&world.application),
-            CapabilityIdentity::reference(),
-            key.to_owned(),
+            CapabilityIdentity::at("CapabilityIdentity"),
+            key.to_owned().into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -88,7 +78,7 @@ pub(super) fn account(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application(&world.application),
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
             key.to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,

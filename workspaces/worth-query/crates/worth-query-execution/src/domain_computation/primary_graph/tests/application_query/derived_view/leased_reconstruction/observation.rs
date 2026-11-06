@@ -83,7 +83,7 @@ pub(super) fn observe_case(
             selected
                 .resolve_entity(
                     &phase_custody.phase_for_application(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     status.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

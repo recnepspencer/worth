@@ -1,92 +1,79 @@
+#[path = "application_schema/records.rs"]
+pub(in crate::declaration) mod storage_model;
+pub use storage_model::{
+    CollectionItemAspect, CollectionItemKeyField, CollectionItemStatusField, IdentityAspect,
+    IdentityIdField, MeasurementAspect, MeasurementValueField, QueryRevisionAspect,
+    QueryRevisionValueField, QueryTextAspect, QueryTextStatusField, SizeAspect, SizeValueField,
+    UiRecords, WorthUiRecord,
+};
 use worth_foundational::facade::CanonicalF32;
-use worth_query_decl::facade::application_schema::{
-    StringApplicationValueBinding, U64ApplicationValueBinding,
-};
-use worth_query_decl::facade::{
-    worth_query_application, worth_query_application_contribution, worth_query_aspect,
-    worth_query_entity, worth_query_field, worth_query_portable_type, worth_query_value_binding,
-};
 
-worth_query_application! {
-    pub WorthUiApplicationSchema {
-        owner: "worth_ui",
-        version: (1, 1),
-        contributions: [WorthUiRecordContribution],
+use worth_query_decl::facade::{worth_query_portable_type, worth_query_value_binding};
+
+use worth_query_decl::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy)]
+pub struct WorthUiApplicationSchema;
+impl Fragment for WorthUiApplicationSchema {
+    const NAME: &'static str = "WorthUiApplicationSchema";
+    type Bindings = NoBindings;
+    type Members = (WorthUiRecordContribution,);
+}
+impl ApplicationSchema for WorthUiApplicationSchema {
+    const OWNER: &'static str = "worth_ui";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 1;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        fragment::visit_correction(Self, source, visitor)
     }
 }
 
-worth_query_application_contribution! {
-    pub contribution WorthUiRecordContribution in WorthUiApplicationSchema {
-        identity: "worth.ui.record.v1",
-        members: |schema| {
+impl ApplicationSchemaComposition for WorthUiApplicationSchema {
+    type Contributions = <Self as Fragment>::Members;
+}
+
+pub struct WorthUiRecordContribution;
+impl ApplicationSchemaContribution<WorthUiApplicationSchema> for WorthUiRecordContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("worth.ui.record.v1");
+    type Members = (UiRecords, Contracts);
+}
+impl WorthUiRecordContribution {
+    pub const fn reference() -> ApplicationSchemaContributionRef<WorthUiApplicationSchema, Self> {
+        ApplicationSchemaContributionRef::from_contribution()
+    }
+}
+pub struct Contracts;
+impl Registration<WorthUiApplicationSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<WorthUiApplicationSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<WorthUiApplicationSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok({
             let schema = schema
-                .entity(WorthUiRecord::reference())
-                .entity(super::WorthUiExternalPrincipalMapping::reference())
-                .entity(super::WorthUiPrincipal::reference())
-                .aspect(super::WorthUiExternalPrincipalMapping::reference(), super::WorthUiExternalIdentity::reference())
-                .aspect(super::WorthUiPrincipal::reference(), super::WorthUiPrincipalIdentity::reference())
-                .field(super::WorthUiExternalPrincipalMapping::reference(), super::WorthUiExternalIdentityKey::reference())
-                .field(super::WorthUiExternalPrincipalMapping::reference(), super::WorthUiMappingStatus::reference())
-                .field(super::WorthUiPrincipal::reference(), super::WorthUiPrincipalId::reference())
-                .relation(super::WorthUiExternalPrincipal::reference(), super::WorthUiExternalPrincipalMapping::reference(), super::WorthUiPrincipal::reference())
                 .principal_binding(super::WorthUiPrincipalBinding::reference())
-                .aspect(WorthUiRecord::reference(), IdentityAspect::reference())
-                .aspect(WorthUiRecord::reference(), QueryTextAspect::reference())
-                .aspect(WorthUiRecord::reference(), QueryRevisionAspect::reference())
-                .aspect(WorthUiRecord::reference(), CollectionItemAspect::reference())
-                .aspect(WorthUiRecord::reference(), MeasurementAspect::reference())
-                .aspect(WorthUiRecord::reference(), SizeAspect::reference())
-                .field(WorthUiRecord::reference(), IdentityIdField::reference())
-                .field(WorthUiRecord::reference(), QueryTextStatusField::reference())
-                .field(WorthUiRecord::reference(), QueryRevisionValueField::reference())
-                .field(WorthUiRecord::reference(), CollectionItemStatusField::reference())
-                .field(WorthUiRecord::reference(), CollectionItemKeyField::reference())
-                .field(WorthUiRecord::reference(), MeasurementValueField::reference())
-                .field(WorthUiRecord::reference(), SizeValueField::reference())
                 .invariant(super::status_integrity_invariant())
                 .effect(super::WorthUiStatusChangedEffect::reference())
                 .application_query(super::status_query_definition())
                 .application_query_binding::<super::WorthUiStatusQueryBinding>();
             super::declare_status_action(super::declare_status_mutation(schema))
-        }
+        })
     }
 }
-
-worth_query_entity!(pub WorthUiRecord for WorthUiApplicationSchema);
-worth_query_aspect!(pub IdentityAspect for WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x91611056), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub QueryTextAspect for WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x91611057), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub QueryRevisionAspect for WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x91611058), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub CollectionItemAspect for WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x9161105b), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub MeasurementAspect for WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x91611059), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub SizeAspect for WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x9161105a), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub IdentityIdField for WorthUiApplicationSchema, WorthUiRecord, IdentityAspect:
-    String => StringApplicationValueBinding, read_only, equality
-);
-worth_query_field!(
-    pub QueryTextStatusField for WorthUiApplicationSchema, WorthUiRecord, QueryTextAspect:
-    String => StringApplicationValueBinding, read_write, equality
-);
-worth_query_field!(
-    pub QueryRevisionValueField for WorthUiApplicationSchema, WorthUiRecord, QueryRevisionAspect:
-    u64 => U64ApplicationValueBinding, read_write, equality
-);
-worth_query_field!(
-    pub CollectionItemStatusField for WorthUiApplicationSchema, WorthUiRecord, CollectionItemAspect:
-    String => StringApplicationValueBinding, read_only, equality
-);
-worth_query_field!(
-    pub CollectionItemKeyField for WorthUiApplicationSchema, WorthUiRecord, CollectionItemAspect:
-    u64 => U64ApplicationValueBinding, read_only, equality
-);
-worth_query_field!(
-    pub MeasurementValueField for WorthUiApplicationSchema, WorthUiRecord, MeasurementAspect:
-    UiMeasurementValue => UiMeasurementValueBinding, read_only, equality
-);
-worth_query_field!(
-    pub SizeValueField for WorthUiApplicationSchema, WorthUiRecord, SizeAspect:
-    UiSizeValue => UiSizeValueBinding, read_only, equality
-);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct UiMeasurementValue(CanonicalF32);

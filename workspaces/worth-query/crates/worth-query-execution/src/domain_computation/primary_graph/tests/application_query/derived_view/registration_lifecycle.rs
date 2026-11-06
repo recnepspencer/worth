@@ -66,7 +66,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
             let open = selected
                 .resolve_entity(
                     &host_custody.phase_for_application(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -75,7 +75,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
             let unrelated = selected
                 .resolve_entity(
                     &host_custody.phase_for_application(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "unrelated".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -134,7 +134,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
                 .unwrap()
                 .unwrap();
             let graph = world.application.runtime.primary_graph().unwrap();
-            let field = AccountLabel::reference();
+            let field = AccountLabel::at("AccountLabel");
             let locator = graph
                 .layout
                 .field_locator(field.entity(), field.aspect(), field.field())

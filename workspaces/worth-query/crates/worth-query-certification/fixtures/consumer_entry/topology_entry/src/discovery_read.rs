@@ -41,15 +41,7 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryMarkerIdentity<Schema>
     const SCOPE_TYPE_NAME: &'static str = "Body";
 }
 
-type DiscoveryScope<Schema> = ApplicationQueryFieldScope<
-    Schema,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+type DiscoveryScope = ApplicationQueryFieldScope<BodyKey>;
 
 pub struct PlanarDiscoveryBinding<Schema>(PhantomData<fn() -> Schema>);
 impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema>
@@ -60,7 +52,7 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema>
     type Query = PlanarDiscoveryQuery;
     type ParameterBinding = PlanarDiscoveryParametersBinding;
     type ResultBinding = PlanarDiscoveryResultBinding;
-    type ScopeBinding = DiscoveryScope<Schema>;
+    type ScopeBinding = DiscoveryScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -69,17 +61,8 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.planar-discovery-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -99,8 +82,8 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryIntent<Schema> for PlanarDis
     fn parameters(&self) -> ApplicationQueryParameterSet<PlanarDiscoveryQuery> {
         ApplicationQueryParameterSet::new()
     }
-    fn into_scope(self) -> DiscoveryScope<Schema> {
-        DiscoveryScope::new(BodyKey::reference(), self.body_key)
+    fn into_scope(self) -> DiscoveryScope {
+        DiscoveryScope::new(BodyKey::at("BodyKey"), self.body_key)
     }
 }
 
@@ -123,19 +106,8 @@ fn successor<
 fn body_key<
     Schema: TopologySchemaBinding,
     Slot: worth_query_decl::facade::portable_identity::WorthQueryPortableType,
->() -> ApplicationQueryResultFieldRef<
-    PlanarDiscoveryQuery,
-    Slot,
-    Schema,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("body_key", BodyKey::reference())
+>() -> ApplicationQueryResultFieldRef<PlanarDiscoveryQuery, Slot, Schema, BodyKey> {
+    ApplicationQueryResultFieldRef::new("body_key", BodyKey::at("BodyKey"))
 }
 
 pub fn planar_discovery_definition<Schema: TopologySchemaBinding>() -> ApplicationQueryDefinition<

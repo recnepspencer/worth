@@ -21,29 +21,23 @@ pub fn retention_field() -> ApplicationQueryResultFieldRef<
     RetentionQuery,
     RetentionSlot,
     CapabilitySchema,
-    Document,
-    DocumentFacts,
     DocumentRetentionField,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("retention", DocumentRetentionField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "retention",
+        DocumentRetentionField::at("DocumentRetentionField"),
+    )
 }
 pub fn identity_field() -> ApplicationQueryResultFieldRef<
     RetentionQuery,
     IdentitySlot,
     CapabilitySchema,
-    Document,
-    DocumentFacts,
     DocumentIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("identity", DocumentIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DocumentIdentityField::at("DocumentIdentityField"),
+    )
 }
 pub fn definition() -> ApplicationQueryDefinition<
     CapabilitySchema,
@@ -86,15 +80,7 @@ impl WorthQueryApplicationProjection<CapabilitySchema, RetentionQuery> for Docum
 }
 pub use worth_query_testkit_document_retention::facade::document_retention_model::retention_entry::DocumentRetentionRead as ReadRetention;
 pub struct ReadBinding;
-pub type ReadScope = ApplicationQueryFieldScope<
-    CapabilitySchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReadScope = ApplicationQueryFieldScope<DocumentIdentityField>;
 impl ApplicationQueryBinding<CapabilitySchema> for ReadBinding {
     type Input = worth_query_testkit_document_retention::facade::document_retention_model::retention_entry::DocumentRetentionRead;
     type InputBinding =
@@ -110,17 +96,8 @@ impl ApplicationQueryBinding<CapabilitySchema> for ReadBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "source-only-retention.read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        CapabilitySchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CapabilitySchema,
@@ -139,7 +116,10 @@ impl ApplicationQueryIntent<CapabilitySchema> for ReadRetention {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> ReadScope {
-        ReadScope::new(DocumentIdentityField::reference(), self.identity)
+        ReadScope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity,
+        )
     }
 }
 /// An independent installation-minted native reader observes the actual grant field.
@@ -154,12 +134,12 @@ pub fn grant_status(host: &super::host::Host) -> u64 {
                     |reader| {
                         let grant = reader
                             .resolve_entity(
-                                super::grants::GrantIdentity::reference(),
+                                super::grants::GrantIdentity::at("GrantIdentity"),
                                 "source-child".to_owned(),
                             )
                             .unwrap();
                         reader
-                            .field(&grant, super::grants::GrantStatus::reference())
+                            .field(&grant, super::grants::GrantStatus::at("GrantStatus"))
                             .unwrap()
                     },
                     worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

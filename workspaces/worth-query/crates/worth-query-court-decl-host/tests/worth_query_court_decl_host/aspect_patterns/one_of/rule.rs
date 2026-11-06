@@ -3,7 +3,6 @@ use super::*;
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Refusal {
     pub subject: String,
-    pub class: Option<u64>,
     pub present: u64,
 }
 worth_query_value_binding!(pub RefusalBinding for Refusal { identity: "native-record-patterns.refusal.v1", scalar: String, canonical: ValueDecodeBounds::new(256, 64, 8, 8), });
@@ -31,7 +30,6 @@ pub fn definition() -> ApplicationInvariantDefinition<Schema, OneOf> {
 type Field = WorthQueryApplicationInvariantFieldBinding<Schema, Record, u64>;
 pub struct Rule {
     key: WorthQueryApplicationInvariantFieldBinding<Schema, Record, String>,
-    class: Field,
     first: Field,
     second: Field,
     required: Field,
@@ -41,19 +39,18 @@ pub fn resolve(
     resolver: &WorthQueryApplicationInvariantSchemaResolver<'_, Schema>,
 ) -> Result<Rule, String> {
     Ok(Rule {
-        key: resolver.typed_field(Key::reference()).ok_or("key")?,
-        class: resolver.typed_field(Class::reference()).ok_or("class")?,
+        key: resolver.typed_field(Key::at("Key")).ok_or("key")?,
         first: resolver
-            .typed_field(FirstValue::reference())
+            .typed_field(FirstValue::at("FirstValue"))
             .ok_or("first")?,
         second: resolver
-            .typed_field(SecondValue::reference())
+            .typed_field(SecondValue::at("SecondValue"))
             .ok_or("second")?,
         required: resolver
-            .typed_field(SecondRequired::reference())
+            .typed_field(SecondRequired::at("SecondRequired"))
             .ok_or("required")?,
         third: resolver
-            .typed_field(ThirdValue::reference())
+            .typed_field(ThirdValue::at("ThirdValue"))
             .ok_or("third")?,
     })
 }
@@ -106,14 +103,8 @@ impl WorthQueryApplicationInvariantRule<Schema> for Rule {
     }
 }
 impl Rule {
-    fn fields(&self) -> [&Field; 5] {
-        [
-            &self.class,
-            &self.first,
-            &self.second,
-            &self.required,
-            &self.third,
-        ]
+    fn fields(&self) -> [&Field; 4] {
+        [&self.first, &self.second, &self.required, &self.third]
     }
     fn prepare(
         &self,
@@ -191,7 +182,7 @@ impl Rule {
                 return Err(stop());
             }
             let proposed = context.proposed();
-            let mut values = [None; 5];
+            let mut values = [None; 4];
             for (value, field) in values.iter_mut().zip(self.fields()) {
                 if !budget.checkpoint(1) {
                     return Err(stop());
@@ -202,9 +193,9 @@ impl Rule {
             }
             let valid = matches!(
                 values,
-                [Some(1), Some(_), None, None, None]
-                    | [Some(2), None, Some(_), Some(_), None]
-                    | [Some(3), None, None, None, Some(_)]
+                [Some(_), None, None, None]
+                    | [None, Some(_), Some(_), None]
+                    | [None, None, None, Some(_)]
             );
             if !valid {
                 if !budget.checkpoint(1) {
@@ -216,13 +207,12 @@ impl Rule {
                     .ok_or_else(|| {
                         WorthQueryApplicationInvariantExecutionError::new("missing subject key")
                     })?;
-                let present = [values[1], values[2], values[4]]
+                let present = [values[0], values[1], values[3]]
                     .into_iter()
                     .filter(Option::is_some)
                     .count() as u64;
                 return Ok(WorthQueryApplicationInvariantVerdict::Violation(Refusal {
                     subject,
-                    class: values[0],
                     present,
                 }));
             }

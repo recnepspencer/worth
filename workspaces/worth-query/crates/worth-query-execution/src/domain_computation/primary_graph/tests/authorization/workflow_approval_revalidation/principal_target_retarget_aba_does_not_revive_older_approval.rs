@@ -45,7 +45,7 @@ fn principal_target_retarget_aba_does_not_revive_older_approval() {
             world
         .selected_product(&(phase).test_host_request(), )
         .resolve_entity(&phase,
-            super::super::super::fixture::PrincipalIdentityField::reference(),
+            super::super::super::fixture::PrincipalIdentityField::at("PrincipalIdentityField"),
             2_u64,
             &request,
             crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,

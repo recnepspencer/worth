@@ -32,7 +32,7 @@ worth_query_structured_value_binding!(pub PlanarIslandCouplingDenialBinding for 
     identity: "worth.query.certification.planar-island-coupling-denial.v1"
 });
 worth_query_operation!(pub EditPlanarIslandCoupling for S: TopologySchemaBinding, input PlanarIslandCouplingInputBinding);
-worth_query_operation_reads!(EditPlanarIslandCoupling => [Body, BodyKey, PlanarCoupling]);
+worth_query_operation_reads!(EditPlanarIslandCoupling => [Body, PlanarCoupling]);
 worth_query_operation_links!(EditPlanarIslandCoupling => [PlanarCoupling]);
 worth_query_operation_unlinks!(EditPlanarIslandCoupling => [PlanarCoupling]);
 worth_query_mutation_binding! {
@@ -49,8 +49,8 @@ worth_query_mutation_binding! {
         binding_type ConsumerPrincipalBinding, mapping ExternalPrincipalMapping,
         principal_entity Principal, principal_identity u64,
         identity_binding U64ApplicationValueBinding,
-    scope Body, PlanarPosition, BodyKey, String, ReadOnly, NoApplicationUnit,
-    field BodyKey::reference(), value_field scope_key,
+    scope BodyKey,
+    field BodyKey::at("BodyKey"), value_field scope_key,
 }
 
 pub(super) fn declare<S: TopologySchemaBinding>(
@@ -67,7 +67,7 @@ pub(super) fn declare<S: TopologySchemaBinding>(
         )
         .operation_projection_work_budget(operation, 128)
         .operation_read_entity(operation, Body::reference())
-        .operation_read_field(operation, BodyKey::reference())
+        .operation_read_field(operation, BodyKey::at("BodyKey"))
         .operation_read_relation(operation, PlanarCoupling::reference())
         .operation_link(operation, PlanarCoupling::reference())
         .operation_unlink(operation, PlanarCoupling::reference())

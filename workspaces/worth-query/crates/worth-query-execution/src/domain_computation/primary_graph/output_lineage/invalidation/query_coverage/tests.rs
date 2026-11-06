@@ -23,7 +23,7 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
             let entity = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -33,13 +33,13 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
             let graph = world.application.runtime.primary_graph().unwrap();
             let handle = graph.integration_handle();
             let owner = &handle.source_owner.invalidation_owner;
-            let label_ref = AccountLabel::reference();
+            let label_ref = AccountLabel::at("AccountLabel");
             let label = graph
                 .layout()
                 .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
                 .unwrap()
                 .clone();
-            let status_ref = AccountStatus::reference();
+            let status_ref = AccountStatus::at("AccountStatus");
             let status = graph
                 .layout()
                 .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())

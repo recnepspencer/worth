@@ -6,32 +6,6 @@ pub(super) fn declare<S: OrbitModel>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
 ) -> ApplicationSchemaDeclarationBuilder<S> {
     schema
-        .entity(Grant::reference())
-        .aspect(Grant::reference(), GrantFacts::reference())
-        .field(Grant::reference(), GrantAction::reference())
-        .field(Grant::reference(), GrantPurpose::reference())
-        .field(Grant::reference(), GrantActive::reference())
-        .field(Grant::reference(), GrantWorkflow::reference())
-        .field(Grant::reference(), GrantDisclosure::reference())
-        .field(Grant::reference(), GrantFrom::reference())
-        .field(Grant::reference(), GrantUntil::reference())
-        .field(Grant::reference(), GrantLimit::reference())
-        .relation(
-            Holder::reference(),
-            Principal::reference(),
-            Grant::reference(),
-        )
-        .relation(
-            Issuer::reference(),
-            Principal::reference(),
-            Grant::reference(),
-        )
-        .relation(Resource::reference(), Grant::reference(), Node::reference())
-        .relation(
-            ParentGrant::reference(),
-            Grant::reference(),
-            Grant::reference(),
-        )
         .capability_context(QueryContext::reference())
         .capability_provenance(QueryProvenance::reference())
         .operation(
@@ -42,7 +16,7 @@ pub(super) fn declare<S: OrbitModel>(
                 .finish(),
         )
         .operation_read_entity(Inspect::reference(), Node::reference())
-        .operation_read_field(Inspect::reference(), NodeKey::reference())
+        .operation_read_field(Inspect::reference(), NodeKey::at("NodeKey"))
         .capability(contract::<S>())
 }
 fn contract<S: OrbitModel>() -> ApplicationCapabilityContract<S, ReadOrbit<S>, Inspect, InspectInput>
@@ -53,25 +27,33 @@ fn contract<S: OrbitModel>() -> ApplicationCapabilityContract<S, ReadOrbit<S>, I
         Grant::reference(),
     )
     .target(ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(GrantAction::reference::<S>(), flag(false)),
+        ApplicationCapabilityValueBinding::new(GrantAction::at("GrantAction"), flag(false))
+            .unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(Resource::reference::<S>()),
         ApplicationCapabilityRelationDimension::not_applicable(),
-        ApplicationCapabilityFieldDimension::bound(GrantDisclosure::reference::<S>()),
-        ApplicationCapabilityValueBinding::new(GrantPurpose::reference::<S>(), flag(false)),
+        ApplicationCapabilityFieldDimension::bound(GrantDisclosure::at("GrantDisclosure")).unwrap(),
+        ApplicationCapabilityValueBinding::new(GrantPurpose::at("GrantPurpose"), flag(false))
+            .unwrap(),
     ))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
-            ApplicationCapabilityValueBinding::new(GrantActive::reference::<S>(), flag(true)),
+            ApplicationCapabilityValueBinding::new(GrantActive::at("GrantActive"), flag(true))
+                .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(GrantWorkflow::reference::<S>()),
-                ApplicationCapabilityFieldBinding::from_reference(Marked::reference::<S>()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantWorkflow::at(
+                    "GrantWorkflow",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(Marked::at("Marked")).unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(GrantFrom::reference::<S>()),
-                ApplicationCapabilityFieldBinding::from_reference(GrantUntil::reference::<S>()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantFrom::at("GrantFrom"))
+                    .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(GrantUntil::at("GrantUntil"))
+                    .unwrap(),
             ),
         ),
         QueryContext::<S>::reference(),
@@ -80,7 +62,7 @@ fn contract<S: OrbitModel>() -> ApplicationCapabilityContract<S, ReadOrbit<S>, I
         ApplicationCapabilityRelationBinding::from_reference(ParentGrant::reference::<S>()),
         ApplicationCapabilityRelationBinding::from_reference(Issuer::reference::<S>()),
         ApplicationCapabilityRelationBinding::from_reference(Holder::reference::<S>()),
-        ApplicationCapabilityFieldBinding::from_reference(GrantLimit::reference::<S>()),
+        ApplicationCapabilityFieldBinding::from_reference(GrantLimit::at("GrantLimit")).unwrap(),
         QueryProvenance::<S>::reference(),
     ))
     .composition(ApplicationCapabilityComposition::new(
@@ -110,12 +92,13 @@ fn contract<S: OrbitModel>() -> ApplicationCapabilityContract<S, ReadOrbit<S>, I
             ApplicationCapabilityDisclosureRule::permit([
                 ApplicationCapabilityScopeGuard::requiring([
                     ApplicationCapabilityAcceptedValues::one_of(
-                        GrantDisclosure::reference::<S>(),
+                        GrantDisclosure::at("GrantDisclosure"),
                         [
                             ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(0)
                                 .unwrap(),
                         ],
-                    ),
+                    )
+                    .unwrap(),
                 ]),
             ]),
         ),

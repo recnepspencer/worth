@@ -47,7 +47,7 @@ pub(super) fn read(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>
                 .project(
                     &phase,
                     |reader| {
-                        let root = reader.resolve_entity(NodeKey::reference(), key).unwrap();
+                        let root = reader.resolve_entity(NodeKey::at("NodeKey"), key).unwrap();
                         reader
                             .orbit(Next::reference(), &root)
                             .unwrap()

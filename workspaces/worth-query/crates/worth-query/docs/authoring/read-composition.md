@@ -23,7 +23,7 @@ an invariant callback or construct an admitted plan.
 
 ## Stable Entry Points
 
-- `worth_query_application_schema!`
+- `application_schema::fragment::{Fragment, Entity, Aspect, Record, Scalar}`
 - `worth_query_application_query!`
 - `ApplicationQueryDefinitionBuilder`
 - `ApplicationQueryResultShapeBuilder`

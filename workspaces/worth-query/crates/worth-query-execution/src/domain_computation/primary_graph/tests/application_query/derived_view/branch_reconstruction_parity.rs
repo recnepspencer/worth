@@ -33,7 +33,7 @@ fn members_admitted_on_another_branch_are_foreign_after_the_reads() {
             let roots = ["open", "unrelated"].map(|status| {
                 old.resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     status.into(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -120,7 +120,7 @@ fn members_admitted_on_another_branch_are_foreign_after_the_reads() {
             let sibling_root = sibling
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "unrelated".into(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

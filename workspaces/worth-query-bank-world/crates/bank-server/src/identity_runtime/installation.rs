@@ -71,8 +71,9 @@ pub(super) fn prepare_installation(
         *successor.revision(),
         *successor_p2.revision(),
     ];
-    let declaration = BankSchema::declaration()
-        .map_err(|denial| BankIdentityRuntimeBuildError::SchemaDeclaration(Box::new(denial)))?;
+    let declaration =
+        worth_query_host::facade::declaration::application_schema::fragment::declare(BankSchema)
+            .map_err(|denial| BankIdentityRuntimeBuildError::SchemaDeclaration(Box::new(denial)))?;
     let resources = super::product_world_resources::bank_product_world_resources();
     #[cfg(test)]
     let resources = match world.as_ref().and_then(|seed| seed.execution_policy) {

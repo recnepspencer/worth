@@ -1,8 +1,7 @@
 //! Validation and sealing of an aggregate projection plan.
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef, ApplicationSchema,
-    ApplicationSignedAggregateValueBinding, DeclaredApplicationFieldValue, WritePosture,
+    ApplicationRelationRef, ApplicationSchema, ApplicationSignedAggregateValueBinding,
 };
 use worth_relational::facade::identity::{EntityId, KindId, VersionId};
 
@@ -26,29 +25,20 @@ pub(super) struct ValidatedAggregatePlan {
 }
 
 impl ValidatedAggregatePlan {
-    pub(super) fn validate<
-        Schema,
-        Relation,
-        From,
-        To,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >(
+    pub(super) fn validate<Schema, Relation, From, To, Aspect, Field, Value>(
         reader: &WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
-        field: ApplicationFieldRef<Schema, From, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         target: &WorthQueryInvariantEntityIdentity<Schema, To>,
     ) -> Result<Self, WorthQueryInvariantAggregateDenial>
     where
         Schema: ApplicationSchema,
-        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = From,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationSignedAggregateValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         let relation_layout = installed_relation(reader, relation.name())?;
         let source_kind = installed_source_kind(reader, field.entity(), field.field())?;

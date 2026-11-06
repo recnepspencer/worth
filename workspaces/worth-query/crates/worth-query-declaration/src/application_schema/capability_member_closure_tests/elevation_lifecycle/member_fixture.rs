@@ -17,11 +17,11 @@ pub(super) fn aspect_member(entity: &str, aspect: &str) -> ApplicationSchemaMemb
 }
 
 pub(super) fn elevation_field_member(field: &str) -> ApplicationSchemaMember {
-    typed_field_member("Elevation", "ElevationFacts", field)
+    typed_field_member("Elevation", crate::application_schema::fragment::aspect(crate::application_schema::capability_member_closure_tests::elevation_lifecycle::bindings::ElevationModel, Elevation, ElevationFacts).name(), field)
 }
 
 pub(super) fn review_field_member(field: &str) -> ApplicationSchemaMember {
-    typed_field_member("Review", "ReviewFacts", field)
+    typed_field_member("Review", crate::application_schema::fragment::aspect(crate::application_schema::capability_member_closure_tests::elevation_lifecycle::bindings::ElevationModel, Review, ReviewFacts).name(), field)
 }
 
 fn typed_field_member(entity: &str, aspect: &str, field: &str) -> ApplicationSchemaMember {

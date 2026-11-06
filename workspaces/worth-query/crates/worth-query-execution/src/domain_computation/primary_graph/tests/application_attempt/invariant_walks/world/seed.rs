@@ -6,9 +6,9 @@ pub(super) fn graph(bootstrap: &mut WorthQueryPrimaryGraphBootstrap<WalkSchema>,
         bootstrap
             .bind_entity(
                 WorthQueryApplicationEntitySeed::new(Node::reference(), node_key(key))
-                    .field(NodeKey::reference(), key)
-                    .field(Active::reference(), key == 0 && graph.active)
-                    .field(Blocked::reference(), graph.blocked.contains(&key)),
+                    .field(NodeKey::at("NodeKey"), key)
+                    .field(Active::at("Active"), key == 0 && graph.active)
+                    .field(Blocked::at("Blocked"), graph.blocked.contains(&key)),
             )
             .unwrap();
     }

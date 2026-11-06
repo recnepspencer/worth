@@ -13,8 +13,8 @@ use worth_query_declaration::{worth_query_application_query, worth_query_effect}
 
 use super::application_queries::AccountSummaryParameters;
 use super::{
-    Account, AccountAllActivity, AccountIdentity, AccountPolicy, Activity, ActivityFacts,
-    ActivityIdentity, ActivitySequence, IdentityExecutionSchema, ViewAccount,
+    Account, AccountAllActivity, AccountIdentity, Activity, ActivityIdentity, ActivitySequence,
+    IdentityExecutionSchema, ViewAccount,
 };
 
 worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
@@ -145,16 +145,16 @@ pub(super) fn live_account_activity_definition() -> ApplicationQueryDefinition<
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())
         .requires_ability(ViewAccount::reference())
         .parameter(live_account_parameter())
-        .where_equal(AccountIdentity::reference(), live_account_parameter())
+        .where_equal(
+            AccountIdentity::at("AccountIdentity"),
+            live_account_parameter(),
+        )
         .order_by(
             activity_sequence(),
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(activities())
-        .live_by::<Activity, LiveAccountActivityCause, _, _, _, _, _, _, _, _>(
-            account_identity(),
-            activity_identity(),
-        )
+        .live_by::<Activity, LiveAccountActivityCause>(account_identity(), activity_identity())
         .build()
         .unwrap()
 }
@@ -234,45 +234,27 @@ fn account_identity() -> ApplicationQueryResultFieldRef<
     LiveAccountActivityQuery,
     AccountIdentitySlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("account", AccountIdentity::reference())
+    ApplicationQueryResultFieldRef::new("account", AccountIdentity::at("AccountIdentity"))
 }
 
 fn activity_identity() -> ApplicationQueryResultFieldRef<
     LiveAccountActivityQuery,
     ActivityIdentitySlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivityIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("activity", ActivityIdentity::reference())
+    ApplicationQueryResultFieldRef::new("activity", ActivityIdentity::at("ActivityIdentity"))
 }
 
 fn activity_sequence() -> ApplicationQueryResultFieldRef<
     LiveAccountActivityQuery,
     ActivitySequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 fn activities() -> ApplicationQueryResultRelationRef<

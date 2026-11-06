@@ -69,11 +69,13 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             }
         }
         let field = B::scope_field();
+        let column = selected.record_selection(field).map_err(Stop::Scope)?;
+        let locus = column.recipe().locus();
         let _temporary = super::super::managed_index::source_acquisition::temporary::scope(
             execution,
-            field.entity(),
-            field.aspect(),
-            field.field(),
+            locus.entity(),
+            locus.aspect(),
+            locus.field(),
             selector,
         )?;
         let scope = selected

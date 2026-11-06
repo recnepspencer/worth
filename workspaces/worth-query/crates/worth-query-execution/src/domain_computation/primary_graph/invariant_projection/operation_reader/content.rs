@@ -4,29 +4,25 @@ use crate::domain_computation::primary_graph::{
     AdmittedContent, ContentReadDenial as Denial, HandlerExecutionDenial,
     WorthQueryInvariantEntityIdentity, WorthQueryValueDecodeDenial as Stop,
 };
-use worth_foundational::facade::ContentRefId;
+
 use worth_query_declaration::facade::application_schema::{
-    ApplicationContentBinding, ApplicationContentFieldRef, ContentRefApplicationValueBinding,
+    ApplicationContentBinding, ApplicationContentFieldRef,
 };
-use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationSchema, DeclaredApplicationFieldValue, OperationReads,
-    WritePosture,
-};
+use worth_query_installation::facade::ApplicationSchema;
 
 impl<S: ApplicationSchema, O> Reader<'_, '_, S, O> {
-    pub(in crate::domain_computation::primary_graph) fn decision_content<E, A, F, W, Q, U, C>(
+    pub(in crate::domain_computation::primary_graph) fn decision_content<E, F, C>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<S, E>,
-        content: ApplicationContentFieldRef<S, E, A, F, W, Q, U, C>,
+        content: ApplicationContentFieldRef<F, C>,
     ) -> Result<Option<AdmittedContent<C>>, Denial>
     where
-        F: OperationReads<O>
-            + DeclaredApplicationFieldValue<
-                Value = ContentRefId,
-                Binding = ContentRefApplicationValueBinding,
-            >,
-        W: WritePosture,
-        U: ApplicationFieldUnit,
+        F: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = E,
+        >,
+
+        F::Binding:
+            worth_query_declaration::facade::application_schema::ApplicationContentReferenceBinding,
         C: ApplicationContentBinding,
     {
         let field = content.field();
@@ -44,7 +40,7 @@ impl<S: ApplicationSchema, O> Reader<'_, '_, S, O> {
             session.refuse_content(Stop::BindingContractMismatch);
             return Err(Denial::BindingContractMismatch);
         };
-        let Some(value) = self.reader.content_reference(
+        let Some(value) = self.reader.content_reference::<F::Binding>(
             identity.entity_id,
             identity.kind,
             (field.entity(), field.aspect(), field.field()),

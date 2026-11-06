@@ -25,7 +25,6 @@ pub struct ApplicationQueryBindingReferenceParts {
     pub scope_field: String,
     pub scope_value: Identity,
     pub scope_resolution: ApplicationQueryScopeResolutionMode,
-    pub scope_writable: bool,
     pub principal_binding: String,
 }
 
@@ -88,14 +87,13 @@ impl ApplicationQueryBindingReference {
                 scope_field: field.locus().field().to_owned(),
                 scope_value: field.binding_identity().clone(),
                 scope_resolution: descriptor.scope().mode(),
-                scope_writable: descriptor.scope().writable(),
                 principal_binding: descriptor.principal().name().to_owned(),
             },
         }
     }
 
     /// Stable named fields used by canonical declaration and installation identities.
-    pub fn canonical_fields(&self) -> [(&'static str, &str); 14] {
+    pub fn canonical_fields(&self) -> [(&'static str, &str); 13] {
         let p = &self.parts;
         [
             ("binding", p.binding.as_str()),
@@ -115,10 +113,6 @@ impl ApplicationQueryBindingReference {
                     ApplicationQueryScopeResolutionMode::InputField => "input-field",
                     ApplicationQueryScopeResolutionMode::PrincipalIdentity => "principal-identity",
                 },
-            ),
-            (
-                "scope-writable",
-                if p.scope_writable { "true" } else { "false" },
             ),
             ("principal-binding", &p.principal_binding),
         ]

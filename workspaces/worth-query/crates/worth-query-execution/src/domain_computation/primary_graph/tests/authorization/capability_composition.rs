@@ -278,7 +278,7 @@ fn composed_program(
             &admission,
             |reader, projected| {
                 reader
-                    .require_decision_field(projected, AccountLabel::reference())
+                    .require_decision_field(projected, AccountLabel::at("AccountLabel"))
                     .unwrap();
             },
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -303,7 +303,11 @@ fn composed_program(
         .begin_effect_program();
     let account = effects.existing_entity(&account).unwrap();
     effects
-        .write_field(&account, AccountLabel::reference(), "composed".to_owned())
+        .write_field(
+            &account,
+            AccountLabel::at("AccountLabel"),
+            "composed".to_owned(),
+        )
         .unwrap();
     effects.finish().unwrap()
 }

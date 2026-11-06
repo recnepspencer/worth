@@ -88,7 +88,7 @@ fn observe<Schema: BirthSchema>(
     phase: &WorthQueryAdvancementPhase<'_>,
     receipt: &WorthQueryApplicationCommitReceipt,
 ) -> (EntityId, RelationalFieldRevision, Effect) {
-    let field = Value::reference::<Schema>();
+    let field = Value::at("Value");
     let mut roles = receipt
         .output_correspondence()
         .native_witness_roles()

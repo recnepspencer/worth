@@ -1,16 +1,14 @@
 //! Genuine owner-root census for managed image growth qualification.
 use super::{
-    Account, AccountLabel, AccountOwner, AccountPolicy, AccountSummaryParameters,
-    IdentityExecutionSchema, Principal,
+    Account, AccountLabel, AccountOwner, AccountSummaryParameters, IdentityExecutionSchema,
+    Principal,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
     WorthQueryApplicationProjectionRow,
 };
 use worth_query_declaration::facade::application_query::*;
-use worth_query_declaration::facade::application_schema::{
-    EqualityPredicate, NoApplicationUnit, ReadWrite,
-};
+
 use worth_relational::facade::identity::EntityId;
 
 pub struct MembersSlot;
@@ -45,15 +43,9 @@ fn label() -> ApplicationQueryResultFieldRef<
     OwnerMembersQuery,
     LabelSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountLabel,
-    String,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("label", AccountLabel::reference())
+    ApplicationQueryResultFieldRef::new("label", AccountLabel::at("AccountLabel"))
 }
 impl WorthQueryApplicationProjection<IdentityExecutionSchema, OwnerMembersQuery>
     for OwnerMembersResult

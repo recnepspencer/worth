@@ -46,7 +46,7 @@ fn operation_graph_capacity_denial_and_drop_return_exact_reservations() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &host_custody.phase_for_application(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

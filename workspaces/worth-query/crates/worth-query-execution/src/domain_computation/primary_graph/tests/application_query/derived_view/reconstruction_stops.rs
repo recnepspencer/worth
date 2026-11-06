@@ -52,7 +52,7 @@ fn check(case: usize) {
             let root = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".into(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

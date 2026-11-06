@@ -95,7 +95,7 @@ pub fn conditional_package() -> WorthQueryValidatedPortableDomainPackage {
     let binding = WorthQueryPortableApplicationConditionalOperationBinding::from_untrusted_parts(
         WorthQueryPortableApplicationConditionalOperationBindingParts {
             schema_owner: Schema::OWNER.to_owned(),
-            schema_name: Schema::NAME.to_owned(),
+            schema_name: <Schema as ApplicationSchema>::NAME.to_owned(),
             application_operation: Operation::IDENTIFIER.to_owned(),
             input_type: WorthQueryPortableTypeIdentity::from_untrusted(
                 "worth.query.archive.conditional-input".to_owned(),

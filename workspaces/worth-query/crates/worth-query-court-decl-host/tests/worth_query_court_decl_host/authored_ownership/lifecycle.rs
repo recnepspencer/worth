@@ -96,8 +96,8 @@ worth_query_mutation_binding!(
     outputs CreatedOutputs, source NoApplicationMutationSource,
     principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit,
-    field Id::reference(), value_field scope,
+    scope Id,
+    field Id::at("Id"), value_field scope,
 );
 worth_query_mutation_binding!(
     pub RetireBinding for Retire, schema generic S: Scenario,
@@ -107,8 +107,8 @@ worth_query_mutation_binding!(
     outputs RetiredOutputs, source NoApplicationMutationSource,
     principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit,
-    field Id::reference(), value_field scope,
+    scope Id,
+    field Id::at("Id"), value_field scope,
 );
 worth_query_mutation_binding!(
     pub RestoreBinding for Restore, schema generic S: Scenario,
@@ -118,8 +118,8 @@ worth_query_mutation_binding!(
     outputs CreatedOutputs, source NoApplicationMutationSource,
     principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit,
-    field Id::reference(), value_field scope,
+    scope Id,
+    field Id::at("Id"), value_field scope,
 );
 worth_query_mutation_binding!(
     pub PlainBinding for Plain, schema generic S: Scenario,
@@ -129,8 +129,8 @@ worth_query_mutation_binding!(
     outputs RetiredOutputs, source NoApplicationMutationSource,
     principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Node, Facts, Id, u64, ReadOnly, NoApplicationUnit,
-    field Id::reference(), value_field scope,
+    scope Id,
+    field Id::at("Id"), value_field scope,
 );
 impl OperationCreates<CreateOp> for Node {}
 impl OperationReads<CreateOp> for Id {}
@@ -141,10 +141,10 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for CreateOp {
         schema: ApplicationSchemaDeclarationBuilder<S>,
     ) -> ApplicationSchemaDeclarationBuilder<S> {
         schema
-            .operation_read_field(Self::reference(), Id::reference())
+            .operation_read_field(Self::reference(), Id::at("Id"))
             .operation_create(Self::reference(), Node::reference())
-            .operation_write(Self::reference(), Id::reference())
-            .operation_write(Self::reference(), Value::reference())
+            .operation_write(Self::reference(), Id::at("Id"))
+            .operation_write(Self::reference(), Value::at("Value"))
     }
 }
 impl OperationCreates<RestoreOp> for Node {}
@@ -156,10 +156,10 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for RestoreOp {
         schema: ApplicationSchemaDeclarationBuilder<S>,
     ) -> ApplicationSchemaDeclarationBuilder<S> {
         schema
-            .operation_read_field(Self::reference(), Id::reference())
+            .operation_read_field(Self::reference(), Id::at("Id"))
             .operation_create(Self::reference(), Node::reference())
-            .operation_write(Self::reference(), Id::reference())
-            .operation_write(Self::reference(), Value::reference())
+            .operation_write(Self::reference(), Id::at("Id"))
+            .operation_write(Self::reference(), Value::at("Value"))
     }
 }
 impl OperationReads<RetireOp> for Node {}
@@ -172,8 +172,8 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for RetireOp {
     ) -> ApplicationSchemaDeclarationBuilder<S> {
         schema
             .operation_read_entity(Self::reference(), Node::reference())
-            .operation_read_field(Self::reference(), Id::reference())
-            .operation_read_field(Self::reference(), Value::reference())
+            .operation_read_field(Self::reference(), Id::at("Id"))
+            .operation_read_field(Self::reference(), Value::at("Value"))
             .operation_delete(Self::reference(), Node::reference())
     }
 }
@@ -190,11 +190,11 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for PlainOp {
     ) -> ApplicationSchemaDeclarationBuilder<S> {
         schema
             .operation_create(Self::reference(), Node::reference())
-            .operation_write(Self::reference(), Id::reference())
-            .operation_write(Self::reference(), Value::reference())
+            .operation_write(Self::reference(), Id::at("Id"))
+            .operation_write(Self::reference(), Value::at("Value"))
             .operation_read_entity(Self::reference(), Node::reference())
-            .operation_read_field(Self::reference(), Id::reference())
-            .operation_read_field(Self::reference(), Value::reference())
+            .operation_read_field(Self::reference(), Id::at("Id"))
+            .operation_read_field(Self::reference(), Value::at("Value"))
             .operation_delete(Self::reference(), Node::reference())
     }
 }

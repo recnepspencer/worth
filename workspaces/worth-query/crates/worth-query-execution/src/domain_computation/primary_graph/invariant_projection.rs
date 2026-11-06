@@ -53,9 +53,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
-    ApplicationSchema, ApplicationSchemaBindingIdentity, DeclaredApplicationFieldValue,
-    WritePosture,
+    ApplicationReadableScalarValueBinding, ApplicationSchema, ApplicationSchemaBindingIdentity,
 };
 use worth_relational::facade::identity::{EntityId, KindId, VersionId};
 
@@ -153,14 +151,8 @@ pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
 ///
 /// It is valid only with readers from the same projection authority; any other
 /// reader refuses it as foreign.
-#[derive(Clone, Debug)]
-pub struct WorthQueryInvariantEntityIdentity<Schema, Entity> {
-    entity_id: EntityId,
-    kind: KindId,
-    entity: Arc<str>,
-    authority_identity: u64,
-    _marker: PhantomData<fn() -> (Schema, Entity)>,
-}
+pub use entity_identity::WorthQueryInvariantEntityIdentity;
+mod entity_identity;
 
 /// An exact projected entity admitted for the later application effect phase.
 /// It is minted only by the operation-typed invariant reader after validating

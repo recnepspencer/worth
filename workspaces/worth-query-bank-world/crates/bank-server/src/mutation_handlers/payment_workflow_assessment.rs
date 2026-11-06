@@ -22,12 +22,14 @@ impl OperationHandler<BankSchema, ApprovedPaymentAssessmentBinding>
         WorthQueryInvariantMutationTarget<BankSchema, PaymentIntent>,
         ApprovedPaymentAssessmentDenial,
     > {
-        let payment = match reader.resolve_entity(PaymentIdentityField::reference(), input.payment)
-        {
+        let payment = match reader.resolve_entity(
+            PaymentIdentityField::at("PaymentIdentityField"),
+            input.payment,
+        ) {
             Ok(payment) => payment,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&payment, PaymentStatusField::reference()) {
+        match reader.field(&payment, PaymentStatusField::at("PaymentStatusField")) {
             Ok(Some(status)) if status == input.status => {}
             Ok(_) => {
                 return HandlerResult::DomainDenied(ApprovedPaymentAssessmentDenial::SourceChanged)

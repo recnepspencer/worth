@@ -8,18 +8,14 @@ use worth_query_declaration::facade::application_schema::{
 };
 use worth_query_declaration::{
     worth_query_capability, worth_query_operation, worth_query_operation_reads,
-    worth_query_operation_writes,
 };
 
 use super::{
     CapabilityAction, CapabilityActionBinding, CapabilityElevationApprover,
-    CapabilityElevationClosedAt, CapabilityElevationGrant, CapabilityElevationIdentity,
-    CapabilityElevationNotAfter, CapabilityElevationNotBefore, CapabilityElevationReason,
-    CapabilityElevationRequester, CapabilityElevationResource, CapabilityElevationReview,
-    CapabilityElevationSlot, CapabilityElevationStatusField, CapabilityPurpose,
-    CapabilityPurposeBinding, CapabilityRequestContext, CapabilityReviewIdentity,
-    CapabilityReviewKindField, CapabilityReviewResource, CapabilityReviewStatusField,
-    CapabilityReviewer,
+    CapabilityElevationGrant, CapabilityElevationIdentity, CapabilityElevationRequester,
+    CapabilityElevationResource, CapabilityElevationReview, CapabilityElevationSlot,
+    CapabilityPurpose, CapabilityPurposeBinding, CapabilityRequestContext,
+    CapabilityReviewResource, CapabilityReviewer,
 };
 use crate::domain_computation::primary_graph::tests::fixture::{
     Account, AccountIdentity, IdentityExecutionSchema,
@@ -38,8 +34,7 @@ worth_query_declaration::worth_query_portable_type!(
 
 worth_query_declaration::worth_query_structured_value_binding!(pub RevokeCapabilityElevationOperationInputBinding for CloseElevationInput { identity: "worth.query.test.close-elevation-input.v1" });
 worth_query_operation!(pub RevokeCapabilityElevationOperation for IdentityExecutionSchema, input RevokeCapabilityElevationOperationInputBinding);
-worth_query_operation_reads!(RevokeCapabilityElevationOperation => [CapabilityElevationIdentity, CapabilityElevationReason, CapabilityElevationStatusField, CapabilityElevationNotBefore, CapabilityElevationNotAfter, CapabilityElevationClosedAt, CapabilityReviewIdentity, CapabilityReviewKindField, CapabilityReviewStatusField, CapabilityElevationRequester, CapabilityElevationApprover, CapabilityElevationGrant, CapabilityElevationResource, CapabilityElevationReview, CapabilityReviewResource, CapabilityReviewer]);
-worth_query_operation_writes!(RevokeCapabilityElevationOperation => [CapabilityElevationStatusField, CapabilityElevationClosedAt]);
+worth_query_operation_reads!(RevokeCapabilityElevationOperation => [CapabilityElevationRequester, CapabilityElevationApprover, CapabilityElevationGrant, CapabilityElevationResource, CapabilityElevationReview, CapabilityReviewResource, CapabilityReviewer]);
 
 impl ApplicationCapabilityRequest<IdentityExecutionSchema, RevokeElevationCapability>
     for CloseElevationInput
@@ -59,12 +54,12 @@ impl ApplicationCapabilityRequest<IdentityExecutionSchema, RevokeElevationCapabi
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                AccountIdentity::reference(),
+                AccountIdentity::at("AccountIdentity"),
                 ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                     self.account.clone(),
                 )
                 .expect("fixture account identity must encode"),
-            ),
+            ).unwrap(),
             ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(
                 CapabilityAction::RevokeElevation,
             )
@@ -76,12 +71,10 @@ impl ApplicationCapabilityRequest<IdentityExecutionSchema, RevokeElevationCapabi
             ApplicationCapabilityRequestContext::new(CapabilityRequestContext::reference()).entity(
                 CapabilityElevationSlot::reference(),
                 ApplicationCapabilityEntitySelector::new(
-                    CapabilityElevationIdentity::reference(),
-                    ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
-                        self.elevation.clone(),
-                    )
+                    CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+                    ApplicationEncodedScalarValue::<<CapabilityElevationIdentity as worth_query_declaration::facade::application_schema::fragment::RecordSelection>::Binding>::try_new(self.elevation.clone().into())
                     .expect("fixture elevation identity must encode"),
-                ),
+                ).unwrap(),
             ),
         ))
     }

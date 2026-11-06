@@ -12,19 +12,11 @@ pub struct Input {
 }
 worth_query_structured_value_binding!(pub InputBinding for Input {identity:"canonical-related.retire.input.v1"});
 worth_query_operation!(pub Retire for CanonicalSchema,input InputBinding);
-worth_query_operation_reads!(Retire=>[Derived,DerivedValueField,DerivedChildren]);
+worth_query_operation_reads!(Retire => [Derived, DerivedChildren]);
 worth_query_operation_unlinks!(Retire=>[DerivedChildren]);
 worth_query_operation_deletes!(Retire=>[Derived]);
 pub struct Binding;
-pub type Scope = ApplicationMutationFieldScope<
-    CanonicalSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope = ApplicationMutationFieldScope<DocumentIdentityField>;
 pub struct Decision {
     pub targets: Vec<WorthQueryInvariantMutationTarget<CanonicalSchema, Derived>>,
 }
@@ -55,17 +47,8 @@ impl ApplicationMutationBinding<CanonicalSchema> for Binding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        CanonicalSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CanonicalSchema,
@@ -84,7 +67,10 @@ impl ApplicationMutationIntent<CanonicalSchema> for Input {
         self
     }
     fn scope_binding(&self) -> Scope {
-        Scope::new(DocumentIdentityField::reference(), self.identity.clone())
+        Scope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity.clone(),
+        )
     }
 }
 pub struct Handler;
@@ -108,7 +94,7 @@ impl OperationHandler<CanonicalSchema, Binding> for Handler {
             {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
             }
-            match reader.field(&target, DerivedValueField::reference()) {
+            match reader.field(&target, DerivedValueField::at("DerivedValueField")) {
                 Ok(Some(_)) => {}
                 Ok(None) => return HandlerResult::DomainDenied(Denied),
                 Err(error) => return HandlerResult::ExecutionDenied(error),

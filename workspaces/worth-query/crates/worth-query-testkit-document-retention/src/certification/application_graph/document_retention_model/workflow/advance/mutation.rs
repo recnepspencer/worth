@@ -5,8 +5,8 @@ pub use worth_query_host::facade::declaration::{
         NoApplicationMutationSource,
     },
     application_schema::{
-        ApplicationFieldRef, ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder,
-        EqualityPredicate, NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
+        ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder, EqualityPredicate,
+        NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
     },
 };
 pub use worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget;
@@ -48,15 +48,7 @@ worth_query_structured_value_binding!(pub WorkflowAdvanceDenialBinding for Workf
 pub struct WorkflowAdvanceBinding;
 pub struct WorkflowApprovalBinding;
 
-pub type WorkflowAdvanceScope = ApplicationMutationFieldScope<
-    DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type WorkflowAdvanceScope = ApplicationMutationFieldScope<DocumentIdentityField>;
 
 impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowAdvanceBinding {
     fn workflow_execution_requirements(
@@ -89,17 +81,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowAdvanceBind
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -149,17 +132,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowApprovalBin
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -187,7 +161,7 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for WorkflowAdvanceInten
 
     fn scope_binding(&self) -> WorkflowAdvanceScope {
         WorkflowAdvanceScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.input.document_identity.clone(),
         )
     }
@@ -202,7 +176,7 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for WorkflowApprovalInte
 
     fn scope_binding(&self) -> WorkflowAdvanceScope {
         WorkflowAdvanceScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.input.document_identity.clone(),
         )
     }

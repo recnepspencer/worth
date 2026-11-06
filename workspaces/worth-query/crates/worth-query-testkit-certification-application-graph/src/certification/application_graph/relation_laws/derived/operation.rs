@@ -28,17 +28,9 @@ impl CountTwoSteps {
         ApplicationOperationRef::from_declaration()
     }
 }
-worth_query_operation_reads!(CountTwoSteps => [NodeKey]);
+
 pub struct CountBinding<L: LawPolicy>(pub PhantomData<fn() -> L>);
-pub type Scope<L> = ApplicationMutationFieldScope<
-    GraphSchema<L>,
-    Node,
-    NodeFacts,
-    NodeKey,
-    u64,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope<L> = ApplicationMutationFieldScope<GraphKey<GraphSchema<L>>>;
 impl<L: LawPolicy> ApplicationMutationBinding<GraphSchema<L>> for CountBinding<L> {
     type Input = Input;
     type InputBinding = InputBinding;
@@ -63,17 +55,8 @@ impl<L: LawPolicy> ApplicationMutationBinding<GraphSchema<L>> for CountBinding<L
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        GraphSchema<L>,
-        Node,
-        NodeFacts,
-        NodeKey,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        NodeKey::reference()
+    fn scope_field() -> GraphKey<GraphSchema<L>> {
+        node_key::<GraphSchema<L>>()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         GraphSchema<L>,
@@ -97,6 +80,6 @@ impl<L: LawPolicy> ApplicationMutationIntent<GraphSchema<L>> for Intent<L> {
         &self.input
     }
     fn scope_binding(&self) -> Scope<L> {
-        Scope::new(NodeKey::reference(), self.input.root)
+        Scope::<L>::new(node_key::<GraphSchema<L>>(), self.input.root)
     }
 }

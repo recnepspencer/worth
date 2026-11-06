@@ -1,9 +1,13 @@
+mod denial;
+pub use denial::{
+    WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
+};
+use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 mod orbit;
 use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationOperationDecisionReadTarget, ApplicationReadableScalarValueBinding,
-    ApplicationRelationRef, ApplicationSchema, DeclaredApplicationFieldValue, OperationReads,
-    WritePosture,
+    ApplicationEntityRef, ApplicationOperationDecisionReadTarget,
+    ApplicationReadableScalarValueBinding, ApplicationRelationRef, ApplicationSchema,
+    OperationReads,
 };
 
 use worth_relational::facade::identity::EntityId;
@@ -27,26 +31,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
     WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantRelation,
 };
-
-/// Why a decision read in an operation projection was refused.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryInvariantDecisionPlanDenialKind {
-    /// The operation does not declare this target as a decision read.
-    UndeclaredDecisionTarget,
-    /// The identity came from a different projection authority.
-    ForeignIdentity,
-    /// The field is not installed.
-    FieldNotInstalled,
-}
-
-/// Refusal of a decision read in an operation projection.
-///
-/// [`Self::kind`] says why and [`Self::subject`] names the target.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryInvariantDecisionPlanDenial {
-    kind: WorthQueryInvariantDecisionPlanDenialKind,
-    subject: String,
-}
 
 impl<'reader, 'runtime, Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
@@ -89,17 +73,19 @@ where
         Ok(())
     }
 
-    pub fn decision_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn decision_field<Entity, Aspect, Field, Value>(
         &mut self,
 
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
     ) -> Result<Option<Value>, WorthQueryInvariantDecisionPlanDenial>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         let _execution = self.reader.execution;
         self.require_decision_field(identity, field)?;
@@ -189,17 +175,27 @@ where
         relations
     }
 
-    pub fn require_decision_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn require_decision_field<Entity, Aspect, Field, Value>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
     ) -> Result<(), WorthQueryInvariantDecisionPlanDenial>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
+        field
+            .installed(self.reader.value_bindings.fragments())
+            .map_err(|_| {
+                WorthQueryInvariantDecisionPlanDenial::new(
+                    WorthQueryInvariantDecisionPlanDenialKind::FieldNotInstalled,
+                    field.field(),
+                )
+            })?;
         self.require_named_field(identity, field.entity(), field.aspect(), field.field())
     }
 
@@ -233,16 +229,36 @@ where
                     field,
                 )
             })?;
-        self.record_field_dependency(identity, entity, locator);
+        self.record_field_dependency(
+            identity,
+            &ApplicationFieldBindingLocus::new(entity, aspect, field),
+            locator,
+        );
         Ok(())
     }
 
     fn record_field_dependency<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        entity: &str,
+        field: &ApplicationFieldBindingLocus,
         locator: worth_foundational::facade::AspectFieldLocator,
     ) {
+        let entity = field.entity();
+        if let Some(presence) = self.reader.layout.record_presence_locator(field).cloned()
+            && presence != locator
+            && self.admitted_contracts.as_deref().is_some_and(|contract| {
+                field_presence::may_write(contract.touches(), entity, &locator)
+            })
+        {
+            self.decision_facts.record(
+                WorthQueryApplicationFactKey::Field {
+                    entity: entity.to_owned(),
+                    entity_id: identity.entity_id,
+                    locator: presence,
+                },
+                DecisionReadOutcome::Observed,
+            );
+        }
         if self.reader.layout.field_is_optional(entity, &locator)
             && self.admitted_contracts.as_deref().is_some_and(|contract| {
                 field_presence::may_write(contract.touches(), entity, &locator)
@@ -349,40 +365,4 @@ fn decision_traversal_denial(
         super::super::WorthQueryInvariantProjectionTraversalDenialKind::UndeclaredDecisionTarget,
         denial.subject(),
     )
-}
-
-impl WorthQueryInvariantDecisionPlanDenial {
-    pub const fn kind(&self) -> WorthQueryInvariantDecisionPlanDenialKind {
-        self.kind
-    }
-
-    pub fn subject(&self) -> &str {
-        &self.subject
-    }
-
-    fn new(kind: WorthQueryInvariantDecisionPlanDenialKind, subject: impl Into<String>) -> Self {
-        Self {
-            kind,
-            subject: subject.into(),
-        }
-    }
-}
-
-impl std::fmt::Display for WorthQueryInvariantDecisionPlanDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "invariant decision plan denied: {:?} ({})",
-            self.kind, self.subject
-        )
-    }
-}
-
-impl std::error::Error for WorthQueryInvariantDecisionPlanDenial {}
-
-impl worth_execution::ChargedBytes for WorthQueryInvariantDecisionPlanDenial {
-    fn additional_charged_bytes(&self) -> u64 {
-        let Self { kind: _, subject } = self;
-        subject.capacity() as u64
-    }
 }

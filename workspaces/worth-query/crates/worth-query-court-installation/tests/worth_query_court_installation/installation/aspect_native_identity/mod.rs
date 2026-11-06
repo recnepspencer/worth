@@ -2,8 +2,8 @@ pub(crate) mod model;
 
 #[test]
 fn declaration_order_converges_to_the_same_installed_identity() {
-    let forward = model::declaration::<8, 9>(false).unwrap();
-    let reverse = model::declaration::<8, 9>(true).unwrap();
+    let forward = model::declaration::<8, 9, false>().unwrap();
+    let reverse = model::declaration::<8, 9, true>().unwrap();
     assert_eq!(forward.identity(), reverse.identity());
     let index = model::index(&forward);
     let forward = index

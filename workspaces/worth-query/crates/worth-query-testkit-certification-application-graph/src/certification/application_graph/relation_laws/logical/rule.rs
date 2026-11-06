@@ -27,7 +27,8 @@ pub fn definition<L: LawPolicy>() -> ApplicationInvariantDefinition<GraphSchema<
         ),
     )
 }
-pub type Entity<L> = WorthQueryApplicationInvariantEntity<GraphSchema<L>, Node>;
+pub type Entity<L> =
+    WorthQueryApplicationInvariantEntity<GraphSchema<L>, GraphNode<GraphSchema<L>>>;
 pub type Member<L> = WorthQueryApplicationInvariantGraphMember<GraphSchema<L>, Uses>;
 pub type Coordinate = (EntityId, String);
 #[derive(Debug, PartialEq)]
@@ -42,13 +43,26 @@ pub struct Root<L: LawPolicy> {
 }
 pub struct Rule<L: LawPolicy> {
     pub observer: Option<observation::Observer>,
-    pub node: WorthQueryApplicationInvariantEntityBinding<GraphSchema<L>, Node>,
-    pub physical:
-        WorthQueryApplicationInvariantRelationBinding<GraphSchema<L>, Precedes, Node, Node>,
-    pub negative:
-        WorthQueryApplicationInvariantProjectedCaseBinding<GraphSchema<L>, Uses, Node, Negative>,
-    pub roots:
-        WorthQueryApplicationInvariantDerivedRelationBinding<GraphSchema<L>, RootUses, Node, Uses>,
+    pub node:
+        WorthQueryApplicationInvariantEntityBinding<GraphSchema<L>, GraphNode<GraphSchema<L>>>,
+    pub physical: WorthQueryApplicationInvariantRelationBinding<
+        GraphSchema<L>,
+        GraphPrecedes<GraphSchema<L>>,
+        GraphNode<GraphSchema<L>>,
+        GraphNode<GraphSchema<L>>,
+    >,
+    pub negative: WorthQueryApplicationInvariantProjectedCaseBinding<
+        GraphSchema<L>,
+        Uses,
+        GraphNode<GraphSchema<L>>,
+        Negative,
+    >,
+    pub roots: WorthQueryApplicationInvariantDerivedRelationBinding<
+        GraphSchema<L>,
+        RootUses,
+        GraphNode<GraphSchema<L>>,
+        Uses,
+    >,
     pub source: WorthQueryApplicationInvariantDerivedRelationBinding<
         GraphSchema<L>,
         UseSuccessor,
@@ -62,9 +76,11 @@ pub fn resolve<L: LawPolicy>(
 ) -> Result<Rule<L>, String> {
     Ok(Rule {
         observer: L::logical_read_observer(),
-        node: resolver.typed_entity(Node::reference()).ok_or("Node")?,
+        node: resolver
+            .typed_entity(node::<GraphSchema<L>>())
+            .ok_or("Node")?,
         physical: resolver
-            .typed_relation(Precedes::reference())
+            .typed_relation(precedes::<GraphSchema<L>>())
             .ok_or("Precedes")?,
         negative: resolver
             .typed_projected_case(Uses::reference(), Negative::reference())

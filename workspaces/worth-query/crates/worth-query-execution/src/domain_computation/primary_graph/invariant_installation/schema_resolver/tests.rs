@@ -7,10 +7,28 @@ use worth_query_declaration::facade::application_schema::*;
 use worth_query_installation::facade::*;
 struct BindingSchema<const PROFILE: u8>;
 struct Node;
-impl<const P: u8> ApplicationEntityMarkerIdentity<BindingSchema<P>> for Node {
-    const IDENTIFIER: &'static str = "Node";
+use worth_query_declaration::facade::application_schema::fragment;
+impl fragment::Entity for Node {
+    const NAME: &'static str = "Node";
+    type Aspects = ();
+    type Relations = (A, B);
 }
-struct Coupling;
+struct A;
+struct B;
+impl fragment::Relation for A {
+    const NAME: &'static str = "A";
+    type To = Node;
+}
+impl fragment::Relation for B {
+    const NAME: &'static str = "B";
+    type To = Node;
+}
+struct ResolverRecords;
+impl fragment::Fragment for ResolverRecords {
+    const NAME: &'static str = "resolver_records";
+    type Bindings = fragment::NoBindings;
+    type Members = (Node,);
+}
 struct Set;
 struct Rule;
 impl<const P: u8> ApplicationInvariantMarkerIdentity<BindingSchema<P>> for Rule {
@@ -28,17 +46,8 @@ impl<const P: u8> ApplicationSchema for BindingSchema<P> {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        let node = ApplicationEntityRef::<Self, Node>::from_schema_identifier("Node");
-        let relation = |name| {
-            ApplicationRelationRef::<Self, Coupling, Node, Node>::from_schema_identifiers(
-                name,
-                "Node",
-                "Node",
-                ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-            )
-        };
-        let a = relation("A");
-        let b = relation("B");
+        let a = fragment::relation(ResolverRecords, Node, A);
+        let b = fragment::relation(ResolverRecords, Node, B);
         let mut reads = vec![
             ApplicationInvariantScopeTarget::Entity("Node".into()),
             ApplicationInvariantScopeTarget::Relation("A".into()),
@@ -55,10 +64,7 @@ impl<const P: u8> ApplicationSchema for BindingSchema<P> {
                 .retain(|target| target != &ApplicationInvariantScopeTarget::Relation("B".into())),
             _ => unreachable!(),
         }
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(node)
-            .relation(a, node, node)
-            .relation(b, node, node)
+        ApplicationSchemaDeclarationBuilder::from_fragment(ResolverRecords)?
             .components(
                 ApplicationComponentSetDefinition::new(set())
                     .coupled_by(a)

@@ -19,7 +19,7 @@ fn producer_decision_field_uses_native_revision_after_value_aba() {
             .primary_graph()
             .unwrap()
             .layout
-            .entity_kind(AccountIdentity::reference().entity())
+            .entity_kind(AccountIdentity::at("AccountIdentity").entity())
             .unwrap(),
         locator: planned(&locator),
         value: StringApplicationValueBinding::encode(&"reviewed".to_owned()).unwrap(),

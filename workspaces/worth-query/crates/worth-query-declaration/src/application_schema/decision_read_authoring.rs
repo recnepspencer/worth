@@ -1,9 +1,8 @@
-use super::capabilities::{ApplicationFieldUnit, OperationReads};
-use super::field_reference::ApplicationFieldRef;
+use super::capabilities::OperationReads;
 use super::references::{ApplicationEntityRef, ApplicationOperationRef, ApplicationRelationRef};
 use super::{
     ApplicationOperationDecisionReadTarget, ApplicationSchemaDeclarationBuilder,
-    ApplicationSchemaMember, DeclaredApplicationFieldValue,
+    ApplicationSchemaMember,
 };
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
@@ -57,34 +56,20 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         )
     }
 
-    pub fn operation_read_field<
-        Operation,
-        Input,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >(
-        self,
+    pub fn operation_read_field<Operation, Input, Field: super::fragment::RecordSelection>(
+        mut self,
         operation: ApplicationOperationRef<Schema, Operation, Input>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Self
-    where
-        Field: OperationReads<Operation>,
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-    {
-        self.decision_read(
-            operation.name(),
-            ApplicationOperationDecisionReadTarget::Field {
-                entity: field.entity().to_string(),
-                aspect: field.aspect().to_string(),
-                field: field.field().to_string(),
-            },
-        )
+        field: Field,
+    ) -> Self {
+        let recipe = field.expected_recipe();
+        let locus = recipe.locus();
+        let target = ApplicationOperationDecisionReadTarget::Field {
+            entity: locus.entity().to_owned(),
+            aspect: locus.aspect().to_owned(),
+            field: locus.field().to_owned(),
+        };
+        self.member_provenance.fragments.expect_field(recipe);
+        self.decision_read(operation.name(), target)
     }
 
     pub fn operation_read_relation<Operation, Input, Relation, From, To>(

@@ -26,19 +26,12 @@ worth_query_portable_type!(Slot => "worth.query.document-history.matching-retent
 fn expected() -> ApplicationQueryParameterRef<Query, Expected, U64ApplicationValueBinding> {
     ApplicationQueryParameterRef::from_query_identifier("expected")
 }
-fn retention() -> ApplicationQueryResultFieldRef<
-    Query,
-    Slot,
-    DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
-    DocumentRetentionField,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("retention", DocumentRetentionField::reference())
+fn retention(
+) -> ApplicationQueryResultFieldRef<Query, Slot, DocumentRetentionSchema, DocumentRetentionField> {
+    ApplicationQueryResultFieldRef::new(
+        "retention",
+        DocumentRetentionField::at("DocumentRetentionField"),
+    )
 }
 pub struct Binding;
 impl ApplicationQueryBinding<DocumentRetentionSchema> for Binding {
@@ -55,17 +48,8 @@ impl ApplicationQueryBinding<DocumentRetentionSchema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.document-history.matching-read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema,
@@ -86,7 +70,10 @@ impl ApplicationQueryIntent<DocumentRetentionSchema> for Input {
             .unwrap()
     }
     fn into_scope(self) -> DocumentRetentionQueryScope {
-        DocumentRetentionQueryScope::new(DocumentIdentityField::reference(), self.identity)
+        DocumentRetentionQueryScope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity,
+        )
     }
 }
 pub fn definition(
@@ -110,7 +97,10 @@ pub fn definition(
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .parameter(expected())
-        .where_equal(DocumentRetentionField::reference(), expected())
+        .where_equal(
+            DocumentRetentionField::at("DocumentRetentionField"),
+            expected(),
+        )
         .build()
         .unwrap()
 }

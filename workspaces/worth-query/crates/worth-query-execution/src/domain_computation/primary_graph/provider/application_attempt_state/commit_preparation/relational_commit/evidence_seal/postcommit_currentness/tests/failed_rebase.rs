@@ -28,7 +28,7 @@ fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
                     .primary_graph()
                     .unwrap()
                     .layout
-                    .entity_kind(AccountIdentity::reference().entity())
+                    .entity_kind(AccountIdentity::at("AccountIdentity").entity())
                     .unwrap(),
                 locator,
             };

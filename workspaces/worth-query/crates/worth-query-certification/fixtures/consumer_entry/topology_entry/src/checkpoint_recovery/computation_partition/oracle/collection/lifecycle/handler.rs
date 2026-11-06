@@ -64,7 +64,7 @@ macro_rules! handler {
                 };
                 let command = *reader.idempotency_key();
                 let set = match reader
-                    .resolve_entity(facts::EntrySetKey::reference(), input.entries.clone())
+                    .resolve_entity(facts::EntrySetKey::at("EntrySetKey"), input.entries.clone())
                 {
                     Ok(set) => set,
                     Err(error) => {
@@ -132,10 +132,10 @@ fn observe_preserved_topology<Schema: TopologySchemaBinding>(
     for member_key in [key.clone(), format!("{key}:b"), format!("{key}:c")] {
         // Selection alone grants nothing: the real decision reader resolves
         // and records each native target for the subsequent candidate writer.
-        let body = reader.resolve_entity(BodyKey::reference(), member_key)?;
+        let body = reader.resolve_entity(BodyKey::at("BodyKey"), member_key)?;
         // Replacement lowering needs the actual field preimage, in addition
         // to the observed entity. The total still comes only from the collection.
-        reader.field(&body, Length::reference())?;
+        reader.field(&body, Length::at("Length"))?;
     }
     members::observe(input, reader)
 }
@@ -169,16 +169,16 @@ fn create<Schema: TopologySchemaBinding>(
             )
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&body, BodyKey::reference(), member_key)
+            .initialize_field(&body, BodyKey::at("BodyKey"), member_key)
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&body, PositionX::reference(), length(x))
+            .initialize_field(&body, PositionX::at("PositionX"), length(x))
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&body, PositionY::reference(), length(y))
+            .initialize_field(&body, PositionY::at("PositionY"), length(y))
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&body, Length::reference(), value)
+            .initialize_field(&body, Length::at("Length"), value)
             .map_err(HandlerExecutionDenial::new)?;
         if suffix.is_empty() {
             writer
@@ -227,10 +227,10 @@ fn preserve<Schema: TopologySchemaBinding>(
             format!("{key}:{suffix}")
         };
         let body = writer
-            .resolve_entity(BodyKey::reference(), member_key)
+            .resolve_entity(BodyKey::at("BodyKey"), member_key)
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .write_field(&body, Length::reference(), value)
+            .write_field(&body, Length::at("Length"), value)
             .map_err(HandlerExecutionDenial::new)?;
         if suffix.is_empty() {
             writer

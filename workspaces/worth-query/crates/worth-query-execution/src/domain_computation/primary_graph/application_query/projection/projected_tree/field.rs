@@ -74,27 +74,17 @@ impl WorthQueryApplicationProjectedField {
         Aspect,
         Field,
         Value,
-        Write,
-        Equality,
-        Unit,
     >(
         &self,
-        selector: &ApplicationQueryResultFieldRef<
-            Query,
-            Slot,
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
+        selector: &ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>,
     ) -> bool
     where
-        Field: RequiredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
+
         Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
@@ -109,27 +99,17 @@ impl WorthQueryApplicationProjectedField {
         Aspect,
         Field,
         Value,
-        Write,
-        Equality,
-        Unit,
     >(
         &self,
-        selector: &ApplicationQueryOptionalResultFieldRef<
-            Query,
-            Slot,
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
+        selector: &ApplicationQueryOptionalResultFieldRef<Query, Slot, Schema, Field>,
     ) -> bool
     where
-        Field: OptionalApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
+
         Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {

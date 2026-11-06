@@ -14,6 +14,8 @@ use worth_query_installation::{
 };
 #[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/base_model.rs"]
 mod base_model;
+#[path = "model.rs"]
+mod storage_model;
 use base_model::*;
 #[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/principal.rs"]
 mod principal;

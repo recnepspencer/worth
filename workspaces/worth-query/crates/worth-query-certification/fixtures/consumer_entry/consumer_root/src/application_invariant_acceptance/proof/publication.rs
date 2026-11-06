@@ -143,7 +143,7 @@ fn declared_minimum_is_program_meaning() {
         unbound.revision(),
         "the installed program revision includes its actual schema's graph laws"
     );
-    let declaration = crate::ConsumerSchema::declaration().unwrap();
+    let declaration = <crate::ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap();
     let explicit =
         ApplicationProgramAuthoring::<crate::ConsumerSchema, crate::ConsumerProgram>::begin()
             .with_schema(&declaration)

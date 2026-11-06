@@ -19,25 +19,18 @@ where
         self.work
     }
 
-    pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
+    pub fn resolve_entity<Aspect, Entity, Field, Value>(
         &mut self,
 
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         if !self.work_budget.can_afford(3) {
             return Err(WorthQueryEntityResolutionDenial::new(
@@ -45,6 +38,24 @@ where
                 field.field(),
             ));
         }
+        let column = field
+            .installed(self.value_bindings.fragments())
+            .map_err(|_| {
+                WorthQueryEntityResolutionDenial::new(
+                    WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::FieldNotInstalled,
+                    ),
+                    field.field(),
+                )
+            })?;
+        Field::Binding::validate(&value).map_err(|_| {
+            WorthQueryEntityResolutionDenial::new(
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::ValueEncodingRejected,
+                ),
+                column.path(),
+            )
+        })?;
         let value = Field::Binding::encode(&value).map_err(|_| {
             WorthQueryEntityResolutionDenial::new(
                 WorthQueryEntityResolutionDenialKind::Refused(
@@ -115,28 +126,21 @@ where
         })
     }
 
-    pub fn resolve_optional_entity<Aspect, Entity, Field, Value, Write, Unit>(
+    pub fn resolve_optional_entity<Aspect, Entity, Field, Value>(
         &mut self,
 
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
     ) -> Result<
         Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>,
         WorthQueryEntityResolutionDenial,
     >
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         let _execution = self.execution;
         match self.resolve_entity(field, value) {
@@ -153,18 +157,24 @@ where
         }
     }
 
-    pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn field<Entity, Aspect, Field, Value>(
         &mut self,
 
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
     ) -> Option<Value>
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
+        if field.installed(self.value_bindings.fragments()).is_err() {
+            self.value_decode.refuse_content(crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial::BindingContractMismatch);
+            return None;
+        }
         let execution = self.execution;
         if self.native_read_stop.is_some() || self.value_decode.stopped() {
             return None;

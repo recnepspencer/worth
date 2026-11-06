@@ -27,31 +27,42 @@ pub fn definition<L: LawPolicy>() -> ApplicationInvariantDefinition<GraphSchema<
         ),
     )
 }
-pub type Entity<L> = WorthQueryApplicationInvariantEntity<GraphSchema<L>, Node>;
+pub type Entity<L> =
+    WorthQueryApplicationInvariantEntity<GraphSchema<L>, GraphNode<GraphSchema<L>>>;
 pub struct Root<L: LawPolicy> {
     pub proposed: Entity<L>,
     pub committed: Option<Entity<L>>,
 }
 pub struct Rule<L: LawPolicy> {
-    pub node: WorthQueryApplicationInvariantEntityBinding<GraphSchema<L>, Node>,
-    pub key: WorthQueryApplicationInvariantFieldBinding<GraphSchema<L>, Node, u64>,
-    pub physical:
-        WorthQueryApplicationInvariantRelationBinding<GraphSchema<L>, Precedes, Node, Node>,
-    pub derived:
-        WorthQueryApplicationInvariantDerivedRelationBinding<GraphSchema<L>, TwoSteps, Node, Node>,
+    pub node:
+        WorthQueryApplicationInvariantEntityBinding<GraphSchema<L>, GraphNode<GraphSchema<L>>>,
+    pub key:
+        WorthQueryApplicationInvariantFieldBinding<GraphSchema<L>, GraphNode<GraphSchema<L>>, u64>,
+    pub physical: WorthQueryApplicationInvariantRelationBinding<
+        GraphSchema<L>,
+        GraphPrecedes<GraphSchema<L>>,
+        GraphNode<GraphSchema<L>>,
+        GraphNode<GraphSchema<L>>,
+    >,
+    pub derived: WorthQueryApplicationInvariantDerivedRelationBinding<
+        GraphSchema<L>,
+        TwoSteps,
+        GraphNode<GraphSchema<L>>,
+        GraphNode<GraphSchema<L>>,
+    >,
 }
 pub fn resolve<L: LawPolicy>(
     resolver: &WorthQueryApplicationInvariantSchemaResolver<'_, GraphSchema<L>>,
 ) -> Result<Rule<L>, String> {
     Ok(Rule {
         node: resolver
-            .typed_entity(Node::reference())
+            .typed_entity(node::<GraphSchema<L>>())
             .ok_or("Node absent")?,
         key: resolver
-            .typed_field(NodeKey::reference())
+            .typed_field(node_key::<GraphSchema<L>>())
             .ok_or("NodeKey absent")?,
         physical: resolver
-            .typed_relation(Precedes::reference())
+            .typed_relation(precedes::<GraphSchema<L>>())
             .ok_or("Precedes absent")?,
         derived: resolver
             .typed_derived_relation(TwoSteps::reference())

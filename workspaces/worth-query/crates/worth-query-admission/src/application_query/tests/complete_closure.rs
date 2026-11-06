@@ -3,7 +3,7 @@ use super::*;
 use crate::application_query::requirements::derive_graph_read_access_requirements_for_contract_admitted;
 use crate::graph_read_access::*;
 use worth_query_declaration::facade::application_query::*;
-worth_query_relation!(pub AccountNext in PlanningTestSchema, Account => Account; integrity = same_context_unbounded_retain_dangling);
+
 worth_query_application_query!(pub(super) ClosureQuery for PlanningTestSchema, identity "planning-complete-closure", parameters ActivityParametersBinding, result ActivityResultBinding, scope Account => "Account", name "planning_complete_closure");
 worth_query_application_query!(pub(super) ReverseClosureQuery for PlanningTestSchema, identity "planning-reverse-complete-closure", parameters ActivityParametersBinding, result ActivityResultBinding, scope Account => "Account", name "planning_reverse_complete_closure");
 pub(super) fn definition<Q: ApplicationQueryMarkerIdentity<PlanningTestSchema> + 'static>(
@@ -46,9 +46,9 @@ where
             Value = ActivityResult,
         >,
 {
-    let field = ApplicationQueryResultFieldRef::<Q, AccountIdSlot, _, _, _, _, _, _, _, _>::new(
+    let field = ApplicationQueryResultFieldRef::<Q, AccountIdSlot, _, _>::new(
         "account_id",
-        AccountId::reference(),
+        AccountId::at("AccountId"),
     );
     let shape = ApplicationQueryResultShapeBuilder::<
         PlanningTestSchema,
@@ -308,3 +308,5 @@ fn check_derived<Q: ApplicationQueryMarkerIdentity<PlanningTestSchema> + 'static
         &WorthQueryGraphIndexLifecycleOwner::LowerRuntime
     );
 }
+
+pub use super::storage_model::AccountNext;

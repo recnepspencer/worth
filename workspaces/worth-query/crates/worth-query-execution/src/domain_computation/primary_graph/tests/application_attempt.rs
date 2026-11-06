@@ -312,7 +312,7 @@ pub(in crate::domain_computation::primary_graph) fn resolved_account(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase.phase_for_application(&world.application),
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             status.to_string(),
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,

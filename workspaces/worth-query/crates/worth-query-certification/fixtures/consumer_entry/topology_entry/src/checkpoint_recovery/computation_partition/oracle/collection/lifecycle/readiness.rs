@@ -14,7 +14,13 @@ pub(super) struct Readiness<const INITIAL: bool, const CONFLICT: bool = false, c
 impl<const INITIAL: bool, const CONFLICT: bool, const ORPHAN: u8>
     Readiness<INITIAL, CONFLICT, ORPHAN>
 {
-    fn conditional_binding() -> domain::WorthQueryApplicationConditionalOperationBinding<
+    fn conditional_binding(
+        definition: &domain::WorthQueryDomainOperationDefinition<
+            RegionOutputDomain,
+            RegionOutputReadinessOperation,
+            RegionOutputReadinessFamily,
+        >,
+    ) -> domain::WorthQueryApplicationConditionalOperationBinding<
         CheckpointSchema,
         TotalRegionOutput,
         RegionOutputInput,
@@ -24,7 +30,7 @@ impl<const INITIAL: bool, const CONFLICT: bool, const ORPHAN: u8>
     > {
         domain::WorthQueryApplicationConditionalOperationBinding::declare(
             TotalRegionOutput::reference::<CheckpointSchema>(),
-            definition::<CONFLICT, ORPHAN>().reference(),
+            definition.reference(),
         )
     }
 }
@@ -46,31 +52,36 @@ impl<const INITIAL: bool, const CONFLICT: bool, const ORPHAN: u8>
         &[PreserveProducer::IDENTITY]
     };
     fn package_contract(
-        _declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+        declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
     ) -> Result<
         WorthQueryApplicationConditionalPackageContract,
         worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
     > {
-        Ok({
-            WorthQueryApplicationConditionalPackageContract::new(
-                definition::<CONFLICT, ORPHAN>().into_portable(),
-                Self::conditional_binding().portable().clone(),
-                RegionOutputReadyNode::reference().node_identity(),
-            )
-        })
+        let definition = definition::<CONFLICT, ORPHAN>(declaration)?;
+        let binding = Self::conditional_binding(&definition);
+        Ok(WorthQueryApplicationConditionalPackageContract::new(
+            definition.into_portable(),
+            binding.portable().clone(),
+            RegionOutputReadyNode::reference().node_identity(),
+        ))
     }
     fn install(
         _: (),
         _: &WorthQueryApplicationConditionalProducerAccess<'_, CheckpointSchema>,
         installation: &mut WorthQueryConditionalApplicationRuntimeInstallation<CheckpointSchema>,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
+        let definition = definition::<CONFLICT, ORPHAN>(
+            installation.installed_schema().installed_declaration(),
+        )?;
+        let binding = Self::conditional_binding(&definition);
+
         let operation = installation
             .installed_schema()
             .installed_operation(TotalRegionOutput::reference::<CheckpointSchema>())
             .unwrap();
         let node = installation
             .installed_packages()
-            .bind_conditional_application_operation(operation, &Self::conditional_binding())
+            .bind_conditional_application_operation(operation, &binding)
             .unwrap()
             .bind_node(RegionOutputReadyNode::reference())
             .unwrap();
@@ -83,34 +94,41 @@ impl<const INITIAL: bool, const CONFLICT: bool, const ORPHAN: u8>
 }
 
 fn definition<const CONFLICT: bool, const ORPHAN: u8>(
-) -> domain::WorthQueryDomainOperationDefinition<
-    RegionOutputDomain,
-    RegionOutputReadinessOperation,
-    RegionOutputReadinessFamily,
+    declaration: &worth_query_decl::facade::application_schema::ErasedApplicationSchemaDeclaration,
+) -> Result<
+    domain::WorthQueryDomainOperationDefinition<
+        RegionOutputDomain,
+        RegionOutputReadinessOperation,
+        RegionOutputReadinessFamily,
+    >,
+    WorthQueryOutputReadinessContractDenial,
 > {
-    let dependency = crate::readiness::output_change_dependency();
     let identity = "collection-shared-readiness";
-    let definition = WorthQueryOutputReadinessContractBuilder::new(
+    let definition = WorthQueryOutputReadinessContractBuilder::for_field(
+        declaration,
+        crate::readiness::delivery_field(),
         domain::WorthQueryDomainOperationIdentity::new(identity, 1),
         "region-output-ready",
-        crate::readiness::output_change_projection(),
         crate::readiness::canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new(identity).unwrap(),
-        // Same authored identity, different native lowering meaning must not coalesce.
         if CONFLICT {
             "collection-conflicting-readiness-v1"
         } else {
             identity
         },
-    )
-    .semantic_reads([crate::readiness::output_change_projection()])
-    .dependencies([dependency.clone()])
-    .readiness_dependencies([dependency])
-    .build()
-    .expect("singleton producer readiness contract is canonical");
+    )?
+    .field_dependency(
+        declaration,
+        crate::readiness::delivery_field(),
+        WorthQueryReadinessFieldUse::DeliveryAndEligibility,
+    )?
+    .build_typed::<RegionOutputDomain, RegionOutputReadinessOperation, RegionOutputReadinessFamily>(
+    )?
+    .definition()
+    .clone();
     if ORPHAN == 0 {
-        return definition;
+        return Ok(definition);
     }
     let mut semantics = definition.semantics().clone();
     if ORPHAN == 1 {
@@ -140,7 +158,10 @@ fn definition<const CONFLICT: bool, const ORPHAN: u8>(
             domain::WorthQueryPortableWorkflowDefinition::new("orphan-stage", [stage]),
         );
     }
-    domain::WorthQueryDomainOperationDefinition::new(definition.identity().clone(), semantics)
+    Ok(domain::WorthQueryDomainOperationDefinition::new(
+        definition.identity().clone(),
+        semantics,
+    ))
 }
 
 fn additional_node(

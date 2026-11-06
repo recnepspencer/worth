@@ -47,9 +47,8 @@ worth_query_query_binding!(
     result AccountDiscoveryQueryResultBinding,
     principal BankPrincipalBinding, mapping ExternalPrincipalMapping, principal_entity Principal,
     principal_identity crate::model::BankPrincipalId, identity_binding BankPrincipalIdBinding,
-    scope Principal, PrincipalIdentity, PrincipalIdentityField,
-        crate::model::BankPrincipalId, ReadOnly, NoApplicationUnit,
-    principal_field PrincipalIdentityField::reference(),
+    scope PrincipalIdentityField,
+    principal_field PrincipalIdentityField::at("PrincipalIdentityField"),
     limits results 1_024
 );
 

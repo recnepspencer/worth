@@ -52,7 +52,7 @@ fn check(observe_field: bool) {
                     .unwrap();
                 let control = FreshnessCancellationGuardForTest::install_on_this_thread(source, 0);
                 let refusal = attempt
-                    .observe_field(&execution, &account, AccountStatus::reference())
+                    .observe_field(&execution, &account, AccountStatus::at("AccountStatus"))
                     .unwrap_err();
                 assert!(control.triggered());
                 assert_eq!(

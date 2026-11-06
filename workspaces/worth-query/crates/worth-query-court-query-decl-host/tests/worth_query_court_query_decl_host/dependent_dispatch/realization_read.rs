@@ -15,33 +15,13 @@ pub struct KeySlot;
 pub struct ValueSlot;
 worth_query_portable_type!(KeySlot => "dispatch.realization.key");
 worth_query_portable_type!(ValueSlot => "dispatch.realization.value");
-pub fn key_field() -> ApplicationQueryResultFieldRef<
-    RealizationQuery,
-    KeySlot,
-    Schema,
-    Realization,
-    RealizationFacts,
-    RealizationKey,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", RealizationKey::reference())
+pub fn key_field(
+) -> ApplicationQueryResultFieldRef<RealizationQuery, KeySlot, Schema, RealizationKey> {
+    ApplicationQueryResultFieldRef::new("key", RealizationKey::at("RealizationKey"))
 }
-pub fn value_field() -> ApplicationQueryResultFieldRef<
-    RealizationQuery,
-    ValueSlot,
-    Schema,
-    Realization,
-    RealizationFacts,
-    RealizedValue,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", RealizedValue::reference())
+pub fn value_field(
+) -> ApplicationQueryResultFieldRef<RealizationQuery, ValueSlot, Schema, RealizedValue> {
+    ApplicationQueryResultFieldRef::new("value", RealizedValue::at("RealizedValue"))
 }
 pub fn definition(
 ) -> ApplicationQueryDefinition<Schema, RealizationQuery, (), Realized, Realization> {
@@ -84,4 +64,4 @@ pub fn scope(input: ReadRealization) -> String {
 worth_query_query_binding!(pub Binding for ReadRealization, schema Schema, identity "dispatch.realization.read", input Input,
     query RealizationQuery, parameters Parameters => |_| ApplicationQueryParameterSet::new(), result ResultBinding,
     principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Realization, RealizationFacts, RealizationKey, String, ReadOnly, NoApplicationUnit, field RealizationKey::reference(), value scope, limits results 1);
+    scope RealizationKey, field RealizationKey::at("RealizationKey"), value scope, limits results 1);

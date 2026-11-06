@@ -190,20 +190,26 @@ where
                     Number::reference(),
                     WorthQueryApplicationEntityKey::new("numeric").unwrap(),
                 )
-                .field(Key::reference(), "numeric".to_owned())
-                .field(Primary::reference(), 5_u64)
-                .field(Secondary::reference(), 7_u64)
-                .field(ReadEnabled::reference(), true)
-                .field(Ceiling::reference(), 100_u64)
-                .field(Calculated::reference(), 0_u64)
-                .field(super::write_admission::Binary::reference(), 5_u64)
+                .field(Key::at("Key"), "numeric".to_owned())
+                .field(Primary::at("Primary"), Counter(5_u64))
+                .field(Secondary::at("Secondary"), 7_u64)
+                .field(ReadEnabled::at("ReadEnabled"), true)
+                .field(Ceiling::at("Ceiling"), 100_u64)
+                .field(Calculated::at("Calculated"), 0_u64)
                 .field(
-                    super::write_admission::Canonical::reference(),
+                    super::write_admission::Binary::at("Binary"),
+                    BinaryCounter(5_u64),
+                )
+                .field(
+                    super::write_admission::Canonical::at("Canonical"),
                     super::write_admission::CanonicalCounter(5),
                 )
-                .field(super::write_admission::Delegated::reference(), 5_u64)
                 .field(
-                    super::composite_definition_model::DefinitionRevision::reference(),
+                    super::write_admission::Delegated::at("Delegated"),
+                    DelegatedCounter(5_u64),
+                )
+                .field(
+                    super::composite_definition_model::DefinitionRevision::at("DefinitionRevision"),
                     5_u64,
                 ),
             )?;

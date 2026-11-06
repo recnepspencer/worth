@@ -44,8 +44,8 @@ fn install<const MODE: u8>() -> Result<
                         Node::reference(),
                         WorthQueryApplicationEntityKey::new(key).unwrap(),
                     )
-                    .field(Id::reference(), id)
-                    .field(Value::reference(), 0),
+                    .field(Id::at("Id"), id)
+                    .field(Value::at("Value"), 0),
                 )?;
             }
             graph.bind_relation(WorthQueryApplicationRelationSeed::new(

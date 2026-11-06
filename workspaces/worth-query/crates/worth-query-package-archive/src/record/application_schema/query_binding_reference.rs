@@ -40,11 +40,6 @@ pub(in crate::record) fn decode(
                 "principal-identity" => ApplicationQueryScopeResolutionMode::PrincipalIdentity,
                 _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
             },
-            scope_writable: match input.text()? {
-                "true" => true,
-                "false" => false,
-                _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-            },
             principal_binding: input.text()?.to_owned(),
         },
     ))

@@ -41,9 +41,20 @@ fn definition_for<
         "protected-prefix",
         access::ReadBoxes::reference(),
     )
-    .use_field_by(ItemIdentity::reference(), access::encoded(), all.clone())
-    .use_field_by(ItemName::reference(), access::encoded(), name_influence)
-    .use_field_by(ItemEnabled::reference(), access::encoded(), all.clone())
+    .use_field_by(
+        ItemIdentity::at("ItemIdentity"),
+        access::encoded(),
+        all.clone(),
+    )
+    .expect("record field contract")
+    .use_field_by(ItemName::at("ItemName"), access::encoded(), name_influence)
+    .expect("record field contract")
+    .use_field_by(
+        ItemEnabled::at("ItemEnabled"),
+        access::encoded(),
+        all.clone(),
+    )
+    .expect("record field contract")
     .disclose_field_by(source::identity::<Q>(), access::encoded(), all.clone())
     .disclose_field_by(source::name::<Q>(), hidden, all.clone())
     .disclose_field_by(source::enabled::<Q>(), access::encoded(), all);
@@ -75,7 +86,7 @@ fn definition_for<
     };
     builder
         .parameter(enabled::<Q>())
-        .where_equal(ItemEnabled::reference(), enabled::<Q>())
+        .where_equal(ItemEnabled::at("ItemEnabled"), enabled::<Q>())
         .order_by(
             source::identity::<Q>(),
             ApplicationQueryOrderingDirection::Ascending,
@@ -113,7 +124,14 @@ impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
             identity: row.field(source::identity())?,
-            name: row.disclosed_field(source::name())?,
+            name: match row.disclosed_field(source::name())? {
+                WorthQueryApplicationDisclosed::Disclosed(value) => {
+                    WorthQueryApplicationDisclosed::Disclosed(value.into())
+                }
+                WorthQueryApplicationDisclosed::Omitted(omission) => {
+                    WorthQueryApplicationDisclosed::Omitted(omission)
+                }
+            },
             enabled: row.field(source::enabled())?,
         })
     }
@@ -150,19 +168,19 @@ worth_query_query_binding!(pub Binding for Find, schema Catalog, identity "maint
         .bind(probe::<Query>(), source::Probe { prefix: input.prefix.clone() }).unwrap().bind(enabled::<Query>(), true).unwrap() },
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value scope, limits results 16);
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value scope, limits results 16);
 worth_query_query_binding!(pub AliasBinding for FindAlias, schema Catalog, identity "maintained-catalog.protected-alias-prefix-binding.v1", input AliasInputBinding,
     query Query, parameters source::ParametersBinding => |input: &FindAlias| { ApplicationQueryParameterSet::new()
         .bind(probe::<Query>(), source::Probe { prefix: input.prefix.clone() }).unwrap().bind(enabled::<Query>(), true).unwrap() },
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value alias_scope, limits results 16);
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value alias_scope, limits results 16);
 worth_query_query_binding!(pub BlockedBinding for FindBlocked, schema Catalog, identity "maintained-catalog.blocked-prefix-binding.v1", input BlockedInputBinding,
     query BlockedQuery, parameters source::ParametersBinding => |input: &FindBlocked| { ApplicationQueryParameterSet::new()
         .bind(probe::<BlockedQuery>(), source::Probe { prefix: input.prefix.clone() }).unwrap().bind(enabled::<BlockedQuery>(), true).unwrap() },
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value blocked_scope, limits results 16);
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value blocked_scope, limits results 16);

@@ -60,7 +60,7 @@ fn check(case: Case) {
             let root = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".into(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -186,7 +186,7 @@ fn missing_door_index(live: bool, predicate_missing: bool) {
             let root = selected
                 .resolve_entity(
                     &phase,
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".into(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

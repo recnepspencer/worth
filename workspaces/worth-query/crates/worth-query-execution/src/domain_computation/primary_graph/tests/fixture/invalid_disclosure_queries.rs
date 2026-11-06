@@ -89,10 +89,11 @@ pub(super) fn forbidden_influence_definition() -> ApplicationQueryDefinition<
         TouchAccountCapability::reference(),
     )
     .use_field_by(
-        AccountStatus::reference(),
+        AccountStatus::at("AccountStatus"),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::forbid_all(),
     )
+    .expect("record field contract")
     .disclose_field_by(
         status_result_field::<ForbiddenInfluenceQuery>(),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
@@ -209,7 +210,7 @@ where
     if predicate {
         builder
             .parameter(status_parameter())
-            .where_equal(AccountStatus::reference(), status_parameter())
+            .where_equal(AccountStatus::at("AccountStatus"), status_parameter())
             .build()
             .unwrap()
     } else {

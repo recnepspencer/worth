@@ -24,7 +24,7 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                 .selected_product(&phase.test_host_request())
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -32,7 +32,7 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                 .unwrap()
                 .entity_id();
             let graph = world.application.runtime.primary_graph().unwrap();
-            let status_ref = AccountStatus::reference();
+            let status_ref = AccountStatus::at("AccountStatus");
             let status = graph
                 .layout()
                 .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
@@ -127,7 +127,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
             let entity = selected_product
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -139,7 +139,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
             let graph = world.application.runtime.primary_graph().unwrap();
             let handle = graph.integration_handle();
             let owner = &handle.source_owner.invalidation_owner;
-            let status_ref = AccountStatus::reference();
+            let status_ref = AccountStatus::at("AccountStatus");
             let status = graph
                 .layout()
                 .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())

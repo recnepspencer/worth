@@ -66,10 +66,10 @@ pub fn install(value: NestedValue) -> Result<Host, WorthQueryInMemoryApplication
                     WorthQueryApplicationEntityKey::new("nested-row").unwrap(),
                 )
                 .field(
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     "authored-nested".to_owned(),
                 )
-                .field(DocumentValueField::reference(), value),
+                .field(DocumentValueField::at("DocumentValueField"), value),
             )?;
             Ok(())
         },

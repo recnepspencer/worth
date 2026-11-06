@@ -9,12 +9,16 @@ use super::record::Column;
 use super::{Aspect, Entity, Fragment, Record, RecordBinding};
 use std::any::TypeId;
 use std::collections::BTreeMap;
+mod field_selection;
 mod record_access;
-pub(crate) use record_access::{expand_record_access, RecordAccess};
+mod record_encoding;
+mod relation_payload;
+pub(in crate::application_schema) use record_access::{expand_record_access, RecordAccess};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct FragmentCatalog {
     definitions: BTreeMap<TypeId, FragmentDefinition>,
+    native_aspects: BTreeMap<u64, String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -31,6 +35,7 @@ pub struct AspectDefinition {
     path: String,
     entity: String,
     name: String,
+    meaning: String,
     binding: RecordBinding,
     fields: Vec<RecordFieldDefinition>,
     optional: bool,
@@ -38,10 +43,14 @@ pub struct AspectDefinition {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RecordFieldDefinition {
-    recipe: ApplicationFieldBindingRecipe,
-    writable: bool,
-    equality: bool,
-    unique: bool,
+    pub(super) content: Option<super::super::ApplicationContentBindingRecipe>,
+    pub(super) path: String,
+    pub(super) recipe: ApplicationFieldBindingRecipe,
+    pub(super) presence: super::super::ApplicationFieldPresence,
+    pub(super) internal_presence: bool,
+    pub(super) writable: bool,
+    pub(super) equality: bool,
+    pub(super) unique: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -53,7 +62,30 @@ pub struct RelationDefinition {
 }
 
 impl FragmentCatalog {
+    /// SDK structural columns, compiled once into the Native layout.
+    #[doc(hidden)]
+    pub fn presence_field(&self, entity: &str, aspect: &str) -> Option<&RecordFieldDefinition> {
+        self.definitions
+            .values()
+            .flat_map(|fragment| fragment.aspects.values())
+            .find(|row| row.entity == entity && row.name == aspect)
+            .and_then(|row| row.fields.iter().find(|field| field.internal_presence))
+    }
+    pub(crate) fn internal_field(
+        &self,
+        locus: &super::super::ApplicationFieldBindingLocus,
+    ) -> bool {
+        self.definitions
+            .values()
+            .flat_map(|fragment| fragment.aspects.values())
+            .flat_map(|aspect| &aspect.fields)
+            .any(|field| field.internal_presence && field.recipe.locus() == locus)
+    }
     pub fn fragment<F: Fragment>(&self, _: F) -> Option<&FragmentDefinition> {
+        self.fragment_type::<F>()
+    }
+
+    pub fn fragment_type<F: Fragment>(&self) -> Option<&FragmentDefinition> {
         self.definitions.get(&TypeId::of::<F>())
     }
 
@@ -98,35 +130,66 @@ impl FragmentCatalog {
         columns: &[Column],
         optional: bool,
     ) -> Result<AspectDefinition, Denial> {
-        let owner = self.owner(entity_path)?;
-        let entity_type = owner
+        let entity_type = self
+            .owner(entity_path)?
             .entities
             .iter()
             .find(|(_, name)| name.as_str() == entity)
             .map(|(key, _)| *key)
             .ok_or(Denial::MissingEntity)?;
-        let fields = columns
+        super::super::identifier_validation::validate_simple_identifier(A::NAME)?;
+        let path = format!("{entity_path}.{}", A::NAME);
+        let native_identity = super::identity::native_aspect_identity(entity, A::NAME);
+        if let Some(first) = self.native_aspects.get(&native_identity) {
+            return Err(if first == &path {
+                Denial::DuplicateFragmentMember { path }
+            } else {
+                Denial::FragmentIdentityCollision {
+                    identity: native_identity,
+                    first: first.clone(),
+                    second: path,
+                }
+            });
+        }
+        self.native_aspects.insert(native_identity, path.clone());
+        let name = super::native_aspect_name(entity, A::NAME);
+        let mut fields: Vec<_> = columns
             .iter()
             .map(|column| RecordFieldDefinition {
+                content: column.content.clone(),
+                path: format!("{entity_path}.{}.{}", A::NAME, column.path),
                 recipe: (column.recipe)(super::super::ApplicationFieldBindingLocus::new(
                     entity,
-                    A::NAME,
+                    &name,
                     &column.path,
                 )),
+                presence: column.presence,
+                internal_presence: false,
                 writable: column.writable,
                 equality: column.equality,
                 unique: column.unique,
             })
             .collect();
+        if fields
+            .iter()
+            .all(|field| field.presence == super::super::ApplicationFieldPresence::Optional)
+        {
+            fields.push(super::record_presence::definition(
+                entity,
+                &name,
+                &format!("{entity_path}.{}", A::NAME),
+            ));
+        }
         let definition = AspectDefinition {
             path: format!("{entity_path}.{}", A::NAME),
             entity: entity.to_owned(),
-            name: A::NAME.to_owned(),
+            name,
+            meaning: A::NAME.to_owned(),
             binding: RecordBinding::record::<Set, A::Row>(),
             fields,
             optional,
         };
-        owner
+        self.owner(entity_path)?
             .aspects
             .insert((entity_type, TypeId::of::<A>()), definition.clone());
         Ok(definition)
@@ -185,6 +248,14 @@ impl FragmentCatalog {
 }
 
 impl FragmentDefinition {
+    /// Logical paths and physical names of the fragment's compiled aspect rows.
+    pub fn aspects(&self) -> impl Iterator<Item = &AspectDefinition> {
+        self.aspects.values()
+    }
+    pub fn relation_aspect<R: super::Relation, A: Aspect>(&self) -> Option<&AspectDefinition> {
+        self.aspects.get(&(TypeId::of::<R>(), TypeId::of::<A>()))
+    }
+
     pub fn case_aspect<E: Entity>(
         &self,
         case: &super::CaseDefinition,
@@ -225,6 +296,9 @@ impl AspectDefinition {
     pub fn name(&self) -> &str {
         &self.name
     }
+    pub fn meaning(&self) -> &str {
+        &self.meaning
+    }
     pub fn binding(&self) -> &RecordBinding {
         &self.binding
     }
@@ -237,8 +311,21 @@ impl AspectDefinition {
 }
 
 impl RecordFieldDefinition {
+    pub fn content_format(&self) -> Option<&super::super::ApplicationContentBindingRecipe> {
+        self.content.as_ref()
+    }
+    pub fn path(&self) -> &str {
+        &self.path
+    }
+
     pub fn recipe(&self) -> &ApplicationFieldBindingRecipe {
         &self.recipe
+    }
+    pub fn presence(&self) -> super::super::ApplicationFieldPresence {
+        self.presence
+    }
+    pub fn internal_presence(&self) -> bool {
+        self.internal_presence
     }
     pub fn writable(&self) -> bool {
         self.writable
@@ -250,3 +337,6 @@ impl RecordFieldDefinition {
         self.unique
     }
 }
+
+#[cfg(test)]
+mod tests;

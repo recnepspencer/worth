@@ -10,8 +10,9 @@ impl<S, E: Entity> ApplicationPrincipalMappingIdentityRequirement<S, E> {
     ) -> Result<Self, Denial> {
         posture(&field, false, true)?;
         Ok(Self {
+            recipe: field.recipe().clone(),
             entity: E::NAME,
-            aspect: A::NAME,
+            aspect: field.locus().aspect().to_owned(),
             field: field.locus().field().to_owned(),
             _marker: PhantomData,
         })
@@ -23,7 +24,8 @@ impl<S, E: Entity> ApplicationPrincipalMappingStatusRequirement<S, E> {
     ) -> Result<Self, Denial> {
         posture(&field, true, false)?;
         Ok(Self {
-            aspect: A::NAME,
+            recipe: field.recipe().clone(),
+            aspect: field.locus().aspect().to_owned(),
             field: field.locus().field().to_owned(),
             _marker: PhantomData,
         })
@@ -48,7 +50,7 @@ impl<S, E: Entity, T: 'static, B: ApplicationIdentityScalarValueBinding<Value = 
             });
         }
         Ok(Self {
-            aspect: A::NAME,
+            aspect: field.locus().aspect().to_owned(),
             field: field.locus().field().to_owned(),
             scalar_family: B::SCALAR_FAMILY,
             value_type: B::IDENTITY_NAME,

@@ -53,7 +53,7 @@ fn foreign_phase_refuses_both_live_doors_before_cancelled_read_admission() {
                     .selected_product(&custody)
                     .resolve_entity(
                         &receiver_phase,
-                        AccountIdentity::reference(),
+                        AccountIdentity::at("AccountIdentity"),
                         "account-1".to_owned(),
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,

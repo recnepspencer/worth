@@ -39,14 +39,8 @@ impl WorthQueryManagedIndexProvider<Schema, Index> for Provider {
                 query::SourceQuery,
                 query::ContentSlot,
                 Schema,
-                Record,
-                Samples,
                 Values,
-                ContentRefId,
-                ReadWrite,
-                NoEqualityPredicate,
-                NoApplicationUnit,
-            >::new("missing", Values::reference());
+            >::new("missing", Values::at("Values"));
             let ignored = row.with_content(invalid, codec::GridFormat, |_| ());
             assert!(matches!(
                 ignored,

@@ -133,7 +133,7 @@ fn apply_parent_drift(
             phase_custody,
             world,
             "capability-parent",
-            field(world, CapabilityStatusField::reference()),
+            field(world, CapabilityStatusField::at("CapabilityStatusField")),
             super::super::fixture::CapabilityStatusBinding::encode(
                 &super::super::fixture::CapabilityStatus::Revoked,
             )
@@ -143,14 +143,20 @@ fn apply_parent_drift(
             phase_custody,
             world,
             "capability-parent",
-            field(world, CapabilityNotAfterField::reference()),
+            field(
+                world,
+                CapabilityNotAfterField::at("CapabilityNotAfterField"),
+            ),
             U64ApplicationValueBinding::encode(&99_u64).unwrap(),
         ),
         ParentDrift::Workflow => update_grant_field(
             phase_custody,
             world,
             "capability-parent",
-            field(world, CapabilityWorkflowField::reference()),
+            field(
+                world,
+                CapabilityWorkflowField::at("CapabilityWorkflowField"),
+            ),
             StringApplicationValueBinding::encode(&"closed".to_owned()).unwrap(),
         ),
         ParentDrift::Resource => {

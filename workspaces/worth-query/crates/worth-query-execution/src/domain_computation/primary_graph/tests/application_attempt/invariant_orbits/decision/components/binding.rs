@@ -8,10 +8,14 @@ use worth_query_declaration::{
     *,
 };
 pub struct Visible;
+impl worth_query_declaration::facade::application_schema::fragment::Relation for Visible {
+    const NAME: &'static str = "ComponentVisibility";
+    type To = Node;
+}
 impl Visible {
     pub fn reference<S: OrbitModel>() -> ApplicationRelationRef<S, Self, Node, Node> {
         ApplicationRelationRef::from_schema_identifiers(
-            "ComponentVisibility",
+            <Self as worth_query_declaration::facade::application_schema::fragment::Relation>::NAME,
             "Node",
             "Node",
             ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
@@ -40,7 +44,7 @@ pub struct CheckComponentsInput {
 worth_query_portable_type!(CheckComponentsInput => "worth.query.test.check-components-input.v1");
 worth_query_structured_value_binding!(pub CheckComponentsInputBinding for CheckComponentsInput {identity:"worth.query.test.check-components-input.v1"});
 worth_query_operation!(pub CheckComponents for S:OrbitModel,input CheckComponentsInputBinding);
-worth_query_operation_reads!(CheckComponents => [Node,NodeKey,Next,Shells,Focused,Empty]);
+worth_query_operation_reads!(CheckComponents => [Node, Next, Shells, Focused, Empty]);
 worth_query_mutation_binding!(pub CheckComponentsBinding for CheckComponentsInput,
     schema generic S: OrbitModel, identity "worth.query.test.check-components-mutation.v1",
     input CheckComponentsInputBinding,operation CheckComponents,result CheckOrbitOutcomeBinding,
@@ -50,14 +54,13 @@ worth_query_mutation_binding!(pub CheckComponentsBinding for CheckComponentsInpu
     outputs NoApplicationMutationOutputs,source NoApplicationMutationSource,
     principal binding IdentityBinding::reference(),binding_type IdentityBinding,
     mapping ExternalMapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Node,NodeData,NodeKey,u64,ReadOnly,NoApplicationUnit,
-    field NodeKey::reference(),value_field root,
+    scope NodeKey,
+    field NodeKey::at("NodeKey"),value_field root,
 );
 pub(in super::super) fn declare<S: OrbitModel>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
 ) -> ApplicationSchemaDeclarationBuilder<S> {
     schema
-        .relation(Visible::reference(), Node::reference(), Node::reference())
         .components(
             ApplicationComponentSetDefinition::new(Shells::reference())
                 .coupled_by(Next::reference()),
@@ -78,7 +81,7 @@ pub(in super::super) fn declare<S: OrbitModel>(
                 .finish(),
         )
         .operation_read_entity(CheckComponents::reference(), Node::reference())
-        .operation_read_field(CheckComponents::reference(), NodeKey::reference())
+        .operation_read_field(CheckComponents::reference(), NodeKey::at("NodeKey"))
         .operation_component_read(ApplicationOperationComponentReadDefinition::new(
             CheckComponents::reference(),
             Shells::reference(),
@@ -95,10 +98,11 @@ pub(in super::super) fn declare<S: OrbitModel>(
             ApplicationQueryRootPath::from(Node::reference())
                 .forward_closure(Visible::reference())
                 .where_equal(
-                    Marked::reference(),
+                    Marked::at("Marked"),
                     ApplicationEncodedScalarValue::<BoolApplicationValueBinding>::try_new(true)
                         .unwrap(),
-                ),
+                )
+                .expect("record field contract"),
         ))
         .application_mutation_binding::<CheckComponentsBinding<S>>()
 }

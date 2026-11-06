@@ -2,8 +2,7 @@
 use super::*;
 use worth_query_decl::facade::{
     application_operation::*, worth_query_mutation_binding, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation_reads, worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
@@ -32,8 +31,8 @@ worth_query_structured_value_binding!(pub SetPlanarHistoryStatusInput for SetPla
 });
 worth_query_operation!(pub SetPlanarHistoryStatusOperation for Schema: TopologySchemaBinding,
     input SetPlanarHistoryStatusInput);
-worth_query_operation_reads!(SetPlanarHistoryStatusOperation => [PlanarHistoryGrant, PlanarHistoryGrantIdentity, PlanarHistoryStatus]);
-worth_query_operation_writes!(SetPlanarHistoryStatusOperation => [PlanarHistoryStatus]);
+worth_query_operation_reads!(SetPlanarHistoryStatusOperation => [PlanarHistoryGrant]);
+
 worth_query_mutation_binding! {
     pub SetPlanarHistoryStatusBinding for SetPlanarHistoryStatus,
     schema generic Schema: TopologySchemaBinding,
@@ -51,9 +50,8 @@ worth_query_mutation_binding! {
         binding_type ConsumerPrincipalBinding, mapping ExternalPrincipalMapping,
         principal_entity Principal, principal_identity u64,
         identity_binding U64ApplicationValueBinding,
-    scope PlanarHistoryGrant, PlanarHistoryGrantFacts, PlanarHistoryGrantIdentity,
-        String, ReadWrite, NoApplicationUnit,
-    field PlanarHistoryGrantIdentity::reference(), value_field grant,
+    scope PlanarHistoryGrantIdentity,
+    field PlanarHistoryGrantIdentity::at("PlanarHistoryGrantIdentity"), value_field grant,
 }
 
 pub(crate) fn declare<S: TopologySchemaBinding>(
@@ -70,9 +68,12 @@ pub(crate) fn declare<S: TopologySchemaBinding>(
         )
         .operation_projection_work_budget(operation, 16)
         .operation_read_entity(operation, PlanarHistoryGrant::reference())
-        .operation_read_field(operation, PlanarHistoryGrantIdentity::reference())
-        .operation_read_field(operation, PlanarHistoryStatus::reference())
-        .operation_write(operation, PlanarHistoryStatus::reference())
+        .operation_read_field(
+            operation,
+            PlanarHistoryGrantIdentity::at("PlanarHistoryGrantIdentity"),
+        )
+        .operation_read_field(operation, PlanarHistoryStatus::at("PlanarHistoryStatus"))
+        .operation_write(operation, PlanarHistoryStatus::at("PlanarHistoryStatus"))
         .application_mutation_binding::<SetPlanarHistoryStatusBinding<S>>()
 }
 
@@ -88,14 +89,15 @@ impl<S: TopologySchemaBinding> OperationHandler<S, SetPlanarHistoryStatusBinding
         WorthQueryInvariantMutationTarget<S, PlanarHistoryGrant>,
         PlanarHistoryStatusDenial,
     > {
-        let grant = match reader
-            .resolve_entity(PlanarHistoryGrantIdentity::reference(), input.grant.clone())
-        {
+        let grant = match reader.resolve_entity(
+            PlanarHistoryGrantIdentity::at("PlanarHistoryGrantIdentity"),
+            input.grant.clone(),
+        ) {
             Ok(grant) => grant,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
         // The existing field's observed revision guards this ordinary write.
-        if let Err(cause) = reader.field(&grant, PlanarHistoryStatus::reference()) {
+        if let Err(cause) = reader.field(&grant, PlanarHistoryStatus::at("PlanarHistoryStatus")) {
             return HandlerResult::ExecutionDenied(cause);
         }
         match reader.mutation_target(&grant) {
@@ -116,7 +118,11 @@ impl<S: TopologySchemaBinding> OperationHandler<S, SetPlanarHistoryStatusBinding
             }
         };
         let status = if input.active { "active" } else { "revoked" };
-        match writer.write_field(&grant, PlanarHistoryStatus::reference(), status.to_owned()) {
+        match writer.write_field(
+            &grant,
+            PlanarHistoryStatus::at("PlanarHistoryStatus"),
+            status.to_owned(),
+        ) {
             Ok(()) => HandlerResult::Completed(PlanarHistoryStatusResult {
                 active: input.active,
             }),

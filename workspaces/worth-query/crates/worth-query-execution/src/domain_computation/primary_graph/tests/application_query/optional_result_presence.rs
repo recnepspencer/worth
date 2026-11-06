@@ -83,7 +83,7 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
         .expect("the fixture read owns its installed host call");
 
     let graph = world.application.runtime.primary_graph().unwrap();
-    let label = AccountLabel::reference();
+    let label = AccountLabel::at("AccountLabel");
     let label_locator = graph
         .layout
         .field_locator(label.entity(), label.aspect(), label.field())
@@ -118,7 +118,7 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
         })
         .expect("the fixture read owns its installed host call");
 
-    let note = AccountNote::reference();
+    let note = AccountNote::at("AccountNote");
     let note_locator = graph
         .layout
         .field_locator(note.entity(), note.aspect(), note.field())
@@ -171,7 +171,7 @@ fn present_optional_source_denies_equal_value_after_aba() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(before.note(), Some("reviewed"));
     let graph = world.application.runtime.primary_graph().unwrap();
-    let note = AccountNote::reference();
+    let note = AccountNote::at("AccountNote");
     let locator = graph
         .layout
         .field_locator(note.entity(), note.aspect(), note.field())
@@ -325,7 +325,7 @@ fn execute_with_note_fact(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             phase_custody,
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
             account.to_owned(),
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -381,7 +381,7 @@ fn execute_with_note_fact(
     let note = footprint
         .aspects
         .iter()
-        .find(|observed| observed.field.as_str() == AccountNote::reference().field())
+        .find(|observed| observed.field.as_str() == AccountNote::at("AccountNote").field())
         .expect("the optional note is a tracked source field");
     let fact = WorthQueryApplicationObservedFact::SourceFieldRevision {
         entity_id: note.entity,

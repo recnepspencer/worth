@@ -10,14 +10,14 @@ use worth_query_decl::facade::{
         NoApplicationMutationSource,
     },
     application_schema::{
-        ApplicationEncodedScalarValue, ApplicationFieldRef, ApplicationPrincipalBindingRef,
-        NoApplicationUnit, ReadOnly, StringApplicationValueBinding,
+        ApplicationEncodedScalarValue, ApplicationPrincipalBindingRef,
+        StringApplicationValueBinding,
     },
-    worth_query_operation, worth_query_operation_reads,
+    worth_query_operation,
 };
 
 use crate::{
-    model::{BankPrincipalId, PaymentId},
+    model::BankPrincipalId,
     proposals::{BankIdempotencyKey, BankProposalDenial},
 };
 
@@ -25,7 +25,7 @@ use super::super::{
     ApprovePayment, ApprovePaymentInputBinding, ApprovePaymentMutationBinding,
     BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping,
     PaymentDecisionDenialBinding, PaymentDecisionResult, PaymentDecisionResultBinding,
-    PaymentIdentity, PaymentIdentityField, PaymentIntent, Principal,
+    PaymentIdentityField, PaymentIntent, Principal,
 };
 use super::{
     ApprovedBusinessPaymentAdvance, ApprovedBusinessPaymentApproval,
@@ -58,15 +58,7 @@ impl ApprovedBusinessPaymentControlContext {
     }
 }
 
-type PaymentWorkflowScope = ApplicationMutationFieldScope<
-    BankSchema,
-    PaymentIntent,
-    PaymentIdentity,
-    PaymentIdentityField,
-    PaymentId,
-    ReadOnly,
-    NoApplicationUnit,
->;
+type PaymentWorkflowScope = ApplicationMutationFieldScope<PaymentIdentityField>;
 
 macro_rules! payment_workflow_control {
     (
@@ -77,7 +69,7 @@ macro_rules! payment_workflow_control {
             pub $operation for BankSchema,
             input ApprovePaymentInputBinding
         );
-        worth_query_operation_reads!($operation => [PaymentIdentityField]);
+
 
         pub struct $binding;
 
@@ -111,17 +103,8 @@ macro_rules! payment_workflow_control {
             const WORKFLOW_CONTROL: bool = true;
 
 
-            fn scope_field() -> ApplicationFieldRef<
-                BankSchema,
-                PaymentIntent,
-                PaymentIdentity,
-                PaymentIdentityField,
-                PaymentId,
-                ReadOnly,
-                worth_query_decl::facade::application_schema::EqualityPredicate,
-                NoApplicationUnit,
-            > {
-                PaymentIdentityField::reference()
+            fn scope_field() -> PaymentIdentityField {
+                PaymentIdentityField::at("PaymentIdentityField")
             }
 
             fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -159,7 +142,7 @@ macro_rules! payment_workflow_control {
             }
 
             fn scope_binding(&self) -> PaymentWorkflowScope {
-                PaymentWorkflowScope::new(PaymentIdentityField::reference(), self.input.payment)
+                PaymentWorkflowScope::new(PaymentIdentityField::at("PaymentIdentityField"), self.input.payment)
             }
         }
 
@@ -175,9 +158,9 @@ macro_rules! payment_workflow_control {
             > {
                 Ok(ApplicationCapabilityRequestProjection::new(
                     ApplicationCapabilityEntitySelector::new(
-                        PaymentIdentityField::reference(),
+                        PaymentIdentityField::at("PaymentIdentityField"),
                         crate::schema::encoded_bank_value(self.payment),
-                    ),
+                    ).unwrap(),
                     encoded("manage-approved-business-payment-workflow"),
                     encoded("business-payment-approval"),
                     ApplicationCapabilityRequestContext::new(
@@ -212,7 +195,10 @@ impl ApplicationMutationIntent<BankSchema> for ApprovedBusinessPaymentApplyInten
     }
 
     fn scope_binding(&self) -> PaymentWorkflowScope {
-        PaymentWorkflowScope::new(PaymentIdentityField::reference(), self.input.payment)
+        PaymentWorkflowScope::new(
+            PaymentIdentityField::at("PaymentIdentityField"),
+            self.input.payment,
+        )
     }
 }
 payment_workflow_control!(

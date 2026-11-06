@@ -35,7 +35,7 @@ fn contract<S: Scenario>(
 ) -> Result<Contract, WorthQueryOutputReadinessContractDenial> {
     WorthQueryOutputReadinessContractBuilder::for_field(
         declaration,
-        Value::reference::<S>(),
+        Value::at("Value"),
         domain::WorthQueryDomainOperationIdentity::new("authored-ownership.producer.v1", 1),
         "authored-ownership.producer.v1",
         canonical_query(),
@@ -45,7 +45,7 @@ fn contract<S: Scenario>(
     )?
     .field_dependency(
         declaration,
-        Value::reference::<S>(),
+        Value::at("Value"),
         WorthQueryReadinessFieldUse::DeliveryAndEligibility,
     )?
     .build_typed()
@@ -106,7 +106,7 @@ impl<S: Scenario> WorthQueryApplicationConditionalBinding<S> for Readiness {
             .delivery_ordinal(
                 installation.installed_schema(),
                 node.declaration(),
-                Value::reference::<S>(),
+                Value::at("Value"),
             )
             .unwrap();
         installation.bind_output_readiness::<producer::Producer<S>, _, _, _, _, _, _>(node, ordinal)

@@ -65,10 +65,10 @@ fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
     };
     let body = |name: &str, x, y, standing| {
         WorthQueryApplicationEntitySeed::new(Body::reference::<CheckpointSchema>(), key(name))
-            .field(BodyKey::reference::<CheckpointSchema>(), name.to_owned())
-            .field(Length::reference::<CheckpointSchema>(), length(standing))
-            .field(PositionX::reference::<CheckpointSchema>(), length(x))
-            .field(PositionY::reference::<CheckpointSchema>(), length(y))
+            .field(BodyKey::at("BodyKey"), name.to_owned())
+            .field(Length::at("Length"), length(standing))
+            .field(PositionX::at("PositionX"), length(x))
+            .field(PositionY::at("PositionY"), length(y))
     };
     // A commit gives its anchor the length one above its height. Every ring
     // starts two above its heights, where no commit puts it, but for

@@ -40,15 +40,6 @@ impl ApplicationReadableScalarValueBinding for Unmarked {
         panic!("refuse before admitted decoding effects")
     }
 }
-schema!(
-    UnmarkedSchema,
-    UnmarkedEntity,
-    UnmarkedAspect,
-    UnmarkedField,
-    String,
-    Unmarked,
-    0x919e_0010
-);
 
 #[test]
 fn an_unmarked_binding_cannot_satisfy_a_domain_atom_contract() {
@@ -85,36 +76,6 @@ impl ApplicationScalarValueBinding for RawBytes {
     }
 }
 
-macro_rules! equality_schema {
-    ($Schema:ident, $Entity:ident, $Aspect:ident, $Field:ident, $Binding:ty, $id:expr) => {
-        worth_query_declaration::worth_query_application_schema! {
-            schema $Schema { owner: $Schema, version: (1, 0), members: |schema| {
-                schema.entity($Entity::reference()).aspect($Entity::reference(), $Aspect::reference())
-                    .field($Entity::reference(), $Field::reference())
-            } }
-        }
-        worth_query_declaration::worth_query_entity!($Entity for $Schema);
-        worth_query_declaration::worth_query_aspect!($Aspect for $Schema, $Entity; identity = AspectIdentity($id), revision = AspectContractRevision(1));
-        worth_query_declaration::worth_query_field!($Field for $Schema, $Entity, $Aspect: String => $Binding, read_only, equality);
-    };
-}
-equality_schema!(
-    DomainEquality,
-    DomainEntity,
-    DomainAspect,
-    DomainField,
-    Unmarked,
-    0x919e_0011
-);
-equality_schema!(
-    RawEquality,
-    RawEntity,
-    RawAspect,
-    RawField,
-    RawBytes,
-    0x919e_0012
-);
-
 #[test]
 fn domain_and_inline_byte_fields_refuse_semantic_equality_before_codec_effects() {
     // These are actual authored field contracts. The independent literal
@@ -122,11 +83,38 @@ fn domain_and_inline_byte_fields_refuse_semantic_equality_before_codec_effects()
     let domain = DomainEquality::declaration().unwrap();
     let raw = RawEquality::declaration().unwrap();
     for (declaration, subject) in [
-        (domain.erased(), "DomainEntity:DomainAspect:DomainField"),
-        (raw.erased(), "RawEntity:RawAspect:RawField"),
+        (
+            domain.erased(),
+            format!(
+                "DomainEntity:{}:DomainField",
+                DomainField::at("DomainField").aspect()
+            ),
+        ),
+        (
+            raw.erased(),
+            format!("RawEntity:{}:RawField", RawField::at("RawField").aspect()),
+        ),
     ] {
         let refusal = collect_declared_fields(declaration).unwrap_err();
         assert_eq!(refusal.kind(), DenialKind::ContractMismatch);
         assert_eq!(refusal.subject(), subject);
+    }
+}
+
+#[path = "domain_posture/unmarked_schema.rs"]
+mod unmarked_schema;
+use unmarked_schema::*;
+#[path = "domain_posture/domain_equality.rs"]
+mod domain_equality;
+use domain_equality::*;
+#[path = "domain_posture/raw_equality.rs"]
+mod raw_equality;
+use raw_equality::*;
+
+impl ApplicationReadableScalarValueBinding for RawBytes {
+    fn decode(
+        _: &worth_foundational::facade::AspectValue,
+    ) -> Result<String, ApplicationValueDecodeDenial> {
+        panic!("predicate admission must precede decoder entry")
     }
 }

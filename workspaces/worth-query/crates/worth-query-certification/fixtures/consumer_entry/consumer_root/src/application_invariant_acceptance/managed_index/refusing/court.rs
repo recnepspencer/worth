@@ -5,8 +5,8 @@ use super::{directory, host, mutation, prefix, query, rule};
 use stats_alloc::Region;
 use std::sync::{atomic::Ordering, Arc};
 use worth_query_host::facade::{
-    admission::authenticated_principal::*, application_entry::*, application_installation::*,
-    primary_graph::*, runtime::ExecutionAllocationPolicy,
+    application_entry::*, application_installation::*, primary_graph::*,
+    runtime::ExecutionAllocationPolicy,
 };
 #[test]
 fn explicit_initialization_is_confined_to_one_unpublished_seed_attempt() {

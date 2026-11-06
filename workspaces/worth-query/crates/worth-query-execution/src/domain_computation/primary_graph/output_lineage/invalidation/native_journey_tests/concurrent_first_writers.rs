@@ -94,7 +94,7 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
             selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -106,7 +106,7 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = Arc::clone(&handle.source_owner.invalidation_owner);
-    let reference = AccountStatus::reference();
+    let reference = AccountStatus::at("AccountStatus");
     let status = graph
         .layout()
         .field_locator(reference.entity(), reference.aspect(), reference.field())

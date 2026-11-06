@@ -44,14 +44,15 @@ impl OperationHandler<BankSchema, FreezeEstateAccountMutationBinding>
         let EstateAction::FreezeAccount { estate, account } = decision else {
             return HandlerResult::DomainDenied(EstateMutationDenial::InputVariant);
         };
-        let account = match candidate.resolve_entity(AccountIdentity::reference(), account) {
-            Ok(account) => account,
-            Err(denial) => {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
-            }
-        };
+        let account =
+            match candidate.resolve_entity(AccountIdentity::at("AccountIdentity"), account) {
+                Ok(account) => account,
+                Err(denial) => {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
+                }
+            };
         if let Err(denial) =
-            candidate.write_field(&account, Status::reference(), AccountStatus::Frozen)
+            candidate.write_field(&account, Status::at("Status"), AccountStatus::Frozen)
         {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial));
         }

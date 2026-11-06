@@ -19,8 +19,8 @@ worth_query_structured_value_binding!(pub InputBinding for Refresh { identity: "
 worth_query_structured_value_binding!(pub ResultBinding for Refreshed { identity: "managed-geometry.refresh.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "managed-geometry.refresh.denial.v1" });
 worth_query_operation!(pub RefreshDirectory for Catalog, input InputBinding);
-worth_query_operation_reads!(RefreshDirectory => [Directory, DirectoryIdentity, DirectoryNote]);
-worth_query_operation_writes!(RefreshDirectory => [DirectoryNote]);
+worth_query_operation_reads!(RefreshDirectory => [Directory]);
+
 pub struct Binding;
 impl ApplicationMutationAdmissionBinding<Catalog> for Binding {
     type Admission = ApplicationConventionalAdmission;
@@ -36,15 +36,7 @@ impl ApplicationMutationBinding<Catalog> for Binding {
     type Denial = Denial;
     type DenialBinding = DenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        Catalog,
-        Directory,
-        DirectoryFacts,
-        DirectoryIdentity,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<DirectoryIdentity>;
     type PrincipalBinding = CatalogPrincipal;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -58,17 +50,8 @@ impl ApplicationMutationBinding<Catalog> for Binding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        Catalog,
-        Directory,
-        DirectoryFacts,
-        DirectoryIdentity,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DirectoryIdentity::reference()
+    fn scope_field() -> DirectoryIdentity {
+        DirectoryIdentity::at("DirectoryIdentity")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Catalog,
@@ -98,7 +81,10 @@ impl ApplicationMutationIntent<Catalog> for Refresh {
         self
     }
     fn scope_binding(&self) -> <Binding as ApplicationMutationBinding<Catalog>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(DirectoryIdentity::reference(), self.directory.clone())
+        ApplicationMutationFieldScope::new(
+            DirectoryIdentity::at("DirectoryIdentity"),
+            self.directory.clone(),
+        )
     }
 }
 
@@ -110,13 +96,15 @@ impl OperationHandler<Catalog, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Catalog, Directory>, Denial> {
         let result = (|| {
-            let directory =
-                reader.resolve_entity(DirectoryIdentity::reference(), input.directory.clone())?;
+            let directory = reader.resolve_entity(
+                DirectoryIdentity::at("DirectoryIdentity"),
+                input.directory.clone(),
+            )?;
             reader
                 .reader()
                 .require_decision_entity(&directory, Directory::reference())
                 .map_err(HandlerExecutionDenial::new)?;
-            reader.field(&directory, DirectoryNote::reference())?;
+            reader.field(&directory, DirectoryNote::at("DirectoryNote"))?;
             reader.mutation_target(&directory)
         })();
         match result {
@@ -135,7 +123,11 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 .projected_entity(&target)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .write_field(&directory, DirectoryNote::reference(), input.note.clone())
+                .write_field(
+                    &directory,
+                    DirectoryNote::at("DirectoryNote"),
+                    input.note.clone(),
+                )
                 .map_err(HandlerExecutionDenial::new)
         })();
         match result {
@@ -152,8 +144,8 @@ pub(super) fn declare(
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 32)
         .operation_read_entity(op, Directory::reference())
-        .operation_read_field(op, DirectoryIdentity::reference())
-        .operation_read_field(op, DirectoryNote::reference())
-        .operation_write(op, DirectoryNote::reference())
+        .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
+        .operation_read_field(op, DirectoryNote::at("DirectoryNote"))
+        .operation_write(op, DirectoryNote::at("DirectoryNote"))
         .application_mutation_binding::<Binding>()
 }

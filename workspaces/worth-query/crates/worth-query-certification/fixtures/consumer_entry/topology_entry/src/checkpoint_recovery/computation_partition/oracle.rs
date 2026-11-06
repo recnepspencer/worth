@@ -32,7 +32,7 @@ use super::*;
 
 mod absence;
 mod advancement_custody;
-pub(super) mod collection;
+pub(crate) mod collection;
 mod counts;
 mod courtroom;
 mod cutoff;

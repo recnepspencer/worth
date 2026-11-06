@@ -38,9 +38,9 @@ macro_rules! worlds_certification_application_graph_correction_model_compensatio
         impl ApplicationDeclaredOperation<NumericSchema> for $Operation {
             fn declare_access(schema: ApplicationSchemaDeclarationBuilder<NumericSchema>) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
                 schema.operation_projection_work_budget(Self::reference(), 8)
-                    .operation_read_field(Self::reference(), Key::reference())
-                    .operation_read_field(Self::reference(), Primary::reference())
-                    .operation_write(Self::reference(), Primary::reference())
+                    .operation_read_field(Self::reference(), Key::at("Key"))
+                    .operation_read_field(Self::reference(), Primary::at("Primary"))
+                    .operation_write(Self::reference(), Primary::at("Primary"))
             }
         }
         worth_query_mutation_binding!(
@@ -51,23 +51,23 @@ macro_rules! worlds_certification_application_graph_correction_model_compensatio
             handler identity $handler_id, outputs NoApplicationMutationOutputs,
             principal ActorBinding, mapping ExternalMapping, principal_entity Principal,
             principal_identity u64, identity_binding U64ApplicationValueBinding,
-            scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-            field Key::reference(), value $Input::scope_key,
+            scope Key,
+            field Key::at("Key"), value $Input::scope_key,
         );
         pub struct $Handler;
         static $Counter: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
         impl OperationHandler<NumericSchema, $Binding> for $Handler {
             fn decide(&self, input: &$Input, reader: &mut DecisionReader<'_, '_, '_, NumericSchema, $Binding>) -> HandlerResult<BalanceDecision, MissingValue> {
                 $Counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                let root = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+                let root = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
                     Ok(root) => root, Err(error) => return HandlerResult::ExecutionDenied(error),
                 };
-                let balance = match reader.field(&root, Primary::reference()) {
+                let balance = match reader.field(&root, Primary::at("Primary")) {
                     Ok(Some(balance)) => balance,
                     Ok(None) => return HandlerResult::DomainDenied(MissingValue),
                     Err(error) => return HandlerResult::ExecutionDenied(error),
                 };
-                let Some(next) = balance.$arithmetic(input.amount) else { return HandlerResult::DomainDenied(MissingValue) };
+                let Some(next) = balance.0.$arithmetic(input.amount) else { return HandlerResult::DomainDenied(MissingValue) };
                 match reader.mutation_target(&root) {
                     Ok(target) => HandlerResult::Completed(BalanceDecision { target, next }),
                     Err(error) => HandlerResult::ExecutionDenied(error),
@@ -78,7 +78,7 @@ macro_rules! worlds_certification_application_graph_correction_model_compensatio
                     Ok(target) => target,
                     Err(error) => return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)),
                 };
-                match writer.write_field(&target, Primary::reference(), decision.next) {
+                match writer.write_field(&target, Primary::at("Primary"), Counter(decision.next)) {
                     Ok(()) => HandlerResult::Completed(Edited),
                     Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)),
                 }

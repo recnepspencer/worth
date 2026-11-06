@@ -62,7 +62,7 @@ pub fn assert_source_change_key_absent(application: &Application) {
             selected
                 .resolve_entity(
                     &host_phase,
-                    IntentIdentityField::reference(),
+                    IntentIdentityField::at("IntentIdentityField"),
                     "intent-1".to_owned(),
                     &request,
                     primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
@@ -167,7 +167,7 @@ pub fn read_intent(application: &Application) -> IntentQueryResult {
             selected
                 .resolve_entity(
                     &host_phase,
-                    IntentIdentityField::reference(),
+                    IntentIdentityField::at("IntentIdentityField"),
                     "intent-1".to_owned(),
                     &request,
                     primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,

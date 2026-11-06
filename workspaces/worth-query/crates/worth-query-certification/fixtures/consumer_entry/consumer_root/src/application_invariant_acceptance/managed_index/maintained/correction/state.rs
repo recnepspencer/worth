@@ -1,7 +1,7 @@
 //! Fresh ordinary note disclosure and final-state observation in the same Catalog.
 use super::*;
-use worth_query_decl::facade::{application_query::*, application_schema::*, *};
-use worth_query_host::facade::primary_graph::*;
+use worth_query_decl::facade::{application_query::*, *};
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Row {
     pub note: String,
@@ -12,19 +12,8 @@ worth_query_application_query!(pub NoteQuery for Catalog,
     result ResultBinding, scope Directory => "Directory", name "note_state");
 pub struct NoteSlot;
 worth_query_portable_type!(NoteSlot => "maintained-catalog.note-state.slot.v1");
-fn note() -> ApplicationQueryResultFieldRef<
-    NoteQuery,
-    NoteSlot,
-    Catalog,
-    Directory,
-    DirectoryFacts,
-    DirectoryNote,
-    String,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("note", DirectoryNote::reference())
+fn note() -> ApplicationQueryResultFieldRef<NoteQuery, NoteSlot, Catalog, DirectoryNote> {
+    ApplicationQueryResultFieldRef::new("note", DirectoryNote::at("DirectoryNote"))
 }
 impl WorthQueryApplicationProjection<Catalog, NoteQuery> for Row {
     fn project(
@@ -48,8 +37,8 @@ worth_query_query_binding!(pub Binding for Read, schema Catalog,
     query NoteQuery, parameters query::ParametersBinding => |_| ApplicationQueryParameterSet::new(),
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value scope, limits results 1
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value scope, limits results 1
 );
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,

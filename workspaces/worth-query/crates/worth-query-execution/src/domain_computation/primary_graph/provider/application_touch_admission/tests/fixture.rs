@@ -1,76 +1,32 @@
 //! Real installation contracts and native candidates for the admission owner.
+
 use super::*;
 use worth_query_decl::facade::{
-    application_schema::*, worth_query_application_schema, worth_query_aspect, worth_query_entity,
-    worth_query_field, worth_query_operation, worth_query_operation_reads,
-    worth_query_operation_removes_aspects, worth_query_operation_writes,
+    application_schema::*, worth_query_operation, worth_query_operation_reads,
+    worth_query_operation_removes_aspects,
 };
 use worth_query_installation::facade::*;
 pub(super) mod relation;
 
-worth_query_entity!(pub(super) Node for TouchSchema);
-worth_query_entity!(pub(super) RequiredNode for TouchSchema);
-worth_query_aspect!(pub(super) Identity for TouchSchema, Node; identity = AspectIdentity(0x91000201), revision = AspectContractRevision(1));
-worth_query_aspect!(pub(super) Notes for TouchSchema, Node; identity = AspectIdentity(0x91000202), revision = AspectContractRevision(1));
-worth_query_aspect!(pub(super) RequiredNotes for TouchSchema, RequiredNode; identity = AspectIdentity(0x91000203), revision = AspectContractRevision(1));
-worth_query_field!(pub(super) Key for TouchSchema, Node, Identity: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub(super) A for TouchSchema, Node, Notes: optional String => StringApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub(super) B for TouchSchema, Node, Notes: optional String => StringApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub(super) RequiredA for TouchSchema, RequiredNode, RequiredNotes: optional String => StringApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub(super) RequiredB for TouchSchema, RequiredNode, RequiredNotes: optional String => StringApplicationValueBinding, read_write, no_equality);
+#[path = "fixture/schema.rs"]
+mod schema;
+pub(super) use schema::*;
+
 #[derive(Clone, serde::Serialize)]
-pub(super) struct Input {
+pub struct Input {
     value: String,
 }
-worth_query_decl::facade::worth_query_structured_value_binding!(pub(super) InputBinding for Input { identity: "worth.query.test.struct-touch-input.v1" });
-worth_query_operation!(pub(super) OnlyA for TouchSchema, input InputBinding);
+worth_query_decl::facade::worth_query_structured_value_binding!(pub InputBinding for Input { identity: "worth.query.test.struct-touch-input.v1" });
+worth_query_operation!(pub ReadOnly for TouchSchema, input InputBinding);
+worth_query_operation_reads!(ReadOnly => [Node]);
+worth_query_operation!(pub OnlyA for TouchSchema, input InputBinding);
 worth_query_operation_reads!(OnlyA => [Node]);
-worth_query_operation_writes!(OnlyA => [A]);
-worth_query_operation!(pub(super) FieldsOnly for TouchSchema, input InputBinding);
+worth_query_operation!(pub FieldsOnly for TouchSchema, input InputBinding);
 worth_query_operation_reads!(FieldsOnly => [Node]);
-worth_query_operation_writes!(FieldsOnly => [A, B]);
-worth_query_operation!(pub(super) Both for TouchSchema, input InputBinding);
-worth_query_operation_reads!(Both => [Node, RequiredNode, A, B]);
-worth_query_operation_writes!(Both => [A, B, RequiredA, RequiredB]);
+worth_query_operation!(pub Both for TouchSchema, input InputBinding);
+worth_query_operation_reads!(Both => [Node, RequiredNode]);
 worth_query_operation_removes_aspects!(Both => [Notes]);
-worth_query_application_schema! {
-    pub schema TouchSchema {
-        owner: struct_touch_admission,
-        version: (1, 0),
-        members: |schema| {
-            let one = OnlyA::reference();
-            let both = Both::reference();
-            let fields = FieldsOnly::reference();
-            let schema = schema.entity(Node::reference()).entity(RequiredNode::reference())
-                .aspect(Node::reference(), Identity::reference())
-                .field(Node::reference(), Key::reference())
-                .optional_aspect(Node::reference(), Notes::reference())
-                .field(Node::reference(), A::reference()).field(Node::reference(), B::reference())
-                .aspect(RequiredNode::reference(), RequiredNotes::reference())
-                .field(RequiredNode::reference(), RequiredA::reference())
-                .field(RequiredNode::reference(), RequiredB::reference())
-                .operation(one.definition().no_external_effect().no_aftermath().finish())
-                .operation_projection_work_budget(one, 16)
-                .operation_read_entity(one, Node::reference()).operation_write(one, A::reference())
-                .operation(fields.definition().no_external_effect().no_aftermath().finish())
-                .operation_projection_work_budget(fields, 16)
-                .operation_read_entity(fields, Node::reference())
-                .operation_write(fields, A::reference()).operation_write(fields, B::reference())
-                .operation(both.definition().no_external_effect().no_aftermath().finish())
-                .operation_projection_work_budget(both, 16)
-                .operation_read_entity(both, Node::reference())
-                .operation_read_entity(both, RequiredNode::reference())
-                .operation_read_field(both, A::reference()).operation_read_field(both, B::reference())
-                .operation_write(both, A::reference()).operation_write(both, B::reference())
-                .operation_write(both, RequiredA::reference()).operation_write(both, RequiredB::reference())
-                // eea53fe428: removing the parent requires its own installed grant.
-                .operation_remove_aspect(both, Notes::reference());
-            relation::declare(schema)
-        }
-    }
-}
-
-pub(super) struct World {
+pub struct World {
     pub native: RelationalRuntime,
     pub layout: WorthQueryPrimaryGraphLayout,
     pub schema: WorthQueryInstalledApplicationSchema<TouchSchema>,
@@ -119,25 +75,37 @@ impl World {
             .build()
             .expect("valid native runtime configuration");
         let entity_name = if required { "RequiredNode" } else { "Node" };
-        let aspect = if required { "RequiredNotes" } else { "Notes" };
+        let aspect = if required {
+            required_a_field().aspect()
+        } else {
+            a_field().aspect()
+        };
         let mut values = std::collections::BTreeMap::new();
         if !required {
             values.insert(
                 layout
-                    .field_locator("Node", "Identity", "Key")
+                    .field_locator("Node", key_field().aspect(), "Key")
                     .unwrap()
                     .clone(),
                 encode("sentinel"),
             );
         }
-        for (field, value) in fields {
-            values.insert(
-                layout
-                    .field_locator(entity_name, aspect, field)
-                    .unwrap()
-                    .clone(),
-                encode(value),
-            );
+        if required || !fields.is_empty() {
+            let definition = notes_definition(&schema, required);
+            let encoded = definition
+                .encode::<Bindings, NotesValue>(&notes_value(fields))
+                .unwrap();
+            let prefix = format!("{}.", definition.path());
+            for (path, value) in encoded {
+                let field = path.strip_prefix(&prefix).unwrap();
+                values.insert(
+                    layout
+                        .field_locator(entity_name, aspect, field)
+                        .unwrap()
+                        .clone(),
+                    value,
+                );
+            }
         }
         let (_, basis) = native
             .observe_branch(&native.main_branch_identity())
@@ -186,17 +154,37 @@ impl World {
             basis: worth_foundational::facade::PortableAspectContractBasis::from_contract(
                 self.contract(),
             ),
-            value: worth_foundational::facade::ContractValidationInput::Struct(
-                worth_foundational::facade::StructAspectValue::new(fields.iter().map(
-                    |(field, value)| {
-                        (
-                            worth_foundational::facade::FieldKey::new(*field).unwrap(),
-                            encode(value),
-                        )
-                    },
-                ))
-                .unwrap(),
-            ),
+            value: worth_foundational::facade::ContractValidationInput::Struct({
+                let definition = notes_definition(&self.schema, self.entity_name == "RequiredNode");
+                let prefix = format!("{}.", definition.path());
+                let (declared, unknown): (Vec<_>, Vec<_>) = fields
+                    .iter()
+                    .copied()
+                    .partition(|(name, _)| matches!(*name, "A" | "B"));
+                let encoded = definition
+                    .encode::<Bindings, NotesValue>(&notes_value(&declared))
+                    .unwrap();
+                worth_foundational::facade::StructAspectValue::new(
+                    encoded
+                        .into_iter()
+                        .map(|(path, value)| {
+                            (
+                                worth_foundational::facade::FieldKey::new(
+                                    path.strip_prefix(&prefix).unwrap(),
+                                )
+                                .unwrap(),
+                                value,
+                            )
+                        })
+                        .chain(unknown.into_iter().map(|(name, value)| {
+                            (
+                                worth_foundational::facade::FieldKey::new(name).unwrap(),
+                                encode(value),
+                            )
+                        })),
+                )
+                .unwrap()
+            }),
         }
     }
     pub fn clear(&self) -> Op {
@@ -298,6 +286,25 @@ impl World {
             contracts.read_touch_overlap(),
         )
     }
+    pub fn admit_read_only(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        candidate: &ValidatedRelationalProposal,
+    ) -> Result<WorthQueryInstalledTouchAdmissionEvidence, TouchAdmissionFailure> {
+        let installed = self
+            .schema
+            .installed_operation(ReadOnly::reference())
+            .unwrap();
+        let contracts = installed.contracts();
+        admit_validated_application_touches(
+            execution,
+            candidate,
+            &self.layout,
+            contracts.graph_reads(),
+            contracts.touches(),
+            contracts.read_touch_overlap(),
+        )
+    }
     pub fn truth(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -306,14 +313,10 @@ impl World {
             ProjectionAspectRequirement, ProjectionAspectScope,
         };
         let aspect = self.contract().key();
-        let fields: Vec<_> = if self.entity_name == "Node" {
-            ["A", "B"]
-        } else {
-            ["RequiredA", "RequiredB"]
-        }
-        .into_iter()
-        .map(|f| worth_foundational::facade::FieldKey::new(f).unwrap())
-        .collect();
+        let fields: Vec<_> = ["A", "B"]
+            .into_iter()
+            .map(|f| worth_foundational::facade::FieldKey::new(f).unwrap())
+            .collect();
         let view = self
             .native
             .read_truth()

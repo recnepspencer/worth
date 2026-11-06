@@ -1,5 +1,8 @@
+#[cfg(test)]
 mod runtime_time;
+#[cfg(test)]
 pub(super) use runtime_time::RuntimeTime;
+
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock;
 use worth_query_host::facade::runtime::RuntimeWorldBranchBudgetInstallation;
 use worth_query_host::facade::runtime::RuntimeWorldBudgetInstallation;

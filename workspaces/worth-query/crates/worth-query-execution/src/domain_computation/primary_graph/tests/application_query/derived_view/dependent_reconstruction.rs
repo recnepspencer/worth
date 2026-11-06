@@ -94,7 +94,7 @@ fn journey(case: Case) {
         let principal = selected.resolve_authenticated_principal(
             &phase, &world.binding, &external, &scope, WorthQueryPrincipalResolutionMode::Ordinary,
         ).unwrap();
-        let root = selected.resolve_entity(&phase, AccountStatus::reference(), "open".into(),
+        let root = selected.resolve_entity(&phase, AccountStatus::at("AccountStatus"), "open".into(),
             &scope, WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
         let sibling = (case == Case::ForeignBasis).then(|| {
             let fork = world.application.branches().fork(world.application.current_world())
@@ -150,7 +150,7 @@ fn journey(case: Case) {
                 request, &view, selected.product(), &membership,
                 |row| row.members.iter().map(|root| (*root, row.tag.clone())).collect(), &batch,
                 |_: &String, read| {
-                    let local = selected.resolve_entity(&phase, AccountStatus::reference(), "open".into(),
+                    let local = selected.resolve_entity(&phase, AccountStatus::at("AccountStatus"), "open".into(),
                         &scope, WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
                     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &local);
                     let plan = selected.retain_selection(&issued).unwrap().admit_application_query(
@@ -173,7 +173,7 @@ fn journey(case: Case) {
                     let principal = if failure && case == Case::ForeignBasis { sibling_principal.as_ref().unwrap() } else { &principal };
                     let local_scope = if failure && case == Case::ForeignRequest { &foreign_scope } else { &scope };
                     let selector = if failure && case == Case::WrongScope { "open" } else { first.label() };
-                    let local = selected.resolve_entity(&phase, AccountStatus::reference(), selector.to_owned(),
+                    let local = selected.resolve_entity(&phase, AccountStatus::at("AccountStatus"), selector.to_owned(),
                         local_scope, WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
                     assert!(failure && case == Case::WrongScope || local.entity_id() != root.entity_id());
                     let access = WorthQueryApplicationQueryAccessContext::new(principal, &local);
@@ -204,7 +204,7 @@ fn journey(case: Case) {
                     if failure && case == Case::AfterProjection { cancellation.cancel(); }
                     if failure && case == Case::StaleProduct {
                         let graph = world.application.runtime.primary_graph().unwrap();
-                        let field = AccountLabel::reference();
+                        let field = AccountLabel::at("AccountLabel");
                         let locator = graph.layout.field_locator(field.entity(), field.aspect(), field.field()).unwrap().clone();
                         let prepared = graph.managed_derived_views().prepare_publication(
                             publication_basis(selected.product()),

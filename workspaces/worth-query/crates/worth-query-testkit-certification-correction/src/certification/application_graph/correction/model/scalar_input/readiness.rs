@@ -39,7 +39,7 @@ fn contract(
 ) -> Result<Contract, WorthQueryOutputReadinessContractDenial> {
     WorthQueryOutputReadinessContractBuilder::for_field(
         declaration,
-        Total::reference(),
+        Total::at("Total"),
         domain::WorthQueryDomainOperationIdentity::new("numeric-scalar-readiness", 1),
         "numeric-scalar-ready",
         canonical_query(),
@@ -49,12 +49,12 @@ fn contract(
     )?
     .field_dependency(
         declaration,
-        Total::reference(),
+        Total::at("Total"),
         WorthQueryReadinessFieldUse::DeliveryAndEligibility,
     )?
     .field_dependency(
         declaration,
-        Calculated::reference(),
+        Calculated::at("Calculated"),
         WorthQueryReadinessFieldUse::Eligibility,
     )?
     .build_typed()
@@ -99,7 +99,7 @@ impl WorthQueryApplicationConditionalBinding<NumericSchema> for Readiness {
             .delivery_ordinal(
                 installation.installed_schema(),
                 node.declaration(),
-                Total::reference(),
+                Total::at("Total"),
             )
             .unwrap();
         installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)
@@ -108,12 +108,12 @@ impl WorthQueryApplicationConditionalBinding<NumericSchema> for Readiness {
 fn canonical_query() -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle
 {
     let query = DetailQueryBuilder::new(RootEntityKey::new("Number").unwrap())
-        .project(AspectFieldSelector::new("ScalarResult", "Total").unwrap())
+        .project(AspectFieldSelector::new(crate::facade::certification::application_graph::correction::model::scalar_input::ScalarResult::reference().name(), "Total").unwrap())
         .build()
         .unwrap()
         .into_raw();
     let shape = DetailResultShapeBuilder::new()
-        .field(AuthoredResultShapeField::new("ScalarResult", "Total", "scalar_total").unwrap())
+        .field(AuthoredResultShapeField::new(crate::facade::certification::application_graph::correction::model::scalar_input::ScalarResult::reference().name(), "Total", "scalar_total").unwrap())
         .build()
         .unwrap()
         .into_raw();

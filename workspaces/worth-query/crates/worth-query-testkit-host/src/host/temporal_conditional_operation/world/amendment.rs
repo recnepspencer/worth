@@ -43,7 +43,7 @@ impl CourtroomWorld {
                     .expect("the selected product branch remains admitted")
                     .resolve_entity(
                         &phase,
-                        IntentIdentityField::reference(),
+                        IntentIdentityField::at("IntentIdentityField"),
                         "intent-1".to_string(),
                         &request_scope(),
                         primary_graph::WorthQueryPrincipalResolutionMode::Certification,
@@ -234,7 +234,7 @@ impl CourtroomWorld {
                 selected
                     .resolve_entity(
                         &phase,
-                        IntentIdentityField::reference(),
+                        IntentIdentityField::at("IntentIdentityField"),
                         "intent-1".to_string(),
                         &request,
                         primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
@@ -269,19 +269,19 @@ impl CourtroomWorld {
                 &phase, &admission,
                 |reader, scope| {
                     reader
-                        .decision_field(scope, IntentRevisionField::reference())
+                        .decision_field(scope, IntentRevisionField::at("IntentRevisionField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, IntentLifecycleField::reference())
+                        .decision_field(scope, IntentLifecycleField::at("IntentLifecycleField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, IntentGateField::reference())
+                        .decision_field(scope, IntentGateField::at("IntentGateField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, IntentDueField::reference())
+                        .decision_field(scope, IntentDueField::at("IntentDueField"))
                         .unwrap();
                     reader
-                        .decision_field(scope, IntentInputField::reference())
+                        .decision_field(scope, IntentInputField::at("IntentInputField"))
                         .unwrap();
                 },
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -314,24 +314,36 @@ impl CourtroomWorld {
         let intent = effects.existing_entity(&intent).unwrap();
         if matches!(width, AmendmentWidth::Full) {
             effects
-                .write_field(&intent, IntentRevisionField::reference(), revision)
+                .write_field(
+                    &intent,
+                    IntentRevisionField::at("IntentRevisionField"),
+                    revision,
+                )
                 .unwrap();
             effects
                 .write_field(
                     &intent,
-                    IntentLifecycleField::reference(),
+                    IntentLifecycleField::at("IntentLifecycleField"),
                     lifecycle.to_string(),
                 )
                 .unwrap();
             effects
-                .write_field(&intent, IntentDueField::reference(), due)
+                .write_field(&intent, IntentDueField::at("IntentDueField"), due)
                 .unwrap();
             effects
-                .write_field(&intent, IntentInputField::reference(), input.to_string())
+                .write_field(
+                    &intent,
+                    IntentInputField::at("IntentInputField"),
+                    input.to_string(),
+                )
                 .unwrap();
         }
         effects
-            .write_field(&intent, IntentGateField::reference(), gate.to_string())
+            .write_field(
+                &intent,
+                IntentGateField::at("IntentGateField"),
+                gate.to_string(),
+            )
             .unwrap();
         let idempotency =
             primary_graph::WorthQueryApplicationIdempotencyBinding::for_host_commit::<

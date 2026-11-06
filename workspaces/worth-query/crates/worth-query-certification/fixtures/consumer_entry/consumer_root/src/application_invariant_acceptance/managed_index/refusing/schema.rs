@@ -1,47 +1,49 @@
 //! Immutable refusing application meaning, using the common public prefix adapter.
+use worth_query_decl::facade::application_schema::fragment::RecordSelection;
+#[path = "schema/records.rs"]
+mod storage_model;
 use super::{directory, mutation, prefix, query};
+pub use storage_model::*;
 use worth_query_decl::facade::application_query::ApplicationManagedIndexDefinition;
-use worth_query_decl::facade::{application_schema::*, authentication::*, *};
-worth_query_application! { pub Catalog {
-    owner: "worth.query.consumer.refusing-catalog", version: (1, 0),
-    contributions: [super::host::Contribution],
-}}
+use worth_query_decl::facade::{application_schema::*, authentication::*};
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Catalog;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for Catalog {
+    const NAME: &'static str = "Catalog";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (super::host::Contribution,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for Catalog {
+    const OWNER: &'static str = "worth.query.consumer.refusing-catalog";
+    const NAME: &'static str = "Catalog";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for Catalog {
+    type Contributions = (super::host::Contribution,);
+}
+
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
     directory::declare(mutation::declare(
         schema
-            .entity(ExternalMapping::reference())
-            .entity(Principal::reference())
-            .entity(Directory::reference())
-            .entity(Item::reference())
-            .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-            .aspect(Principal::reference(), PrincipalFacts::reference())
-            .aspect(Directory::reference(), DirectoryFacts::reference())
-            .aspect(Item::reference(), ItemFacts::reference())
-            .field(
-                ExternalMapping::reference(),
-                ExternalIdentityField::reference(),
-            )
-            .field(
-                ExternalMapping::reference(),
-                MappingStatusField::reference(),
-            )
-            .field(Principal::reference(), PrincipalIdentityField::reference())
-            .field(Directory::reference(), DirectoryIdentity::reference())
-            .field(Item::reference(), ItemIdentity::reference())
-            .field(Item::reference(), ItemName::reference())
-            .field(Item::reference(), ItemEnabled::reference())
-            .relation(
-                MappingTarget::reference(),
-                ExternalMapping::reference(),
-                Principal::reference(),
-            )
-            .relation(
-                Contains::reference(),
-                Directory::reference(),
-                Item::reference(),
-            )
             .principal_binding(CatalogPrincipal::reference())
             .application_query(query::source_definition())
             .application_query_binding::<query::SourceBinding>()
@@ -53,28 +55,106 @@ pub(super) fn declare(
             >::new()),
     ))
 }
-worth_query_entity!(pub ExternalMapping for Catalog);
-worth_query_entity!(pub Principal for Catalog);
-worth_query_entity!(pub Directory for Catalog);
-worth_query_entity!(pub Item for Catalog);
-worth_query_aspect!(pub ExternalIdentity for Catalog, ExternalMapping; identity = AspectIdentity(0x919001), revision = AspectContractRevision(1));
-worth_query_aspect!(pub PrincipalFacts for Catalog, Principal; identity = AspectIdentity(0x919002), revision = AspectContractRevision(1));
-worth_query_aspect!(pub DirectoryFacts for Catalog, Directory; identity = AspectIdentity(0x919003), revision = AspectContractRevision(1));
-worth_query_aspect!(pub ItemFacts for Catalog, Item; identity = AspectIdentity(0x919004), revision = AspectContractRevision(1));
-worth_query_field!(pub ExternalIdentityField for Catalog, ExternalMapping, ExternalIdentity: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub MappingStatusField for Catalog, ExternalMapping, ExternalIdentity: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub PrincipalIdentityField for Catalog, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub DirectoryIdentity for Catalog, Directory, DirectoryFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub ItemIdentity for Catalog, Item, ItemFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_value_binding!(pub NameBinding for String {
-    identity: "managed-catalog.name.v1", scalar: String,
-    canonical: ValueDecodeBounds::new(2048, 1024, 8, 8),
-});
-worth_query_field!(pub ItemName for Catalog, Item, ItemFacts: String => NameBinding, read_write, equality);
-worth_query_field!(pub ItemEnabled for Catalog, Item, ItemFacts: bool => BoolApplicationValueBinding, read_write, equality);
-worth_query_relation!(pub MappingTarget in Catalog, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub Contains in Catalog, Directory => Item; integrity = same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(pub CatalogPrincipal in Catalog, mapping ExternalMapping {
-    identity: ExternalIdentityField, status: MappingStatusField,
-    target: MappingTarget => Principal, principal_identity: PrincipalIdentityField
-});
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CatalogName(String);
+impl From<String> for CatalogName {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+impl From<&str> for CatalogName {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
+    }
+}
+impl From<CatalogName> for String {
+    fn from(value: CatalogName) -> Self {
+        value.0
+    }
+}
+impl CatalogName {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+pub struct NameBinding;
+impl ApplicationScalarValueBinding for NameBinding {
+    type Value = CatalogName;
+    type Unit = ();
+    type Decode = ApplicationValueDecodeAvailable;
+    type Identity = ApplicationValueIsNotIdentity;
+    type SignedAggregate = ApplicationValueSignedAggregateUnavailable;
+    const IDENTITY_NAME: &'static str = "managed-catalog.name.v1";
+    const SCALAR_FAMILY: worth_query_decl::facade::typed::ScalarAspectType =
+        worth_query_decl::facade::typed::ScalarAspectType::String;
+    const SUPPORTS_ADMITTED_DECODE: bool = <String as CanonicalValue>::SUPPORTS_ADMISSION;
+    fn validate(_: &CatalogName) -> Result<(), ApplicationValueValidationDenial> {
+        Ok(())
+    }
+    fn canonical_contract() -> Option<ApplicationCanonicalValueContract> {
+        Some(ApplicationCanonicalValueContract::of::<String>(
+            ValueDecodeBounds::new(2048, 1024, 8, 8),
+        ))
+    }
+    fn encode(value: &CatalogName) -> Result<ApplicationValue, ApplicationValueEncodeDenial> {
+        encode_canonical_value(&value.0, ValueDecodeBounds::new(2048, 1024, 8, 8))
+            .map(|text| ApplicationValue::String(text.into()))
+            .map_err(|cause| ApplicationValueEncodeDenial::Canonical {
+                binding_identity: Self::IDENTITY,
+                cause,
+            })
+    }
+}
+impl ApplicationReadableScalarValueBinding for NameBinding {
+    fn decode(raw: &ApplicationValue) -> Result<CatalogName, ApplicationValueDecodeDenial> {
+        decode_application_canonical_value::<String>(
+            raw,
+            ValueDecodeBounds::new(2048, 1024, 8, 8),
+            Self::IDENTITY,
+        )
+        .map(CatalogName)
+    }
+    fn decode_admitted(
+        raw: &ApplicationValue,
+        work: &mut ValueDecodeAdmission<'_>,
+    ) -> Result<CatalogName, ApplicationValueDecodeDenial> {
+        decode_application_canonical_value_with_admission::<String>(
+            raw,
+            ValueDecodeBounds::new(2048, 1024, 8, 8),
+            Self::IDENTITY,
+            work,
+        )
+        .map(CatalogName)
+    }
+}
+
+pub struct CatalogPrincipal;
+impl CatalogPrincipal {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        Catalog,
+        Self,
+        ExternalMapping,
+        Principal,
+        <PrincipalIdentityField as RecordSelection>::Value,
+        <PrincipalIdentityField as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "CatalogPrincipal",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    ExternalIdentityField::at("ExternalIdentityField"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    MappingStatusField::at("MappingStatusField"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    MappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
+                ),
+            },
+        )
+    }
+}

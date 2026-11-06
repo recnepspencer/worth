@@ -47,7 +47,7 @@ fn payment_projection_rejects_multiple_decision_entities() {
                 phase,
                 |reader| {
                     let payment_entity = reader
-                        .resolve_entity(PaymentIdentityField::reference(), payment)
+                        .resolve_entity(PaymentIdentityField::at("PaymentIdentityField"), payment)
                         .unwrap();
                     project_payment_approval(
                         reader,
@@ -98,7 +98,7 @@ fn payment_projection_preserves_the_source_account_balance() {
                 phase,
                 |reader| {
                     let payment_entity = reader
-                        .resolve_entity(PaymentIdentityField::reference(), payment)
+                        .resolve_entity(PaymentIdentityField::at("PaymentIdentityField"), payment)
                         .unwrap();
                     project_payment_approval(
                         reader,
@@ -144,7 +144,7 @@ fn payment_work(
                 phase,
                 |reader| {
                     let payment_entity = reader
-                        .resolve_entity(PaymentIdentityField::reference(), payment)
+                        .resolve_entity(PaymentIdentityField::at("PaymentIdentityField"), payment)
                         .unwrap();
                     project_payment_approval(
                         reader,
@@ -178,7 +178,10 @@ fn reversal_work(
                 |reader| {
                     let institution_id = id(InstitutionId::new, 1);
                     let institution = reader
-                        .resolve_entity(InstitutionIdentityField::reference(), institution_id)
+                        .resolve_entity(
+                            InstitutionIdentityField::at("InstitutionIdentityField"),
+                            institution_id,
+                        )
                         .unwrap();
                     project_journal_reversal(
                         reader,

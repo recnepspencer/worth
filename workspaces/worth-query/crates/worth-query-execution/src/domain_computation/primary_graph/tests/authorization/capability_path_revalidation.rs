@@ -108,8 +108,8 @@ fn replace_grantor_with_custodian(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             phase_custody,
-            CapabilityIdentity::reference(),
-            "capability-1".to_owned(),
+            CapabilityIdentity::at("CapabilityIdentity"),
+            "capability-1".to_owned().into(),
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

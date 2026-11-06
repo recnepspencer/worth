@@ -3,7 +3,7 @@ use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_mutation_binding,
     worth_query_operation, worth_query_operation_creates, worth_query_operation_deletes,
     worth_query_operation_links, worth_query_operation_reads, worth_query_operation_unlinks,
-    worth_query_operation_writes, worth_query_structured_value_binding,
+    worth_query_structured_value_binding,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
@@ -28,8 +28,8 @@ worth_query_structured_value_binding!(pub ModelLifecycleDenialBinding for ModelL
     identity: "worth.query.certification.model-lifecycle-denial.v1"
 });
 worth_query_operation!(pub ModelLifecycle for DocumentRetentionSchema, input ModelLifecycleInputBinding);
-worth_query_operation_reads!(ModelLifecycle => [Document, Principal, DocumentIdentityField, DocumentRetentionField, PrincipalIdentityField, WorkflowDocumentOwner]);
-worth_query_operation_writes!(ModelLifecycle => [DocumentIdentityField, DocumentRetentionField]);
+worth_query_operation_reads!(ModelLifecycle => [Document, Principal, WorkflowDocumentOwner]);
+
 worth_query_operation_creates!(ModelLifecycle => [Document]);
 worth_query_operation_deletes!(ModelLifecycle => [Document]);
 worth_query_operation_links!(ModelLifecycle => [WorkflowDocumentOwner]);
@@ -50,12 +50,27 @@ pub fn declare(
         .operation_projection_work_budget(operation, 64)
         .operation_read_entity(operation, Document::reference())
         .operation_read_entity(operation, Principal::reference())
-        .operation_read_field(operation, DocumentIdentityField::reference())
-        .operation_read_field(operation, DocumentRetentionField::reference())
-        .operation_read_field(operation, PrincipalIdentityField::reference())
+        .operation_read_field(
+            operation,
+            DocumentIdentityField::at("DocumentIdentityField"),
+        )
+        .operation_read_field(
+            operation,
+            DocumentRetentionField::at("DocumentRetentionField"),
+        )
+        .operation_read_field(
+            operation,
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+        )
         .operation_read_relation(operation, WorkflowDocumentOwner::reference())
-        .operation_write(operation, DocumentIdentityField::reference())
-        .operation_write(operation, DocumentRetentionField::reference())
+        .operation_write(
+            operation,
+            DocumentIdentityField::at("DocumentIdentityField"),
+        )
+        .operation_write(
+            operation,
+            DocumentRetentionField::at("DocumentRetentionField"),
+        )
         .operation_create(operation, Document::reference())
         .operation_delete(operation, Document::reference())
         .operation_link(operation, WorkflowDocumentOwner::reference())
@@ -77,8 +92,8 @@ worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal DocumentPrincipalBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Document, DocumentFacts, DocumentIdentityField, String, ReadOnly, NoApplicationUnit,
-    field DocumentIdentityField::reference(), value context,
+    scope DocumentIdentityField,
+    field DocumentIdentityField::at("DocumentIdentityField"), value context,
 );
 #[derive(Clone)]
 pub struct ModelLifecycleIntent {
@@ -93,7 +108,7 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for ModelLifecycleIntent
         &self,
     ) -> <Self::Binding as ApplicationMutationBinding<DocumentRetentionSchema>>::ScopeBinding {
         ApplicationMutationFieldScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.input.context.clone(),
         )
     }

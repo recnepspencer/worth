@@ -48,7 +48,7 @@ fn ordinary_field_allocation(world: &super::super::fixture::AuthorizationWorld) 
                         // completion or retained read-set capture. This is not a peak-byte proof.
                         let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
                         let actual = reader
-                            .decision_field(scope, AccountLabel::reference())
+                            .decision_field(scope, AccountLabel::at("AccountLabel"))
                             .unwrap()
                             .unwrap();
                         allocated = region.change().bytes_allocated;
@@ -92,7 +92,7 @@ mod serial {
                     let scope = reader.scope().clone();
                     reader.field_with_predecode_admission(
                         &scope,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         |raw, check| {
                             check().unwrap();
                             let AspectValue::String(InternedString::Raw(text)) = raw else {
@@ -123,7 +123,7 @@ mod serial {
                     let scope = reader.scope().clone();
                     reader.field_with_predecode_admission(
                         &scope,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         |raw, _| Err(OwnerDenied(raw.semantic_byte_width())),
                     )
                 })
@@ -195,7 +195,7 @@ mod serial {
                                 stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
                             let result = reader.decision_field_with_predecode_admission(
                                 scope,
-                                AccountLabel::reference(),
+                                AccountLabel::at("AccountLabel"),
                                 |raw, _| {
                                     let AspectValue::String(InternedString::Raw(actual)) = raw
                                     else {
@@ -280,7 +280,7 @@ mod serial {
                         &phase,
                         |reader| {
                             reader
-                                .resolve_entity(AccountStatus::reference(), "open".into())
+                                .resolve_entity(AccountStatus::at("AccountStatus"), "open".into())
                                 .unwrap()
                         },
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -297,7 +297,7 @@ mod serial {
                 projection::with_reader(&phase, &world, &request, |reader| {
                     reader.field_with_predecode_admission(
                         &foreign,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         |_, _| {
                             called.set(true);
                             Ok::<_, ()>(())
@@ -324,7 +324,7 @@ mod serial {
                     // ProgramRequiredOperation declares only AccountStatus, not AccountLabel.
                     reader.field_with_predecode_admission(
                         &scope,
-                        AccountLabel::reference(),
+                        AccountLabel::at("AccountLabel"),
                         |_, _| {
                             called.set(true);
                             Ok::<_, ()>(())

@@ -46,7 +46,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

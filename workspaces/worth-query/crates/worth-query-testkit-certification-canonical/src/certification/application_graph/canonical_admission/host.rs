@@ -86,12 +86,15 @@ pub fn install_owned(
             for identity in ["root", "child"] {
                 graph.bind_entity(
                     WorthQueryApplicationEntitySeed::new(Document::reference(), key(identity))
-                        .field(DocumentIdentityField::reference(), identity.to_owned())
                         .field(
-                            DocumentValueField::reference(),
+                            DocumentIdentityField::at("DocumentIdentityField"),
+                            identity.to_owned(),
+                        )
+                        .field(
+                            DocumentValueField::at("DocumentValueField"),
                             super::opaque::SwallowingValue(super::value()),
                         )
-                        .field(CounterField::reference(), 0_u64),
+                        .field(CounterField::at("CounterField"), 0_u64),
                 )?;
             }
             graph.bind_relation(WorthQueryApplicationRelationSeed::new(

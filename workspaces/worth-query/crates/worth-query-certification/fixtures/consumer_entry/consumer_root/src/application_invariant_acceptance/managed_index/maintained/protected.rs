@@ -1,6 +1,6 @@
 //! Protected Parent declarations reuse the actual grant and READ-policy owners.
 #[path = "../boxes/access.rs"]
-pub(super) mod access;
+pub(crate) mod access;
 #[cfg(test)]
 mod court;
 pub(super) mod expectation;

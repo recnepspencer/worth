@@ -66,7 +66,7 @@ fn check(case: usize) {
             let root = old
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -159,7 +159,7 @@ fn check(case: usize) {
                 return;
             }
             let graph = &world.application.runtime.primary_provider.graph;
-            let label = AccountLabel::reference();
+            let label = AccountLabel::at("AccountLabel");
             let locator = graph
                 .layout
                 .field_locator(label.entity(), label.aspect(), label.field())

@@ -16,47 +16,21 @@ worth_query_application_query!(pub FirstQuery for AdmissionSchema,
     identity "canonical-admission.paired.first.v1", parameters query::ParametersBinding,
     result query::ResultBinding, scope Document => "Document", name "paired_canonical_first");
 
-pub fn identity() -> ApplicationQueryResultFieldRef<
-    FirstQuery,
-    IdentitySlot,
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", DocumentIdentityField::reference())
+pub fn identity(
+) -> ApplicationQueryResultFieldRef<FirstQuery, IdentitySlot, AdmissionSchema, DocumentIdentityField>
+{
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DocumentIdentityField::at("DocumentIdentityField"),
+    )
 }
-pub fn value() -> ApplicationQueryResultFieldRef<
-    FirstQuery,
-    ValueSlot,
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentValueField,
-    SwallowingValue,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", DocumentValueField::reference())
+pub fn value(
+) -> ApplicationQueryResultFieldRef<FirstQuery, ValueSlot, AdmissionSchema, DocumentValueField> {
+    ApplicationQueryResultFieldRef::new("value", DocumentValueField::at("DocumentValueField"))
 }
-pub fn counter() -> ApplicationQueryResultFieldRef<
-    FirstQuery,
-    CounterSlot,
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    CounterField,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("counter", CounterField::reference())
+pub fn counter(
+) -> ApplicationQueryResultFieldRef<FirstQuery, CounterSlot, AdmissionSchema, CounterField> {
+    ApplicationQueryResultFieldRef::new("counter", CounterField::at("CounterField"))
 }
 
 pub fn definition(
@@ -112,16 +86,7 @@ impl ApplicationQueryBinding<AdmissionSchema> for FirstBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "canonical-admission.paired.first-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        AdmissionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
+    fn scope_field() -> DocumentIdentityField {
         query::ReadBinding::scope_field()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<

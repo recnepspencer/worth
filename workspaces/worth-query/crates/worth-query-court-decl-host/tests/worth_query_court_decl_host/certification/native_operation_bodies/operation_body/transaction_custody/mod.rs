@@ -47,7 +47,7 @@ fn candidate(
             let document = selected
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     DOCUMENT_IDENTITY.to_owned(),
                     scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -77,7 +77,10 @@ fn candidate(
                     |reader, target| {
                         assert_eq!(
                             reader
-                                .decision_field(target, DocumentRetentionField::reference())
+                                .decision_field(
+                                    target,
+                                    DocumentRetentionField::at("DocumentRetentionField")
+                                )
                                 .unwrap(),
                             Some(7)
                         );
@@ -103,7 +106,11 @@ fn candidate(
                 .begin_effect_program();
             let target = effects.existing_entity(&document).unwrap();
             effects
-                .write_field(&target, DocumentRetentionField::reference(), 8)
+                .write_field(
+                    &target,
+                    DocumentRetentionField::at("DocumentRetentionField"),
+                    8,
+                )
                 .unwrap();
             effects.finish().unwrap()
         })

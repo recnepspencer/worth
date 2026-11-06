@@ -149,7 +149,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
     ) -> Result<WorthQueryComputationPartitionPlan<Number>, WorthQueryComputationInputDenial<u32>>
     {
         if matches!(self.status, StatusReadBy::Membership) {
-            reader.field(account, AccountStatus::reference())?;
+            reader.field(account, AccountStatus::at("AccountStatus"))?;
         }
         Ok(WorthQueryComputationPartitionPlan::keyed(
             [3, 1, 2].map(Number),
@@ -164,7 +164,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         item: &Number,
     ) -> Result<Parity, WorthQueryComputationInputDenial<u32>> {
         if matches!(self.status, StatusReadBy::ItemKeys) {
-            reader.field(account, AccountStatus::reference())?;
+            reader.field(account, AccountStatus::at("AccountStatus"))?;
         }
         Ok(Parity(item.0 % 2))
     }
@@ -175,7 +175,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         account: &Root,
         partition: WorthQueryComputationPartitionMembers<'_, Parity, Number>,
     ) -> Result<u64, WorthQueryComputationInputDenial<u32>> {
-        reader.field(account, AccountLabel::reference())?;
+        reader.field(account, AccountLabel::at("AccountLabel"))?;
         self.gathered.lock().unwrap().push(partition.identity());
         Ok(partition.items().map(|(_, item)| item.0).sum())
     }
@@ -262,7 +262,7 @@ fn routed(
                         }
                         if handler_reads_status {
                             reader
-                                .require_decision_field(root, AccountStatus::reference())
+                                .require_decision_field(root, AccountStatus::at("AccountStatus"))
                                 .unwrap();
                         }
                     },

@@ -36,10 +36,10 @@ pub fn resolve_rule(
 ) -> Result<TemporalIntegrityRule, String> {
     Ok(TemporalIntegrityRule {
         lifecycle: resolver
-            .typed_field(IntentLifecycleField::reference())
+            .typed_field(IntentLifecycleField::at("IntentLifecycleField"))
             .ok_or("temporal lifecycle field is not installed")?,
         revision: resolver
-            .typed_field(IntentRevisionField::reference())
+            .typed_field(IntentRevisionField::at("IntentRevisionField"))
             .ok_or("temporal revision field is not installed")?,
     })
 }

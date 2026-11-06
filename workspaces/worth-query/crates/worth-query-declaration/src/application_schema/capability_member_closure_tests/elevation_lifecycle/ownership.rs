@@ -76,8 +76,8 @@ fn lifecycle_operation_cannot_also_own_capability_revocation() {
     .delegation(delegation_definition().with_revocation(
         ApplicationCapabilityRevocationDefinition::new(
             operation::<RequestOperation>("Request"),
-            binding::<Action>("Action"),
-            ApplicationCapabilityValueBinding::new(field::<Status>("Status"), encoded(2_u64)),
+            binding("Action"),
+            ApplicationCapabilityValueBinding::new(field("Status"), encoded(2_u64)).unwrap(),
         ),
     ))
     .composition(composition(true))
@@ -110,7 +110,7 @@ fn lifecycle_operation_cannot_also_own_delegation_activation() {
     .delegation(delegation_definition().with_activation(
         ApplicationCapabilityDelegationActivationDefinition::new(
             operation::<RequestOperation>("Request"),
-            binding::<Action>("Action"),
+            binding("Action"),
         ),
     ))
     .composition(composition(true))

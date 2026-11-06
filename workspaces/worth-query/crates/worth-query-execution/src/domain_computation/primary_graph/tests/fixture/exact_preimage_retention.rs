@@ -12,9 +12,10 @@ pub(in super::super) fn status_with_external_owner(
         recorded_inverse(
             "test-status-external-inverse",
             "test-status-external-lowering",
-            [DeclaredPreImageLocus::from_field(
-                super::AccountStatus::reference(),
-            )],
+            [
+                DeclaredPreImageLocus::from_field(super::AccountStatus::at("AccountStatus"))
+                    .expect("record field contract"),
+            ],
         ),
         DeclaredReconciliationProcedure::new("confirm-test-status-effect").unwrap(),
     )
@@ -26,8 +27,10 @@ pub(in super::super) fn two_field_inverse(
         "test-two-field-inverse",
         "test-two-field-lowering",
         [
-            DeclaredPreImageLocus::from_field(super::AccountStatus::reference()),
-            DeclaredPreImageLocus::from_field(super::AccountLabel::reference()),
+            DeclaredPreImageLocus::from_field(super::AccountStatus::at("AccountStatus"))
+                .expect("record field contract"),
+            DeclaredPreImageLocus::from_field(super::AccountLabel::at("AccountLabel"))
+                .expect("record field contract"),
         ],
     ))
 }

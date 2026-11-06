@@ -1,3 +1,4 @@
+use crate::facade::certification::granular_invalidation::financial_runtime_world::schema as stored;
 pub use std::sync::OnceLock;
 
 pub use worth_query::facade::{domain, read};
@@ -161,7 +162,7 @@ pub fn schema_view() -> read::QuerySchemaView {
     read::QuerySchemaView::new(
         "financial-primary",
         [read::SchemaFieldView::new(
-            read::AspectName::new("RiskFacts").unwrap(),
+            read::AspectName::new(stored::RiskFacts::reference().name()).unwrap(),
             read::FieldName::new("RiskValueField").unwrap(),
             read::ScalarAspectType::UInt64,
         )],
@@ -171,7 +172,7 @@ pub fn schema_view() -> read::QuerySchemaView {
 
 pub fn field() -> worth_query_host::facade::declaration::authoring::AspectFieldSelector {
     worth_query_host::facade::declaration::authoring::AspectFieldSelector::new(
-        "RiskFacts",
+        stored::RiskFacts::reference().name(),
         "RiskValueField",
     )
     .unwrap()
@@ -180,7 +181,7 @@ pub fn field() -> worth_query_host::facade::declaration::authoring::AspectFieldS
 pub fn result_field() -> worth_query_host::facade::declaration::authoring::AuthoredResultShapeField
 {
     worth_query_host::facade::declaration::authoring::AuthoredResultShapeField::new(
-        "RiskFacts",
+        stored::RiskFacts::reference().name(),
         "RiskValueField",
         "risk",
     )

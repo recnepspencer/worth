@@ -155,7 +155,7 @@ impl<S: ApplicationSchema, O> ReadPort for Reader<'_, '_, S, O> {
                     })
                     .transpose()
                 })?;
-            if let Some(raw) = raw {
+            if let Some(raw) = raw.filter(|_| !field.internal_presence()) {
                 values.insert(path, raw);
             }
         }

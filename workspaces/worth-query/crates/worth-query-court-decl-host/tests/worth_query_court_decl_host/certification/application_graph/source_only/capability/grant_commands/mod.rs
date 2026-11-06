@@ -25,7 +25,7 @@ fn product_stale_command_releases_each_managed_owner_before_native_progression()
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     DOCUMENT_IDENTITY.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Certification,
@@ -48,7 +48,7 @@ fn product_stale_command_releases_each_managed_owner_before_native_progression()
                     .publish_native_field_write_for_test(
                         branch,
                         record,
-                        DocumentRetentionField::reference(),
+                        DocumentRetentionField::at("DocumentRetentionField"),
                         21_u64,
                         &scope,
                     )

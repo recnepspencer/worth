@@ -63,6 +63,12 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
         self.fragments.fragment(marker)
     }
 
+    pub fn fragments(
+        &self,
+    ) -> &worth_query_declaration::facade::application_schema::fragment::FragmentCatalog {
+        &self.fragments
+    }
+
     pub fn field(
         &self,
         entity: &str,

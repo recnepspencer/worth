@@ -49,7 +49,7 @@ fn matching_prohibited_path_denies_only_through_bridge_decision_authority() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

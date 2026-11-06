@@ -2,18 +2,23 @@
 use worth_query_decl::facade::application_schema::{
     BinaryValueDelegate, BinaryValueWriter, ValueCodecDenial, ValueDecodeAdmission,
 };
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct BinaryCounter(pub u64);
 pub struct StaleEncoder;
 impl BinaryValueDelegate for StaleEncoder {
-    type Value = u64;
+    type Value = BinaryCounter;
     const MAXIMUM_WIRE_BYTES: usize = 9;
-    fn encode(value: &u64, output: &mut dyn BinaryValueWriter) -> Result<(), ValueCodecDenial> {
-        output.write(&[if *value == 13 { 2 } else { 1 }])?;
-        output.write(&value.to_le_bytes())
+    fn encode(
+        value: &BinaryCounter,
+        output: &mut dyn BinaryValueWriter,
+    ) -> Result<(), ValueCodecDenial> {
+        output.write(&[if value.0 == 13 { 2 } else { 1 }])?;
+        output.write(&value.0.to_le_bytes())
     }
     fn admit(
         bytes: &[u8],
         admission: &mut ValueDecodeAdmission<'_>,
-    ) -> Result<u64, ValueCodecDenial> {
+    ) -> Result<BinaryCounter, ValueCodecDenial> {
         let [version, a, b, c, d, e, f, g, h] = bytes else {
             return Err(ValueCodecDenial::Malformed);
         };
@@ -34,9 +39,9 @@ impl BinaryValueDelegate for StaleEncoder {
         if result.is_err() {
             return Err(ValueCodecDenial::Malformed);
         }
-        Ok(value)
+        Ok(BinaryCounter(value))
     }
 }
-worth_query_decl::facade::worth_query_value_binding!(pub BrokenBinaryBinding for u64 {
+worth_query_decl::facade::worth_query_value_binding!(pub BrokenBinaryBinding for BinaryCounter {
     identity: "domain-write.stale-binary.v1", binary: StaleEncoder,
 });

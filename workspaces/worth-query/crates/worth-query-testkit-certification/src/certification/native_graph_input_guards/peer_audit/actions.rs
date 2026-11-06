@@ -32,8 +32,8 @@ impl serde::Serialize for Append {
 }
 worth_query_structured_value_binding!(pub Input for Append {identity:"worth.query.peer-append.input.v1",capture_input:true});
 worth_query_operation!(pub AppendAudit for Schema,input Input);
-worth_query_operation_reads!(AppendAudit=>[Row,RowIdentity,RowValue,Parent]);
-worth_query_operation_writes!(AppendAudit=>[RowValue,AuditIdentity,AuditValue,JournalName,JournalRevision,JournalActor]);
+worth_query_operation_reads!(AppendAudit => [Row, Parent]);
+
 worth_query_operation_creates!(AppendAudit=>[Audit,Journal]);
 worth_query_operation_links!(AppendAudit=>[ParentJournal]);
 pub fn scope(input: &Append) -> String {
@@ -44,27 +44,31 @@ identity "worth.query.peer-append.binding.v1",input Input,operation AppendAudit,
 idempotency u64,identity "worth.query.peer-append.request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
 handler identity "worth.query.peer-append.body.v1",program required,outputs NoApplicationMutationOutputs,
 principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value scope,
+scope RowIdentity, field RowIdentity::at("RowIdentity"),value scope,
 );
 pub fn declare(
     builder: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let body = AppendAudit::reference()
         .body()
-        .assign(RowValue::reference(), 99)
+        .assign(RowValue::at("RowValue"), 99)
         .unwrap()
         .create_in_scope(Audit::reference(), "root-audit")
         .unwrap()
-        .initialize(AuditIdentity::reference(), "anchor-check".to_string())
+        .initialize(
+            AuditIdentity::at("AuditIdentity"),
+            "anchor-check".to_string(),
+        )
         .unwrap()
-        .initialize(AuditValue::reference(), 0)
+        .initialize(AuditValue::at("AuditValue"), 0)
         .unwrap()
         .with_peer(Journal::reference(), "journal", |peer| {
-            peer.initialize_input(JournalName::reference(), "audit_name")?
-                .initialize_from_scope(RowValue::reference(), JournalRevision::reference())?
-                .initialize_from_principal_identity::<Binding, _, _, _, _, _>(
-                    JournalActor::reference(),
+            peer.initialize_input(JournalName::at("JournalName"), "audit_name")?
+                .initialize_from_scope(
+                    RowValue::at("RowValue"),
+                    JournalRevision::at("JournalRevision"),
                 )?
+                .initialize_from_principal_identity::<Binding>(JournalActor::at("JournalActor"))?
                 .link_from_path(
                     ApplicationQueryRootPath::from(Row::reference())
                         .reverse(ParentRows::reference()),
@@ -85,7 +89,7 @@ pub fn declare(
                 .with_body(body)
                 .unwrap(),
         )
-        .operation_read_field(AppendAudit::reference(), RowIdentity::reference())
+        .operation_read_field(AppendAudit::reference(), RowIdentity::at("RowIdentity"))
         .operation_projection_work_budget(AppendAudit::reference(), 256)
         .application_mutation_binding::<Binding>()
 }

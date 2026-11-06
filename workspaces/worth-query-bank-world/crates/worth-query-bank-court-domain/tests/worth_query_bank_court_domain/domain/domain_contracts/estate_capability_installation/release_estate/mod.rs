@@ -15,7 +15,9 @@ fn release_installs_exact_reads_and_effect() {
         installed_program_targets(release.contracts()),
         [InstalledProgramTarget::Write {
             entity: "EstateCase".to_owned(),
-            aspect: "EstateCaseRecord".to_owned(),
+            aspect: bank_domain::schema::EstateCaseRecord::reference()
+                .name()
+                .to_owned(),
             path: path("EstateCaseStatusField"),
         }]
         .into_iter()

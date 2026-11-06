@@ -16,7 +16,7 @@ fn current_output_reports_an_obsolete_source_after_authoritative_retirement() {
                     &phase,
                     |reader| {
                         reader
-                            .resolve_entity(AccountStatus::reference(), "open".to_owned())
+                            .resolve_entity(AccountStatus::at("AccountStatus"), "open".to_owned())
                             .unwrap()
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -54,7 +54,7 @@ fn current_output_reports_an_obsolete_source_after_authoritative_retirement() {
             selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "unrelated".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

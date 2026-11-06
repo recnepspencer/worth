@@ -29,10 +29,14 @@ fn cancelled_before_admission_never_enters_the_raw_callback() {
             projection::with_reader(&phase, &world, &request, |reader| {
                 let scope = reader.scope().clone();
                 source.cancel();
-                reader.field_with_predecode_admission(&scope, AccountStatus::reference(), |_, _| {
-                    called.set(true);
-                    Ok::<_, ()>(())
-                })
+                reader.field_with_predecode_admission(
+                    &scope,
+                    AccountStatus::at("AccountStatus"),
+                    |_, _| {
+                        called.set(true);
+                        Ok::<_, ()>(())
+                    },
+                )
             })
         })
         .expect("the fixture read owns its installed host call");
@@ -66,7 +70,7 @@ fn cancellation_during_preflight_is_observable_without_reborrowing_reader() {
                 let scope = reader.scope().clone();
                 reader.field_with_predecode_admission(
                     &scope,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     |_, checkpoint| {
                         assert_eq!(checkpoint(), Ok(()));
                         source.cancel();
@@ -104,7 +108,7 @@ fn deadline_during_preflight_preserves_its_distinct_request_reason() {
                 let scope = reader.scope().clone();
                 reader.field_with_predecode_admission(
                     &scope,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     |_, checkpoint| {
                         assert_eq!(checkpoint(), Ok(()));
                         time.advance(Duration::from_secs(1)).unwrap();

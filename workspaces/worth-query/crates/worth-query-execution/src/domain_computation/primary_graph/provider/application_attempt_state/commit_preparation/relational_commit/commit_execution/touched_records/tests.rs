@@ -82,9 +82,9 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
                 .unwrap()
                 .clone()
         };
-        let identity = AccountIdentity::reference();
-        let status = AccountStatus::reference();
-        let label = AccountLabel::reference();
+        let identity = AccountIdentity::at("AccountIdentity");
+        let status = AccountStatus::at("AccountStatus");
+        let label = AccountLabel::at("AccountLabel");
         let value = StringApplicationValueBinding::encode(&"prepared-custody".to_owned()).unwrap();
         let fields = BTreeMap::from([
             (

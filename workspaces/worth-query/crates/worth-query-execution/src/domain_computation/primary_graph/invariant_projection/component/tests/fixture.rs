@@ -1,36 +1,36 @@
 //! A genuinely installed application owns the component definitions and seed graph.
-use crate::domain_computation::{execution_runtime::*, primary_graph::*};
-use worth_query_declaration::{facade::application_schema::*, *};
-use worth_query_installation::facade::*;
+#[path = "fixture/records.rs"]
+pub(super) mod storage_model;
+use storage_model::ComponentRecords;
+pub(super) use storage_model::{Node, NodeKey};
+
+use worth_query_declaration::facade::application_schema::fragment;
+
 mod principal_binding;
 
 #[derive(Debug)]
 pub(super) struct Schema;
-worth_query_entity!(pub Node for Schema);
-worth_query_aspect!(pub NodeData for Schema, Node; identity = AspectIdentity(0x9181_5001), revision = AspectContractRevision(1));
-worth_query_field!(pub NodeKey for Schema, Node, NodeData: u64 => U64ApplicationValueBinding, read_only, equality);
-pub(super) struct A;
-pub(super) struct B;
+
+pub struct A;
+pub struct B;
 pub(super) struct Shells;
 pub(super) struct OnlyA;
+impl fragment::Relation for A {
+    const NAME: &'static str = "A";
+    type To = Node;
+}
 impl A {
     pub(super) fn reference() -> ApplicationRelationRef<Schema, Self, Node, Node> {
-        ApplicationRelationRef::from_schema_identifiers(
-            "A",
-            "Node",
-            "Node",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        )
+        fragment::relation(ComponentRecords, Node, Self)
     }
+}
+impl fragment::Relation for B {
+    const NAME: &'static str = "B";
+    type To = Node;
 }
 impl B {
     pub(super) fn reference() -> ApplicationRelationRef<Schema, Self, Node, Node> {
-        ApplicationRelationRef::from_schema_identifiers(
-            "B",
-            "Node",
-            "Node",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        )
+        fragment::relation(ComponentRecords, Node, Self)
     }
 }
 impl Shells {
@@ -51,12 +51,7 @@ impl ApplicationSchema for Schema {
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
         principal_binding::declare(
-            ApplicationSchemaDeclarationBuilder::for_schema()
-                .entity(Node::reference())
-                .aspect(Node::reference(), NodeData::reference())
-                .field(Node::reference(), NodeKey::reference())
-                .relation(A::reference(), Node::reference(), Node::reference())
-                .relation(B::reference(), Node::reference(), Node::reference())
+            ApplicationSchemaDeclarationBuilder::from_fragment(ComponentRecords)?
                 .components(
                     ApplicationComponentSetDefinition::new(Shells::reference())
                         .coupled_by(B::reference())
@@ -112,7 +107,7 @@ pub(super) fn install() -> World {
             bootstrap
                 .bind_entity(
                     WorthQueryApplicationEntitySeed::new(Node::reference(), node_key(key))
-                        .field(NodeKey::reference(), key),
+                        .field(NodeKey::at("NodeKey"), key),
                 )
                 .unwrap();
         }
@@ -156,3 +151,7 @@ fn seed_edges<R>(
             .unwrap();
     }
 }
+
+use crate::domain_computation::{execution_runtime::*, primary_graph::*};
+use worth_query_declaration::facade::application_schema::*;
+use worth_query_installation::facade::*;

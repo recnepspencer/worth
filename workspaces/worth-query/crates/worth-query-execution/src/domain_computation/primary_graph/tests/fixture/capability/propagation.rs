@@ -18,7 +18,7 @@ pub(super) fn capability_propagation() -> ApplicationCapabilityPropagationCompos
         ),
         ApplicationCapabilityDisclosureRule::permit([ApplicationCapabilityScopeGuard::requiring(
             [ApplicationCapabilityAcceptedValues::one_of(
-                CapabilityDisclosureField::reference(),
+                CapabilityDisclosureField::at("CapabilityDisclosureField"),
                 [
                     ApplicationEncodedScalarValue::<CapabilityDisclosureBinding>::try_new(
                         CapabilityDisclosure::AccountActivity,
@@ -29,7 +29,8 @@ pub(super) fn capability_propagation() -> ApplicationCapabilityPropagationCompos
                     )
                     .unwrap(),
                 ],
-            )],
+            )
+            .unwrap()],
         )]),
     )
 }

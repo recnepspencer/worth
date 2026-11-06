@@ -35,7 +35,7 @@ fn long_history_keeps_native_cleanup_through_fresh_release_without_a_retention_w
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    UnrelatedValueField::reference(),
+                    UnrelatedValueField::at("UnrelatedValueField"),
                     0,
                     &request_scope(),
                     WorthQueryPrincipalResolutionMode::Certification,
@@ -52,7 +52,7 @@ fn long_history_keeps_native_cleanup_through_fresh_release_without_a_retention_w
             .publish_native_field_write_for_test(
                 branch,
                 unrelated,
-                UnrelatedValueField::reference(),
+                UnrelatedValueField::at("UnrelatedValueField"),
                 value,
                 &request_scope(),
             )
@@ -107,5 +107,9 @@ fn long_history_keeps_native_cleanup_through_fresh_release_without_a_retention_w
             .retained_wake_count(),
         1
     );
-    assert_authoritative_value(&world, IntentEffectField::reference(), "payload".to_owned());
+    assert_authoritative_value(
+        &world,
+        IntentEffectField::at("IntentEffectField"),
+        "payload".to_owned(),
+    );
 }

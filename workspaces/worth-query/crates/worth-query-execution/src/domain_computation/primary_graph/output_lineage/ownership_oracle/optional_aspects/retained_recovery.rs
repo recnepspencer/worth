@@ -24,13 +24,13 @@ pub(super) fn materialize_source_in_phase<Schema: BirthSchema>(
         .unwrap()
         .resolve_entity(
             phase,
-            BodyKey::reference(),
+            BodyKey::at("BodyKey"),
             installation::ANCHOR.to_owned(),
             &scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let field = SourceContent::reference::<Schema>();
+    let field = SourceContent::at("SourceContent");
     let native = runtime
         .installed_schema()
         .native_contracts()
@@ -157,10 +157,10 @@ fn restored_projection_reads_the_checkpoint_without_authoring_initial_state() {
                     &phase,
                     |reader| {
                         let anchor = reader
-                            .resolve_entity(BodyKey::reference(), installation::ANCHOR.to_owned())
+                            .resolve_entity(BodyKey::at("BodyKey"), installation::ANCHOR.to_owned())
                             .unwrap();
                         assert_eq!(
-                            reader.field(&anchor, BodyKey::reference()),
+                            reader.field(&anchor, BodyKey::at("BodyKey")),
                             Some(installation::ANCHOR.to_owned())
                         );
                         anchor
@@ -175,7 +175,7 @@ fn restored_projection_reads_the_checkpoint_without_authoring_initial_state() {
                     &phase,
                     |reader| {
                         reader
-                            .resolve_entity(BodyKey::reference(), installation::ANCHOR.to_owned())
+                            .resolve_entity(BodyKey::at("BodyKey"), installation::ANCHOR.to_owned())
                             .unwrap()
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,

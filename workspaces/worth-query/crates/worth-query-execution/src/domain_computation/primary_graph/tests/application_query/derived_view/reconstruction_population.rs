@@ -18,7 +18,7 @@ pub(super) fn add_third_root(
     let graph = world.application.runtime.primary_graph().unwrap();
     macro_rules! declared_field {
         ($marker:ty, $value:expr) => {{
-            let field = <$marker>::reference();
+            let field = <$marker>::at(stringify!($marker));
             (
                 graph
                     .layout
@@ -70,7 +70,7 @@ pub(super) fn add_primary_reads(
     let root = selected
         .resolve_entity(
             phase_custody,
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             "open".to_owned(),
             &scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -105,7 +105,7 @@ pub(super) fn add_primary_reads(
             selected
                 .resolve_entity(
                     phase_custody,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     status.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

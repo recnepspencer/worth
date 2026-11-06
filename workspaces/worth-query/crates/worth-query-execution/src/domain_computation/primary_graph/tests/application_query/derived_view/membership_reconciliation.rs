@@ -61,7 +61,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
             let scope = current
                 .resolve_entity(
                     &host_custody.phase_for_application(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -100,7 +100,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
             let scope = current
                 .resolve_entity(
                     &host_custody.phase_for_application(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     key.to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -141,7 +141,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
         let pair_scope = selected
             .resolve_entity(
                 &host_custody.phase_for_application(&world.application),
-                AccountStatus::reference(),
+                AccountStatus::at("AccountStatus"),
                 "open".to_string(),
                 &request,
                 WorthQueryPrincipalResolutionMode::Ordinary,

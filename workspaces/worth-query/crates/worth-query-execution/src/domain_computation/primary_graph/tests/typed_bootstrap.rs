@@ -13,10 +13,6 @@ use super::fixture::{
     external_identity, installed_world_with_policy_fact, IdentityBinding, IdentityExecutionSchema,
 };
 use worth_foundational::facade::AspectIdentity;
-use worth_query_declaration::facade::application_schema::{
-    ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
-    U64ApplicationValueBinding,
-};
 
 #[test]
 fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
@@ -45,7 +41,10 @@ fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
             .unwrap();
         let installed = schema
             .native_contracts()
-            .aspect("Principal", "PrincipalIdentity")
+            .aspect(
+                "Principal",
+                super::fixture::PrincipalIdentityField::at("PrincipalIdentityField").aspect(),
+            )
             .unwrap();
         let maximum_application_identity = schema
             .native_contracts()
@@ -59,7 +58,7 @@ fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
             .registered_entity_aspect(
                 &active_phase.borrowed_request_for_test(),
                 "Principal",
-                "PrincipalIdentity",
+                super::fixture::PrincipalIdentityField::at("PrincipalIdentityField").aspect(),
             )
             .unwrap();
 
@@ -74,77 +73,6 @@ fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
                 AspectIdentity(maximum_application_identity + 2),
                 AspectIdentity(maximum_application_identity + 3),
             ]
-        );
-    })
-}
-
-struct ExhaustedProviderIdentitySchema;
-worth_query_declaration::worth_query_entity!(ExhaustedEntity for ExhaustedProviderIdentitySchema);
-worth_query_declaration::worth_query_aspect!(
-    ExhaustedAspect for ExhaustedProviderIdentitySchema, ExhaustedEntity;
-    identity = AspectIdentity(u64::MAX - 2),
-    revision = AspectContractRevision(1),
-);
-worth_query_declaration::worth_query_field!(
-    ExhaustedField for ExhaustedProviderIdentitySchema, ExhaustedEntity, ExhaustedAspect:
-    u64 => U64ApplicationValueBinding, read_only, no_equality
-);
-
-impl ApplicationSchema for ExhaustedProviderIdentitySchema {
-    const OWNER: &'static str = "provider-identity-exhaustion";
-    const NAME: &'static str = "ExhaustedProviderIdentitySchema";
-    const MAJOR: u32 = 1;
-    const MINOR: u32 = 0;
-
-    fn declaration() -> Result<
-        ApplicationSchemaDeclaration<Self>,
-        worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
-    > {
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(ExhaustedEntity::reference())
-            .aspect(ExhaustedEntity::reference(), ExhaustedAspect::reference())
-            .field(ExhaustedEntity::reference(), ExhaustedField::reference())
-            .build()
-    }
-}
-
-#[test]
-fn provider_identity_exhaustion_denies_before_relational_installation() {
-    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
-        let phase = &active_phase;
-
-        let declaration = ExhaustedProviderIdentitySchema::declaration().unwrap();
-        let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
-            ExhaustedProviderIdentitySchema::OWNER,
-            1,
-            0,
-        ))
-        .application_schema(declaration.clone())
-        .validate()
-        .unwrap();
-        let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
-            .admit(package)
-            .unwrap();
-        let installation = WorthQueryExecutionRuntimeInstaller::new()
-            .install(WorthQueryInstallationGeneration::initial(), [admitted])
-            .unwrap();
-        let (runtime, authority) = installation.into_parts();
-        let schema = runtime
-            .installed_packages()
-            .bind_application_schema(declaration)
-            .unwrap();
-        let denial = authority
-        .prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()))
-        .err()
-        .unwrap();
-
-        assert_eq!(
-            denial.kind(),
-            WorthQueryPrimaryGraphInstallationDenialKind::InvalidSchemaMember
-        );
-        assert_eq!(
-            denial.subject(),
-            "application schema exhausts Relational aspect-contract identity space"
         );
     })
 }

@@ -2,35 +2,27 @@
 use super::{WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantRelation};
 use worth_execution::{MapKernelStop, WorkCeilingDenial};
 use worth_foundational::facade::ContractValidatedAspectValueView;
-use worth_query_declaration::facade::application_schema::{
-    ApplicationAspectMarkerIdentity, ApplicationFieldMarkerIdentity,
-};
-use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationReadableScalarValueBinding, ApplicationRelationFieldRef,
-    ApplicationSchema,
-};
+use worth_query_declaration::facade::application_schema::fragment::RelationSelection;
+use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::storage::RecordLifecycleState;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
     /// Read one actual field under bootstrap-minted broad invariant authority.
     /// This supplies neither ordinary query disclosure nor an operation's
     /// recorded relation-field decision read. Those readers expose no forwarding door.
-    pub fn relation_field<Relation, From, To, Aspect, Field, Write, Unit>(
+    pub fn relation_field<Relation, From, To, Field>(
         &mut self,
         identity: &WorthQueryInvariantRelation<Schema, Relation, From, To>,
-        field: ApplicationRelationFieldRef<Schema, Relation, From, To, Aspect, Field, Write, Unit>,
+        field: Field,
     ) -> Option<Field::Value>
     where
-        Aspect: ApplicationAspectMarkerIdentity<Schema, Relation>,
-        Field: ApplicationFieldMarkerIdentity<Schema, Relation, Aspect>,
-        Field::Binding: ApplicationReadableScalarValueBinding,
-        Unit: ApplicationFieldUnit,
+        Field: RelationSelection<Entity = Relation, From = From, To = To>,
     {
         if self.native_read_stop.is_some() || self.value_decode.stopped() {
             return None;
         }
-        let relation = field.relation();
-        let layout = self.layout.relation(relation.name())?;
+        let relation = field;
+        let layout = self.layout.relation(relation.entity())?;
         if !self.identity_is_local(identity.from(), relation.from())
             || !self.identity_is_local(identity.to(), relation.to())
             || identity.from().kind != layout.from
@@ -38,17 +30,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         {
             return None;
         }
-        let contract = self
-            .layout
-            .relation_aspect_contract(relation.name(), field.aspect())?;
-        if contract.identity() != Aspect::ASPECT_IDENTITY
-            || contract.revision() != Aspect::CONTRACT_REVISION
-        {
-            return None;
-        }
         let locator =
             self.layout
-                .relation_field_locator(relation.name(), field.aspect(), field.field())?;
+                .relation_field_locator(relation.entity(), field.aspect(), field.field())?;
         let [key] = locator.field_path().fields() else {
             return None;
         };
@@ -81,7 +65,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                     };
                     let raw = value.get(key)?;
                     decoder.decode_relation::<Field::Binding>(
-                        relation.name(),
+                        relation.entity(),
                         field.aspect(),
                         field.field(),
                         raw,

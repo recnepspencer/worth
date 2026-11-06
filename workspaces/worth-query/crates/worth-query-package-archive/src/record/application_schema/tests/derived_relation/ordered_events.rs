@@ -5,11 +5,15 @@ use worth_query_declaration::facade::application_schema::*;
 struct Events;
 struct Event;
 struct Row;
-impl ApplicationEntityMarkerIdentity<Events> for Event {
-    const IDENTIFIER: &'static str = "Event";
+impl worth_query_declaration::facade::application_schema::fragment::Entity for Event {
+    const NAME: &'static str = "Event";
+    type Aspects = ();
+    type Relations = (Previous, Introduces, Retires);
 }
-impl ApplicationEntityMarkerIdentity<Events> for Row {
-    const IDENTIFIER: &'static str = "Row";
+impl worth_query_declaration::facade::application_schema::fragment::Entity for Row {
+    const NAME: &'static str = "Row";
+    type Aspects = ();
+    type Relations = ();
 }
 
 struct Previous;
@@ -22,15 +26,7 @@ impl ApplicationSchema for Events {
     const MAJOR: u32 = 1;
     const MINOR: u32 = 0;
     fn declaration() -> Result<ApplicationSchemaDeclaration<Self>, Denial> {
-        let event = ApplicationEntityRef::<Self, Event>::from_schema_identifier("Event");
-        let row = ApplicationEntityRef::<Self, Row>::from_schema_identifier("Row");
-        let (previous, introduces, retires) = leaves();
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(event)
-            .entity(row)
-            .relation(previous, event, event)
-            .relation(introduces, event, row)
-            .relation(retires, event, row)
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(FixtureRecords)?
             .derived_relation(reference(), recipe(), Laws::unbounded())
             .build()
     }
@@ -73,7 +69,7 @@ fn definition(member: &Member) -> &Definition {
 fn record(members: Vec<Member>) -> Schema {
     Schema::from_untrusted_parts(Parts {
         owner: Events::OWNER.into(),
-        name: Events::NAME.into(),
+        name: <Events as ApplicationSchema>::NAME.into(),
         major: 1,
         minor: 0,
         members,
@@ -284,4 +280,23 @@ fn untrusted_event_roles_reject_nonliteral_projected_bad_indices_and_missing_sou
             ..
         })
     ));
+}
+
+struct FixtureRecords;
+impl worth_query_declaration::facade::application_schema::fragment::Fragment for FixtureRecords {
+    const NAME: &'static str = "fixture_records";
+    type Bindings = worth_query_declaration::facade::application_schema::fragment::NoBindings;
+    type Members = (Event, Row);
+}
+impl worth_query_declaration::facade::application_schema::fragment::Relation for Previous {
+    const NAME: &'static str = "Previous";
+    type To = Event;
+}
+impl worth_query_declaration::facade::application_schema::fragment::Relation for Introduces {
+    const NAME: &'static str = "Introduces";
+    type To = Row;
+}
+impl worth_query_declaration::facade::application_schema::fragment::Relation for Retires {
+    const NAME: &'static str = "Retires";
+    type To = Row;
 }

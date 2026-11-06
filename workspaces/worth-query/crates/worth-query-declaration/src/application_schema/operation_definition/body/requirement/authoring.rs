@@ -5,11 +5,7 @@ use super::{
     ApplicationOperationBodyRequirementOperand as Operand,
     ApplicationOperationBodyRequirementSource as Source,
 };
-use crate::application_schema::{
-    ApplicationFieldBindingLocus, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationOperationRef, ApplicationRelationRef, ApplicationScalarValueBinding,
-    DeclaredApplicationFieldValue, NoApplicationUnit, OperationReads,
-};
+use crate::application_schema::{ApplicationOperationRef, ApplicationRelationRef, OperationReads};
 use std::marker::PhantomData;
 
 /// Typed native sources available to one operation's requirement expressions.
@@ -65,7 +61,7 @@ impl<Schema, Operation> ApplicationOperationBodyRequirementOperands<Schema, Oper
                 field: field.locus().clone(),
                 binding: field.recipe().binding_identity().clone(),
                 scalar_family: field.recipe().scalar_family(),
-                presence: crate::application_schema::ApplicationFieldPresence::Required,
+                presence: field.presence(),
                 presence_only,
             },
         )
@@ -73,65 +69,27 @@ impl<Schema, Operation> ApplicationOperationBodyRequirementOperands<Schema, Oper
 
     /// Reads a scalar value with its exact optionality. Unit-bearing values
     /// need a quantity binding rather than silently becoming unitless scalars.
-    pub fn field<Entity, Aspect, Field, Value, Write, Equality>(
+    pub fn field<Field: crate::application_schema::fragment::RecordSelection>(
         self,
         name: &str,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            NoApplicationUnit,
-        >,
-    ) -> Result<Self, Denial>
-    where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-    {
-        self.add_field::<Entity, Aspect, Field, Value, Write, Equality, NoApplicationUnit>(
-            name, field, false,
-        )
+        field: Field,
+    ) -> Result<Self, Denial> {
+        let checked = field.checked().map_err(|_| Denial::InvalidRecordField {
+            field: field.expected_recipe().locus().clone(),
+        })?;
+        self.record_field(name, checked)
     }
 
     /// Reads presence without interpreting the field's value or physical unit.
-    pub fn presence<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn presence<Field: crate::application_schema::fragment::RecordSelection>(
         self,
         name: &str,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Result<Self, Denial>
-    where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-    {
-        self.add_field(name, field, true)
-    }
-
-    fn add_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
-        self,
-        name: &str,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        presence_only: bool,
-    ) -> Result<Self, Denial>
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-    {
-        self.push(
-            name,
-            Source::Field {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
-                binding: Field::Binding::IDENTITY,
-                scalar_family: Field::Binding::SCALAR_FAMILY,
-                presence: Field::PRESENCE,
-                presence_only,
-            },
-        )
+        field: Field,
+    ) -> Result<Self, Denial> {
+        let checked = field.checked().map_err(|_| Denial::InvalidRecordField {
+            field: field.expected_recipe().locus().clone(),
+        })?;
+        self.record_presence(name, checked)
     }
 
     /// Counts distinct live target entities. A dangling endpoint is unavailable,

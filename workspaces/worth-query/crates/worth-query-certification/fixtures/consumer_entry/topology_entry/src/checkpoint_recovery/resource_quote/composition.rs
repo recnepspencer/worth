@@ -1,35 +1,76 @@
 //! The counted fixture owns exactly its source, output and conditional action.
 use super::*;
-use worth_query_decl::facade::{worth_query_application, worth_query_application_contribution};
 
-worth_query_application! {
-    pub QuoteSchema {
-        owner: "worth.query.certification.quote-count",
-        version: (1, 0),
-        contributions: [QuoteContribution],
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct QuoteSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for QuoteSchema {
+    const NAME: &'static str = "QuoteSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (QuoteContribution,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for QuoteSchema {
+    const OWNER: &'static str = "worth.query.certification.quote-count";
+    const NAME: &'static str = "QuoteSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
     }
 }
-impl TopologySchemaBinding for QuoteSchema {}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for QuoteSchema {
+    type Contributions = (QuoteContribution,);
+}
 
-worth_query_application_contribution! {
-    pub contribution QuoteContribution for S: TopologySchemaBinding {
-        identity: "worth.query.certification.quote-count-contribution.v1",
-        members: |schema| {
-            let schema = schema
-                .entity(Body::reference::<S>())
-                .aspect(Body::reference::<S>(), PlanarPosition::reference::<S>())
-                .field(Body::reference::<S>(), BodyKey::reference::<S>())
-                .entity(ExternalPrincipalMapping::reference::<S>())
-                .entity(Principal::reference::<S>())
-                .aspect(ExternalPrincipalMapping::reference::<S>(), ExternalIdentity::reference::<S>())
-                .aspect(Principal::reference::<S>(), PrincipalFacts::reference::<S>())
-                .field(ExternalPrincipalMapping::reference::<S>(), ExternalIdentityField::reference::<S>())
-                .field(ExternalPrincipalMapping::reference::<S>(), MappingStatusField::reference::<S>())
-                .field(Principal::reference::<S>(), PrincipalIdentity::reference::<S>())
-                .relation(MappingTarget::reference::<S>(), ExternalPrincipalMapping::reference::<S>(), Principal::reference::<S>())
-                .principal_binding(ConsumerPrincipalBinding::reference::<S>());
+impl TopologySchemaBinding for QuoteSchema {
+    type PrincipalFragment = crate::PrincipalRecords;
+}
+
+pub struct QuoteContribution;
+impl<S: TopologySchemaBinding>
+    worth_query_decl::facade::application_schema::ApplicationSchemaContribution<S>
+    for QuoteContribution
+{
+    const IDENTITY:
+        worth_query_decl::facade::application_schema::ApplicationSchemaContributionIdentity =
+        worth_query_decl::facade::application_schema::ApplicationSchemaContributionIdentity::new(
+            "worth.query.certification.quote-count-contribution.v1",
+        );
+    type Members = (
+        QuoteRecords,
+        crate::MinimalPrincipalRecords,
+        QuoteContributionContracts,
+    );
+}
+pub struct QuoteContributionContracts;
+impl<S: TopologySchemaBinding>
+    worth_query_decl::facade::application_schema::fragment::Registration<S>
+    for QuoteContributionContracts
+{
+    fn register(
+        schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<
+            S,
+        >,
+    ) -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<S>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        Ok({
+            let schema = schema.principal_binding(ConsumerPrincipalBinding::reference::<S>());
             super::declare(schema)
-        }
+        })
     }
 }
 

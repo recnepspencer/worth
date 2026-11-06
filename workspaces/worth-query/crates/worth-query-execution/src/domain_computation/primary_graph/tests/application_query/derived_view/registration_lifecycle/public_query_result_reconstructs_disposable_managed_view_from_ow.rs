@@ -33,7 +33,7 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
             selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -153,7 +153,7 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
         .unwrap();
     drop(retained_product);
     let graph = world.application.runtime.primary_graph().unwrap();
-    let field = AccountLabel::reference();
+    let field = AccountLabel::at("AccountLabel");
     let locator = graph
         .layout
         .field_locator(field.entity(), field.aspect(), field.field())
@@ -207,7 +207,7 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
             selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

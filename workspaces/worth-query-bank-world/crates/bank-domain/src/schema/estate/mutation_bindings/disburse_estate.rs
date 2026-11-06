@@ -4,10 +4,7 @@ use worth_query_decl::facade::{
         ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
         NoApplicationMutationSource,
     },
-    application_schema::{
-        ApplicationFieldRef, ApplicationPrincipalBindingRef, EqualityPredicate, NoApplicationUnit,
-        ReadOnly,
-    },
+    application_schema::ApplicationPrincipalBindingRef,
 };
 
 use crate::{
@@ -16,8 +13,7 @@ use crate::{
     proposals::{BankIdempotencyKey, BankInvariantApprovedProposal},
     schema::{
         BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, DisburseEstateCapability,
-        DisburseEstateOperation, EstateCase, EstateCaseIdentityField, ExternalPrincipalMapping,
-        Principal,
+        DisburseEstateOperation, EstateCaseIdentityField, ExternalPrincipalMapping, Principal,
     },
 };
 
@@ -60,15 +56,7 @@ impl ApplicationMutationBinding<BankSchema> for DisburseEstateMutationBinding {
     type Denial = EstateMutationDenial;
     type DenialBinding = EstateMutationDenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        BankSchema,
-        EstateCase,
-        super::super::EstateCaseRecord,
-        EstateCaseIdentityField,
-        EstateCaseId,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<EstateCaseIdentityField>;
     type PrincipalBinding = BankPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -81,17 +69,8 @@ impl ApplicationMutationBinding<BankSchema> for DisburseEstateMutationBinding {
     const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
 
-    fn scope_field() -> ApplicationFieldRef<
-        BankSchema,
-        EstateCase,
-        super::super::EstateCaseRecord,
-        EstateCaseIdentityField,
-        EstateCaseId,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        EstateCaseIdentityField::reference()
+    fn scope_field() -> EstateCaseIdentityField {
+        EstateCaseIdentityField::at("EstateCaseIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -120,7 +99,10 @@ impl ApplicationMutationIntent<BankSchema> for DisburseEstate {
     fn scope_binding(
         &self,
     ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(EstateCaseIdentityField::reference(), self.estate)
+        ApplicationMutationFieldScope::new(
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
+            self.estate,
+        )
     }
 }
 

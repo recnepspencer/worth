@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
-use worth_query_decl::facade::application_schema::ApplicationFieldRef;
+use worth_query_decl::facade::application_schema::fragment::RecordSelection;
 
 use super::{
     CollectionItemKeyField, CollectionItemStatusField, IdentityIdField, MeasurementValueField,
-    QueryRevisionValueField, QueryTextStatusField, SizeValueField, WorthUiApplicationSchema,
-    WorthUiProjectionField,
+    QueryRevisionValueField, QueryTextStatusField, SizeValueField, WorthUiProjectionField,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -66,102 +65,79 @@ impl UiProjectionFieldRequirement {
     }
 
     pub fn query_text_status() -> Self {
-        Self::from_worth_ui_field(QueryTextStatusField::reference())
+        Self::from_worth_ui_field(QueryTextStatusField::at("QueryTextStatusField"))
     }
 
     pub fn measurement_value() -> Self {
-        Self::from_worth_ui_field(MeasurementValueField::reference())
+        Self::from_worth_ui_field(MeasurementValueField::at("MeasurementValueField"))
     }
 
     pub fn size_value() -> Self {
-        Self::from_worth_ui_field(SizeValueField::reference())
+        Self::from_worth_ui_field(SizeValueField::at("SizeValueField"))
     }
 
     pub fn identity_id() -> Self {
-        Self::from_worth_ui_field(IdentityIdField::reference())
+        Self::from_worth_ui_field(IdentityIdField::at("IdentityIdField"))
     }
 
     pub fn query_revision() -> Self {
-        Self::from_worth_ui_field(QueryRevisionValueField::reference())
+        Self::from_worth_ui_field(QueryRevisionValueField::at("QueryRevisionValueField"))
     }
 
     pub fn collection_item_status() -> Self {
-        Self::from_worth_ui_field(CollectionItemStatusField::reference())
+        Self::from_worth_ui_field(CollectionItemStatusField::at("CollectionItemStatusField"))
     }
 
     pub fn collection_item_key() -> Self {
-        Self::from_worth_ui_field(CollectionItemKeyField::reference())
+        Self::from_worth_ui_field(CollectionItemKeyField::at("CollectionItemKeyField"))
     }
 
     /// Bind a Worth UI schema field. Names remain diagnostic only.
     ///
-    /// Cross-schema fields are unrepresentable:
+    /// Foreign record fields cannot acquire the UI's sealed projection contract:
     ///
     /// ```compile_fail
-    /// use worth_query_decl::facade::{worth_query_application_schema, worth_query_aspect, worth_query_entity, worth_query_field};
+    /// use worth_query_decl::facade::application_schema::{*, fragment::*};
     /// use worth_ui_query_binding::UiProjectionFieldRequirement;
-    /// worth_query_application_schema! {
-    ///     pub schema OtherSchema {
-    ///         owner: other,
-    ///         version: (1, 0),
-    ///         members: |schema| { schema.entity(OtherRecord::reference()).aspect(OtherRecord::reference(), OtherAspect::reference()).field(OtherRecord::reference(), OtherField::reference()) }
-    ///     }
+    /// struct Other;
+    /// impl Fragment for Other { const NAME: &'static str = "other"; type Bindings = Set; type Members = (Item,); }
+    /// struct Item;
+    /// impl Entity for Item { const NAME: &'static str = "item"; type Aspects = (Facts,); type Relations = (); }
+    /// struct Facts;
+    /// impl Aspect for Facts { const NAME: &'static str = "facts"; type Row = u64; }
+    /// struct Set;
+    /// impl BindingSet for Set {
+    ///     type Work<'a> = ValueDecodeAdmission<'a>;
+    ///     fn with_admission<T>(work: &mut Self::Work<'_>, run: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T) -> T { run(work) }
     /// }
-    /// worth_query_entity!(pub OtherRecord for OtherSchema);
-    /// worth_query_aspect!(pub OtherAspect for OtherSchema, OtherRecord; identity = AspectIdentity(0x9161105b), revision = AspectContractRevision(1),);
-    /// worth_query_field!(pub OtherField for OtherSchema, OtherRecord, OtherAspect: String => worth_query_decl::facade::application_schema::StringApplicationValueBinding, read_only, equality);
-    /// let _ = UiProjectionFieldRequirement::from_worth_ui_field(OtherField::reference());
+    /// impl Scalar<u64> for Set { type Binding = U64ApplicationValueBinding; }
+    /// let field = FieldSelection::<Other, Item, Facts, u64>::at("value");
+    /// let _ = UiProjectionFieldRequirement::from_worth_ui_field(field);
     /// ```
     ///
-    /// Cross-aspect fields are unrepresentable:
+    /// Aspect identity remains part of the record handle's type:
     ///
     /// ```compile_fail
     /// use worth_ui_query_binding::{IdentityIdField, QueryTextStatusField, UiProjectionFieldRequirement};
-    /// fn bind_status(
-    ///     field: worth_query_decl::facade::application_schema::ApplicationFieldRef<
-    ///         worth_ui_query_binding::WorthUiApplicationSchema,
-    ///         worth_ui_query_binding::WorthUiRecord,
-    ///         worth_ui_query_binding::QueryTextAspect,
-    ///         QueryTextStatusField,
-    ///         String,
-    ///     >,
-    /// ) -> UiProjectionFieldRequirement {
+    /// fn bind_status(field: QueryTextStatusField) -> UiProjectionFieldRequirement {
     ///     UiProjectionFieldRequirement::from_worth_ui_field(field)
     /// }
-    /// let _ = bind_status(IdentityIdField::reference());
+    /// let _ = bind_status(IdentityIdField::at("IdentityIdField"));
     /// ```
     ///
-    /// Wrong value types are unrepresentable:
+    /// Value types remain checked:
     ///
     /// ```compile_fail
-    /// use worth_ui_query_binding::{QueryTextStatusField, UiProjectionFieldRequirement};
-    /// fn bind_f32(
-    ///     field: worth_query_decl::facade::application_schema::ApplicationFieldRef<
-    ///         worth_ui_query_binding::WorthUiApplicationSchema,
-    ///         worth_ui_query_binding::WorthUiRecord,
-    ///         worth_ui_query_binding::QueryTextAspect,
-    ///         QueryTextStatusField,
-    ///         f32,
-    ///     >,
-    /// ) -> UiProjectionFieldRequirement {
+    /// use worth_query_decl::facade::application_schema::fragment::RecordSelection;
+    /// use worth_ui_query_binding::{QueryTextStatusField, WorthUiNativeField, UiProjectionFieldRequirement};
+    /// fn bind_f32<F: RecordSelection<Value=f32> + WorthUiNativeField>(field: F) -> UiProjectionFieldRequirement {
     ///     UiProjectionFieldRequirement::from_worth_ui_field(field)
     /// }
-    /// let _ = bind_f32(QueryTextStatusField::reference());
+    /// let _ = bind_f32(QueryTextStatusField::at("QueryTextStatusField"));
     /// ```
-    pub fn from_worth_ui_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
-        field: ApplicationFieldRef<
-            WorthUiApplicationSchema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
-    ) -> Self
+    pub fn from_worth_ui_field<Field>(field: Field) -> Self
     where
-        Field: super::WorthUiNativeField,
+        Field: RecordSelection + super::WorthUiNativeField,
     {
         let _typed_authority = field;
         Self {

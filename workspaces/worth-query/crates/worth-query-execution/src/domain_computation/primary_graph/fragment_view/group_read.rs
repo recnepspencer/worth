@@ -69,7 +69,7 @@ where
         .port
         .with_decode_admission(aspect.path(), &mut |admission| {
             decoded = Some(G::Cases::decode(
-                aspect.name(),
+                aspect.meaning(),
                 &raw,
                 aspect.path(),
                 work,
@@ -139,7 +139,7 @@ macro_rules! case_read {
                 let Some((aspect, raw)) = observe_group(access, fragment, target, group)? else {
                     return Ok(None);
                 };
-                if aspect.name() != A::NAME {
+                if aspect.meaning() != A::NAME {
                     return Ok(None);
                 }
                 decode_record::<Set, A::Row>(access, &raw, aspect.path(), work).map(Some)

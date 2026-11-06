@@ -156,7 +156,7 @@ impl World {
                     (
                         key.clone(),
                         reader
-                            .resolve_entity(BodyKey::reference(), key.clone())
+                            .resolve_entity(BodyKey::at("BodyKey"), key.clone())
                             .unwrap(),
                     )
                 })
@@ -170,7 +170,7 @@ impl World {
             let mut groups = Vec::new();
             for key in keys {
                 let member = reader
-                    .resolve_entity(BodyKey::reference(), key.clone())
+                    .resolve_entity(BodyKey::at("BodyKey"), key.clone())
                     .unwrap();
                 if covered.contains(&member) {
                     continue;

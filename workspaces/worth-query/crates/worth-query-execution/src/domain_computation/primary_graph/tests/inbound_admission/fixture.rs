@@ -117,7 +117,7 @@ impl InboundWorld {
                     .unwrap()
                     .resolve_entity(
                         phase_custody,
-                        TargetKey::reference(),
+                        TargetKey::at("TargetKey"),
                         "target".to_owned(),
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -266,7 +266,7 @@ impl InboundWorld {
                     .unwrap()
                     .resolve_entity(
                         phase_custody,
-                        TargetKey::reference(),
+                        TargetKey::at("TargetKey"),
                         "target".to_owned(),
                         request,
                         WorthQueryPrincipalResolutionMode::Ordinary,

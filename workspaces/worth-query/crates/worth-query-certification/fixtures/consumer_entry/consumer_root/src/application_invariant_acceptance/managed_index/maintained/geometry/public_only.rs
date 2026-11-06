@@ -72,8 +72,8 @@ worth_query_query_binding!(pub Binding for FindPublicBoxes, schema Catalog,
     query PublicQuery, parameters source::ParametersBinding => |input:&FindPublicBoxes| ApplicationQueryParameterSet::new().bind(probe(),input.probe).unwrap(), result source::ResultBinding,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value scope, limits results 4096);
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value scope, limits results 4096);
 
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,

@@ -46,7 +46,7 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -88,10 +88,10 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
                     &admission,
                     |reader, _| {
                         let account = reader
-                            .resolve_entity(AccountStatus::reference(), "open".to_string())
+                            .resolve_entity(AccountStatus::at("AccountStatus"), "open".to_string())
                             .unwrap();
                         for _ in 0..31 {
-                            let _ = reader.field(&account, AccountStatus::reference());
+                            let _ = reader.field(&account, AccountStatus::at("AccountStatus"));
                         }
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,

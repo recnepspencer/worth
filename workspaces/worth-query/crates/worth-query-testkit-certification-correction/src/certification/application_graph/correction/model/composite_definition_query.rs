@@ -25,61 +25,19 @@ worth_query_portable_type!(KeySlot => "numeric-definition.key-slot.v1");
 worth_query_portable_type!(RevisionSlot => "numeric-definition.revision-slot.v1");
 worth_query_portable_type!(DueSlot => "numeric-definition.due-slot.v1");
 worth_query_portable_type!(LifecycleSlot => "numeric-definition.lifecycle-slot.v1");
-pub fn key_field() -> ApplicationQueryResultFieldRef<
-    ReadQuery,
-    KeySlot,
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Key,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", Key::reference())
+pub fn key_field() -> ApplicationQueryResultFieldRef<ReadQuery, KeySlot, NumericSchema, Key> {
+    ApplicationQueryResultFieldRef::new("key", Key::at("Key"))
 }
-pub fn revision_field() -> ApplicationQueryResultFieldRef<
-    ReadQuery,
-    RevisionSlot,
-    NumericSchema,
-    Number,
-    DefinitionRevisionFacts,
-    DefinitionRevision,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("revision", DefinitionRevision::reference())
+pub fn revision_field(
+) -> ApplicationQueryResultFieldRef<ReadQuery, RevisionSlot, NumericSchema, DefinitionRevision> {
+    ApplicationQueryResultFieldRef::new("revision", DefinitionRevision::at("DefinitionRevision"))
 }
-pub fn due_field() -> ApplicationQueryResultFieldRef<
-    ReadQuery,
-    DueSlot,
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Secondary,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("due", Secondary::reference())
+pub fn due_field() -> ApplicationQueryResultFieldRef<ReadQuery, DueSlot, NumericSchema, Secondary> {
+    ApplicationQueryResultFieldRef::new("due", Secondary::at("Secondary"))
 }
-pub fn lifecycle_field() -> ApplicationQueryResultFieldRef<
-    ReadQuery,
-    LifecycleSlot,
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Ceiling,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("lifecycle", Ceiling::reference())
+pub fn lifecycle_field(
+) -> ApplicationQueryResultFieldRef<ReadQuery, LifecycleSlot, NumericSchema, Ceiling> {
+    ApplicationQueryResultFieldRef::new("lifecycle", Ceiling::at("Ceiling"))
 }
 pub fn definition() -> ApplicationQueryDefinition<NumericSchema, ReadQuery, Parameters, Row, Number>
 {
@@ -126,15 +84,7 @@ impl ApplicationQueryBinding<NumericSchema> for Binding {
     type Query = ReadQuery;
     type ParameterBinding = ParametersBinding;
     type ResultBinding = ResultBinding;
-    type ScopeBinding = ApplicationQueryFieldScope<
-        NumericSchema,
-        Number,
-        NumberFacts,
-        Key,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationQueryFieldScope<Key>;
     type PrincipalBinding = ActorBinding;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -142,17 +92,8 @@ impl ApplicationQueryBinding<NumericSchema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "numeric-definition.read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        NumericSchema,
-        Number,
-        NumberFacts,
-        Key,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        Key::reference()
+    fn scope_field() -> Key {
+        Key::at("Key")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         NumericSchema,

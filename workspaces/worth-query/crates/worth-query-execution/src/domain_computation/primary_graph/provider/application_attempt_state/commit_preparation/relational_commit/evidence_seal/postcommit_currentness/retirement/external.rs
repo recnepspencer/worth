@@ -20,7 +20,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
             let owned = selected
                 .resolve_entity(
                     &host_custody.phase_for_application(&world.application),
-                    ActivityIdentity::reference(),
+                    ActivityIdentity::at("ActivityIdentity"),
                     "activity-primary".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -41,7 +41,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
                 .kind;
             let kind = graph
                 .layout
-                .entity_kind(ActivityIdentity::reference().entity())
+                .entity_kind(ActivityIdentity::at("ActivityIdentity").entity())
                 .unwrap();
             let relations = graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
                 crate::domain_computation::primary_graph::application_attempt::observe_adjacency(

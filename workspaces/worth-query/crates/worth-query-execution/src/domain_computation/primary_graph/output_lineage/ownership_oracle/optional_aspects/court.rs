@@ -68,7 +68,7 @@ fn readmit_with_ordinary<Schema: BirthSchema>(
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     installation::ANCHOR.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -181,7 +181,7 @@ pub(super) fn edit_source_to<Schema: BirthSchema>(
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     installation::ANCHOR.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -192,7 +192,7 @@ pub(super) fn edit_source_to<Schema: BirthSchema>(
                 .primary_provider
                 .graph
                 .layout
-                .field_locator("Body", "PlanarPosition", "PositionY")
+                .field_locator("Body", PositionY::at("PositionY").aspect(), "PositionY")
                 .unwrap()
                 .clone();
             let batch =

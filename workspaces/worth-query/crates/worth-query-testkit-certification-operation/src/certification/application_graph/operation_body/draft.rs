@@ -70,15 +70,7 @@ where
     type Denial = WorthQueryOperationBodyDenial;
     type DenialBinding = super::binding::BodyDenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        DocumentRetentionSchema<DESTINATION>,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<DocumentIdentityField>;
     type PrincipalBinding = DocumentPrincipalBinding;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -90,17 +82,8 @@ where
     const IDEMPOTENCY_IDENTITY: &'static str = Operation::IDEMPOTENCY_IDENTITY;
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema<DESTINATION>,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema<DESTINATION>,
@@ -146,7 +129,7 @@ where
     }
     fn scope_binding(&self) -> <Self::Binding as ApplicationMutationBinding<DocumentRetentionSchema<DESTINATION>>>::ScopeBinding{
         ApplicationMutationFieldScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.0.identity.clone(),
         )
     }

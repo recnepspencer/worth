@@ -57,7 +57,7 @@ pub(crate) fn resolve_rule<Schema: ParameterSchemaBinding>(
 ) -> Result<PositiveParameterCountRule<Schema>, String> {
     Ok(PositiveParameterCountRule {
         count: resolver
-            .typed_field(Count::reference::<Schema>())
+            .typed_field(Count::at("value"))
             .ok_or("missing parameter count")?,
     })
 }

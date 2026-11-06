@@ -26,7 +26,7 @@ fn a_transition_does_not_absorb_an_independently_authored_parent_clear() {
                 identity,
                 revision,
                 ..
-            } if aspect == "measured" => Some((*identity, *revision)),
+            } if aspect == "ac9a7ff83b921347e" => Some((*identity, *revision)),
             _ => None,
         })
         .unwrap();
@@ -35,7 +35,7 @@ fn a_transition_does_not_absorb_an_independently_authored_parent_clear() {
         entity: "item".to_owned(),
         entity_id: id,
         contract: PortableAspectContractBasis::new(
-            AspectKey::new("measured").unwrap(),
+            AspectKey::new("ac9a7ff83b921347e").unwrap(),
             identity,
             revision,
         ),
@@ -81,4 +81,23 @@ fn unknown_encoded_columns_are_refused_before_any_effect_is_authored() {
     let denial = prepare_fields(aspect, fields).unwrap_err();
     assert_eq!(denial.kind(), Kind::InvalidEffectValue);
     assert_eq!(denial.subject(), path);
+}
+
+#[test]
+fn a_wrong_scalar_family_refuses_before_any_case_effect_is_authored() {
+    let declaration = declare(Fixture).unwrap();
+    let fragment = declaration
+        .member_provenance()
+        .fragment_catalog()
+        .fragment(Fixture)
+        .unwrap();
+    let aspect = fragment.aspect::<Item, Named>().unwrap();
+    let path = format!("{}.text", aspect.path());
+    let fields = BTreeMap::from([(
+        path.clone(),
+        U64ApplicationValueBinding::encode(&9).unwrap(),
+    )]);
+    let denied = prepare_fields(aspect, fields).unwrap_err();
+    assert_eq!(denied.kind(), Kind::InvalidEffectValue);
+    assert_eq!(denied.subject(), path);
 }

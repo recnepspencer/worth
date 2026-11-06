@@ -134,10 +134,11 @@ pub use operation_commit::{
 pub use ordinary::{
     mutations, queries, BankAuthorizationDenial, BankAuthorizationDenialKind,
     BankEntityResolutionDenial, BankEntityResolutionDenialKind, BankMutation, BankMutationControls,
-    BankMutationForPrincipal, BankOperationConstructionRefusal, BankOperationInstallationDenial,
-    BankOperationInstallationDenialKind, BankPaymentContinuationDenial,
-    BankPendingPaymentContinuation, BankQuery, BankQueryForPrincipal, BankReadControlDenial,
-    BankReadControls, BankReadyMutation, BankReadyQuery, BankRejectPendingPayment,
+    BankMutationForPrincipal, BankMutationPreconditionDenial, BankOperationConstructionRefusal,
+    BankOperationInstallationDenial, BankOperationInstallationDenialKind,
+    BankPaymentContinuationDenial, BankPendingPaymentContinuation, BankQuery,
+    BankQueryForPrincipal, BankReadControlDenial, BankReadControls, BankReadyMutation,
+    BankReadyQuery, BankRejectPendingPayment,
 };
 pub use principal_seed::BankPrincipalSeed;
 pub use program_adoption::{BankProgramAdoptionPreparationDenial, BankProgramInspectionDenial};

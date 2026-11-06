@@ -105,7 +105,7 @@ fn break_narrowing_axis(
     }
     let (field, value, grant) = match axis {
         NarrowingAxis::Action => (
-            field(world, CapabilityActionField::reference()),
+            field(world, CapabilityActionField::at("CapabilityActionField")),
             super::super::fixture::CapabilityActionBinding::encode(
                 &super::super::fixture::CapabilityAction::Inspect,
             )
@@ -113,7 +113,7 @@ fn break_narrowing_axis(
             "capability-parent",
         ),
         NarrowingAxis::Purpose => (
-            field(world, CapabilityPurposeField::reference()),
+            field(world, CapabilityPurposeField::at("CapabilityPurposeField")),
             super::super::fixture::CapabilityPurposeBinding::encode(
                 &super::super::fixture::CapabilityPurpose::Audit,
             )
@@ -121,7 +121,10 @@ fn break_narrowing_axis(
             "capability-parent",
         ),
         NarrowingAxis::Disclosure => (
-            field(world, CapabilityDisclosureField::reference()),
+            field(
+                world,
+                CapabilityDisclosureField::at("CapabilityDisclosureField"),
+            ),
             super::super::fixture::CapabilityDisclosureBinding::encode(
                 &super::super::fixture::CapabilityDisclosure::PrivateLabel,
             )
@@ -129,27 +132,39 @@ fn break_narrowing_axis(
             "capability-parent",
         ),
         NarrowingAxis::Magnitude => (
-            field(world, CapabilityAmountField::reference()),
+            field(world, CapabilityAmountField::at("CapabilityAmountField")),
             U64ApplicationValueBinding::encode(&76_u64).unwrap(),
             "capability-child",
         ),
         NarrowingAxis::Workflow => (
-            field(world, CapabilityWorkflowField::reference()),
+            field(
+                world,
+                CapabilityWorkflowField::at("CapabilityWorkflowField"),
+            ),
             StringApplicationValueBinding::encode(&"closed".to_owned()).unwrap(),
             "capability-parent",
         ),
         NarrowingAxis::ValidityStart => (
-            field(world, CapabilityNotBeforeField::reference()),
+            field(
+                world,
+                CapabilityNotBeforeField::at("CapabilityNotBeforeField"),
+            ),
             U64ApplicationValueBinding::encode(&89_u64).unwrap(),
             "capability-child",
         ),
         NarrowingAxis::ValidityEnd => (
-            field(world, CapabilityNotAfterField::reference()),
+            field(
+                world,
+                CapabilityNotAfterField::at("CapabilityNotAfterField"),
+            ),
             U64ApplicationValueBinding::encode(&111_u64).unwrap(),
             "capability-child",
         ),
         NarrowingAxis::DownstreamDelegation => (
-            field(world, CapabilityDelegationLimitField::reference()),
+            field(
+                world,
+                CapabilityDelegationLimitField::at("CapabilityDelegationLimitField"),
+            ),
             U64ApplicationValueBinding::encode(&2_u64).unwrap(),
             "capability-child",
         ),

@@ -55,7 +55,7 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -78,19 +78,21 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
 
     let duplicate_target = TypedMutationPreconditions::new()
         .expect_fact(
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                 "open".to_owned(),
             )
             .expect("fixture account status must encode"),
         )
+        .expect("record field contract")
         .expect_fact(
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                 "open".to_owned(),
             )
             .expect("fixture account status must encode"),
-        );
+        )
+        .expect("record field contract");
     world
         .application
         .with_host_advancement(|phase| {
@@ -111,11 +113,15 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
         .expect("the fixture read owns its installed host call");
 
     let oversized_value = "x".repeat(budget.maximum_encoded_bytes());
-    let oversized = TypedMutationPreconditions::new().expect_fact(
-        AccountStatus::reference(),
-        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(oversized_value)
+    let oversized = TypedMutationPreconditions::new()
+        .expect_fact(
+            AccountStatus::at("AccountStatus"),
+            ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                oversized_value,
+            )
             .expect("fixture account status must encode"),
-    );
+        )
+        .expect("record field contract");
     world
         .application
         .with_host_advancement(|phase| {

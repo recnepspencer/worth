@@ -1,15 +1,38 @@
 //! An owned node group with a traversed path and ordinary edit operations.
-use worth_query_declaration::facade::application_schema::*;
-use worth_query_declaration::facade::authentication::*;
-use worth_query_declaration::*;
+#[path = "schema/records.rs"]
+mod storage_model;
 
-worth_query_application_schema! {
-    pub schema WalkSchema {
-        owner: invariant_walk_test,
-        version: (1, 0),
-        members: |schema| {
-            members(schema)
-        }
+use worth_query_declaration::facade::application_schema::fragment::{self};
+#[derive(Clone, Copy)]
+pub struct WalkSchema;
+impl Fragment for WalkSchema {
+    const NAME: &'static str = "WalkSchema";
+    type Bindings = NoBindings;
+    type Members = (WalkSchemaRecords, Contracts);
+}
+impl ApplicationSchema for WalkSchema {
+    const OWNER: &'static str = "invariant_walk_test";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+}
+impl WalkSchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+pub struct Contracts;
+impl Registration<WalkSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<WalkSchema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<WalkSchema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(members(schema))
     }
 }
 
@@ -17,36 +40,6 @@ fn members(
     schema: ApplicationSchemaDeclarationBuilder<WalkSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<WalkSchema> {
     let schema = schema
-        .entity(ExternalMapping::reference())
-        .entity(Principal::reference())
-        .entity(Node::reference())
-        .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-        .field(
-            ExternalMapping::reference(),
-            ExternalIdentityField::reference(),
-        )
-        .field(
-            ExternalMapping::reference(),
-            MappingStatusField::reference(),
-        )
-        .aspect(Principal::reference(), PrincipalIdentity::reference())
-        .field(Principal::reference(), PrincipalIdentityField::reference())
-        .aspect(Node::reference(), NodeData::reference())
-        .field(Node::reference(), NodeKey::reference())
-        .field(Node::reference(), Active::reference())
-        .field(Node::reference(), Blocked::reference())
-        .relation(
-            MappingTarget::reference(),
-            ExternalMapping::reference(),
-            Principal::reference(),
-        )
-        .relation(
-            NodeOwner::reference(),
-            Principal::reference(),
-            Node::reference(),
-        )
-        .relation(GroupRoot::reference(), Node::reference(), Node::reference())
-        .relation(Next::reference(), Node::reference(), Node::reference())
         .principal_binding(IdentityBinding::reference())
         .ability(EditNode::reference())
         .policy(NodeAccess::reference())
@@ -69,8 +62,8 @@ fn members(
         .operation_projection_work_budget(ReplaceNext::reference(), 128)
         .operation_requires_ability(ReplaceNext::reference(), EditNode::reference())
         .operation_read_entity(ReplaceNext::reference(), Node::reference())
-        .operation_read_field(ReplaceNext::reference(), NodeKey::reference())
-        .operation_expected_fact(ReplaceNext::reference(), NodeKey::reference())
+        .operation_read_field(ReplaceNext::reference(), NodeKey::at("NodeKey"))
+        .operation_expected_fact(ReplaceNext::reference(), NodeKey::at("NodeKey"))
         .operation_read_relation(ReplaceNext::reference(), Next::reference())
         .operation_link(ReplaceNext::reference(), Next::reference())
         .operation_unlink(ReplaceNext::reference(), Next::reference())
@@ -83,7 +76,7 @@ fn members(
         )
         .operation_requires_ability(InspectWalk::reference(), EditNode::reference())
         .operation_read_entity(InspectWalk::reference(), Node::reference())
-        .operation_read_field(InspectWalk::reference(), NodeKey::reference())
+        .operation_read_field(InspectWalk::reference(), NodeKey::at("NodeKey"))
         .operation_read_relation(InspectWalk::reference(), Next::reference())
         .operation(
             SetActive::reference()
@@ -95,10 +88,10 @@ fn members(
         .operation_projection_work_budget(SetActive::reference(), 64)
         .operation_requires_ability(SetActive::reference(), EditNode::reference())
         .operation_read_entity(SetActive::reference(), Node::reference())
-        .operation_read_field(SetActive::reference(), NodeKey::reference())
-        .operation_read_field(SetActive::reference(), Active::reference())
-        .operation_expected_fact(SetActive::reference(), Active::reference())
-        .operation_write(SetActive::reference(), Active::reference())
+        .operation_read_field(SetActive::reference(), NodeKey::at("NodeKey"))
+        .operation_read_field(SetActive::reference(), Active::at("Active"))
+        .operation_expected_fact(SetActive::reference(), Active::at("Active"))
+        .operation_write(SetActive::reference(), Active::at("Active"))
         .invariant(super::rule::definition())
         .invariant(super::probe::definition());
     super::reobservation::declaration::declare(super::declared_queries::declarations::declare(
@@ -106,33 +99,36 @@ fn members(
     ))
 }
 
-worth_query_entity!(pub ExternalMapping for WalkSchema);
-worth_query_entity!(pub Principal for WalkSchema);
-worth_query_entity!(pub Node for WalkSchema);
-worth_query_aspect!(pub ExternalIdentity for WalkSchema, ExternalMapping; identity = AspectIdentity(0x9181_3101), revision = AspectContractRevision(1),);
-worth_query_field!(pub ExternalIdentityField for WalkSchema, ExternalMapping, ExternalIdentity:
-    WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub MappingStatusField for WalkSchema, ExternalMapping, ExternalIdentity:
-    WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_aspect!(pub PrincipalIdentity for WalkSchema, Principal; identity = AspectIdentity(0x9181_3102), revision = AspectContractRevision(1),);
-worth_query_field!(pub PrincipalIdentityField for WalkSchema, Principal, PrincipalIdentity:
-    u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_relation!(pub MappingTarget in WalkSchema, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(pub IdentityBinding in WalkSchema,
-    mapping ExternalMapping { identity: ExternalIdentityField, status: MappingStatusField,
-        target: MappingTarget => Principal, principal_identity: PrincipalIdentityField });
+pub struct IdentityBinding;
+impl IdentityBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        WalkSchema,
+        Self,
+        ExternalMapping,
+        Principal,
+        <PrincipalIdentityField as RecordSelection>::Value,
+        <PrincipalIdentityField as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "IdentityBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    ExternalIdentityField::at("ExternalIdentityField"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    MappingStatusField::at("MappingStatusField"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    MappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
+                ),
+            },
+        )
+    }
+}
 
-worth_query_aspect!(pub NodeData for WalkSchema, Node; identity = AspectIdentity(0x9181_3103), revision = AspectContractRevision(1),);
-worth_query_field!(pub NodeKey for WalkSchema, Node, NodeData: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub Active for WalkSchema, Node, NodeData: bool => BoolApplicationValueBinding, read_write, equality);
-worth_query_field!(pub Blocked for WalkSchema, Node, NodeData: bool => BoolApplicationValueBinding, read_write, equality);
-worth_query_relation!(pub NodeOwner in WalkSchema, Principal => Node; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub GroupRoot in WalkSchema, Node => Node; integrity = ApplicationRelationIntegrity::new(
-    ApplicationRelationEndpoints::same_context(true),
-    ApplicationRelationCardinality::new(Some(1), Some(1), None, None, None, None),
-    ApplicationRelationDeletionPolicy::RetainDanglingForAudit,
-));
-worth_query_relation!(pub Next in WalkSchema, Node => Node; integrity = same_context_unbounded_retain_dangling);
 worth_query_ability!(pub EditNode scoped_to Node, in WalkSchema);
 worth_query_policy!(pub NodeAccess in WalkSchema);
 
@@ -142,14 +138,14 @@ worth_query_portable_type!(ReplaceNextInput => "worth.query.test.replace-walk-ed
 worth_query_structured_value_binding!(pub ReplaceNextInputBinding for ReplaceNextInput { identity: "worth.query.test.replace-walk-edge.v1" });
 worth_query_operation!(pub ReplaceNext for WalkSchema, input ReplaceNextInputBinding);
 worth_query_operation_requires!(ReplaceNext => [EditNode]);
-worth_query_operation_reads!(ReplaceNext => [Node, NodeKey, Next]);
-worth_query_operation_expects_fact!(ReplaceNext => [NodeKey]);
+worth_query_operation_reads!(ReplaceNext => [Node, Next]);
+
 worth_query_operation_links!(ReplaceNext => [Next]);
 worth_query_operation_unlinks!(ReplaceNext => [Next]);
 
 worth_query_operation!(pub InspectWalk for WalkSchema, input ReplaceNextInputBinding);
 worth_query_operation_requires!(InspectWalk => [EditNode]);
-worth_query_operation_reads!(InspectWalk => [Node, NodeKey, Next]);
+worth_query_operation_reads!(InspectWalk => [Node, Next]);
 
 #[derive(Clone, Debug)]
 pub struct SetActiveInput;
@@ -157,6 +153,10 @@ worth_query_portable_type!(SetActiveInput => "worth.query.test.activate-walk-roo
 worth_query_structured_value_binding!(pub SetActiveInputBinding for SetActiveInput { identity: "worth.query.test.activate-walk-root.v1" });
 worth_query_operation!(pub SetActive for WalkSchema, input SetActiveInputBinding);
 worth_query_operation_requires!(SetActive => [EditNode]);
-worth_query_operation_reads!(SetActive => [Node, NodeKey, Active]);
-worth_query_operation_expects_fact!(SetActive => [Active]);
-worth_query_operation_writes!(SetActive => [Active]);
+worth_query_operation_reads!(SetActive => [Node]);
+
+pub use storage_model::*;
+use worth_query_declaration::facade::application_schema::fragment::*;
+use worth_query_declaration::facade::application_schema::*;
+use worth_query_declaration::facade::authentication::*;
+use worth_query_declaration::*;

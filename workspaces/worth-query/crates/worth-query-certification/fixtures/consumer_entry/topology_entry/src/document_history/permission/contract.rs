@@ -16,43 +16,43 @@ where
     )
     .target(ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
-            PlanarHistoryAction::reference::<S>(),
+            PlanarHistoryAction::at("PlanarHistoryAction"),
             encoded(C::ACTION.to_owned()),
-        ),
+        ).unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(
             PlanarHistoryResource::reference::<S>(),
         ),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(
-            PlanarHistoryPurpose::reference::<S>(),
+            PlanarHistoryPurpose::at("PlanarHistoryPurpose"),
             encoded("model-history".to_owned()),
-        ),
+        ).unwrap(),
     ))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                PlanarHistoryStatus::reference::<S>(),
+                PlanarHistoryStatus::at("PlanarHistoryStatus"),
                 encoded("active".to_owned()),
-            ),
+            ).unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
                 ApplicationCapabilityFieldBinding::from_reference(
-                    PlanarHistoryScopeKey::reference::<S>(),
-                ),
+                    PlanarHistoryScopeKey::at("PlanarHistoryScopeKey"),
+                ).unwrap(),
                 ApplicationCapabilityFieldBinding::from_reference(
-                    BodyKey::reference::<S>(),
-                ),
+                    BodyKey::at("BodyKey"),
+                ).unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
                 ApplicationCapabilityFieldBinding::from_reference(
-                    PlanarHistoryNotBefore::reference::<S>(),
-                ),
+                    PlanarHistoryNotBefore::at("PlanarHistoryNotBefore"),
+                ).unwrap(),
                 ApplicationCapabilityFieldBinding::from_reference(
-                    PlanarHistoryNotAfter::reference::<S>(),
-                ),
+                    PlanarHistoryNotAfter::at("PlanarHistoryNotAfter"),
+                ).unwrap(),
             ),
         ),
         PlanarHistoryContext::<S>::reference(),
@@ -67,7 +67,7 @@ where
         ApplicationCapabilityRelationBinding::from_reference(
             PlanarHistoryGrantee::reference::<S>(),
         ),
-        ApplicationCapabilityFieldBinding::from_reference(PlanarHistoryDepth::reference::<S>()),
+        ApplicationCapabilityFieldBinding::from_reference(PlanarHistoryDepth::at("PlanarHistoryDepth")).unwrap(),
         PlanarHistoryProvenance::<S>::reference(),
     ))
     .composition(ApplicationCapabilityComposition::new(
@@ -106,17 +106,29 @@ fn bind_permission<S: TopologySchemaBinding, C: HistoryPermission<S>>(
             PlanarHistoryGrant::reference::<S>(),
             Key::new(grant.clone()).unwrap(),
         )
-        .field(PlanarHistoryGrantIdentity::reference::<S>(), grant.clone())
-        .field(PlanarHistoryScopeKey::reference::<S>(), model.to_owned())
-        .field(PlanarHistoryAction::reference::<S>(), C::ACTION.to_owned())
         .field(
-            PlanarHistoryPurpose::reference::<S>(),
+            PlanarHistoryGrantIdentity::at("PlanarHistoryGrantIdentity"),
+            grant.clone(),
+        )
+        .field(
+            PlanarHistoryScopeKey::at("PlanarHistoryScopeKey"),
+            model.to_owned(),
+        )
+        .field(
+            PlanarHistoryAction::at("PlanarHistoryAction"),
+            C::ACTION.to_owned(),
+        )
+        .field(
+            PlanarHistoryPurpose::at("PlanarHistoryPurpose"),
             "model-history".to_owned(),
         )
-        .field(PlanarHistoryStatus::reference::<S>(), "active".to_owned())
-        .field(PlanarHistoryNotBefore::reference::<S>(), 0)
-        .field(PlanarHistoryNotAfter::reference::<S>(), u64::MAX)
-        .field(PlanarHistoryDepth::reference::<S>(), 0),
+        .field(
+            PlanarHistoryStatus::at("PlanarHistoryStatus"),
+            "active".to_owned(),
+        )
+        .field(PlanarHistoryNotBefore::at("PlanarHistoryNotBefore"), 0)
+        .field(PlanarHistoryNotAfter::at("PlanarHistoryNotAfter"), u64::MAX)
+        .field(PlanarHistoryDepth::at("PlanarHistoryDepth"), 0),
     )?;
     graph.bind_relation(Relation::new(
         PlanarHistoryResource::reference::<S>(),

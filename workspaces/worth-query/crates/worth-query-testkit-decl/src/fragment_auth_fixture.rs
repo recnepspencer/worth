@@ -45,7 +45,7 @@ impl Entity for Principal {
 }
 pub struct Identity;
 impl Aspect for Identity {
-    const NAME: &'static str = "principal_identity";
+    const NAME: &'static str = "identity";
     type Row = PrincipalData;
 }
 pub struct OptionalItem;
@@ -56,27 +56,27 @@ impl Entity for OptionalItem {
 }
 pub struct ItemIdentity;
 impl Aspect for ItemIdentity {
-    const NAME: &'static str = "item_identity";
+    const NAME: &'static str = "identity";
     type Row = PrincipalData;
 }
 pub struct OptionalIdentity;
 impl Aspect for OptionalIdentity {
-    const NAME: &'static str = "optional_identity";
+    const NAME: &'static str = "identity";
     type Row = PrincipalData;
 }
 pub struct OptionalForm;
 impl OneOf for OptionalForm {
     type Row = FormValue;
-    type Cases = (OptionalMeasured, OptionalNamed);
+    type Cases = (OptionalMeasured, OptionalNamed, OptionalNoted);
 }
 pub struct OptionalMeasured;
 impl Aspect for OptionalMeasured {
-    const NAME: &'static str = "optional_measured";
+    const NAME: &'static str = "measured";
     type Row = Measurements;
 }
 pub struct OptionalNamed;
 impl Aspect for OptionalNamed {
-    const NAME: &'static str = "optional_named";
+    const NAME: &'static str = "named";
     type Row = Caption;
 }
 
@@ -115,4 +115,10 @@ pub fn samples(value: std::any::TypeId) -> Option<Vec<Box<dyn BindingSample>>> {
         )]);
     }
     None
+}
+
+pub struct OptionalNoted;
+impl Aspect for OptionalNoted {
+    const NAME: &'static str = "noted";
+    type Row = OptionalText;
 }

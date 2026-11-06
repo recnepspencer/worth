@@ -3,8 +3,7 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::collections::BTreeMap;
 
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
-    WorthQueryInstalledApplicationOperation, WritableCapability, WritePosture,
+    ApplicationSchema, WorthQueryInstalledApplicationOperation,
 };
 use worth_runtime_bridge::facade::{BridgeManagedClockBinding, BridgeSealedRuntimeAssembly};
 
@@ -36,32 +35,18 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
     Principal,
     PrincipalIdentity,
     PrincipalIdentityBinding,
-    ScopeAspect,
     ScopeField,
     ScopeValue,
-    ScopeWrite,
-    ScopeUnit,
     PrincipalSource,
     QueryAuthorization,
     Invoker,
     IntentEntity,
-    IdentityAspect,
     IdentityField,
     IdentityValue,
-    IdentityWrite,
-    IdentityUnit,
-    RevisionAspect,
     RevisionField,
     RevisionValue,
-    RevisionWrite,
-    RevisionEquality,
-    RevisionUnit,
-    LifecycleAspect,
     LifecycleField,
     LifecycleValue,
-    LifecycleWrite,
-    LifecycleEquality,
-    LifecycleUnit,
     Authorization,
     Clock,
 >(
@@ -81,11 +66,8 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
         PrincipalIdentity,
         PrincipalIdentityBinding,
         Scope,
-        ScopeAspect,
         ScopeField,
         ScopeValue,
-        ScopeWrite,
-        ScopeUnit,
         PrincipalSource,
         QueryAuthorization,
     >,
@@ -96,23 +78,12 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
         Scope,
         Invoker,
         IntentEntity,
-        IdentityAspect,
         IdentityField,
         IdentityValue,
-        IdentityWrite,
-        IdentityUnit,
-        RevisionAspect,
         RevisionField,
         RevisionValue,
-        RevisionWrite,
-        RevisionEquality,
-        RevisionUnit,
-        LifecycleAspect,
         LifecycleField,
         LifecycleValue,
-        LifecycleWrite,
-        LifecycleEquality,
-        LifecycleUnit,
         Authorization,
     >,
     candidates: &mut BTreeMap<
@@ -131,42 +102,40 @@ where
         worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
             Value = PrincipalIdentity,
         >,
-    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = Scope,
+        Value = ScopeValue,
+    >,
     ScopeField::Binding:
         worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
     ScopeValue: Clone,
-    ScopeWrite: WritePosture,
-    ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
-    IdentityField: OperationReads<Operation>,
-    IdentityField:
-        worth_query_installation::facade::DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = IntentEntity,
+        Value = IdentityValue,
+    >,
     IdentityField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
         Value = IdentityValue,
     >,
     IdentityValue: Clone,
-    IdentityWrite: WritePosture,
-    IdentityUnit: ApplicationFieldUnit,
-    RevisionField: OperationReads<Operation> + OperationWrites<Operation>,
-    RevisionField:
-        worth_query_installation::facade::DeclaredApplicationFieldValue<Value = RevisionValue>,
+    RevisionField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = IntentEntity,
+        Value = RevisionValue,
+    >,
     RevisionField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
             Value = RevisionValue,
         > + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
     RevisionValue: Clone,
-    RevisionWrite: WritableCapability,
-    RevisionUnit: ApplicationFieldUnit,
-    LifecycleField: OperationReads<Operation> + OperationWrites<Operation>,
-    LifecycleField:
-        worth_query_installation::facade::DeclaredApplicationFieldValue<Value = LifecycleValue>,
+    LifecycleField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = IntentEntity,
+        Value = LifecycleValue,
+    >,
     LifecycleField::Binding:
         worth_query_installation::facade::ApplicationReadableScalarValueBinding<
             Value = LifecycleValue,
         >,
     LifecycleValue: Clone,
-    LifecycleWrite: WritableCapability,
-    LifecycleUnit: ApplicationFieldUnit,
     Authorization:
         super::super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
 {

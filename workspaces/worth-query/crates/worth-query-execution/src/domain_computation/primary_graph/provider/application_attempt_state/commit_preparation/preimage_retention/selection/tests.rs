@@ -44,7 +44,7 @@ fn demand(field: &str) -> InstalledPreImageDemand {
 fn observed(field: &str, value: AspectValue, slot: u64) -> WorthQueryObservedPreImageCandidate {
     WorthQueryObservedPreImageCandidate::from_observed_field(
         crate::domain_computation::application_aftermath::aftermath_schema_fixture::freeze_account_fields_read_scope(field),
-        locator("IdentityAspect", field),
+        locator(crate::domain_computation::application_aftermath::aftermath_schema_fixture::aspect_name(), field),
         value,
         entity(slot),
         KindId(7),
@@ -65,7 +65,7 @@ fn mutating(
         .map(|slot| {
             (
                 RecordRef::Entity(entity(slot)),
-                locator("IdentityAspect", field),
+                locator(crate::domain_computation::application_aftermath::aftermath_schema_fixture::aspect_name(), field),
             )
         })
         .collect()
@@ -127,7 +127,14 @@ fn exact_demand_slices_one_matching_field_and_preserves_owner_axes() {
     let field = retained.field(&demand.loci()[0]).unwrap();
     assert_eq!(field.value(), &AspectValue::Bool(true));
     assert_eq!(field.entity_kind(), KindId(7));
-    assert_eq!(field.locator(), &locator("IdentityAspect", "frozen"));
+    assert_eq!(
+        field.locator(),
+        &locator(
+            crate::domain_computation::application_aftermath::aftermath_schema_fixture::aspect_name(
+            ),
+            "frozen"
+        )
+    );
     assert_eq!(
         retained.target_record(),
         Some(&RecordRef::Entity(entity(1)))
@@ -145,7 +152,7 @@ fn wrong_field_locus_and_record_cannot_supply_prior_truth() {
         (
             WorthQueryObservedPreImageCandidate::from_observed_field(
                 crate::domain_computation::application_aftermath::aftermath_schema_fixture::freeze_account_fields_read_scope("note"),
-                locator("IdentityAspect", "note"),
+                locator(crate::domain_computation::application_aftermath::aftermath_schema_fixture::aspect_name(), "note"),
                 AspectValue::String("foreign".into()),
                 entity(1),
                 KindId(7),
@@ -231,11 +238,11 @@ fn ambiguous_or_mixed_record_prior_truth_fails_closed() {
     let mutation = [
         (
             RecordRef::Entity(entity(1)),
-            locator("IdentityAspect", "frozen"),
+            locator(crate::domain_computation::application_aftermath::aftermath_schema_fixture::aspect_name(), "frozen"),
         ),
         (
             RecordRef::Entity(entity(2)),
-            locator("IdentityAspect", "note"),
+            locator(crate::domain_computation::application_aftermath::aftermath_schema_fixture::aspect_name(), "note"),
         ),
     ];
     assert_eq!(

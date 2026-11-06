@@ -86,8 +86,8 @@ impl<S, O, I, Scope> Builder<S, O, I, Scope> {
                 self.effects.extend(removals);
                 self.case_transitions.insert(key, fresh_slots);
             }
-            for (locus, value) in prepared {
-                self.write_body_input_field(&native, locus, value)?;
+            for (field, value) in prepared {
+                self.write_prepared_record_field(&native, field, value)?;
             }
         } else {
             self.preflight_record(&native, selected, &[])?;
@@ -98,8 +98,8 @@ impl<S, O, I, Scope> Builder<S, O, I, Scope> {
                 return Err(Denial::new(Kind::ForeignEffectTarget, selected.path()).into());
             };
             fields.retain(|field, _| !in_cases(field, cases));
-            for (locus, value) in prepared {
-                self.initialize_body_field(&native, locus, std::borrow::Cow::Owned(value))?;
+            for (field, value) in prepared {
+                self.write_prepared_record_field(&native, field, value)?;
             }
         }
         Ok(())

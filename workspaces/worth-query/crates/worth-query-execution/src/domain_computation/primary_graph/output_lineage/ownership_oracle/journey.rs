@@ -46,7 +46,7 @@ pub(super) fn complete_with_contacts(
             let entity = selected
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     ANCHOR.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

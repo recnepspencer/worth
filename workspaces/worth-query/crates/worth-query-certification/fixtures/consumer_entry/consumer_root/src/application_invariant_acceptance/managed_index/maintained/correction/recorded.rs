@@ -1,8 +1,6 @@
 //! Actual recorded inverse declarations and the fixed Catalog correction dispatcher.
 use super::*;
-use worth_query_decl::facade::{
-    application_aftermath::*, application_query::*, application_schema::*, *,
-};
+use worth_query_decl::facade::application_query::*;
 pub struct Note;
 pub struct Mover;
 pub struct Motion;
@@ -56,7 +54,10 @@ impl ApplicationCorrectionBinding<Catalog> for Note {
     fn mechanism() -> DeclaredCorrectionMechanism<Catalog> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(DirectoryNote::reference())],
+                [
+                    DeclaredPreImageLocus::from_field(DirectoryNote::at("DirectoryNote"))
+                        .expect("record field contract"),
+                ],
                 PREIMAGE_BYTES,
             )
             .unwrap(),
@@ -71,9 +72,10 @@ impl ApplicationCorrectionBinding<Catalog> for Note {
         };
         let prior = StringApplicationValueBinding::decode(
             preimage
-                .field(&DeclaredPreImageLocus::from_field(
-                    DirectoryNote::reference(),
-                ))
+                .field(
+                    &DeclaredPreImageLocus::from_field(DirectoryNote::at("DirectoryNote"))
+                        .expect("record field contract"),
+                )
                 .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?,
         )
         .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;
@@ -116,7 +118,8 @@ impl ApplicationCorrectionBinding<Catalog> for Mover {
     fn mechanism() -> DeclaredCorrectionMechanism<Catalog> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(ItemName::reference())],
+                [DeclaredPreImageLocus::from_field(ItemName::at("ItemName"))
+                    .expect("record field contract")],
                 PREIMAGE_BYTES,
             )
             .unwrap(),
@@ -131,12 +134,15 @@ impl ApplicationCorrectionBinding<Catalog> for Mover {
         };
         let prior = NameBinding::decode(
             preimage
-                .field(&DeclaredPreImageLocus::from_field(ItemName::reference()))
+                .field(
+                    &DeclaredPreImageLocus::from_field(ItemName::at("ItemName"))
+                        .expect("record field contract"),
+                )
                 .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?,
         )
         .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;
         Ok(mover::Input {
-            replacement: prior,
+            replacement: prior.into(),
             ..original.clone()
         })
     }
@@ -180,8 +186,9 @@ impl ApplicationCorrectionBinding<Catalog> for Motion {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
                 [DeclaredPreImageLocus::from_field(
-                    super::super::geometry::schema::VertexRegion::reference(),
-                )],
+                    super::super::geometry::schema::VertexRegion::at("VertexRegion"),
+                )
+                .expect("record field contract")],
                 PREIMAGE_BYTES,
             )
             .unwrap(),
@@ -196,9 +203,12 @@ impl ApplicationCorrectionBinding<Catalog> for Motion {
         };
         let prior = super::super::bounds::CoordinatesBinding::decode(
             preimage
-                .field(&DeclaredPreImageLocus::from_field(
-                    super::super::geometry::schema::VertexRegion::reference(),
-                ))
+                .field(
+                    &DeclaredPreImageLocus::from_field(
+                        super::super::geometry::schema::VertexRegion::at("VertexRegion"),
+                    )
+                    .expect("record field contract"),
+                )
                 .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?,
         )
         .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;

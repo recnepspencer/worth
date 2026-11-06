@@ -7,7 +7,7 @@ fn post_effect_rebase_door_preserves_stops_at_every_consult() {
     );
     world.application.with_host_advancement(|phase| {
         let (entity, locator) = account_note(&phase, &world, "account-1");
-        let kind = world.application.runtime.primary_graph().unwrap().layout.entity_kind(AccountIdentity::reference().entity()).unwrap();
+        let kind = world.application.runtime.primary_graph().unwrap().layout.entity_kind(AccountIdentity::at("AccountIdentity").entity()).unwrap();
         let fact = WorthQueryApplicationObservedFact::AbsentField { entity_id: entity, kind, locator: planned(&locator) };
         crate::test_read_stops::every_consult_under(&phase.borrowed_request_for_test(),|execution| match rebase_result_at_current(&phase, execution, &world, vec![fact.clone()]) {
             RebasedSourceFacts::Exact(_) => Ok(true),
@@ -30,7 +30,7 @@ fn selected_native_rebase_preserves_stops_at_every_consult() {
     );
     world.application.with_host_advancement(|phase| {
         let (entity, locator) = account_note(&phase, &world, "account-1");
-        let kind = world.application.runtime.primary_graph().unwrap().layout.entity_kind(AccountIdentity::reference().entity()).unwrap();
+        let kind = world.application.runtime.primary_graph().unwrap().layout.entity_kind(AccountIdentity::at("AccountIdentity").entity()).unwrap();
         let control = StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None);
         let mut facts = NativeFactPayloadBuilder::allocate(2, control).unwrap();
         facts.push(WorthQueryApplicationObservedFact::AbsentField { entity_id: entity, kind, locator: planned(&locator) }).unwrap();

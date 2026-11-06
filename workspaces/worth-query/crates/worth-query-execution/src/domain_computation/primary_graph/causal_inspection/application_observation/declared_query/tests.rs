@@ -64,7 +64,7 @@ fn native_query_observations_preserve_exact_binding_without_retaining_a_reader()
             let account = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -167,7 +167,7 @@ fn native_query_observation_preserves_many_and_empty_rosters_separately_from_sel
             let scope = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

@@ -28,7 +28,7 @@ fn retained_source_must_include_every_registered_upstream_edge() {
         .with_host_advancement(|phase| {
             selected.resolve_entity(
                 &phase,
-                AccountStatus::reference(),
+                AccountStatus::at("AccountStatus"),
                 "open".to_owned(),
                 &live_scope(),
                 WorthQueryPrincipalResolutionMode::Ordinary,

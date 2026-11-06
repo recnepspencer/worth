@@ -2,9 +2,7 @@
 
 use super::{Builder, Denial, Lowering};
 use crate::application_schema::fragment::AspectDefinition;
-use crate::application_schema::{
-    ApplicationFieldPresence, ApplicationSchemaMember, AspectContractRevision, AspectIdentity,
-};
+use crate::application_schema::{ApplicationSchemaMember, AspectContractRevision, AspectIdentity};
 use sha2::{Digest, Sha256};
 
 pub(super) fn emit<S>(
@@ -14,6 +12,16 @@ pub(super) fn emit<S>(
     state: &mut Lowering,
 ) -> Result<Builder<S>, Denial> {
     let identity = AspectIdentity(state.names.insert(definition.path())?);
+    if definition
+        .fields()
+        .iter()
+        .any(|field| field.internal_presence())
+    {
+        builder
+            .member_provenance
+            .fragments
+            .register_bindings(vec![super::super::record_presence::binding()]);
+    }
     let mut shape = Vec::new();
     for field in definition.fields() {
         let recipe = field.recipe();
@@ -31,15 +39,33 @@ pub(super) fn emit<S>(
         builder
             .member_provenance
             .register_field_binding(recipe.clone());
+        if let Some(content) = field.content_format() {
+            if state
+                .content_formats
+                .insert((content.binding_type(), content.declaration().identity))
+            {
+                builder.push_member_in_place(ApplicationSchemaMember::ContentFormat {
+                    declaration: content.declaration().clone(),
+                });
+                builder
+                    .member_provenance
+                    .register_content_binding(content.clone());
+            }
+            builder
+                .member_provenance
+                .register_content_field(locus.clone(), content.clone());
+        }
         let member = ApplicationSchemaMember::Field {
             entity: locus.entity().to_owned(),
             aspect: locus.aspect().to_owned(),
             field: locus.field().to_owned(),
-            presence: ApplicationFieldPresence::Required,
+            presence: field.presence(),
             scalar_family: recipe.scalar_family(),
             value_type: recipe.binding_identity().as_str().to_owned(),
             canonical: recipe.canonical_contract().cloned(),
-            content_format: None,
+            content_format: field
+                .content_format()
+                .map(|content| content.declaration().identity),
             unit: recipe.unit().map(|unit| unit.as_str().to_owned()),
             frame: recipe.frame().map(|frame| frame.as_str().to_owned()),
             writable: field.writable(),
@@ -64,7 +90,7 @@ pub(super) fn emit<S>(
     Ok(builder)
 }
 
-fn revision(
+pub(super) fn revision(
     definition: &AspectDefinition,
     shape: &mut [ApplicationSchemaMember],
     group_contract: Option<&[u8; 32]>,
@@ -100,8 +126,6 @@ fn revision(
     let mut hash = Sha256::new();
     hash.update(b"worth.record.contract.v1");
     hash.update(digest.value().bytes());
-    hash.update((definition.binding().identity().len() as u64).to_le_bytes());
-    hash.update(definition.binding().identity().as_bytes());
     hash.update([u8::from(group_contract.is_some())]);
     if let Some(group) = group_contract {
         hash.update(group);

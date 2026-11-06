@@ -1,3 +1,6 @@
+#[path = "authority/records.rs"]
+mod storage_model;
+pub use storage_model::*;
 use worth_query_decl::facade::{
     application_capability::{
         ApplicationCapabilityActorComposition, ApplicationCapabilityAllowRule,
@@ -22,14 +25,13 @@ use worth_query_decl::facade::{
         ApplicationOperationRef, ApplicationSchemaDeclarationBuilder,
         StringApplicationValueBinding,
     },
-    worth_query_aspect, worth_query_entity, worth_query_field, worth_query_relation,
 };
 
 use crate::model::{CustomerRole, PaymentId};
 use crate::schema::{
     AccountAuthorizedUser, ApprovePayment, ApprovePaymentInputBinding, AuthorizationAccount,
-    AuthorizationRole, BankSchema, PaymentIdBinding, PaymentIdentityField, PaymentInitiator,
-    PaymentIntent, PaymentSource, Principal,
+    AuthorizationRole, BankSchema, PaymentIdentityField, PaymentInitiator, PaymentIntent,
+    PaymentSource, Principal,
 };
 
 use super::{
@@ -40,25 +42,6 @@ use super::{
     ApprovedBusinessPaymentInstanceStartOperation,
 };
 
-worth_query_entity!(pub ApprovedBusinessPaymentGrant for BankSchema);
-worth_query_aspect!(
-    pub ApprovedBusinessPaymentGrantFacts for BankSchema, ApprovedBusinessPaymentGrant;
-    identity = AspectIdentity(0x91611019),
-    revision = AspectContractRevision(1),
-);
-worth_query_field!(pub ApprovedBusinessPaymentGrantAction for BankSchema, ApprovedBusinessPaymentGrant, ApprovedBusinessPaymentGrantFacts: String => StringApplicationValueBinding, read_only, no_equality);
-worth_query_field!(pub ApprovedBusinessPaymentGrantPurpose for BankSchema, ApprovedBusinessPaymentGrant, ApprovedBusinessPaymentGrantFacts: String => StringApplicationValueBinding, read_only, no_equality);
-worth_query_field!(pub ApprovedBusinessPaymentGrantStatus for BankSchema, ApprovedBusinessPaymentGrant, ApprovedBusinessPaymentGrantFacts: String => StringApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub ApprovedBusinessPaymentGrantWorkflow for BankSchema, ApprovedBusinessPaymentGrant, ApprovedBusinessPaymentGrantFacts: PaymentId => PaymentIdBinding, read_write, no_equality);
-worth_query_field!(pub ApprovedBusinessPaymentGrantNotBefore for BankSchema, ApprovedBusinessPaymentGrant, ApprovedBusinessPaymentGrantFacts: u64 => worth_query_decl::facade::application_schema::U64ApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub ApprovedBusinessPaymentGrantNotAfter for BankSchema, ApprovedBusinessPaymentGrant, ApprovedBusinessPaymentGrantFacts: u64 => worth_query_decl::facade::application_schema::U64ApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub ApprovedBusinessPaymentGrantDelegationLimit for BankSchema, ApprovedBusinessPaymentGrant, ApprovedBusinessPaymentGrantFacts: u64 => worth_query_decl::facade::application_schema::U64ApplicationValueBinding, read_write, no_equality);
-
-worth_query_relation!(pub ApprovedBusinessPaymentGrantResource in BankSchema, ApprovedBusinessPaymentGrant => PaymentIntent; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub ApprovedBusinessPaymentGrantParent in BankSchema, ApprovedBusinessPaymentGrant => ApprovedBusinessPaymentGrant; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub ApprovedBusinessPaymentGrantGrantor in BankSchema, Principal => ApprovedBusinessPaymentGrant; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub ApprovedBusinessPaymentGrantGrantee in BankSchema, Principal => ApprovedBusinessPaymentGrant; integrity = same_context_unbounded_retain_dangling);
-
 worth_query_decl::facade::worth_query_capability_provenance!(
     pub ApprovedBusinessPaymentGrantProvenance in BankSchema
 );
@@ -67,59 +50,6 @@ pub(crate) fn install_approved_business_payment_authority(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     schema
-        .entity(ApprovedBusinessPaymentGrant::reference())
-        .aspect(
-            ApprovedBusinessPaymentGrant::reference(),
-            ApprovedBusinessPaymentGrantFacts::reference(),
-        )
-        .field(
-            ApprovedBusinessPaymentGrant::reference(),
-            ApprovedBusinessPaymentGrantAction::reference(),
-        )
-        .field(
-            ApprovedBusinessPaymentGrant::reference(),
-            ApprovedBusinessPaymentGrantPurpose::reference(),
-        )
-        .field(
-            ApprovedBusinessPaymentGrant::reference(),
-            ApprovedBusinessPaymentGrantStatus::reference(),
-        )
-        .field(
-            ApprovedBusinessPaymentGrant::reference(),
-            ApprovedBusinessPaymentGrantWorkflow::reference(),
-        )
-        .field(
-            ApprovedBusinessPaymentGrant::reference(),
-            ApprovedBusinessPaymentGrantNotBefore::reference(),
-        )
-        .field(
-            ApprovedBusinessPaymentGrant::reference(),
-            ApprovedBusinessPaymentGrantNotAfter::reference(),
-        )
-        .field(
-            ApprovedBusinessPaymentGrant::reference(),
-            ApprovedBusinessPaymentGrantDelegationLimit::reference(),
-        )
-        .relation(
-            ApprovedBusinessPaymentGrantResource::reference(),
-            ApprovedBusinessPaymentGrant::reference(),
-            PaymentIntent::reference(),
-        )
-        .relation(
-            ApprovedBusinessPaymentGrantParent::reference(),
-            ApprovedBusinessPaymentGrant::reference(),
-            ApprovedBusinessPaymentGrant::reference(),
-        )
-        .relation(
-            ApprovedBusinessPaymentGrantGrantor::reference(),
-            Principal::reference(),
-            ApprovedBusinessPaymentGrant::reference(),
-        )
-        .relation(
-            ApprovedBusinessPaymentGrantGrantee::reference(),
-            Principal::reference(),
-            ApprovedBusinessPaymentGrant::reference(),
-        )
         .capability_context(ApprovedBusinessPaymentControlContext::reference())
         .capability_provenance(ApprovedBusinessPaymentGrantProvenance::reference())
         .capability(contract::<_, _>(
@@ -157,41 +87,56 @@ where
     )
     .target(ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
-            ApprovedBusinessPaymentGrantAction::reference(),
+            ApprovedBusinessPaymentGrantAction::at("ApprovedBusinessPaymentGrantAction"),
             encoded("manage-approved-business-payment-workflow"),
-        ),
+        )
+        .unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(
             ApprovedBusinessPaymentGrantResource::reference(),
         ),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(
-            ApprovedBusinessPaymentGrantPurpose::reference(),
+            ApprovedBusinessPaymentGrantPurpose::at("ApprovedBusinessPaymentGrantPurpose"),
             encoded("business-payment-approval"),
-        ),
+        )
+        .unwrap(),
     ))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                ApprovedBusinessPaymentGrantStatus::reference(),
+                ApprovedBusinessPaymentGrantStatus::at("ApprovedBusinessPaymentGrantStatus"),
                 encoded("active"),
-            ),
+            )
+            .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
                 ApplicationCapabilityFieldBinding::from_reference(
-                    ApprovedBusinessPaymentGrantWorkflow::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(PaymentIdentityField::reference()),
+                    ApprovedBusinessPaymentGrantWorkflow::at(
+                        "ApprovedBusinessPaymentGrantWorkflow",
+                    ),
+                )
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(PaymentIdentityField::at(
+                    "PaymentIdentityField",
+                ))
+                .unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
                 ApplicationCapabilityFieldBinding::from_reference(
-                    ApprovedBusinessPaymentGrantNotBefore::reference(),
-                ),
+                    ApprovedBusinessPaymentGrantNotBefore::at(
+                        "ApprovedBusinessPaymentGrantNotBefore",
+                    ),
+                )
+                .unwrap(),
                 ApplicationCapabilityFieldBinding::from_reference(
-                    ApprovedBusinessPaymentGrantNotAfter::reference(),
-                ),
+                    ApprovedBusinessPaymentGrantNotAfter::at(
+                        "ApprovedBusinessPaymentGrantNotAfter",
+                    ),
+                )
+                .unwrap(),
             ),
         ),
         ApprovedBusinessPaymentControlContext::reference(),
@@ -207,8 +152,11 @@ where
             ApprovedBusinessPaymentGrantGrantee::reference(),
         ),
         ApplicationCapabilityFieldBinding::from_reference(
-            ApprovedBusinessPaymentGrantDelegationLimit::reference(),
-        ),
+            ApprovedBusinessPaymentGrantDelegationLimit::at(
+                "ApprovedBusinessPaymentGrantDelegationLimit",
+            ),
+        )
+        .unwrap(),
         ApprovedBusinessPaymentGrantProvenance::reference(),
     ))
     .composition(composition())
@@ -220,9 +168,10 @@ fn composition() -> ApplicationCapabilityComposition {
     let allow = ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .forward(AccountAuthorizedUser::reference())
         .where_equal(
-            AuthorizationRole::reference(),
+            AuthorizationRole::at("AuthorizationRole"),
             crate::schema::encoded_bank_value(CustomerRole::Approver),
         )
+        .expect("owned record selection is valid")
         .forward(AuthorizationAccount::reference())
         .reverse(PaymentSource::reference())
         .allow(PaymentIntent::reference());

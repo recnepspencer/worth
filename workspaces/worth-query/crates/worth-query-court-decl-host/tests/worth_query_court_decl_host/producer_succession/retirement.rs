@@ -14,7 +14,7 @@ macro_rules! select_retirements {
             .relations_to(GeneratedBy::reference(), &$source)
             .map_err(HandlerExecutionDenial::new)?
         {
-            let key = $reader.field(edge.from(), Key::reference())?.unwrap();
+            let key = $reader.field(edge.from(), Key::at("Key"))?.unwrap();
             let index = key.rsplit('.').next().unwrap().parse::<u64>().unwrap();
             if index >= $width {
                 pending.push((edge.from().clone(), $source.clone()));
@@ -22,7 +22,7 @@ macro_rules! select_retirements {
         }
         while let Some((node, parent)) = pending.pop() {
             $reader.entity(&node, Node::reference())?;
-            let key = $reader.field(&node, Key::reference())?.unwrap();
+            let key = $reader.field(&node, Key::at("Key"))?.unwrap();
             for edge in $reader
                 .relations_to(GeneratedBy::reference(), &node)
                 .map_err(HandlerExecutionDenial::new)?

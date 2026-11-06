@@ -119,14 +119,14 @@ fn commit_own_write(
             &admitted,
             |reader, projected| {
                 reader
-                    .require_decision_field(projected, AccountLabel::reference())
+                    .require_decision_field(projected, AccountLabel::at("AccountLabel"))
                     .unwrap();
                 reader.begin_computation_reads();
                 let x = reader.attributed(
                     ComputationRead::Partition(PartitionIdentity::new(7)),
                     |reader| {
                         reader
-                            .decision_field(projected, AccountStatus::reference())
+                            .decision_field(projected, AccountStatus::at("AccountStatus"))
                             .unwrap()
                             .unwrap()
                     },
@@ -165,10 +165,10 @@ fn commit_own_write(
         effects
             .bind_output(OutputRoleUse::fixed::<GeneratedAccount>(), &output)
             .unwrap();
-        effects.initialize_field(&output, crate::domain_computation::primary_graph::tests::fixture::AccountIdentity::reference(), "computed-own-write".to_owned()).unwrap();
-        effects.initialize_field(&output, crate::domain_computation::primary_graph::tests::fixture::AccountMembershipTag::reference(), "open".to_owned()).unwrap();
+        effects.initialize_field(&output, crate::domain_computation::primary_graph::tests::fixture::AccountIdentity::at("AccountIdentity"), "computed-own-write".to_owned()).unwrap();
+        effects.initialize_field(&output, crate::domain_computation::primary_graph::tests::fixture::AccountMembershipTag::at("AccountMembershipTag"), "open".to_owned()).unwrap();
         effects
-            .initialize_field(&output, AccountStatus::reference(), "generated".to_owned())
+            .initialize_field(&output, AccountStatus::at("AccountStatus"), "generated".to_owned())
             .unwrap();
         output
     } else {
@@ -180,15 +180,15 @@ fn commit_own_write(
     };
     if generated {
         effects
-            .initialize_field(&output, AccountLabel::reference(), computed)
+            .initialize_field(&output, AccountLabel::at("AccountLabel"), computed)
             .unwrap();
     } else {
         effects
-            .write_field(&output, AccountLabel::reference(), computed)
+            .write_field(&output, AccountLabel::at("AccountLabel"), computed)
             .unwrap();
     }
     effects
-        .write_field(&source, AccountStatus::reference(), "2".to_owned())
+        .write_field(&source, AccountStatus::at("AccountStatus"), "2".to_owned())
         .unwrap();
 
         effects.finish().unwrap().with_output_demand_observation()

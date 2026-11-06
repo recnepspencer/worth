@@ -61,7 +61,7 @@ let principal = authenticated_principal(
                 &admission,
                 |reader, projected| {
                     reader
-                        .require_decision_field(projected, AccountStatus::reference())
+                        .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                         .unwrap();
                 },
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,

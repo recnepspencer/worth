@@ -1,6 +1,6 @@
 //! Ordinary current family delivery reaches the optional generated payload.
 use super::*;
-use members::{GeneratedSupport, SupportKey, SupportPayload, SupportValue, TotalSupport};
+use members::{GeneratedSupport, SupportKey, SupportValue, TotalSupport};
 use worth_query_decl::facade::{
     application_query::*, application_schema::*, worth_query_portable_type,
     worth_query_structured_value_binding,
@@ -38,7 +38,7 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema> for Binding<
     type Query = Query;
     type ParameterBinding = ParameterBinding;
     type ResultBinding = ResultBinding;
-    type ScopeBinding = PlanarReadScope<Schema>;
+    type ScopeBinding = PlanarReadScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -46,17 +46,8 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema> for Binding<
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "collection-family-read.binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -74,8 +65,8 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryIntent<Schema> for FamilyRea
     fn parameters(&self) -> ApplicationQueryParameterSet<Query> {
         ApplicationQueryParameterSet::new()
     }
-    fn into_scope(self) -> PlanarReadScope<Schema> {
-        PlanarReadScope::new(BodyKey::reference(), self.body_key)
+    fn into_scope(self) -> PlanarReadScope {
+        PlanarReadScope::new(BodyKey::at("BodyKey"), self.body_key)
     }
 }
 pub(super) struct MembersSlot;
@@ -96,33 +87,13 @@ fn members<Schema: TopologySchemaBinding>() -> ApplicationQueryResultRelationRef
 > {
     ApplicationQueryResultRelationRef::forward_many("members", TotalSupport::reference())
 }
-fn key<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    Query,
-    KeySlot,
-    Schema,
-    GeneratedSupport,
-    SupportPayload,
-    SupportKey,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", SupportKey::reference())
+fn key<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<Query, KeySlot, Schema, SupportKey> {
+    ApplicationQueryResultFieldRef::new("key", SupportKey::at("SupportKey"))
 }
-fn value<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    Query,
-    ValueSlot,
-    Schema,
-    GeneratedSupport,
-    SupportPayload,
-    SupportValue,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", SupportValue::reference())
+fn value<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<Query, ValueSlot, Schema, SupportValue> {
+    ApplicationQueryResultFieldRef::new("value", SupportValue::at("SupportValue"))
 }
 pub(super) fn declare<Schema: TopologySchemaBinding>(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,

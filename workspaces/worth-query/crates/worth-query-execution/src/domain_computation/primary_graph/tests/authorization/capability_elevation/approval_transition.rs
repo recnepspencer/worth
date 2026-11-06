@@ -1,3 +1,5 @@
+#[path = "approval_transition/exact_request.rs"]
+mod exact_request;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::time::Duration;
 
@@ -33,33 +35,6 @@ pub(super) type Access = WorthQueryAdmittedApplicationCapabilityAccess<
     ApproveCapabilityElevationOperation,
     ApproveElevationInput,
 >;
-
-#[test]
-fn exact_request_approval_reobserves_lifecycle_and_commits_two_derived_effects() {
-    let (world, request, requested) = requested_world(CapabilityElevationScenario::Active);
-    let approver = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            authenticated(&host_custody, &world, "bob", &request)
-        })
-        .expect("the fixture read owns its installed host call");
-    let program = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            materialize_exact_approval(&host_custody, &world, &request, requested)
-        })
-        .expect("the fixture read owns its installed host call");
-
-    let WorthQueryElevationApprovalOutcome::Approved(approved) = world
-        .application
-        .compare_and_commit_elevation_approval(program, idempotency(172, 172))
-    else {
-        panic!("the exact approval transition must commit");
-    };
-    assert_approved(&approved, &approver);
-}
 
 #[test]
 fn requester_and_conflicted_approver_cannot_enter_approval_progression() {
@@ -229,36 +204,63 @@ pub(super) fn seal_approval_facts(
 ) {
     let elevation = reader
         .resolve_entity(
-            CapabilityElevationIdentity::reference(),
-            "elevation-2".to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            "elevation-2".to_owned().into(),
         )
         .unwrap();
     let review = reader
-        .resolve_entity(CapabilityReviewIdentity::reference(), "review-2".to_owned())
+        .resolve_entity(
+            CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
+            "review-2".to_owned(),
+        )
         .unwrap();
     reader
-        .require_decision_field(&elevation, CapabilityElevationIdentity::reference())
+        .require_decision_field(
+            &elevation,
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&elevation, CapabilityElevationReason::reference())
+        .require_decision_field(
+            &elevation,
+            CapabilityElevationReason::at("CapabilityElevationReason"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&elevation, CapabilityElevationStatusField::reference())
+        .require_decision_field(
+            &elevation,
+            CapabilityElevationStatusField::at("CapabilityElevationStatusField"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&elevation, CapabilityElevationNotBefore::reference())
+        .require_decision_field(
+            &elevation,
+            CapabilityElevationNotBefore::at("CapabilityElevationNotBefore"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&elevation, CapabilityElevationNotAfter::reference())
+        .require_decision_field(
+            &elevation,
+            CapabilityElevationNotAfter::at("CapabilityElevationNotAfter"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&review, CapabilityReviewIdentity::reference())
+        .require_decision_field(
+            &review,
+            CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&review, CapabilityReviewKindField::reference())
+        .require_decision_field(
+            &review,
+            CapabilityReviewKindField::at("CapabilityReviewKindField"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&review, CapabilityReviewStatusField::reference())
+        .require_decision_field(
+            &review,
+            CapabilityReviewStatusField::at("CapabilityReviewStatusField"),
+        )
         .unwrap();
     reader
         .decision_relations_to(CapabilityElevationRequester::reference(), &elevation)

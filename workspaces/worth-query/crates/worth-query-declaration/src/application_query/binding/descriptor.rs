@@ -22,20 +22,14 @@ pub enum ApplicationQueryScopeResolutionMode {
 pub struct ApplicationQueryScopeContract {
     mode: ApplicationQueryScopeResolutionMode,
     field: ApplicationFieldBindingRecipe,
-    writable: bool,
 }
 
 impl ApplicationQueryScopeContract {
     pub(crate) fn new(
         mode: ApplicationQueryScopeResolutionMode,
         field: ApplicationFieldBindingRecipe,
-        writable: bool,
     ) -> Self {
-        Self {
-            mode,
-            field,
-            writable,
-        }
+        Self { mode, field }
     }
 
     pub const fn mode(&self) -> ApplicationQueryScopeResolutionMode {
@@ -44,10 +38,6 @@ impl ApplicationQueryScopeContract {
 
     pub fn field(&self) -> &ApplicationFieldBindingRecipe {
         &self.field
-    }
-
-    pub const fn writable(&self) -> bool {
-        self.writable
     }
 }
 

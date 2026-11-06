@@ -7,12 +7,11 @@ use super::super::{
 use worth_query_decl::facade::{
     application_history::{ApplicationHistoryBinding, ApplicationHistoryNavigationBinding},
     application_schema::ApplicationSchemaDeclarationBuilder,
-    worth_query_capability, worth_query_operation, worth_query_operation_reads,
+    worth_query_capability, worth_query_operation,
 };
 
 worth_query_capability!(pub NavigationCapability in DocumentRetentionSchema);
 worth_query_operation!(pub SelectSnapshot for DocumentRetentionSchema, input capability::InputBinding);
-worth_query_operation_reads!(SelectSnapshot => [DocumentIdentityField]);
 
 impl capability::Role for NavigationCapability {
     const ACTION: &'static str = "select-document-snapshot";
@@ -67,7 +66,10 @@ pub fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(operation, DocumentIdentityField::reference())
+        .operation_read_field(
+            operation,
+            DocumentIdentityField::at("DocumentIdentityField"),
+        )
         .capability(capability::contract(
             NavigationCapability::reference(),
             operation,

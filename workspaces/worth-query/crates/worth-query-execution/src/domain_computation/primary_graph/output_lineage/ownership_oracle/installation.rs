@@ -8,22 +8,83 @@ use std::sync::{atomic::AtomicUsize, Arc};
 use worth_foundational::facade::ApplicationBuildIdentity;
 use worth_query_decl::facade::{application_program::*, application_schema::*};
 
-worth_query_decl::facade::worth_query_application! {
-    pub(super) OwnerSchema { owner: "worth.query.test.mixed-owner", version: (1, 0), contributions: [OwnerMembers], }
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct OwnerSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for OwnerSchema {
+    const NAME: &'static str = "OwnerSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (OwnerMembers,);
 }
+impl worth_query_decl::facade::application_schema::ApplicationSchema for OwnerSchema {
+    const OWNER: &'static str = "worth.query.test.mixed-owner";
+    const NAME: &'static str = "OwnerSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for OwnerSchema {
+    type Contributions = (OwnerMembers,);
+}
+impl OwnerSchema {
+    pub fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        <Self as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+    }
+}
+
 impl TopologyModelBinding for OwnerSchema {}
-worth_query_decl::facade::worth_query_application_contribution! {
-    pub(super) contribution OwnerMembers in OwnerSchema {
-        identity: "worth.query.test.mixed-owner-members",
-        members: |schema| {
+pub(super) struct OwnerMembers;
+impl worth_query_decl::facade::application_schema::ApplicationSchemaContribution<OwnerSchema>
+    for OwnerMembers
+{
+    const IDENTITY:
+        worth_query_decl::facade::application_schema::ApplicationSchemaContributionIdentity =
+        worth_query_decl::facade::application_schema::ApplicationSchemaContributionIdentity::new(
+            "worth.query.test.mixed-owner-members",
+        );
+    type Members = (TopologyRecords, facts::FactsRecords, OwnerMembersContracts);
+}
+
+pub(super) struct OwnerMembersContracts;
+impl worth_query_decl::facade::application_schema::fragment::Registration<OwnerSchema>
+    for OwnerMembersContracts
+{
+    fn register(
+        schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<
+            OwnerSchema,
+        >,
+    ) -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<
+            OwnerSchema,
+        >,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        Ok({
             let schema = base_model::declare(schema);
-            let schema = facts::declare(schema);
             region_output::declare(schema)
                 .application_query(planar_query_definition::<OwnerSchema>())
                 .application_query_binding::<PlanarReadBinding<OwnerSchema>>()
-        }
+        })
     }
 }
+
 impl WorthQueryApplicationContribution<OwnerSchema> for OwnerMembers {
     type Configuration = super::commit_interruption::Interruption;
     fn contracts(
@@ -52,7 +113,7 @@ impl WorthQueryApplicationContribution<OwnerSchema> for OwnerMembers {
         )?;
         let handler = RegionOutputHandler::running(|reader, set| {
             WorthQueryDecisionPlan::immediate(
-                match reader.field(set, facts::EntrySetWeight::reference()) {
+                match reader.field(set, facts::EntrySetWeight::at("EntrySetWeight")) {
                     Ok(value) => HandlerResult::Completed(value),
                     Err(cause) => HandlerResult::ExecutionDenied(cause),
                 },
@@ -113,17 +174,17 @@ pub(super) fn install_with_interruption(
                 worth_query_decl::facade::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
             for (key, x, y) in [(ANCHOR, 1, 1), ("owner-source:b", 10, 1), ("owner-source:c", 1, 10)] {
                 graph.bind_entity(WorthQueryApplicationEntitySeed::new(Body::reference(), WorthQueryApplicationEntityKey::new(key).unwrap())
-                    .field(BodyKey::reference(), key.to_owned())
-                    .field(Length::reference(), PositiveLength::new(11).unwrap())
-                    .field(PositionX::reference(), PositiveLength::new(x).unwrap())
-                    .field(PositionY::reference(), PositiveLength::new(y).unwrap()))?;
+                    .field(BodyKey::at("BodyKey"), key.to_owned())
+                    .field(Length::at("Length"), PositiveLength::new(11).unwrap())
+                    .field(PositionX::at("PositionX"), PositiveLength::new(x).unwrap())
+                    .field(PositionY::at("PositionY"), PositiveLength::new(y).unwrap()))?;
             }
             for (from, to) in [(ANCHOR, "owner-source:b"), ("owner-source:b", "owner-source:c"), ("owner-source:c", ANCHOR)] {
                 graph.bind_relation(WorthQueryApplicationRelationSeed::new(PlanarSuccessor::reference(), format!("{from}-to-{to}"),
                     WorthQueryApplicationEntityKey::new(from).unwrap(), WorthQueryApplicationEntityKey::new(to).unwrap()))?;
             }
             graph.bind_entity(WorthQueryApplicationEntitySeed::new(facts::EntrySet::reference(), WorthQueryApplicationEntityKey::new("odd").unwrap())
-                .field(facts::EntrySetKey::reference(), "odd".to_owned()).field(facts::EntrySetWeight::reference(), 7))?;
+                .field(facts::EntrySetKey::at("EntrySetKey"), "odd".to_owned()).field(facts::EntrySetWeight::at("EntrySetWeight"), 7))?;
             Ok(())
         }).unwrap()
 }

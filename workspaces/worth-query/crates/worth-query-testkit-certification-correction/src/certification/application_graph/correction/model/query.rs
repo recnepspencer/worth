@@ -28,47 +28,17 @@ pub fn read_parameter(
 ) -> ApplicationQueryParameterRef<ReadQuery, ReadParameter, BoolApplicationValueBinding> {
     ApplicationQueryParameterRef::from_query_identifier("read_enabled")
 }
-pub fn primary_field() -> ApplicationQueryResultFieldRef<
-    ReadQuery,
-    PrimarySlot,
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Primary,
-    u64,
-    ReadWrite,
-    NoEqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("primary", Primary::reference())
+pub fn primary_field(
+) -> ApplicationQueryResultFieldRef<ReadQuery, PrimarySlot, NumericSchema, Primary> {
+    ApplicationQueryResultFieldRef::new("primary", Primary::at("Primary"))
 }
-pub fn secondary_field() -> ApplicationQueryResultFieldRef<
-    ReadQuery,
-    SecondarySlot,
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Secondary,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("secondary", Secondary::reference())
+pub fn secondary_field(
+) -> ApplicationQueryResultFieldRef<ReadQuery, SecondarySlot, NumericSchema, Secondary> {
+    ApplicationQueryResultFieldRef::new("secondary", Secondary::at("Secondary"))
 }
-fn operand() -> ApplicationQueryOptionalResultFieldRef<
-    ReadQuery,
-    OperandSlot,
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Operand,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryOptionalResultFieldRef::new("operand", Operand::reference())
+fn operand(
+) -> ApplicationQueryOptionalResultFieldRef<ReadQuery, OperandSlot, NumericSchema, Operand> {
+    ApplicationQueryOptionalResultFieldRef::new("operand", Operand::at("Operand"))
 }
 pub fn definition() -> ApplicationQueryDefinition<NumericSchema, ReadQuery, Parameters, Row, Number>
 {
@@ -93,7 +63,7 @@ pub fn definition() -> ApplicationQueryDefinition<NumericSchema, ReadQuery, Para
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .parameter(read_parameter())
-        .where_equal(ReadEnabled::reference(), read_parameter())
+        .where_equal(ReadEnabled::at("ReadEnabled"), read_parameter())
         .build()
         .unwrap()
 }
@@ -108,7 +78,7 @@ impl WorthQueryApplicationProjection<NumericSchema, ReadQuery> for Row {
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
             operand: row.optional_field(operand())?,
-            primary: row.field(primary_field())?,
+            primary: row.field(primary_field())?.0,
             secondary: row.field(secondary_field())?,
         })
     }
@@ -119,15 +89,7 @@ pub struct Read {
 }
 worth_query_structured_value_binding!(pub ReadInputBinding for Read { identity: "numeric-correction.read-input.v1" });
 pub struct ReadBinding;
-pub type Scope = ApplicationQueryFieldScope<
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Key,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope = ApplicationQueryFieldScope<Key>;
 impl ApplicationQueryBinding<NumericSchema> for ReadBinding {
     type Input = Read;
     type InputBinding = ReadInputBinding;
@@ -143,17 +105,8 @@ impl ApplicationQueryBinding<NumericSchema> for ReadBinding {
     const IDENTITY: &'static str = "numeric-correction.read-binding.v1";
     // The unique key selects at most one numeric root.
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        NumericSchema,
-        Number,
-        NumberFacts,
-        Key,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        Key::reference()
+    fn scope_field() -> Key {
+        Key::at("Key")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         NumericSchema,
@@ -172,6 +125,6 @@ impl ApplicationQueryIntent<NumericSchema> for Read {
         parameters()
     }
     fn into_scope(self) -> Scope {
-        Scope::new(Key::reference(), self.key)
+        Scope::new(Key::at("Key"), self.key)
     }
 }

@@ -21,7 +21,7 @@ fn indexed_reobservation_preserves_native_request_and_lookup_denials() {
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
-    let field = AccountNote::reference();
+    let field = AccountNote::at("AccountNote");
     let locator = graph
         .layout
         .field_locator(field.entity(), field.aspect(), field.field())
@@ -29,7 +29,7 @@ fn indexed_reobservation_preserves_native_request_and_lookup_denials() {
         .clone();
     let kind = graph
         .layout
-        .entity_kind(AccountIdentity::reference().entity())
+        .entity_kind(AccountIdentity::at("AccountIdentity").entity())
         .unwrap();
     let value = StringApplicationValueBinding::encode(&"reviewed".to_owned()).unwrap();
     world

@@ -198,7 +198,7 @@ impl DecisionReadWorld {
             .selected(host)
             .resolve_entity(
                 &phase,
-                schema::PrincipalIdentity::reference(),
+                schema::PrincipalIdentity::at("PrincipalIdentity"),
                 PRINCIPAL,
                 request,
                 WorthQueryPrincipalResolutionMode::Ordinary,

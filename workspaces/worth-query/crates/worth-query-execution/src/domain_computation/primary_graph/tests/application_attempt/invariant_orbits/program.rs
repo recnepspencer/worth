@@ -40,7 +40,7 @@ pub(super) fn swap_successors<const O: bool>(
                     selected
                         .resolve_entity(
                             &phase,
-                            NodeKey::reference(),
+                            NodeKey::at("NodeKey"),
                             key,
                             request,
                             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -55,14 +55,14 @@ pub(super) fn swap_successors<const O: bool>(
                     &admission,
                     |reader, _| {
                         for (from, to) in pairs {
-                            let from = reader.resolve_entity(NodeKey::reference(), from).unwrap();
-                            let to = reader.resolve_entity(NodeKey::reference(), to).unwrap();
+                            let from = reader.resolve_entity(NodeKey::at("NodeKey"), from).unwrap();
+                            let to = reader.resolve_entity(NodeKey::at("NodeKey"), to).unwrap();
                             for entity in [&from, &to] {
                                 reader
                                     .require_decision_entity(entity, Node::reference())
                                     .unwrap();
                                 reader
-                                    .require_decision_field(entity, NodeKey::reference())
+                                    .require_decision_field(entity, NodeKey::at("NodeKey"))
                                     .unwrap();
                             }
                             reader
@@ -159,7 +159,7 @@ where
     let subject = selected
         .resolve_entity(
             phase,
-            NodeKey::reference(),
+            NodeKey::at("NodeKey"),
             key,
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,

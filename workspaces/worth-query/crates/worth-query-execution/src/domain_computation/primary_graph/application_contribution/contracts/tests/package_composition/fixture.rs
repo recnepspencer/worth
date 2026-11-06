@@ -43,8 +43,9 @@ pub(super) fn definition(name: &str, lowering: &str) -> Definition {
     .unwrap()
     .bind_application_schema(Schema::declaration().unwrap())
     .unwrap();
-    let field =
-        crate::domain_computation::primary_graph::tests::fixture::AccountStatus::reference();
+    let field = crate::domain_computation::primary_graph::tests::fixture::AccountStatus::at(
+        "AccountStatus",
+    );
     let native = index
         .native_contracts()
         .aspect(field.entity(), field.aspect())

@@ -16,7 +16,7 @@ fn round_scope(input: RoundTrip) -> String {
 worth_query_query_binding!(pub RoundBinding for RoundTrip,schema Catalog,identity "event-catalog.round-binding.v1",input RoundInputBinding,
     query RoundTripQuery,parameters ParametersBinding=>|_|ApplicationQueryParameterSet::new(),result ResultBinding,
     principal CatalogPrincipal,mapping ExternalMapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Directory,DirectoryFacts,DirectoryIdentity,String,ReadOnly,NoApplicationUnit,field DirectoryIdentity::reference(),value round_scope,limits results 8192);
+    scope DirectoryIdentity, field DirectoryIdentity::at("DirectoryIdentity"),value round_scope,limits results 8192);
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EventRow {
     pub identity: String,
@@ -27,19 +27,9 @@ worth_query_application_query!(pub InverseQuery for Catalog,identity "event-cata
     result EventResultBinding,scope Item=>"Item",name "event_inverse");
 pub struct EventIdentitySlot;
 worth_query_portable_type!(EventIdentitySlot=>"event-catalog.event-identity-slot.v1");
-fn event_identity() -> ApplicationQueryResultFieldRef<
-    InverseQuery,
-    EventIdentitySlot,
-    Catalog,
-    Directory,
-    DirectoryFacts,
-    DirectoryIdentity,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", DirectoryIdentity::reference())
+fn event_identity(
+) -> ApplicationQueryResultFieldRef<InverseQuery, EventIdentitySlot, Catalog, DirectoryIdentity> {
+    ApplicationQueryResultFieldRef::new("identity", DirectoryIdentity::at("DirectoryIdentity"))
 }
 impl WorthQueryApplicationProjection<Catalog, InverseQuery> for EventRow {
     fn project(
@@ -66,7 +56,7 @@ fn inverse_scope(input: Inverse) -> String {
 worth_query_query_binding!(pub InverseBinding for Inverse,schema Catalog,identity "event-catalog.inverse-binding.v1",input InverseInputBinding,
     query InverseQuery,parameters ParametersBinding=>|_|ApplicationQueryParameterSet::new(),result EventResultBinding,
     principal CatalogPrincipal,mapping ExternalMapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Item,ItemFacts,ItemIdentity,String,ReadOnly,NoApplicationUnit,field ItemIdentity::reference(),value inverse_scope,limits results 8192);
+    scope ItemIdentity, field ItemIdentity::at("ItemIdentity"),value inverse_scope,limits results 8192);
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {

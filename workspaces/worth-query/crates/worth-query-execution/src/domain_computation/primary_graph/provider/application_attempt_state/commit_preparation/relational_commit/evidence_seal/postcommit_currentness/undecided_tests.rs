@@ -31,7 +31,7 @@ fn only_a_comparison_that_cannot_answer_is_undecidable() {
         .primary_graph()
         .unwrap()
         .layout
-        .entity_kind(AccountIdentity::reference().entity())
+        .entity_kind(AccountIdentity::at("AccountIdentity").entity())
         .unwrap();
     let read = world
         .application

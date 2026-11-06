@@ -72,19 +72,25 @@ pub(super) fn bind_elevated_capability(
                 WorthQueryApplicationEntityKey::new("elevation-1").unwrap(),
             )
             .field(
-                CapabilityElevationIdentity::reference(),
-                "elevation-1".to_owned(),
+                CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+                "elevation-1".to_owned().into(),
             )
             .field(
-                CapabilityElevationReason::reference(),
+                CapabilityElevationReason::at("CapabilityElevationReason"),
                 "protect-customer".to_owned(),
             )
             .field(
-                CapabilityElevationStatusField::reference(),
+                CapabilityElevationStatusField::at("CapabilityElevationStatusField"),
                 CapabilityElevationStatus::Approved,
             )
-            .field(CapabilityElevationNotBefore::reference(), 95)
-            .field(CapabilityElevationNotAfter::reference(), 105),
+            .field(
+                CapabilityElevationNotBefore::at("CapabilityElevationNotBefore"),
+                95,
+            )
+            .field(
+                CapabilityElevationNotAfter::at("CapabilityElevationNotAfter"),
+                105,
+            ),
         )
         .unwrap();
     bootstrap
@@ -93,13 +99,16 @@ pub(super) fn bind_elevated_capability(
                 CapabilityReview::reference(),
                 WorthQueryApplicationEntityKey::new("review-1").unwrap(),
             )
-            .field(CapabilityReviewIdentity::reference(), "review-1".to_owned())
             .field(
-                CapabilityReviewKindField::reference(),
+                CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
+                "review-1".to_owned(),
+            )
+            .field(
+                CapabilityReviewKindField::at("CapabilityReviewKindField"),
                 CapabilityReviewKind::Elevation,
             )
             .field(
-                CapabilityReviewStatusField::reference(),
+                CapabilityReviewStatusField::at("CapabilityReviewStatusField"),
                 CapabilityReviewStatus::Required,
             ),
         )

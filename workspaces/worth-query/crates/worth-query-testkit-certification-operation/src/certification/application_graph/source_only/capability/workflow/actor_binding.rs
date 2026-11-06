@@ -31,17 +31,8 @@ impl ApplicationMutationBinding<CapabilitySchema> for ActorBinding {
     const IDENTITY: &'static str = "capability-workflow.ActorBinding.v1";
     const HANDLER_IDENTITY: &'static str = "capability-workflow.handler.ActorBinding";
     const IDEMPOTENCY_IDENTITY: &'static str = "capability-workflow.key.ActorBinding";
-    fn scope_field() -> ApplicationFieldRef<
-        CapabilitySchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CapabilitySchema,

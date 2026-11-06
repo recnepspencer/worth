@@ -137,7 +137,7 @@ pub fn validated_program() -> Result<
     worth_query_decl::facade::application_program::ApplicationProgramValidationDenial,
 > {
     ApplicationProgramAuthoring::<ConsumerSchema, ConsumerProgram>::begin()
-        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
 }
 
@@ -149,7 +149,7 @@ pub fn validated_omitted_installed_rule_program() -> Result<
     worth_query_decl::facade::application_program::ApplicationProgramValidationDenial,
 > {
     ApplicationProgramAuthoring::<ConsumerSchema, OmittedInstalledRuleProgram>::begin()
-        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
 }
 

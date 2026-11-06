@@ -148,10 +148,8 @@ worth_query_decl::facade::worth_query_query_binding!(
     result EstateEmergencyAccessActivityQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope EstateCase, crate::schema::EstateCaseRecord, crate::schema::EstateCaseIdentityField,
-        EstateCaseId, worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
-    field crate::schema::EstateCaseIdentityField::reference(),
+    scope crate::schema::EstateCaseIdentityField,
+    field crate::schema::EstateCaseIdentityField::at("EstateCaseIdentityField"),
     value EstateEmergencyAccessActivityRequest::estate,
     limits results 1_024
 );
@@ -194,20 +192,23 @@ pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefiniti
         ViewEstateEmergencyProtectionCapability::reference(),
     )
     .use_field_by(
-        EstateCaseIdentityField::reference(),
+        EstateCaseIdentityField::at("EstateCaseIdentityField"),
         field(),
         live_scope.clone(),
     )
+    .expect("owned record selection is valid")
     .use_field_by(
-        EmergencyAccessIdentityField::reference(),
+        EmergencyAccessIdentityField::at("EmergencyAccessIdentityField"),
         field(),
         access_ordering.clone(),
     )
+    .expect("owned record selection is valid")
     .use_field_by(
-        EmergencyAccessIssuedAtField::reference(),
+        EmergencyAccessIssuedAtField::at("EmergencyAccessIssuedAtField"),
         field(),
         access_ordering.clone(),
     )
+    .expect("owned record selection is valid")
     .disclose_field_by(estate_id(), field(), live_scope)
     .disclose_relation_by(estate_accesses(), field(), collection)
     .disclose_field_by(access_id(), field(), access_ordering.clone())
@@ -242,7 +243,7 @@ pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefiniti
         )
         .order_by(access_id(), ApplicationQueryOrderingDirection::Ascending)
         .continue_by(estate_accesses())
-        .live_by::<EmergencyAccess, EstateEmergencyAccessActivityLiveCause, _, _, _, _, _, _, _, _>(
+        .live_by::<EmergencyAccess, EstateEmergencyAccessActivityLiveCause>(
             estate_id(),
             access_id(),
         )

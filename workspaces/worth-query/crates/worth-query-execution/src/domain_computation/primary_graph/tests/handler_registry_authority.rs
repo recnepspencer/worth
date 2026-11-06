@@ -1,8 +1,10 @@
+#[path = "handler_registry_authority/records.rs"]
+mod storage_model;
 use std::sync::atomic::{AtomicUsize, Ordering};
+pub use storage_model::*;
 
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
-    U64ApplicationValueBinding,
 };
 use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
@@ -14,16 +16,6 @@ use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntimeInst
 static DECLARATION_CALLS: AtomicUsize = AtomicUsize::new(0);
 
 struct InstalledCatalogAuthoritySchema;
-worth_query_declaration::worth_query_entity!(InstalledEntity for InstalledCatalogAuthoritySchema);
-worth_query_declaration::worth_query_aspect!(
-    InstalledAspect for InstalledCatalogAuthoritySchema, InstalledEntity;
-    identity = AspectIdentity(0x9161_0101),
-    revision = AspectContractRevision(1),
-);
-worth_query_declaration::worth_query_field!(
-    InstalledField for InstalledCatalogAuthoritySchema, InstalledEntity, InstalledAspect:
-    u64 => U64ApplicationValueBinding, read_only, no_equality
-);
 
 impl ApplicationSchema for InstalledCatalogAuthoritySchema {
     const OWNER: &'static str = "installed-catalog-authority-test";
@@ -39,10 +31,8 @@ impl ApplicationSchema for InstalledCatalogAuthoritySchema {
             DECLARATION_CALLS.fetch_add(1, Ordering::SeqCst) < 2,
             "handler sealing must not become another schema declaration authority"
         );
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(InstalledEntity::reference())
-            .aspect(InstalledEntity::reference(), InstalledAspect::reference())
-            .field(InstalledEntity::reference(), InstalledField::reference())
+        ApplicationSchemaDeclarationBuilder::from_fragment(RegistryRecords)
+            .expect("owned record model is valid")
             .build()
     }
 }

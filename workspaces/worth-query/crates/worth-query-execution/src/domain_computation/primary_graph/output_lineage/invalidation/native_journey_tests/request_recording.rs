@@ -66,7 +66,7 @@ let recorded = || {
             assert_eq!(stopped.kind(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Superseded);
             assert!(!recorded(), "factless refusal cannot establish a verified row");
         }
-        let label = AccountLabel::reference();
+        let label = AccountLabel::at("AccountLabel");
         let locator = graph.layout().field_locator(label.entity(), label.aspect(), label.field()).unwrap().clone();
         let fact = field_fact(&host_custody.borrowed_request_for_test(), runtime, snapshot, entity, locator);
         read.facts = RetainedSourceFacts::for_test(false, Arc::from([fact])).for_comparison();
@@ -226,7 +226,7 @@ fn primed_output(
         .selected_product(&(phase_custody).test_host_request())
         .resolve_entity(
             phase_custody,
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             "open".to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -234,7 +234,7 @@ fn primed_output(
         .unwrap()
         .entity_id();
     let graph = world.application.runtime.primary_graph().unwrap();
-    let label_ref = AccountLabel::reference();
+    let label_ref = AccountLabel::at("AccountLabel");
     let label = graph
         .layout()
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())

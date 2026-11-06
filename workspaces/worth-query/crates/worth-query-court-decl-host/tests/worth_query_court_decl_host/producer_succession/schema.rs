@@ -1,54 +1,80 @@
+#[path = "schema/records.rs"]
+pub(super) mod storage_model;
 use super::*;
+pub use storage_model::{
+    DispatchModel, ExternalIdentity, GeneratedBy, Key, Mapping, MappingStatus, MappingTarget, Node,
+    ParentName, Principal, PrincipalIdentity, Produced, Value, Width,
+};
+use worth_query_decl::facade::application_schema::fragment::{self, *};
 use worth_query_decl::facade::authentication::*;
-worth_query_application!(pub Schema { owner: "worth.query.generic-dependent-dispatch", version: (1, 0), contributions: [Contribution], });
-worth_query_entity!(pub Mapping for Schema);
-worth_query_entity!(pub Principal for Schema);
-worth_query_entity!(pub Node for Schema);
-worth_query_aspect!(pub MappingFacts for Schema, Mapping; identity = AspectIdentity(0x9176A101), revision = AspectContractRevision(1));
-worth_query_aspect!(pub PrincipalFacts for Schema, Principal; identity = AspectIdentity(0x9176A102), revision = AspectContractRevision(1));
-worth_query_aspect!(pub Facts for Schema, Node; identity = AspectIdentity(0x9176A103), revision = AspectContractRevision(1));
-worth_query_field!(pub ExternalIdentity for Schema, Mapping, MappingFacts: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub MappingStatus for Schema, Mapping, MappingFacts: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub PrincipalIdentity for Schema, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub Key for Schema, Node, Facts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub ParentName for Schema, Node, Facts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub Value for Schema, Node, Facts: u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_field!(pub Width for Schema, Node, Facts: u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_aspect!(pub OutputFacts for Schema, Node; identity = AspectIdentity(0x9176A104), revision = AspectContractRevision(1));
-worth_query_field!(pub Produced for Schema, Node, OutputFacts: u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_relation!(pub GeneratedBy in Schema, Node => Node; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub MappingTarget in Schema, Mapping => Principal; integrity = same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(pub PrincipalBinding in Schema, mapping Mapping { identity: ExternalIdentity, status: MappingStatus, target: MappingTarget => Principal, principal_identity: PrincipalIdentity });
+#[derive(Clone, Copy)]
+pub struct Schema;
+impl Fragment for Schema {
+    const NAME: &'static str = "Schema";
+    type Bindings = NoBindings;
+    type Members = (Contribution,);
+}
+impl ApplicationSchema for Schema {
+    const OWNER: &'static str = "worth.query.generic-dependent-dispatch";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        fragment::visit_correction(Self, source, visitor)
+    }
+}
+impl Schema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+impl ApplicationSchemaComposition for Schema {
+    type Contributions = <Self as Fragment>::Members;
+}
+
+pub struct PrincipalBinding;
+impl PrincipalBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        Schema,
+        Self,
+        Mapping,
+        Principal,
+        <PrincipalIdentity as RecordSelection>::Value,
+        <PrincipalIdentity as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "PrincipalBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    ExternalIdentity::at("ExternalIdentity"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    MappingStatus::at("MappingStatus"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    MappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalIdentity::at("PrincipalIdentity"),
+                ),
+            },
+        )
+    }
+}
+
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let schema = schema
-        .entity(Mapping::reference())
-        .entity(Principal::reference())
-        .entity(Node::reference())
-        .aspect(Mapping::reference(), MappingFacts::reference())
-        .aspect(Principal::reference(), PrincipalFacts::reference())
-        .aspect(Node::reference(), Facts::reference())
-        .optional_aspect(Node::reference(), OutputFacts::reference())
-        .field(Mapping::reference(), ExternalIdentity::reference())
-        .field(Mapping::reference(), MappingStatus::reference())
-        .field(Principal::reference(), PrincipalIdentity::reference())
-        .unique_field(Node::reference(), Key::reference())
-        .field(Node::reference(), ParentName::reference())
-        .field(Node::reference(), Value::reference())
-        .field(Node::reference(), Width::reference())
-        .field(Node::reference(), Produced::reference())
-        .relation(
-            MappingTarget::reference(),
-            Mapping::reference(),
-            Principal::reference(),
-        )
         .principal_binding(PrincipalBinding::reference())
-        .relation(
-            GeneratedBy::reference(),
-            Node::reference(),
-            Node::reference(),
-        )
         .application_query(query::definition())
         .application_query_binding::<ReadBinding>();
     realization::declare(schema)

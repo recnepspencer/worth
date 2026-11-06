@@ -38,12 +38,16 @@ impl ApplicationSchema for Schema {
 pub(super) struct Entity;
 pub(super) struct WrongEntity;
 
-impl ApplicationEntityMarkerIdentity<Schema> for Entity {
-    const IDENTIFIER: &'static str = "entity";
+impl worth_query_declaration::facade::application_schema::fragment::Entity for Entity {
+    const NAME: &'static str = "entity";
+    type Aspects = ();
+    type Relations = ();
 }
 
-impl ApplicationEntityMarkerIdentity<Schema> for WrongEntity {
-    const IDENTIFIER: &'static str = "wrong-entity";
+impl worth_query_declaration::facade::application_schema::fragment::Entity for WrongEntity {
+    const NAME: &'static str = "wrong-entity";
+    type Aspects = ();
+    type Relations = ();
 }
 
 macro_rules! role {

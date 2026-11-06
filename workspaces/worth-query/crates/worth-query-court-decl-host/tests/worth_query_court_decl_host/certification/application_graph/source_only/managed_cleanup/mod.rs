@@ -22,7 +22,7 @@ fn managed_product_stale_retains_native_failure_until_owner_thread_close() {
                     .unwrap()
                     .resolve_entity(
                         &phase,
-                        DocumentIdentityField::reference(),
+                        DocumentIdentityField::at("DocumentIdentityField"),
                         DOCUMENT_IDENTITY.to_owned(),
                         &scope,
                         WorthQueryPrincipalResolutionMode::Certification,
@@ -42,14 +42,16 @@ fn managed_product_stale_retains_native_failure_until_owner_thread_close() {
             .preconditions(
                 TypedMutationPreconditions::new()
                     .expect_fact(
-                        DocumentIdentityField::reference(),
+                        DocumentIdentityField::at("DocumentIdentityField"),
                         ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned())
                             .unwrap(),
                     )
+                    .expect("record precondition")
                     .expect_fact(
-                        DocumentRetentionField::reference(),
+                        DocumentRetentionField::at("DocumentRetentionField"),
                         ApplicationEncodedScalarValue::try_new(7_u64).unwrap(),
-                    ),
+                    )
+                    .expect("record precondition"),
             )
             .idempotency_owned(0x9176_6019)
             .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
@@ -72,7 +74,7 @@ fn managed_product_stale_retains_native_failure_until_owner_thread_close() {
                 .publish_native_field_write_for_test(
                     branch,
                     record,
-                    DocumentRetentionField::reference(),
+                    DocumentRetentionField::at("DocumentRetentionField"),
                     21_u64,
                     &scope,
                 )

@@ -79,7 +79,8 @@ impl<Schema, Query, Parameters, QueryResult, Scope, Root>
     /// worth_query_declaration::worth_query_structured_value_binding!(ParametersBinding for Parameters { identity: "example.parameters.v1" });
     /// worth_query_declaration::worth_query_structured_value_binding!(DeclaredResultBinding for Result { identity: "example.result.v1" });
     /// worth_query_declaration::worth_query_structured_value_binding!(WrongResultBinding for Result { identity: "example.wrong-result.v1" });
-    /// worth_query_declaration::worth_query_entity!(pub Record for Schema);
+    /// pub struct Record;
+    /// impl worth_query_declaration::facade::application_schema::fragment::Entity for Record {const NAME:&'static str="Record";type Aspects=();type Relations=();}
     /// worth_query_declaration::worth_query_application_query!(
     ///     pub ReadRecord for Schema,
     ///     identity "example.read-record.v1",
@@ -111,11 +112,13 @@ impl<Schema, Query, Parameters, QueryResult, Scope, Root>
         Query: ApplicationQueryMarkerIdentity<Schema, ResultBinding = ShapeBinding>,
         ShapeBinding: ApplicationStructuredValueBinding<Value = QueryResult>,
     {
+        let (result_shape, field_expectations) = result_shape.into_parts();
         ApplicationQueryCardinalityAuthoring {
+            field_expectations,
             reference: self.reference,
             root: self.root,
             scope: self.scope,
-            result_shape: result_shape.into_erased(),
+            result_shape,
         }
     }
 }
@@ -126,6 +129,7 @@ pub struct ApplicationQueryCardinalityAuthoring<Schema, Query, Parameters, Query
     root: ApplicationEntityRef<Schema, Root>,
     scope: ApplicationEntityRef<Schema, Scope>,
     result_shape: ApplicationQueryResultShape,
+    field_expectations: Vec<crate::application_schema::ApplicationFieldBindingRecipe>,
 }
 
 impl<Schema, Query, Parameters, QueryResult, Scope, Root>
@@ -251,6 +255,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope, Root>
                 root: cardinality.root,
                 scope: cardinality.scope,
                 result_shape: cardinality.result_shape,
+                field_expectations: cardinality.field_expectations,
                 cardinality: disclosure.cardinality,
                 disclosure: basis.disclosure,
                 basis_support,
@@ -273,6 +278,7 @@ pub(super) struct ApplicationQueryDefinitionParts<
     pub(super) root: ApplicationEntityRef<Schema, Root>,
     pub(super) scope: ApplicationEntityRef<Schema, Scope>,
     pub(super) result_shape: ApplicationQueryResultShape,
+    pub(super) field_expectations: Vec<crate::application_schema::ApplicationFieldBindingRecipe>,
     pub(super) cardinality: ApplicationQueryCardinality,
     pub(super) disclosure: ApplicationQueryDisclosureContract,
     pub(super) basis_support: ApplicationQueryBasisSupport,

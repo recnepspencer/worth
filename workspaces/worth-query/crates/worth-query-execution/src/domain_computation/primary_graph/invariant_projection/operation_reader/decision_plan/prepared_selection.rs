@@ -4,9 +4,8 @@ use std::marker::PhantomData;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationDecisionReadTarget,
-    ApplicationScalarValueBinding, ApplicationSchema, ApplicationSchemaBindingIdentity,
-    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads, WritePosture,
+    ApplicationOperationDecisionReadTarget, ApplicationScalarValueBinding, ApplicationSchema,
+    ApplicationSchemaBindingIdentity,
 };
 use worth_relational::facade::indexes::{
     BoundedEntityFieldLookupAdmissionStop as Stop, BoundedEntityFieldLookupDenialKind,
@@ -28,15 +27,9 @@ use crate::domain_computation::primary_graph::{
 pub struct WorthQueryPreparedEntitySelection<
     Schema,
     Operation,
-    Entity,
-    Aspect,
-    Field,
-    Value,
-    Write,
-    Unit,
+    Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection,
 > {
-    field:
-        ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, EqualityPredicate, Unit>,
+    field: Field,
     native: PreparedEntityFieldLookup,
     snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     authority_identity: u64,
@@ -44,43 +37,28 @@ pub struct WorthQueryPreparedEntitySelection<
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
-    _operation: PhantomData<fn() -> Operation>,
+    _operation: PhantomData<fn() -> (Schema, Operation)>,
 }
 
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    pub fn prepare_entity_selection<Entity, Aspect, Field, Value, Write, Unit>(
+    pub fn prepare_entity_selection<Entity, Aspect, Field, Value>(
         &mut self,
 
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-    ) -> Result<
-        WorthQueryPreparedEntitySelection<
-            Schema,
-            Operation,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Unit,
-        >,
-        HandlerExecutionDenial,
-    >
+        field: Field,
+    ) -> Result<WorthQueryPreparedEntitySelection<Schema, Operation, Field>, HandlerExecutionDenial>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
+        self.reader
+            .layout
+            .record_selection(field)
+            .map_err(HandlerExecutionDenial::new)?;
         let execution = self.reader.execution;
         self.reader
             .retention_control
@@ -167,26 +145,19 @@ impl<Schema: ApplicationSchema, Operation>
         })
     }
 
-    pub fn decision_select_entities_prepared<Entity, Aspect, Field, Value, Write, Unit>(
+    pub fn decision_select_entities_prepared<Entity, Aspect, Field, Value>(
         &mut self,
 
-        prepared: &WorthQueryPreparedEntitySelection<
-            Schema,
-            Operation,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Unit,
-        >,
+        prepared: &WorthQueryPreparedEntitySelection<Schema, Operation, Field>,
         value: Value,
         candidate_limit: usize,
     ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         let execution = self.reader.execution;
         if prepared.authority_identity != self.reader.authority_identity
@@ -306,8 +277,8 @@ impl<Schema: ApplicationSchema, Operation>
                 prepared.field.field(),
             ));
         }
-        self.retain_entity_selection(
-            prepared.field,
+        self.retain_named_entity_selection(
+            prepared.field.entity(),
             prepared.native.entity_kind(),
             prepared.native.field_locator().clone(),
             value,
@@ -317,13 +288,13 @@ impl<Schema: ApplicationSchema, Operation>
     }
 }
 
-impl<Schema, Operation, Entity, Aspect, Field, Value, Write, Unit>
-    WorthQueryPreparedEntitySelection<Schema, Operation, Entity, Aspect, Field, Value, Write, Unit>
+impl<
+        Schema,
+        Operation,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection,
+    > WorthQueryPreparedEntitySelection<Schema, Operation, Field>
 {
-    pub(in crate::domain_computation::primary_graph) fn field(
-        &self,
-    ) -> ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, EqualityPredicate, Unit>
-    {
+    pub(in crate::domain_computation::primary_graph) fn field(&self) -> Field {
         self.field
     }
 }

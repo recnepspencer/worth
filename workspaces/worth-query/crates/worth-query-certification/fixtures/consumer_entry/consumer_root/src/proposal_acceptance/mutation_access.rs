@@ -27,12 +27,13 @@ impl ApplicationCapabilityRequest<Schema, EditRetention> for RetentionEdit {
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                ModelName::reference(),
+                ModelName::at("ModelName"),
                 ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                     self.model.label.clone(),
                 )
                 .unwrap(),
-            ),
+            )
+            .unwrap(),
             encoded(2),
             encoded(1),
             ApplicationCapabilityRequestContext::new(EditContext::reference()),

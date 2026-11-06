@@ -18,9 +18,7 @@ fn scenario(direct: bool) {
     // request.query(), without the publication wrapper's private projection.
     macro_rules! read_source {
         () => {{
-            use worth_query_decl::facade::application_query::{
-                ApplicationQueryIntent, ApplicationQueryScopeResolution,
-            };
+            use worth_query_decl::facade::application_query::ApplicationQueryIntent;
             crate::checkpoint_recovery::support::host_call(&application, |phase| {
                 let intent = PlanarRead {
                     body_key: "anchor-a".into(),

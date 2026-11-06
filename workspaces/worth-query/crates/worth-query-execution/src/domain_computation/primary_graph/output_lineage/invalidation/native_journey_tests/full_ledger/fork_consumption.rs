@@ -33,13 +33,13 @@ pub(super) fn restored_root_consumption_and_later_writes() {
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let label = AccountLabel::reference();
+    let label = AccountLabel::at("AccountLabel");
     let label = graph
         .layout()
         .field_locator(label.entity(), label.aspect(), label.field())
         .unwrap()
         .clone();
-    let status = AccountStatus::reference();
+    let status = AccountStatus::at("AccountStatus");
     let status = graph
         .layout()
         .field_locator(status.entity(), status.aspect(), status.field())

@@ -3,10 +3,9 @@ use std::sync::Arc;
 
 use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
-    ApplicationRelationRef, ApplicationSchema, ApplicationSignedAggregateValueBinding,
-    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads,
-    WorthQueryCompiledApplicationOperationContracts, WritePosture,
+    ApplicationReadableScalarValueBinding, ApplicationRelationRef, ApplicationSchema,
+    ApplicationSignedAggregateValueBinding, OperationReads,
+    WorthQueryCompiledApplicationOperationContracts,
 };
 
 mod admitted;

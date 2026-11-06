@@ -84,7 +84,7 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
             selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

@@ -10,8 +10,6 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 #[doc(hidden)]
-pub struct ScalarColumns;
-#[doc(hidden)]
 pub struct RecordColumns;
 #[doc(hidden)]
 pub struct ArrayColumns<Kind>(PhantomData<Kind>);
@@ -33,14 +31,32 @@ pub trait ValueColumns<T, Kind>: super::BindingSet {
     ) -> Result<T, RecordRefusal>;
 }
 
-impl<Set: Scalar<T>, T: 'static> ValueColumns<T, ScalarColumns> for Set {
+pub(crate) trait ScalarValue<T>: super::BindingSet {
+    fn bindings(output: &mut Vec<super::RecordBinding>);
+    fn columns(path: &str, output: &mut Vec<Column>) -> Result<(), RecordRefusal>;
+    fn encode(
+        value: &T,
+        path: &str,
+        output: &mut BTreeMap<String, ApplicationValue>,
+    ) -> Result<(), RecordRefusal>;
+    fn decode(
+        values: &BTreeMap<String, ApplicationValue>,
+        path: &str,
+        work: &mut Self::Work<'_>,
+        admission: &mut DecodeContext<'_, '_>,
+    ) -> Result<T, RecordRefusal>;
+}
+
+impl<Set: Scalar<T>, T: 'static> ScalarValue<T> for Set {
     fn bindings(output: &mut Vec<super::RecordBinding>) {
         output.push(super::RecordBinding::scalar::<Set, T>());
     }
     fn columns(path: &str, output: &mut Vec<Column>) -> Result<(), RecordRefusal> {
         output.push(Column {
+            content: Set::content_format(),
             path: path.to_owned(),
             recipe: ApplicationFieldBindingRecipe::of::<Set::Binding>,
+            presence: super::super::ApplicationFieldPresence::Required,
             writable: Set::WRITABLE,
             equality: Set::EQUALITY_QUERYABLE,
             unique: false,
@@ -95,7 +111,7 @@ impl<Set: Record<T>, T: 'static> ValueColumns<T, RecordColumns> for Set {
         output.extend(Set::record().bindings());
     }
     fn columns(path: &str, output: &mut Vec<Column>) -> Result<(), RecordRefusal> {
-        output.extend(Set::record().columns(path)?);
+        output.extend(Set::record().columns_field(path)?);
         Ok(())
     }
 
@@ -104,7 +120,7 @@ impl<Set: Record<T>, T: 'static> ValueColumns<T, RecordColumns> for Set {
         path: &str,
         output: &mut BTreeMap<String, ApplicationValue>,
     ) -> Result<(), RecordRefusal> {
-        output.extend(Set::record().encode(value, path)?);
+        output.extend(Set::record().encode_field(value, path)?);
         Ok(())
     }
 
@@ -114,7 +130,7 @@ impl<Set: Record<T>, T: 'static> ValueColumns<T, RecordColumns> for Set {
         work: &mut Self::Work<'_>,
         admission: &mut DecodeContext<'_, '_>,
     ) -> Result<T, RecordRefusal> {
-        Set::record().decode_fields(values, path, work, admission)
+        Set::record().decode_field(values, path, work, admission)
     }
 }
 

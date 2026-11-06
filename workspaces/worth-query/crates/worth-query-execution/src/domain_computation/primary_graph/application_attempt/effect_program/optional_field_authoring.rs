@@ -3,9 +3,7 @@ use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, PortableAspectContractBasis};
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationProgramTarget,
-    ApplicationScalarValueBinding, OperationWrites, OptionalApplicationFieldValue,
-    WritableCapability,
+    ApplicationOperationProgramTarget, ApplicationScalarValueBinding,
 };
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::transactions::EntityReference;
@@ -25,24 +23,37 @@ impl<Schema, Operation, Input, Scope>
     /// `Some(value)` preserves even empty or zero values; `None` clears the
     /// field. The field must remain an admitted decision read so absence or
     /// value drift participates in compare-and-commit currentness.
-    pub fn write_optional_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn write_optional_field<Entity, Field>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        value: Option<Value>,
+        field: Field,
+        value: Option<Field::Value>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
-        Field: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
-        Write: WritableCapability,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+        >,
     {
+        let column = self.layout.record_selection(field)?;
+        if !column.writable()
+            || column.presence()
+                != worth_query_installation::facade::ApplicationFieldPresence::Optional
+        {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
+                column.path(),
+            ));
+        }
         let value = value
-            .map(|value| Field::Binding::encode(&value))
+            .map(|value| {
+                Field::Binding::validate(&value)?;
+                Field::Binding::encode(&value)
+            })
             .transpose()
             .map_err(|_| {
-                super::denial(
+                denial(
                     WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
-                    field.field(),
+                    column.path(),
                 )
             })?;
         self.validate_target(target, field.entity())?;
@@ -73,6 +84,7 @@ impl<Schema, Operation, Input, Scope>
         locator: AspectFieldLocator,
         value: Option<AspectValue>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let present = value.is_some();
         self.require_parent_not_removed(field.entity(), entity_id, &locator)?;
         self.require_field_observation(entity_id, &locator)?;
         let contract = self
@@ -105,6 +117,9 @@ impl<Schema, Operation, Input, Scope>
         if first_write {
             self.field_write_positions
                 .remember(field.entity(), entity_id, position);
+        }
+        if present {
+            self.retain_record_presence(field, position)?;
         }
         Ok(())
     }

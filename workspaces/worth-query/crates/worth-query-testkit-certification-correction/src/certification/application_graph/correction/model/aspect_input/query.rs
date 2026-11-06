@@ -29,61 +29,17 @@ pub struct Row {
 worth_query_structured_value_binding!(pub ResultBinding for Row { identity: "numeric-aspect.causal-row.v1" });
 worth_query_application_query!(pub Query for NumericSchema, identity "numeric-aspect.causal-query.v1",
     parameters ParametersBinding, result ResultBinding, scope Number => "Number", name "aspect-input-calculation");
-fn input() -> ApplicationQueryResultFieldRef<
-    Query,
-    InputSlot,
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Primary,
-    u64,
-    ReadWrite,
-    NoEqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("input", Primary::reference())
+fn input() -> ApplicationQueryResultFieldRef<Query, InputSlot, NumericSchema, Primary> {
+    ApplicationQueryResultFieldRef::new("input", Primary::at("Primary"))
 }
-fn output() -> ApplicationQueryResultFieldRef<
-    Query,
-    OutputSlot,
-    NumericSchema,
-    Number,
-    NumberFacts,
-    Calculated,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("calculated", Calculated::reference())
+fn output() -> ApplicationQueryResultFieldRef<Query, OutputSlot, NumericSchema, Calculated> {
+    ApplicationQueryResultFieldRef::new("calculated", Calculated::at("Calculated"))
 }
-fn bias() -> ApplicationQueryOptionalAspectFieldRef<
-    Query,
-    BiasSlot,
-    NumericSchema,
-    Number,
-    InputFacts,
-    Bias,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryOptionalAspectFieldRef::new("bias", Bias::reference())
+fn bias() -> ApplicationQueryOptionalAspectFieldRef<Query, BiasSlot, NumericSchema, Bias> {
+    ApplicationQueryOptionalAspectFieldRef::new("bias", Bias::at("Bias"))
 }
-fn sibling() -> ApplicationQueryOptionalAspectFieldRef<
-    Query,
-    SiblingSlot,
-    NumericSchema,
-    Number,
-    InputFacts,
-    Sibling,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryOptionalAspectFieldRef::new("sibling", Sibling::reference())
+fn sibling() -> ApplicationQueryOptionalAspectFieldRef<Query, SiblingSlot, NumericSchema, Sibling> {
+    ApplicationQueryOptionalAspectFieldRef::new("sibling", Sibling::at("Sibling"))
 }
 pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Parameters, Row, Number> {
     let shape = ApplicationQueryResultShapeBuilder::<
@@ -141,7 +97,7 @@ impl WorthQueryApplicationProjection<NumericSchema, Query> for Row {
         Ok(Self {
             bias: row.optional_aspect_field(bias())?,
             sibling: row.optional_aspect_field(sibling())?,
-            input: row.field(input())?,
+            input: row.field(input())?.0,
             calculated: row.field(output())?,
         })
     }
@@ -159,6 +115,6 @@ worth_query_structured_value_binding!(pub InputBinding for Read { identity: "num
 worth_query_query_binding!(pub Binding for Read, schema NumericSchema, identity "numeric-aspect.causal-binding.v1",
     input InputBinding, query Query, parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(), result ResultBinding,
     principal ActorBinding, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-    field Key::reference(), value Read::into_key, limits results 1
+    scope Key,
+    field Key::at("Key"), value Read::into_key, limits results 1
 );

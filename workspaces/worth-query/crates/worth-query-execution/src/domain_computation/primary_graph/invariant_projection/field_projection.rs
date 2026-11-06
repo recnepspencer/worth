@@ -49,33 +49,37 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionSnapshot
 
     /// One field is one completed read. Use `read_fields` for a multi-read
     /// decision whose cumulative custody must survive until its final handoff.
-    pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn field<Entity, Aspect, Field, Value>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
     ) -> Result<Option<Value>, WorthQueryInvariantProjectionDenial>
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         self.read_fields(execution, |read| read.field(identity, field))?
     }
 }
 
 impl<Schema: ApplicationSchema> WorthQueryRetainedSnapshotRead<'_, '_, '_, Schema> {
-    pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn field<Entity, Aspect, Field, Value>(
         &self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
     ) -> Result<Option<Value>, WorthQueryInvariantProjectionDenial>
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         if let Some(cause) = self.native_stop.get() {
             return Err(

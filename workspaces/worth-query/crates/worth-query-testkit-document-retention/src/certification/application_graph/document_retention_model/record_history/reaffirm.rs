@@ -5,10 +5,7 @@ pub use super::super::retention_entry::{
 pub use super::*;
 pub use worth_query_host::facade::{declaration::application_operation::*, primary_graph::*, *};
 
-worth_query_operation!(pub ReaffirmRetention for DocumentRetentionSchema, input SetRetentionInputBinding; access {
-    read_fields: [DocumentIdentityField, DocumentRetentionField];
-    writes: [DocumentRetentionField];
-});
+worth_query_operation!(pub ReaffirmRetention for DocumentRetentionSchema, input SetRetentionInputBinding);
 pub struct Binding;
 pub type Base = SetRetentionBinding;
 impl ApplicationMutationBinding<DocumentRetentionSchema> for Binding {
@@ -37,16 +34,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for Binding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
+    fn scope_field() -> DocumentIdentityField {
         Base::scope_field()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -90,10 +78,16 @@ impl OperationHandler<DocumentRetentionSchema, Binding> for Handler {
         <Binding as ApplicationMutationBinding<DocumentRetentionSchema>>::Denial,
     > {
         let result = reader
-            .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
+            .resolve_entity(
+                DocumentIdentityField::at("DocumentIdentityField"),
+                input.identity.clone(),
+            )
             .and_then(|document| {
                 // The actual observed field is the write's native effect basis.
-                reader.field(&document, DocumentRetentionField::reference())?;
+                reader.field(
+                    &document,
+                    DocumentRetentionField::at("DocumentRetentionField"),
+                )?;
                 reader.mutation_target(&document)
             });
         match result {
@@ -113,7 +107,7 @@ impl OperationHandler<DocumentRetentionSchema, Binding> for Handler {
         let result = writer.projected_entity(&target).and_then(|document| {
             writer.write_field(
                 &document,
-                DocumentRetentionField::reference(),
+                DocumentRetentionField::at("DocumentRetentionField"),
                 input.retention_days,
             )
         });
@@ -138,15 +132,15 @@ pub fn declare(
         )
         .operation_read_field(
             ReaffirmRetention::reference(),
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
         )
         .operation_write(
             ReaffirmRetention::reference(),
-            DocumentRetentionField::reference(),
+            DocumentRetentionField::at("DocumentRetentionField"),
         )
         .operation_read_field(
             ReaffirmRetention::reference(),
-            DocumentRetentionField::reference(),
+            DocumentRetentionField::at("DocumentRetentionField"),
         )
         .application_mutation_binding::<Binding>()
 }

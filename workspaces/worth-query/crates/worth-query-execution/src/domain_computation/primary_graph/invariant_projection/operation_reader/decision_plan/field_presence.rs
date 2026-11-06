@@ -37,12 +37,12 @@ mod tests {
             .unwrap();
         let graph = world.application.runtime.primary_graph().unwrap();
         for field in [
-            AccountNote::reference().field(),
-            AccountScore::reference().field(),
+            AccountNote::at("AccountNote").field(),
+            AccountScore::at("AccountScore").field(),
         ] {
             let locator = graph
                 .layout
-                .field_locator("Account", "AccountPolicy", field)
+                .field_locator("Account", AccountNote::at("AccountNote").aspect(), field)
                 .unwrap();
             assert!(may_write(writer.contracts().touches(), "Account", locator));
             assert!(!may_write(

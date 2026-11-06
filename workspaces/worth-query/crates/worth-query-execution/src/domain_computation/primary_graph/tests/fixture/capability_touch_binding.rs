@@ -11,9 +11,7 @@ use crate::domain_computation::primary_graph::application_entry::mutation::{
 use worth_query_declaration::facade::application_operation::{
     ApplicationCapabilityMutationBinding, NoApplicationMutationOutputs,
 };
-use worth_query_declaration::facade::application_schema::{
-    NoApplicationUnit, ReadWrite, U64ApplicationValueBinding,
-};
+use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 
 worth_query_declaration::worth_query_mutation_binding!(
     pub CapabilityTouchMutationBinding for CapabilityTouchInput,
@@ -32,8 +30,8 @@ worth_query_declaration::worth_query_mutation_binding!(
         principal_entity Principal,
         principal_identity u64,
         identity_binding U64ApplicationValueBinding,
-    scope Account, AccountPolicy, AccountStatus, String, ReadWrite, NoApplicationUnit,
-    field AccountStatus::reference(),
+    scope AccountStatus,
+    field AccountStatus::at("AccountStatus"),
     value touch_scope,
 );
 

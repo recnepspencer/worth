@@ -27,7 +27,7 @@ fn optional_aspect_initialization_reconstructed_presence_detects_present_empty()
         let entity = account.entity_id();
         let kind = account.entity_kind();
         let graph = world.application.runtime.primary_graph().unwrap();
-        let field = fixture::AccountAnnotation::reference();
+        let field = fixture::AccountAnnotation::at("AccountAnnotation");
         let locator = graph.layout.field_locator(field.entity(), field.aspect(), field.field()).unwrap();
         let aspect = locator.aspect().aspect_key().clone();
         let contract = graph.layout.aspect_contract(field.entity(), &aspect).unwrap();
@@ -47,13 +47,15 @@ fn optional_aspect_initialization_reconstructed_presence_detects_present_empty()
         handle.with_runtime(&execution, |runtime| {
             assert!(reconstructed.remains_equal_in(runtime, &execution, before.application_basis().snapshot_handle()).unwrap());
         });
+        let presence = graph.layout.record_presence_locator(field.binding_recipe().locus())
+            .expect("the SDK represents an all-optional row's parent presence");
         fixture::publish_relational_mutation(&execution, &world,
             WorkerIntentBatch::new("materialize-empty-annotations").push(
                 MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(ApplyEntityAspectPatchIntent {
                     entity_id: entity,
                     aspect_patch: PortableRecordAspectPatch::new([PortableAspectPatchOperation::SetWhole {
                         basis: PortableAspectContractBasis::from_contract(contract),
-                        value: ContractValidationInput::Struct(StructAspectValue::new([]).unwrap()),
+                        value: ContractValidationInput::Struct(StructAspectValue::new([(presence.field_path().fields()[0].clone(), worth_foundational::facade::AspectValue::Bool(true))]).unwrap()),
                     }]),
                 }))));
         let after = world.selected_product(&host);

@@ -27,11 +27,11 @@ use worth_query_host::facade as runtime_api;
 
 mod compiled_examples;
 mod demand;
-pub(super) mod entry_correction;
+pub(crate) mod entry_correction;
 mod entry_edit;
 mod execution;
-mod facts;
-mod oracle;
+pub(crate) mod facts;
+pub(crate) mod oracle;
 mod output_producer;
 mod own_write;
 mod owner;
@@ -183,13 +183,8 @@ impl<Binding: RegionTotalsBinding> ApplicationSchemaContribution<CheckpointSchem
 {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::IDENTITY;
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<CheckpointSchema>,
-    ) -> ApplicationSchemaDeclarationBuilder<CheckpointSchema> {
-        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::register_members(
-            builder,
-        )
-    }
+    type Members =
+        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::Members;
 }
 impl<Binding: RegionTotalsBinding> WorthQueryApplicationContribution<CheckpointSchema>
     for RegionTotalsContribution<Binding>
@@ -244,7 +239,7 @@ where
         CheckpointSchema,
         RegionTotalsProgram<DeclaredOnly<Computation>>,
     >::begin()
-        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<CheckpointSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
     .validated_program()
     .expect("the region totals program is complete")
     .revision()
@@ -258,7 +253,7 @@ where
         CheckpointSchema,
         RegionTotalsProgram<DeclaredOnly<Computation>>,
     >::begin()
-        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<CheckpointSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
     .validated_program()
     .err()
     .map(|denial| denial.kind())
@@ -274,7 +269,7 @@ mod serial {
             CheckpointSchema,
             RegionTotalsProgram<owner::PartitionedOwner>,
         >::begin()
-        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<CheckpointSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .expect("the region totals program is complete");
         let computations = program

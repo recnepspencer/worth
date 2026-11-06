@@ -2,11 +2,13 @@
 use super::*;
 use std::marker::PhantomData;
 use worth_query_decl::facade::{
-    application_operation::*, application_program::*, application_schema::*, worth_query_aspect,
-    worth_query_entity, worth_query_field, worth_query_operation, worth_query_operation_creates,
-    worth_query_operation_links, worth_query_operation_reads, worth_query_operation_writes,
+    application_operation::*, application_program::*, application_schema::*, worth_query_operation,
+    worth_query_operation_creates, worth_query_operation_links, worth_query_operation_reads,
+    worth_query_operation_writes,
 };
 mod schema;
+mod source_text;
+pub(super) use schema::SourceNotes;
 use schema::*;
 mod outputs;
 use outputs::*;

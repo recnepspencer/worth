@@ -116,7 +116,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                     let entity = selected
                         .resolve_entity(
                             &host_custody.phase_for_application(&world.application),
-                            AccountStatus::reference(),
+                            AccountStatus::at("AccountStatus"),
                             "open".to_owned(),
                             &live_scope(),
                             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -138,7 +138,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                     let graph = world.application.runtime.primary_graph().unwrap();
                     let handle = graph.integration_handle();
                     let owner = &handle.source_owner.invalidation_owner;
-                    let status_ref = AccountStatus::reference();
+                    let status_ref = AccountStatus::at("AccountStatus");
                     let locator = graph
                         .layout()
                         .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())

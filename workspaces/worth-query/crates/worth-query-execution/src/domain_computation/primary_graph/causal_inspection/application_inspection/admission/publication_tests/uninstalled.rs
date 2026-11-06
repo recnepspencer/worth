@@ -6,8 +6,8 @@ use crate::domain_computation::primary_graph::{
         WorthQueryApplicationInspectionDenial, WorthQueryApplicationInspectionOwnerRefusal,
     },
     tests::fixture::{
-        Account, AccountPolicy, AccountStatus, ExternalMapping, IdentityBinding,
-        IdentityExecutionSchema, Principal, TestAccountSourceBinding as Base,
+        AccountStatus, ExternalMapping, IdentityBinding, IdentityExecutionSchema, Principal,
+        TestAccountSourceBinding as Base,
     },
 };
 use worth_execution::{MapKernelFailure, ScopeStop};
@@ -28,16 +28,7 @@ impl ApplicationQueryBinding<S> for Uninstalled {
     type PrincipalIdentityBinding = <Base as ApplicationQueryBinding<S>>::PrincipalIdentityBinding;
     const IDENTITY: &'static str = "worth.query.test.uninstalled-inspection-cause.v1";
     const LIMITS: ApplicationQueryBindingLimits = Base::LIMITS;
-    fn scope_field() -> ApplicationFieldRef<
-        S,
-        Account,
-        AccountPolicy,
-        AccountStatus,
-        String,
-        ReadWrite,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
+    fn scope_field() -> AccountStatus {
         Base::scope_field()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<

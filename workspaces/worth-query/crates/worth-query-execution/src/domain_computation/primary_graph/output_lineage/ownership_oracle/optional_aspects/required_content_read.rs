@@ -18,14 +18,14 @@ pub(super) fn assert_absent_required_content_is_readable(
         let binding = runtime.installed_schema().principal_binding(ConsumerPrincipalBinding::reference()).unwrap();
         let principal = selected.resolve_authenticated_principal(&phase, &binding, &external, &request,
             WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
-        let source = selected.resolve_entity(&phase, BodyKey::reference(), installation::ANCHOR.to_owned(), &request,
+        let source = selected.resolve_entity(&phase, BodyKey::at("BodyKey"), installation::ANCHOR.to_owned(), &request,
             WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
         let operation = runtime.installed_schema().installed_operation(Produce::reference()).unwrap();
         let admitted = selected.authorize_operation(&phase, &principal, &source, &operation, Default::default(), &request).unwrap();
         let (_, snapshot, _) = runtime.mutation_projection.project_admitted_operation(&phase, &admitted, |reader, root| {
-            assert_eq!(reader.decision_field(root, SourceContent::reference()).unwrap(), None);
+            assert_eq!(reader.decision_field(root, SourceContent::at("SourceContent")).unwrap(), None);
             let called = std::cell::Cell::new(false);
-            assert_eq!(reader.decision_field_with_predecode_admission(root, SourceContent::reference(), |_, _| {
+            assert_eq!(reader.decision_field_with_predecode_admission(root, SourceContent::at("SourceContent"), |_, _| {
                 called.set(true); Ok::<_, ()>(())
             }, &|| Ok(())).unwrap().unwrap(), None);
             assert!(!called.get());

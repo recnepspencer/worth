@@ -5,9 +5,7 @@ use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
-    ApplicationScalarValueBinding, ApplicationSchema, DeclaredApplicationFieldValue,
-    EqualityPredicate, WritePosture,
+    ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding, ApplicationSchema,
 };
 
 use super::work::WorthQueryInvariantProjectionWorkBudget;

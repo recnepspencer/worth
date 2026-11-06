@@ -28,7 +28,7 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
     world.application.with_host_advancement(|phase| {
         let custody = phase.test_host_request();
         let selected = world.selected_product(&custody);
-        let entity = selected.resolve_entity(&phase, AccountStatus::reference(),
+        let entity = selected.resolve_entity(&phase, AccountStatus::at("AccountStatus"),
             "open".into(), &live_scope(), WorthQueryPrincipalResolutionMode::Ordinary).unwrap().entity_id();
         let (_, product, _) = selected.into_parts();
         let coordinate = ProductCoordinate {
@@ -43,9 +43,9 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
         };
         let row = RecordedSettlementIdentity::retain(&source, coordinate, 0);
         let graph = world.application.runtime.primary_graph().unwrap();
-        let status_ref = AccountStatus::reference();
+        let status_ref = AccountStatus::at("AccountStatus");
         let status = graph.layout().field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field()).unwrap().clone();
-        let label_ref = AccountLabel::reference();
+        let label_ref = AccountLabel::at("AccountLabel");
         let label = graph.layout().field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field()).unwrap().clone();
         let handle = graph.integration_handle();
         let owner = &handle.source_owner.invalidation_owner;

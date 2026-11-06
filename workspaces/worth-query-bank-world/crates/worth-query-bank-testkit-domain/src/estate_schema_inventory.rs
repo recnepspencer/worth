@@ -15,6 +15,9 @@ pub fn delegation_activation_read(
         return None;
     }
     Some(match target {
+        ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => {
+            ("managed-index", parent.parts().binding.as_str())
+        }
         ApplicationOperationDecisionReadTarget::Entity { entity } => ("entity", entity),
         ApplicationOperationDecisionReadTarget::Field { field, .. } => ("field", field),
         ApplicationOperationDecisionReadTarget::Relation { relation, .. } => ("relation", relation),

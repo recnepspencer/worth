@@ -44,7 +44,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -93,8 +93,8 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         )),
     )
     .unwrap();
-    let status_ref = AccountStatus::reference();
-    let label_ref = AccountLabel::reference();
+    let status_ref = AccountStatus::at("AccountStatus");
+    let label_ref = AccountLabel::at("AccountLabel");
     let planned_status = layout
         .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap();

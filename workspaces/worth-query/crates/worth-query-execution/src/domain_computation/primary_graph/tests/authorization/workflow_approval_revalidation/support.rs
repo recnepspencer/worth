@@ -169,7 +169,7 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                 &host_custody.phase_for_application(&world.application),
                 &world,
                 "unrelated-capability-0",
-                field(&world, CapabilityStatusField::reference()),
+                field(&world, CapabilityStatusField::at("CapabilityStatusField")),
                 super::super::super::fixture::CapabilityStatusBinding::encode(
                     &super::super::super::fixture::CapabilityStatus::Revoked,
                 )
@@ -179,7 +179,7 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                 &host_custody.phase_for_application(&world.application),
                 &world,
                 "unrelated-capability-0",
-                field(&world, CapabilityStatusField::reference()),
+                field(&world, CapabilityStatusField::at("CapabilityStatusField")),
                 super::super::super::fixture::CapabilityStatusBinding::encode(
                     &super::super::super::fixture::CapabilityStatus::Active,
                 )
@@ -253,7 +253,7 @@ fn native_stamp_for_independent_grant(
     let predicate = RelationalAuthorizationPredicate::new(
         0,
         kind,
-        field(world, CapabilityStatusField::reference()),
+        field(world, CapabilityStatusField::at("CapabilityStatusField")),
         super::super::super::fixture::CapabilityStatusBinding::encode(
             &super::super::super::fixture::CapabilityStatus::Active,
         )

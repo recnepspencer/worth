@@ -22,68 +22,56 @@ where
         self.reader.runtime.runtime_instance_id()
     }
 
-    pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
+    pub fn resolve_entity<Aspect, Entity, Field, Value>(
         &mut self,
 
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         let _execution = self.reader.execution;
         self.reader.resolve_entity(field, value)
     }
 
-    pub fn resolve_optional_entity<Aspect, Entity, Field, Value, Write, Unit>(
+    pub fn resolve_optional_entity<Aspect, Entity, Field, Value>(
         &mut self,
 
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
     ) -> Result<
         Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>,
         WorthQueryEntityResolutionDenial,
     >
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         let _execution = self.reader.execution;
         self.reader.resolve_optional_entity(field, value)
     }
 
-    pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn field<Entity, Aspect, Field, Value>(
         &mut self,
 
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
     ) -> Option<Value>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         let _execution = self.reader.execution;
         self.reader.field(identity, field)
@@ -150,29 +138,21 @@ where
         self.reader.relations_to(relation, to)
     }
 
-    pub fn summarize_exclusive_incoming<
-        Relation,
-        From,
-        To,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >(
+    pub fn summarize_exclusive_incoming<Relation, From, To, Aspect, Field, Value>(
         &mut self,
 
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
-        field: ApplicationFieldRef<Schema, From, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         target: &WorthQueryInvariantEntityIdentity<Schema, To>,
     ) -> Result<super::super::WorthQueryInvariantAggregate<Value>, WorthQueryInvariantAggregateDenial>
     where
         Relation: OperationReads<Operation>,
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = From,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationSignedAggregateValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         let _execution = self.reader.execution;
         self.reader

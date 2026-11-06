@@ -20,12 +20,7 @@ fn installed_catalog_resolves_declaration_owned_contribution_closure() {
 #[test]
 fn reassigning_same_member_to_another_contribution_changes_installed_meaning() {
     let index = installed_index();
-    let reassigned = ApplicationSchemaDeclarationBuilder::<ContributionSchema>::for_schema()
-        .contributions()
-        .register::<ReassignedContribution>()
-        .unwrap()
-        .build()
-        .unwrap();
+    let reassigned = reassigned_declaration();
 
     let denial = index.bind_application_schema(reassigned).unwrap_err();
     assert_eq!(

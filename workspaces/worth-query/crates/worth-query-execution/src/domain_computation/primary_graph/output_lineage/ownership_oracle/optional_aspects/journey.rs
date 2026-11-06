@@ -87,7 +87,7 @@ fn demand_expected<Schema: BirthSchema>(
             let entity = selected
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     ANCHOR.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -99,7 +99,7 @@ fn demand_expected<Schema: BirthSchema>(
                 let principal = selected.resolve_authenticated_principal(
                     &phase, &principal_binding, &external, &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
-                let entity = selected.resolve_entity(&phase, BodyKey::reference(), ANCHOR.to_owned(), &scope,
+                let entity = selected.resolve_entity(&phase, BodyKey::at("BodyKey"), ANCHOR.to_owned(), &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
                 let access = WorthQueryApplicationQueryAccessContext::new(&principal, &entity);
                 let plan = selected
@@ -144,7 +144,7 @@ fn demand_expected<Schema: BirthSchema>(
             let mut original_output_revision = None;
             if matches!(expected, Expected::Materialized | Expected::RequiredAdmission) {
                 assert!(matches!(advanced, WorthQueryOutputDemandAdvance::Progressed), "the original born-stale publication progressed without settling current");
-                let locator = runtime.runtime.primary_provider.graph.layout.field_locator("Body", "SourceNotes", "SourceSelection").unwrap();
+                let locator = runtime.runtime.primary_provider.graph.layout.field_locator("Body", SourceContent::at("SourceContent").aspect(), "SourceSelection").unwrap();
                 demand.assert_born_stale_absence_for_test(runtime, &phase, &execution, root, locator, |receipt| {
                     original_roster = Some(court::observe_performed_receipt(runtime, &phase, receipt, WorthQueryApplicationOutputPosture::Create));
                     if matches!(expected, Expected::Materialized) {

@@ -20,7 +20,6 @@ use worth_query_host::facade::{
     declaration::application_schema::{
         ApplicationInvariantExecutionPoint, ApplicationInvariantMarkerIdentity,
         ApplicationSchemaContribution, ApplicationSchemaContributionIdentity,
-        ApplicationSchemaDeclarationBuilder,
     },
     primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 };
@@ -35,30 +34,24 @@ use crate::mutation_handlers::{
     RevokeAccountAccessHandler, SendMoneyHandler, WithdrawHandler,
 };
 
-macro_rules! bank_provider_contribution {
-    ($Provider:ident, $Contribution:ty) => {
-        #[doc(hidden)]
-        pub struct $Provider;
-
-        impl ApplicationSchemaContribution<BankSchema> for $Provider {
-            const IDENTITY: ApplicationSchemaContributionIdentity =
-                <$Contribution as ApplicationSchemaContribution<BankSchema>>::IDENTITY;
-
-            fn register_members(
-                schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
-            ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
-                <$Contribution as ApplicationSchemaContribution<BankSchema>>::register_members(
-                    schema,
-                )
-            }
-        }
-    };
+pub struct BankAccountsProvider;
+impl ApplicationSchemaContribution<BankSchema> for BankAccountsProvider {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        <BankAccounts as ApplicationSchemaContribution<BankSchema>>::IDENTITY;
+    type Members = <BankAccounts as ApplicationSchemaContribution<BankSchema>>::Members;
 }
-
-bank_provider_contribution!(BankAccountsProvider, BankAccounts);
-bank_provider_contribution!(BankPaymentsProvider, BankPayments);
-bank_provider_contribution!(BankEstateProvider, BankEstate);
-
+pub struct BankPaymentsProvider;
+impl ApplicationSchemaContribution<BankSchema> for BankPaymentsProvider {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        <BankPayments as ApplicationSchemaContribution<BankSchema>>::IDENTITY;
+    type Members = <BankPayments as ApplicationSchemaContribution<BankSchema>>::Members;
+}
+pub struct BankEstateProvider;
+impl ApplicationSchemaContribution<BankSchema> for BankEstateProvider {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        <BankEstate as ApplicationSchemaContribution<BankSchema>>::IDENTITY;
+    type Members = <BankEstate as ApplicationSchemaContribution<BankSchema>>::Members;
+}
 impl WorthQueryApplicationContribution<BankSchema> for BankAccountsProvider {
     type Configuration = std::sync::Arc<super::current_accounts::AccountIndexWork>;
 

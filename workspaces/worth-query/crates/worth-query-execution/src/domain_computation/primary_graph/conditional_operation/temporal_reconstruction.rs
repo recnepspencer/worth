@@ -2,10 +2,9 @@ use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusa
 use std::{collections::BTreeMap, num::NonZeroUsize};
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationSchema, EqualityPredicate,
-    WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
-    WorthQueryNamedClock, WorthQueryNamedClockSource, WorthQueryTemporalIntentProjector,
-    WritePosture,
+    ApplicationSchema, WorthQueryHostConditionalPredicateProvider,
+    WorthQueryInstalledTemporalConditionalOperation, WorthQueryNamedClock,
+    WorthQueryNamedClockSource, WorthQueryTemporalIntentProjector,
 };
 
 use super::installation::{
@@ -68,19 +67,13 @@ pub(super) fn reconstruct_temporal_intents<
     Principal,
     PrincipalIdentity,
     PrincipalIdentityBinding,
-    ScopeAspect,
     ScopeField,
     ScopeValue,
-    ScopeWrite,
-    ScopeUnit,
     PrincipalSource,
     QueryAuthorization,
     IntentEntity,
-    IdentityAspect,
     IdentityField,
     IdentityValue,
-    IdentityWrite,
-    IdentityUnit,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -109,24 +102,12 @@ pub(super) fn reconstruct_temporal_intents<
         PrincipalIdentity,
         PrincipalIdentityBinding,
         Scope,
-        ScopeAspect,
         ScopeField,
         ScopeValue,
-        ScopeWrite,
-        ScopeUnit,
         PrincipalSource,
         QueryAuthorization,
     >,
-    identity_field: ApplicationFieldRef<
-        Schema,
-        IntentEntity,
-        IdentityAspect,
-        IdentityField,
-        IdentityValue,
-        IdentityWrite,
-        EqualityPredicate,
-        IdentityUnit,
-    >,
+    identity_field: IdentityField,
     product: &crate::basis::WorthQueryProductBranchLease,
 ) -> Result<
     WorthQueryTemporalReconstruction<Clock, Input>,
@@ -144,12 +125,13 @@ where
         worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
             Value = PrincipalIdentity,
         >,
-    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = Scope,
+        Value = ScopeValue,
+    >,
     ScopeField::Binding:
         worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
     ScopeValue: Clone,
-    ScopeWrite: WritePosture,
-    ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
     QueryAuthorization: super::WorthQueryTemporalQueryAuthorization<
         Schema,
@@ -160,13 +142,13 @@ where
         PrincipalIdentity,
         Scope,
     >,
-    IdentityField:
-        worth_query_installation::facade::DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = IntentEntity,
+        Value = IdentityValue,
+    >,
     IdentityField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
         Value = IdentityValue,
     >,
-    IdentityWrite: WritePosture,
-    IdentityUnit: ApplicationFieldUnit,
 {
     let admission = isolate_principal_source(access)?;
     let (external, request) = admission.into_parts();
@@ -271,11 +253,8 @@ fn isolate_principal_source<
     PrincipalIdentity,
     PrincipalIdentityBinding,
     Scope,
-    ScopeAspect,
     ScopeField,
     ScopeValue,
-    ScopeWrite,
-    ScopeUnit,
     PrincipalSource,
     QueryAuthorization,
 >(
@@ -287,11 +266,8 @@ fn isolate_principal_source<
         PrincipalIdentity,
         PrincipalIdentityBinding,
         Scope,
-        ScopeAspect,
         ScopeField,
         ScopeValue,
-        ScopeWrite,
-        ScopeUnit,
         PrincipalSource,
         QueryAuthorization,
     >,
@@ -305,11 +281,12 @@ where
         worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
             Value = PrincipalIdentity,
         >,
-    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = Scope,
+        Value = ScopeValue,
+    >,
     ScopeField::Binding:
         worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
-    ScopeWrite: WritePosture,
-    ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
 {
     match access.fresh_admission() {

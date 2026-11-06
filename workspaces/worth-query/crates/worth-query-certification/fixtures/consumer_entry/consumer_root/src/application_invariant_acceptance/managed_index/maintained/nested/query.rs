@@ -32,47 +32,14 @@ worth_query_portable_type!(IdentitySlot => "nested-catalog.identity-slot.v1");
 worth_query_portable_type!(NameSlot => "nested-catalog.name-slot.v1");
 worth_query_portable_type!(EnabledSlot => "nested-catalog.enabled-slot.v1");
 
-pub fn identity<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    IdentitySlot,
-    Catalog,
-    Item,
-    ItemFacts,
-    ItemIdentity,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", ItemIdentity::reference())
+pub fn identity<Q>() -> ApplicationQueryResultFieldRef<Q, IdentitySlot, Catalog, ItemIdentity> {
+    ApplicationQueryResultFieldRef::new("identity", ItemIdentity::at("ItemIdentity"))
 }
-pub fn name<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    NameSlot,
-    Catalog,
-    Item,
-    ItemFacts,
-    ItemName,
-    String,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("name", ItemName::reference())
+pub fn name<Q>() -> ApplicationQueryResultFieldRef<Q, NameSlot, Catalog, ItemName> {
+    ApplicationQueryResultFieldRef::new("name", ItemName::at("ItemName"))
 }
-pub fn enabled<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    EnabledSlot,
-    Catalog,
-    Item,
-    ItemFacts,
-    ItemEnabled,
-    bool,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("enabled", ItemEnabled::reference())
+pub fn enabled<Q>() -> ApplicationQueryResultFieldRef<Q, EnabledSlot, Catalog, ItemEnabled> {
+    ApplicationQueryResultFieldRef::new("enabled", ItemEnabled::at("ItemEnabled"))
 }
 pub(super) fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = ResultBinding>>(
     reference: ApplicationQueryReference<Catalog, Q, Parameters, ItemRow, Directory>,
@@ -122,7 +89,7 @@ pub fn prefix_definition(
     )
     .managed_index(PrefixIndex::reference(), probe())
     .parameter(enabled_parameter())
-    .where_equal(ItemEnabled::reference(), enabled_parameter())
+    .where_equal(ItemEnabled::at("ItemEnabled"), enabled_parameter())
     .order_by(identity(), ApplicationQueryOrderingDirection::Ascending)
     .build()
     .unwrap()
@@ -140,7 +107,7 @@ impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection
                 row.entity_id().generation_value(),
             ),
             identity: row.field(identity())?,
-            name: row.field(name())?,
+            name: row.field(name())?.into(),
             enabled: row.field(enabled())?,
             children: super::shape::project(row)?,
             parents: super::shape::project_parents(row)?,
@@ -187,8 +154,8 @@ worth_query_query_binding!(pub SourceBinding for ReadSource, schema Catalog,
     query SourceQuery, parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(),
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value source_scope, limits results super::SOURCE_MAX_RESULTS
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value source_scope, limits results super::SOURCE_MAX_RESULTS
 );
 worth_query_query_binding!(pub PrefixBinding for FindPrefix, schema Catalog,
     identity "nested-catalog.prefix-binding.v1", input PrefixInputBinding,
@@ -198,6 +165,6 @@ worth_query_query_binding!(pub PrefixBinding for FindPrefix, schema Catalog,
     },
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value prefix_scope, limits results 16
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value prefix_scope, limits results 16
 );

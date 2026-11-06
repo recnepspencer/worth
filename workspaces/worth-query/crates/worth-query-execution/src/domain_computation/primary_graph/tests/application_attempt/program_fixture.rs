@@ -1,3 +1,6 @@
+#[path = "program_fixture/operation_admission.rs"]
+mod operation_admission;
+pub(in crate::domain_computation::primary_graph) use operation_admission::admitted_operation;
 use worth_query_declaration::facade::application_schema::{
     ApplicationEncodedScalarValue, StringApplicationValueBinding, TypedMutationPreconditions,
 };
@@ -22,30 +25,6 @@ type Preconditions = TypedMutationPreconditions<Schema, TouchAccountOperation, A
 pub(super) type Program =
     WorthQueryApplicationEffectProgram<Schema, TouchAccountOperation, Input, Account>;
 
-pub(in crate::domain_computation::primary_graph) fn admitted_operation(
-    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-    world: &World,
-    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
-    account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
-    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-) -> WorthQueryAdmittedApplicationOperation<Schema, TouchAccountOperation, Input, Account> {
-    let selected = world.selected_product(&(phase_custody).test_host_request());
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(TouchAccountOperation::reference())
-        .unwrap();
-    selected
-        .authorize_operation(
-            phase_custody,
-            principal,
-            account,
-            &operation,
-            Preconditions::new(),
-            request,
-        )
-        .unwrap()
-}
 pub(super) type MutationFreeProgram = WorthQueryApplicationEffectProgram<
     Schema,
     MutationFreeEmitOperation,
@@ -92,7 +71,7 @@ pub(super) fn admitted_program_required_program(
             &admission,
             |reader, projected| {
                 reader
-                    .require_decision_field(projected, AccountStatus::reference())
+                    .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                     .unwrap();
             },
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -117,7 +96,11 @@ pub(super) fn admitted_program_required_program(
         .begin_effect_program();
     let account = effects.existing_entity(account).unwrap();
     effects
-        .write_field(&account, AccountStatus::reference(), replacement.to_owned())
+        .write_field(
+            &account,
+            AccountStatus::at("AccountStatus"),
+            replacement.to_owned(),
+        )
         .unwrap();
     effects.finish().unwrap()
 }
@@ -264,13 +247,15 @@ pub(super) fn admitted_program_with_expected_status(
         ProgramOptions {
             replacement: status_and_replacement.1,
             emissions: Vec::new(),
-            preconditions: Preconditions::new().expect_fact(
-                AccountStatus::reference(),
-                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
-                    status_and_replacement.0.to_owned(),
+            preconditions: Preconditions::new()
+                .expect_fact(
+                    AccountStatus::at("AccountStatus"),
+                    ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                        status_and_replacement.0.to_owned(),
+                    )
+                    .expect("fixture account status must encode"),
                 )
-                .expect("fixture account status must encode"),
-            ),
+                .expect("record field contract"),
         },
     )
 }
@@ -356,7 +341,7 @@ fn admitted_program_from_selected(
             &admission,
             |reader, projected| {
                 reader
-                    .require_decision_field(projected, AccountStatus::reference())
+                    .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                     .unwrap();
             },
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -383,7 +368,7 @@ fn admitted_program_from_selected(
     effects
         .write_field(
             &account,
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             options.replacement.to_owned(),
         )
         .unwrap();

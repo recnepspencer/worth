@@ -3,11 +3,9 @@ use super::*;
 use crate::domain_computation::primary_graph::ContentWriteDenial as Denial;
 use worth_foundational::facade::ContentRefId;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationContentBinding, ApplicationContentFieldRef, ContentRefApplicationValueBinding,
+    ApplicationContentBinding, ApplicationContentFieldRef,
 };
-use worth_query_installation::facade::{
-    WorthQueryInstalledApplicationValueBindingCatalog as Catalog, WritableCapability,
-};
+use worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog as Catalog;
 use worth_relational::facade::content::RelationalContentAttachments;
 
 impl<S, O, I, P> WorthQueryApplicationEffectProgramBuilder<S, O, I, P> {
@@ -71,22 +69,22 @@ impl<S, O, I, P> WorthQueryApplicationEffectProgramBuilder<S, O, I, P> {
             session.content_binding::<C>(entity, aspect, field)
         })
     }
-    pub(in crate::domain_computation::primary_graph) fn initialize_content<E, A, F, W, Q, U, C>(
+    pub(in crate::domain_computation::primary_graph) fn initialize_content<E, F, C>(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bindings: &Catalog,
         target: &WorthQueryApplicationEffectEntity<S, E>,
-        content: ApplicationContentFieldRef<S, E, A, F, W, Q, U, C>,
+        content: ApplicationContentFieldRef<F, C>,
         value: &C::Value,
     ) -> Result<(), Denial>
     where
         E: OperationCreates<O>,
-        F: OperationWrites<O>
-            + DeclaredApplicationFieldValue<
-                Value = ContentRefId,
-                Binding = ContentRefApplicationValueBinding,
-            >,
-        U: ApplicationFieldUnit,
+        F: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = E,
+        >,
+
+        F::Binding:
+            worth_query_declaration::facade::application_schema::ApplicationContentReferenceBinding,
         C: ApplicationContentBinding,
     {
         let field = content.field();
@@ -102,27 +100,26 @@ impl<S, O, I, P> WorthQueryApplicationEffectProgramBuilder<S, O, I, P> {
             (field.entity(), field.aspect(), field.field()),
             value,
         )?;
-        self.initialize_field(target, field, identity)
+        self.initialize_field(target, field, <F::Binding as worth_query_declaration::facade::application_schema::ApplicationContentReferenceBinding>::from_reference(identity))
             .map_err(Denial::Effect)?;
         self.content_attachments = staged;
         Ok(())
     }
-    pub(in crate::domain_computation::primary_graph) fn write_content<E, A, F, W, Q, U, C>(
+    pub(in crate::domain_computation::primary_graph) fn write_content<E, F, C>(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bindings: &Catalog,
         target: &WorthQueryApplicationEffectEntity<S, E>,
-        content: ApplicationContentFieldRef<S, E, A, F, W, Q, U, C>,
+        content: ApplicationContentFieldRef<F, C>,
         value: &C::Value,
     ) -> Result<(), Denial>
     where
-        F: OperationWrites<O>
-            + DeclaredApplicationFieldValue<
-                Value = ContentRefId,
-                Binding = ContentRefApplicationValueBinding,
-            >,
-        W: WritableCapability,
-        U: ApplicationFieldUnit,
+        F: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = E,
+        >,
+
+        F::Binding:
+            worth_query_declaration::facade::application_schema::ApplicationContentReferenceBinding,
         C: ApplicationContentBinding,
     {
         let field = content.field();
@@ -138,7 +135,7 @@ impl<S, O, I, P> WorthQueryApplicationEffectProgramBuilder<S, O, I, P> {
             (field.entity(), field.aspect(), field.field()),
             value,
         )?;
-        self.write_field(target, field, identity)
+        self.write_field(target, field, <F::Binding as worth_query_declaration::facade::application_schema::ApplicationContentReferenceBinding>::from_reference(identity))
             .map_err(Denial::Effect)?;
         self.content_attachments = staged;
         Ok(())

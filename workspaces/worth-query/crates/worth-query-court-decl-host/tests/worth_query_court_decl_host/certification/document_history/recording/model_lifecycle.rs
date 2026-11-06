@@ -38,7 +38,7 @@ fn identity(runtime: &Runtime, branch: WorthQueryProductBranch) -> (u32, u64, u3
             let issued = selected
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     DOCUMENT_IDENTITY.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Certification,

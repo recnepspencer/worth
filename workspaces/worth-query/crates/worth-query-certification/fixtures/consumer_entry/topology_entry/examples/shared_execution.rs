@@ -69,12 +69,12 @@ pub(crate) fn run() {
     drop(first);
 
     let program = ApplicationProgramAuthoring::<ExampleSchema, ExampleProgram<false>>::begin()
-        .with_schema(&ExampleSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<ExampleSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let mut reopened = installation::in_memory_program_from_checkpoint(
         program,
-        ExampleSchema::declaration().unwrap(),
+        <ExampleSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
         (setup::configuration(),),
         build,
         limits(),

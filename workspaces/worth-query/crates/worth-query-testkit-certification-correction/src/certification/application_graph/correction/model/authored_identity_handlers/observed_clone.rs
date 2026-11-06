@@ -8,13 +8,13 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         input: &CloneNumber,
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, Binding>,
     ) -> HandlerResult<Snapshot, MissingValue> {
-        let parent = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+        let parent = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
             Ok(parent) => parent,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
         macro_rules! read {
             ($Field:ty) => {
-                match reader.field(&parent, <$Field>::reference()) {
+                match reader.field(&parent, <$Field>::at(stringify!($Field))) {
                     Ok(Some(value)) => value,
                     Ok(None) => return HandlerResult::DomainDenied(MissingValue),
                     Err(cause) => return HandlerResult::ExecutionDenied(cause),
@@ -28,7 +28,7 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         let image = Restore {
             key,
             name: input.name.clone(),
-            primary: read!(Primary),
+            primary: read!(Primary).0,
             secondary: read!(Secondary),
             read_enabled: read!(ReadEnabled),
             ceiling: read!(Ceiling),

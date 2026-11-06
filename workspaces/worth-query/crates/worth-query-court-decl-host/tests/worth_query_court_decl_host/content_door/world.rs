@@ -86,7 +86,7 @@ pub fn install_with_calls(
                     Record::reference(),
                     WorthQueryApplicationEntityKey::new("record").unwrap(),
                 )
-                .field(Key::reference(), "record".to_owned()),
+                .field(Key::at("Key"), "record".to_owned()),
             )?;
             Ok(())
         },

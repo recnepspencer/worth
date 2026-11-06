@@ -73,7 +73,7 @@ pub fn install_cells(cells: &[(u64, u64, u64)], retained_steps: u64) -> Host {
                         Feature::reference(),
                         WorthQueryApplicationEntityKey::new(format!("feature-{feature}")).unwrap(),
                     )
-                    .field(FeatureKey::reference(), feature),
+                    .field(FeatureKey::at("FeatureKey"), feature),
                 )?;
             }
             for &(cell, feature, value) in cells {
@@ -83,8 +83,8 @@ pub fn install_cells(cells: &[(u64, u64, u64)], retained_steps: u64) -> Host {
                         Cell::reference(),
                         WorthQueryApplicationEntityKey::new(format!("cell-{cell}")).unwrap(),
                     )
-                    .field(CellKey::reference(), cell)
-                    .field(CellValue::reference(), value),
+                    .field(CellKey::at("CellKey"), cell)
+                    .field(CellValue::at("CellValue"), value),
                 )?;
                 graph.bind_relation(WorthQueryApplicationRelationSeed::new(
                     OwnsCell::reference(),

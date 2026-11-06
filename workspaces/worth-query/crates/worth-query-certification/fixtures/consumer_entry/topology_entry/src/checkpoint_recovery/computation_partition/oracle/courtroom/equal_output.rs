@@ -16,8 +16,42 @@ mod installation;
 mod publication;
 mod readiness;
 mod source;
-worth_query_decl::facade::worth_query_application! { Schema { owner: "worth.query.certification.equal-output", version: (1, 0), contributions: [installation::Contribution], } }
-impl TopologySchemaBinding for Schema {}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct Schema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for Schema {
+    const NAME: &'static str = "Schema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (installation::Contribution,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for Schema {
+    const OWNER: &'static str = "worth.query.certification.equal-output";
+    const NAME: &'static str = "Schema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for Schema {
+    type Contributions = (installation::Contribution,);
+}
+
+impl TopologySchemaBinding for Schema {
+    type PrincipalFragment = crate::PrincipalRecords;
+}
 
 const OUTPUT: &str = "anchor-a";
 const DEPENDENT: &str = "anchor-isolated";

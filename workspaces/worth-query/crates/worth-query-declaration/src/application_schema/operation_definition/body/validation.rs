@@ -141,6 +141,7 @@ pub(crate) fn validate_operation_bodies(
                     ..
                 } = member
                     && entity == creation.entity()
+                    && field != crate::application_schema::fragment::record_presence::COLUMN
                     && (members.iter().any(|member| matches!(member,
                         ApplicationSchemaMember::Aspect { entity: owner, aspect: name, absence: worth_foundational::facade::AbsenceLaw::Required, .. }
                         if owner == entity && name == aspect))

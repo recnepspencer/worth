@@ -53,7 +53,7 @@ fn execute_source_bound(
             let root = selected
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     installation::ANCHOR.to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

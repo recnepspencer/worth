@@ -67,6 +67,7 @@ pub(super) fn lower_relation_layouts(
 pub(super) fn lower_fields(
     schema: &ErasedApplicationSchemaDeclaration,
     entity_kinds: &BTreeMap<String, KindId>,
+    value_bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
 ) -> Result<
     BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
     WorthQueryPrimaryGraphInstallationDenial,
@@ -89,6 +90,13 @@ pub(super) fn lower_fields(
             Ok((
                 (entity.clone(), aspect.clone(), field.clone()),
                 WorthQueryPrimaryFieldLayout {
+                    record_presence: value_bindings
+                        .fragments()
+                        .presence_field(entity, aspect)
+                        .map(|presence| {
+                            planned_field_locator(aspect, presence.recipe().locus().field())
+                        })
+                        .transpose()?,
                     entity_kind: required_kind(entity_kinds, entity)?,
                     locator: planned_field_locator(aspect, field)?,
                     equality_queryable: *equality_queryable,

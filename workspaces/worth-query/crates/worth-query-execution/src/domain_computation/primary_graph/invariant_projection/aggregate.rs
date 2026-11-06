@@ -12,8 +12,7 @@ mod validated_plan;
 mod tests;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef, ApplicationSchema,
-    ApplicationSignedAggregateValueBinding, DeclaredApplicationFieldValue, WritePosture,
+    ApplicationRelationRef, ApplicationSchema, ApplicationSignedAggregateValueBinding,
 };
 
 use super::{WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantEntityIdentity};
@@ -93,28 +92,20 @@ impl<Schema> WorthQueryApplicationInvariantProjectionReader<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn summarize_exclusive_incoming<
-        Relation,
-        From,
-        To,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >(
+    pub fn summarize_exclusive_incoming<Relation, From, To, Aspect, Field, Value>(
         &mut self,
 
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
-        field: ApplicationFieldRef<Schema, From, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         target: &WorthQueryInvariantEntityIdentity<Schema, To>,
     ) -> Result<WorthQueryInvariantAggregate<Value>, WorthQueryInvariantAggregateDenial>
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = From,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationSignedAggregateValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         let execution = self.execution;
         let plan = validated_plan::ValidatedAggregatePlan::validate(self, relation, field, target)?;

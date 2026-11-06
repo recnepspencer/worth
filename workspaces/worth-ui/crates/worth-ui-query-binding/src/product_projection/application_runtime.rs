@@ -36,8 +36,9 @@ pub(super) fn install_status_application(
 ) -> Result<WorthUiStatusApplication, WorthUiStatusOwnerError> {
     let program = validated_status_program()
         .map_err(|error| WorthUiStatusOwnerError::Installation(format!("{error:?}")))?;
-    let declaration = WorthUiApplicationSchema::declaration()
-        .map_err(|error| WorthUiStatusOwnerError::Installation(format!("{error:?}")))?;
+    let declaration =
+        worth_query_decl::facade::application_schema::fragment::declare(WorthUiApplicationSchema)
+            .map_err(|error| WorthUiStatusOwnerError::Installation(format!("{error:?}")))?;
     in_memory_program(
         program,
         declaration,
@@ -73,11 +74,14 @@ pub(super) fn install_status_application(
             graph.bind_entity(
                 WorthQueryApplicationEntitySeed::new(WorthUiRecord::reference(), record)
                     .field(
-                        IdentityIdField::reference(),
+                        IdentityIdField::at("IdentityIdField"),
                         "platform.pulse.status".to_owned(),
                     )
-                    .field(QueryTextStatusField::reference(), "PENDING".to_owned())
-                    .field(QueryRevisionValueField::reference(), 0),
+                    .field(
+                        QueryTextStatusField::at("QueryTextStatusField"),
+                        "PENDING".to_owned(),
+                    )
+                    .field(QueryRevisionValueField::at("QueryRevisionValueField"), 0),
             )?;
             Ok(())
         },
@@ -118,7 +122,7 @@ fn resource_limits() -> WorthQueryInMemoryApplicationLimits {
                 owner_created_component_custody_records: 256,
             },
         },
-        WorthQueryProductWorldClock::start(),
+        WorthQueryProductWorldClock::start(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         WorthQueryInvalidationResources::new(),
         crate::query_runtime_resources::UI_EXECUTION_POLICY,
     )

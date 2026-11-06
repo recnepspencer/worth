@@ -50,7 +50,7 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
                         let value = reader
                             .decision_field_with_predecode_admission(
                                 root,
-                                AccountStatus::reference(),
+                                AccountStatus::at("AccountStatus"),
                                 |_, _| Ok::<_, ()>(()),
                                 &|| Ok(()),
                             )
@@ -87,7 +87,11 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
         .expect("the fixture read owns its installed host call");
     let target = effects.existing_entity(&account).unwrap();
     effects
-        .write_field(&target, AccountStatus::reference(), "loser".to_owned())
+        .write_field(
+            &target,
+            AccountStatus::at("AccountStatus"),
+            "loser".to_owned(),
+        )
         .unwrap();
     let loser = effects.finish().unwrap();
     let winner = world
@@ -199,7 +203,7 @@ fn optional_program(
                 let value = reader
                     .decision_field_with_predecode_admission(
                         root,
-                        AccountNote::reference(),
+                        AccountNote::at("AccountNote"),
                         |_, _| {
                             called.set(true);
                             Ok::<_, ()>(())
@@ -232,7 +236,11 @@ fn optional_program(
         .begin_effect_program();
     let target = effects.existing_entity(&account).unwrap();
     effects
-        .write_optional_field(&target, AccountNote::reference(), Some(note.to_owned()))
+        .write_optional_field(
+            &target,
+            AccountNote::at("AccountNote"),
+            Some(note.to_owned()),
+        )
         .unwrap();
     effects.finish().unwrap()
 }

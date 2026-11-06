@@ -39,10 +39,10 @@ pub(crate) fn resolve_rule<Schema: TopologyModelBinding>(
         return Err("relation binding accepted forged endpoint names".to_owned());
     }
     let x = resolver
-        .typed_field(PositionX::reference::<Schema>())
+        .typed_field(PositionX::at("PositionX"))
         .ok_or("missing position x")?;
     let y = resolver
-        .typed_field(PositionY::reference::<Schema>())
+        .typed_field(PositionY::at("PositionY"))
         .ok_or("missing position y")?;
     let successor = resolver
         .typed_relation(declared_successor)

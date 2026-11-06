@@ -135,7 +135,7 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
                             reader
                                 .require_decision_field(
                                     projected,
-                                    super::super::AccountStatus::reference(),
+                                    super::super::AccountStatus::at("AccountStatus"),
                                 )
                                 .unwrap();
                         },

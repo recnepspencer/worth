@@ -22,7 +22,7 @@ fn prepared_decision_selection_preserves_scalar_results_and_rejects_foreign_proj
         .with_host_advancement(|phase| {
             projection::with_reader(&phase, &world, &request, |reader| {
                 let denied = reader
-                    .prepare_entity_selection(AccountLabel::reference())
+                    .prepare_entity_selection(AccountLabel::at("AccountLabel"))
                     .err()
                     .unwrap();
                 assert_eq!(
@@ -33,14 +33,14 @@ fn prepared_decision_selection_preserves_scalar_results_and_rejects_foreign_proj
                     WorthQueryInvariantDecisionPlanDenialKind::UndeclaredDecisionTarget
                 );
                 let prepared = reader
-                    .prepare_entity_selection(AccountStatus::reference())
+                    .prepare_entity_selection(AccountStatus::at("AccountStatus"))
                     .unwrap();
                 for value in ["open", "absent"] {
                     let selected = reader
                         .select_entities_prepared(&prepared, value.to_owned(), 2)
                         .unwrap();
                     let scalar = reader
-                        .select_entities(AccountStatus::reference(), value.to_owned(), 2)
+                        .select_entities(AccountStatus::at("AccountStatus"), value.to_owned(), 2)
                         .unwrap();
                     assert_eq!(
                         selected
@@ -92,7 +92,7 @@ fn prepared_decision_selection_observes_cancellation_after_preparation() {
         .with_host_advancement(|phase| {
             projection::try_with_reader(&phase, &world, &request, |reader| {
                 let prepared = reader
-                    .prepare_entity_selection(AccountStatus::reference())
+                    .prepare_entity_selection(AccountStatus::at("AccountStatus"))
                     .unwrap();
                 assert_eq!(
                     reader

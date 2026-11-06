@@ -63,25 +63,7 @@ pub struct Configuration {
 impl ApplicationSchemaContribution<Schema> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("succession.contribution");
-    fn register_members(
-        schema: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        schema::declare(schema)
-    }
-    fn visit_correction<V: ApplicationCorrectionVisitor<Schema>>(
-        source: std::any::TypeId,
-        visitor: V,
-    ) -> Result<V::Output, V> {
-        if source == std::any::TypeId::of::<source_control::Binding>() {
-            Ok(dispatch_application_correction::<
-                Schema,
-                correction::Resize,
-                V,
-            >(visitor))
-        } else {
-            Err(visitor)
-        }
-    }
+    type Members = (schema::DispatchModel, Contracts, correction::Resize);
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = Configuration;
@@ -121,5 +103,15 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
             configuration.fault,
             configuration.child_width,
         )
+    }
+}
+
+pub struct Contracts;
+impl worth_query_decl::facade::application_schema::fragment::Registration<Schema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(schema::declare(schema))
     }
 }

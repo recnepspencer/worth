@@ -719,16 +719,17 @@ identities or assume a particular edge wins when several close cycles.
 
 ## Relation-owned payload at creation
 
-Declare a real relation aspect with
-`ApplicationRelationAspectDefinition::new(relation, aspect, absence)` and typed
-`ApplicationRelationFieldRef` fields (or `worth_query_relation_field!`). Register
-the definition with `.relation_aspect(..)`. Scalar bindings keep their real
-relation owner through native contracts, canonical meaning and installation.
-The existing entity field declaration remains entity-owned.
+List `WithAspects<Edge, (Option<Payload>,)>` in the source entity's
+`Relations` tuple. `Payload: Aspect` supplies its row, and the fragment's
+binding set implements `Record<Row>`. Select initialized fields with
+`RelationFieldSelection` from that same record. The existing flat scalar
+machinery retains their actual relation owner through native contracts,
+canonical meaning and installation.
 
 An operation that creates the relation declares both `.operation_link(..)` and
-`.operation_initialize_relation_field(operation, field)`, with `OperationLinks`
-and `OperationWrites` on its typed markers. In its handler, use
+`.operation_initialize_relation_field(operation, field)`. `OperationLinks`
+belongs to the relation marker; installed initialization contracts check each
+record-derived field's type, binding and write posture. In its handler, use
 `writer.link_for_initialization(..)` and then
 `writer.initialize_relation_field(&created, field, encoded_value)`.
 `ApplicationEncodedScalarValue` is explicit caller preparation. The initializer

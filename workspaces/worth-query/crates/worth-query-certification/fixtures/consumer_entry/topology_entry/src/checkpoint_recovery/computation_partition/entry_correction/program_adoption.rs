@@ -28,7 +28,7 @@ pub(in super::super) struct ProgramAdoptionInput {
 }
 worth_query_structured_value_binding!(pub(in super::super) ProgramAdoptionInputBinding for ProgramAdoptionInput { identity: "worth.query.certification.oracle-adoption-input.v1" });
 worth_query_operation!(pub(in super::super) ProgramAdoptionOperation for Schema: TopologySchemaBinding, input ProgramAdoptionInputBinding);
-worth_query_operation_reads!(ProgramAdoptionOperation => [BodyKey]);
+
 pub(in super::super) struct ProgramAdoptionBinding<Schema>(PhantomData<fn() -> Schema>);
 impl<Schema: TopologySchemaBinding> ApplicationProgramAdoptionBinding<Schema>
     for ProgramAdoptionBinding<Schema>
@@ -76,12 +76,13 @@ impl<Schema: TopologySchemaBinding>
             || ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(2).unwrap();
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                BodyKey::reference(),
+                BodyKey::at("BodyKey"),
                 ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                     super::super::oracle::installation::SCOPE.to_owned(),
                 )
                 .unwrap(),
-            ),
+            )
+            .unwrap(),
             scalar(),
             scalar(),
             ApplicationCapabilityRequestContext::new(CorrectionContext::<Schema>::reference()),
@@ -100,7 +101,10 @@ pub(in super::super) fn declare<Schema: TopologySchemaBinding>(
                 .finish(),
         )
         .operation_projection_work_budget(ProgramAdoptionOperation::reference(), 512)
-        .operation_read_field(ProgramAdoptionOperation::reference(), BodyKey::reference())
+        .operation_read_field(
+            ProgramAdoptionOperation::reference(),
+            BodyKey::at("BodyKey"),
+        )
         .capability(super::capability::contract::grant_contract(
             ProgramAdoptionCapability::<Schema>::reference(),
             ProgramAdoptionOperation::reference(),

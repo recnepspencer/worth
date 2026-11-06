@@ -15,16 +15,6 @@ pub(super) struct Resource;
 pub(super) struct Principal;
 pub(super) struct Facts;
 pub(super) struct ResourceFacts;
-pub(super) struct Action;
-pub(super) struct Purpose;
-pub(super) struct Field;
-pub(super) struct Amount;
-pub(super) struct Workflow;
-pub(super) struct ResourceWorkflow;
-pub(super) struct Status;
-pub(super) struct ValidFrom;
-pub(super) struct ValidThrough;
-pub(super) struct DelegationLimit;
 pub(super) struct ResourceRelation;
 pub(super) struct ScopedRelation;
 pub(super) struct PrincipalResource;
@@ -38,9 +28,6 @@ pub(super) struct Provenance;
 pub(super) struct OtherProvenance;
 pub(super) struct ChangedProvenance;
 pub(super) struct ResourceSlot;
-pub(super) struct ChangedWorkflow;
-pub(super) struct ChangedResourceWorkflow;
-pub(super) struct ChangedValidFrom;
 
 worth_query_declaration::worth_query_portable_type!(
     Capability => "worth.query.installation-test.capability.v1"
@@ -118,3 +105,118 @@ impl ApplicationOperationMarkerIdentity<Schema> for Operation {
     type InputBinding = OperationInputBinding;
     const IDENTIFIER: &'static str = "Operation";
 }
+
+pub(super) struct PrincipalFacts;
+pub(super) struct MapsToPrincipal;
+pub(super) type Action =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Grant,
+        Facts,
+        u64,
+    >;
+pub(super) type Purpose =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Grant,
+        Facts,
+        u64,
+    >;
+pub(super) type Field =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Grant,
+        Facts,
+        u64,
+    >;
+pub(super) type Amount =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Grant,
+        Facts,
+        u64,
+    >;
+pub(super) type Workflow =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Grant,
+        Facts,
+        u64,
+    >;
+pub(super) type ResourceWorkflow =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Resource,
+        ResourceFacts,
+        u64,
+    >;
+pub(super) type Status =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Grant,
+        Facts,
+        u64,
+    >;
+pub(super) type ValidFrom =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Grant,
+        Facts,
+        u64,
+    >;
+pub(super) type ValidThrough =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Grant,
+        Facts,
+        u64,
+    >;
+pub(super) type DelegationLimit =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Grant,
+        Facts,
+        u64,
+    >;
+pub(super) type ChangedWorkflow =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Grant,
+        Facts,
+        u64,
+    >;
+pub(super) type ChangedResourceWorkflow =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Resource,
+        ResourceFacts,
+        u64,
+    >;
+pub(super) type ChangedValidFrom =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Grant,
+        Facts,
+        u64,
+    >;
+pub(super) type MappingIdentity =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Grant,
+        Facts,
+        worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity,
+    >;
+pub(super) type MappingStatus =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Grant,
+        Facts,
+        worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus,
+    >;
+pub(super) type PrincipalIdentity =
+    worth_query_declaration::facade::application_schema::fragment::FieldSelection<
+        super::field_references::CapabilityFields,
+        Principal,
+        PrincipalFacts,
+        u64,
+    >;

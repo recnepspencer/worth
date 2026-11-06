@@ -123,7 +123,7 @@ fn bind_action_records(bootstrap: &mut WorthQueryPrimaryGraphBootstrap<IdentityE
                     WorthQueryApplicationEntityKey::new(record).unwrap(),
                 )
                 .field(
-                    CapabilityActionRecordIdentity::reference(),
+                    CapabilityActionRecordIdentity::at("CapabilityActionRecordIdentity"),
                     record.to_owned(),
                 ),
             )

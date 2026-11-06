@@ -88,7 +88,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Wide> for WideOwner 
     ) -> Result<u64, WorthQueryComputationInputDenial<u32>> {
         let slot = partition.key().0;
         if slot == 1 {
-            reader.field(account, AccountStatus::reference())?;
+            reader.field(account, AccountStatus::at("AccountStatus"))?;
         }
         self.gathered.lock().unwrap().push(slot);
         Ok(partition.items().map(|(_, item)| item.0).sum())

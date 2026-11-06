@@ -47,25 +47,27 @@ pub fn declare(
             ApplicationQueryInfluenceContract::permit([facet.influence()]),
         );
     }
+    let public =
+        ApplicationHistoryQueryDefinition::<DocumentRetentionSchema, PublicChanges>::entity(
+            Document::reference(),
+            ApplicationQueryDisclosureContract::public(),
+        )
+        .aspect(DocumentFacts::reference(), &schema)
+        .unwrap()
+        .finish()
+        .unwrap();
+    let governed =
+        ApplicationHistoryQueryDefinition::<DocumentRetentionSchema, GovernedChanges>::entity(
+            Document::reference(),
+            disclosure,
+        )
+        .aspect(DocumentFacts::reference(), &schema)
+        .unwrap()
+        .finish()
+        .unwrap();
     reaffirm::declare(capability::declare(schema))
         .application_query(query::definition())
         .application_query_binding::<query::Binding>()
-        .application_history_query(
-            ApplicationHistoryQueryDefinition::<DocumentRetentionSchema, PublicChanges>::entity(
-                Document::reference(),
-                ApplicationQueryDisclosureContract::public(),
-            )
-            .aspect(DocumentFacts::reference())
-            .finish()
-            .unwrap(),
-        )
-        .application_history_query(
-            ApplicationHistoryQueryDefinition::<DocumentRetentionSchema, GovernedChanges>::entity(
-                Document::reference(),
-                disclosure,
-            )
-            .aspect(DocumentFacts::reference())
-            .finish()
-            .unwrap(),
-        )
+        .application_history_query(public)
+        .application_history_query(governed)
 }

@@ -24,19 +24,10 @@ pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>
                         Body::reference::<CheckpointSchema>(),
                         entity_key(key),
                     )
-                    .field(BodyKey::reference::<CheckpointSchema>(), key.clone())
-                    .field(
-                        Length::reference::<CheckpointSchema>(),
-                        length(offset + y + 1),
-                    )
-                    .field(
-                        PositionX::reference::<CheckpointSchema>(),
-                        length(offset + x),
-                    )
-                    .field(
-                        PositionY::reference::<CheckpointSchema>(),
-                        length(offset + y),
-                    ),
+                    .field(BodyKey::at("BodyKey"), key.clone())
+                    .field(Length::at("Length"), length(offset + y + 1))
+                    .field(PositionX::at("PositionX"), length(offset + x))
+                    .field(PositionY::at("PositionY"), length(offset + y)),
                 )
                 .unwrap();
         }

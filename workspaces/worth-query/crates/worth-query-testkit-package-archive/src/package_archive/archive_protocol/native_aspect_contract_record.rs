@@ -1,3 +1,10 @@
+use worth_query_declaration::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[path = "native_aspect_contract_record/records.rs"]
+mod storage_model;
+pub use storage_model::*;
 pub use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
     StringApplicationValueBinding, U64ApplicationValueBinding,
@@ -19,23 +26,9 @@ pub const VERSION_THIRTEEN_NATIVE_ASPECT_HEX: &str = "000d000b000000020000009100
 pub const VERSION_FOURTEEN_NATIVE_ASPECT_HEX: &str = "000e000b00000002000000910000000c4e6174697665536368656d610000000c4e6174697665456e746974790000000750726f66696c650000000750726f66696c6500000000916211000000000000000003000100020002000100020000000200000003416765000a00010001000200000003546167001000010001000200000002000000034167650000000354616700010000000750726f66696c65";
 pub const VERSION_SIXTEEN_NATIVE_ASPECT_HEX: &str = "0010000b00000002000000910000000c4e6174697665536368656d610000000c4e6174697665456e746974790000000750726f66696c650000000750726f66696c6500000000916211000000000000000003000100020002000100020000000200000003416765000a00010001000200000003546167001000010001000200000002000000034167650000000354616700010000000750726f66696c65";
 pub const VERSION_SEVENTEEN_NATIVE_ASPECT_HEX: &str = "0011000b00000002000000910000000c4e6174697665536368656d610000000c4e6174697665456e746974790000000750726f66696c650000000750726f66696c6500000000916211000000000000000003000100020002000100020000000200000003416765000a00010001000200000003546167001000010001000200000002000000034167650000000354616700010000000750726f66696c65";
-pub const VERSION_EIGHTEEN_NATIVE_ASPECT_HEX: &str = "0012000b00000002000000910000000c4e6174697665536368656d610000000c4e6174697665456e746974790000000750726f66696c650000000750726f66696c6500000000916211000000000000000003000100020002000100020000000200000003416765000a00010001000200000003546167001000010001000200000002000000034167650000000354616700010000000750726f66696c65";
+pub const VERSION_EIGHTEEN_NATIVE_ASPECT_HEX: &str = "0012000b00000002000000af0000000c4e6174697665536368656d610000000c4e6174697665456e746974790000001161613463633463333838343638383932340000001161613463633463333838343638383932340fc38577fb0ddb81615d51cfb2dcf10d000100020002000100020000000200000003416765000a0001000100020000000354616700100001000100020000000200000003416765000000035461670001000000116161346363346333383834363838393234";
 
 pub struct NativeSchema;
-worth_query_declaration::worth_query_entity!(NativeEntity for NativeSchema);
-worth_query_declaration::worth_query_aspect!(
-    Profile for NativeSchema, NativeEntity;
-    identity = AspectIdentity(0x9162_1100),
-    revision = AspectContractRevision(3),
-);
-worth_query_declaration::worth_query_field!(
-    Age for NativeSchema, NativeEntity, Profile:
-    u64 => U64ApplicationValueBinding, read_only, equality
-);
-worth_query_declaration::worth_query_field!(
-    Tag for NativeSchema, NativeEntity, Profile:
-    String => StringApplicationValueBinding, read_only, no_equality
-);
 
 impl ApplicationSchema for NativeSchema {
     const OWNER: &'static str = "archive.native";
@@ -43,16 +36,9 @@ impl ApplicationSchema for NativeSchema {
     const MAJOR: u32 = 1;
     const MINOR: u32 = 0;
 
-    fn declaration() -> Result<
-        ApplicationSchemaDeclaration<Self>,
-        worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
-    > {
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(NativeEntity::reference())
-            .aspect(NativeEntity::reference(), Profile::reference())
-            .field(NativeEntity::reference(), Age::reference())
-            .field(NativeEntity::reference(), Tag::reference())
-            .build()
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
     }
 }
 
@@ -109,4 +95,10 @@ pub fn assert_decode_kind(bytes: &[u8], expected: WorthQueryPackageArchiveDenial
         decoder.work(),
         WorthQueryPackageArchiveDecodeWork::default()
     );
+}
+
+impl fragment::Fragment for NativeSchema {
+    const NAME: &'static str = "NativeSchema";
+    type Bindings = NoBindings;
+    type Members = (NativeModel,);
 }

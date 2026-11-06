@@ -39,10 +39,9 @@ impl ApplicationStructuredValueBinding for AliasInput {
 }
 worth_query_operation!(pub Copy for Schema, input CopyInput);
 worth_query_operation!(pub Alias for Schema, input AliasInput);
-worth_query_operation_reads!(Copy=>[Row,Parent,ParentRevision,ParentRows,RowValue,RowIdentity]);
-worth_query_operation_reads!(Alias=>[Row,Parent,ParentRevision,ParentRows,RowValue,RowIdentity]);
-worth_query_operation_writes!(Copy=>[ParentRevision]);
-worth_query_operation_writes!(Alias=>[ParentRevision]);
+worth_query_operation_reads!(Copy => [Row, Parent, ParentRows]);
+worth_query_operation_reads!(Alias => [Row, Parent, ParentRows]);
+
 pub fn copy_row(input: &CopyRow) -> String {
     input.row.clone()
 }
@@ -55,7 +54,7 @@ idempotency u64, identity "worth.query.path-value.copy-request.v1",
 decision WorthQueryOperationBodyDecision<Schema, Row>, denial DenialBinding,
 handler identity "worth.query.path-value.copy-body.v1", program required, outputs NoApplicationMutationOutputs,
 principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-scope Row, RowFacts, RowIdentity, String, ReadOnly, NoApplicationUnit, field RowIdentity::reference(), value copy_row,
+scope RowIdentity, field RowIdentity::at("RowIdentity"), value copy_row,
 );
 worth_query_mutation_binding!(pub AliasBinding for AliasRow, schema Schema,
 identity "worth.query.path-value.alias-binding.v1", input AliasInput, operation Alias, result ResultBinding,
@@ -63,19 +62,16 @@ idempotency u64, identity "worth.query.path-value.alias-request.v1",
 decision WorthQueryOperationBodyDecision<Schema, Row>, denial DenialBinding,
 handler identity "worth.query.path-value.alias-body.v1", program required, outputs NoApplicationMutationOutputs,
 principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-scope Row, RowFacts, RowIdentity, String, ReadOnly, NoApplicationUnit, field RowIdentity::reference(), value alias_row,
+scope RowIdentity, field RowIdentity::at("RowIdentity"), value alias_row,
 );
 pub fn value<O, I>(
     operation: ApplicationOperationRef<Schema, O, I>,
-) -> ApplicationOperationBodyValue<Schema, O, U64ApplicationValueBinding>
-where
-    RowValue: OperationReads<O>,
-{
+) -> ApplicationOperationBodyValue<Schema, O, U64ApplicationValueBinding> {
     ApplicationOperationBodyValue::admit(
         "row-value",
         operation
             .requirement_operands()
-            .field("value", RowValue::reference())
+            .field("value", RowValue::at("RowValue"))
             .unwrap(),
         worth_foundational::expression_api::expressions()
             .reading_within(ApplicationOperationBodyExpression::PROFILE)
@@ -93,7 +89,7 @@ pub fn declare(
         .body()
         .assign_value_at_path(
             ApplicationQueryRootPath::from(Row::reference()).reverse(ParentRows::reference()),
-            ParentRevision::reference(),
+            ParentRevision::at("ParentRevision"),
             &copied,
         )
         .unwrap()
@@ -105,7 +101,7 @@ pub fn declare(
         .body()
         .assign_value_at_path(
             ApplicationQueryRootPath::from(Row::reference()).reverse(ParentRows::reference()),
-            ParentRevision::reference(),
+            ParentRevision::at("ParentRevision"),
             &copied,
         )
         .unwrap()
@@ -114,7 +110,7 @@ pub fn declare(
                 .reverse(ParentRows::reference())
                 .forward(ParentRows::reference())
                 .reverse(ParentRows::reference()),
-            ParentRevision::reference(),
+            ParentRevision::at("ParentRevision"),
             &copied,
         )
         .unwrap()
@@ -138,8 +134,8 @@ pub fn declare(
                 .with_body(alias_body)
                 .unwrap(),
         )
-        .operation_read_field(copy, RowIdentity::reference())
-        .operation_read_field(alias, RowIdentity::reference())
+        .operation_read_field(copy, RowIdentity::at("RowIdentity"))
+        .operation_read_field(alias, RowIdentity::at("RowIdentity"))
         .operation_projection_work_budget(copy, 256)
         .operation_projection_work_budget(alias, 256)
         .application_mutation_binding::<CopyBinding>()

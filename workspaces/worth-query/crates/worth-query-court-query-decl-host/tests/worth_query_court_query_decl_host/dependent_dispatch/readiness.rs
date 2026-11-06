@@ -1,15 +1,16 @@
 //! Every fixture producer has genuine installed field-based readiness.
+use super::schema::Facts;
 use worth_query_decl::facade::{
     authoring::*, binding::QueryBindingDescriptor, canonicalization::*,
 };
 pub fn canonical_query() -> CanonicalQueryBundle {
     let query = DetailQueryBuilder::new(RootEntityKey::new("Node").unwrap())
-        .project(AspectFieldSelector::new("Facts", "Value").unwrap())
+        .project(AspectFieldSelector::new(Facts::reference().name(), "Value").unwrap())
         .build()
         .unwrap()
         .into_raw();
     let shape = DetailResultShapeBuilder::new()
-        .field(AuthoredResultShapeField::new("Facts", "Value", "value").unwrap())
+        .field(AuthoredResultShapeField::new(Facts::reference().name(), "Value", "value").unwrap())
         .build()
         .unwrap()
         .into_raw();
@@ -30,12 +31,12 @@ macro_rules! readiness {
         pub struct Readiness;
         type Contract = WorthQueryOutputReadinessContract<ReadyDomain, ReadyOperation, ReadyFamily>;
         fn readiness_contract(declaration: &ErasedApplicationSchemaDeclaration) -> Result<Contract, WorthQueryOutputReadinessContractDenial> {
-            WorthQueryOutputReadinessContractBuilder::for_field(declaration, $field::reference(),
+            WorthQueryOutputReadinessContractBuilder::for_field(declaration, $field::at(stringify!($field)),
                 domain::WorthQueryDomainOperationIdentity::new($identity, 1), $identity,
                 $query(),
                 domain::WorthQueryOperationProjectionRole::new($role).unwrap(),
                 domain::WorthQueryExecutionStrategyName::new($identity).unwrap(), $identity)?
-                .field_dependency(declaration, $field::reference(), WorthQueryReadinessFieldUse::DeliveryAndEligibility)?.build_typed()
+                .field_dependency(declaration, $field::at(stringify!($field)), WorthQueryReadinessFieldUse::DeliveryAndEligibility)?.build_typed()
         }
         fn conditional_binding(contract: &Contract) -> domain::WorthQueryApplicationConditionalOperationBinding<Schema, Operation, Input, ReadyDomain, ReadyOperation, ReadyFamily> {
             domain::WorthQueryApplicationConditionalOperationBinding::declare(Operation::reference(), contract.definition().reference())
@@ -54,7 +55,7 @@ macro_rules! readiness {
                 let binding = conditional_binding(&contract);
                 let operation = installation.installed_schema().installed_operation(Operation::reference()).unwrap();
                 let node = installation.installed_packages().bind_conditional_application_operation(operation, &binding).unwrap().bind_node(ReadyNode::reference()).unwrap();
-                let ordinal = contract.delivery_ordinal(installation.installed_schema(), node.declaration(), $field::reference()).unwrap();
+                let ordinal = contract.delivery_ordinal(installation.installed_schema(), node.declaration(), $field::at(stringify!($field))).unwrap();
                 installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)
             }
         }

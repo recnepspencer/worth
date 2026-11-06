@@ -37,10 +37,10 @@ pub(super) fn change_spare<const O: bool>(
                             .require_decision_entity(root, Node::reference())
                             .unwrap();
                         reader
-                            .require_decision_field(root, NodeKey::reference())
+                            .require_decision_field(root, NodeKey::at("NodeKey"))
                             .unwrap();
                         let spare = reader
-                            .resolve_optional_entity(SpareKey::reference(), 19u64)
+                            .resolve_optional_entity(SpareKey::at("SpareKey"), 19u64)
                             .unwrap();
                         if create {
                             assert!(spare.is_none());
@@ -50,7 +50,7 @@ pub(super) fn change_spare<const O: bool>(
                                 .require_decision_entity(&spare, Spare::reference())
                                 .unwrap();
                             reader
-                                .require_decision_field(&spare, SpareKey::reference())
+                                .require_decision_field(&spare, SpareKey::at("SpareKey"))
                                 .unwrap();
                         }
                     },
@@ -81,7 +81,7 @@ pub(super) fn change_spare<const O: bool>(
                     selected
                         .resolve_entity(
                             &phase,
-                            SpareKey::reference(),
+                            SpareKey::at("SpareKey"),
                             19u64,
                             request,
                             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -103,7 +103,7 @@ pub(super) fn change_spare<const O: bool>(
                     )
                     .unwrap();
                 effects
-                    .initialize_field(&spare, SpareKey::reference(), 19u64)
+                    .initialize_field(&spare, SpareKey::at("SpareKey"), 19u64)
                     .unwrap();
             } else {
                 let spare = effects.existing_entity(&spare.unwrap()).unwrap();

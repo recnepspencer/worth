@@ -57,3 +57,11 @@ impl<S, O, I, E> ApplicationOperationBodyCreationBuilder<S, O, I, E> {
         Ok(self)
     }
 }
+
+pub(super) fn resolve<Field: crate::application_schema::fragment::RecordSelection>(
+    field: Field,
+) -> Result<RecordField<Field::Entity, Field::Aspect, Field::Value>, Denial> {
+    field.checked().map_err(|_| Denial::InvalidRecordField {
+        field: field.expected_recipe().locus().clone(),
+    })
+}

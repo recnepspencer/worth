@@ -44,7 +44,9 @@ fn parent_reactivation_does_not_revive_delegated_approval() {
                 "capability-parent",
                 field(
                     &world,
-                    super::super::super::fixture::capability::CapabilityStatusField::reference(),
+                    super::super::super::fixture::capability::CapabilityStatusField::at(
+                        "CapabilityStatusField",
+                    ),
                 ),
                 super::super::super::fixture::CapabilityStatusBinding::encode(
                     &super::super::super::fixture::CapabilityStatus::Active,

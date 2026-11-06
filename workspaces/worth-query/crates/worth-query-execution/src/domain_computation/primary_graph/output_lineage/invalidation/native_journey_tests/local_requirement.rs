@@ -30,7 +30,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
             selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -44,7 +44,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let status_ref = AccountStatus::reference();
+    let status_ref = AccountStatus::at("AccountStatus");
     let status = graph
         .layout()
         .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())

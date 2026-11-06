@@ -82,7 +82,7 @@ pub fn incomplete_read_and_mixed_parent_child_writes_refuse_atomically() {
             );
             assert_eq!(
                 coordinates.locator().aspect().aspect_key().as_str(),
-                "InputFacts"
+                crate::facade::certification::application_graph::correction::model::aspect_input::InputFacts::reference().name()
             );
         }
         let read = request

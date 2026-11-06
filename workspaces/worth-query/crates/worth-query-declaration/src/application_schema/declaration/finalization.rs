@@ -23,6 +23,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             &self.member_provenance.fragments.catalog,
             &self.member_provenance.fragments.access,
             &mut self.members,
+            &mut self.contributions,
         )?;
         validate_schema_header(self.owner, self.name)?;
         validate_member_identifiers(&self.members)?;

@@ -244,7 +244,7 @@ fn change_status(
     subject: worth_relational::facade::identity::EntityId,
     value: &str,
 ) {
-    let field = AccountStatus::reference();
+    let field = AccountStatus::at("AccountStatus");
     let locator = application
         .runtime
         .primary_graph()

@@ -11,7 +11,7 @@ use worth_query_declaration::worth_query_application_query;
 
 use super::application_queries::AccountSummaryParameters;
 use super::{
-    Account, AccountAllActivity, Activity, ActivityFacts, ActivityIdentity, ActivitySequence,
+    Account, AccountAllActivity, Activity, ActivityIdentity, ActivitySequence,
     CapabilityDisclosure, CapabilityDisclosureBinding, IdentityExecutionSchema,
     TouchAccountCapability,
 };
@@ -106,10 +106,11 @@ pub(super) fn governed_hidden_ordering_definition() -> ApplicationQueryDefinitio
         TouchAccountCapability::reference(),
     )
     .use_field_by(
-        ActivitySequence::reference(),
+        ActivitySequence::at("ActivitySequence"),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::permit([ApplicationQueryObservableInfluence::Ordering]),
     )
+    .expect("record field contract")
     .disclose_relation_by(
         activities(),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
@@ -182,30 +183,18 @@ fn activity_identity() -> ApplicationQueryResultFieldRef<
     GovernedHiddenOrderingQuery,
     ActivityIdentitySlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivityIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("identity", ActivityIdentity::reference())
+    ApplicationQueryResultFieldRef::new("identity", ActivityIdentity::at("ActivityIdentity"))
 }
 
 fn activity_sequence() -> ApplicationQueryResultFieldRef<
     GovernedHiddenOrderingQuery,
     ActivitySequenceSlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivitySequence,
-    u64,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+    ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::at("ActivitySequence"))
 }
 
 fn activities() -> ApplicationQueryResultRelationRef<

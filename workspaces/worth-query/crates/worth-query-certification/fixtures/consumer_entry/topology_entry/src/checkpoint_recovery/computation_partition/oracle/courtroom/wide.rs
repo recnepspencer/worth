@@ -78,7 +78,7 @@ impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFe
                 .into_to();
             Ok(f64::from_bits(
                 reader
-                    .field(&entry, facts::EntryValueBits::reference())?
+                    .field(&entry, facts::EntryValueBits::at("EntryValueBits"))?
                     .unwrap(),
             ))
         } else {
@@ -106,13 +106,8 @@ struct Contribution<const FRESH: bool>;
 impl<const FRESH: bool> ApplicationSchemaContribution<CheckpointSchema> for Contribution<FRESH> {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::IDENTITY;
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<CheckpointSchema>,
-    ) -> ApplicationSchemaDeclarationBuilder<CheckpointSchema> {
-        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::register_members(
-            builder,
-        )
-    }
+    type Members =
+        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::Members;
 }
 impl<const FRESH: bool> WorthQueryApplicationContribution<CheckpointSchema>
     for Contribution<FRESH>

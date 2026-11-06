@@ -79,13 +79,7 @@ fn tag_result_field() -> ApplicationQueryResultFieldRef<
     PublicAccountMembershipQuery,
     StatusResultSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountMembership,
     AccountMembershipTag,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("tag", AccountMembershipTag::reference())
+    ApplicationQueryResultFieldRef::new("tag", AccountMembershipTag::at("AccountMembershipTag"))
 }

@@ -9,6 +9,31 @@ impl World {
     where
         O: ApplicationOperationMarkerIdentity<Fixture, InputBinding = UnitInput> + 'static,
     {
+        let (program, target, _) = self.candidate_observing(reference, false);
+        (program, target)
+    }
+    pub(super) fn column_candidate(
+        &self,
+    ) -> (
+        world::Program<ChangeForm>,
+        WorthQueryApplicationEffectEntity<Fixture, Item>,
+    ) {
+        let (program, _, target) = self.candidate_observing(ChangeForm::reference(), true);
+        let target = program.projected_entity(&target).unwrap();
+        (program, target)
+    }
+    pub(super) fn candidate_observing<O>(
+        &self,
+        reference: ApplicationOperationRef<Fixture, O, ()>,
+        observe_note: bool,
+    ) -> (
+        world::Program<O>,
+        ObservedTarget<Item>,
+        WorthQueryInvariantMutationTarget<Fixture, Item>,
+    )
+    where
+        O: ApplicationOperationMarkerIdentity<Fixture, InputBinding = UnitInput> + 'static,
+    {
         let request = live_scope();
         let external = authenticate_external(
             self.application.installed_schema(),
@@ -29,10 +54,9 @@ impl World {
                     )
                     .unwrap();
                 let target = selected
-                    .resolve_record_entity(
+                    .resolve_entity(
                         &phase,
-                        Fixture,
-                        record_field(Fixture, Item, ItemIdentity, "id").unwrap(),
+                        select_field(Fixture, Item, ItemIdentity, "id"),
                         11u64,
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -53,16 +77,20 @@ impl World {
                         &request,
                     )
                     .unwrap();
-                let (target, projection, _) = self
+                let ((target, native_target), projection, _) = self
                     .invariant
                     .project_admitted_operation(
                         &phase,
                         &admission,
                         |reader, projected| {
+                            let native_target = reader.mutation_target(projected).unwrap();
                             let observed = projected.for_fragment();
                             let mut view = reader.fragment(Fixture).unwrap();
                             work(|work| view.read(&observed, Form, work)).unwrap();
-                            view.target(&observed).unwrap()
+                            if observe_note {
+                                work(|work| view.read(&observed, Note, work)).unwrap();
+                            }
+                            (view.target(&observed).unwrap(), native_target)
                         },
                         SystemAllocation,
                     )
@@ -80,7 +108,7 @@ impl World {
                     .complete_projected_dependencies(&phase, SystemAllocation)
                     .unwrap()
                     .begin_effect_program();
-                (candidate, target)
+                (candidate, target, native_target)
             })
             .unwrap()
     }

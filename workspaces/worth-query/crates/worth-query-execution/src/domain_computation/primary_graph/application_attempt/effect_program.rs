@@ -19,6 +19,7 @@ mod optional_field_authoring;
 mod ordinary_field_authoring;
 mod original_input;
 pub(super) mod output_correspondence;
+mod record_presence;
 mod relation_effects;
 mod relation_initialization;
 mod target_admission;
@@ -34,9 +35,8 @@ use std::sync::Arc;
 
 use worth_foundational::facade::AspectFieldLocator;
 use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationOperationProgramTarget, ApplicationScalarValueBinding,
-    DeclaredApplicationFieldValue, OperationCreates, OperationDeletes, OperationWrites,
+    ApplicationEntityRef, ApplicationOperationProgramTarget, ApplicationScalarValueBinding,
+    OperationCreates, OperationDeletes,
 };
 use worth_relational::facade::transactions::EntityReference;
 use write_index::FieldWriteIndex;
@@ -131,21 +131,29 @@ impl<Schema, Operation, Input, Scope>
             .map_or(Ok(()), Err)
     }
 
-    pub fn initialize_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn initialize_field<Entity, Field>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        value: Value,
+        field: Field,
+        value: Field::Value,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
         Entity: OperationCreates<Operation>,
-        Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+        >,
     {
+        let column = self.layout.record_selection(field)?;
+        Field::Binding::validate(&value).map_err(|_| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
+                column.path(),
+            )
+        })?;
         let value = Field::Binding::encode(&value).map_err(|_| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
-                field.field(),
+                column.path(),
             )
         })?;
         self.initialize_encoded_field(
@@ -196,12 +204,19 @@ impl<Schema, Operation, Input, Scope>
                 field.entity(),
             ));
         };
+        let presence = self.layout.record_presence_locator(field).cloned();
         let WorthQueryApplicationRealizedEffect::CreateEntity { fields, .. } =
             &mut self.effects[created_effect]
         else {
             unreachable!("validated created effect changed before field retention");
         };
         fields.insert(locator, value.into_owned());
+        if let Some(presence) = presence {
+            fields.insert(
+                presence,
+                worth_foundational::facade::AspectValue::Bool(true),
+            );
+        }
         Ok(())
     }
 

@@ -54,7 +54,7 @@ pub(in crate::domain_computation::primary_graph::tests::inbound_admission) fn in
                     Target::reference(),
                     WorthQueryApplicationEntityKey::new("target").unwrap(),
                 )
-                .field(TargetKey::reference(), "target".to_owned()),
+                .field(TargetKey::at("TargetKey"), "target".to_owned()),
             )
             .unwrap();
         let invariant = bootstrap.retain_invariant_projection_authority();

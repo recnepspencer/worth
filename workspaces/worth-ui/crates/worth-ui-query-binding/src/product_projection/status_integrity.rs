@@ -22,10 +22,10 @@ pub(super) fn resolve_rule(
 ) -> Result<WorthUiStatusIntegrityRule, String> {
     Ok(WorthUiStatusIntegrityRule {
         status: resolver
-            .typed_field(QueryTextStatusField::reference())
+            .typed_field(QueryTextStatusField::at("QueryTextStatusField"))
             .ok_or("UI status field is not installed")?,
         revision: resolver
-            .typed_field(QueryRevisionValueField::reference())
+            .typed_field(QueryRevisionValueField::at("QueryRevisionValueField"))
             .ok_or("UI revision field is not installed")?,
     })
 }

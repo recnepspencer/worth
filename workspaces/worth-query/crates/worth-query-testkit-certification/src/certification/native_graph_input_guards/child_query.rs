@@ -33,7 +33,7 @@ macro_rules! worlds_certification_native_graph_input_guards_child_query_rs_field
     ($slot:ident,$name:ident,$entity:ty,$aspect:ty,$field:ty,$value:ty,$identity:literal)=>{
         pub struct $slot;
         worth_query_portable_type!($slot=>$identity);
-        fn $name<Q:ApplicationQueryMarkerIdentity<Schema>>()->ApplicationQueryResultFieldRef<Q,$slot,Schema,$entity,$aspect,$field,$value,ReadOnly,EqualityPredicate,NoApplicationUnit>{ApplicationQueryResultFieldRef::new(stringify!($name),<$field>::reference())}
+        fn $name<Q:ApplicationQueryMarkerIdentity<Schema>>()->ApplicationQueryResultFieldRef<Q, $slot, Schema, $field>{ApplicationQueryResultFieldRef::new(stringify!($name),<$field>::at(stringify!($field)))}
     };
 }
 pub use crate::worlds_certification_native_graph_input_guards_child_query_rs_field as field;
@@ -66,19 +66,9 @@ field!(
 );
 pub struct Note;
 worth_query_portable_type!(Note=>"worth.query.child.note-slot.v1");
-pub fn note<Q: ApplicationQueryMarkerIdentity<Schema>>() -> ApplicationQueryOptionalResultFieldRef<
-    Q,
-    Note,
-    Schema,
-    Cell,
-    CellFacts,
-    CellNote,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryOptionalResultFieldRef::new("note", CellNote::reference())
+pub fn note<Q: ApplicationQueryMarkerIdentity<Schema>>(
+) -> ApplicationQueryOptionalResultFieldRef<Q, Note, Schema, CellNote> {
+    ApplicationQueryOptionalResultFieldRef::new("note", CellNote::at("CellNote"))
 }
 pub struct Details;
 worth_query_portable_type!(Details=>"worth.query.child.details-slot.v1");
@@ -148,7 +138,7 @@ impl<Q: ApplicationQueryMarkerIdentity<Schema>> WorthQueryApplicationProjection<
         Ok(Self {
             id: row.field(id())?,
             kind: row.field(kind())?,
-            note: row.optional_field(note())?,
+            note: row.optional_field(note())?.map(|note| note.0),
             detail: row
                 .optional(details())?
                 .map(|detail| detail.field(label()))
@@ -165,7 +155,7 @@ pub fn archive_scope(read: ReadArchive) -> String {
 }
 worth_query_query_binding!(pub ReadArchiveBinding for ReadArchive,schema Schema,identity "worth.query.child.archive-read-binding.v1",input ArchiveInput,query ArchiveQuery,parameters Parameters=>|_|ApplicationQueryParameterSet::new(),result ResultBinding,
     principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value archive_scope,limits results 20);
+    scope RowIdentity, field RowIdentity::at("RowIdentity"),value archive_scope,limits results 20);
 worth_query_query_binding!(pub ReadBinding for Read,schema Schema,identity "worth.query.child.read-binding.v1",input Input,query Query,parameters Parameters=>|_|ApplicationQueryParameterSet::new(),result ResultBinding,
     principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value scope,limits results 20);
+    scope RowIdentity, field RowIdentity::at("RowIdentity"),value scope,limits results 20);

@@ -30,7 +30,7 @@ pub(super) fn owner_path_fixture() -> (
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase_custody.phase_for_application(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -38,7 +38,7 @@ pub(super) fn owner_path_fixture() -> (
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let field = AccountStatus::reference();
+    let field = AccountStatus::at("AccountStatus");
     let graph = world.application.runtime.primary_provider.graph.clone();
     let locator = graph
         .layout

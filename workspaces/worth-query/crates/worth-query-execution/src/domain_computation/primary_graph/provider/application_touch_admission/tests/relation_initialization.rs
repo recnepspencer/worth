@@ -1,6 +1,8 @@
 //! The raw Native door must enforce field authority independently of typed writers.
+use super::fixture::relation;
 use super::*;
 use fixture::relation::{Initialize, LinkOnly};
+use worth_query_decl::facade::application_schema::fragment::RecordSelection;
 use worth_query_decl::facade::application_schema::ApplicationScalarValueBinding;
 #[test]
 fn native_initialized_relation_requires_link_and_actual_field_authority() {
@@ -82,7 +84,11 @@ fn initialized_batch(world: &World) -> WorkerIntentBatch {
     fields.insert(
         world
             .layout
-            .relation_field_locator("Edge", "Payload", "Weight")
+            .relation_field_locator(
+                "Edge",
+                relation::weight_field().aspect(),
+                relation::weight_field().field(),
+            )
             .unwrap()
             .clone(),
         worth_query_decl::facade::application_schema::U64ApplicationValueBinding::encode(&7)

@@ -19,7 +19,16 @@ fn installed_schema_exposes_exact_indexed_field_binding_recipes() {
     let bindings = installed.value_bindings();
 
     let principal_identity = bindings
-        .field("TestEntity", "IdentityAspect", "PrincipalIdentityField")
+        .field(
+            "TestEntity",
+            worth_query_declaration::facade::application_schema::fragment::aspect(
+                super::InstallationFields,
+                super::FixtureEntity,
+                super::FixtureIdentityAspect,
+            )
+            .name(),
+            "PrincipalIdentityField",
+        )
         .expect("the declared principal identity field must have one installed binding");
     assert_eq!(bindings.len(), 3);
     assert_eq!(principal_identity.schema(), &installed.binding_identity());

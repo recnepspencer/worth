@@ -29,8 +29,10 @@ fn duplicate_whole_operations_and_entity_intents_keep_native_refusals() {
                 ConflictClass::RecordAspectPatchDenied { .. }
             ));
             assert!(
-                format!("{:?}", error.class)
-                    .contains("ReadmissionDenied(DuplicateAspectOperation(AspectKey(\"Notes\")))"),
+                format!("{:?}", error.class).contains(&format!(
+                    "ReadmissionDenied(DuplicateAspectOperation(AspectKey({:?})))",
+                    world.aspect
+                )),
                 "exact duplicate-aspect cause: {:?}",
                 error.class
             );

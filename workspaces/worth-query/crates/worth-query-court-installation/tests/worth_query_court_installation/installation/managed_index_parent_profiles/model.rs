@@ -1,16 +1,52 @@
 //! The real schema declaration includes its own typed Source, Index and Parent.
 use super::*;
 use worth_query_declaration::facade::authentication::*;
-use worth_query_declaration::{worth_query_aspect, worth_query_entity, worth_query_field};
 
 pub trait ModelSchema: ApplicationSchema {
     const MODE: u8;
+    type Model: ParentModel;
 }
 pub struct ParentSchema<const MODE: u8>;
-impl<const MODE: u8> ModelSchema for ParentSchema<MODE> {
-    const MODE: u8 = MODE;
+impl ModelSchema for ParentSchema<0> {
+    const MODE: u8 = 0;
+    type Model = ParentRecords<false>;
 }
-impl<const MODE: u8> ApplicationSchema for ParentSchema<MODE> {
+impl ModelSchema for ParentSchema<1> {
+    const MODE: u8 = 1;
+    type Model = ParentRecords<false>;
+}
+impl ModelSchema for ParentSchema<2> {
+    const MODE: u8 = 2;
+    type Model = ParentRecords<false>;
+}
+impl ModelSchema for ParentSchema<3> {
+    const MODE: u8 = 3;
+    type Model = ParentRecords<false>;
+}
+impl ModelSchema for ParentSchema<4> {
+    const MODE: u8 = 4;
+    type Model = ParentRecords<false>;
+}
+impl ModelSchema for ParentSchema<5> {
+    const MODE: u8 = 5;
+    type Model = ParentRecords<false>;
+}
+impl ModelSchema for ParentSchema<6> {
+    const MODE: u8 = 6;
+    type Model = ParentRecords<false>;
+}
+impl ModelSchema for ParentSchema<7> {
+    const MODE: u8 = 7;
+    type Model = ParentRecords<false>;
+}
+impl ModelSchema for ParentSchema<8> {
+    const MODE: u8 = 8;
+    type Model = ParentRecords<true>;
+}
+impl<const MODE: u8> ApplicationSchema for ParentSchema<MODE>
+where
+    Self: ModelSchema,
+{
     const OWNER: &'static str = "worth.query.tests.managed-parent";
     const NAME: &'static str = "ParentSchema";
     const MAJOR: u32 = 1;
@@ -18,29 +54,17 @@ impl<const MODE: u8> ApplicationSchema for ParentSchema<MODE> {
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
         let policy = policy::<Self>();
-        let declared = ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(Mapping::reference())
-            .entity(Principal::reference())
-            .aspect(Mapping::reference(), ExternalIdentity::reference())
-            .aspect(Principal::reference(), PrincipalFacts::reference())
-            .field(Mapping::reference(), ExternalIdentityField::reference())
-            .field(Mapping::reference(), MappingStatus::reference())
-            .field(Principal::reference(), PrincipalIdentity::reference())
-            .relation(
-                MappingTarget::reference(),
-                Mapping::reference(),
-                Principal::reference(),
-            )
+        let declared = <Self as ModelSchema>::Model::storage::<Self>()?
             .principal_binding(principal_binding::<Self>())
             .policy(policy)
             .ability(ability::<Self>())
             .ability_policy(
                 ability::<Self>(),
                 policy,
-                [ApplicationAuthorizationPathBuilder::from_principal(
-                    Principal::reference::<Self>(),
-                )
-                .allow(Principal::reference::<Self>())],
+                [
+                    ApplicationAuthorizationPathBuilder::from_principal(principal::<Self>())
+                        .allow(principal::<Self>()),
+                ],
             )
             .application_query(queries::source::<Self>())
             .application_query_binding::<queries::SourceBinding<Self>>()
@@ -50,48 +74,20 @@ impl<const MODE: u8> ApplicationSchema for ParentSchema<MODE> {
                 Self,
                 queries::ModelIndex<Self>,
             >::new());
-        let declared = if MODE == 8 {
-            declared
-                .content_format::<super::super::content_binding::codec::Good>()
-                .content_field(
-                    Principal::reference(),
-                    content_field(
-                        ContentSamples::reference(),
-                        super::super::content_binding::codec::Good,
-                    ),
-                )
-        } else {
-            declared
-        };
         super::decision_read::declare(declared).build()
     }
 }
-worth_query_entity!(pub Mapping for Schema: ModelSchema);
-worth_query_entity!(pub Principal for Schema: ModelSchema);
-worth_query_aspect!(pub ExternalIdentity for Schema: ModelSchema, Mapping; identity = AspectIdentity(0x91902001), revision = AspectContractRevision(1));
-worth_query_aspect!(pub PrincipalFacts for Schema: ModelSchema, Principal; identity = AspectIdentity(0x91902002), revision = AspectContractRevision(1));
-worth_query_field!(pub ExternalIdentityField for Schema: ModelSchema, Mapping, ExternalIdentity: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub MappingStatus for Schema: ModelSchema, Mapping, ExternalIdentity: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub PrincipalIdentity for Schema: ModelSchema, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub ContentSamples for Schema: ModelSchema, Principal, PrincipalFacts: worth_foundational::facade::ContentRefId => ContentRefApplicationValueBinding, read_only, no_equality);
-pub struct MappingTarget;
-impl MappingTarget {
-    pub fn reference<S: ModelSchema>() -> ApplicationRelationRef<S, Self, Mapping, Principal> {
-        ApplicationRelationRef::from_schema_identifiers(
-            "MappingTarget",
-            "Mapping",
-            "Principal",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        )
-    }
-}
-
+use worth_query_declaration::facade::application_schema::fragment::{self, *};
+mod records;
+pub use records::*;
+mod profile;
+pub use profile::*;
 pub struct PrincipalBinding;
 pub fn principal_binding<S: ModelSchema>() -> ApplicationPrincipalBindingRef<
     S,
     PrincipalBinding,
-    Mapping,
-    Principal,
+    Mapping<S>,
+    Principal<S>,
     u64,
     U64ApplicationValueBinding,
 > {
@@ -99,23 +95,21 @@ pub fn principal_binding<S: ModelSchema>() -> ApplicationPrincipalBindingRef<
         "PrincipalBinding",
         ApplicationPrincipalBindingRequirements {
             mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
-                ExternalIdentityField::reference::<S>(),
+                S::Model::mapping_identity(),
             ),
             mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
-                MappingStatus::reference::<S>(),
+                S::Model::mapping_status(),
             ),
-            target: ApplicationPrincipalTargetRequirement::from_relation(
-                MappingTarget::reference::<S>(),
-            ),
+            target: ApplicationPrincipalTargetRequirement::from_relation(mapping_target::<S>()),
             principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
-                PrincipalIdentity::reference::<S>(),
+                principal_identity::<S>(),
             ),
         },
     )
 }
 pub struct CloseAssessment;
 pub struct ManagedParentPolicy;
-pub fn ability<S: ModelSchema>() -> ApplicationAbilityRef<S, CloseAssessment, Principal> {
+pub fn ability<S: ModelSchema>() -> ApplicationAbilityRef<S, CloseAssessment, Principal<S>> {
     ApplicationAbilityRef::from_schema_identifiers("CloseAssessment", "Principal")
 }
 pub fn policy<S: ModelSchema>() -> ApplicationPolicyRef<S, ManagedParentPolicy> {

@@ -67,8 +67,8 @@ lowers to `interval.start` and `interval.end`. These remain ordinary scalar fiel
 Native scalar decoding borrows Query's original admission separately from domain
 work. Decode invokes the owner's checked constructor and retains its typed error.
 Scalar refusals identify the full leaf path; constructor refusals identify their
-owning record prefix. Tuple arities for membership, cases and record accessors are 1 through 8;
-empty membership tuples are supported.
+owning record prefix. Membership and case tuples support arities 1 through 8, with nested membership
+tuples and empty membership tuples. Records support up to 16 constructor arguments.
 
 During schema authoring, select a field from that same record:
 
@@ -120,3 +120,20 @@ the original phase, product and request. For completed candidate programs,
 `application.fragment_candidate(&mut candidate, Fixture)` lends a write view
 after checking the candidate's runtime and schema affinity. Handler writers
 continue to use `writer.fragment(Fixture)`.
+
+A scalar binding set can attach an immutable content format through
+`Scalar<T>::content_format()`. Format-bearing value types use
+`ApplicationContentReferenceBinding` to carry the Native reference through their
+owned scalar codec. `content_field(selection, Format)` requests that installed
+interpretation; it does not register storage. Different formats use distinct
+value forms, and installation checks the actual ContentRef representation.
+
+`TypedSchemaRoot` and `worth_query_schema!` remain query-surface declarations.
+They describe exposure to a canonical query, including ordering-only, hidden and
+workflow fields and traversal limits. They install no rows, identities or value
+codecs. Application storage membership belongs to fragments.
+
+History queries accept `aspect(fragment, entity, aspect)` and
+`relation_aspect(fragment, source_entity, relation, aspect)`. Both selectors
+prove membership and check the installed fragment owner before resolving the
+portable contract, including when another fragment reuses native names.

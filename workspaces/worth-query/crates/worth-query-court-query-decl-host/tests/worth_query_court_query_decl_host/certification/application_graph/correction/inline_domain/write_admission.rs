@@ -1,7 +1,7 @@
 //! Real operations refuse unreadable owner output before changing the selected commit.
 use super::super::model::write_admission::{
-    self as fixture, BrokenBinaryBinding, CanonicalBinding, CanonicalCounter, DelegatedBinding,
-    Encoding, Write,
+    self as fixture, BinaryCounter, BrokenBinaryBinding, CanonicalBinding, CanonicalCounter,
+    DelegatedBinding, DelegatedCounter, Encoding, Write,
 };
 use super::*;
 mod controls;
@@ -15,7 +15,7 @@ use worth_query_host::facade::{
 
 #[test]
 fn binary_owner_output_that_its_reader_refuses_cannot_publish() {
-    let raw = BrokenBinaryBinding::encode(&13).unwrap();
+    let raw = BrokenBinaryBinding::encode(&BinaryCounter(13)).unwrap();
     assert_wire(&raw, &[2, 13, 0, 0, 0, 0, 0, 0, 0]);
     assert!(BrokenBinaryBinding::decode(&raw).is_err());
     refuse_and_retry(
@@ -51,7 +51,7 @@ fn canonical_refusal(encoding: Encoding, value: u64, cause: ValueCodecDenial) {
             CanonicalBinding::IDENTITY,
         ),
         Encoding::Delegated => (
-            DelegatedBinding::encode(&value).unwrap(),
+            DelegatedBinding::encode(&DelegatedCounter(value)).unwrap(),
             DelegatedBinding::IDENTITY,
         ),
         Encoding::Binary => panic!("canonical court requires a JSON domain binding"),
@@ -142,21 +142,27 @@ fn read(
                 &phase,
                 |reader| {
                     let entity = reader
-                        .resolve_entity(Key::reference(), "numeric".to_owned())
+                        .resolve_entity(Key::at("Key"), "numeric".to_owned())
                         .unwrap();
                     match encoding {
                         Encoding::Binary => {
-                            reader.field(&entity, fixture::Binary::reference()).unwrap()
-                        }
-                        Encoding::Canonical => {
                             reader
-                                .field(&entity, fixture::Canonical::reference())
+                                .field(&entity, fixture::Binary::at("Binary"))
                                 .unwrap()
                                 .0
                         }
-                        Encoding::Delegated => reader
-                            .field(&entity, fixture::Delegated::reference())
-                            .unwrap(),
+                        Encoding::Canonical => {
+                            reader
+                                .field(&entity, fixture::Canonical::at("Canonical"))
+                                .unwrap()
+                                .0
+                        }
+                        Encoding::Delegated => {
+                            reader
+                                .field(&entity, fixture::Delegated::at("Delegated"))
+                                .unwrap()
+                                .0
+                        }
                     }
                 },
                 ExecutionAllocationPolicy::SystemAllocation,

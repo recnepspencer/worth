@@ -60,7 +60,7 @@ pub(super) fn observe_roles<Schema: BirthSchema>(
         .select(phase)
         .unwrap();
     let graph = &runtime.runtime.primary_provider.graph;
-    let field = Value::reference::<Schema>();
+    let field = Value::at("Value");
     let locator = graph
         .layout
         .field_locator(field.entity(), field.aspect(), field.field())

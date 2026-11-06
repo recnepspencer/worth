@@ -26,15 +26,12 @@ pub fn identity() -> ApplicationQueryResultFieldRef<
     MembershipQuery,
     IdentitySlot,
     AdmissionSchema,
-    Document,
-    DocumentFacts,
     DocumentIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("identity", DocumentIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DocumentIdentityField::at("DocumentIdentityField"),
+    )
 }
 
 pub fn children() -> ApplicationQueryResultRelationRef<
@@ -54,15 +51,12 @@ pub fn child_identity() -> ApplicationQueryResultFieldRef<
     MembershipQuery,
     ChildIdentitySlot,
     AdmissionSchema,
-    Document,
-    DocumentFacts,
     DocumentIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("child_identity", DocumentIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "child_identity",
+        DocumentIdentityField::at("DocumentIdentityField"),
+    )
 }
 
 pub fn definition() -> ApplicationQueryDefinition<
@@ -115,15 +109,7 @@ impl WorthQueryApplicationProjection<AdmissionSchema, MembershipQuery> for Membe
 }
 
 pub struct MembershipBinding;
-pub type ReadScope = ApplicationQueryFieldScope<
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReadScope = ApplicationQueryFieldScope<DocumentIdentityField>;
 impl ApplicationQueryBinding<AdmissionSchema> for MembershipBinding {
     type Input = query::ReadValue;
     type InputBinding = query::ReadInputBinding;
@@ -138,17 +124,8 @@ impl ApplicationQueryBinding<AdmissionSchema> for MembershipBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "canonical-admission.paired.membership-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        AdmissionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         AdmissionSchema,

@@ -22,10 +22,10 @@ worth_query_structured_value_binding!(pub ChangeBinding for Change { identity: "
 worth_query_structured_value_binding!(pub ChangedBinding for Changed { identity: "resource-scope.lifecycle-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "resource-scope.lifecycle-denial.v1" });
 worth_query_operation!(pub Lifecycle for CapabilitySchema, input ChangeBinding);
-worth_query_operation_reads!(Lifecycle => [Principal, PrincipalIdentityField, Document, DocumentIdentityField, DocumentRetentionField]);
+worth_query_operation_reads!(Lifecycle => [Principal, Document]);
 worth_query_operation_creates!(Lifecycle => [Document]);
 worth_query_operation_deletes!(Lifecycle => [Document]);
-worth_query_operation_writes!(Lifecycle => [DocumentIdentityField, DocumentRetentionField]);
+
 pub struct Targets {
     pub principal: WorthQueryInvariantMutationTarget<CapabilitySchema, Principal>,
     pub document: Option<WorthQueryInvariantMutationTarget<CapabilitySchema, Document>>,
@@ -39,8 +39,8 @@ worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal DocumentPrincipalBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Principal, PrincipalFacts, PrincipalIdentityField, u64, ReadOnly, NoApplicationUnit,
-    principal_field PrincipalIdentityField::reference(),
+    scope PrincipalIdentityField,
+    principal_field PrincipalIdentityField::at("PrincipalIdentityField"),
 );
 pub struct Handler;
 impl OperationHandler<CapabilitySchema, Binding> for Handler {
@@ -50,9 +50,10 @@ impl OperationHandler<CapabilitySchema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, CapabilitySchema, Binding>,
     ) -> HandlerResult<Targets, Denial> {
         let mut observe = || -> Result<Option<Targets>, HandlerExecutionDenial> {
-            let principal = reader.resolve_entity(PrincipalIdentityField::reference(), 1)?;
+            let principal =
+                reader.resolve_entity(PrincipalIdentityField::at("PrincipalIdentityField"), 1)?;
             let document = reader.resolve_optional_entity(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 DOCUMENT_IDENTITY.to_owned(),
             )?;
             if input.restore == document.is_some() {
@@ -63,7 +64,10 @@ impl OperationHandler<CapabilitySchema, Binding> for Handler {
                     .reader()
                     .require_decision_entity(document, Document::reference())
                     .map_err(HandlerExecutionDenial::new)?;
-                reader.field(document, DocumentRetentionField::reference())?;
+                reader.field(
+                    document,
+                    DocumentRetentionField::at("DocumentRetentionField"),
+                )?;
             }
             Ok(Some(Targets {
                 principal: reader.mutation_target(&principal)?,
@@ -107,12 +111,16 @@ impl OperationHandler<CapabilitySchema, Binding> for Handler {
                 writer
                     .initialize_field(
                         &document,
-                        DocumentIdentityField::reference(),
+                        DocumentIdentityField::at("DocumentIdentityField"),
                         DOCUMENT_IDENTITY.to_owned(),
                     )
                     .map_err(HandlerExecutionDenial::new)?;
                 writer
-                    .initialize_field(&document, DocumentRetentionField::reference(), 8)
+                    .initialize_field(
+                        &document,
+                        DocumentRetentionField::at("DocumentRetentionField"),
+                        8,
+                    )
                     .map_err(HandlerExecutionDenial::new)?;
             }
             Ok(())
@@ -132,12 +140,12 @@ pub fn declare(
         .operation_projection_work_budget(op, 64)
         .operation_read_entity(op, Principal::reference())
         .operation_read_entity(op, Document::reference())
-        .operation_read_field(op, PrincipalIdentityField::reference())
-        .operation_read_field(op, DocumentIdentityField::reference())
-        .operation_read_field(op, DocumentRetentionField::reference())
+        .operation_read_field(op, PrincipalIdentityField::at("PrincipalIdentityField"))
+        .operation_read_field(op, DocumentIdentityField::at("DocumentIdentityField"))
+        .operation_read_field(op, DocumentRetentionField::at("DocumentRetentionField"))
         .operation_create(op, Document::reference())
         .operation_delete(op, Document::reference())
-        .operation_write(op, DocumentIdentityField::reference())
-        .operation_write(op, DocumentRetentionField::reference())
+        .operation_write(op, DocumentIdentityField::at("DocumentIdentityField"))
+        .operation_write(op, DocumentRetentionField::at("DocumentRetentionField"))
         .application_mutation_binding::<Binding>()
 }

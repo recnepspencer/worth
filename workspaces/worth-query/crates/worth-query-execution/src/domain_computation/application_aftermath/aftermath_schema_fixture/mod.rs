@@ -101,7 +101,7 @@ pub(crate) fn freeze_account_fields_read_scope(field: &str) -> WorthQueryOperati
                 return false;
             };
             scope.entity().semantic_key() == "FixtureEntity"
-                && scope.aspect().as_str() == "IdentityAspect"
+                && scope.aspect().as_str() == aspect_name()
                 && scope.projection().mask().paths().iter().any(|path| {
                     path.fields()
                         .first()
@@ -116,4 +116,8 @@ pub(crate) fn freeze_balance() -> WorthQueryInstalledAftermathContract {
 }
 pub(crate) fn charge() -> WorthQueryInstalledAftermathContract {
     aftermath_of::<Charge>()
+}
+
+pub(crate) fn aspect_name() -> &'static str {
+    declaration::FrozenRead::at("frozen").aspect()
 }

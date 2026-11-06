@@ -33,7 +33,7 @@ pub struct ApplicationContentBindingRecipe {
     verify: ErasedContentVerify,
 }
 impl ApplicationContentBindingRecipe {
-    pub(crate) fn of<F: ApplicationContentBinding>() -> Self {
+    pub fn of<F: ApplicationContentBinding>() -> Self {
         Self {
             declaration: ApplicationContentFormatDeclaration {
                 identity: *F::IDENTITY.bytes(),

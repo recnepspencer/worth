@@ -15,12 +15,12 @@ fn non_governed_capability_rejects_an_elevation_selector() {
         .unwrap();
     let projection = ApplicationCapabilityRequestProjection::new(
         ApplicationCapabilityEntitySelector::new(
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
             ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                 "account-1".to_owned(),
             )
             .expect("fixture account identity must encode"),
-        ),
+        ).unwrap(),
         ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(CapabilityAction::Touch)
             .expect("fixture capability action must encode"),
         ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
@@ -30,12 +30,10 @@ fn non_governed_capability_rejects_an_elevation_selector() {
         ApplicationCapabilityRequestContext::new(CapabilityRequestContext::reference()),
     )
     .elevation(ApplicationCapabilityEntitySelector::new(
-        CapabilityElevationIdentity::reference(),
-        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
-            "elevation-1".to_owned(),
-        )
+        CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+        ApplicationEncodedScalarValue::<<CapabilityElevationIdentity as worth_query_declaration::facade::application_schema::fragment::RecordSelection>::Binding>::try_new("elevation-1".to_owned().into())
         .expect("fixture elevation identity must encode"),
-    ));
+    ).unwrap());
 
     let denial = crate::domain_computation::authorization::validate_elevation_projection(
         capability.contract(),

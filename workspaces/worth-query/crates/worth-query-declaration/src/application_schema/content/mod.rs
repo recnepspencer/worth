@@ -12,3 +12,6 @@ pub use recipe::{
     ApplicationContentBindingRecipe, ErasedContentEncode, ErasedContentLength,
     ErasedContentValidate, ErasedContentVerify,
 };
+
+mod reference_binding;
+pub use reference_binding::ApplicationContentReferenceBinding;

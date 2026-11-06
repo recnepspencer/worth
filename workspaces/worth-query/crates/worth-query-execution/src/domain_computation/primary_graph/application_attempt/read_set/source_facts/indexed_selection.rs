@@ -73,7 +73,7 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
                         for value in ["missing-a", "missing-b"] {
                             assert!(reader
                                 .decision_select_entities(
-                                    AccountStatus::reference(),
+                                    AccountStatus::at("AccountStatus"),
                                     value.to_owned(),
                                     2,
                                 )
@@ -202,7 +202,7 @@ fn set_unrelated_status(
     world: &AuthorizationWorld,
     status: &str,
 ) {
-    let field = AccountStatus::reference();
+    let field = AccountStatus::at("AccountStatus");
     set_unrelated_value(
         phase_custody,
         world,

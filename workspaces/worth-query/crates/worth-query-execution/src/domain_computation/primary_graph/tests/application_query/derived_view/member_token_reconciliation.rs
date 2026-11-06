@@ -61,7 +61,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                 let scope = current
                     .resolve_entity(
                         &host_custody.phase_for_application(&world.application),
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         "open".to_string(),
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -100,7 +100,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                 let scope = current
                     .resolve_entity(
                         &host_custody.phase_for_application(&world.application),
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         token.split('-').next().unwrap().to_string(),
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -142,7 +142,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
             let pair_scope = selected
                 .resolve_entity(
                     &host_custody.phase_for_application(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -250,7 +250,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                     .unwrap()
             ));
             let graph = world.application.runtime.primary_graph().unwrap();
-            let tag_field = AccountMembershipTag::reference();
+            let tag_field = AccountMembershipTag::at("AccountMembershipTag");
             let tag_locator = graph
                 .layout
                 .field_locator(tag_field.entity(), tag_field.aspect(), tag_field.field())

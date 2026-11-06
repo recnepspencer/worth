@@ -32,11 +32,11 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
         let custody = host.phase_for_application(&world.application);
         let before = world.selected_product(&host);
         let entity = before.resolve_entity(
-            &custody, AccountIdentity::reference(), "account-2".into(), &live_scope(),
+            &custody, AccountIdentity::at("AccountIdentity"), "account-2".into(), &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         ).unwrap().entity_id();
         let other = before.resolve_entity(
-            &custody, AccountIdentity::reference(), "account-1".into(), &live_scope(),
+            &custody, AccountIdentity::at("AccountIdentity"), "account-1".into(), &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         ).unwrap().entity_id();
         let delete = |entity| WorkerIntentBatch::new("retirement-support").push(

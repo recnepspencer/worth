@@ -38,7 +38,7 @@ pub(super) fn apply(
             )
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&vertex, VertexIdentity::reference(), identity)
+            .initialize_field(&vertex, VertexIdentity::at("VertexIdentity"), identity)
             .map_err(HandlerExecutionDenial::new)?;
         // u32 counts times two fit i64; checked origin keeps authoring exact.
         let x = origin.checked_add(i64::from(index) * 2).ok_or_else(|| {
@@ -49,7 +49,7 @@ pub(super) fn apply(
         writer
             .initialize_field(
                 &vertex,
-                VertexRegion::reference(),
+                VertexRegion::at("VertexRegion"),
                 Coordinates::new(x, 0, x, 0),
             )
             .map_err(HandlerExecutionDenial::new)?;
@@ -64,7 +64,7 @@ pub(super) fn apply(
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&edge, EdgeIdentity::reference(), identity.clone())
+                .initialize_field(&edge, EdgeIdentity::at("EdgeIdentity"), identity.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .link(

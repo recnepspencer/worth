@@ -6,13 +6,13 @@ pub(super) fn membership_and_label(
     world: &AuthorizationWorld,
 ) -> (AspectFieldLocator, AspectFieldLocator) {
     let graph = world.application.runtime.primary_graph().unwrap();
-    let tag_field = AccountMembershipTag::reference();
+    let tag_field = AccountMembershipTag::at("AccountMembershipTag");
     let tag_locator = graph
         .layout
         .field_locator(tag_field.entity(), tag_field.aspect(), tag_field.field())
         .unwrap()
         .clone();
-    let label_field = AccountLabel::reference();
+    let label_field = AccountLabel::at("AccountLabel");
     let label_locator = graph
         .layout
         .field_locator(

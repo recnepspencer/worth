@@ -1,10 +1,19 @@
+use worth_query_decl::facade::application_schema::fragment::{self, *};
+#[path = "schema/records.rs"]
+mod storage_model;
 use super::*;
+pub use storage_model::*;
 pub trait Scenario:
     ApplicationSchema + ApplicationSchemaComposition<Contributions = (Contribution,)>
 {
     const MODE: u8;
 }
 pub struct Model<const MODE: u8>;
+impl<const MODE: u8> Fragment for Model<MODE> {
+    const NAME: &'static str = "Model";
+    type Bindings = NoBindings;
+    type Members = (Contribution,);
+}
 impl<const MODE: u8> Scenario for Model<MODE> {
     const MODE: u8 = MODE;
 }
@@ -20,30 +29,17 @@ impl<const MODE: u8> ApplicationSchema for Model<MODE> {
         source: std::any::TypeId,
         visitor: V,
     ) -> V::Output {
-        match <Contribution as ApplicationSchemaContribution<Self>>::visit_correction(
-            source, visitor,
-        ) {
+        match visit_correction::<Self, V>(source, visitor) {
             Ok(output) => output,
             Err(visitor) => visitor.unavailable(),
         }
     }
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .contributions()
-            .register::<Contribution>()?
-            .build()
+        fragment::declare(Self)
     }
 }
-worth_query_entity!(pub Mapping for S: Scenario);
-worth_query_entity!(pub Node for S: Scenario);
-worth_query_aspect!(pub MappingFacts for S: Scenario, Mapping; identity = AspectIdentity(0x919B3901), revision = AspectContractRevision(1));
-worth_query_aspect!(pub Facts for S: Scenario, Node; identity = AspectIdentity(0x919B3902), revision = AspectContractRevision(1));
-worth_query_aspect!(pub Values for S: Scenario, Node; identity = AspectIdentity(0x919B3903), revision = AspectContractRevision(1));
-worth_query_field!(pub ExternalId for S: Scenario, Mapping, MappingFacts: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub Status for S: Scenario, Mapping, MappingFacts: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub Id for S: Scenario, Node, Facts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub Value for S: Scenario, Node, Values: u64 => U64ApplicationValueBinding, read_write, equality);
+
 pub struct MapsTo;
 pub struct Peer;
 impl MapsTo {
@@ -73,13 +69,13 @@ pub fn actor<S: Scenario>(
         "Actor",
         ApplicationPrincipalBindingRequirements {
             mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
-                ExternalId::reference(),
+                ExternalId::at("ExternalId"),
             ),
-            mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
-                Status::reference(),
-            ),
+            mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(Status::at(
+                "Status",
+            )),
             target: ApplicationPrincipalTargetRequirement::from_relation(MapsTo::reference()),
-            principal_identity: ApplicationPrincipalIdentityRequirement::from_field(Id::reference()),
+            principal_identity: ApplicationPrincipalIdentityRequirement::from_field(Id::at("Id")),
         },
     )
 }
@@ -87,61 +83,56 @@ pub struct Contribution;
 impl<S: Scenario> ApplicationSchemaContribution<S> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("authored-ownership.contribution.v1");
-    fn register_members(
+    type Members = (OwnershipModel, Contracts);
+}
+pub struct Contracts;
+impl<S: Scenario> Registration<S> for Contracts {
+    fn register(
         schema: ApplicationSchemaDeclarationBuilder<S>,
-    ) -> ApplicationSchemaDeclarationBuilder<S> {
-        let schema = lifecycle::declare(producer::declare(
-            schema
-                .entity(Mapping::reference())
-                .entity(Node::reference())
-                .aspect(Mapping::reference(), MappingFacts::reference())
-                .aspect(Node::reference(), Facts::reference())
-                .optional_aspect(Node::reference(), Values::reference())
-                .field(Mapping::reference(), ExternalId::reference())
-                .field(Mapping::reference(), Status::reference())
-                .unique_field(Node::reference(), Id::reference())
-                .field(Node::reference(), Value::reference())
-                .relation(MapsTo::reference(), Mapping::reference(), Node::reference())
-                .relation(Peer::reference(), Node::reference(), Node::reference())
-                .principal_binding(actor())
-                .application_query(query::definition())
-                .application_query_binding::<query::Binding<S>>(),
-        ))
-        .correction::<correction::UndoCreate<S>>();
-        if S::MODE == 4 {
-            // The inverse Retire has no correction declaration: only the
-            // prepared retire_created correction can supply its anchor.
-            schema.declared_operation(
-                lifecycle::RetireOp::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish(),
-            )
-        } else {
-            schema.correction::<correction::UndoRetire<S>>()
-        }
+    ) -> Result<ApplicationSchemaDeclarationBuilder<S>, ApplicationSchemaDeclarationDenial> {
+        Ok({
+            let schema = lifecycle::declare(producer::declare(
+                schema
+                    .principal_binding(actor())
+                    .application_query(query::definition())
+                    .application_query_binding::<query::Binding<S>>(),
+            ))
+            .correction::<correction::UndoCreate<S>>();
+            if S::MODE == 4 {
+                // The inverse Retire has no correction declaration: only the
+                // prepared retire_created correction can supply its anchor.
+                schema.declared_operation(
+                    lifecycle::RetireOp::reference()
+                        .definition()
+                        .no_external_effect()
+                        .no_aftermath()
+                        .finish(),
+                )
+            } else {
+                schema.correction::<correction::UndoRetire<S>>()
+            }
+        })
     }
-    fn visit_correction<V: ApplicationCorrectionVisitor<S>>(
-        source: std::any::TypeId,
-        visitor: V,
-    ) -> Result<V::Output, V> {
-        if source == std::any::TypeId::of::<lifecycle::CreateBinding<S>>() {
-            return Ok(dispatch_application_correction::<
-                S,
-                correction::UndoCreate<S>,
-                V,
-            >(visitor));
-        }
-        if S::MODE != 4 && source == std::any::TypeId::of::<lifecycle::RetireBinding<S>>() {
-            return Ok(dispatch_application_correction::<
-                S,
-                correction::UndoRetire<S>,
-                V,
-            >(visitor));
-        }
-        Err(visitor)
+}
+pub fn visit_correction<S: Scenario, V: ApplicationCorrectionVisitor<S>>(
+    source: std::any::TypeId,
+    visitor: V,
+) -> Result<V::Output, V> {
+    if source == std::any::TypeId::of::<lifecycle::CreateBinding<S>>() {
+        return Ok(dispatch_application_correction::<
+            S,
+            correction::UndoCreate<S>,
+            V,
+        >(visitor));
     }
+    if S::MODE != 4 && source == std::any::TypeId::of::<lifecycle::RetireBinding<S>>() {
+        return Ok(dispatch_application_correction::<
+            S,
+            correction::UndoRetire<S>,
+            V,
+        >(visitor));
+    }
+    Err(visitor)
 }
 impl<S: Scenario> WorthQueryApplicationContribution<S> for Contribution {
     type Configuration = ();
@@ -164,4 +155,13 @@ impl<S: Scenario> WorthQueryApplicationContribution<S> for Contribution {
         setup.producer::<producer::Producer<S>>(producer::Provider)?;
         setup.conditional::<readiness::Readiness>(())
     }
+}
+
+impl fragment::Relation for MapsTo {
+    const NAME: &'static str = "MapsTo";
+    type To = Node;
+}
+impl fragment::Relation for Peer {
+    const NAME: &'static str = "Peer";
+    type To = Node;
 }

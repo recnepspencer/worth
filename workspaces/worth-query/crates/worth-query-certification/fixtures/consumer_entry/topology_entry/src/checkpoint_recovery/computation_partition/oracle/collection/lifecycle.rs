@@ -18,7 +18,7 @@ mod handler;
 mod history;
 mod inventory;
 mod locality;
-mod members;
+pub(crate) mod members;
 mod population;
 mod producer;
 mod readiness;

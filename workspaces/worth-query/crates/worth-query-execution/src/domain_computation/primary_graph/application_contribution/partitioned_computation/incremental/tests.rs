@@ -106,7 +106,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
     ) -> Result<Parity, WorthQueryComputationInputDenial<u32>> {
         self.calls.lock().unwrap()[1] += 1;
         if matches!(self.status, StatusRead::ItemKeys) {
-            reader.field(account, AccountStatus::reference())?;
+            reader.field(account, AccountStatus::at("AccountStatus"))?;
         }
         Ok(Parity(item.0 % self.modulus))
     }
@@ -118,11 +118,11 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         partition: WorthQueryComputationPartitionMembers<'_, Parity, Number>,
     ) -> Result<u64, WorthQueryComputationInputDenial<u32>> {
         self.calls.lock().unwrap()[2] += 1;
-        reader.field(account, AccountLabel::reference())?;
+        reader.field(account, AccountLabel::at("AccountLabel"))?;
         let parity = partition.key().0;
         let mut sum = partition.items().map(|(_, item)| item.0).sum::<u64>();
         if matches!(self.status, StatusRead::Gather(status) if status == parity) {
-            reader.field(account, AccountStatus::reference())?;
+            reader.field(account, AccountStatus::at("AccountStatus"))?;
             sum += *self.bump.lock().unwrap();
         }
         self.gathered.lock().unwrap().push(parity);

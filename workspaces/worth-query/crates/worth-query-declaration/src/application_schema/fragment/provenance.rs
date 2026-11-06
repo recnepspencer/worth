@@ -4,7 +4,7 @@ use super::super::{
     ApplicationFieldBindingRecipe, ApplicationSchemaDeclaration,
     ApplicationSchemaDeclarationDenial, ApplicationValue,
 };
-use super::record_value::{ScalarColumns, ValueColumns};
+use super::record_value::ScalarValue;
 use super::{Record, RecordRefusal, RecordRefusalKind, Scalar, Shape};
 use std::any::{Any, TypeId};
 use std::collections::BTreeMap;
@@ -59,7 +59,7 @@ impl RecordBinding {
             ),
             encode: |value, prefix| {
                 let mut encoded = BTreeMap::new();
-                <Set as ValueColumns<T, ScalarColumns>>::encode(
+                <Set as ScalarValue<T>>::encode(
                     value.downcast_ref::<T>().ok_or_else(|| {
                         RecordRefusal::new(prefix, RecordRefusalKind::WrongValueType)
                     })?,
@@ -118,11 +118,13 @@ impl FragmentProvenance {
         fields: &[ApplicationFieldBindingRecipe],
     ) -> Result<(), ApplicationSchemaDeclarationDenial> {
         for expected in &self.expected_fields {
-            if !fields.iter().any(|field| {
-                field.locus() == expected.locus()
-                    && field.value_type() == expected.value_type()
-                    && field.binding_type() == expected.binding_type()
-            }) {
+            if self.catalog.internal_field(expected.locus())
+                || !fields.iter().any(|field| {
+                    field.locus() == expected.locus()
+                        && field.value_type() == expected.value_type()
+                        && field.binding_type() == expected.binding_type()
+                })
+            {
                 return Err(ApplicationSchemaDeclarationDenial::InvalidRecordField {
                     field: expected.locus().clone(),
                 });

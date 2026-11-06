@@ -5,10 +5,7 @@ use super::super::{
     bounds::Coordinates, court::accounted_request, host, prefix, rule as prefix_rule,
     schema::Catalog,
 };
-use super::{
-    authoring::{self, Edit},
-    provider, query, rule, Configuration,
-};
+use super::{authoring::Edit, provider, query, rule, Configuration};
 use stats_alloc::Region;
 use std::sync::{atomic::Ordering, Arc, Mutex};
 use worth_query_host::facade::{

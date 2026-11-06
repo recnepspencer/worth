@@ -1,47 +1,87 @@
 //! Neutral schema, declarations and installed contracts; no reference arithmetic.
+#[path = "application/records.rs"]
+mod storage_model;
 use super::{computation, operation, read};
 use crate::principal::*;
-use worth_query_decl::facade::{
-    application_program::*, application_schema::*, worth_query_application,
-    worth_query_application_contribution, worth_query_aspect, worth_query_entity,
-    worth_query_field,
-};
+pub use storage_model::*;
+use worth_query_decl::facade::application_program::*;
 use worth_query_host::facade::{
     application_contribution::*, primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 };
 
 pub trait SchemaBinding: crate::TopologySchemaBinding {}
-worth_query_entity!(pub Node for Schema: SchemaBinding);
-worth_query_aspect!(pub NodeFacts for Schema: SchemaBinding, Node;
-    identity = AspectIdentity(0x9176_7801), revision = AspectContractRevision(1),);
-worth_query_field!(pub NodeKey for Schema: SchemaBinding, Node, NodeFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub Value for Schema: SchemaBinding, Node, NodeFacts: u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_field!(pub Applied for Schema: SchemaBinding, Node, NodeFacts: u64 => U64ApplicationValueBinding, read_write, equality);
 
-worth_query_application_contribution! {
-    pub contribution Contribution for Schema: SchemaBinding {
-        identity: "worth.certification.neutral-history.v1",
-        members: |schema| {
-            operation::declare(read::declare(schema))
-                .entity(Node::reference::<Schema>())
-                .aspect(Node::reference(),NodeFacts::reference())
-                .field(Node::reference(),NodeKey::reference())
-                .field(Node::reference(),Value::reference())
-                .field(Node::reference(),Applied::reference())
-                .entity(ExternalPrincipalMapping::reference::<Schema>())
-                .entity(Principal::reference::<Schema>())
-                .aspect(ExternalPrincipalMapping::reference(),ExternalIdentity::reference())
-                .aspect(Principal::reference(),PrincipalFacts::reference())
-                .field(ExternalPrincipalMapping::reference(),ExternalIdentityField::reference())
-                .field(ExternalPrincipalMapping::reference(),MappingStatusField::reference())
-                .field(Principal::reference(),PrincipalIdentity::reference())
-                .relation(MappingTarget::reference(),ExternalPrincipalMapping::reference(),Principal::reference())
-                .principal_binding(ConsumerPrincipalBinding::reference())
-        }
+pub struct Contribution;
+impl<Schema: SchemaBinding>
+    worth_query_decl::facade::application_schema::ApplicationSchemaContribution<Schema>
+    for Contribution
+{
+    const IDENTITY:
+        worth_query_decl::facade::application_schema::ApplicationSchemaContributionIdentity =
+        worth_query_decl::facade::application_schema::ApplicationSchemaContributionIdentity::new(
+            "worth.certification.neutral-history.v1",
+        );
+    type Members = (
+        HistoryRecords,
+        crate::MinimalPrincipalRecords,
+        crate::PrincipalMappingRecords,
+        ContributionContracts,
+    );
+}
+pub struct ContributionContracts;
+impl<Schema: SchemaBinding>
+    worth_query_decl::facade::application_schema::fragment::Registration<Schema>
+    for ContributionContracts
+{
+    fn register(
+        schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<
+            Schema,
+        >,
+    ) -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<Schema>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(operation::declare(read::declare(schema))
+            .principal_binding(ConsumerPrincipalBinding::reference()))
     }
 }
-worth_query_application! { pub Schema {owner:"worth.certification.neutral-history", version:(1,0), contributions:[Contribution],} }
-impl crate::TopologySchemaBinding for Schema {}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Schema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for Schema {
+    const NAME: &'static str = "Schema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (Contribution,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for Schema {
+    const OWNER: &'static str = "worth.certification.neutral-history";
+    const NAME: &'static str = "Schema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for Schema {
+    type Contributions = (Contribution,);
+}
+
+impl crate::TopologySchemaBinding for Schema {
+    type PrincipalFragment = crate::PrincipalRecords;
+}
 impl SchemaBinding for Schema {}
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = ();

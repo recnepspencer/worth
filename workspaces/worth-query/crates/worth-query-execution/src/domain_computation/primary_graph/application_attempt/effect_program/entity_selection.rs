@@ -1,10 +1,7 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding,
-    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads, WritePosture,
-};
+use worth_query_installation::facade::ApplicationScalarValueBinding;
 use worth_relational::facade::transactions::EntityReference;
 
 use super::{denial, WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder};
@@ -21,26 +18,17 @@ impl<Schema, Operation, Input, Scope>
         Aspect,
         Field,
         Value,
-        Write,
-        Unit,
     >(
         &self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
     ) -> Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
         let encoded = Field::Binding::encode(&value).map_err(|_| {

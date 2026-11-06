@@ -50,7 +50,8 @@ fn projection_capability_does_not_widen_the_installed_decision_manifest() {
                 .begin_application_read_attempt(execution, admission)
                 .unwrap();
 
-            let Err(denial) = attempt.observe_field(execution, &account, AccountLabel::reference())
+            let Err(denial) =
+                attempt.observe_field(execution, &account, AccountLabel::at("AccountLabel"))
             else {
                 panic!(
                     "a compile-capable projection field must still need installed read admission"

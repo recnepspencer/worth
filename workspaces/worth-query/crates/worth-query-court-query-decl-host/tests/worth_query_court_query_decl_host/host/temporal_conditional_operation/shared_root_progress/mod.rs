@@ -83,7 +83,7 @@ fn shared_host_root_reads_while_real_bridge_conditional_work_is_parked() {
                         .expect("the selected product branch remains admitted")
                         .resolve_entity(
                             &phase,
-                            IntentIdentityField::reference(),
+                            IntentIdentityField::at("IntentIdentityField"),
                             "intent-1".to_string(),
                             &request_scope(),
                             primary_graph::WorthQueryPrincipalResolutionMode::Certification,

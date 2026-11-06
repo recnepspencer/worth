@@ -42,7 +42,7 @@ fn completed_query_roster_keeps_original_funding_until_final_observation_close()
             let scope = selected
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

@@ -47,7 +47,7 @@ pub(super) fn validated_denial_program<
     Schema: ApplicationSchemaComposition + ParameterSchemaBinding + TopologySchemaBinding,
 >() -> ValidatedApplicationProgram<Schema, DenialProgram<Schema>> {
     ApplicationProgramAuthoring::<Schema, DenialProgram<Schema>>::begin()
-        .with_schema(&Schema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .expect("the denial program has one valid parameter feature")
 }

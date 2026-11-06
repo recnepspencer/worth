@@ -93,7 +93,7 @@ pub(super) fn revoke_parent(
         phase_custody,
         world,
         "capability-parent",
-        field(world, CapabilityStatusField::reference()),
+        field(world, CapabilityStatusField::at("CapabilityStatusField")),
         super::super::fixture::CapabilityStatusBinding::encode(&CapabilityStatus::Revoked).unwrap(),
     );
 }

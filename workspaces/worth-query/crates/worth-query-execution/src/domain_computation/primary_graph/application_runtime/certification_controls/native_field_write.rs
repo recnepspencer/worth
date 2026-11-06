@@ -4,10 +4,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
 use std::collections::BTreeMap;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding, ApplicationSchema,
-    DeclaredApplicationFieldValue,
-};
+use worth_query_installation::facade::{ApplicationScalarValueBinding, ApplicationSchema};
 use worth_relational::facade::{
     identity::{EntityId, PartitionId},
     indexes::DerivedIndexBuildRequest,
@@ -29,25 +26,20 @@ where
     /// transaction on `branch`, bypassing every Query commit path.
     #[doc(hidden)]
     #[allow(clippy::too_many_arguments)]
-    pub fn publish_native_field_write_for_test<
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >(
+    pub fn publish_native_field_write_for_test<Entity, Aspect, Field, Value>(
         &self,
         branch: WorthQueryProductBranch,
         record: RelationalBridgeRecordIdentityParts,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         value: Value,
         request: &WorthQueryRequestScope,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryAdvancementDenial>
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         self.with_application_advancement(request, |phase| {
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;

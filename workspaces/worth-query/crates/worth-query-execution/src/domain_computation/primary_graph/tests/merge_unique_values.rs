@@ -124,7 +124,7 @@ pub(in crate::domain_computation::primary_graph) struct MergeWorld {
     pub(in crate::domain_computation::primary_graph) label: AspectFieldLocator,
     status: AspectFieldLocator,
     /// The fields a create must carry besides the two it varies.
-    required: [AspectFieldLocator; 3],
+    required: [AspectFieldLocator; 4],
     pub(in crate::domain_computation::primary_graph) index: DerivedIndexId,
 }
 
@@ -144,12 +144,33 @@ impl MergeWorld {
                 .expect("the schema declares the field")
                 .clone()
         };
-        let label = field("AccountPolicy", "AccountLabel");
-        let status = field("AccountPolicy", "AccountStatus");
+        let label = field(
+            super::fixture::AccountStatus::at("AccountStatus").aspect(),
+            "AccountLabel",
+        );
+        let status = field(
+            super::fixture::AccountStatus::at("AccountStatus").aspect(),
+            "AccountStatus",
+        );
+        let annotation = field(
+            super::fixture::AccountAnnotation::at("AccountAnnotation").aspect(),
+            "AccountAnnotation",
+        );
         let required = [
-            field("AccountPolicy", "AccountIdentity").locator,
-            field("AccountMembership", "AccountMembershipTag").locator,
-            field("AccountAnnotations", "AccountAnnotation").locator,
+            field(
+                super::fixture::AccountStatus::at("AccountStatus").aspect(),
+                "AccountIdentity",
+            )
+            .locator,
+            field(
+                super::fixture::AccountMembershipTag::at("AccountMembershipTag").aspect(),
+                "AccountMembershipTag",
+            )
+            .locator,
+            annotation.locator,
+            annotation
+                .record_presence
+                .expect("the annotation row retains its structural column"),
         ];
         Self {
             kind: label.entity_kind,
@@ -231,7 +252,7 @@ impl MergeWorld {
     }
 
     fn created_fields(&self, key: &str, label: u64) -> AspectFieldPatch {
-        let [identity, membership, annotation] = self.required.clone();
+        let [identity, membership, annotation, presence] = self.required.clone();
         AspectFieldPatch::from(BTreeMap::from([
             (self.label.clone(), value(label)),
             (self.status.clone(), value(1)),
@@ -241,6 +262,7 @@ impl MergeWorld {
             ),
             (membership, value(1)),
             (annotation, value(1)),
+            (presence, AspectValue::Bool(true)),
         ]))
     }
 

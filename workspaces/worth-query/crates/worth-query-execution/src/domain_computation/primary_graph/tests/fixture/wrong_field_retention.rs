@@ -20,9 +20,12 @@ fn recorded_inverse(
                 DeclaredLoweringCorrespondenceRef::new(lowering).unwrap(),
                 DeclaredAftermathPostcondition::ExactPriorTruth,
                 DeclaredPreImageDemand::new(
-                    [DeclaredPreImageLocus::from_field(
-                        super::AccountStatus::reference(),
-                    )],
+                    [
+                        DeclaredPreImageLocus::from_field(super::AccountStatus::at(
+                            "AccountStatus",
+                        ))
+                        .expect("record field contract"),
+                    ],
                     256,
                 )
                 .unwrap(),

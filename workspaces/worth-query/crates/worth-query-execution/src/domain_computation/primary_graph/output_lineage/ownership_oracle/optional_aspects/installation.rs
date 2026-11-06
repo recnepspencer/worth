@@ -5,29 +5,155 @@ use crate::facade::application_installation::{
 };
 use std::sync::{atomic::AtomicUsize, Arc};
 use worth_foundational::facade::ApplicationBuildIdentity;
-worth_query_decl::facade::worth_query_application! { pub(super) OptionalSchema { owner: "worth.query.test.optional-aspects", version: (1, 0), contributions: [Members], } }
-worth_query_decl::facade::worth_query_application! { pub(super) RequiredSchema { owner: "worth.query.test.required-aspects", version: (1, 0), contributions: [Members], } }
-worth_query_decl::facade::worth_query_application! { pub(super) ReuseSchema { owner: "worth.query.test.optional-aspects-input-reuse", version: (1, 0), contributions: [Members], } }
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct OptionalSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for OptionalSchema {
+    const NAME: &'static str = "OptionalSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (Members,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for OptionalSchema {
+    const OWNER: &'static str = "worth.query.test.optional-aspects";
+    const NAME: &'static str = "OptionalSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for OptionalSchema {
+    type Contributions = (Members,);
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct RequiredSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for RequiredSchema {
+    const NAME: &'static str = "RequiredSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (Members,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for RequiredSchema {
+    const OWNER: &'static str = "worth.query.test.required-aspects";
+    const NAME: &'static str = "RequiredSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for RequiredSchema {
+    type Contributions = (Members,);
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct ReuseSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for ReuseSchema {
+    const NAME: &'static str = "ReuseSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (Members,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for ReuseSchema {
+    const OWNER: &'static str = "worth.query.test.optional-aspects-input-reuse";
+    const NAME: &'static str = "ReuseSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for ReuseSchema {
+    type Contributions = (Members,);
+}
+
 impl TopologyModelBinding for ReuseSchema {}
 impl BirthSchema for ReuseSchema {
-    const REQUIRED: bool = false;
+    type Nodes = NodeRecords<false>;
     const INPUT_REUSE: bool = true;
 }
 impl TopologyModelBinding for OptionalSchema {}
 impl BirthSchema for OptionalSchema {
-    const REQUIRED: bool = false;
+    type Nodes = NodeRecords<false>;
 }
 impl TopologyModelBinding for RequiredSchema {}
 impl BirthSchema for RequiredSchema {
-    const REQUIRED: bool = true;
+    type Nodes = NodeRecords<true>;
 }
-worth_query_decl::facade::worth_query_application_contribution! {
-    pub(super) contribution Members for Schema: BirthSchema {
-        identity: "worth.query.test.optional-aspect-members",
-        members: |schema| { schema::declare(base_model::declare(schema))
-            .application_query(planar_query_definition::<Schema>()).application_query_binding::<PlanarReadBinding<Schema>>() }
+pub(super) struct Members;
+impl<Schema: BirthSchema>
+    worth_query_decl::facade::application_schema::ApplicationSchemaContribution<Schema>
+    for Members
+{
+    const IDENTITY:
+        worth_query_decl::facade::application_schema::ApplicationSchemaContributionIdentity =
+        worth_query_decl::facade::application_schema::ApplicationSchemaContributionIdentity::new(
+            "worth.query.test.optional-aspect-members",
+        );
+    type Members = (
+        TopologyRecords,
+        facts::FactsRecords,
+        Schema::Nodes,
+        MembersContracts,
+    );
+}
+
+pub(super) struct MembersContracts;
+impl<Schema: BirthSchema>
+    worth_query_decl::facade::application_schema::fragment::Registration<Schema>
+    for MembersContracts
+{
+    fn register(
+        schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<
+            Schema,
+        >,
+    ) -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<Schema>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema::declare(base_model::declare(schema))
+            .application_query(planar_query_definition::<Schema>())
+            .application_query_binding::<PlanarReadBinding<Schema>>())
     }
 }
+
 impl<Schema: BirthSchema> WorthQueryApplicationContribution<Schema> for Members {
     type Configuration = bool;
     fn contracts(
@@ -130,10 +256,10 @@ pub(super) fn install<
                         Body::reference(),
                         WorthQueryApplicationEntityKey::new(key).unwrap(),
                     )
-                    .field(BodyKey::reference(), key.to_owned())
-                    .field(Length::reference(), PositiveLength::new(11).unwrap())
-                    .field(PositionX::reference(), PositiveLength::new(x).unwrap())
-                    .field(PositionY::reference(), PositiveLength::new(y).unwrap()),
+                    .field(BodyKey::at("BodyKey"), key.to_owned())
+                    .field(Length::at("Length"), PositiveLength::new(11).unwrap())
+                    .field(PositionX::at("PositionX"), PositiveLength::new(x).unwrap())
+                    .field(PositionY::at("PositionY"), PositiveLength::new(y).unwrap()),
                 )?;
             }
             for (from, to) in [

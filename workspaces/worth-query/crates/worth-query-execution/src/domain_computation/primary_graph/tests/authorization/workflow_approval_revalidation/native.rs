@@ -34,7 +34,9 @@ fn grant_expiry_aba_does_not_revive_older_approval() {
         .expect("the fixture envelope owns its installed host call");
     let expiry_field = field(
         &world,
-        super::super::super::fixture::capability::CapabilityNotAfterField::reference(),
+        super::super::super::fixture::capability::CapabilityNotAfterField::at(
+            "CapabilityNotAfterField",
+        ),
     );
     world
         .application

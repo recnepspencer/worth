@@ -97,19 +97,9 @@ pub fn successor_query_definition<Schema: TopologySchemaBinding>() -> Applicatio
     .build()
     .expect("planar query is canonical")
 }
-fn successor_position_y_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    SuccessorQuery,
-    SuccessorPositionYSlot,
-    Schema,
-    Body,
-    PlanarPosition,
-    PositionY,
-    PositiveLength,
-    ReadWrite,
-    EqualityPredicate,
-    DeclaredApplicationUnit<Metre, <TopologyLengthBinding as ApplicationScalarValueBinding>::Unit>,
-> {
-    ApplicationQueryResultFieldRef::new("successor_y", PositionY::reference())
+fn successor_position_y_result<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<SuccessorQuery, SuccessorPositionYSlot, Schema, PositionY> {
+    ApplicationQueryResultFieldRef::new("successor_y", PositionY::at("PositionY"))
 }
 fn planar_successor_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultRelationRef<
     SuccessorQuery,
@@ -136,33 +126,13 @@ fn second_successor_result<Schema: TopologySchemaBinding>() -> ApplicationQueryR
     ApplicationQueryResultRelationRef::forward_one("second_successor", PlanarSuccessor::reference())
 }
 fn second_successor_position_y_result<Schema: TopologySchemaBinding>(
-) -> ApplicationQueryResultFieldRef<
-    SuccessorQuery,
-    SecondSuccessorPositionYSlot,
-    Schema,
-    Body,
-    PlanarPosition,
-    PositionY,
-    PositiveLength,
-    ReadWrite,
-    EqualityPredicate,
-    DeclaredApplicationUnit<Metre, <TopologyLengthBinding as ApplicationScalarValueBinding>::Unit>,
-> {
-    ApplicationQueryResultFieldRef::new("second_successor_y", PositionY::reference())
+) -> ApplicationQueryResultFieldRef<SuccessorQuery, SecondSuccessorPositionYSlot, Schema, PositionY>
+{
+    ApplicationQueryResultFieldRef::new("second_successor_y", PositionY::at("PositionY"))
 }
-fn position_y_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    SuccessorQuery,
-    PositionYSlot,
-    Schema,
-    Body,
-    PlanarPosition,
-    PositionY,
-    PositiveLength,
-    ReadWrite,
-    EqualityPredicate,
-    DeclaredApplicationUnit<Metre, <TopologyLengthBinding as ApplicationScalarValueBinding>::Unit>,
-> {
-    ApplicationQueryResultFieldRef::new("y", PositionY::reference())
+fn position_y_result<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<SuccessorQuery, PositionYSlot, Schema, PositionY> {
+    ApplicationQueryResultFieldRef::new("y", PositionY::at("PositionY"))
 }
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationProjection<Schema, SuccessorQuery>
     for SuccessorReadResult
@@ -178,30 +148,12 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProjection<Schema, Succ
         })
     }
 }
-fn body_key_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    SuccessorQuery,
-    BodyKeySlot,
-    Schema,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("body_key", BodyKey::reference())
+fn body_key_result<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<SuccessorQuery, BodyKeySlot, Schema, BodyKey> {
+    ApplicationQueryResultFieldRef::new("body_key", BodyKey::at("BodyKey"))
 }
 pub struct SuccessorReadBinding<Schema>(PhantomData<fn() -> Schema>);
-pub type SuccessorReadScope<Schema> = ApplicationQueryFieldScope<
-    Schema,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type SuccessorReadScope = ApplicationQueryFieldScope<BodyKey>;
 impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema>
     for SuccessorReadBinding<Schema>
 {
@@ -210,7 +162,7 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema>
     type Query = SuccessorQuery;
     type ParameterBinding = SuccessorReadParametersBinding;
     type ResultBinding = SuccessorReadResultBinding;
-    type ScopeBinding = SuccessorReadScope<Schema>;
+    type ScopeBinding = SuccessorReadScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -218,17 +170,8 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema>
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.certification.courtroom-successor-read.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -246,7 +189,7 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryIntent<Schema> for Successor
     fn parameters(&self) -> ApplicationQueryParameterSet<SuccessorQuery> {
         ApplicationQueryParameterSet::new()
     }
-    fn into_scope(self) -> SuccessorReadScope<Schema> {
-        SuccessorReadScope::new(BodyKey::reference(), self.body_key)
+    fn into_scope(self) -> SuccessorReadScope {
+        SuccessorReadScope::new(BodyKey::at("BodyKey"), self.body_key)
     }
 }

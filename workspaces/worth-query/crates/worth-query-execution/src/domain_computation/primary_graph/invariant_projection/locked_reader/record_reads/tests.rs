@@ -21,24 +21,32 @@ fn absent_fields_and_predecode_refusal_observe_the_same_acquired_field() {
                     &phase,
                     |reader| {
                         let present = reader
-                            .resolve_entity(AccountIdentity::reference(), "account-1".to_owned())
+                            .resolve_entity(
+                                AccountIdentity::at("AccountIdentity"),
+                                "account-1".to_owned(),
+                            )
                             .unwrap();
                         let absent = reader
-                            .resolve_entity(AccountIdentity::reference(), "account-2".to_owned())
+                            .resolve_entity(
+                                AccountIdentity::at("AccountIdentity"),
+                                "account-2".to_owned(),
+                            )
                             .unwrap();
                         let before = reader.work.field_reads();
                         assert_eq!(
-                            reader.field(&present, AccountNote::reference()).as_deref(),
+                            reader
+                                .field(&present, AccountNote::at("AccountNote"))
+                                .as_deref(),
                             Some("reviewed")
                         );
                         let present_reads = reader.work.field_reads() - before;
                         let before = reader.work.field_reads();
-                        assert_eq!(reader.field(&absent, AccountNote::reference()), None);
+                        assert_eq!(reader.field(&absent, AccountNote::at("AccountNote")), None);
                         let absent_reads = reader.work.field_reads() - before;
                         let before = reader.work.field_reads();
                         let refused = reader.field_with_predecode_admission(
                             &present,
-                            AccountNote::reference(),
+                            AccountNote::at("AccountNote"),
                             |_, _| Err::<(), _>("owner-refused"),
                             &|| Ok(()),
                         );
@@ -48,7 +56,7 @@ fn absent_fields_and_predecode_refusal_observe_the_same_acquired_field() {
                         let before = reader.work.field_reads();
                         let missing = reader.field_with_predecode_admission(
                             &absent,
-                            AccountNote::reference(),
+                            AccountNote::at("AccountNote"),
                             |_, _| {
                                 invoked.set(true);
                                 Ok::<_, ()>(())
@@ -104,15 +112,20 @@ fn cancelled_field_acquisition_contributes_no_field_observation() {
         product.observation().basis().relational_basis().clone(),
         |reader| {
             let account = reader
-                .resolve_entity(AccountIdentity::reference(), "account-1".to_owned())
+                .resolve_entity(
+                    AccountIdentity::at("AccountIdentity"),
+                    "account-1".to_owned(),
+                )
                 .unwrap();
             let before = reader.work.field_reads();
-            assert!(reader.field(&account, AccountNote::reference()).is_some());
+            assert!(reader
+                .field(&account, AccountNote::at("AccountNote"))
+                .is_some());
             let acquired = reader.work.field_reads() - before;
             cancellation.cancel();
             let before = reader.work.field_reads();
-            assert_eq!(reader.field(&account, AccountNote::reference()), None);
-            let field = AccountNote::reference();
+            assert_eq!(reader.field(&account, AccountNote::at("AccountNote")), None);
+            let field = AccountNote::at("AccountNote");
             let locator = reader
                 .layout
                 .field_locator(field.entity(), field.aspect(), field.field())
