@@ -11,6 +11,11 @@ use crate::aspects::masks::AspectMaskContract;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AspectContract {
+    definition: std::sync::Arc<AspectContractDefinition>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct AspectContractDefinition {
     key: AspectKey,
     identity: AspectIdentity,
     revision: AspectContractRevision,
@@ -23,40 +28,40 @@ pub struct AspectContract {
 
 impl AspectContract {
     pub fn key(&self) -> &AspectKey {
-        &self.key
+        &self.definition.key
     }
 
     pub fn identity(&self) -> AspectIdentity {
-        self.identity
+        self.definition.identity
     }
 
     pub fn revision(&self) -> AspectContractRevision {
-        self.revision
+        self.definition.revision
     }
 
     pub fn shape(&self) -> &AspectShape {
-        &self.shape
+        &self.definition.shape
     }
 
     pub fn masks(&self) -> &AspectMaskContract {
-        &self.masks
+        &self.definition.masks
     }
 
     pub fn absence(&self) -> AbsenceLaw {
-        self.absence
+        self.definition.absence
     }
 
     pub fn equivalence(&self) -> AspectEquivalenceBasis {
-        self.equivalence
+        self.definition.equivalence
     }
 
     pub fn evolution(&self) -> crate::aspects::evolution::AspectEvolutionPolicy {
-        self.evolution
+        self.definition.evolution
     }
 
     /// Stable logical width of this contract's native semantic material.
     pub fn semantic_byte_width(&self) -> usize {
-        let shape = match &self.shape {
+        let shape = match &self.definition.shape {
             AspectShape::Struct(shape) => shape.fields().iter().fold(1_usize, |total, field| {
                 total
                     .saturating_add(field.key().as_str().len())
@@ -64,7 +69,8 @@ impl AspectContract {
             }),
             _ => 2,
         };
-        self.key
+        self.definition
+            .key
             .as_str()
             .len()
             .saturating_add(20)
@@ -74,9 +80,10 @@ impl AspectContract {
     /// Allocator capacity retained exclusively by this contract, excluding
     /// its inline `AspectContract` storage.
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
-        self.key
+        self.definition
+            .key
             .owned_allocation_capacity_bytes()
-            .saturating_add(match &self.shape {
+            .saturating_add(match &self.definition.shape {
                 AspectShape::Struct(shape) => shape.owned_allocation_capacity_bytes(),
                 _ => 0,
             })

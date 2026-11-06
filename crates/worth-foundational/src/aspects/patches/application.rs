@@ -51,6 +51,8 @@ impl AuthoritativeRecordAspectPatch {
         }
     }
 
+    /// Cost: O(changed aspects * log(record aspects) + changed struct fields).
+    /// Untouched aspect values and contracts retain their allocation identity.
     fn apply_to_state(
         &self,
         state: &AuthoritativeRecordAspectState,
@@ -86,16 +88,18 @@ impl AuthoritativeRecordAspectPatch {
             );
         }
         Ok(AuthoritativeRecordAspectState::from_canonical_map(
-            CanonicalAspectStateMap::from_canonical_entries(self.whole_aspect_sets.clone()),
+            CanonicalAspectStateMap::from_canonical_entries(
+                self.whole_aspect_sets
+                    .iter()
+                    .map(|(key, value)| (key.clone(), value.clone()))
+                    .collect(),
+            ),
         ))
     }
 }
 
 fn apply_field_patch_to_entry(
-    entries: &std::collections::BTreeMap<
-        crate::aspects::keys::AspectKey,
-        ContractValidatedAspectValue,
-    >,
+    entries: &im::OrdMap<crate::aspects::keys::AspectKey, ContractValidatedAspectValue>,
     field_patch: &FieldLevelAspectPatch,
 ) -> Result<ContractValidatedAspectValue, AuthoritativePatchApplicationDenial> {
     let current_entry = entries.get(field_patch.key()).ok_or_else(|| {

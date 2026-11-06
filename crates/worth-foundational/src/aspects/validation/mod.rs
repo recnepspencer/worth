@@ -9,3 +9,6 @@ pub use validated_value::{
 };
 pub use validation_denial::ContractValidationDenial;
 pub use validation_input::ContractValidationInput;
+
+#[cfg(test)]
+pub(in crate::aspects) use validated_value::CloneObservation;

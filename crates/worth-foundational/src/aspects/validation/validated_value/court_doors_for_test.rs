@@ -9,7 +9,9 @@ impl ContractValidatedAspectValue {
         field: &FieldKey,
         replacement: Option<AspectValue>,
     ) -> bool {
-        let ContractValidatedAspectValueKind::Struct(value) = &mut self.kind else {
+        let ContractValidatedAspectValueKind::Struct(value) =
+            &mut std::sync::Arc::make_mut(&mut self.value).kind
+        else {
             return false;
         };
         if value.get(field).is_none() {

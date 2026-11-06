@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use im::OrdMap;
 
 use super::AuthoritativeStateAdmissionDenial;
 use crate::aspects::keys::AspectKey;
@@ -7,14 +7,14 @@ use serde::Serialize;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct CanonicalAspectStateMap {
-    entries: BTreeMap<AspectKey, ContractValidatedAspectValue>,
+    pub(super) entries: OrdMap<AspectKey, ContractValidatedAspectValue>,
 }
 
 impl CanonicalAspectStateMap {
     pub(crate) fn from_validated_entries(
         entries: impl IntoIterator<Item = ContractValidatedAspectValue>,
     ) -> Result<Self, AuthoritativeStateAdmissionDenial> {
-        let mut canonical_entries = BTreeMap::new();
+        let mut canonical_entries = OrdMap::new();
         for entry in entries {
             let key = entry.key().clone();
             if canonical_entries.insert(key.clone(), entry).is_some() {
@@ -28,7 +28,7 @@ impl CanonicalAspectStateMap {
     }
 
     pub(crate) fn from_canonical_entries(
-        entries: BTreeMap<AspectKey, ContractValidatedAspectValue>,
+        entries: OrdMap<AspectKey, ContractValidatedAspectValue>,
     ) -> Self {
         Self { entries }
     }
@@ -41,7 +41,7 @@ impl CanonicalAspectStateMap {
         self.entries.get(key)
     }
 
-    pub(crate) fn cloned_entries(&self) -> BTreeMap<AspectKey, ContractValidatedAspectValue> {
+    pub(crate) fn cloned_entries(&self) -> OrdMap<AspectKey, ContractValidatedAspectValue> {
         self.entries.clone()
     }
 
