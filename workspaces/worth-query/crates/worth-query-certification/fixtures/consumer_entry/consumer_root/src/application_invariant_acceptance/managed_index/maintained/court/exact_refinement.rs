@@ -50,7 +50,7 @@ fn run() {
         "the genuine candidate shared is not exact sha"
     );
     assert!(
-        matches!(request.query(exact()).next_watch(&mut broad), Err(_)),
+        request.query(exact()).next_watch(&mut broad).is_err(),
         "equal probes do not identify the same Parent/mode watch"
     );
     let equal = request

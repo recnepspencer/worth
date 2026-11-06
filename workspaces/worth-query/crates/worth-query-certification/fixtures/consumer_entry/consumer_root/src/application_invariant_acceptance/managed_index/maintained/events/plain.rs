@@ -4,7 +4,6 @@ use worth_query_decl::facade::{
     application_operation::*, application_query::*, application_schema::*, *,
 };
 use worth_query_host::facade::primary_graph::*;
-#[path = "plain/handler.rs"]
 mod handler;
 pub use handler::Handler;
 

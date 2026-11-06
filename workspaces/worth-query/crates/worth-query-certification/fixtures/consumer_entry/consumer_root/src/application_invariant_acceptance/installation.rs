@@ -30,6 +30,7 @@ pub(super) struct ConsumerWorld<Program = ConsumerProgram> {
     pub(super) invariant_calls: Arc<AtomicUsize>,
     pub(super) invariant_probe: Arc<AtomicUsize>,
     pub(super) producer_authorization_denials: Arc<AtomicUsize>,
+    #[cfg(test)]
     pub(super) producer_domain_denial: Arc<AtomicBool>,
 }
 

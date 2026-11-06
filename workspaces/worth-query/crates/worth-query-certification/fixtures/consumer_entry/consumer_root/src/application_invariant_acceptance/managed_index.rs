@@ -1,5 +1,5 @@
 //! Public committed index consumers, separate from the original application schema.
-mod boxes;
+pub(super) mod boxes;
 mod directory;
 pub(super) mod directory_edit;
 mod expectations;
@@ -32,3 +32,6 @@ const PREFIX_REFINEMENT: Option<
 const PREFIX_MAINTENANCE:
     worth_query_decl::facade::application_query::ApplicationManagedIndexMaintenance =
     worth_query_decl::facade::application_query::ApplicationManagedIndexMaintenance::WhenRequired;
+
+pub(in crate::application_invariant_acceptance) mod prefix_probe;
+pub(in crate::application_invariant_acceptance) mod prefix_provider;

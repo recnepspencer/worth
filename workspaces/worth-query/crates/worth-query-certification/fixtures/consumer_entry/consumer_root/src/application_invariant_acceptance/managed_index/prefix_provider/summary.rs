@@ -4,11 +4,11 @@ use worth_query_consumer_values::{
     compare_prefix_keys, join_prefix_bounds, prefix_bounds_may_match, PrefixSourceBounds,
 };
 type Bounds = PrefixSourceBounds<WorthQueryManagedIndexSourceSlot>;
-type Sources<'a, 'b, I> = WorthQueryManagedIndexSummarySources<'a, 'b, Catalog, I>;
+type Sources<'a, 'b, S, I> = WorthQueryManagedIndexSummarySources<'a, 'b, S, I>;
 
-pub(super) fn merge<I: PrefixSourceIndex>(
+pub(super) fn merge<S: ApplicationSchema, I: PrefixSourceIndex<S>>(
     parts: [Option<Bounds>; 3],
-    sources: &Sources<'_, '_, I>,
+    sources: &Sources<'_, '_, S, I>,
     control: &WorthQueryManagedIndexControl<'_>,
     calls: &Calls,
 ) -> Result<Bounds, Stop> {
@@ -34,8 +34,8 @@ pub(super) fn merge<I: PrefixSourceIndex>(
                 let b = sources.get(right)?;
                 #[cfg(test)]
                 calls.cost_stages.record(prefix_cost_stages::Stage::LoanEnd);
-                a.with_text(query::name(), |a| {
-                    b.with_text(query::name(), |b| {
+                I::with_name(&a, |a| {
+                    I::with_name(&b, |b| {
                         compare_prefix_keys(a, 0, b, 0, |units| {
                             control.checkpoint(units).map_err(Stop::Controlled)
                         })
@@ -49,10 +49,10 @@ pub(super) fn merge<I: PrefixSourceIndex>(
     }
     result.ok_or(Stop::Domain(PrefixIndexDenial::InvalidTopology))
 }
-pub(super) fn may_match<I: PrefixSourceIndex>(
+pub(super) fn may_match<S: ApplicationSchema, I: PrefixSourceIndex<S>>(
     bounds: Bounds,
-    sources: &Sources<'_, '_, I>,
-    probe: &query::Probe,
+    sources: &Sources<'_, '_, S, I>,
+    probe: &Probe,
     control: &WorthQueryManagedIndexControl<'_>,
     calls: &Calls,
 ) -> Result<bool, Stop> {
@@ -72,15 +72,13 @@ pub(super) fn may_match<I: PrefixSourceIndex>(
     let upper = sources.get(bounds.upper)?;
     #[cfg(test)]
     calls.cost_stages.record(prefix_cost_stages::Stage::LoanEnd);
-    lower
-        .with_text(query::name(), |lower| {
-            upper
-                .with_text(query::name(), |upper| {
-                    prefix_bounds_may_match(lower, upper, &probe.prefix, |units| {
-                        control.checkpoint(units).map_err(Stop::Controlled)
-                    })
-                })
-                .map_err(text_denial)?
+    I::with_name(&lower, |lower| {
+        I::with_name(&upper, |upper| {
+            prefix_bounds_may_match(lower, upper, &probe.prefix, |units| {
+                control.checkpoint(units).map_err(Stop::Controlled)
+            })
         })
         .map_err(text_denial)?
+    })
+    .map_err(text_denial)?
 }

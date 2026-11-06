@@ -134,7 +134,7 @@ fn two_fixed_members_keep_their_original_trees_and_record_the_last_complete_endp
         );
         (
             tree.observation().selected_commit().clone(),
-            child.commit_reference().commit_id.clone(),
+            child.commit_reference().commit_id,
         )
     };
     until(app, &mut group, |group| {

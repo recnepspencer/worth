@@ -12,7 +12,7 @@ pub(super) fn describe(
     #[cfg(test)]
     {
         let fault = *calls.structure_fault.lock().unwrap();
-        return Ok(match fault {
+        Ok(match fault {
             Fault::OmitSource => WorthQueryManagedIndexNodeRegion::new(None, region.children()),
             Fault::DuplicateSource => WorthQueryManagedIndexNodeRegion::new(
                 Some(
@@ -32,7 +32,7 @@ pub(super) fn describe(
                 None => region,
             },
             _ => region,
-        });
+        })
     }
     #[cfg(not(test))]
     {
@@ -42,8 +42,8 @@ pub(super) fn describe(
 }
 
 #[cfg(test)]
-pub(super) fn cyclic_sources<I: PrefixSourceIndex>(
-    sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, I>,
+pub(super) fn cyclic_sources<S: ApplicationSchema, I: PrefixSourceIndex<S>>(
+    sources: &WorthQueryManagedIndexSourceRows<'_, S, I>,
     nodes: &mut WorthQueryManagedIndexNodeWriter<'_, Node>,
 ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
     let mut root = None;

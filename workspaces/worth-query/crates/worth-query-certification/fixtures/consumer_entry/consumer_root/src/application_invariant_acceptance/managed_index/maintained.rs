@@ -10,13 +10,10 @@ mod generated;
 mod geometry;
 mod handler;
 mod host;
-#[path = "mutation.rs"]
 mod mutation;
 mod nested;
-#[path = "prefix.rs"]
 mod prefix;
 mod protected;
-#[path = "query.rs"]
 mod query;
 mod refinement;
 mod rule;

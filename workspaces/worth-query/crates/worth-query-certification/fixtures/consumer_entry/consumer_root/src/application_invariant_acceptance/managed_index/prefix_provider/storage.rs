@@ -3,13 +3,20 @@ use super::*;
 use std::sync::Mutex;
 use worth_query_consumer_values::{compare_prefix_keys, PrefixBuildStorage};
 
-pub(super) struct Build<'call, 'source, 'node, 'control, I: PrefixSourceIndex> {
-    pub sources: &'call WorthQueryManagedIndexSourceRows<'source, Catalog, I>,
+pub(super) struct Build<
+    'call,
+    'source,
+    'node,
+    'control,
+    S: ApplicationSchema,
+    I: PrefixSourceIndex<S>,
+> {
+    pub sources: &'call WorthQueryManagedIndexSourceRows<'source, S, I>,
     pub nodes: &'call mut WorthQueryManagedIndexNodeWriter<'node, Node>,
     pub control: &'call WorthQueryManagedIndexControl<'control>,
     pub after_first_node: &'call Mutex<Option<Box<dyn FnOnce() + Send>>>,
 }
-impl<I: PrefixSourceIndex> Build<'_, '_, '_, '_, I> {
+impl<S: ApplicationSchema, I: PrefixSourceIndex<S>> Build<'_, '_, '_, '_, S, I> {
     fn observed_write(&self) {
         let observe = self.after_first_node.lock().unwrap().take();
         if let Some(observe) = observe {
@@ -20,7 +27,9 @@ impl<I: PrefixSourceIndex> Build<'_, '_, '_, '_, I> {
 fn invalid() -> Stop {
     Stop::Domain(PrefixIndexDenial::InvalidTopology)
 }
-impl<I: PrefixSourceIndex> PrefixBuildStorage for Build<'_, '_, '_, '_, I> {
+impl<S: ApplicationSchema, I: PrefixSourceIndex<S>> PrefixBuildStorage
+    for Build<'_, '_, '_, '_, S, I>
+{
     type Id = WorthQueryManagedIndexNodeId;
     type Source = WorthQueryManagedIndexSourceSlot;
     type Stop = Stop;
@@ -34,8 +43,8 @@ impl<I: PrefixSourceIndex> PrefixBuildStorage for Build<'_, '_, '_, '_, I> {
     ) -> Result<std::cmp::Ordering, Stop> {
         let a = self.sources.get(left)?;
         let b = self.sources.get(right)?;
-        a.with_text(query::name(), |a| {
-            b.with_text(query::name(), |b| {
+        I::with_name(&a, |a| {
+            I::with_name(&b, |b| {
                 compare_prefix_keys(a, 0, b, 0, |units| {
                     self.control.checkpoint(units).map_err(Into::into)
                 })

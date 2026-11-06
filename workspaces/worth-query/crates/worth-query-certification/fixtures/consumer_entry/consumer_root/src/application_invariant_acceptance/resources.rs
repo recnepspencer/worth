@@ -1,4 +1,6 @@
+#[cfg(test)]
 mod runtime_time;
+#[cfg(test)]
 pub(super) use runtime_time::RuntimeTime;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock;
 use worth_query_host::facade::runtime::RuntimeWorldBranchBudgetInstallation;
@@ -92,6 +94,7 @@ pub(super) fn application_limits_with_branches(
     ))
 }
 
+#[cfg(test)]
 pub(super) fn application_limits_with_clock(
     policy: worth_foundational::ExecutionRequestPolicy,
     clock: WorthQueryAdmissionClock,
@@ -104,6 +107,7 @@ pub(super) fn application_limits_with_clock(
     ))
 }
 
+#[cfg(test)]
 pub(super) fn application_limits_with_observations(
     policy: worth_foundational::ExecutionRequestPolicy,
     active_observations: u64,

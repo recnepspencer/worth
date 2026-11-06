@@ -5,7 +5,7 @@ mod affinity;
 mod authority;
 #[cfg(test)]
 mod candidate_allocation;
-mod coordinates;
+pub(in crate::application_invariant_acceptance) mod coordinates;
 mod field;
 mod geometry;
 #[cfg(test)]

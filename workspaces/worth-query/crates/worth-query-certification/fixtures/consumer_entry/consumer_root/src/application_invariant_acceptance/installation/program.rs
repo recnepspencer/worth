@@ -131,6 +131,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
         invariant_calls,
         invariant_probe,
         producer_authorization_denials,
+        #[cfg(test)]
         producer_domain_denial,
     })
 }
