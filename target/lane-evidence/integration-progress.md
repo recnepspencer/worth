@@ -1392,3 +1392,26 @@ Final phase tools are deliberately held at a source-ready sentinel until the rem
   check and the named Home control only. No new main-stack build or Bank rerun:
   this private Home-retirement correction changes neither serving layout nor
   the measured Memory entry/Bank call paths. Then phase gates and fresh review.
+
+## Final handoff: source5c495d7e5d, IN PROGRESS
+- Unwind correction committed5c495; Query lib strict and actual Home close/reopen
+  both exit0 at clean5c495. No injected-panic test claimed; the inner task remains
+  structurally borrowed before its potentially unwinding advance call.
+- Green: D9 consumer-root real main at97f0/a7e; factory12/0/0 at97f0;
+  Bank parents2/0/1 metadata-ignore at97f0/a7e; Home1/0/0 ata7e/5c495;
+  all reached final checks/lints, fmt,31-file line cap and context. Exact HEADs
+  and chronology limits are in main-entry-report.md; do not claim broad final
+  owner suites from these focused packets.
+- OPEN integration P1: all3ordinary examples stilloverflow after2authorized
+  rounds. Full97/163/176-frame final paths and exact1MiB PE headers retained.
+  Next: design the entire mutation and output-demand/Signal path from
+  main-entry-stack-handoff.md before further source changes/compilation.
+- Boundary15 remain held by P-A/P-C; Candidate is gone. No baseline/caller
+  permissions added. UI metadata-only lock change saved and restored exactly.
+- Fresh independent reviewer main_entry_fresh_independent_review REJECT,
+  finding1P1agreed OPEN; no other material in-scope defect. It did not rebuild.
+  Holder census remains withdrawn by coordinator ruling; no tracked-share
+  cutover or changed public close refusal was introduced.
+- Counts:2checks+6clippy,7focusedbuilds,5nextestruns,8ordinaryexecutions,
+  6diagnosticreexecutions,2ownedtoolruns. No ignored test, scale, exhaustive
+  oracle or scenario executed. Sourcecommitted; no push.
