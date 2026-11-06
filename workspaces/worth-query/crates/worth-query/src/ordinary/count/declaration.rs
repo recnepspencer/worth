@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -15,16 +16,18 @@ impl WorthQueryCountDeclarationIdentity {
         &self.0
     }
 
-    fn from_declared_intent(intent: &WorthQueryDeclaredReadIntent) -> Self {
-        Self(
+    fn from_declared_intent(
+        intent: &WorthQueryDeclaredReadIntent,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self(
             worth_query_evidence_identity(WorthQueryEvidenceScope::ReadGraphDigest)
                 .field_shape(WorthQueryEvidenceTag::new("stage"), "declared_count")
                 .field_value(WorthQueryEvidenceTag::new("source_query"), intent.digest())
                 .field_shape(WorthQueryEvidenceTag::new("aggregate"), "count_rows")
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string(),
-        )
+        ))
     }
 }
 

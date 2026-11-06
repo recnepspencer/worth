@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::support_matrix::{EffectSupportCause, EffectSupportPosture};
@@ -48,7 +49,7 @@ impl EffectDeferredSupportContract {
     fn new(
         neighbor_family: EffectDeferredNeighborFamily,
         denial_kind: DeniedEffectEligibilityKind,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let residue_posture = EffectDeferredResiduePosture::ZeroOperationalResidue;
         let contract_identity =
             WorthQueryEvidenceIdentity::compose(EFFECT_LIFECYCLE_IDENTITY_SCOPE)
@@ -68,13 +69,13 @@ impl EffectDeferredSupportContract {
                     WorthQueryEvidenceTag::new("residue"),
                     residue_posture.as_str(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             neighbor_family,
             denial_kind,
             residue_posture,
             contract_identity,
-        }
+        })
     }
 
     pub fn neighbor_family(&self) -> EffectDeferredNeighborFamily {

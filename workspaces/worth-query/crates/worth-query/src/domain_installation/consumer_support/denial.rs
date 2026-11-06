@@ -2,6 +2,7 @@ use super::{
     WorthQueryConsumerSupportAdmissionCounters, WorthQueryConsumerSupportDimension,
     WorthQueryConsumerSupportPosture,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -20,7 +21,7 @@ impl WorthQueryConsumerSupportCompatibilityDenial {
         dimension: WorthQueryConsumerSupportDimension,
         runtime_posture: WorthQueryConsumerSupportPosture,
         counters: WorthQueryConsumerSupportAdmissionCounters,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let evidence_identity = worth_query_evidence_identity(
             WorthQueryEvidenceScope::ConsumerProjectionContractDenial,
         )
@@ -33,13 +34,13 @@ impl WorthQueryConsumerSupportCompatibilityDenial {
             WorthQueryEvidenceTag::new("runtime_posture"),
             runtime_posture.as_str(),
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             dimension,
             runtime_posture,
             counters,
             evidence_identity,
-        }
+        })
     }
 
     pub fn dimension(&self) -> WorthQueryConsumerSupportDimension {

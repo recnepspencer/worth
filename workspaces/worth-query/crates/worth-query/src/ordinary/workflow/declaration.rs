@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -111,8 +112,8 @@ fn workflow_identity(
     family: WorthQueryWorkflowFamily,
     label: &WorthQuerySessionLabel,
     mutation: &WorthQueryMutationDeclaration,
-) -> WorthQueryWorkflowDeclarationIdentity {
-    WorthQueryWorkflowDeclarationIdentity {
+) -> Result<WorthQueryWorkflowDeclarationIdentity, IdentityDerivationDenial> {
+    Ok(WorthQueryWorkflowDeclarationIdentity {
         identity: WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::WorkflowMutationLowering,
         )
@@ -129,6 +130,6 @@ fn workflow_identity(
             WorthQueryEvidenceTag::new("mutation"),
             mutation.identity().evidence_identity(),
         )
-        .seal(),
-    }
+        .seal()?,
+    })
 }

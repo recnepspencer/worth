@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::{BridgeExecutionOracle, RelationalExecutionOracle};
@@ -37,7 +38,7 @@ impl EffectExecutionOracleVerification {
         execution_subject_identity: &WorthQueryEvidenceIdentity,
         oracle: &RelationalExecutionOracle,
         component_count: usize,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let verification_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -60,21 +61,21 @@ impl EffectExecutionOracleVerification {
                     WorthQueryEvidenceTag::new("component_count"),
                     component_count,
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             verification_kind,
             execution_subject_identity: execution_subject_identity.clone(),
             relational_oracle_identity: Some(oracle.relational_oracle_identity().clone()),
             bridge_oracle_identity: None,
             verification_identity,
             component_count,
-        }
+        })
     }
 
     pub(crate) fn bridge(
         execution_subject_identity: &WorthQueryEvidenceIdentity,
         oracle: &BridgeExecutionOracle,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let verification_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -94,15 +95,15 @@ impl EffectExecutionOracleVerification {
                     oracle.bridge_oracle_identity(),
                 )
                 .field_usize(WorthQueryEvidenceTag::new("component_count"), 1)
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             verification_kind: EffectExecutionOracleVerificationKind::Writeback,
             execution_subject_identity: execution_subject_identity.clone(),
             relational_oracle_identity: None,
             bridge_oracle_identity: Some(oracle.bridge_oracle_identity().clone()),
             verification_identity,
             component_count: 1,
-        }
+        })
     }
 
     pub fn verification_kind(&self) -> EffectExecutionOracleVerificationKind {

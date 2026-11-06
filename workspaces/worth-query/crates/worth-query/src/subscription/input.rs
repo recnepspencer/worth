@@ -1,5 +1,6 @@
 use crate::basis_lifecycle::{BasisFamily, ScopedSubscriptionDeclarationBasis};
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::live::{LivePromotionDescriptor, LiveQueryFamily};
 use crate::view_shape_live::LiveViewShapeFamily;
 
@@ -111,7 +112,7 @@ impl LiveQueryAdmissionArtifact {
         dimensions: QuerySubscriptionAdmissionDimensions,
         construction_source: QuerySubscriptionConstructionSource,
         future_selection: QuerySubscriptionFutureSelection,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let basis_posture = subscription_posture_for_basis(&scoped_declaration_basis);
         let query_identity =
             crate::identity::validated_query_evidence_identity(descriptor.query_digest());
@@ -148,7 +149,7 @@ impl LiveQueryAdmissionArtifact {
             diagnostic_source_identity: WorthQueryEvidenceIdentity::compose(
                 crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
             )
-            .seal(),
+            .seal()?,
             authorized_projection_width: dimensions.authorized_projection_width,
             ordering_width: dimensions.ordering_width,
             grouping_width: dimensions.grouping_width,
@@ -157,7 +158,7 @@ impl LiveQueryAdmissionArtifact {
             construction_source,
         };
         artifact.diagnostic_source_identity = diagnostic_source_identity(&artifact);
-        artifact
+        Ok(artifact)
     }
 
     pub fn live_family(&self) -> &LiveQueryFamily {

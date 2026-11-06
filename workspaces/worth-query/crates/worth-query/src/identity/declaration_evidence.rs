@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -10,11 +11,13 @@ fn declaration_digest_evidence(
     family: &'static str,
     field: &'static str,
     digest: &str,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceSourceDigest)
-        .field_shape(WorthQueryEvidenceTag::new("identity_family"), family)
-        .field_value(WorthQueryEvidenceTag::new(field), digest)
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceSourceDigest)
+            .field_shape(WorthQueryEvidenceTag::new("identity_family"), family)
+            .field_value(WorthQueryEvidenceTag::new(field), digest)
+            .seal()?,
+    )
 }
 
 pub(crate) fn canonical_query_evidence_identity(

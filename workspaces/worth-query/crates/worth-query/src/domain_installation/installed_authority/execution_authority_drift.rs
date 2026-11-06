@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -180,7 +181,7 @@ impl WorthQueryInstalledDomainExecutionDrift {
         current_authority: Option<&WorthQueryInstalledDomainAuthorityWitness>,
         kind: WorthQueryInstalledDomainExecutionDriftKind,
         next_action: WorthQueryInstalledDomainExecutionNextAction,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let mut drift_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainExecution)
                 .field_shape(WorthQueryEvidenceTag::new("outcome"), "authority-drift")
@@ -199,14 +200,14 @@ impl WorthQueryInstalledDomainExecutionDrift {
                 current_authority.witness_identity(),
             );
         }
-        Self {
+        Ok(Self {
             kind,
             next_action,
             counters: WorthQueryInstalledDomainExecutionDriftCounters::denied_before_work(),
             retained_authority: retained_authority.clone(),
             current_authority: current_authority.cloned(),
-            drift_identity: drift_identity.seal(),
-        }
+            drift_identity: drift_identity.seal()?,
+        })
     }
 
     pub fn kind(&self) -> WorthQueryInstalledDomainExecutionDriftKind {

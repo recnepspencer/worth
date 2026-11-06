@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::BasisFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
 use super::super::inventory_rows::{
@@ -14,14 +15,16 @@ use super::EFFECT_LIFECYCLE_IDENTITY_SCOPE;
 fn compose_inventory_identity(
     identity_family: &str,
     rows: &[WorthQueryEvidenceIdentity],
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(EFFECT_LIFECYCLE_IDENTITY_SCOPE)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            identity_family,
-        )
-        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), rows)
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(EFFECT_LIFECYCLE_IDENTITY_SCOPE)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                identity_family,
+            )
+            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), rows)
+            .seal()?,
+    )
 }
 
 pub fn effect_lifecycle_family_inventory() -> EffectLifecycleFamilyInventory {

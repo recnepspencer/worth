@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -103,7 +104,7 @@ impl QuerySubscriptionSupportProfile {
         active_lifecycle_support: QuerySubscriptionActiveLifecycleSupport,
         lifecycle_closeout_support: QuerySubscriptionLifecycleCloseoutSupport,
         source_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let durable_support = QuerySubscriptionDurableSupport::ExplicitDebt;
         let profile_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::SubscriptionActivationReceipt,
@@ -129,15 +130,15 @@ impl QuerySubscriptionSupportProfile {
             durable_support.as_str(),
         )
         .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             runtime_backed_support,
             active_lifecycle_support,
             lifecycle_closeout_support,
             durable_support,
             source_identity: source_identity.clone(),
             profile_identity,
-        }
+        })
     }
 
     pub fn runtime_backed_support(&self) -> &QuerySubscriptionRuntimeBackedSupport {

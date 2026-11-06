@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::marker::PhantomData;
 
 use crate::application::{
@@ -300,20 +301,24 @@ where
     Ok(())
 }
 
-fn operating_context_identity<D, C>(operating_context: &C) -> WorthQueryEvidenceIdentity
+fn operating_context_identity<D, C>(
+    operating_context: &C,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>
 where
     D: WorthQueryDomainEntryMarker,
     C: WorthQueryDomainOperatingContext<D>,
 {
     let declaration = operating_context.context_identity();
-    worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainDeclarationContext)
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("operating_context_field_name"),
-            declaration.fields().map(|(name, _)| name),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("operating_context_field_value"),
-            declaration.fields().map(|(_, value)| value),
-        )
-        .seal()
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainDeclarationContext)
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("operating_context_field_name"),
+                declaration.fields().map(|(name, _)| name),
+            )
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("operating_context_field_value"),
+                declaration.fields().map(|(_, value)| value),
+            )
+            .seal()?,
+    )
 }

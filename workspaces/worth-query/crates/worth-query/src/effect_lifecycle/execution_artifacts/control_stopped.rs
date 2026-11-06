@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::counters::EffectLifecycleCounters;
@@ -17,7 +18,7 @@ impl EffectExecutionControlStopped {
         lowered: &LoweredEffectExecutionPlan,
         kind: super::super::EffectExecutionControlStopKind,
         message: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let message = message.into();
         let plan_identity = lowered.lowered_effect_execution_plan_identity().clone();
         let outcome_identity =
@@ -28,8 +29,8 @@ impl EffectExecutionControlStopped {
                 )
                 .field_evidence_identity(WorthQueryEvidenceTag::new("plan"), &plan_identity)
                 .field_shape(WorthQueryEvidenceTag::new("kind"), format!("{kind:?}"))
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             kind,
             message,
             lowered_effect_execution_plan_identity: plan_identity,
@@ -39,7 +40,7 @@ impl EffectExecutionControlStopped {
                 lowered.counters().effect_lowering_width(),
                 lowered.counters().effect_executor_rediscovery_count(),
             ),
-        }
+        })
     }
 
     pub const fn kind(&self) -> super::super::EffectExecutionControlStopKind {

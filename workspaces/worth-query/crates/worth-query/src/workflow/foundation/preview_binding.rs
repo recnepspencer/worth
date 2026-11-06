@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -27,8 +28,8 @@ fn synthetic_preview_workflow_query_identity(
     source_label: &str,
     binding_scope: &WorkflowBindingScopeField<'_>,
     preview_session_identity: &BridgePreviewSessionIdentity,
-) -> WorthQueryEvidenceIdentity {
-    apply_binding_scope_field(
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(apply_binding_scope_field(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
@@ -41,7 +42,7 @@ fn synthetic_preview_workflow_query_identity(
         WorthQueryEvidenceTag::new("preview_session"),
         &preview_session_identity.bridge_trust_boundary(),
     )
-    .seal()
+    .seal()?)
 }
 
 fn synthetic_preview_workflow_source_identity(
@@ -49,8 +50,8 @@ fn synthetic_preview_workflow_source_identity(
     binding_scope: &WorkflowBindingScopeField<'_>,
     evaluation_class: &WorkflowPreviewEvaluationClass,
     preview_session_identity: &BridgePreviewSessionIdentity,
-) -> WorthQueryEvidenceIdentity {
-    apply_binding_scope_field(
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(apply_binding_scope_field(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
@@ -67,15 +68,15 @@ fn synthetic_preview_workflow_source_identity(
         WorthQueryEvidenceTag::new("preview_session"),
         &preview_session_identity.bridge_trust_boundary(),
     )
-    .seal()
+    .seal()?)
 }
 
 fn synthetic_preview_workflow_basis_identity(
     source_label: &str,
     binding_scope: &WorkflowBindingScopeField<'_>,
     preview_session_identity: &BridgePreviewSessionIdentity,
-) -> WorthQueryEvidenceIdentity {
-    apply_binding_scope_field(
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(apply_binding_scope_field(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
@@ -92,7 +93,7 @@ fn synthetic_preview_workflow_basis_identity(
         WorthQueryEvidenceTag::new("preview_session"),
         &preview_session_identity.bridge_trust_boundary(),
     )
-    .seal()
+    .seal()?)
 }
 
 pub(crate) fn synthetic_preview_workflow_binding(

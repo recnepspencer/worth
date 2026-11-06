@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::BasisFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
 use super::super::counters::EffectLifecycleCounters;
@@ -56,7 +57,7 @@ impl EffectLifecycleSupportDiscovery {
         requested_effect_family: EffectFamily,
         decision: EffectSupportDecision,
         support_matrix_identity: WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let EffectSupportDecision {
             posture,
             cause,
@@ -93,8 +94,8 @@ impl EffectLifecycleSupportDiscovery {
                 .field_evidence_identity(WorthQueryEvidenceTag::new("matched_row"), row_identity),
             None => discovery.field_shape(WorthQueryEvidenceTag::new("matched_row"), "unsupported"),
         };
-        let discovery_identity = discovery.seal();
-        Self {
+        let discovery_identity = discovery.seal()?;
+        Ok(Self {
             requested_basis_family,
             requested_effect_family,
             posture,
@@ -104,7 +105,7 @@ impl EffectLifecycleSupportDiscovery {
             support_matrix_identity,
             discovery_identity,
             counters,
-        }
+        })
     }
 
     pub fn requested_basis_family(&self) -> BasisFamily {
@@ -186,7 +187,8 @@ impl EffectLifecycleSupportDiscovery {
     }
 }
 
-pub fn effect_lifecycle_support_matrix() -> EffectLifecycleSupportMatrix {
+pub fn effect_lifecycle_support_matrix(
+) -> Result<EffectLifecycleSupportMatrix, IdentityDerivationDenial> {
     let rows = support_rows()
         .iter()
         .map(|row| {
@@ -211,11 +213,11 @@ pub fn effect_lifecycle_support_matrix() -> EffectLifecycleSupportMatrix {
             "effect_lifecycle_support_matrix_v1",
         )
         .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
-        .seal();
-    EffectLifecycleSupportMatrix {
+        .seal()?;
+    Ok(EffectLifecycleSupportMatrix {
         rows,
         matrix_identity,
-    }
+    })
 }
 
 pub fn discover_effect_lifecycle_support(

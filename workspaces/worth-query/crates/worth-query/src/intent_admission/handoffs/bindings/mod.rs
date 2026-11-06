@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod inspection;
 mod read;
 mod routing;
@@ -242,86 +243,90 @@ impl WorthQueryAuthoritativeMutationBatchExecutionBinding {
     }
 }
 
-fn hash_effect_pending_delivery(pending_delivery: &WorthQueryEffectDelivery) -> String {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceipt)
-        .field_shape(WorthQueryEvidenceTag::new("role"), "pending-delivery")
-        .field_value(
-            WorthQueryEvidenceTag::new("effect"),
-            pending_delivery.effect_name(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("commit"),
-            &pending_delivery.commit_identity().evidence_identity(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("trigger_source"),
-            pending_delivery.trigger_source(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("trigger_source_kind"),
-            pending_delivery.trigger_source_kind().as_str(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("target"),
-            pending_delivery.target(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("action"),
-            pending_delivery.action().as_str(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("authority"),
-            pending_delivery.authority_lane().as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("policy"),
-            pending_delivery.effect_policy().as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("suppression"),
-            pending_delivery.suppression_policy().as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("family"),
-            effect_delivery_family_label(pending_delivery.family()),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("phase"),
-            pending_delivery
-                .phase_evidence()
-                .phases()
-                .iter()
-                .map(|phase| phase.as_str()),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("loop_prevention"),
-            pending_delivery.phase_evidence().loop_prevention().as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("source_lane"),
-            WorthQueryIntentSourceLane::EffectTriggered.as_str(),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("aspect"),
-            terminal_aspect_touch_digest_parts(pending_delivery.aspect_touches())
-                .iter()
-                .map(String::as_str),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("payload"),
-            pending_delivery.payload().terminal_digest_material(),
-        )
-        .optional_value(
-            WorthQueryEvidenceTag::new("reason"),
-            pending_delivery.reason(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("write_adjacent_trigger"),
-            pending_delivery.write_adjacent_trigger().identity(),
-        )
-        .seal()
-        .as_str()
-        .to_string()
+fn hash_effect_pending_delivery(
+    pending_delivery: &WorthQueryEffectDelivery,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceipt)
+            .field_shape(WorthQueryEvidenceTag::new("role"), "pending-delivery")
+            .field_value(
+                WorthQueryEvidenceTag::new("effect"),
+                pending_delivery.effect_name(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("commit"),
+                &pending_delivery.commit_identity().evidence_identity(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("trigger_source"),
+                pending_delivery.trigger_source(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("trigger_source_kind"),
+                pending_delivery.trigger_source_kind().as_str(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("target"),
+                pending_delivery.target(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("action"),
+                pending_delivery.action().as_str(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("authority"),
+                pending_delivery.authority_lane().as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("policy"),
+                pending_delivery.effect_policy().as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("suppression"),
+                pending_delivery.suppression_policy().as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("family"),
+                effect_delivery_family_label(pending_delivery.family()),
+            )
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("phase"),
+                pending_delivery
+                    .phase_evidence()
+                    .phases()
+                    .iter()
+                    .map(|phase| phase.as_str()),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("loop_prevention"),
+                pending_delivery.phase_evidence().loop_prevention().as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("source_lane"),
+                WorthQueryIntentSourceLane::EffectTriggered.as_str(),
+            )
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("aspect"),
+                terminal_aspect_touch_digest_parts(pending_delivery.aspect_touches())
+                    .iter()
+                    .map(String::as_str),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("payload"),
+                pending_delivery.payload().terminal_digest_material(),
+            )
+            .optional_value(
+                WorthQueryEvidenceTag::new("reason"),
+                pending_delivery.reason(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("write_adjacent_trigger"),
+                pending_delivery.write_adjacent_trigger().identity(),
+            )
+            .seal()?
+            .as_str()
+            .to_string(),
+    )
 }
 
 fn terminal_aspect_touch_digest_parts(touches: &[WorthQueryAspectTouch]) -> Vec<String> {
@@ -348,27 +353,31 @@ fn intent_execution_binding_identity(
     role: &'static str,
     handoff_digest: &str,
     pending_delivery_digest: Option<&str>,
-) -> String {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceipt)
-        .field_shape(WorthQueryEvidenceTag::new("role"), role)
-        .field_value(WorthQueryEvidenceTag::new("handoff"), handoff_digest)
-        .optional_value(
-            WorthQueryEvidenceTag::new("pending_delivery"),
-            pending_delivery_digest,
-        )
-        .seal()
-        .as_str()
-        .to_string()
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceipt)
+            .field_shape(WorthQueryEvidenceTag::new("role"), role)
+            .field_value(WorthQueryEvidenceTag::new("handoff"), handoff_digest)
+            .optional_value(
+                WorthQueryEvidenceTag::new("pending_delivery"),
+                pending_delivery_digest,
+            )
+            .seal()?
+            .as_str()
+            .to_string(),
+    )
 }
 
 pub(super) fn handoff_execution_binding_identity(
     role: &'static str,
     handoff_digest: &str,
-) -> String {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceipt)
-        .field_shape(WorthQueryEvidenceTag::new("role"), role)
-        .field_value(WorthQueryEvidenceTag::new("handoff"), handoff_digest)
-        .seal()
-        .as_str()
-        .to_string()
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceipt)
+            .field_shape(WorthQueryEvidenceTag::new("role"), role)
+            .field_value(WorthQueryEvidenceTag::new("handoff"), handoff_digest)
+            .seal()?
+            .as_str()
+            .to_string(),
+    )
 }

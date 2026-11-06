@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::super::admission::QuerySubscriptionAdmissionArtifact;
 use super::super::super::declaration::QuerySubscriptionDeclarationArtifact;
@@ -20,7 +21,7 @@ impl QuerySubscriptionSupportEvidenceError {
         message: &'static str,
         declaration_identity: &WorthQueryEvidenceIdentity,
         admission_declaration_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let failure_identity = WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
         )
@@ -40,11 +41,11 @@ impl QuerySubscriptionSupportEvidenceError {
             crate::evidence_identity::WorthQueryEvidenceTag::new("admission_declaration"),
             admission_declaration_identity,
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             message,
             failure_identity,
-        }
+        })
     }
 
     pub fn message(&self) -> &str {

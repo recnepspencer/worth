@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::BasisFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -84,7 +85,7 @@ pub struct AuthorityScopedEffectPlan {
 }
 
 impl AuthorityScopedEffectPlan {
-    pub(crate) fn new(admitted: AdmittedEffectIntent) -> Self {
+    pub(crate) fn new(admitted: AdmittedEffectIntent) -> Result<Self, IdentityDerivationDenial> {
         let invariant_scope = invariant_scope_for(admitted.normalized().family());
         let preview_posture = preview_posture_for(admitted.workflow_declaration());
         let policy_posture = policy_posture_for(admitted.normalized().basis_family());
@@ -133,8 +134,8 @@ impl AuthorityScopedEffectPlan {
                     WorthQueryEvidenceTag::new("counters"),
                     &counters.evidence_identity(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             admitted,
             invariant_scope,
             preview_posture,
@@ -144,7 +145,7 @@ impl AuthorityScopedEffectPlan {
             conflict_footprint,
             plan_identity,
             counters,
-        }
+        })
     }
 
     pub fn admitted(&self) -> &AdmittedEffectIntent {

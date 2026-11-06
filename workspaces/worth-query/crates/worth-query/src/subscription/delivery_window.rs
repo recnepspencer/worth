@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::acknowledgement::{QueryDeliveryBatchReceipt, QueryDeliverySequence};
 use super::active_budget::ActiveSubscriptionAllocationPosture;
@@ -137,7 +138,10 @@ impl QueryDeliveryWindow {
         &self.counters
     }
 
-    pub(super) fn apply_continuation(self, report: &SubscriptionContinuationReport) -> Self {
+    pub(super) fn apply_continuation(
+        self,
+        report: &SubscriptionContinuationReport,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let delivery_window_identity = WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
         )
@@ -157,11 +161,11 @@ impl QueryDeliveryWindow {
             crate::evidence_identity::WorthQueryEvidenceTag::new("remap_width"),
             report.remap_width() as usize,
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             delivery_window_identity,
             ..self
-        }
+        })
     }
 }
 

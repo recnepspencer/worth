@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_runtime_bridge::facade::{
     BridgeIdentityEvidence, RelationalBridgeSnapshotIdentityParts, TruthCommitIdentity,
     TruthSnapshotIdentity,
@@ -196,8 +197,10 @@ impl WorthQuerySnapshotIdentity {
         }
     }
 
-    pub fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
-        match &self.inner {
+    pub fn evidence_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(match &self.inner {
             WorthQuerySnapshotIdentityInner::EmptyRelationalState => {
                 WorthQueryEvidenceIdentity::compose(
                     WorthQueryEvidenceScope::WriteReceiptSnapshotIdentity,
@@ -206,7 +209,7 @@ impl WorthQuerySnapshotIdentity {
                     WorthQueryEvidenceTag::new("snapshot_state"),
                     "empty-relational",
                 )
-                .seal()
+                .seal()?
             }
             WorthQuerySnapshotIdentityInner::RelationalBridge { parts, .. } => {
                 WorthQueryEvidenceIdentity::compose(
@@ -220,12 +223,12 @@ impl WorthQuerySnapshotIdentity {
                     WorthQueryEvidenceTag::new("relational_version_id"),
                     parts.version_id() as usize,
                 )
-                .seal()
+                .seal()?
             }
             WorthQuerySnapshotIdentityInner::Preview { evidence_identity } => {
                 evidence_identity.clone()
             }
-        }
+        })
     }
 
     pub fn bridge_admission_evidence(&self) -> BridgeIdentityEvidence {

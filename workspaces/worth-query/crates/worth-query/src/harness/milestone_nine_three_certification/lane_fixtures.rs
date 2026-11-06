@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::subscription::{
     ActiveAllocationScopeWidth, ActiveFanoutWidth, ActiveRegistryLookupWidth,
     ActiveSubscriptionAllocationPosture, ActiveSubscriptionWorkBudget, ConsumerDeliveryPacingWidth,
@@ -6,8 +7,10 @@ use crate::subscription::{
     QuerySubscriptionWorkBudget, SubscriptionConsumerAttachmentBudget,
 };
 
-pub(super) fn continuation_harness_identity(label: &str) -> crate::WorthQueryEvidenceIdentity {
-    crate::WorthQueryEvidenceIdentity::compose(
+pub(super) fn continuation_harness_identity(
+    label: &str,
+) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
     )
     .field_shape(
@@ -15,7 +18,7 @@ pub(super) fn continuation_harness_identity(label: &str) -> crate::WorthQueryEvi
         "subscription_continuation_harness_identity_v1",
     )
     .field_shape(crate::WorthQueryEvidenceTag::new("label"), label)
-    .seal()
+    .seal()?)
 }
 
 pub(super) fn roomy_budget() -> QuerySubscriptionWorkBudget {

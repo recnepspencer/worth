@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::any::TypeId;
 use std::sync::Arc;
 
@@ -163,13 +164,15 @@ impl WorthQueryInstalledDomainAuthority {
 
 fn installed_world_identity(
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainWorld)
-        .field_value(
-            WorthQueryEvidenceTag::new("runtime_authority"),
-            runtime_authority.as_u64().to_string(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainWorld)
+            .field_value(
+                WorthQueryEvidenceTag::new("runtime_authority"),
+                runtime_authority.as_u64().to_string(),
+            )
+            .seal()?,
+    )
 }
 
 fn installed_authority_identity(
@@ -177,25 +180,27 @@ fn installed_authority_identity(
     generation: WorthQueryDomainInstallationGeneration,
     installation_identity: &WorthQueryEvidenceIdentity,
     installed_semantics_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainHandle)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("installation"),
-            installation_identity,
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("runtime_authority"),
-            runtime_authority.as_u64().to_string(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("generation"),
-            generation.ordinal().to_string(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("installed_semantics"),
-            installed_semantics_identity,
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainHandle)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("installation"),
+                installation_identity,
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("runtime_authority"),
+                runtime_authority.as_u64().to_string(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("generation"),
+                generation.ordinal().to_string(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("installed_semantics"),
+                installed_semantics_identity,
+            )
+            .seal()?,
+    )
 }
 
 fn contribution_category_family(

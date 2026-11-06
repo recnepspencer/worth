@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::super::active_digest::ActiveSubscriptionLaneDigest;
@@ -22,7 +23,9 @@ pub struct SubscriptionContinuationReport {
 }
 
 impl SubscriptionContinuationReport {
-    pub(super) fn new(evidence: &SubscriptionContinuationEvidence) -> Self {
+    pub(super) fn new(
+        evidence: &SubscriptionContinuationEvidence,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let performance_receipt = SubscriptionPerformanceReceipt::new(
             evidence.remap_width(),
             evidence.remap_width(),
@@ -49,8 +52,8 @@ impl SubscriptionContinuationReport {
             crate::evidence_identity::WorthQueryEvidenceTag::new("performance"),
             performance_receipt.performance_receipt_identity(),
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             active_lane_digest: evidence.active_lane_digest().clone(),
             continuation_class: evidence.continuation_class(),
             continuation_identity: evidence.evidence_identity().clone(),
@@ -59,7 +62,7 @@ impl SubscriptionContinuationReport {
             remap_width: evidence.remap_width(),
             performance_receipt,
             report_identity,
-        }
+        })
     }
 
     pub(crate) fn active_lane_digest(&self) -> &ActiveSubscriptionLaneDigest {

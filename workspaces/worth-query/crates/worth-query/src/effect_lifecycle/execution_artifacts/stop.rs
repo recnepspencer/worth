@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::counters::EffectLifecycleCounters;
@@ -18,7 +19,7 @@ impl EffectExecutionDeferred {
         lowered: &LoweredEffectExecutionPlan,
         kind: super::super::EffectExecutionDeferredKind,
         message: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let message = message.into();
         let plan_identity = lowered.lowered_effect_execution_plan_identity().clone();
         let outcome_identity =
@@ -29,8 +30,8 @@ impl EffectExecutionDeferred {
                 )
                 .field_evidence_identity(WorthQueryEvidenceTag::new("plan"), &plan_identity)
                 .field_shape(WorthQueryEvidenceTag::new("message"), message.as_str())
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             kind,
             message,
             lowered_effect_execution_plan_identity: plan_identity,
@@ -38,7 +39,7 @@ impl EffectExecutionDeferred {
             counters: EffectLifecycleCounters::deferred(
                 lowered.counters().effect_support_row_count(),
             ),
-        }
+        })
     }
 
     pub fn kind(&self) -> super::super::EffectExecutionDeferredKind {
@@ -76,7 +77,7 @@ impl EffectExecutionDurabilityUnresolved {
         lowered: &LoweredEffectExecutionPlan,
         message: impl Into<String>,
         unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let message = message.into();
         let plan_identity = lowered.lowered_effect_execution_plan_identity().clone();
         let outcome_identity =
@@ -91,8 +92,8 @@ impl EffectExecutionDurabilityUnresolved {
                 .field_evidence_identity(WorthQueryEvidenceTag::new("plan"), &plan_identity),
                 &unresolved,
             )
-            .seal();
-        Self {
+            .seal()?;
+        Ok(Self {
             message,
             lowered_effect_execution_plan_identity: plan_identity,
             outcome_identity,
@@ -103,7 +104,7 @@ impl EffectExecutionDurabilityUnresolved {
                 1,
             ),
             unresolved,
-        }
+        })
     }
 
     pub fn message(&self) -> &str {

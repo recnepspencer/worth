@@ -1,4 +1,5 @@
 use super::WorthQueryInstalledDomainAuthorityWitness;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -137,7 +138,7 @@ impl WorthQueryInstalledDomainExecutionReceipt {
         basis_identity: WorthQueryEvidenceIdentity,
         operational_identity: WorthQueryEvidenceIdentity,
         managed_live_resource_identity: Option<WorthQueryEvidenceIdentity>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let receipt_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainExecution)
                 .field_shape(
@@ -161,8 +162,8 @@ impl WorthQueryInstalledDomainExecutionReceipt {
                     WorthQueryEvidenceTag::new("managed_live_resource"),
                     managed_live_resource_identity.as_ref(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             installed_authority,
             capability,
             declaration_identity,
@@ -170,14 +171,19 @@ impl WorthQueryInstalledDomainExecutionReceipt {
             operational_identity,
             managed_live_resource_identity,
             receipt_identity,
-        }
+        })
     }
 
-    pub(crate) fn label_identity(role: &'static str, value: &str) -> WorthQueryEvidenceIdentity {
-        worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainExecution)
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_value(WorthQueryEvidenceTag::new("query_minted_value"), value)
-            .seal()
+    pub(crate) fn label_identity(
+        role: &'static str,
+        value: &str,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(
+            worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainExecution)
+                .field_shape(WorthQueryEvidenceTag::new("role"), role)
+                .field_value(WorthQueryEvidenceTag::new("query_minted_value"), value)
+                .seal()?,
+        )
     }
 
     pub(crate) fn derive(

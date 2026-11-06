@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -54,7 +55,7 @@ impl EffectExecutionOracleError {
         message: impl Into<String>,
         execution_subject_identity: &WorthQueryEvidenceIdentity,
         oracle_identity: Option<&WorthQueryEvidenceIdentity>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let message = message.into();
         let error_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
@@ -69,14 +70,14 @@ impl EffectExecutionOracleError {
                 )
                 .optional_evidence_identity(WorthQueryEvidenceTag::new("oracle"), oracle_identity)
                 .field_shape(WorthQueryEvidenceTag::new("message"), message.as_str())
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             kind,
             message,
             execution_subject_identity: execution_subject_identity.clone(),
             oracle_identity: oracle_identity.cloned(),
             error_identity,
-        }
+        })
     }
 
     pub fn kind(&self) -> EffectExecutionOracleErrorKind {
@@ -114,12 +115,15 @@ impl EffectExecutionOracleError {
     }
 }
 
-pub(crate) fn bridge_oracle_observation_subject() -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "bridge_oracle_observation_subject_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("kind"), "last_writeback")
-        .seal()
+pub(crate) fn bridge_oracle_observation_subject(
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "bridge_oracle_observation_subject_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("kind"), "last_writeback")
+            .seal()?,
+    )
 }

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -242,7 +243,7 @@ fn mutation_lowering_identity(
     authority_binding_identity: &WorthQueryEvidenceIdentity,
     freshness_binding: &WorkflowFreshnessBinding,
     request: &NativeStrategyCommitRequest,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
             .field_evidence_identity(
@@ -275,7 +276,7 @@ fn mutation_lowering_identity(
             &runtime_snapshot_identity.evidence_identity(),
         );
     }
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 fn request_origin_label(origin: &StrategyRequestOrigin) -> &'static str {

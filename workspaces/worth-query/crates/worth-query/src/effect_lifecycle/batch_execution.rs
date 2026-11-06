@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::BasisFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::batch::LoweredEffectBatchExecutionPlan;
@@ -137,7 +138,7 @@ impl EffectBatchDurabilityUnresolved {
         lowered: &LoweredEffectBatchExecutionPlan,
         message: impl Into<String>,
         unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let message = message.into();
         let batch_identity = lowered.batch_identity().clone();
         let outcome_identity = super::durability_unresolved_subject::field_unresolved_subject(
@@ -149,8 +150,8 @@ impl EffectBatchDurabilityUnresolved {
                 .field_evidence_identity(WorthQueryEvidenceTag::new("batch"), &batch_identity),
             &unresolved,
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             message,
             batch_identity,
             outcome_identity,
@@ -161,7 +162,7 @@ impl EffectBatchDurabilityUnresolved {
                 1,
             ),
             unresolved,
-        }
+        })
     }
 
     pub fn message(&self) -> &str {
@@ -252,7 +253,7 @@ impl ExecutedEffectBatchPlan {
         authority_owner: EffectAuthorityOwner,
         aggregate_artifact: ExecutedEffectAuthorityArtifact,
         components: Vec<ExecutedEffectPlan>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let batch_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
                 .field_shape(
@@ -282,7 +283,7 @@ impl ExecutedEffectBatchPlan {
                         .iter()
                         .map(ExecutedEffectPlan::effect_execution_identity),
                 )
-                .seal();
+                .seal()?;
         let counters = EffectLifecycleCounters::executed_batch(
             components.len(),
             components
@@ -295,7 +296,7 @@ impl ExecutedEffectBatchPlan {
                 .sum(),
             1,
         );
-        Self {
+        Ok(Self {
             lowered,
             authority_lane,
             basis_family,
@@ -304,7 +305,7 @@ impl ExecutedEffectBatchPlan {
             components,
             batch_identity,
             counters,
-        }
+        })
     }
 
     pub fn authority_lane(&self) -> EffectAuthorityLane {

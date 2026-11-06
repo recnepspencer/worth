@@ -1,4 +1,5 @@
 use crate::basis::{BasisAuthorityFamily, ExecutionPreflightBundle};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::workflow::WorkflowCounters;
@@ -17,8 +18,8 @@ fn synthetic_runtime_workflow_query_identity(
     source_label: &str,
     binding_scope: &WorkflowBindingScopeField<'_>,
     runtime_snapshot_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    apply_binding_scope_field(
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(apply_binding_scope_field(
         WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::WorkflowContextBinding,
         )
@@ -33,15 +34,15 @@ fn synthetic_runtime_workflow_query_identity(
         WorthQueryEvidenceTag::new("runtime_snapshot"),
         runtime_snapshot_identity,
     )
-    .seal()
+    .seal()?)
 }
 
 fn synthetic_runtime_workflow_source_identity(
     source_label: &str,
     binding_scope: &WorkflowBindingScopeField<'_>,
     runtime_snapshot_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    apply_binding_scope_field(
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(apply_binding_scope_field(
         WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::WorkflowContextBinding,
         )
@@ -56,15 +57,15 @@ fn synthetic_runtime_workflow_source_identity(
         WorthQueryEvidenceTag::new("runtime_snapshot"),
         runtime_snapshot_identity,
     )
-    .seal()
+    .seal()?)
 }
 
 fn synthetic_runtime_workflow_basis_identity(
     source_label: &str,
     binding_scope: &WorkflowBindingScopeField<'_>,
     runtime_snapshot_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    apply_binding_scope_field(
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(apply_binding_scope_field(
         WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::WorkflowContextBinding,
         )
@@ -83,7 +84,7 @@ fn synthetic_runtime_workflow_basis_identity(
         WorthQueryEvidenceTag::new("runtime_snapshot"),
         runtime_snapshot_identity,
     )
-    .seal()
+    .seal()?)
 }
 
 pub(crate) fn synthetic_runtime_workflow_binding_for_snapshot_identity(

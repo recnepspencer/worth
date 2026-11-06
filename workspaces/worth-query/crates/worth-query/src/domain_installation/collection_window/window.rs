@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::{
@@ -30,13 +31,15 @@ pub enum WorthQueryCollectionContinuation {
 }
 
 impl WorthQueryCollectionContinuation {
-    pub fn identity_evidence(&self) -> Option<crate::WorthQueryEvidenceIdentity> {
+    pub fn identity_evidence(
+        &self,
+    ) -> Result<Option<crate::WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
         let (posture, cursor) = match self {
-            Self::Complete => return None,
+            Self::Complete => return Ok(None),
             Self::SnapshotMore(cursor) => ("snapshot-more", cursor),
             Self::LiveMore(cursor) => ("live-more", cursor),
         };
-        Some(
+        Ok(Some(
             crate::WorthQueryEvidenceIdentity::compose(
                 crate::WorthQueryEvidenceScope::ProjectionConsumptionIdentity,
             )
@@ -49,8 +52,8 @@ impl WorthQueryCollectionContinuation {
                 crate::WorthQueryEvidenceTag::new("cursor"),
                 &cursor.identity_evidence(),
             )
-            .seal(),
-        )
+            .seal()?,
+        ))
     }
 }
 

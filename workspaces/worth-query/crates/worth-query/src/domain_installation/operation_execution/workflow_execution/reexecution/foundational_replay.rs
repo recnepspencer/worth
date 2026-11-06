@@ -1,4 +1,5 @@
 use crate::domain_installation::{foundational_boundary_artifact_id, foundational_boundary_handle};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -92,14 +93,19 @@ pub(crate) fn materialize_replay_attachment(
     }
 }
 
-fn trace_evidence_identity(role: &'static str, trace_identity: &str) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::InstalledDomainExecution)
-        .field_shape(WorthQueryEvidenceTag::new("identity_family"), role)
-        .field_value(
-            WorthQueryEvidenceTag::new("query_trace_identity"),
-            trace_identity,
-        )
-        .seal()
+fn trace_evidence_identity(
+    role: &'static str,
+    trace_identity: &str,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::InstalledDomainExecution)
+            .field_shape(WorthQueryEvidenceTag::new("identity_family"), role)
+            .field_value(
+                WorthQueryEvidenceTag::new("query_trace_identity"),
+                trace_identity,
+            )
+            .seal()?,
+    )
 }
 
 #[cfg(test)]

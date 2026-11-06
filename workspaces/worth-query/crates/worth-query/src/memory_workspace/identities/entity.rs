@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::sync::Arc;
 use worth_foundational::facade::admit_foundational_authority_identity;
 use worth_runtime_bridge::facade::{
@@ -169,24 +170,26 @@ impl std::hash::Hash for WorthQueryEntityIdentity {
 
 fn entity_evidence_from_relational_record(
     relational_record: RelationalBridgeRecordIdentityParts,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let kind = match relational_record.kind() {
         RelationalBridgeRecordIdentityKind::Entity => "entity",
         RelationalBridgeRecordIdentityKind::Relation => "relation",
     };
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WriteReceiptEntityIdentity)
-        .field_shape(WorthQueryEvidenceTag::new("record_kind"), kind)
-        .field_usize(
-            WorthQueryEvidenceTag::new("partition_id"),
-            relational_record.partition_id() as usize,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("local_slot"),
-            relational_record.local_slot() as usize,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("generation"),
-            relational_record.generation() as usize,
-        )
-        .seal()
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WriteReceiptEntityIdentity)
+            .field_shape(WorthQueryEvidenceTag::new("record_kind"), kind)
+            .field_usize(
+                WorthQueryEvidenceTag::new("partition_id"),
+                relational_record.partition_id() as usize,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("local_slot"),
+                relational_record.local_slot() as usize,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("generation"),
+                relational_record.generation() as usize,
+            )
+            .seal()?,
+    )
 }

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -141,7 +142,7 @@ impl WorthQueryOrdinaryRuntimePosture {
         basis_posture: WorthQueryOrdinaryRuntimeBasisPostureKind,
         remask_posture: Option<WorthQueryOrdinaryRuntimeRemaskPostureKind>,
         support_evidence_digest: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let support_evidence_digest = support_evidence_digest.into();
         let support_evidence_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
@@ -153,15 +154,15 @@ impl WorthQueryOrdinaryRuntimePosture {
                     WorthQueryEvidenceTag::new("support_digest"),
                     &support_evidence_digest,
                 )
-                .seal();
-        Self::new_with_support_identity(
+                .seal()?;
+        Ok(Self::new_with_support_identity(
             kind,
             cause_posture,
             async_posture,
             basis_posture,
             remask_posture,
             support_evidence_identity,
-        )
+        ))
     }
 
     pub fn new_with_support_identity(
@@ -171,7 +172,7 @@ impl WorthQueryOrdinaryRuntimePosture {
         basis_posture: WorthQueryOrdinaryRuntimeBasisPostureKind,
         remask_posture: Option<WorthQueryOrdinaryRuntimeRemaskPostureKind>,
         support_evidence_identity: WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let posture_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
                 .field_shape(
@@ -193,8 +194,8 @@ impl WorthQueryOrdinaryRuntimePosture {
                     WorthQueryEvidenceTag::new("support"),
                     &support_evidence_identity,
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             kind,
             cause_posture,
             async_posture,
@@ -202,7 +203,7 @@ impl WorthQueryOrdinaryRuntimePosture {
             remask_posture,
             support_evidence_identity,
             posture_identity,
-        }
+        })
     }
 
     pub fn kind(&self) -> WorthQueryOrdinaryRuntimePostureKind {

@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::super::admission_error::QuerySubscriptionAdmissionError;
 use super::super::super::bridge_lowering_error::QuerySubscriptionBridgeLoweringError;
@@ -50,7 +51,7 @@ impl QuerySubscriptionDiagnosticBundleError {
         error_kind: QuerySubscriptionDiagnosticBundleErrorKind,
         message: &'static str,
         evidence_parts: &[String],
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let counters = QuerySubscriptionDiagnosticCounters::missing_stage_denied();
         let failure_identity = WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
@@ -75,13 +76,13 @@ impl QuerySubscriptionDiagnosticBundleError {
             crate::evidence_identity::WorthQueryEvidenceTag::new("evidence"),
             evidence_parts.iter().map(String::as_str),
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             error_kind,
             message,
             failure_identity,
             counters,
-        }
+        })
     }
 
     pub fn error_kind(&self) -> &QuerySubscriptionDiagnosticBundleErrorKind {

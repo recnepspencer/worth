@@ -5,6 +5,7 @@ use super::subscription_fixtures::{
     scale_axis_evidence, scale_slope_report, slice_budget, work_budget,
 };
 use super::SubscriptionLifecycleCertificationBundle;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::digest_parts;
 use crate::live::LiveQueryFamily;
 use crate::subscription::{
@@ -23,8 +24,10 @@ use crate::subscription::{
     SubscriptionLifecycleCloseRequest, SubscriptionLifecyclePreviewCertification,
 };
 
-fn continuation_harness_identity(label: &str) -> crate::WorthQueryEvidenceIdentity {
-    crate::WorthQueryEvidenceIdentity::compose(
+fn continuation_harness_identity(
+    label: &str,
+) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
     )
     .field_shape(
@@ -32,7 +35,7 @@ fn continuation_harness_identity(label: &str) -> crate::WorthQueryEvidenceIdenti
         "subscription_continuation_harness_identity_v1",
     )
     .field_shape(crate::WorthQueryEvidenceTag::new("label"), label)
-    .seal()
+    .seal()?)
 }
 
 pub(super) fn lifecycle_lane(

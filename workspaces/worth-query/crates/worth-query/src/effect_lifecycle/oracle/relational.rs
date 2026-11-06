@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::runtime::RelationalRuntime;
 
@@ -5,14 +6,18 @@ use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvide
 
 use super::{EffectExecutionOracleError, EffectExecutionOracleErrorKind};
 
-fn relational_branch_observation_subject(branch: &BranchId) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "relational_branch_observation_subject_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("branch"), branch.0.as_str())
-        .seal()
+fn relational_branch_observation_subject(
+    branch: &BranchId,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "relational_branch_observation_subject_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("branch"), branch.0.as_str())
+            .seal()?,
+    )
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -137,26 +142,28 @@ fn compose_relational_oracle_identity(
     observed_commit_id: u64,
     observed_version_id: u64,
     observed_parent_commit_ids: &[u64],
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "relational_execution_oracle_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("branch"), branch_identity)
-        .field_usize(
-            WorthQueryEvidenceTag::new("commit_id"),
-            observed_commit_id as usize,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("version_id"),
-            observed_version_id as usize,
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("parent_commit_ids"),
-            observed_parent_commit_ids
-                .iter()
-                .map(|parent| parent.to_string()),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "relational_execution_oracle_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("branch"), branch_identity)
+            .field_usize(
+                WorthQueryEvidenceTag::new("commit_id"),
+                observed_commit_id as usize,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("version_id"),
+                observed_version_id as usize,
+            )
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("parent_commit_ids"),
+                observed_parent_commit_ids
+                    .iter()
+                    .map(|parent| parent.to_string()),
+            )
+            .seal()?,
+    )
 }

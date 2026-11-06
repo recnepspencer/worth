@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::workflow::{
     lower_merge_workflow_declaration, lower_mutation_intent_declaration,
     lower_query_writeback_declaration, LoweredMergeWorkflowDeclaration,
@@ -70,7 +71,7 @@ impl EffectLoweringDenial {
         execution_subject_identity: &WorthQueryEvidenceIdentity,
         effect_support_row_count: usize,
         error: WorkflowLoweringError,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let denial_kind = lowering_denial_kind(error.failure_class());
         let denial_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
@@ -88,8 +89,8 @@ impl EffectLoweringDenial {
                     error.staleness_class().as_str(),
                 )
                 .field_shape(WorthQueryEvidenceTag::new("message"), error.message())
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             denial_kind,
             message: error.message(),
             staleness_class: error.staleness_class().clone(),
@@ -99,7 +100,7 @@ impl EffectLoweringDenial {
                 effect_support_row_count,
                 error.counters().workflow_lowering_width(),
             ),
-        }
+        })
     }
 
     pub fn denial_kind(&self) -> EffectLoweringDenialKind {
@@ -154,7 +155,7 @@ impl LoweredEffectExecutionPlan {
     fn new(
         authority_scoped_plan: AuthorityScopedEffectPlan,
         artifact: LoweredEffectExecutionArtifact,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let lowered_effect_execution_plan_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
                 .field_shape(
@@ -169,18 +170,18 @@ impl LoweredEffectExecutionPlan {
                     WorthQueryEvidenceTag::new("artifact"),
                     artifact_identity(&artifact),
                 )
-                .seal();
+                .seal()?;
         let counters = EffectLifecycleCounters::lowered(
             authority_scoped_plan.counters().effect_support_row_count(),
             artifact_counters(&artifact).workflow_lowering_width(),
             artifact_counters(&artifact).workflow_executor_rediscovery_count(),
         );
-        Self {
+        Ok(Self {
             authority_scoped_plan,
             artifact,
             lowered_effect_execution_plan_identity,
             counters,
-        }
+        })
     }
 
     pub fn authority_scoped_plan(&self) -> &AuthorityScopedEffectPlan {

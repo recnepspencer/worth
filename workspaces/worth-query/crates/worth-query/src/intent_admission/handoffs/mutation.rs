@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -192,66 +193,76 @@ fn mutation_handoff_digest(
     execution_seam: WorthQueryIntentAdmissionExecutionSeam,
     decision_digest: &str,
     fingerprint: WorthQueryEvidenceIdentity,
-) -> String {
+) -> Result<String, IdentityDerivationDenial> {
     let decision_identity = worth_query_evidence_identity(
         WorthQueryEvidenceScope::AuthoritativeMutationExecutionHandoff,
     )
     .field_shape(WorthQueryEvidenceTag::new("role"), "decision-digest")
     .field_value(WorthQueryEvidenceTag::new("digest"), decision_digest)
-    .seal();
-    worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationExecutionHandoff)
-        .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
-        .field_shape(
-            WorthQueryEvidenceTag::new("entrypoint"),
-            entrypoint.as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("execution_seam"),
-            execution_seam.as_str(),
-        )
-        .field_evidence_identity(WorthQueryEvidenceTag::new("decision"), &decision_identity)
-        .field_evidence_identity(WorthQueryEvidenceTag::new("fingerprint"), &fingerprint)
-        .seal()
-        .as_str()
-        .to_string()
+    .seal()?;
+    Ok(worth_query_evidence_identity(
+        WorthQueryEvidenceScope::AuthoritativeMutationExecutionHandoff,
+    )
+    .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
+    .field_shape(
+        WorthQueryEvidenceTag::new("entrypoint"),
+        entrypoint.as_str(),
+    )
+    .field_shape(
+        WorthQueryEvidenceTag::new("execution_seam"),
+        execution_seam.as_str(),
+    )
+    .field_evidence_identity(WorthQueryEvidenceTag::new("decision"), &decision_identity)
+    .field_evidence_identity(WorthQueryEvidenceTag::new("fingerprint"), &fingerprint)
+    .seal()?
+    .as_str()
+    .to_string())
 }
 
-fn command_handoff_fingerprint(command: &WorthQueryWriteCommand) -> WorthQueryEvidenceIdentity {
+fn command_handoff_fingerprint(
+    command: &WorthQueryWriteCommand,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let declared_entity_identity = command
         .declared_entity_identity_ref()
         .map(|identity| identity.evidence_identity());
     let declared_collection_identity = command.declared_collection_identity();
-    worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationExecutionHandoff)
-        .field_shape(
-            WorthQueryEvidenceTag::new("family"),
-            command.mutation_family().as_str(),
-        )
-        .optional_evidence_identity(
-            WorthQueryEvidenceTag::new("declared_entity_identity"),
-            declared_entity_identity.as_ref(),
-        )
-        .optional_evidence_identity(
-            WorthQueryEvidenceTag::new("declared_collection"),
-            declared_collection_identity
-                .as_ref()
-                .map(crate::runtime::WorthQueryMutationTargetCollectionIdentity::evidence_identity),
-        )
-        .seal()
+    Ok(worth_query_evidence_identity(
+        WorthQueryEvidenceScope::AuthoritativeMutationExecutionHandoff,
+    )
+    .field_shape(
+        WorthQueryEvidenceTag::new("family"),
+        command.mutation_family().as_str(),
+    )
+    .optional_evidence_identity(
+        WorthQueryEvidenceTag::new("declared_entity_identity"),
+        declared_entity_identity.as_ref(),
+    )
+    .optional_evidence_identity(
+        WorthQueryEvidenceTag::new("declared_collection"),
+        declared_collection_identity
+            .as_ref()
+            .map(crate::runtime::WorthQueryMutationTargetCollectionIdentity::evidence_identity),
+    )
+    .seal()?)
 }
 
-fn batch_handoff_fingerprint(commands: &[WorthQueryWriteCommand]) -> WorthQueryEvidenceIdentity {
+fn batch_handoff_fingerprint(
+    commands: &[WorthQueryWriteCommand],
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let command_fingerprints = commands
         .iter()
         .map(command_handoff_fingerprint)
         .collect::<Vec<_>>();
-    worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationExecutionHandoff)
-        .field_shape(
-            WorthQueryEvidenceTag::new("role"),
-            "batch-command-fingerprint",
-        )
-        .field_evidence_identity_sequence(
-            WorthQueryEvidenceTag::new("command"),
-            command_fingerprints.iter(),
-        )
-        .seal()
+    Ok(worth_query_evidence_identity(
+        WorthQueryEvidenceScope::AuthoritativeMutationExecutionHandoff,
+    )
+    .field_shape(
+        WorthQueryEvidenceTag::new("role"),
+        "batch-command-fingerprint",
+    )
+    .field_evidence_identity_sequence(
+        WorthQueryEvidenceTag::new("command"),
+        command_fingerprints.iter(),
+    )
+    .seal()?)
 }

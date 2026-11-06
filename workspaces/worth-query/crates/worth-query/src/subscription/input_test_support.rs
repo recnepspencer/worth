@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::{basis_lifecycle, ScopedSubscriptionDeclarationBasis};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::CollectionPlanDigest;
 use crate::live::LiveQueryFamily;
 use crate::view_shape_live::LiveViewShapeFamily;
@@ -57,7 +58,7 @@ impl LiveQueryAdmissionArtifact {
         tenant_label: Option<String>,
         relationship_proof_label: Option<String>,
         relationship_proof_posture: QuerySubscriptionRelationshipProofPosture,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let (
             authorized_projection_width,
             ordering_width,
@@ -85,7 +86,7 @@ impl LiveQueryAdmissionArtifact {
             crate::evidence_identity::WorthQueryEvidenceTag::new("validated_query_digest"),
             "query-digest",
         )
-        .seal();
+        .seal()?;
         let plan_identity = crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::MutationEvidenceSourceDigest,
         )
@@ -97,7 +98,7 @@ impl LiveQueryAdmissionArtifact {
             crate::evidence_identity::WorthQueryEvidenceTag::new("plan_digest"),
             "plan-digest",
         )
-        .seal();
+        .seal()?;
         let collection_digest =
             CollectionPlanDigest::from_parts(&["collection-digest".to_string()]);
         let collection_identity =
@@ -135,7 +136,7 @@ impl LiveQueryAdmissionArtifact {
             diagnostic_source_identity: crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
                 crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
             )
-            .seal(),
+            .seal()?,
             authorized_projection_width,
             ordering_width,
             grouping_width,
@@ -144,7 +145,7 @@ impl LiveQueryAdmissionArtifact {
             construction_source,
         };
         artifact.diagnostic_source_identity = diagnostic_source_identity(&artifact);
-        artifact
+        Ok(artifact)
     }
     pub(crate) fn for_test_grouped_with_missing_grouping_width() -> Self {
         let mut artifact = Self::for_test(

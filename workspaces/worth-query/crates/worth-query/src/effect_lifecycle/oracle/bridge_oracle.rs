@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_runtime_bridge::facade::{BridgeWritebackOutcomeClass, RuntimeBridge};
 
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
@@ -190,28 +191,30 @@ pub fn bridge_observation_execution_receipt_subject_identity(
 fn bridge_observation_subject_identity(
     kind: &str,
     observed_digest: &str,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "bridge_observation_subject_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("kind"), kind)
-        .field_bridge_retained_evidence_identity(
-            WorthQueryEvidenceTag::new("observed"),
-            &WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
-                .field_shape(
-                    WorthQueryEvidenceTag::new("identity_family"),
-                    "bridge_observed_digest_v1",
-                )
-                .field_value(
-                    WorthQueryEvidenceTag::new("observed_digest"),
-                    observed_digest,
-                )
-                .seal()
-                .bridge_external_identity_evidence(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "bridge_observation_subject_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("kind"), kind)
+            .field_bridge_retained_evidence_identity(
+                WorthQueryEvidenceTag::new("observed"),
+                &WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
+                    .field_shape(
+                        WorthQueryEvidenceTag::new("identity_family"),
+                        "bridge_observed_digest_v1",
+                    )
+                    .field_value(
+                        WorthQueryEvidenceTag::new("observed_digest"),
+                        observed_digest,
+                    )
+                    .seal()?
+                    .bridge_external_identity_evidence(),
+            )
+            .seal()?,
+    )
 }
 
 fn compose_bridge_oracle_identity(
@@ -221,37 +224,39 @@ fn compose_bridge_oracle_identity(
     request_subject_identity: &WorthQueryEvidenceIdentity,
     receipt_subject_identity: &WorthQueryEvidenceIdentity,
     execution_receipt_subject_identity: Option<&WorthQueryEvidenceIdentity>,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "bridge_execution_oracle_v1",
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("execution_record"),
-            execution_record_identity,
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("outcome"),
-            outcome_subject_identity,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("outcome_class"),
-            writeback_outcome_class_label(outcome_class),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("request"),
-            request_subject_identity,
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("receipt"),
-            receipt_subject_identity,
-        )
-        .optional_evidence_identity(
-            WorthQueryEvidenceTag::new("execution_receipt"),
-            execution_receipt_subject_identity,
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "bridge_execution_oracle_v1",
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("execution_record"),
+                execution_record_identity,
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("outcome"),
+                outcome_subject_identity,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("outcome_class"),
+                writeback_outcome_class_label(outcome_class),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("request"),
+                request_subject_identity,
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("receipt"),
+                receipt_subject_identity,
+            )
+            .optional_evidence_identity(
+                WorthQueryEvidenceTag::new("execution_receipt"),
+                execution_receipt_subject_identity,
+            )
+            .seal()?,
+    )
 }
 
 fn writeback_outcome_class_label(outcome_class: BridgeWritebackOutcomeClass) -> &'static str {

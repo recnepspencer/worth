@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::sync::Arc;
 
 use crate::evidence_identity::{
@@ -14,7 +15,9 @@ pub struct WorthQueryInstalledDomainAuthorityWitness {
 }
 
 impl WorthQueryInstalledDomainAuthorityWitness {
-    pub(crate) fn from_authority(authority: Arc<WorthQueryInstalledDomainAuthority>) -> Self {
+    pub(crate) fn from_authority(
+        authority: Arc<WorthQueryInstalledDomainAuthority>,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let witness_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainExecution)
                 .field_evidence_identity(
@@ -25,11 +28,11 @@ impl WorthQueryInstalledDomainAuthorityWitness {
                     WorthQueryEvidenceTag::new("world"),
                     authority.world_identity(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             authority,
             witness_identity,
-        }
+        })
     }
 
     pub fn authority(&self) -> &WorthQueryInstalledDomainAuthority {

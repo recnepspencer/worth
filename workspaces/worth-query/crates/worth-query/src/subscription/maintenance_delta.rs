@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::active_digest::ActiveSubscriptionLaneDigest;
 use super::active_posture::ActiveSubscriptionDeliveryPosture;
@@ -148,7 +149,9 @@ pub struct QueryMaintenanceDeltaLoweringReport {
 }
 
 impl QueryMaintenanceDeltaLoweringReport {
-    pub(super) fn new(delta: &QuerySubscriptionMaintenanceDelta) -> Self {
+    pub(super) fn new(
+        delta: &QuerySubscriptionMaintenanceDelta,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let lowering_report_identity = WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
         )
@@ -168,11 +171,11 @@ impl QueryMaintenanceDeltaLoweringReport {
             crate::evidence_identity::WorthQueryEvidenceTag::new("width"),
             delta.width() as usize,
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             maintenance_delta_identity: delta.evidence_identity().clone(),
             lowering_report_identity,
-        }
+        })
     }
 
     pub fn maintenance_delta_identity(&self) -> &WorthQueryEvidenceIdentity {

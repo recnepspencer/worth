@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::BasisFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::admission::admit_effect_intent;
@@ -230,7 +231,7 @@ pub struct AdmittedEffectBatch {
 }
 
 impl AdmittedEffectBatch {
-    fn new(admitted: Vec<AdmittedEffectIntent>) -> Self {
+    fn new(admitted: Vec<AdmittedEffectIntent>) -> Result<Self, IdentityDerivationDenial> {
         let authority_lane = admitted[0].normalized().authority_lane();
         let basis_family = admitted[0].normalized().basis_family();
         let batch_identity =
@@ -243,15 +244,15 @@ impl AdmittedEffectBatch {
                     WorthQueryEvidenceTag::new("admitted"),
                     admitted.iter().map(AdmittedEffectIntent::admitted_identity),
                 )
-                .seal();
+                .seal()?;
         let counters = EffectLifecycleCounters::admitted_batch(admitted.len());
-        Self {
+        Ok(Self {
             admitted,
             authority_lane,
             basis_family,
             batch_identity,
             counters,
-        }
+        })
     }
 
     pub fn admitted(&self) -> &[AdmittedEffectIntent] {

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -41,105 +42,109 @@ pub struct EffectLifecycleCounters {
 }
 
 impl EffectLifecycleCounters {
-    pub fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "effect_lifecycle_counters_v1",
-            )
-            .field_usize(WorthQueryEvidenceTag::new("raw"), self.raw_intent_width)
-            .field_usize(
-                WorthQueryEvidenceTag::new("normalized"),
-                self.normalized_effect_family_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("workflow_family_checks"),
-                self.workflow_declaration_family_check_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("workflow_target_checks"),
-                self.workflow_authority_target_check_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("source_paths"),
-                self.source_path_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("support_lookups"),
-                self.support_lookup_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("support_width"),
-                self.support_lookup_width,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("basis_scope_checks"),
-                self.basis_scope_check_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("admitted"),
-                self.admitted_effect_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("authority_scoped_plans"),
-                self.authority_scoped_plan_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("lowered_effects"),
-                self.lowered_effect_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("batch_lowering"),
-                self.batch_lowering_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("lowering_denied"),
-                self.lowering_denied_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("effect_lowering_width"),
-                self.effect_lowering_width,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("effect_executor_rediscovery"),
-                self.effect_executor_rediscovery_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("batch_basis_reuse"),
-                self.batch_basis_reuse_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("authority_reopen"),
-                self.authority_reopen_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("executed_effects"),
-                self.executed_effect_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("execution_denied"),
-                self.execution_denied_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("durability_unresolved"),
-                self.durability_unresolved_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("effect_execution_width"),
-                self.effect_execution_width,
-            )
-            .field_usize(WorthQueryEvidenceTag::new("advisory"), self.advisory_count)
-            .field_usize(
-                WorthQueryEvidenceTag::new("rebind_required"),
-                self.rebind_required_count,
-            )
-            .field_usize(WorthQueryEvidenceTag::new("deferred"), self.deferred_count)
-            .field_usize(WorthQueryEvidenceTag::new("denied"), self.denied_count)
-            .field_usize(
-                WorthQueryEvidenceTag::new("effect_support_rows"),
-                self.effect_support_row_count,
-            )
-            .seal()
+    pub fn evidence_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(
+            WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+                .field_shape(
+                    WorthQueryEvidenceTag::new("identity_family"),
+                    "effect_lifecycle_counters_v1",
+                )
+                .field_usize(WorthQueryEvidenceTag::new("raw"), self.raw_intent_width)
+                .field_usize(
+                    WorthQueryEvidenceTag::new("normalized"),
+                    self.normalized_effect_family_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("workflow_family_checks"),
+                    self.workflow_declaration_family_check_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("workflow_target_checks"),
+                    self.workflow_authority_target_check_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("source_paths"),
+                    self.source_path_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("support_lookups"),
+                    self.support_lookup_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("support_width"),
+                    self.support_lookup_width,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("basis_scope_checks"),
+                    self.basis_scope_check_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("admitted"),
+                    self.admitted_effect_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("authority_scoped_plans"),
+                    self.authority_scoped_plan_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("lowered_effects"),
+                    self.lowered_effect_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("batch_lowering"),
+                    self.batch_lowering_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("lowering_denied"),
+                    self.lowering_denied_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("effect_lowering_width"),
+                    self.effect_lowering_width,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("effect_executor_rediscovery"),
+                    self.effect_executor_rediscovery_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("batch_basis_reuse"),
+                    self.batch_basis_reuse_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("authority_reopen"),
+                    self.authority_reopen_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("executed_effects"),
+                    self.executed_effect_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("execution_denied"),
+                    self.execution_denied_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("durability_unresolved"),
+                    self.durability_unresolved_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("effect_execution_width"),
+                    self.effect_execution_width,
+                )
+                .field_usize(WorthQueryEvidenceTag::new("advisory"), self.advisory_count)
+                .field_usize(
+                    WorthQueryEvidenceTag::new("rebind_required"),
+                    self.rebind_required_count,
+                )
+                .field_usize(WorthQueryEvidenceTag::new("deferred"), self.deferred_count)
+                .field_usize(WorthQueryEvidenceTag::new("denied"), self.denied_count)
+                .field_usize(
+                    WorthQueryEvidenceTag::new("effect_support_rows"),
+                    self.effect_support_row_count,
+                )
+                .seal()?,
+        )
     }
 
     pub fn counter_for_reporting(&self) -> String {

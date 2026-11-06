@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -61,7 +62,9 @@ impl WorthQueryPromotionEligiblePreviewDeclaration {
     }
 }
 
-pub fn declare(label: WorthQuerySessionLabel) -> WorthQueryReadOnlyPreviewDeclaration {
+pub fn declare(
+    label: WorthQuerySessionLabel,
+) -> Result<WorthQueryReadOnlyPreviewDeclaration, IdentityDerivationDenial> {
     let identity =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::PreviewExecutionEvidence)
             .field_shape(
@@ -72,10 +75,10 @@ pub fn declare(label: WorthQuerySessionLabel) -> WorthQueryReadOnlyPreviewDeclar
                 WorthQueryEvidenceTag::new("session_label"),
                 label.identity_digest(),
             )
-            .seal();
-    WorthQueryReadOnlyPreviewDeclaration {
+            .seal()?;
+    Ok(WorthQueryReadOnlyPreviewDeclaration {
         identity,
         label,
         inspection_policy: WorthQueryOrdinaryInspectionPolicy::OperationalOnly,
-    }
+    })
 }

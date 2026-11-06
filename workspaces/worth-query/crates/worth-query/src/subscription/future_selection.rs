@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -112,7 +113,7 @@ impl QuerySubscriptionFutureSelection {
         class: QuerySubscriptionFutureSelectionClass,
         requests_completion_lifecycle: bool,
         async_request_identity: Vec<QuerySubscriptionAsyncRequestIdentityPart>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let async_request_identity = normalize_async_request_identity(async_request_identity);
         let mut projection_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::SubscriptionActivationReceipt,
@@ -144,13 +145,13 @@ impl QuerySubscriptionFutureSelection {
             WorthQueryEvidenceTag::new("async_values"),
             async_values.iter().map(String::as_str),
         );
-        let projection_identity = projection_identity.seal();
-        Self {
+        let projection_identity = projection_identity.seal()?;
+        Ok(Self {
             class,
             requests_completion_lifecycle,
             async_request_identity,
             projection_identity,
-        }
+        })
     }
 
     pub fn class(&self) -> QuerySubscriptionFutureSelectionClass {

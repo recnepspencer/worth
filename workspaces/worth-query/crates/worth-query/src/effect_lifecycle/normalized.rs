@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::{BasisAuthorityPosture, BasisFamily, BasisLifecyclePosture};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -45,7 +46,7 @@ impl NormalizedEffectIntent {
         workflow_request: WorkflowDeclarationRequest,
         operation_input: EffectOperationInput,
         source_path: &'static str,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let capability_identity = authoring_basis.capability_identity();
         let scoped_basis_identity = authoring_basis.scoped_basis_identity();
         let expected_lower_runtime_binding_identity =
@@ -102,9 +103,9 @@ impl NormalizedEffectIntent {
                 lower_runtime_binding_identity,
             );
         }
-        let normalized_identity = normalized_identity.seal();
+        let normalized_identity = normalized_identity.seal()?;
 
-        Self {
+        Ok(Self {
             family,
             authority_lane,
             basis_family: authoring_basis.family(),
@@ -119,7 +120,7 @@ impl NormalizedEffectIntent {
             source_path,
             normalized_identity,
             counters: EffectLifecycleCounters::normalized(1, 1, 1),
-        }
+        })
     }
 
     pub fn family(&self) -> EffectFamily {
@@ -196,17 +197,21 @@ impl NormalizedEffectIntent {
         &self.counters
     }
 
-    pub(crate) fn admitted_identity(&self) -> WorthQueryEvidenceIdentity {
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "admitted_effect_intent_v1",
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("normalized"),
-                &self.normalized_identity,
-            )
-            .seal()
+    pub(crate) fn admitted_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(
+            WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+                .field_shape(
+                    WorthQueryEvidenceTag::new("identity_family"),
+                    "admitted_effect_intent_v1",
+                )
+                .field_evidence_identity(
+                    WorthQueryEvidenceTag::new("normalized"),
+                    &self.normalized_identity,
+                )
+                .seal()?,
+        )
     }
 }
 

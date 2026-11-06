@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -35,9 +36,10 @@ impl super::super::WorthQueryAdmittedConsumerInvalidation<'_> {
     pub fn admitted_semantic_projection(
         &self,
         workspace: &crate::runtime::WorthQueryWorkspace,
-    ) -> Option<WorthQueryAdmittedInvalidationSemanticProjection> {
+    ) -> Result<Option<WorthQueryAdmittedInvalidationSemanticProjection>, IdentityDerivationDenial>
+    {
         if !self.remains_current(workspace) {
-            return None;
+            return Ok(None);
         }
         let semantic = self.delta().semantic_projection();
         let compatibility = match self.delta().compatibility_continuity() {
@@ -58,12 +60,12 @@ impl super::super::WorthQueryAdmittedConsumerInvalidation<'_> {
                     WorthQueryEvidenceTag::new("compatibility"),
                     compatibility_name(compatibility),
                 )
-                .seal();
-        Some(WorthQueryAdmittedInvalidationSemanticProjection {
+                .seal()?;
+        Ok(Some(WorthQueryAdmittedInvalidationSemanticProjection {
             identity,
             semantic,
             compatibility,
-        })
+        }))
     }
 }
 

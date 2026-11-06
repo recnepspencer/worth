@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -160,27 +161,29 @@ fn installation_identity(
     generation: WorthQueryDomainInstallationGeneration,
     artifact: &WorthQueryInstalledDomainArtifact,
     execution_index_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::DomainInstallation)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("package"),
-            artifact.package_identity.evidence_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("admission"),
-            &artifact.admission_identity,
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("runtime_authority"),
-            runtime_authority.as_u64().to_string(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("generation"),
-            generation.ordinal().to_string(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("execution_index"),
-            execution_index_identity,
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::DomainInstallation)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("package"),
+                artifact.package_identity.evidence_identity(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("admission"),
+                &artifact.admission_identity,
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("runtime_authority"),
+                runtime_authority.as_u64().to_string(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("generation"),
+                generation.ordinal().to_string(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("execution_index"),
+                execution_index_identity,
+            )
+            .seal()?,
+    )
 }

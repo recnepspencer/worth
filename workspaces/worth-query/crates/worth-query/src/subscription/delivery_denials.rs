@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -6,14 +7,18 @@ use super::delivery_error::{QueryDeliveryDenialKind, QueryDeliveryError};
 use super::maintenance_delta::QuerySubscriptionMaintenanceDelta;
 use super::ActiveSubscriptionCounters;
 
-fn raw_delivery_denial_source_identity(source_label: &str) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "query_raw_delivery_denial_source_v1",
-        )
-        .field_value(WorthQueryEvidenceTag::new("source"), source_label)
-        .seal()
+fn raw_delivery_denial_source_identity(
+    source_label: &str,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "query_raw_delivery_denial_source_v1",
+            )
+            .field_value(WorthQueryEvidenceTag::new("source"), source_label)
+            .seal()?,
+    )
 }
 
 pub fn deny_raw_cdc_delivery_fallback(

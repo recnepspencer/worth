@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::batch_execution::ExecutedEffectBatchPlan;
@@ -101,7 +102,7 @@ impl EffectReceiptDecisionTrace {
         lowered_identity: WorthQueryEvidenceIdentity,
         authority_owner: EffectAuthorityOwner,
         admitted_tag: &'static str,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let decision_trace_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -117,13 +118,13 @@ impl EffectReceiptDecisionTrace {
                     WorthQueryEvidenceTag::new("authority_owner"),
                     authority_owner.as_str(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             admitted_or_batch_identity,
             lowered_identity,
             authority_owner,
             decision_trace_identity,
-        }
+        })
     }
 
     pub fn admitted_or_batch_identity(&self) -> &WorthQueryEvidenceIdentity {
@@ -161,7 +162,7 @@ impl EffectReceiptIntegrityMarkers {
         authority_artifact: &ExecutedEffectAuthorityArtifact,
         counters: &EffectLifecycleCounters,
         receipt_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let authority_artifact_identity = executed_authority_artifact_identity(authority_artifact);
         let counter_snapshot_identity = counters.evidence_identity();
         let integrity_identity =
@@ -179,12 +180,12 @@ impl EffectReceiptIntegrityMarkers {
                     &counter_snapshot_identity,
                 )
                 .field_evidence_identity(WorthQueryEvidenceTag::new("receipt"), receipt_identity)
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             authority_artifact_identity,
             counter_snapshot_identity,
             integrity_identity,
-        }
+        })
     }
 
     pub fn authority_artifact_identity(&self) -> &WorthQueryEvidenceIdentity {

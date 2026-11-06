@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -24,7 +25,7 @@ impl EffectEligibilityDecisionTrace {
         outcome: &'static str,
         message: &'static str,
         cause: &'static str,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let trace_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
                 .field_shape(
@@ -38,14 +39,14 @@ impl EffectEligibilityDecisionTrace {
                 .field_shape(WorthQueryEvidenceTag::new("outcome"), outcome)
                 .field_shape(WorthQueryEvidenceTag::new("message"), message)
                 .field_shape(WorthQueryEvidenceTag::new("cause"), cause)
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             normalized_identity: normalized.normalized_identity().clone(),
             outcome,
             message,
             cause,
             trace_identity,
-        }
+        })
     }
 
     pub fn normalized_identity(&self) -> &WorthQueryEvidenceIdentity {

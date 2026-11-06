@@ -5,6 +5,7 @@ use crate::canonicalization::CanonicalQueryBundle;
 use crate::declarative_live::DeclarativeLiveQueryRequest;
 use crate::domain_installation::WorthQueryInstalledGraphReadOperation;
 use crate::domain_installation::WorthQueryInstalledGraphReadOperationBindingDenial;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -282,7 +283,7 @@ impl WorthQueryDeclaredReadIntent {
         operations: WorthQueryDeclaredReadOperations,
         traversal: WorthQueryDeclaredTraversalContract,
         artifacts: WorthQueryDeclaredReadArtifacts,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let digest = worth_query_evidence_identity(WorthQueryEvidenceScope::ReadGraphDigest)
             .field_shape(WorthQueryEvidenceTag::new("stage"), "declared_read_intent")
             .field_value(
@@ -304,10 +305,10 @@ impl WorthQueryDeclaredReadIntent {
                     .iter()
                     .map(WorthQueryReadBuiltInOperator::as_str),
             )
-            .seal()
+            .seal()?
             .as_str()
             .to_string();
-        Self {
+        Ok(Self {
             digest,
             family: meaning.family,
             scope_class: meaning.scope_class,
@@ -321,7 +322,7 @@ impl WorthQueryDeclaredReadIntent {
             schema_view: artifacts.schema_view,
             canonical: artifacts.canonical,
             validated: artifacts.validated,
-        }
+        })
     }
 }
 

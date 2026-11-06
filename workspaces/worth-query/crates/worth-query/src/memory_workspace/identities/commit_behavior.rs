@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::sync::Arc;
 use worth_foundational::facade::admit_foundational_authority_identity;
 use worth_runtime_bridge::facade::{BridgeIdentityEvidence, TruthCommitIdentity};
@@ -19,13 +20,15 @@ impl WorthQueryCommitIdentity {
         }
     }
 
-    pub fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
-        match &self.inner {
+    pub fn evidence_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(match &self.inner {
             WorthQueryCommitIdentityInner::Absent => WorthQueryEvidenceIdentity::compose(
                 WorthQueryEvidenceScope::WriteReceiptCommitIdentity,
             )
             .field_shape(WorthQueryEvidenceTag::new("commit_state"), "absent")
-            .seal(),
+            .seal()?,
             WorthQueryCommitIdentityInner::RelationalBridge { bridge_identity } => {
                 let commit_id = bridge_identity
                     .relational_commit_id()
@@ -37,12 +40,12 @@ impl WorthQueryCommitIdentity {
                     WorthQueryEvidenceTag::new("relational_commit_id"),
                     commit_id as usize,
                 )
-                .seal()
+                .seal()?
             }
             WorthQueryCommitIdentityInner::Preview { evidence_identity } => {
                 evidence_identity.clone()
             }
-        }
+        })
     }
 
     pub fn bridge_admission_evidence(&self) -> BridgeIdentityEvidence {

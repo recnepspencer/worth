@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::sync::Arc;
 
 use worth_foundational::facade::admit_foundational_external_identity_token;
@@ -15,47 +16,53 @@ use super::{WorthQueryCommitIdentity, WorthQueryEntityIdentity, WorthQuerySnapsh
 
 fn preview_commit_evidence_from_admitted(
     admitted: &QueryTruthIdentityAdmissionAuthorityIdentity<Arc<str>, QueryCommitIdentityKind>,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WriteReceiptCommitIdentity)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "query_admitted_external_commit_label_v1",
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("external_commit_label"),
-            admitted.value().as_ref(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WriteReceiptCommitIdentity)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "query_admitted_external_commit_label_v1",
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("external_commit_label"),
+                admitted.value().as_ref(),
+            )
+            .seal()?,
+    )
 }
 
 fn preview_snapshot_evidence_from_admitted(
     admitted: &QueryTruthIdentityAdmissionAuthorityIdentity<Arc<str>, QuerySnapshotIdentityKind>,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WriteReceiptSnapshotIdentity)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "query_admitted_external_snapshot_label_v1",
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("external_snapshot_label"),
-            admitted.value().as_ref(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WriteReceiptSnapshotIdentity)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "query_admitted_external_snapshot_label_v1",
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("external_snapshot_label"),
+                admitted.value().as_ref(),
+            )
+            .seal()?,
+    )
 }
 
 fn preview_entity_evidence_from_admitted(
     admitted: &QueryTruthIdentityAdmissionAuthorityIdentity<Arc<str>, QueryEntityIdentityKind>,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::AuthoredCommandEntityIdentity)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "query_admitted_authored_entity_command_v1",
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("authored_entity_identity"),
-            admitted.value().as_ref(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::AuthoredCommandEntityIdentity)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "query_admitted_authored_entity_command_v1",
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("authored_entity_identity"),
+                admitted.value().as_ref(),
+            )
+            .seal()?,
+    )
 }
 
 pub fn admit_external_commit_token(

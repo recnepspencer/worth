@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
 use super::kinds::{
@@ -22,7 +23,7 @@ impl EffectLifecyclePublicSurfaceRow {
         primary_artifact_kind: Option<EffectReceiptArtifactKind>,
         availability: EffectPublicSurfaceAvailability,
         lower_runtime_visibility_hidden: bool,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let row_identity = WorthQueryEvidenceIdentity::compose(EFFECT_LIFECYCLE_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
@@ -50,15 +51,15 @@ impl EffectLifecyclePublicSurfaceRow {
                 WorthQueryEvidenceTag::new("hidden"),
                 lower_runtime_visibility_hidden.to_string().as_str(),
             )
-            .seal();
-        Self {
+            .seal()?;
+        Ok(Self {
             surface_kind,
             entrypoint,
             primary_artifact_kind,
             availability,
             lower_runtime_visibility_hidden,
             row_identity,
-        }
+        })
     }
 
     pub fn surface_kind(&self) -> EffectPublicSurfaceKind {

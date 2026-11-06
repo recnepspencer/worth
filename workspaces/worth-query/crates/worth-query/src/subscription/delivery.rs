@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -43,13 +44,17 @@ impl QuerySubscriptionDeliveryIntent {
         }
     }
 
-    pub fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
-        WorthQueryEvidenceIdentity::compose(DELIVERY_INTENT_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_delivery_intent_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("intent"), self.as_str())
-            .seal()
+    pub fn evidence_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(
+            WorthQueryEvidenceIdentity::compose(DELIVERY_INTENT_IDENTITY_SCOPE)
+                .field_shape(
+                    WorthQueryEvidenceTag::new("identity_family"),
+                    "query_subscription_delivery_intent_v1",
+                )
+                .field_shape(WorthQueryEvidenceTag::new("intent"), self.as_str())
+                .seal()?,
+        )
     }
 }

@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::super::super::evidence_projection::subscription_evidence_projection;
@@ -34,7 +35,7 @@ impl QuerySubscriptionSupportReportError {
         denial_kind: QuerySubscriptionSupportReportDenialKind,
         message: &'static str,
         evidence_parts: &[String],
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let failure_identity = WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
         )
@@ -54,12 +55,12 @@ impl QuerySubscriptionSupportReportError {
             crate::evidence_identity::WorthQueryEvidenceTag::new("evidence"),
             evidence_parts.iter().map(String::as_str),
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             denial_kind,
             message,
             failure_identity,
-        }
+        })
     }
 
     pub fn denial_kind(&self) -> &QuerySubscriptionSupportReportDenialKind {

@@ -1,4 +1,5 @@
 use super::digest_hash::digest_hash_parts;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
@@ -70,17 +71,17 @@ impl AuthorityBackedDigestLabel {
         scope: WorthQueryEvidenceScope,
         identity_family: &'static str,
         field_tag: &'static str,
-    ) -> WorthQueryEvidenceIdentity {
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
         if let Some(source_identity) = &self.source_identity {
-            return source_identity.clone();
+            return Ok(source_identity.clone());
         }
-        worth_query_evidence_identity(scope)
+        Ok(worth_query_evidence_identity(scope)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 identity_family,
             )
             .field_value(WorthQueryEvidenceTag::new(field_tag), self.as_str())
-            .seal()
+            .seal()?)
     }
 }
 

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -31,7 +32,9 @@ impl WorthQueryPromotionEligibility {
         self.eligibility_identity.as_str()
     }
 
-    pub(crate) fn from_authority(authority: &WorthQueryOrdinaryAuthorityAdmission) -> Self {
+    pub(crate) fn from_authority(
+        authority: &WorthQueryOrdinaryAuthorityAdmission,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let session_label = authority
             .session_label()
             .expect("preview authority must carry a session label")
@@ -52,12 +55,12 @@ impl WorthQueryPromotionEligibility {
             WorthQueryEvidenceTag::new("snapshot"),
             &snapshot_identity.evidence_identity(),
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             session_label,
             snapshot_identity,
             eligibility_identity,
-        }
+        })
     }
 }
 
@@ -74,8 +77,8 @@ impl WorthQueryAdmittedWorkflowEffect {
     pub(crate) fn new(
         declaration_identity: &WorthQueryEvidenceIdentity,
         authority: &WorthQueryOrdinaryAuthorityAdmission,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             effect_identity: WorthQueryEvidenceIdentity::compose(
                 WorthQueryEvidenceScope::PreviewExecutionEvidence,
             )
@@ -91,8 +94,8 @@ impl WorthQueryAdmittedWorkflowEffect {
                 WorthQueryEvidenceTag::new("authority"),
                 authority.admission_identity(),
             )
-            .seal(),
-        }
+            .seal()?,
+        })
     }
 
     pub(crate) fn from_effect_lifecycle(effect_identity: WorthQueryEvidenceIdentity) -> Self {

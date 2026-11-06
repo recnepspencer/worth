@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -84,7 +85,7 @@ impl WorthQueryDomainRebindDenial {
         next_action: WorthQueryDomainRebindNextAction,
         prior_package_identity: WorthQueryDomainPackageIdentity,
         current_package_identity: Option<WorthQueryDomainPackageIdentity>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let counters = WorthQueryInstalledDomainExecutionDriftCounters::denied_before_work();
         let mut denial_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainRebind)
@@ -122,15 +123,15 @@ impl WorthQueryDomainRebindDenial {
                 current_package_identity.evidence_identity(),
             );
         }
-        let denial_identity = denial_identity.seal();
-        Self {
+        let denial_identity = denial_identity.seal()?;
+        Ok(Self {
             kind,
             next_action,
             prior_package_identity,
             current_package_identity,
             counters,
             denial_identity,
-        }
+        })
     }
 
     pub fn kind(&self) -> WorthQueryDomainRebindDenialKind {
@@ -173,7 +174,7 @@ impl WorthQueryDomainRebindReceipt {
     pub(crate) fn new(
         prior: &WorthQueryInstalledDomainAuthorityWitness,
         current: &WorthQueryInstalledDomainAuthorityWitness,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let package_identity = current.package_identity().clone();
         let semantic_equivalence_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainRebind)
@@ -185,7 +186,7 @@ impl WorthQueryDomainRebindReceipt {
                     WorthQueryEvidenceTag::new("package"),
                     package_identity.evidence_identity(),
                 )
-                .seal();
+                .seal()?;
         let receipt_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainRebind)
                 .field_shape(WorthQueryEvidenceTag::new("outcome"), "rebound")
@@ -201,8 +202,8 @@ impl WorthQueryDomainRebindReceipt {
                     WorthQueryEvidenceTag::new("semantic_equivalence"),
                     &semantic_equivalence_identity,
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             prior_authority: prior.authority_arc(),
             current_authority: current.authority_arc(),
             prior_witness_identity: prior.witness_identity().clone(),
@@ -210,7 +211,7 @@ impl WorthQueryDomainRebindReceipt {
             package_identity,
             semantic_equivalence_identity,
             receipt_identity,
-        }
+        })
     }
 
     pub fn prior_witness_identity(&self) -> &WorthQueryEvidenceIdentity {

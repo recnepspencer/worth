@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -22,7 +23,7 @@ impl SubscriptionPerformanceReceipt {
         density_posture: ActiveDeliveryDensityPosture,
         allocation_posture: ActiveSubscriptionAllocationPosture,
         source_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let remaining_width = budgeted_width.saturating_sub(consumed_width);
         let performance_receipt_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::SubscriptionActivationReceipt,
@@ -52,15 +53,15 @@ impl SubscriptionPerformanceReceipt {
             WorthQueryEvidenceTag::new("allocation"),
             allocation_posture.as_str(),
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             consumed_width,
             budgeted_width,
             remaining_width,
             density_posture,
             allocation_posture,
             performance_receipt_identity,
-        }
+        })
     }
 
     pub fn consumed_width(&self) -> u64 {

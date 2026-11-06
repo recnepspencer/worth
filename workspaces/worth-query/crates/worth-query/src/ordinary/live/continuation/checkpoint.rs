@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::sync::Arc;
 
 use crate::evidence_identity::{
@@ -154,31 +155,33 @@ fn continuation_identity(
     basis_binding_identity: &WorthQueryEvidenceIdentity,
     pending_delivery_batch_count: usize,
     last_delivery_sequence: Option<u64>,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "worth_query_managed_live_continuation_v1",
-        )
-        .field_value(WorthQueryEvidenceTag::new("resource_name"), resource_name)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("installation"),
-            installation_identity,
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("basis_binding"),
-            basis_binding_identity,
-        )
-        .field_shape(WorthQueryEvidenceTag::new("durability"), "runtime_bound")
-        .field_usize(
-            WorthQueryEvidenceTag::new("pending_delivery_batch_count"),
-            pending_delivery_batch_count,
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("last_delivery_sequence"),
-            last_delivery_sequence
-                .map(|sequence| sequence.to_string())
-                .unwrap_or_else(|| "none".to_string()),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "worth_query_managed_live_continuation_v1",
+            )
+            .field_value(WorthQueryEvidenceTag::new("resource_name"), resource_name)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("installation"),
+                installation_identity,
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("basis_binding"),
+                basis_binding_identity,
+            )
+            .field_shape(WorthQueryEvidenceTag::new("durability"), "runtime_bound")
+            .field_usize(
+                WorthQueryEvidenceTag::new("pending_delivery_batch_count"),
+                pending_delivery_batch_count,
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("last_delivery_sequence"),
+                last_delivery_sequence
+                    .map(|sequence| sequence.to_string())
+                    .unwrap_or_else(|| "none".to_string()),
+            )
+            .seal()?,
+    )
 }

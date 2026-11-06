@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::envelope::SelfDescribingEffectEnvelope;
@@ -37,7 +38,7 @@ impl EffectDiagnosticsMaterialization {
         receipt: &EffectExecutionReceipt,
         envelope: &SelfDescribingEffectEnvelope,
         request: EffectDiagnosticsRequest,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let receipt_identity = receipt.receipt_identity().clone();
         let envelope_identity = envelope.envelope_identity().clone();
         let mut detail_sections = vec![
@@ -87,13 +88,13 @@ impl EffectDiagnosticsMaterialization {
                 )
                 .field_evidence_identity(WorthQueryEvidenceTag::new("receipt"), &receipt_identity)
                 .field_evidence_identity(WorthQueryEvidenceTag::new("envelope"), &envelope_identity)
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             receipt_identity,
             envelope_identity,
             detail_sections,
             diagnostics_identity,
-        }
+        })
     }
 
     pub fn receipt_for_reporting(&self) -> &str {

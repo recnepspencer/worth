@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -52,7 +53,7 @@ impl QuerySubscriptionAdmissionDiagnostics {
         outcome: QuerySubscriptionAdmissionDiagnosticOutcome,
         reason: impl Into<String>,
         source_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let reason = reason.into();
         let diagnostics_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::SubscriptionActivationReceipt,
@@ -65,13 +66,13 @@ impl QuerySubscriptionAdmissionDiagnostics {
         .field_shape(WorthQueryEvidenceTag::new("outcome"), outcome.as_str())
         .field_shape(WorthQueryEvidenceTag::new("reason"), &reason)
         .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             stage,
             outcome,
             reason,
             diagnostics_identity,
-        }
+        })
     }
 
     pub fn stage(&self) -> &QuerySubscriptionAdmissionDiagnosticStage {

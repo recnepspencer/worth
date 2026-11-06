@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -81,7 +82,9 @@ pub fn projected_state_diff() -> WorthQueryWritebackTrigger {
     WorthQueryWritebackTrigger::ProjectedStateDiff
 }
 
-pub fn declare_writeback(trigger: WorthQueryWritebackTrigger) -> WorthQueryWritebackDeclaration {
+pub fn declare_writeback(
+    trigger: WorthQueryWritebackTrigger,
+) -> Result<WorthQueryWritebackDeclaration, IdentityDerivationDenial> {
     let identity = WorthQueryWritebackDeclarationIdentity {
         identity: WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::WorkflowMutationLowering,
@@ -94,11 +97,11 @@ pub fn declare_writeback(trigger: WorthQueryWritebackTrigger) -> WorthQueryWrite
             WorthQueryEvidenceTag::new("family"),
             trigger.family().as_str(),
         )
-        .seal(),
+        .seal()?,
     };
-    WorthQueryWritebackDeclaration {
+    Ok(WorthQueryWritebackDeclaration {
         identity,
         trigger,
         inspection_policy: WorthQueryOrdinaryInspectionPolicy::OperationalOnly,
-    }
+    })
 }

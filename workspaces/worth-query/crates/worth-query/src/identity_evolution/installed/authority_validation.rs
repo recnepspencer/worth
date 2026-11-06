@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_evolution::{
     IdentityEvolutionExecutionArtifact, IdentityEvolutionExecutionFamily,
     IdentityEvolutionOutcomeFamily,
@@ -9,7 +10,7 @@ pub(super) fn semantic_evidence_identity(
     continuity: Option<&WorthQueryContinuityMutationEvidence>,
     lifecycle_target: Option<&crate::memory_workspace::WorthQueryEntityIdentity>,
     establishing_entity_targets: &[crate::memory_workspace::WorthQueryEntityIdentity],
-) -> crate::evidence_identity::WorthQueryEvidenceIdentity {
+) -> Result<crate::evidence_identity::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let identity = semantic_identity_basis(artifact, continuity);
     let identity = match continuity {
         Some(evidence) => append_continuity_semantics(identity, evidence),
@@ -21,7 +22,7 @@ pub(super) fn semantic_evidence_identity(
         .iter()
         .map(crate::memory_workspace::WorthQueryEntityIdentity::evidence_identity)
         .collect::<Vec<_>>();
-    identity
+    Ok(identity
         .field_evidence_identity_sequence(
             crate::evidence_identity::WorthQueryEvidenceTag::new("establishing_entity_target"),
             &establishing_target_identities,
@@ -30,7 +31,7 @@ pub(super) fn semantic_evidence_identity(
             crate::evidence_identity::WorthQueryEvidenceTag::new("lifecycle_target"),
             lifecycle_identity.as_ref(),
         )
-        .seal()
+        .seal()?)
 }
 
 fn semantic_identity_basis(

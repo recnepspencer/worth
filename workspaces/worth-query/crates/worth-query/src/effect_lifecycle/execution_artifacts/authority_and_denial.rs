@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_runtime_bridge::facade::RuntimeBridge;
 
@@ -228,7 +229,7 @@ impl EffectExecutionDenial {
         lowered: &LoweredEffectExecutionPlan,
         denial_kind: EffectExecutionDenialKind,
         message: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let message = message.into();
         let plan_identity = lowered.lowered_effect_execution_plan_identity().clone();
         let denial_identity =
@@ -240,8 +241,8 @@ impl EffectExecutionDenial {
                 .field_evidence_identity(WorthQueryEvidenceTag::new("plan"), &plan_identity)
                 .field_shape(WorthQueryEvidenceTag::new("kind"), denial_kind.as_str())
                 .field_shape(WorthQueryEvidenceTag::new("message"), message.as_str())
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             denial_kind,
             message,
             lowered_effect_execution_plan_identity: plan_identity,
@@ -251,7 +252,7 @@ impl EffectExecutionDenial {
                 lowered.counters().effect_lowering_width(),
                 lowered.counters().effect_executor_rediscovery_count(),
             ),
-        }
+        })
     }
 
     pub fn denial_kind(&self) -> EffectExecutionDenialKind {

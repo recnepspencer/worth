@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_runtime_bridge::facade::{
     BridgeHistoricalEvaluationDecisionLog, BridgeHistoricalMaterializationPath,
     BridgeTruthViewKind, BridgeTruthViewPolicyResolution, HistoricalEvaluationDeclaration,
@@ -162,15 +163,19 @@ fn lower_materialization_descriptor(
     )
 }
 
-pub(crate) fn bridge_historical_basis(reporting_identity: &str) -> ResolvedBasisProof {
+pub(crate) fn bridge_historical_basis(
+    reporting_identity: &str,
+) -> Result<ResolvedBasisProof, IdentityDerivationDenial> {
     let identity = worth_query_evidence_identity(WorthQueryEvidenceScope::ResolvedSnapshotBasis)
         .field_value(
             WorthQueryEvidenceTag::new("bridge_historical_declaration"),
             reporting_identity,
         )
-        .seal();
-    ResolvedBasisProof::new(identity, BasisResolutionMode::RuntimeDirect)
-        .with_reporting_label(reporting_identity)
+        .seal()?;
+    Ok(
+        ResolvedBasisProof::new(identity, BasisResolutionMode::RuntimeDirect)
+            .with_reporting_label(reporting_identity),
+    )
 }
 
 fn resolved_path_class_for(
