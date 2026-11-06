@@ -35,6 +35,7 @@ pub(crate) mod denial;
 mod input_cutoff;
 mod input_reuse;
 mod installed;
+mod ordinary_authorization;
 pub(crate) mod outcome;
 mod post_authorization;
 pub(crate) mod prepared_plan;
