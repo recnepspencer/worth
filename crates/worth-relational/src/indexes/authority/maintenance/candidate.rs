@@ -95,6 +95,25 @@ impl IndexAuthority<'_> {
             .map_err(|kind| DerivedIndexMaintenanceDenial { kind, work: counts })
     }
 
+    /// Cost: changed records and reached installed indexes, plus keyed lookups.
+    /// The candidate carries its authentic predecessor; no external snapshot is required.
+    pub fn prepare_routed_indexes_for_candidate(
+        &self,
+        candidate: &mut PreparedRelationalCommitCandidate,
+        budget: DerivedIndexMaintenanceBudget,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<DerivedIndexMaintenanceWork, DerivedIndexMaintenanceDenial> {
+        let (prepared, counts) = super::request_payment::run(execution, budget, |work| {
+            work.restrict_to_routed_indexes();
+            self.prepare_candidate_indexes(candidate, &[], None, work, execution)
+        })?;
+        let (prepared, funding) = prepared.into_funded_parts();
+        candidate
+            .attach_prepared_indexes(PreparedCandidateIndexPublication { prepared, funding })
+            .map(|()| counts)
+            .map_err(|kind| DerivedIndexMaintenanceDenial { kind, work: counts })
+    }
+
     fn prepare_candidate_indexes(
         &self,
         candidate: &mut PreparedRelationalCommitCandidate,
@@ -114,6 +133,7 @@ impl IndexAuthority<'_> {
         if candidate.indexes_already_prepared() {
             return Err(Denial::CandidateIndexesAlreadyPrepared);
         }
+        work.defer_publication();
         work.charge(index_ids.len())?;
         let (expected_root, prepared_root) = candidate
             .index_preparation_roots()
@@ -145,6 +165,15 @@ impl IndexAuthority<'_> {
                     .ok_or(Denial::SnapshotUnavailable)
             })
             .transpose()?;
+        let before = if before.is_none() && work.routes_installed_indexes() {
+            Some(prepared_projection(
+                self.runtime,
+                branch_id.clone(),
+                Arc::clone(&expected_root),
+            ))
+        } else {
+            before
+        };
         validate_expected_root(&expected_root, before.as_ref())?;
         basis::validate_prepared(&request, before.as_ref(), &after)?;
         let prepared = self.prepare_refresh(execution, &request, before.as_ref(), &after, work)?;
@@ -172,7 +201,9 @@ impl IndexAuthority<'_> {
         let publication = self
             .runtime
             .indexes
-            .prepare_generation_batch(generations, |units, bytes| work.prepare(units, bytes))
+            .prepare_generation_batch(generations, prepared.basis, |units, bytes| {
+                work.prepare(units, bytes)
+            })
             .map_err(|stop| match stop {
                 crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
                 crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow => {

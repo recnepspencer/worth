@@ -17,7 +17,10 @@ pub(super) fn path_nodes(entries: usize) -> usize {
     nodes
 }
 
-pub(super) fn insertion<K, V>(entries: usize, key_visits: usize) -> Option<(u64, u64)> {
+pub(in crate::runtime::state::subsystems::indexing) fn insertion<K, V>(
+    entries: usize,
+    key_visits: usize,
+) -> Option<(u64, u64)> {
     let nodes = path_nodes(entries);
     // Quote separate key/value arrays and their alignment, rather than an
     // array of inflated scope tuples. Header metadata and twelve edges are
@@ -43,7 +46,10 @@ pub(super) fn insertion<K, V>(entries: usize, key_visits: usize) -> Option<(u64,
     Some((u64::try_from(comparisons).ok()?, u64::try_from(bytes).ok()?))
 }
 
-pub(super) fn add(total: &mut (u64, u64), quote: (u64, u64)) -> Option<()> {
+pub(in crate::runtime::state::subsystems::indexing) fn add(
+    total: &mut (u64, u64),
+    quote: (u64, u64),
+) -> Option<()> {
     total.0 = total.0.checked_add(quote.0)?;
     total.1 = total.1.checked_add(quote.1)?;
     Some(())

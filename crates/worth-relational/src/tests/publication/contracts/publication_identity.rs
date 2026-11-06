@@ -144,7 +144,6 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
             )
         })
         .collect::<Vec<_>>();
-    let before_index = runtime.indexes.with_unique_index(Clone::clone);
     let before_cells = runtime.history.branch_cells_snapshot();
     let before_catalog = runtime.history.catalog_len();
     let before_envelopes = runtime.history.recorded_commit_envelope_count();
@@ -189,10 +188,6 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
         })
         .collect::<Vec<_>>();
     assert_eq!(after_storage, before_storage);
-    assert_eq!(
-        runtime.indexes.with_unique_index(Clone::clone),
-        before_index
-    );
     assert_eq!(runtime.history.branch_cells_snapshot(), before_cells);
     assert_eq!(runtime.history.catalog_len(), before_catalog);
     assert_eq!(
@@ -227,7 +222,6 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
             )
         })
         .collect::<Vec<_>>();
-    let before_index = runtime.indexes.with_unique_index(Clone::clone);
     let before_cells = runtime.history.branch_cells_snapshot();
     let before_catalog = runtime.history.catalog_len();
     let before_durable = runtime.durable_log().len();
@@ -263,10 +257,6 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
         })
         .collect::<Vec<_>>();
     assert_eq!(after_storage, before_storage);
-    assert_eq!(
-        runtime.indexes.with_unique_index(Clone::clone),
-        before_index
-    );
     assert_eq!(runtime.history.branch_cells_snapshot(), before_cells);
     assert_eq!(runtime.history.catalog_len(), before_catalog);
     assert_eq!(runtime.durable_log().len(), before_durable);

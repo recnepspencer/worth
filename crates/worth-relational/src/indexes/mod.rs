@@ -1,3 +1,6 @@
+pub(crate) use authority::{
+    checkpoint_index_projections, verify_checkpoint_index_bases, CheckpointIndexProjections,
+};
 mod access;
 pub use access::{
     AppliedEntityFieldLookupDenial, AppliedEntityFieldLookupOutcome, AppliedEntityFieldMatch,
@@ -10,7 +13,6 @@ pub(crate) use authority::at_next_charges;
 pub(crate) use authority::PreparedCandidateIndexPublication;
 pub mod data;
 mod projected_field_values;
-mod unique_entity_aspect_field_index;
 
 #[cfg(test)]
 pub(crate) use access::index_query_scratch_hint_exists;

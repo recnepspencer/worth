@@ -3,13 +3,16 @@ use super::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
 use crate::identity::data::KindId;
 use crate::schema::data::AspectContractPlanCatalog;
 use std::collections::{BTreeMap, BTreeSet};
-use worth_foundational::facade::AspectFieldLocator;
+use worth_foundational::facade::{AspectFieldLocator, AspectKey, FieldKey};
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct InstalledIndexRouting {
     entities: BTreeMap<KindId, Vec<DerivedIndexId>>,
     relations: BTreeMap<KindId, Vec<DerivedIndexId>>,
     entity_fields: BTreeMap<KindId, Vec<AspectFieldLocator>>,
+    entity_topology: BTreeMap<KindId, Vec<DerivedIndexId>>,
+    relation_topology: BTreeMap<KindId, Vec<DerivedIndexId>>,
+    fields: BTreeMap<(bool, KindId, AspectKey, FieldKey), Vec<DerivedIndexId>>,
 }
 impl InstalledIndexRouting {
     /// cost-lane: cold-start/schema transition. Cost: installed definitions times schema plans.
@@ -34,6 +37,12 @@ impl InstalledIndexRouting {
                                 .entry(plan.kind_id)
                                 .or_default()
                                 .push(definition.index_id);
+                            routing.route_field(
+                                true,
+                                plan.kind_id,
+                                field_locator,
+                                definition.index_id,
+                            );
                             fields
                                 .entry(plan.kind_id)
                                 .or_default()
@@ -54,14 +63,39 @@ impl InstalledIndexRouting {
                                 .entry(plan.kind_id)
                                 .or_default()
                                 .push(definition.index_id);
+                            routing.route_field(
+                                false,
+                                plan.kind_id,
+                                field_locator,
+                                definition.index_id,
+                            );
                         }
                     }
                 }
                 DerivedIndexKind::RelatedEntityOrdering {
                     relation_kind,
                     child_kind,
+                    ordering,
                     ..
                 } => {
+                    routing
+                        .entity_topology
+                        .entry(*child_kind)
+                        .or_default()
+                        .push(definition.index_id);
+                    routing
+                        .relation_topology
+                        .entry(*relation_kind)
+                        .or_default()
+                        .push(definition.index_id);
+                    for field in ordering {
+                        routing.route_field(
+                            true,
+                            *child_kind,
+                            field.locator(),
+                            definition.index_id,
+                        );
+                    }
                     routing
                         .entities
                         .entry(*child_kind)
@@ -80,12 +114,22 @@ impl InstalledIndexRouting {
                         join.right().external_entity_kind(),
                     ] {
                         routing
+                            .entity_topology
+                            .entry(kind)
+                            .or_default()
+                            .push(definition.index_id);
+                        routing
                             .entities
                             .entry(kind)
                             .or_default()
                             .push(definition.index_id);
                     }
                     for leg in [join.left(), join.right()] {
+                        routing
+                            .relation_topology
+                            .entry(leg.relation_kind())
+                            .or_default()
+                            .push(definition.index_id);
                         routing
                             .relations
                             .entry(leg.relation_kind())
@@ -118,6 +162,44 @@ impl InstalledIndexRouting {
     }
     pub(crate) fn entity_fields(&self, kind: KindId) -> &[AspectFieldLocator] {
         self.entity_fields.get(&kind).map_or(&[], Vec::as_slice)
+    }
+    pub(crate) fn topology(&self, kind: KindId, entity: bool) -> &[DerivedIndexId] {
+        let routes = if entity {
+            &self.entity_topology
+        } else {
+            &self.relation_topology
+        };
+        routes.get(&kind).map_or(&[], Vec::as_slice)
+    }
+    fn route_field(
+        &mut self,
+        entity: bool,
+        kind: KindId,
+        locator: &AspectFieldLocator,
+        index: DerivedIndexId,
+    ) {
+        if let [field] = locator.field_path().fields() {
+            self.fields
+                .entry((
+                    entity,
+                    kind,
+                    locator.aspect().aspect_key().clone(),
+                    field.clone(),
+                ))
+                .or_default()
+                .push(index);
+        }
+    }
+    pub(crate) fn field(
+        &self,
+        entity: bool,
+        kind: KindId,
+        aspect: &AspectKey,
+        field: &FieldKey,
+    ) -> &[DerivedIndexId] {
+        self.fields
+            .get(&(entity, kind, aspect.clone(), field.clone()))
+            .map_or(&[], Vec::as_slice)
     }
     pub(crate) fn kind_count(&self) -> usize {
         self.entities.len().max(self.relations.len())

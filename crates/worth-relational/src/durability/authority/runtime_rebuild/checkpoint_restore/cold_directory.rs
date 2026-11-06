@@ -178,9 +178,6 @@ pub(super) fn restore(
     runtime.partitions.install_cells(mirror);
     runtime.history = history;
     runtime.lineage.install_cold_pages(&directory)?;
-    runtime
-        .indexes
-        .install_cold_checkpoint(directory.clone(), &runtime.history)?;
     runtime.durability.checkpoint_selection().restore(directory);
     Ok(())
 }

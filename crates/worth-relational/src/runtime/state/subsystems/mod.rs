@@ -40,7 +40,7 @@ pub use history::{
 };
 pub(crate) use indexing::{
     IndexCatalogCoverage, IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexingState,
-    IndexingSubsystem, PreparedGenerationBatch,
+    IndexingSubsystem, PreparedGenerationBatch, PreparedIndexBasisSelection,
 };
 pub(crate) use lineage::{
     LineageState, LineageSubsystem, ResidentLineageEventPage, ResidentLineageNode,

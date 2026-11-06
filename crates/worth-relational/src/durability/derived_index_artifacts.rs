@@ -47,6 +47,13 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
                 "checkpoint index generation kind mismatches definition",
             ));
         }
+        if let Entries::RelationJoin(index) = &generation.entries {
+            if !index.consistent_legs() {
+                return Err(corrupt(
+                    "checkpoint join leg state is missing or inconsistent",
+                ));
+            }
+        }
         let source = history
             .commit_artifact(generation.source_commit_id)
             .ok_or_else(|| corrupt("checkpoint index source commit is unavailable"))?;
@@ -71,6 +78,19 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
     for generation in generations {
         indexes.restore_generation(generation);
         work.index_generations_readmitted += 1;
+    }
+    if let Some(checkpoint) = checkpoint {
+        for basis in checkpoint.bases() {
+            history
+                .validate_recovered_scoped_index_basis(
+                    &basis.branch,
+                    basis.commit,
+                    basis.version,
+                    basis.schema,
+                )
+                .map_err(|detail| corrupt(&detail))?;
+            indexes.restore_basis_selection(basis).map_err(corrupt)?;
+        }
     }
     Ok(())
 }

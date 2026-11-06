@@ -10,10 +10,17 @@ impl IndexingSubsystem {
         generations: &[crate::indexes::data::DerivedIndexGeneration],
         mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<(), SelectedIndexGenerationAdmissionStop<Stop>> {
-        self.state
-            .write()
+        let mut state = self.state.write();
+        state
+            .bases
+            .quote_updates(generations, false, &mut prepare)?;
+        state
             .generations
-            .publish_batch_admitted(generations, &mut prepare)
+            .publish_batch_admitted(generations, &mut prepare)?;
+        for generation in generations {
+            state.record_basis_generation(generation.generation_id);
+        }
+        Ok(())
     }
     pub(crate) fn maintenance_inputs_admitted<Stop>(
         &self,
@@ -24,6 +31,7 @@ impl IndexingSubsystem {
         before: Option<(
             crate::identity::data::VersionId,
             crate::schema::data::SchemaVersionId,
+            crate::history::data::CommitId,
         )>,
         mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<
@@ -40,29 +48,51 @@ impl IndexingSubsystem {
         let Some(definition) = state.catalog.definitions.get(&index) else {
             return Ok(None);
         };
-        let generation = state.generations.published_for_commit_admitted(
-            index,
-            definition.branch_scoped.then_some(branch),
-            commit,
-            version,
-            &mut prepare,
-        )?;
-        let prior = if let Some((version, schema)) = before {
-            state.generations.exact_admitted(
+        let scope = definition.branch_scoped.then_some(branch);
+        prepare(
+            navigation_work(state.bases.len(), branch.0.len().saturating_add(1))?,
+            0,
+        )
+        .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
+        let generation = if let Some(basis) = state.bases.get(scope, version) {
+            state.generations.note_payload_selection();
+            (basis.commit == commit)
+                .then(|| basis.generation(index))
+                .flatten()
+        } else {
+            state.generations.published_for_commit_admitted(
                 index,
-                definition.branch_scoped.then_some(branch),
+                scope,
+                commit,
                 version,
-                schema,
-                &mut |units, bytes| {
-                    prepare(
-                        match units {
-                            SelectedIndexReadWork::Operation(units)
-                            | SelectedIndexReadWork::OrderedNavigation(units) => units,
-                        },
-                        bytes,
-                    )
-                },
+                &mut prepare,
             )?
+        };
+        let prior = if let Some((version, schema, commit)) = before {
+            prepare(
+                navigation_work(state.bases.len(), branch.0.len().saturating_add(1))?,
+                0,
+            )
+            .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
+            if let Some(basis) = state
+                .bases
+                .get(scope, version)
+                .or_else(|| state.bases.get(None, version))
+            {
+                state.generations.note_payload_selection();
+                (basis.schema == schema && basis.commit == commit)
+                    .then(|| basis.generation(index))
+                    .flatten()
+            } else {
+                state
+                    .generations
+                    .exact_admitted(index, scope, version, schema, &mut |units, bytes| {
+                        let (SelectedIndexReadWork::Operation(units)
+                        | SelectedIndexReadWork::OrderedNavigation(units)) = units;
+                        prepare(units, bytes)
+                    })?
+                    .filter(|generation| generation.source_commit_id == commit)
+            }
         } else {
             None
         };
@@ -87,6 +117,25 @@ impl IndexingSubsystem {
         let Some(definition) = state.catalog.definitions.get(&index) else {
             return Ok(false);
         };
+        let branch = definition
+            .branch_scoped
+            .then_some(observation.identity().branch_id());
+        prepare(
+            SelectedIndexReadWork::OrderedNavigation(navigation_work(state.bases.len(), 1)?),
+            0,
+        )
+        .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
+        if let Some(basis) = state.bases.get(branch, observation.version_id()) {
+            prepare(
+                SelectedIndexReadWork::OrderedNavigation(navigation_work(
+                    state.catalog.definitions.len(),
+                    1,
+                )?),
+                0,
+            )
+            .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
+            return Ok(basis.commit == commit && basis.generation(index).is_some());
+        }
         state.generations.has_published_for_commit_admitted(
             index,
             definition

@@ -10,18 +10,4 @@ impl IndexAccess<'_> {
             .map(|generation| generation.as_ref().clone())
             .collect()
     }
-
-    pub(crate) fn entity_unique_field_entries(
-        &self,
-        field_locator: &worth_foundational::facade::AspectFieldLocator,
-    ) -> Option<
-        std::collections::BTreeMap<
-            crate::storage::data::AuthoritativeFieldComparisonKey,
-            std::collections::BTreeSet<crate::identity::data::EntityId>,
-        >,
-    > {
-        self.runtime
-            .indexes
-            .with_unique_index(|index| index.get(field_locator).cloned())
-    }
 }

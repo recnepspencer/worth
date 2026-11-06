@@ -56,6 +56,7 @@ impl CapturedCheckpointBasis {
             super::super::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
                 self.index_state
                     .retained_generations(&self.retained_indexes),
+                self.index_state.basis_checkpoint(&self.retained_indexes),
             )?;
         self.symbol_table = runtime.services.symbols.snapshot();
         self.lineage_nodes = runtime.lineage_access().resident_nodes_snapshot();

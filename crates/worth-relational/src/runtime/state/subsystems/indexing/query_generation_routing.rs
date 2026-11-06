@@ -19,6 +19,9 @@ impl IndexingSubsystem {
         version: VersionId,
         schema: SchemaVersionId,
     ) -> Option<Arc<DerivedIndexGeneration>> {
+        if let Some(generation) = self.exact_generation(index, branch, version, schema) {
+            return Some(generation);
+        }
         self.state
             .read()
             .generations

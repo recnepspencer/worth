@@ -1,9 +1,9 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::indexes::data::{
-    RelationJoinDefinition, RelationJoinEntry, RelationJoinKey, RelationJoinLeg,
-    RelationJoinSharedEndpoint,
+    ColdJoinLeg, JoinLegsState, RelationJoinDefinition, RelationJoinEntry, RelationJoinIndex,
+    RelationJoinKey, RelationJoinLeg, RelationJoinSharedEndpoint,
 };
 use crate::storage::data::RelationReadRecord;
 
@@ -15,7 +15,7 @@ pub(in crate::indexes) fn build_relation_join_index_checked(
     projection: &IndexProjectionSource<'_>,
     definition: RelationJoinDefinition,
     context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
-) -> Result<BTreeMap<RelationJoinKey, Vec<RelationJoinEntry>>, IndexKernelStop> {
+) -> Result<RelationJoinIndex, IndexKernelStop> {
     let mut left = BTreeMap::new();
     let mut right = BTreeMap::new();
     collect_join_relations_checked(
@@ -35,9 +35,9 @@ pub(in crate::indexes) fn build_relation_join_index_checked(
         context,
     )?;
     let mut entries = BTreeMap::new();
-    for (shared_entity, left_relations) in left {
+    for (shared_entity, left_relations) in &left {
         context.checkpoint(1)?;
-        let Some(right_relations) = right.get(&shared_entity) else {
+        let Some(right_relations) = right.get(shared_entity) else {
             continue;
         };
         for (left_entity, left_relation) in left_relations {
@@ -46,8 +46,12 @@ pub(in crate::indexes) fn build_relation_join_index_checked(
                 context.checkpoint(1)?;
                 checked_push(
                     &mut entries,
-                    RelationJoinKey::new(left_entity, *right_entity),
-                    RelationJoinEntry::new(shared_entity, left_relation, *right_relation),
+                    RelationJoinKey::new(*left_entity, *right_entity),
+                    RelationJoinEntry::new(
+                        *shared_entity,
+                        *left_relation.first().expect("nonempty leg"),
+                        *right_relation.first().expect("nonempty leg"),
+                    ),
                     0,
                     0,
                     context,
@@ -60,7 +64,13 @@ pub(in crate::indexes) fn build_relation_join_index_checked(
         rows.sort();
         rows.dedup_by_key(|entry| entry.shared_entity_id());
     }
-    Ok(entries)
+    let legs = JoinLegsState::cold(left, right);
+    context.checkpoint(legs.relation_count() as u64)?;
+    context.check_result_peak(legs.owned_bytes())?;
+    Ok(RelationJoinIndex::maintained(
+        super::checked_finish(entries, context)?,
+        legs,
+    ))
 }
 
 fn collect_join_relations_checked(
@@ -68,7 +78,7 @@ fn collect_join_relations_checked(
     projection: &IndexProjectionSource<'_>,
     leg: RelationJoinLeg,
     shared_entity_kind: KindId,
-    collected: &mut BTreeMap<EntityId, BTreeMap<EntityId, RelationId>>,
+    collected: &mut ColdJoinLeg,
     context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
 ) -> Result<(), IndexKernelStop> {
     let budget = std::cell::RefCell::new(context);
@@ -113,20 +123,16 @@ fn collect_join_relations_checked(
                     .is_some_and(|rows| rows.contains_key(&external));
                 if new_shared || new_external {
                     let bytes = u64::from(new_shared)
-                        * (std::mem::size_of::<(EntityId, BTreeMap<EntityId, RelationId>)>()
+                        * (std::mem::size_of::<(EntityId, BTreeMap<EntityId, BTreeSet<RelationId>>)>()
                             + 3 * std::mem::size_of::<usize>()) as u64
                         + u64::from(new_external)
-                            * (std::mem::size_of::<(EntityId, RelationId)>()
+                            * (std::mem::size_of::<(EntityId, BTreeSet<RelationId>)>()
                                 + 3 * std::mem::size_of::<usize>())
                                 as u64;
                     budget.borrow_mut().claim_scratch(bytes)?;
                 }
-                collected
-                    .entry(shared)
-                    .or_default()
-                    .entry(external)
-                    .and_modify(|selected| *selected = (*selected).min(relation.relation_id))
-                    .or_insert(relation.relation_id);
+                budget.borrow_mut().claim_scratch((std::mem::size_of::<RelationId>() * 12) as u64)?;
+                collected.entry(shared).or_default().entry(external).or_default().insert(relation.relation_id);
                 Ok(())
             },
         )
@@ -137,10 +143,7 @@ pub(in crate::indexes) fn build_relation_join_index(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     definition: RelationJoinDefinition,
-) -> Result<
-    BTreeMap<RelationJoinKey, Vec<RelationJoinEntry>>,
-    crate::execution::RelationalExecutionDenialCause,
-> {
+) -> Result<RelationJoinIndex, crate::execution::RelationalExecutionDenialCause> {
     let left = collect_join_relations(
         execution,
         projection,
@@ -154,19 +157,19 @@ pub(in crate::indexes) fn build_relation_join_index(
         definition.shared_entity_kind(),
     )?;
     let mut entries = BTreeMap::<RelationJoinKey, Vec<RelationJoinEntry>>::new();
-    for (shared_entity, left_relations) in left {
-        let Some(right_relations) = right.get(&shared_entity) else {
+    for (shared_entity, left_relations) in &left {
+        let Some(right_relations) = right.get(shared_entity) else {
             continue;
         };
         for (left_entity, left_relation) in left_relations {
             for (right_entity, right_relation) in right_relations {
                 entries
-                    .entry(RelationJoinKey::new(left_entity, *right_entity))
+                    .entry(RelationJoinKey::new(*left_entity, *right_entity))
                     .or_default()
                     .push(RelationJoinEntry::new(
-                        shared_entity,
-                        left_relation,
-                        *right_relation,
+                        *shared_entity,
+                        *left_relation.first().expect("nonempty leg"),
+                        *right_relation.first().expect("nonempty leg"),
                     ));
             }
         }
@@ -175,7 +178,10 @@ pub(in crate::indexes) fn build_relation_join_index(
         joined.sort();
         joined.dedup_by_key(|entry| entry.shared_entity_id());
     }
-    Ok(entries)
+    Ok(RelationJoinIndex::maintained(
+        entries.into(),
+        JoinLegsState::cold(left, right),
+    ))
 }
 
 fn collect_join_relations(
@@ -183,11 +189,8 @@ fn collect_join_relations(
     projection: &IndexProjectionSource<'_>,
     leg: RelationJoinLeg,
     shared_entity_kind: KindId,
-) -> Result<
-    BTreeMap<EntityId, BTreeMap<EntityId, RelationId>>,
-    crate::execution::RelationalExecutionDenialCause,
-> {
-    let mut collected = BTreeMap::<EntityId, BTreeMap<EntityId, RelationId>>::new();
+) -> Result<ColdJoinLeg, crate::execution::RelationalExecutionDenialCause> {
+    let mut collected = ColdJoinLeg::new();
     projection.for_each_relation(execution, leg.relation_kind(), |relation| {
         let (shared, external) = join_endpoints(relation, leg.shared_endpoint());
         if projection.with_entity(execution, shared, |record| record.kind.kind_id)?
@@ -201,8 +204,8 @@ fn collect_join_relations(
             .entry(shared)
             .or_default()
             .entry(external)
-            .and_modify(|selected| *selected = (*selected).min(relation.relation_id))
-            .or_insert(relation.relation_id);
+            .or_default()
+            .insert(relation.relation_id);
         Ok(())
     })?;
     Ok(collected)

@@ -3,7 +3,6 @@ use super::{changes::ChangedRecords, record_metadata, work::MaintenanceWork};
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
 use crate::runtime::VisibilityProjectionView;
-use record_metadata::RelationMetadata;
 use std::collections::BTreeMap;
 
 #[derive(Clone, Copy)]
@@ -16,8 +15,6 @@ pub(super) struct EntityChange {
 #[derive(Clone, Copy)]
 pub(super) struct RelationChange {
     pub(super) id: RelationId,
-    pub(super) old: Option<RelationMetadata>,
-    pub(super) new: Option<RelationMetadata>,
 }
 
 pub(super) struct ChangeRouting {
@@ -48,7 +45,7 @@ impl ChangeRouting {
         for id in &changes.relations {
             let old = record_metadata::relation(execution, before, *id, work)?;
             let new = record_metadata::relation(execution, Some(after), *id, work)?;
-            let change = RelationChange { id: *id, old, new };
+            let change = RelationChange { id: *id };
             let old_kind = old.map(|r| r.kind);
             for kind in old_kind
                 .into_iter()
@@ -58,6 +55,13 @@ impl ChangeRouting {
             }
         }
         Ok(routed)
+    }
+
+    pub(super) fn kinds(&self) -> impl Iterator<Item = (KindId, bool)> + '_ {
+        self.entities
+            .keys()
+            .map(|kind| (*kind, true))
+            .chain(self.relations.keys().map(|kind| (*kind, false)))
     }
 
     pub(super) fn entities(

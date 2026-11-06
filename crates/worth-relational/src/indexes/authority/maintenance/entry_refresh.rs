@@ -27,7 +27,7 @@ pub(super) fn update_entries(
     before: Option<&VisibilityProjectionView>,
     after: &VisibilityProjectionView,
     work: &mut MaintenanceWork,
-) -> Result<(), DerivedIndexMaintenanceDenialKind> {
+) -> Result<bool, DerivedIndexMaintenanceDenialKind> {
     match (&definition.kind, entries) {
         (
             DerivedIndexKind::RelatedEntityOrdering {
@@ -37,15 +37,19 @@ pub(super) fn update_entries(
                 ordering,
             },
             DerivedIndexEntries::RelatedEntityOrdering(entries),
-        ) => ordering::refresh(
-            execution,
-            entries,
-            (*relation_kind, *parent_endpoint, *child_kind, ordering),
-            changes,
-            before,
-            after,
-            work,
-        ),
+        ) => {
+            let edits = work.counts().entry_edits;
+            ordering::refresh(
+                execution,
+                entries,
+                (*relation_kind, *parent_endpoint, *child_kind, ordering),
+                changes,
+                before,
+                after,
+                work,
+            )?;
+            Ok(work.counts().entry_edits != edits)
+        }
         (DerivedIndexKind::RelationJoin(join), DerivedIndexEntries::RelationJoin(entries)) => {
             join::refresh(execution, entries, *join, changes, before, after, work)
         }

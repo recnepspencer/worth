@@ -17,7 +17,7 @@ fn name_index(runtime: &RelationalRuntime, name: &str, branch_scoped: bool) -> D
 }
 
 #[test]
-fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
+fn a_fresh_fork_carries_authoring_generation_through_its_own_basis() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -91,7 +91,7 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
         .generations
         .iter()
         .any(|built| built.generation_id == fork_generation.generation_id));
-    assert_eq!(fork_generation.source_branch_id, fork);
+    assert_eq!(fork_generation.source_branch_id, main);
 
     let (_, main_basis) = runtime
         .observe_branch(&runtime.branch_identity(&main).unwrap())
@@ -101,7 +101,7 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
         .unwrap()
         .unwrap();
     assert_eq!(main_generation.source_branch_id, main);
-    assert_ne!(main_generation.generation_id, fork_generation.generation_id);
+    assert_eq!(main_generation.generation_id, fork_generation.generation_id);
     assert_eq!(main_generation.entries, fork_generation.entries);
 }
 
@@ -174,7 +174,10 @@ fn selected_fork_currency_uses_original_request_work_and_never_cold_population()
         .read_published_generation_for_observation(execution, index, &basis.observation())
         .unwrap()
         .unwrap();
-    assert_eq!(fork_generation.source_branch_id, fork);
+    assert_eq!(
+        fork_generation.generation_id,
+        main_build.generations[0].generation_id
+    );
     assert_eq!(fork_generation.entries, main_build.generations[0].entries);
     let (warm, report) = execution
         .run(ExecutionWorkCeiling::new(None), |_| {

@@ -212,13 +212,13 @@ pub(super) fn commit(
     let index_maintenance_work = provider
         .graph
         .with_runtime(&execution, |runtime| {
-            crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(&execution,
-                runtime,
-                &mut candidate,
-                &provider.graph.primary_index_ids,
-                before.as_snapshot(),
-                ordinary_index_budget,
-            )
+            runtime
+                .index_authority()
+                .prepare_routed_indexes_for_candidate(
+                    &mut candidate,
+                    ordinary_index_budget,
+                    &execution,
+                )
         })
         .map_err(index_preparation_stop)?;
     let managed_views = managed_views::prepare(

@@ -1,5 +1,7 @@
 mod admission;
+mod affected_indexes;
 mod basis;
+mod basis_currency;
 mod branch_seed;
 pub(super) mod candidate;
 mod change_routing;
@@ -8,8 +10,10 @@ mod entry_edits;
 mod entry_refresh;
 use entry_refresh::{empty_entries, update_entries};
 mod field;
+mod field_changes;
 mod field_keys;
 mod field_routing;
+mod generation_reuse;
 mod join;
 mod ordering;
 mod persistent_allocation;

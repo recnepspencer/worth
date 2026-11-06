@@ -192,12 +192,9 @@ fn index_packet_result_checked(
                 context,
             )?)
         }
-        DerivedIndexKind::RelationJoin(definition) => {
-            DerivedIndexEntries::RelationJoin(checked_finish(
-                build_relation_join_index_checked(execution, projection, *definition, context)?,
-                context,
-            )?)
-        }
+        DerivedIndexKind::RelationJoin(definition) => DerivedIndexEntries::RelationJoin(
+            build_relation_join_index_checked(execution, projection, *definition, context)?,
+        ),
     };
     context.checkpoint(1)?;
     Ok(OrderedReductionStream::singleton(
@@ -240,7 +237,7 @@ fn index_packet_result(
             .into(),
         ),
         DerivedIndexKind::RelationJoin(definition) => DerivedIndexEntries::RelationJoin(
-            build_relation_join_index(execution, projection, *definition)?.into(),
+            build_relation_join_index(execution, projection, *definition)?,
         ),
     };
     Ok(OrderedReductionStream::singleton(

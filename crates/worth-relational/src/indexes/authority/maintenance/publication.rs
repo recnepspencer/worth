@@ -8,11 +8,12 @@ pub(super) struct PreparedRefresh {
     pub(super) publication: IndexGenerationPublicationBasis,
     pub(super) entries: Vec<(DerivedIndexId, DerivedIndexEntries)>,
     pub(super) reused: Vec<DerivedIndexGeneration>,
+    pub(super) basis: Option<crate::runtime::PreparedIndexBasisSelection>,
 }
 
 impl PreparedRefresh {
     pub(super) fn publish_admitted(
-        self,
+        mut self,
         runtime: &crate::runtime::RelationalRuntime,
         work: &mut MaintenanceWork,
     ) -> Result<Vec<DerivedIndexGeneration>, Denial> {
@@ -65,6 +66,14 @@ impl PreparedRefresh {
                     Denial::WorkBudgetExceeded
                 }
             })?;
+        if let Some(mut basis) = self.basis.take() {
+            runtime.indexes.bind_published_generations(
+                &mut basis,
+                &generations,
+                &mut |units, bytes| work.prepare(units, bytes),
+            )?;
+            runtime.indexes.install_basis_selection(basis);
+        }
         generations.extend(self.reused);
         generations.sort_unstable_by_key(|generation| generation.index_id);
         Ok(generations)

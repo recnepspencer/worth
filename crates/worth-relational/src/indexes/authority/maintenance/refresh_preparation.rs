@@ -14,6 +14,24 @@ impl IndexAuthority<'_> {
         let authoring = root
             .canonical_envelope()
             .map(|envelope| &envelope.branch_context);
+        if work.routes_installed_indexes()
+            && self
+                .runtime
+                .indexes
+                .with_definitions(|definitions| definitions.is_empty())
+        {
+            return Ok(PreparedRefresh {
+                publication: IndexGenerationPublicationBasis::new(
+                    request,
+                    request.branch_id.clone(),
+                    after.version_id(),
+                    schema_version,
+                ),
+                entries: Vec::new(),
+                reused: Vec::new(),
+                basis: None,
+            });
+        }
         let mut prepared = Vec::new();
         let mut pending_fields = Vec::new();
         let mut reused = Vec::new();
@@ -21,11 +39,88 @@ impl IndexAuthority<'_> {
         let mut patch_changes = None;
         let mut cold_routing = None;
         let mut patch_routing = None;
-        let mut requested = std::collections::BTreeSet::new();
-        for index_id in &request.index_ids {
-            work.ordered::<DerivedIndexId, ()>(requested.len(), 1, 0)?;
-            requested.insert(*index_id);
+        let mut basis = if let Some(before) = before {
+            let previous = before
+                .selected_root()
+                .ok_or(DerivedIndexMaintenanceDenialKind::BeforeRootMismatch)?;
+            if let Some(envelope) = previous.canonical_envelope() {
+                self.runtime
+                    .indexes
+                    .prepare_basis_selection(
+                        &request.branch_id,
+                        request.source_commit_id,
+                        after.version_id(),
+                        schema_version,
+                        &envelope.branch_context,
+                        envelope.commit.commit_id,
+                        before.version_id(),
+                        work.publication_is_deferred(),
+                        &mut |units, bytes| work.prepare(units, bytes),
+                    )
+                    .map(Some)
+                    .or_else(|stop| {
+                        if stop == DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired {
+                            Ok(None)
+                        } else {
+                            Err(stop)
+                        }
+                    })?
+            } else {
+                None
+            }
+        } else if let Some(authoring) = authoring.filter(|branch| *branch != &request.branch_id) {
+            self.runtime
+                .indexes
+                .prepare_basis_selection(
+                    &request.branch_id,
+                    request.source_commit_id,
+                    after.version_id(),
+                    schema_version,
+                    authoring,
+                    request.source_commit_id,
+                    after.version_id(),
+                    work.publication_is_deferred(),
+                    &mut |units, bytes| work.prepare(units, bytes),
+                )
+                .map(Some)
+                .or_else(|stop| {
+                    if stop == DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired {
+                        Ok(None)
+                    } else {
+                        Err(stop)
+                    }
+                })?
+        } else {
+            None
+        };
+        let affected = if let Some(before) = before {
+            let changes = changes::ChangedRecords::patch(root, work)?;
+            let affected =
+                affected_indexes::select(self.runtime, execution, &changes, before, after, work)?;
+            patch_changes = Some(changes);
+            Some(affected)
+        } else {
+            None
+        };
+        let inherited = basis.clone();
+        if let (Some(basis), Some(affected)) = (&mut basis, &affected) {
+            for index in affected {
+                basis.remove_admitted(*index, &mut |units, bytes| work.prepare(units, bytes))?;
+            }
         }
+        let requested = if work.routes_installed_indexes() {
+            if basis.is_none() {
+                return Err(DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired);
+            }
+            affected.ok_or(DerivedIndexMaintenanceDenialKind::BeforeRootMismatch)?
+        } else {
+            let mut requested = std::collections::BTreeSet::new();
+            for index_id in &request.index_ids {
+                work.ordered::<DerivedIndexId, ()>(requested.len(), 1, 0)?;
+                requested.insert(*index_id);
+            }
+            requested
+        };
         for index_id in requested {
             let compatible_before = before.filter(|view| {
                 view.selected_schema_authority()
@@ -40,7 +135,11 @@ impl IndexAuthority<'_> {
                     &request.branch_id,
                     request.source_commit_id,
                     after.version_id(),
-                    compatible_before.map(|view| (view.version_id(), schema_version)),
+                    compatible_before.and_then(|view| {
+                        view.selected_root()?
+                            .commit_id()
+                            .map(|commit| (view.version_id(), schema_version, commit))
+                    }),
                     |units, bytes| work.prepare(units, bytes),
                 )
                 .map_err(|stop| match stop {
@@ -91,17 +190,29 @@ impl IndexAuthority<'_> {
                 schema_version,
                 work,
             )? {
-                work.grow_vec(&mut prepared)?;
-                work.prepare(1, 0)?;
-                prepared.push((index_id, seed.entries.clone()));
+                work.grow_vec(&mut reused)?;
+                work.prepare(
+                    1,
+                    (seed.source_branch_id.0.len() + seed.applicability.branch_id.0.len()) as u64,
+                )?;
+                reused.push(seed.as_ref().clone());
                 work.note_seeded_generations(1);
                 continue;
             }
-            let prior = prior.filter(|generation| {
-                compatible_before
-                    .and_then(|view| view.selected_root().and_then(|root| root.commit_id()))
-                    == Some(generation.source_commit_id)
-            });
+            if let (Some(prior), Some(basis)) = (&prior, &basis) {
+                if basis.generation(index_id).is_some() {
+                    work.grow_vec(&mut reused)?;
+                    work.prepare(
+                        1,
+                        (prior.source_branch_id.0.len() + prior.applicability.branch_id.0.len())
+                            as u64,
+                    )?;
+                    reused.push(prior.as_ref().clone());
+                    work.note_reused_generations(1);
+                    continue;
+                }
+            }
+            let previous = prior.clone();
             let (entries, changes, old) = if let Some(prior) = prior {
                 if patch_changes.is_none() {
                     patch_changes = Some(changes::ChangedRecords::patch(root, work)?);
@@ -152,6 +263,7 @@ impl IndexAuthority<'_> {
                         entries,
                         edits: Default::default(),
                         patch: old.is_some(),
+                        changed: false,
                     });
                 }
                 (
@@ -166,6 +278,7 @@ impl IndexAuthority<'_> {
                         entries,
                         edits: Default::default(),
                         patch: old.is_some(),
+                        changed: false,
                     });
                 }
                 (_, mut entries) => {
@@ -179,7 +292,7 @@ impl IndexAuthority<'_> {
                             execution, changes, old, after, work,
                         )?);
                     }
-                    update_entries(
+                    let changed = update_entries(
                         execution,
                         &definition,
                         &mut entries,
@@ -188,8 +301,12 @@ impl IndexAuthority<'_> {
                         after,
                         work,
                     )?;
-                    work.grow_vec(&mut prepared)?;
-                    prepared.push((index_id, entries));
+                    if !changed && let Some(previous) = previous {
+                        generation_reuse::retain(previous, &mut basis, &mut reused, work)?;
+                    } else {
+                        work.grow_vec(&mut prepared)?;
+                        prepared.push((index_id, entries));
+                    }
                 }
             }
         }
@@ -213,9 +330,16 @@ impl IndexAuthority<'_> {
             )?;
         }
         for field in pending_fields {
-            work.grow_vec(&mut prepared)?;
-            work.prepare(1, 0)?;
-            prepared.push(field.into_prepared());
+            let (index, entries, changed) = field.into_prepared();
+            if !changed
+                && let Some(previous) = inherited.as_ref().and_then(|basis| basis.generation(index))
+            {
+                generation_reuse::retain(previous, &mut basis, &mut reused, work)?;
+            } else {
+                work.grow_vec(&mut prepared)?;
+                work.prepare(1, 0)?;
+                prepared.push((index, entries));
+            }
         }
         work.prepare(
             request.branch_id.0.len() as u64,
@@ -231,6 +355,7 @@ impl IndexAuthority<'_> {
             publication,
             entries: prepared,
             reused,
+            basis,
         })
     }
 }

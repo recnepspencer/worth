@@ -1,3 +1,9 @@
+mod basis_checkpoint;
+pub(crate) use basis_checkpoint::IndexBasisCheckpoint;
+mod join_leg_state;
+pub(crate) use join_leg_state::{ColdJoinLeg, JoinLegState, JoinLegsState};
+mod relation_join_index;
+pub use relation_join_index::RelationJoinIndex;
 mod installed_routing;
 pub(crate) use installed_routing::InstalledIndexRouting;
 mod registration_denial;
@@ -111,7 +117,7 @@ pub enum DerivedIndexEntries {
     EntityField(DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>),
     RelationField(DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, RelationId>),
     RelatedEntityOrdering(DerivedIndexEntryMap<EntityId, RelatedEntityOrderingEntry>),
-    RelationJoin(DerivedIndexEntryMap<RelationJoinKey, RelationJoinEntry>),
+    RelationJoin(RelationJoinIndex),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

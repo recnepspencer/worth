@@ -254,10 +254,6 @@ fn prove_commit_paths(
         .unwrap();
     let prepared = prepared.unwrap();
     assert!(report.charged_work() >= prepared.work_units as u64);
-    assert_eq!(
-        prepared.generation_publications_reserved,
-        request.index_ids.len()
-    );
     assert_eq!(prepared.patch_records, 0);
     assert!(request.index_ids.iter().all(|index| runtime
         .index_access()
@@ -271,14 +267,18 @@ fn prove_commit_paths(
         panic!("prepared differential candidate publishes")
     };
     let committed = runtime.settle_performed_publication(performed).unwrap();
-    for (index, old) in request.index_ids.iter().zip(baseline) {
+    for (field, (index, old)) in request.index_ids.iter().zip(baseline).enumerate() {
         let new = runtime
             .index_access()
-            .read_latest_generation(execution, *index, &request.branch_id)
+            .read_published_generation_for_commit(execution, *index, &committed.commit)
             .unwrap()
             .unwrap();
         assert_eq!(new.entries, old.entries, "candidate seed {seed}");
-        assert_eq!(new.source_commit_id, committed.commit.commit_id);
+        if (seed >> field) & 1 != 0 {
+            assert_eq!(new.generation_id, old.generation_id);
+        } else {
+            assert_eq!(new.source_commit_id, committed.commit.commit_id);
+        }
     }
     release_test_commit_snapshot(runtime, &committed);
     // Also exercise the retained-commit reader while the source snapshot owns

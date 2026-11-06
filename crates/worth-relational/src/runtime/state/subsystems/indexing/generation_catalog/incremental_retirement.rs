@@ -50,6 +50,9 @@ impl GenerationCatalog {
             let Some(generation) = self.entries.get(&id) else {
                 continue;
             };
+            if Arc::strong_count(generation) > 1 {
+                continue;
+            }
             let (global, basis_held, source_is_live) = custody(generation);
             if self.selected_for_retention(id, generation, global, basis_held, source_is_live) {
                 continue;
@@ -123,6 +126,38 @@ mod tests {
         assert!(
             revisited,
             "newer arrivals must not postpone an old hold's next eligibility check"
+        );
+    }
+    #[test]
+    fn basis_retirement_revisits_held_roots_while_new_bases_keep_arriving() {
+        use super::super::super::basis_selection::BasisSelections;
+        let mut bases = BasisSelections::default();
+        for id in 1..=40 {
+            bases.insert_generation(Arc::new(super::super::tests::generation(
+                id, 1, 0, id, 1, true,
+            )));
+        }
+        bases.retire(3, |_, _, _| true);
+        let branch = crate::history::data::BranchId("branch-0".into());
+        let mut revisited = false;
+        for round in 0..32 {
+            for offset in 1..=10 {
+                let id = 40 + round * 10 + offset;
+                bases.insert_generation(Arc::new(super::super::tests::generation(
+                    id, 1, 0, id, 1, true,
+                )));
+            }
+            bases.retire(3, |_, version, _| version != VersionId(1));
+            if bases.get(Some(&branch), VersionId(1)).is_none()
+                && bases.get(None, VersionId(1)).is_none()
+            {
+                revisited = true;
+                break;
+            }
+        }
+        assert!(
+            revisited,
+            "new arrivals cannot postpone an old root's next custody check"
         );
     }
 }

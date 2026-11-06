@@ -27,6 +27,7 @@ pub(super) enum PendingField {
         entries: DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>,
         edits: BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<EntityId>>>,
         patch: bool,
+        changed: bool,
     },
     Relation {
         index_id: DerivedIndexId,
@@ -34,18 +35,29 @@ pub(super) enum PendingField {
         entries: DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, RelationId>,
         edits: BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<RelationId>>>,
         patch: bool,
+        changed: bool,
     },
 }
 
 impl PendingField {
-    pub(super) fn into_prepared(self) -> (DerivedIndexId, DerivedIndexEntries) {
+    pub(super) fn into_prepared(self) -> (DerivedIndexId, DerivedIndexEntries, bool) {
         match self {
             Self::Entity {
-                index_id, entries, ..
-            } => (index_id, DerivedIndexEntries::EntityField(entries)),
+                index_id,
+                entries,
+                changed,
+                ..
+            } => (index_id, DerivedIndexEntries::EntityField(entries), changed),
             Self::Relation {
-                index_id, entries, ..
-            } => (index_id, DerivedIndexEntries::RelationField(entries)),
+                index_id,
+                entries,
+                changed,
+                ..
+            } => (
+                index_id,
+                DerivedIndexEntries::RelationField(entries),
+                changed,
+            ),
         }
     }
 }
@@ -63,6 +75,11 @@ pub(super) fn refresh(
     if pending.is_empty() {
         return Ok(());
     }
+    let exact = after
+        .selected_root()
+        .map(|root| super::field_changes::FieldChanges::prepare(root, routing, work))
+        .transpose()?
+        .flatten();
     let mut positions = BTreeMap::new();
     for (position, field) in pending.iter().enumerate() {
         let index = match field {
@@ -80,6 +97,7 @@ pub(super) fn refresh(
             pending,
             routing,
             &positions,
+            if patch { exact.as_ref() } else { None },
             patch,
             &changes.entities,
             old,
@@ -91,6 +109,7 @@ pub(super) fn refresh(
             pending,
             routing,
             &positions,
+            if patch { exact.as_ref() } else { None },
             patch,
             &changes.relations,
             old,
@@ -105,8 +124,10 @@ pub(super) fn refresh(
                 entries,
                 edits,
                 patch,
+                changed,
                 ..
             } => {
+                *changed = !edits.is_empty();
                 grouped(
                     entries,
                     std::mem::take(edits),
@@ -120,8 +141,10 @@ pub(super) fn refresh(
                 entries,
                 edits,
                 patch,
+                changed,
                 ..
             } => {
+                *changed = !edits.is_empty();
                 grouped(
                     entries,
                     std::mem::take(edits),
@@ -141,6 +164,7 @@ fn refresh_entities(
     pending: &mut [PendingField],
     routing: &crate::indexes::data::InstalledIndexRouting,
     positions: &BTreeMap<DerivedIndexId, usize>,
+    exact: Option<&super::field_changes::FieldChanges>,
     patch: bool,
     changed: &std::collections::BTreeSet<EntityId>,
     before: Option<&VisibilityProjectionView>,
@@ -165,6 +189,8 @@ fn refresh_entities(
         for position in super::field_routing::positions(
             routing,
             positions,
+            exact,
+            crate::transactions::data::RecordRef::Entity(*id),
             true,
             old_kind
                 .into_iter()
@@ -220,6 +246,7 @@ fn refresh_relations(
     pending: &mut [PendingField],
     routing: &crate::indexes::data::InstalledIndexRouting,
     positions: &BTreeMap<DerivedIndexId, usize>,
+    exact: Option<&super::field_changes::FieldChanges>,
     patch: bool,
     changed: &std::collections::BTreeSet<RelationId>,
     before: Option<&VisibilityProjectionView>,
@@ -245,6 +272,8 @@ fn refresh_relations(
         for position in super::field_routing::positions(
             routing,
             positions,
+            exact,
+            crate::transactions::data::RecordRef::Relation(*id),
             false,
             old_kind
                 .into_iter()

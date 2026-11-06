@@ -61,7 +61,19 @@ fn index_rejection_for_packet(
     if generation.status != crate::indexes::data::DerivedIndexPublicationStatus::Published {
         return Some(IndexQueryRejectionClass::CorruptIndexEntries);
     }
-    if generation.applicability.branch_id != *branch_id
+    let carried = runtime.indexes.generation_applies(
+        generation.index_id,
+        runtime
+            .indexes
+            .definition(generation.index_id)
+            .as_ref()
+            .and_then(|d| d.branch_scoped.then_some(branch_id)),
+        packet.context_id.version_id,
+        packet.context_id.schema_version,
+        generation.generation_id,
+    );
+    if !carried
+        && generation.applicability.branch_id != *branch_id
         && runtime
             .indexes
             .definition(generation.index_id)
@@ -69,7 +81,7 @@ fn index_rejection_for_packet(
     {
         return Some(IndexQueryRejectionClass::UnsupportedBranch);
     }
-    if generation.applicability.version_id != packet.context_id.version_id {
+    if !carried && generation.applicability.version_id != packet.context_id.version_id {
         return Some(IndexQueryRejectionClass::UnsupportedVersion);
     }
     if generation.applicability.schema_version != packet.context_id.schema_version {

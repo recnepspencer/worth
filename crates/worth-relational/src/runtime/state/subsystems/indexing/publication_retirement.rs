@@ -18,6 +18,11 @@ impl IndexingSubsystem {
         maximum_older_visits: usize,
     ) -> Vec<Arc<DerivedIndexGeneration>> {
         let mut state = self.state.write();
+        state
+            .bases
+            .retire(maximum_older_visits, |branch, version, schema| {
+                history.index_basis_is_held(version, schema, branch)
+            });
         let IndexingState {
             catalog,
             generations,

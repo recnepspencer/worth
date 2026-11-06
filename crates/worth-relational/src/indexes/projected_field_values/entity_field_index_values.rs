@@ -2,9 +2,7 @@ use std::collections::BTreeMap;
 
 use worth_foundational::facade::AspectFieldLocator;
 
-use crate::capabilities::AspectPlanSource;
 use crate::identity::data::EntityId;
-use crate::runtime::RelationalRuntime;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use crate::visibility::materialization::read_records::{
     entity_query_locus_comparison_key, entity_query_locus_value,
@@ -92,18 +90,6 @@ pub(in crate::indexes) fn build_entity_aspect_field_index_checked(
         }
     }
     Ok(entries)
-}
-
-pub(in crate::indexes) fn entity_aspect_field_index_entry(
-    runtime: &RelationalRuntime,
-    record: &crate::storage::data::EntityReadRecord,
-    field_locator: &AspectFieldLocator,
-) -> Option<(AuthoritativeFieldComparisonKey, EntityId)> {
-    entity_index_projection_scope(
-        runtime.entity_aspect_plan(record.kind.kind_id)?,
-        field_locator,
-    )?;
-    entity_query_locus_comparison_key(record, field_locator).map(|value| (value, record.entity_id))
 }
 
 pub(in crate::indexes) fn entity_aspect_field_ordering_value(
