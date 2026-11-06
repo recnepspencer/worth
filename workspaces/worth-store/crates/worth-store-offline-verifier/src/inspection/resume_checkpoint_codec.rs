@@ -132,10 +132,7 @@ pub(super) fn decode_checkpoint(
         elapsed: Duration::new(elapsed_seconds, elapsed_nanos),
         completed,
         partial_source,
-        partial_digest: match partial_digest {
-            Some(bytes) => Some(CanonicalDigestId::new(bytes)),
-            None => None,
-        },
+        partial_digest: partial_digest.map(CanonicalDigestId::new),
     };
     validate_shape(&checkpoint)?;
     Ok(checkpoint)

@@ -1,6 +1,10 @@
 //! Concurrent ordinary requests must converge on one original business result.
 use super::{projection::HeadProjection, receipts, requests, OracleRuntime};
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "The certification driver owns two concurrent external Host callers to prove same-key convergence; each uses the real execution request"
+)]
 pub fn execute(
     runtime: &OracleRuntime,
     key: u64,

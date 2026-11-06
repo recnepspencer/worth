@@ -100,10 +100,7 @@ pub(super) fn audit_editor_result(
         target: edit.target(),
         declaration_identity: CanonicalDigestId::new(edit.identity()),
         before_sha256: CanonicalDigestId::new(Sha256::digest(before).into()),
-        after_sha256: match after_sha256 {
-            Some(bytes) => Some(CanonicalDigestId::new(bytes)),
-            None => None,
-        },
+        after_sha256: after_sha256.map(CanonicalDigestId::new),
         changed_ranges,
         created_path: applied.created_path,
         removed_path: applied.removed_path,

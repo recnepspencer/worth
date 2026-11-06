@@ -138,23 +138,23 @@ impl DurableIdentityCorrespondence {
                 reference: reference.family(),
             });
         }
-        if let Some(prior) = self.home_to_reference.get(home) {
-            if prior != reference {
-                return Err(IdentityDivergence::HomeRemapped {
-                    home: home.clone(),
-                    prior: prior.clone(),
-                    proposed: reference.clone(),
-                });
-            }
+        if let Some(prior) = self.home_to_reference.get(home)
+            && prior != reference
+        {
+            return Err(IdentityDivergence::HomeRemapped {
+                home: home.clone(),
+                prior: prior.clone(),
+                proposed: reference.clone(),
+            });
         }
-        if let Some(prior) = self.reference_to_home.get(reference) {
-            if prior != home {
-                return Err(IdentityDivergence::ReferenceCollision {
-                    reference: reference.clone(),
-                    prior: prior.clone(),
-                    proposed: home.clone(),
-                });
-            }
+        if let Some(prior) = self.reference_to_home.get(reference)
+            && prior != home
+        {
+            return Err(IdentityDivergence::ReferenceCollision {
+                reference: reference.clone(),
+                prior: prior.clone(),
+                proposed: home.clone(),
+            });
         }
         Ok(())
     }

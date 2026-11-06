@@ -87,7 +87,9 @@ pub fn observe(
                         );
                         value
                             .as_bytes()
-                            .chunks_exact(64)
+                            .as_chunks::<64>()
+                            .0
+                            .iter()
                             .map(|word| digest(std::str::from_utf8(word).unwrap()))
                             .collect()
                     };

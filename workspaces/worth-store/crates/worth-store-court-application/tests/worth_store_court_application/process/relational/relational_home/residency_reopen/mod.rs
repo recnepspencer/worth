@@ -217,20 +217,26 @@ fn a_cold_first_commit_on_a_fork_preserves_reference_artifacts_and_record_identi
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let prepared =
             crate::prepared_home::PreparedHome::prepare(&script.steps[..target], &execution);
-        let home = crate::durable_run::open(prepared.location(), &execution).unwrap();
+        let home = crate::durable_run::world::open(
+            prepared.location(),
+            crate::durable_run::served_schema(&script.steps[..target]),
+            false,
+            &execution,
+        )
+        .unwrap();
         assert_eq!(
-            home.relational().cold_storage_reads().member_reads,
+            home.home.relational().cold_storage_reads().member_reads,
             0,
             "fork recovery stays cold"
         );
-        crate::durable_run::apply(&home, &execution, &script.steps[target..target + 1]);
+        crate::durable_run::world::apply(&home.home, &execution, &script.steps[target..target + 1]);
         crate::durable_run::assert_reference_artifacts(
-            &crate::workload::artifacts_of(&execution, home.relational().runtime()),
+            &crate::workload::artifacts_of(&execution, home.home.relational().runtime()),
             &script,
             &format!("cold fork seed {seed:#x}"),
         );
-        crate::durable_run::apply(&home, &execution, &script.steps[target + 1..]);
-        crate::durable_run::assert_holds(&execution, &home, &script, &script.artifacts);
-        home.close(&execution);
+        crate::durable_run::world::apply(&home.home, &execution, &script.steps[target + 1..]);
+        crate::durable_run::world::assert_holds(&execution, &home.home, &script, &script.artifacts);
+        crate::durable_run::world::close(home, &execution);
     }
 }

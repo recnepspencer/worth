@@ -359,12 +359,9 @@ impl OfflineInspectionSession {
             elapsed,
             completed,
             partial_source,
-            partial_digest: match (self.offset > 0)
+            partial_digest: (self.offset > 0)
                 .then(|| self.file_hasher.clone().finalize().into())
-            {
-                Some(bytes) => Some(CanonicalDigestId::new(bytes)),
-                None => None,
-            },
+                .map(CanonicalDigestId::new),
         })
     }
 }

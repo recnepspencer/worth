@@ -232,10 +232,7 @@ impl DurablePhysicalRootManifest {
                     payload[496] = 1;
                     encode_identity(&mut payload[504..528], quarantine);
                 }
-                if let Some(anchor) = match self.tier_epoch_anchor {
-                    Some(digest) => Some(*digest.bytes()),
-                    None => None,
-                } {
+                if let Some(anchor) = self.tier_epoch_anchor.map(|digest| *digest.bytes()) {
                     payload[528..560].copy_from_slice(&anchor);
                 }
                 if payload.len() >= HEAD_BOUND_ROOT_PAYLOAD_BYTES {

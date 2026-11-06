@@ -4,8 +4,9 @@
 use crate::journeys::*;
 
 use {
-    crate::durable_run::apply, crate::durable_run::assert_holds, crate::durable_run::open,
     crate::durable_run::steps_after, crate::durable_run::steps_before,
+    crate::durable_run::world::apply, crate::durable_run::world::assert_holds,
+    crate::durable_run::world::open,
 };
 
 #[test]
@@ -26,24 +27,45 @@ fn a_home_recovers_exactly_what_it_committed_and_keeps_going() {
     let request = crate::workload::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&request);
     let half = COMMITS / 2;
-    let home = open(&location, &execution).expect("a new home opens");
-    assert_eq!(apply(&home, &execution, steps_before(&script, half)), half);
-    let first_half = crate::workload::artifacts_of(&execution, home.relational().runtime());
-    assert_holds(&execution, &home, &script, &first_half);
-    home.close(&execution);
+    let home = open(
+        &location,
+        crate::schema_transition::SOURCE,
+        true,
+        &execution,
+    )
+    .expect("a new home opens");
+    assert_eq!(
+        apply(&home.home, &execution, steps_before(&script, half)),
+        half
+    );
+    let first_half = crate::workload::artifacts_of(&execution, home.home.relational().runtime());
+    assert_holds(&execution, &home.home, &script, &first_half);
+    crate::durable_run::world::close(home, &execution);
 
-    let home = open(&location, &execution).expect("the home reopens");
-    assert_holds(&execution, &home, &script, &first_half);
-    let applied = apply(&home, &execution, steps_after(&script, half));
+    let home = open(
+        &location,
+        crate::durable_run::served_schema(steps_before(&script, half)),
+        false,
+        &execution,
+    )
+    .expect("the home reopens");
+    assert_holds(&execution, &home.home, &script, &first_half);
+    let applied = apply(&home.home, &execution, steps_after(&script, half));
     assert_eq!(applied, COMMITS - half);
-    let everything = crate::workload::artifacts_of(&execution, home.relational().runtime());
+    let everything = crate::workload::artifacts_of(&execution, home.home.relational().runtime());
     assert_eq!(&everything[..half], &first_half[..]);
-    assert_holds(&execution, &home, &script, &everything);
+    assert_holds(&execution, &home.home, &script, &everything);
     drop(home);
 
-    let home = open(&location, &execution).expect("an abandoned home recovers");
-    assert_holds(&execution, &home, &script, &everything);
-    home.close(&execution);
+    let home = open(
+        &location,
+        crate::schema_transition::TARGET,
+        false,
+        &execution,
+    )
+    .expect("an abandoned home recovers");
+    assert_holds(&execution, &home.home, &script, &everything);
+    crate::durable_run::world::close(home, &execution);
 }
 
 #[test]
@@ -53,13 +75,25 @@ fn a_fork_committed_after_a_checkpoint_recovers() {
     let location = directory.path().join("home");
     let request = crate::workload::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&request);
-    let home = open(&location, &execution).expect("a new home opens");
-    assert_eq!(apply(&home, &execution, &script.steps), COMMITS);
-    let everything = crate::workload::artifacts_of(&execution, home.relational().runtime());
+    let home = open(
+        &location,
+        crate::schema_transition::SOURCE,
+        true,
+        &execution,
+    )
+    .expect("a new home opens");
+    assert_eq!(apply(&home.home, &execution, &script.steps), COMMITS);
+    let everything = crate::workload::artifacts_of(&execution, home.home.relational().runtime());
     drop(home);
-    let home = open(&location, &execution).expect("the home recovers");
-    assert_holds(&execution, &home, &script, &everything);
-    home.close(&execution);
+    let home = open(
+        &location,
+        crate::schema_transition::TARGET,
+        false,
+        &execution,
+    )
+    .expect("the home recovers");
+    assert_holds(&execution, &home.home, &script, &everything);
+    crate::durable_run::world::close(home, &execution);
 }
 
 #[test]

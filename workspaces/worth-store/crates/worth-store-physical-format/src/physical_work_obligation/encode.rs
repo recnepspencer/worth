@@ -92,10 +92,7 @@ impl PhysicalWorkObligationV6 {
             identity,
             operation_code,
             target,
-            payload_digest: match payload_digest {
-                Some(bytes) => Some(CanonicalDigestId::new(bytes)),
-                None => None,
-            },
+            payload_digest: payload_digest.map(CanonicalDigestId::new),
         })
     }
     pub const fn identity(self) -> PhysicalWorkObligationIdentity {

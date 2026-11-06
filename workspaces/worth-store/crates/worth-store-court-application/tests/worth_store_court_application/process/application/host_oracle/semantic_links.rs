@@ -14,7 +14,7 @@ fn semantic_comparison_refuses_wrong_custody_targets_causes_and_native_occurrenc
     ]
     .into_iter()
     .map(|location| {
-        let home = host_observation::opening::open(
+        host_observation::opening::open(
             location,
             opening::build(),
             Arc::new(AtomicUsize::new(0)),
@@ -22,8 +22,7 @@ fn semantic_comparison_refuses_wrong_custody_targets_causes_and_native_occurrenc
             None,
             Default::default(),
             &execution,
-        );
-        home
+        )
     })
     .collect();
     let mut map = comparison::HostOracleComparison::default();
@@ -72,16 +71,36 @@ fn semantic_comparison_refuses_wrong_custody_targets_causes_and_native_occurrenc
     };
     let good = retained(home.head.clone());
     let expected = retained(reference.head.clone());
-    custody::compare(map.identities_mut(), &[good.clone()], &[expected.clone()]).unwrap();
+    custody::compare(
+        map.identities_mut(),
+        std::slice::from_ref(&good),
+        std::slice::from_ref(&expected),
+    )
+    .unwrap();
     let mut wrong = good.clone();
     wrong.cause = Some(custody::CustodyCause::StaleProductHead);
-    assert!(custody::compare(map.identities_mut(), &[wrong], &[expected.clone()]).is_err());
+    assert!(custody::compare(
+        map.identities_mut(),
+        &[wrong],
+        std::slice::from_ref(&expected)
+    )
+    .is_err());
     let mut wrong = good.clone();
     wrong.actions = Some(vec![custody::CustodyAction::CloseOwner]);
-    assert!(custody::compare(map.identities_mut(), &[wrong], &[expected.clone()]).is_err());
+    assert!(custody::compare(
+        map.identities_mut(),
+        &[wrong],
+        std::slice::from_ref(&expected)
+    )
+    .is_err());
     let mut wrong = good.clone();
     wrong.expected.as_mut().unwrap().branch = "wrong-semantic-branch".into();
-    assert!(custody::compare(map.identities_mut(), &[wrong], &[expected.clone()]).is_err());
+    assert!(custody::compare(
+        map.identities_mut(),
+        &[wrong],
+        std::slice::from_ref(&expected)
+    )
+    .is_err());
     let mut wrong = good;
     let previous = previous_head.unwrap();
     assert_ne!(previous.commit, home.head.commit);

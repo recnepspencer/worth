@@ -34,7 +34,8 @@ pub(super) fn terminal(
         return WorldPublicationObservation::EvidenceRequired;
     }
     let detail = Denial::Storage(format!("{terminal:?}"));
-    let fate = if terminal.failure().is_some() {
+
+    if terminal.failure().is_some() {
         WorldPublicationObservation::Finished(WorldPublicationCompletion::indeterminate(detail))
     } else {
         match terminal.physical_outcome() {
@@ -49,8 +50,7 @@ pub(super) fn terminal(
                 WorldPublicationCompletion::indeterminate(detail),
             ),
         }
-    };
-    fate
+    }
 }
 
 /// Start refusals precede submission. An unresolved or unrecognized owner

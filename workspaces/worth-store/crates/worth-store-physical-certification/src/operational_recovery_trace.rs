@@ -82,17 +82,12 @@ impl OperationalRecoveryDriverTrace {
         }
         update_optional_identity(
             &mut digest,
-            match self.inspection_evidence_identity {
-                Some(digest) => Some(*digest.bytes()),
-                None => None,
-            },
+            self.inspection_evidence_identity
+                .map(|digest| *digest.bytes()),
         );
         update_optional_identity(
             &mut digest,
-            match self.truth_evidence_identity {
-                Some(digest) => Some(*digest.bytes()),
-                None => None,
-            },
+            self.truth_evidence_identity.map(|digest| *digest.bytes()),
         );
         digest.finalize().into()
     }

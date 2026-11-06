@@ -188,10 +188,7 @@ pub(crate) fn write_current_process_observation(
         environment,
         environment_identity: CanonicalDigestId::new(environment_identity),
         input_artifact_identity: CanonicalDigestId::new(input_artifact_identity),
-        runtime_identity: match runtime_identity {
-            Some(bytes) => Some(CanonicalDigestId::new(bytes)),
-            None => None,
-        },
+        runtime_identity: runtime_identity.map(CanonicalDigestId::new),
     };
     write_new_observation(&observation_path, &evidence)
 }

@@ -105,15 +105,15 @@ fn remove_name(
     if kind.is_dir() && !kind.is_symlink() {
         use cap_fs_ext::DirExt;
         let child = directory
-            .open_dir_nofollow(&name)
+            .open_dir_nofollow(name)
             .map_err(|e| Denial::io(Stage::Removal, e))?;
         remove_contents(&child, None, boundary)?;
         sync(&child, boundary, Stage::Removal)?;
         drop(child);
-        boundary_io_call(boundary, Role::Delete, || directory.remove_dir(&name))
+        boundary_io_call(boundary, Role::Delete, || directory.remove_dir(name))
             .map_err(|e| Denial::io(Stage::Removal, e))
     } else {
-        boundary_io_call(boundary, Role::Delete, || directory.remove_file(&name))
+        boundary_io_call(boundary, Role::Delete, || directory.remove_file(name))
             .map_err(|e| Denial::io(Stage::Removal, e))
     }
 }
