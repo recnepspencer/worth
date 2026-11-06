@@ -15,6 +15,7 @@ pub(crate) mod instance;
 pub(crate) mod operation_output;
 pub(in crate::domain_computation::primary_graph) mod proposal;
 pub(crate) mod schema;
+pub(in crate::domain_computation::primary_graph) mod selection_basis;
 
 pub(in crate::domain_computation::primary_graph) use approval::{
     visit_workflow_approval_facts, workflow_approval_fields, workflow_approval_instance_identity,

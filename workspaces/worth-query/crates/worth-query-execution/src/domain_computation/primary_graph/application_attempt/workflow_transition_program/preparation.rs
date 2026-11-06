@@ -292,5 +292,3 @@ where
     }
 }
 
-#[doc(hidden)]
-pub struct WorthQueryWorkflowAdvanceAdapter;

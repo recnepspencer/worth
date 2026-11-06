@@ -249,7 +249,6 @@ pub use {
     workflow_transition_program::WorkflowTransitionBindingDenial,
     workflow_transition_program::WorkflowTransitionPreparationDenial,
     workflow_transition_program::WorthQueryWorkflowActorContext,
-    workflow_transition_program::WorthQueryWorkflowAdvanceAdapter,
 };
 
 pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;
@@ -289,6 +288,7 @@ pub use provider_execution::MandatoryReviewOps;
 pub(in crate::domain_computation::primary_graph) use provider_execution::MandatoryReviewScopedOps;
 pub use provider_execution::OutputSourceOps;
 pub(in crate::domain_computation::primary_graph) use provider_execution::HistoryProducerCommit;
+pub(in crate::domain_computation::primary_graph) use workflow::selection_basis::WorkflowSelectionBasis;
 pub(in crate::domain_computation::primary_graph) use provider_execution::ProviderExecutionProviderExecutionEntryScopedOps;
 pub(in crate::domain_computation::primary_graph) use provider_execution::ReadmittedCommitProgram;
 pub use read_set::ReadSetOps;
