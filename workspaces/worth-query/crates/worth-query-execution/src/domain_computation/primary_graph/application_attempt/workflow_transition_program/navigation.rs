@@ -21,7 +21,7 @@ where
 {
     pub(super) fn navigation_replay_denial(
         self,
-        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
         instance: worth_relational::facade::identity::EntityId,
         replays: crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayRetention,
         denial: WorthQueryApplicationAttemptDenial,
@@ -38,7 +38,7 @@ where
     /// replays its outcome.
     pub(super) fn replay_only_denial(
         self,
-        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
         instance: worth_relational::facade::identity::EntityId,
         replays: publication::PreparedWorkflowTransitionReplays,
         denial: WorthQueryApplicationAttemptDenial,
@@ -57,7 +57,7 @@ where
 
     pub(super) fn materialize_navigation_back(
         mut self,
-        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
         compiled: crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
         instance: crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
         selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,

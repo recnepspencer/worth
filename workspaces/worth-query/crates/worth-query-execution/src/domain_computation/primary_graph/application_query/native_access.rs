@@ -57,7 +57,7 @@ impl<'a> ApplicationQueryNativeAccess<'a> {
         basis: &crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
         read: impl FnOnce(
             &mut RelationalRuntime,
-            &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+            &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
         ) -> T,
     ) -> Result<
         (

@@ -1,6 +1,6 @@
 //! The same original law fields survive either candidate refusal path.
 use super::{denial_cause::DenialCause, WorthQueryApplicationCommitDenial};
-use crate::domain_computation::WorthQueryRelationLawDenial;
+use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryRelationLawDenial;
 
 impl WorthQueryApplicationCommitDenial {
     /// The native relation law and closing-edge identities, when present.

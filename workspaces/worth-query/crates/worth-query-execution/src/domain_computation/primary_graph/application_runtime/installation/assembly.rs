@@ -2,8 +2,8 @@ use super::PublishedApplicationGraph;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 use crate::domain_computation::authorization::WorthQueryRuntimeClock;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 pub(super) fn assemble_application_runtime<Schema>(

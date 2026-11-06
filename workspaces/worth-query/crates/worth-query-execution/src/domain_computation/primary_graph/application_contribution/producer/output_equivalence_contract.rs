@@ -8,9 +8,7 @@ use worth_query_declaration::facade::application_schema as schema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
 use super::super::native_field_contract::{FieldExpectation, NativeFieldBindingExpectation};
-use crate::domain_computation::primary_graph::{
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 
 /// Exact comparison of one required standard u64 field on this exactly-one Preserve role.
 /// This declares scope only. Missing pre-evaluation field presence, reuse and

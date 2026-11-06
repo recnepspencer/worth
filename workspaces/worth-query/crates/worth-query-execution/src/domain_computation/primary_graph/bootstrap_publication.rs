@@ -17,10 +17,7 @@ use worth_relational::facade::transactions::{
 use super::typed_bootstrap::{
     WorthQueryTypedEntityBootstrapRow, WorthQueryTypedRelationBootstrapRow,
 };
-use super::{
-    primary_relational_branch_id, WorthQueryPrimaryGraph, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {super::primary_relational_branch_id, super::WorthQueryPrimaryGraph, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 use crate::domain_computation::primary_graph::vocabulary::bootstrap::WorthQueryPrincipalBootstrapRow;
 
 pub(super) fn commit_bootstrap_rows(

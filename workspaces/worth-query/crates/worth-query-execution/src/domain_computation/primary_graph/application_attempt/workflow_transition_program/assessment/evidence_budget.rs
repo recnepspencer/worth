@@ -1,9 +1,6 @@
 //! Streaming demand and retained-evidence admission before materialization.
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationRealizedEffect;
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
-    crate::domain_computation::primary_graph::application_attempt::workflow::workflow_evidence_retained_bytes,
-};
+use {crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout, crate::domain_computation::primary_graph::application_attempt::workflow::workflow_evidence_retained_bytes};
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,

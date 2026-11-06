@@ -18,7 +18,7 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
 
     let world = mixed_effect_world(execution);
     let prepared = prepare_provider_attempt(
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFields::none_for_test(),
+        worth_query_execution::court_doors_for_test::domain_computation::graph_layout::unique_fields::WorthQueryUniqueFields::none_for_test(),
         &|_, _| None,
         PartitionId::main(),
         world.effects.len(),
@@ -47,7 +47,7 @@ fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
 
     let world = mixed_effect_world(execution);
     let prepared = prepare_provider_attempt(
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFields::none_for_test(),
+        worth_query_execution::court_doors_for_test::domain_computation::graph_layout::unique_fields::WorthQueryUniqueFields::none_for_test(),
         &|_, _| None,
         PartitionId::main(),
         world.alternate_effects.len(),
@@ -75,7 +75,7 @@ fn created_records_and_symbolic_endpoints_use_the_issued_mutation_partition() {
 
     let world = mixed_effect_world(execution);
     let prepared = prepare_provider_attempt(
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFields::none_for_test(),
+        worth_query_execution::court_doors_for_test::domain_computation::graph_layout::unique_fields::WorthQueryUniqueFields::none_for_test(),
         &|_, _| None,
         PartitionId(7),
         world.effects.len(),
@@ -124,7 +124,7 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
         },
     ];
     let prepared = prepare_provider_attempt(
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFields::none_for_test(),
+        worth_query_execution::court_doors_for_test::domain_computation::graph_layout::unique_fields::WorthQueryUniqueFields::none_for_test(),
         &|_, _| None,
         PartitionId::main(),
         effects.len(),

@@ -14,7 +14,7 @@ use worth_relational::facade::identity::EntityId;
 
 use super::WorthQueryApplicationFactKey;
 use super::WorthQueryApplicationObservedFact;
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 use crate::domain_computation::vocabulary::primary_graph::precondition_binding::EmptyMutationPreconditionAdmissionStop;
 use canonical_identity::prepare_precondition_identity;

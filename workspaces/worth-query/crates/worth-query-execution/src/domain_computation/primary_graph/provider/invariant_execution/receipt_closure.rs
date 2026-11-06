@@ -8,7 +8,7 @@ use worth_relational::facade::{
     runtime::{InvariantDecisionKind, InvariantExecutionPoint},
 };
 
-use crate::domain_computation::WorthQueryInvariantExecutionFailure;
+use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure;
 
 #[cfg(test)]
 mod tests;
@@ -46,7 +46,7 @@ pub(super) fn validate_receipt_closure(
         .map(requirement_fact)
         .collect::<Vec<_>>();
     let (rule_id, major, minor, maximum_work) =
-        crate::domain_computation::primary_graph::vocabulary::application_attempt::fact_custody::fact_custody_receipt_contract();
+        crate::domain_computation::graph_layout::workflow::fact_custody_receipt_contract();
     requirements.push(RequirementFact {
         key: (
             rule_id,

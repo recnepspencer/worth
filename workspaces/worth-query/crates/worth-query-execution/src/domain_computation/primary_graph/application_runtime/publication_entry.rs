@@ -22,10 +22,7 @@ use super::super::conditional_operation::{
     WorthQueryConditionalRuntimeInstallationDenial,
 };
 use super::super::provider::fault_port::{production_fault_port, WorthQueryPrimaryGraphFaultPort};
-use super::super::{
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial,
-};
+use {super::super::WorthQueryPrimaryGraphApplicationRuntime, super::super::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use super::installation;
 
 impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>

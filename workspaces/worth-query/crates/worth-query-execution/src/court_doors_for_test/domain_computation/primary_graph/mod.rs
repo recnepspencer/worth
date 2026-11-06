@@ -59,8 +59,6 @@ pub mod provider;
 pub mod resolution_denial;
 #[path = "root/mod.rs"]
 pub mod root;
-#[path = "schema_layout/mod.rs"]
-pub mod schema_layout;
 #[path = "source_disclosure/mod.rs"]
 pub mod source_disclosure;
 #[path = "source_facts/mod.rs"]

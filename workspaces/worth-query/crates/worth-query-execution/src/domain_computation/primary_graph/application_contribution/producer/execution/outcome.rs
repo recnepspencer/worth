@@ -206,7 +206,7 @@ pub fn commit_receipt(
             let requirement = commit_denial
                 .invariant_execution_failure()
                 .and_then(|failure| match failure.kind() {
-                    crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProducerRequirementNotAdmitted(denial) => Some(denial),
+                    crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind::ProducerRequirementNotAdmitted(denial) => Some(denial),
                     _ => None,
                 });
             Err(commit_denial::stopped(

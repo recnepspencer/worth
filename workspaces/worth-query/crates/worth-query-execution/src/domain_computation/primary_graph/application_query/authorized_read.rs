@@ -43,7 +43,7 @@ fn execute_read_with_security<Schema, Context, Output, Stop>(
     prepare: impl FnOnce() -> Result<Context, Stop>,
     perform: impl FnOnce(
         &mut worth_relational::facade::runtime::RelationalRuntime,
-        &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+        &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
         &worth_relational::facade::snapshots::SnapshotHandle,
         Context,
     ) -> Result<Output, Stop>,
@@ -107,7 +107,7 @@ pub(super) fn execute_graph_read_with_snapshot<Context, Output, Stop>(
     context: Context,
     perform: impl FnOnce(
         &mut worth_relational::facade::runtime::RelationalRuntime,
-        &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+        &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
         &worth_relational::facade::snapshots::SnapshotHandle,
         Context,
     ) -> Result<Output, Stop>,
@@ -140,7 +140,7 @@ pub(super) fn execute_graph_read_with_snapshot_with_native_access<Context, Outpu
     native: &mut super::ApplicationQueryNativeAccess<'_>,
     perform: impl FnOnce(
         &mut worth_relational::facade::runtime::RelationalRuntime,
-        &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+        &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
         &worth_relational::facade::snapshots::SnapshotHandle,
         Context,
     ) -> Result<Output, Stop>,

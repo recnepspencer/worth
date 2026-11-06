@@ -10,7 +10,7 @@ use super::{
 };
 use {crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::vocabulary::application_attempt::recorded_intent::WorthQueryRecordedIntentMatch};
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
+use crate::domain_computation::graph_layout::WorthQueryProviderIdempotencyLayout;
 
 pub fn resolve_at_snapshot(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

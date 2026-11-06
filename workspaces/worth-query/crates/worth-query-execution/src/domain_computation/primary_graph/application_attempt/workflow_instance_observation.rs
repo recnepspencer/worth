@@ -21,7 +21,7 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 
 use {super::observe_adjacency, super::observe_field_value, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationObservedFact};
 use crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition;
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::SettledWorkflowTransition,
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState,

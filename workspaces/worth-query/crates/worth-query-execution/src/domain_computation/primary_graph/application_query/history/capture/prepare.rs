@@ -15,11 +15,7 @@ use {
     super::super::request_stage, super::super::SubjectPlan,
     crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial,
 };
-use {
-    crate::domain_computation::primary_graph::application_query::read_execution::relational_read_denial,
-    crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-};
+use {crate::domain_computation::primary_graph::application_query::read_execution::relational_read_denial, crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial, crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout};
 
 /// Called only from the genuine authorized-read callback at its admitted security snapshot.
 #[allow(clippy::too_many_arguments)]

@@ -11,6 +11,7 @@ pub(crate) mod evidence_identity;
 mod evidence_material;
 mod execution_resource_attempt;
 pub(crate) mod execution_runtime;
+pub(crate) mod graph_layout;
 pub(crate) mod managed_run;
 pub(crate) mod operation_binding;
 pub(crate) mod primary_graph;

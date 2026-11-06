@@ -120,7 +120,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
 fn read_guard(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     pin: &RelationalPinnedRead,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    graph: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     scope: &WorthQueryOperationComponentReadScope,
     guard: &WorthQueryInstalledRootPathGuard,
     candidates: &BTreeSet<EntityId>,

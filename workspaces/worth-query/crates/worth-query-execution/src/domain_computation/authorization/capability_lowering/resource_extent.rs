@@ -1,11 +1,5 @@
 //! Lower the indexed grant head and prove its context-anchored continuation to scope.
-use crate::domain_computation::{
-    authorization::{
-        capability_binding_lowering::kind, capability_registry::WorthQueryCapabilityContextAnchor,
-        lowering::lower_authorization_traversal, WorthQueryOperationAuthorizationDenial,
-    },
-    primary_graph::WorthQueryPrimaryGraphLayout,
-};
+use {crate::domain_computation::authorization::capability_binding_lowering::kind, crate::domain_computation::authorization::capability_registry::WorthQueryCapabilityContextAnchor, crate::domain_computation::authorization::lowering::lower_authorization_traversal, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout};
 use worth_query_declaration::facade::application_capability::ErasedApplicationCapabilityContract;
 use worth_relational::facade::authorization::RelationalAuthorizationTraversal;
 

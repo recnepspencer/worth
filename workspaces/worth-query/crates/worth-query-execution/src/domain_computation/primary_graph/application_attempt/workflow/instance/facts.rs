@@ -6,7 +6,7 @@ use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
 use super::super::definition::CompiledWorkflowDefinition;
-use super::super::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,
 };
@@ -131,10 +131,10 @@ fn visit_instance_record_facts<Error>(
             layout.instance.protocol_version.clone(),
             AspectValue::UInt64(match subject {
                 EntityReference::Existing(_) => {
-                    super::super::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION
+                    crate::domain_computation::graph_layout::workflow::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION
                 }
                 EntityReference::Created(_) => {
-                    super::super::schema::version::WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION
+                    crate::domain_computation::graph_layout::workflow::version::WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION
                 }
             }),
         ),

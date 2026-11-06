@@ -36,7 +36,7 @@ struct DemandDenialEvidence {
     managed_source_query: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenial>>,
     managed_index: Option<crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial>,
     output_comparison: Option<worth_runtime_bridge::facade::BridgeOutputComparisonDenial>,
-    custom_invariant: Option<crate::domain_computation::WorthQueryCustomInvariantDenial>,
+    custom_invariant: Option<crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial>,
     producer_requirement: Option<
         crate::domain_computation::vocabulary::primary_graph::invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial,
     >,

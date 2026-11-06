@@ -1,6 +1,6 @@
 //! Intersect final candidate writes with native preimages using Relational's canonical value equivalence.
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout as Layout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout as Layout;
 use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectKey, AspectValue, CanonicalFieldPath};
 use worth_relational::facade::storage::AuthoritativeFieldComparisonKey as Comparison;

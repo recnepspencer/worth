@@ -1,4 +1,5 @@
 //! Funded immutable wire for native revisions, never a manufactured query source.
+use crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFieldsObservation;
 use worth_execution::{
     ExecutionArrayBuilder, ExecutionByteBuffer, ExecutionImmutableBytes, ExecutionRequest,
 };
@@ -26,7 +27,7 @@ impl WorkflowActorDependencies {
         execution: &ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        layout: &super::super::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
         observed: &[Fact],
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<Self, Denial> {
@@ -122,7 +123,7 @@ impl WorkflowActorDependencies {
         let [Some(partition), Some(slot), Some(generation)] = locators else {
             return Err(invalid("recorded role lacks its native field footprint"));
         };
-        let fields = super::record::WorkflowActorFields {
+        let fields = crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields {
             partition,
             slot,
             generation,

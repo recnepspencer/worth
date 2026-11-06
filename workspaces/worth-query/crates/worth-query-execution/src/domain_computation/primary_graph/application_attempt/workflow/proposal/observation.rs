@@ -1,9 +1,10 @@
+use crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFieldsObservation;
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_relational::facade::identity::EntityId;
 
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use {
     crate::domain_computation::primary_graph::application_attempt::observe_adjacency,
     crate::domain_computation::primary_graph::application_attempt::observe_field_value,

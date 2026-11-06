@@ -1,5 +1,6 @@
 //! One conditional's portable definition and its exact local field expectations.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::output_readiness_contract::WorthQueryOutputReadinessContractDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationConditionalPackageContract {

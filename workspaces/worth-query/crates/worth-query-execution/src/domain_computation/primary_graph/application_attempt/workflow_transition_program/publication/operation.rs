@@ -27,7 +27,7 @@ pub struct PreparedWorkflowOperation<Schema, Operation, Input, Scope> {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) required:
         RequiredWorkflowOperation,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) layout:
-        crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) program_revision:
         ApplicationProgramRevision,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) replays:
@@ -98,14 +98,14 @@ pub struct WorkflowOperationAuthority {
     pub(in crate::domain_computation::primary_graph::application_attempt) settlement_basis:
         crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowOperationSettlementBasis,
     pub(in crate::domain_computation::primary_graph::application_attempt) workflow_layout:
-        crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) approval_authority:
         Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) workflow_execution_requirements:
         worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
     pub(super) handle: WorthQueryPrimaryGraphIntegrationHandle,
     pub(super) layout:
-        Arc<crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout>,
+        Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout>,
 }
 
 impl std::fmt::Debug for WorkflowOperationAuthority {
@@ -253,7 +253,7 @@ impl WorkflowOperationAuthority {
         settlement_basis:
             crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowOperationSettlementBasis,
         workflow_layout:
-            crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+            crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
         approval_authority: Option<
             crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis,
         >,
@@ -261,7 +261,7 @@ impl WorkflowOperationAuthority {
             worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
         handle: WorthQueryPrimaryGraphIntegrationHandle,
         layout: Arc<
-            crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
+            crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
         >,
     ) -> Self {
         Self {

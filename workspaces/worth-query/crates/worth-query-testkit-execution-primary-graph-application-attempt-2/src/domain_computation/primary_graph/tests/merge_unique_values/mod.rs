@@ -27,7 +27,7 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::IdentityWorld;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::merge_unique_values::admit_merge_unique_values;
 use worth_query_execution::facade::integration::WorthQueryMergeUniqueValueDenialKind as Kind;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFieldFixture;
+use worth_query_execution::court_doors_for_test::domain_computation::graph_layout::unique_fields::WorthQueryUniqueFieldFixture;
 use worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle;
 pub const FEATURE: &str = "unique-feature";
 pub struct MergeWorld {

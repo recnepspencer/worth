@@ -8,7 +8,7 @@ use worth_relational::facade::runtime::{
 };
 use worth_relational::facade::storage::RecordLifecycleState;
 
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 use {
     crate::domain_computation::primary_graph::application_attempt::fact::observe_adjacency_checked,
     crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,

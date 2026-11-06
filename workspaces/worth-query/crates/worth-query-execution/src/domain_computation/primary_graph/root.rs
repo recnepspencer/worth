@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::runtime::RelationalRuntime;
 
-use super::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
 
 pub(crate) mod index_installation;

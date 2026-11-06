@@ -5,7 +5,7 @@ use super::installation::{
     WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryPendingConditionalOperation,
 };
 use super::lifecycle::WorthQueryConditionalOperationRegistry;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
 
 pub(in crate::domain_computation::primary_graph) struct ConditionalRuntimeAffinity {
     runtime_authority: u64,

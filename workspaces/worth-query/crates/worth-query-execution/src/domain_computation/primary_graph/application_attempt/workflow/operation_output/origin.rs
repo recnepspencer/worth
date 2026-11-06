@@ -4,10 +4,7 @@ use crate::domain_computation::primary_graph::{
     application_checkpoint::facts::FactPayload,
 };
 use worth_relational::facade::identity::EntityId;
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowOperationSettlementBasis,
-    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowOperationSettlementBasis, crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout};
 
 #[derive(Clone, Debug)]
 pub struct WorkflowOperationOrigin {

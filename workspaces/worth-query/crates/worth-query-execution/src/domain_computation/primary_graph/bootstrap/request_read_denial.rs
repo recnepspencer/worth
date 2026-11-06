@@ -1,8 +1,5 @@
 //! Bootstrap keeps a native read's exact execution cause at installation.
-use super::super::{
-    WorthQueryPrimaryGraphInstallationDenial as Denial,
-    WorthQueryPrimaryGraphInstallationDenialKind as Kind,
-};
+use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind};
 pub(super) fn read(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
 ) -> Denial {

@@ -6,10 +6,7 @@ mod feature;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryPortableDomainPackage;
 
-use super::super::{
-    WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
-};
+use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind};
 use super::conditional::{
     validate_required_producer, DeclaredConditionalBinding, PendingConditionalRegistry,
 };

@@ -128,7 +128,7 @@ pub(super) fn installed_preimage_demand(
 }
 
 pub fn prepare_provider_attempt<'layout>(
-    unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
+    unique_fields: crate::domain_computation::graph_layout::WorthQueryUniqueFields<
         'layout,
     >,
     contracts: &'layout effect_lowering::AspectContracts<'layout>,
@@ -195,7 +195,7 @@ pub fn prepare_provider_attempt<'layout>(
 }
 
 pub(super) fn prepare_program_migration_batch<'layout>(
-    unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
+    unique_fields: crate::domain_computation::graph_layout::WorthQueryUniqueFields<
         'layout,
     >,
     mutation_partition: worth_relational::facade::identity::PartitionId,

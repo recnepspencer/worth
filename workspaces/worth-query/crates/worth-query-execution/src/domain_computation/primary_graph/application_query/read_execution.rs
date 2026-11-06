@@ -87,7 +87,7 @@ pub fn read_bounded_root_rows<
 >(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    graph: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
@@ -115,7 +115,7 @@ pub fn read_bounded_root_rows<
 pub(super) fn read_bounded_plan_rows(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    graph: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     read: &read_plan::ReadPlan<'_>,
     spent: Option<&OneShotReadWorkObservation<'_>>,
     interruption: ReadInterruption<'_>,
@@ -133,7 +133,7 @@ pub(super) fn read_bounded_plan_rows(
 pub(super) fn read_prepared_root_rows(
     runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    graph: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     plan: &read_plan::ReadPlan<'_>,
 
     spent: Option<&OneShotReadWorkObservation<'_>>,

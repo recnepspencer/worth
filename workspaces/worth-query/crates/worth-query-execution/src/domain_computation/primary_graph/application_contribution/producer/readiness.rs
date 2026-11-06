@@ -91,7 +91,7 @@ where
         routes: &WorthQueryInstalledOutputReadinessRoutes,
     ) -> Result<
         (),
-        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+        crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
     > {
         if self.entries.len() != routes.len()
             || self
@@ -99,8 +99,8 @@ where
                 .keys()
                 .any(|producer| !routes.contains_key(producer))
         {
-            return Err(crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::MissingConditionalBinding,
+            return Err(crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial::new(
+                crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind::MissingConditionalBinding,
                 "every installed output producer requires one exact readiness conditional",
             ));
         }

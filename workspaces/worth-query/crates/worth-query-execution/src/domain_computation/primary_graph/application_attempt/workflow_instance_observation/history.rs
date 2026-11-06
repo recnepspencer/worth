@@ -6,11 +6,7 @@ use {
     super::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationObservedFact,
     crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection,
 };
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect,
-    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect, crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout};
 
 pub(crate) mod budget;
 mod captured_inputs;

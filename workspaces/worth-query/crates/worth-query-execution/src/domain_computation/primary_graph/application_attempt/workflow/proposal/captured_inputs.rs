@@ -1,5 +1,5 @@
 //! Immutable per-target rows published in the proposal's own native candidate.
-use super::super::{captured_input::WorkflowCapturedTarget, schema::WorthQueryWorkflowLayout};
+use {super::super::captured_input::WorkflowCapturedTarget, crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout};
 use super::WorkflowProposalMeaning;
 use crate::domain_computation::{
     canonical_operation_material,

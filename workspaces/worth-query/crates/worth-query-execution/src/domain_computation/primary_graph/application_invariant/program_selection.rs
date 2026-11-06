@@ -30,7 +30,7 @@ use worth_relational::facade::runtime::{
 use super::super::program_occurrence::{
     program_revision_rendering, WorthQueryProgramActivationCell,
 };
-use super::super::schema_layout::WorthQueryProgramActivationLayout;
+use crate::domain_computation::graph_layout::WorthQueryProgramActivationLayout;
 
 /// Whether one installed rule speaks for the candidate in front of it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

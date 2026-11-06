@@ -16,7 +16,7 @@ impl ComponentSelection {
     pub(in crate::domain_computation::primary_graph) fn from_query(
         installed: &WorthQueryInstalledGraphReadContract,
         binding: &ApplicationSchemaBindingIdentity,
-        graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+        graph: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
         root: EntityId,
         source: SnapshotHandle,
         subject: ComponentSelectionSubject,

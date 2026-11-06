@@ -4,10 +4,7 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
 use super::super::handler::PendingMutationHandlerRegistry;
-use super::super::{
-    WorthQueryApplicationInvariantFactories, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {super::super::WorthQueryApplicationInvariantFactories, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 use super::conditional::PendingConditionalRegistry;
 use super::contracts::WorthQueryApplicationContractCatalog;
 use super::WorthQueryApplicationContributionContracts;

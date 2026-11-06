@@ -26,5 +26,4 @@ pub(crate) mod product_activation;
 pub(crate) mod product_operation;
 pub(crate) mod provider;
 pub(crate) mod resolution_denial;
-pub(crate) mod schema_layout;
 pub(crate) mod value_decode;

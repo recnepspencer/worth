@@ -10,14 +10,7 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationSchemaComposition, ApplicationSchemaDeclaration},
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
-use {
-    crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationDenial,
-    crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationLimits,
-    crate::domain_computation::primary_graph::WorthQueryApplicationContributionTuple,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
-    crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase,
-};
+use {crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationDenial, crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationLimits, crate::domain_computation::primary_graph::WorthQueryApplicationContributionTuple, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase};
 
 /// Install a fresh program and roster under the supplied bootstrap request.
 /// Setup retains that request's work, memory, cancellation and deadline controls.

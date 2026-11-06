@@ -5,10 +5,7 @@ use crate::domain_computation::execution_runtime::{
     WorthQueryExecutionRuntime,
 };
 
-use super::{
-    WorthQueryApplicationInvariantFactories, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial,
-};
+use {super::WorthQueryApplicationInvariantFactories, super::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 
 impl WorthQueryExecutionInstallationAuthority {
     /// Prepares the application's in-memory graph with its exact invariant factories.

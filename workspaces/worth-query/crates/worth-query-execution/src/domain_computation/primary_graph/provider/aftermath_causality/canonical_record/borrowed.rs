@@ -1,5 +1,5 @@
 //! Compare the existing canonical grammar without owned row/receipt decoding.
-use super::super::{lineage_fields, source_fields, WorthQueryAftermathCausalityLayout};
+use {super::super::lineage_fields, super::super::source_fields, crate::domain_computation::graph_layout::WorthQueryAftermathCausalityLayout};
 use crate::domain_computation::application_aftermath::{
     WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality,
     WorthQueryRecordedCorrectionSource,

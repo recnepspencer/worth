@@ -21,8 +21,8 @@ use crate::domain_computation::primary_graph::application_output_demand::denial:
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerApplicability;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind;
 
 /// Selection work on the request's meter; running out is the selection's
 /// work denial.

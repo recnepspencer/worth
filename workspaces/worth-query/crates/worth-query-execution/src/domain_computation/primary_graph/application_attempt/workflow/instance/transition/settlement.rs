@@ -6,7 +6,7 @@ use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
 use super::{AdmittedWorkflowTransition, WorkflowOperationSettlementBasis};
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,
 };
@@ -149,7 +149,7 @@ fn visit_transition_facts_from_basis<Error>(
         (
             layout.transition.protocol_version.clone(),
             AspectValue::UInt64(if operation_receipt_identity.is_some() {
-                super::super::super::schema::version::WORKFLOW_OPERATION_OUTPUT_PROTOCOL_VERSION
+                crate::domain_computation::graph_layout::workflow::version::WORKFLOW_OPERATION_OUTPUT_PROTOCOL_VERSION
             } else {
                 crate::domain_computation::primary_graph::vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION
             }),

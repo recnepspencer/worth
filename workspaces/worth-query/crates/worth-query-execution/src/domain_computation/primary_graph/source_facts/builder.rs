@@ -1,8 +1,6 @@
 //! Collect each actual physical source once, preserving canonical key order.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    structural_walk::StructuralWalkObservation, WorthQueryPrimaryGraphLayout,
-};
+use {crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation, crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout};
 use std::collections::{BTreeMap, BTreeSet};
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{

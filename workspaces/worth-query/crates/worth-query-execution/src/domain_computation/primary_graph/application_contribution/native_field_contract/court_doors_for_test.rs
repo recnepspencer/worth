@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::native_field_contract::NativeFieldContractDenial;
 
 impl FieldExpectation {
     #[doc(hidden)]
@@ -29,13 +30,6 @@ impl FieldExpectation {
     }
 }
 
-impl NativeFieldContractDenial {
-    #[doc(hidden)]
-    pub fn field_locus_for_test(&self) -> Option<&schema::ApplicationFieldBindingLocus> {
-        Self::field_locus(self)
-    }
-}
-
 impl FieldExpectation {
     #[doc(hidden)]
     pub fn seal_for_test<S: schema::ApplicationSchema>(
@@ -43,12 +37,5 @@ impl FieldExpectation {
         installed: &domain::WorthQueryInstalledApplicationSchema<S>,
     ) -> Result<(), NativeFieldContractDenial> {
         Self::seal::<S>(self, installed)
-    }
-}
-
-impl NativeFieldContractDenial {
-    #[doc(hidden)]
-    pub fn detail_for_test(&self) -> &str {
-        Self::detail(self)
     }
 }

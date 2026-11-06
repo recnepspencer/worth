@@ -23,7 +23,7 @@ use crate::domain_computation::primary_graph::vocabulary::application_query::rea
 pub(super) fn select(
     runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    graph: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
     capture_result_set: bool,
     spent: Option<&OneShotReadWorkObservation<'_>>,

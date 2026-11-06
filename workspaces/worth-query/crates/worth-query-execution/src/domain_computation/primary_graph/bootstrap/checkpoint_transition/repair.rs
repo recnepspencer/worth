@@ -22,7 +22,7 @@ pub struct WorthQueryCheckpointTransitionRecovery {
     detail: String,
     capture_denial: Option<WorthQueryCheckpointCaptureDenial>,
     finalization_denial: Option<
-        Box<crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial>,
+        Box<crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial>,
     >,
 }
 
@@ -63,7 +63,7 @@ impl WorthQueryCheckpointTransitionRecovery {
         publication: WorthQueryPrimaryGraphPublication,
         authority: RecoveredRelationalRuntimeAuthority,
         outputs: super::preserved_outputs::PreservedOutputs,
-        cause: crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+        cause: crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
     ) -> Self {
         Self {
             graph,
@@ -79,7 +79,7 @@ impl WorthQueryCheckpointTransitionRecovery {
     /// Original post-performance refusal. Capture retries never replace it.
     pub fn finalization_denial(
         &self,
-    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial>
+    ) -> Option<&crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial>
     {
         self.finalization_denial.as_deref()
     }

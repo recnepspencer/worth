@@ -1,8 +1,5 @@
 //! Producer associated types own both lifecycle slots and readiness correspondence.
-use super::super::super::{
-    WorthQueryPrimaryGraphInstallationDenial as Denial,
-    WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
-};
+use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind};
 use std::marker::PhantomData;
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, WorthQueryApplicationOutputRole},

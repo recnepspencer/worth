@@ -1,7 +1,7 @@
 use super::*;
 
 pub(super) fn materialize_decision<Schema, Operation, Input, Scope>(
-    layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+    layout: &crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
     program_revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
     admitted: crate::domain_computation::primary_graph::application_attempt::workflow::instance::AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
     meaning: crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowApprovalMeaning,

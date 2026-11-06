@@ -21,7 +21,7 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryCommittedAftermathCausality, WorthQueryPendingAftermathCausality,
 };
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity;
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryAftermathCausalityLayout;
+use crate::domain_computation::graph_layout::WorthQueryAftermathCausalityLayout;
 pub(in crate::domain_computation::primary_graph) use canonical_record::WorthQueryCanonicalCorrectionFact;
 pub(in crate::domain_computation::primary_graph) use correction_history::{
     WorthQueryActiveReversalProgress, WorthQueryCorrectionHistoryPageAllocation,

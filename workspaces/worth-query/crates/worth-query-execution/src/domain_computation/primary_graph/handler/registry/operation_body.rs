@@ -1,9 +1,5 @@
 //! Central implementation selection: authored bodies cannot be replaced.
-use super::{
-    denial, ApplicationMutationBinding, ApplicationSchema, ApplicationSchemaBindingIdentity,
-    DenialKind, OperationHandler, PendingMutationHandlerRegistry,
-    WorthQueryInstalledApplicationMutationBinding, WorthQueryPrimaryGraphInstallationDenial,
-};
+use {super::denial, super::ApplicationMutationBinding, super::ApplicationSchema, super::ApplicationSchemaBindingIdentity, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind, super::OperationHandler, super::PendingMutationHandlerRegistry, super::WorthQueryInstalledApplicationMutationBinding, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding;
 use {
     super::super::super::operation_body::OperationBodyHandler,

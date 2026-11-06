@@ -175,7 +175,7 @@ pub struct PreparedWorkflowAssessment<Schema, Operation, Input, Scope> {
     pub(super) applicability_dependencies:
         Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
     pub(super) layout:
-        crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
     pub(super) program_revision: ApplicationProgramRevision,
     pub(super) replays: PreparedWorkflowTransitionReplays,
     /// Evidence bytes the lineage may still retain when this settles.
@@ -192,7 +192,7 @@ pub struct PreparedWorkflowCondition<Schema, Operation, Input, Scope> {
         >,
     pub(super) required: RequiredWorkflowCondition,
     pub(super) layout:
-        crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
     pub(super) program_revision: ApplicationProgramRevision,
     pub(super) replays: PreparedWorkflowTransitionReplays,
 }

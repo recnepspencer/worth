@@ -20,8 +20,8 @@ pub(super) struct ValidatedApprovalInputs {
 pub(super) fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     compiled: &crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
-    layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
-    graph_layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
+    layout: &crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
+    graph_layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     resource: worth_relational::facade::identity::EntityId,
     instance: &crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef,
     progress: &crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,

@@ -55,7 +55,7 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::{EntityId, KindId, VersionId};
 
-use super::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 use super::{
     WorthQueryInstalledEntityResolutionContext, WorthQueryPrimaryGraphBootstrap,
     WorthQueryPrimaryGraphIntegrationHandle,

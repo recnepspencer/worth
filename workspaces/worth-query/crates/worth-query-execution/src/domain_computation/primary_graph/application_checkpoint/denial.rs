@@ -17,7 +17,7 @@ pub enum WorthQueryCheckpointCaptureDenial {
     ),
     Allocation(ExecutionAllocationDenial),
     /// Original execution stopped, or cannot fund the required capture contract.
-    Execution(super::super::WorthQueryPrimaryGraphInstallationDenial),
+    Execution(crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial),
 }
 
 impl From<RelationalNativeCheckpointCaptureDenial> for WorthQueryCheckpointCaptureDenial {
@@ -30,12 +30,12 @@ impl From<RelationalNativeCheckpointCaptureDenial> for WorthQueryCheckpointCaptu
             RelationalNativeCheckpointCaptureDenial::Durability(error) => error.into(),
             RelationalNativeCheckpointCaptureDenial::Allocation(error) => Self::Allocation(error),
             RelationalNativeCheckpointCaptureDenial::Request(cause) => {
-                use super::super::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
+                use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
                 let kind = match super::super::provider::relational_execution_denial::relational_execution_kind(cause, None) {
                     Ok(kind) => Kind::ExecutionDenied { kind },
                     Err(kind) => Kind::ExecutionControlStopped { kind },
                 };
-                Self::Execution(super::super::WorthQueryPrimaryGraphInstallationDenial::new(
+                Self::Execution(crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial::new(
                     kind,
                     "checkpoint history consolidation stopped",
                 ))

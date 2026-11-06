@@ -5,10 +5,7 @@ use worth_query_installation::facade::{
     WorthQueryInstalledInvariantExecutionRequirement, WorthQueryInvariantEnforcement,
 };
 
-use super::{
-    WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
-    WorthQueryInvariantStructuralCounters,
-};
+use {crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind, crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure, super::WorthQueryInvariantStructuralCounters};
 
 pub(crate) struct WorthQueryInvariantReceiptMaterial {
     pub(crate) identity: Arc<str>,

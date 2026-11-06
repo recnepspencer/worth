@@ -19,9 +19,9 @@ pub struct WorthQueryApplicationInvariantDerivedRelationBinding<Schema, Relation
     pub(in crate::domain_computation::primary_graph) definition:
         worth_relational::facade::schema::DerivedRelationHandle,
     pub(in crate::domain_computation::primary_graph) from:
-        super::super::schema_layout::MemberDomainBinding,
+        crate::domain_computation::graph_layout::MemberDomainBinding,
     pub(in crate::domain_computation::primary_graph) to:
-        super::super::schema_layout::MemberDomainBinding,
+        crate::domain_computation::graph_layout::MemberDomainBinding,
     pub(in crate::domain_computation::primary_graph) orbit_definition:
         Option<worth_foundational::facade::AggregateDefinitionIdentity>,
     pub(in crate::domain_computation::primary_graph) _marker:
@@ -46,7 +46,7 @@ pub struct WorthQueryApplicationInvariantComponentSetBinding<Schema, Set, Entity
         worth_foundational::facade::AggregateDefinitionIdentity,
     pub(in crate::domain_computation::primary_graph) member_kind: KindId,
     pub(in crate::domain_computation::primary_graph) member_domain:
-        super::super::schema_layout::MemberDomainBinding,
+        crate::domain_computation::graph_layout::MemberDomainBinding,
     pub(in crate::domain_computation::primary_graph) source:
         Option<worth_relational::facade::schema::DerivedRelationHandle>,
     pub(in crate::domain_computation::primary_graph) sources:

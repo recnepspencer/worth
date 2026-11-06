@@ -12,7 +12,7 @@ use worth_relational::facade::runtime::VisibilityProjectionView;
 
 use super::super::definition::{read_definition_dependencies, WorkflowDefinitionDependencies};
 use super::super::instance::read_live_instances;
-use super::super::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use super::{
     WorkflowAdoptionReadDenial, WorkflowAdoptionTruth, WorkflowVocabularyCoverageRegistry,
     WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,

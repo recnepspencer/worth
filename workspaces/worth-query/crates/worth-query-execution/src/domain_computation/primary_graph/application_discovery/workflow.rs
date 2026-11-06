@@ -8,7 +8,6 @@ mod admission;
 mod audit;
 mod definition;
 mod enumeration;
-pub(in crate::domain_computation::primary_graph) mod indexes;
 mod original_intent;
 mod read;
 mod target;
@@ -34,7 +33,7 @@ use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionContentIdentity;
 use worth_relational::facade::identity::EntityId;
 
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use {
     super::super::application_attempt::observe_adjacency,
     super::super::application_attempt::observe_field_value,

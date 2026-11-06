@@ -107,7 +107,7 @@ fn installed_relation<Schema>(
     reader: &WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
     relation: &str,
 ) -> Result<
-    crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryRelationLayout,
+    crate::domain_computation::graph_layout::WorthQueryPrimaryRelationLayout,
     WorthQueryInvariantAggregateDenial,
 > {
     reader.layout.relation(relation).cloned().ok_or_else(|| {

@@ -8,7 +8,7 @@ use worth_query_installation::facade::{
     WorthQueryInstalledGraphReadContract,
 };
 
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 fn runtime_supports(
     layout: &WorthQueryPrimaryGraphLayout,

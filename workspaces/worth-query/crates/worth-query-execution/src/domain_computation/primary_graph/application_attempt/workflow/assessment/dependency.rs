@@ -146,7 +146,7 @@ pub fn visit_dependency_facts<Error>(
 }
 
 pub fn append_field_revision_fields(
-    layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorkflowEvidenceDependencyLayout,
+    layout: &crate::domain_computation::graph_layout::workflow::WorkflowEvidenceDependencyLayout,
     locator: &worth_foundational::facade::AspectFieldLocator,
     native_revision: Option<worth_relational::facade::runtime::RelationalFieldRevision>,
     fields: &mut BTreeMap<worth_foundational::facade::AspectFieldLocator, AspectValue>,

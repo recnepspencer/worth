@@ -2,16 +2,14 @@
 
 use worth_relational::facade::runtime::CustomInvariantRegistration;
 
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 
-use super::{
-    denial, WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {super::denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 
 pub(super) fn registration(
     layout: &WorthQueryWorkflowLayout,
 ) -> Result<CustomInvariantRegistration, WorthQueryPrimaryGraphInstallationDenial> {
-    crate::domain_computation::primary_graph::application_attempt::workflow::schema::fact_custody_registration(layout)
+    crate::domain_computation::graph_layout::workflow::fact_custody_registration(layout)
         .map_err(|detail| {
             denial(
                 WorthQueryPrimaryGraphInstallationDenialKind::InvariantFactoryRejected,

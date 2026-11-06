@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::vocabulary::application_query::rea
 pub(super) fn filter(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    graph: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     mut frontier: BTreeSet<EntityId>,

@@ -8,7 +8,7 @@ pub(super) fn complete(
     mut selected: AcquiredComponents,
     meaning: &ApplicationQueryComponentMeaning,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    graph: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
     work: &mut RootSelectionWork<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
@@ -152,7 +152,7 @@ pub(super) fn complete(
 }
 fn make_body(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    graph: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
     subject: ComponentSelectionSubject,
     aggregates: Vec<Arc<AggregateObservation>>,

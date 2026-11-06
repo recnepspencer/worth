@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::output_readiness_contract::WorthQueryOutputReadinessContractDenial;
 
 impl<D, O, F> WorthQueryOutputReadinessContract<D, O, F> {
     #[doc(hidden)]

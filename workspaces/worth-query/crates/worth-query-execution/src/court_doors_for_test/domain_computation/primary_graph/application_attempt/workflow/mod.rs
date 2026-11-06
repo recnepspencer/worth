@@ -13,5 +13,3 @@ pub mod evidence_dependency;
 pub mod instance;
 #[path = "operation_output/mod.rs"]
 pub mod operation_output;
-#[path = "schema/mod.rs"]
-pub mod schema;

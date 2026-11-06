@@ -151,7 +151,7 @@ pub(super) fn evaluate<Schema: worth_query_installation::facade::ApplicationSche
     )
 }
 struct InstalledEvaluationFields<'a> {
-    layout: &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    layout: &'a crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     contracts:
         &'a worth_query_installation::facade::WorthQueryInstalledApplicationSchemaContractCatalog,
 }

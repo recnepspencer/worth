@@ -3,6 +3,7 @@ use super::super::super::native_field_contract::FieldExpectation;
 use super::super::WorthQueryApplicationConditionalPackageContract;
 use super::*;
 use worth_query_declaration::facade::application_schema as schema;
+use crate::domain_computation::vocabulary::primary_graph::output_readiness_contract::WorthQueryOutputReadinessContractDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryReadinessFieldUse {

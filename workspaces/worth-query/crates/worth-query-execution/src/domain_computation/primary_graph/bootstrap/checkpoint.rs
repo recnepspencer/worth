@@ -9,11 +9,7 @@ use crate::domain_computation::execution_runtime::{
     WorthQueryExecutionRuntime,
 };
 
-use super::super::{
-    application_checkpoint::DecodedApplicationCheckpoint, WorthQueryApplicationInvariantFactories,
-    WorthQueryPrimaryGraph, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {super::super::application_checkpoint::DecodedApplicationCheckpoint, super::super::WorthQueryApplicationInvariantFactories, super::super::WorthQueryPrimaryGraph, super::super::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 use crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication;
 
 impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema> {
@@ -29,7 +25,7 @@ impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema> {
 pub(super) fn primary_graph_for_installation(
     runtime_authority: crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: ApplicationSchemaBindingIdentity,
-    layout: super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    layout: crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     relational_runtime: RelationalRuntime,
     invalidation_resources: crate::domain_computation::execution_runtime::WorthQueryInvalidationResources,
     managed_sources: super::super::application_query::managed_index::ManagedSourceInstallation,

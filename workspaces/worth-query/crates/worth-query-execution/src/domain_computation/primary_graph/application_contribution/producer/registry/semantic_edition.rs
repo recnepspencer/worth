@@ -5,10 +5,7 @@ use worth_query_declaration::facade::application_operation::{
 };
 
 use super::DeclaredProducerBinding;
-use crate::domain_computation::primary_graph::{
-    WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
-};
+use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind};
 
 /// The installed declaration's framed semantic meaning. Rust type identities
 /// are runtime guards; the digest contains the portable declared contract.

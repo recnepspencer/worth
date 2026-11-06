@@ -1,4 +1,4 @@
-use super::WorthQueryPrimaryGraphInstallationDenialKind;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind;
 use worth_query_installation::facade::WorthQueryPrincipalBindingInstallationDenialKind;
 
 pub(super) fn map_binding_denial_kind(

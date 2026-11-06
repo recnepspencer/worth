@@ -15,7 +15,7 @@ impl WorthQueryStagedApplicationAttempt<'_> {
             worth_relational::facade::identity::EntityId,
             worth_relational::facade::transactions::CreatedEntityRef,
         )>,
-        crate::domain_computation::WorthQueryInvariantExecutionFailure,
+        crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure,
     > {
         let Some(pending) = self.attempt.aftermath_causality() else {
             return Ok(None);

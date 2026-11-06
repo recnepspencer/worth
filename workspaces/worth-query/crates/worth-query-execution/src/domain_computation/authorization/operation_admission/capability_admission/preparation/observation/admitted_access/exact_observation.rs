@@ -37,7 +37,7 @@ pub(in crate::domain_computation::authorization) struct WorthQueryExactCapabilit
     snapshot: &'observation worth_relational::facade::snapshots::SnapshotHandle,
     resolution:
         crate::domain_computation::primary_graph::WorthQueryInstalledEntityResolutionContext,
-    layout: &'observation crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    layout: &'observation crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     session: WorthQueryGraphWorkSessionIdentity,
     principal: worth_relational::facade::identity::EntityId,
 }

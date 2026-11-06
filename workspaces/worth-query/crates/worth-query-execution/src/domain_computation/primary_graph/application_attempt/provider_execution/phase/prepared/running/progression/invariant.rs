@@ -89,7 +89,7 @@ pub(super) fn progress_invariant_candidate<'run>(
                     })
                     .collect::<Result<
                         Vec<_>,
-                        crate::domain_computation::WorthQueryInvariantExecutionFailure,
+                        crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure,
                     >>()?;
         slots
             .into_iter()

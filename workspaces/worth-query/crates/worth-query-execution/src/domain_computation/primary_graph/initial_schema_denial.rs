@@ -1,8 +1,6 @@
 use worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenialKind;
 
-use super::{
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 
 pub(super) fn map_initial_schema_installation_denial(
     denial: worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial,

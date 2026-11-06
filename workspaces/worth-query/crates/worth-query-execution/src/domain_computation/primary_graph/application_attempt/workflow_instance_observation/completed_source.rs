@@ -1,6 +1,6 @@
 //! Completed history may feed a new episode, never another step on its source.
 use super::super::fact::WorkflowHistoryRequirement;
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use worth_relational::facade::{
     identity::EntityId, runtime::RelationalRuntime, snapshots::SnapshotHandle,
 };

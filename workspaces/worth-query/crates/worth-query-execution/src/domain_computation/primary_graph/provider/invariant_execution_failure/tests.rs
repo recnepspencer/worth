@@ -1,5 +1,5 @@
 use super::{map_custom_invariant_failure, map_invariant_failure, map_transaction_staging_failure};
-use crate::domain_computation::WorthQueryCustomInvariantDenial;
+use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial;
 use worth_relational::facade::transactions::{
     CustomInvariantFailureIdentity, CustomInvariantFailurePhase, CustomInvariantRuleId,
     CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion, InvariantViolationFields,
@@ -24,7 +24,7 @@ fn custom_semantic_violation_preserves_owner_identity() {
 
     assert_eq!(
         failure.kind(),
-        crate::domain_computation::WorthQueryInvariantExecutionDenialKind::CustomInvariantDenied
+        crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind::CustomInvariantDenied
     );
     assert_eq!(
         failure.custom_invariant_denial(),
@@ -58,7 +58,7 @@ fn custom_operational_failure_preserves_identity_phase_and_kind() {
 
         assert_eq!(
             failure.kind(),
-            crate::domain_computation::WorthQueryInvariantExecutionDenialKind::CustomInvariantDenied
+            crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind::CustomInvariantDenied
         );
         assert_eq!(
             failure.custom_invariant_denial(),
@@ -80,7 +80,7 @@ fn built_in_invariant_preserves_relational_detail() {
 
     assert_eq!(
         failure.kind(),
-        crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProviderRejected
+        crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind::ProviderRejected
     );
     assert_eq!(
         failure.detail(),
@@ -106,8 +106,8 @@ fn invariant_materialization_refusal_is_not_exhaustion() {
                 failure,
             );
             let retained = denial.invariant_execution_failure().unwrap();
-            assert_eq!(retained.kind(), crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProviderRejected);
-            assert_eq!(retained.posture(), crate::domain_computation::WorthQueryInvariantExecutionFailurePosture::Denied);
+            assert_eq!(retained.kind(), crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind::ProviderRejected);
+            assert_eq!(retained.posture(), crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailurePosture::Denied);
             assert_eq!(retained.detail(), expected_detail);
         }
 }
@@ -129,12 +129,7 @@ fn original_law_payload_survives_all_query_refusal_translations() {
     use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
     use worth_relational::facade::schema::ContractId;
     use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
-    use {
-        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
-        crate::domain_computation::WorthQueryProviderSessionFailure,
-        crate::domain_computation::WorthQueryProviderSessionProtocolStage,
-        crate::domain_computation::WorthQueryRelationLawDenial,
-    };
+    use {crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind, crate::domain_computation::WorthQueryProviderSessionFailure, crate::domain_computation::WorthQueryProviderSessionProtocolStage, crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryRelationLawDenial};
 
     // Payload transport only: these coordinates make no claim of graph admission.
     // The installed public graph court proves actual law/identity derivation.

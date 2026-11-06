@@ -16,7 +16,7 @@ use super::{prepare_provider_attempt, WorthQueryApplicationRealizedEffect as Eff
 use crate::domain_computation::primary_graph::application_attempt::effect_program::{
     WorthQueryApplicationCreationPartition as Partition, WorthQueryApplicationOptionalFieldWrite,
 };
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFieldFixture;
+use crate::domain_computation::graph_layout::WorthQueryUniqueFieldFixture;
 use {
     crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
     crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial,

@@ -10,7 +10,6 @@ pub(crate) mod decision_reuse;
 pub(crate) mod denial;
 pub(crate) mod expected_steps;
 pub(crate) mod fact;
-pub(crate) mod fact_custody;
 pub(crate) mod handler_fact_boundary;
 pub(crate) mod idempotency_resolution_denial;
 pub(crate) mod indexed_entity_selection;

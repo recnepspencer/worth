@@ -64,7 +64,7 @@ pub(super) fn select_paths(
 pub(super) fn select_root_path_union(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    graph: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
     paths: &[WorthQueryInstalledRootPath],
     capture_result_set: bool,

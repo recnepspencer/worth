@@ -6,7 +6,7 @@ use super::{
     WorkflowDefinitionCompilationPosture,
 };
 use {crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact};
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::publication_binding::ColdCompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::publication_binding::ColdCompiledWorkflowDefinition, crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout};
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_relational::facade::identity::{EntityId, KindId};
 

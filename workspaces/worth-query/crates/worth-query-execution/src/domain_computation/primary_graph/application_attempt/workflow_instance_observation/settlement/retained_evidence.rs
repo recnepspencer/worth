@@ -1,9 +1,6 @@
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowAssessmentEvidenceLocator,
-    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowAssessmentEvidenceLocator, crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout};
 use {
     crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
     crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact,

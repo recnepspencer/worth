@@ -13,7 +13,7 @@ use crate::domain_computation::authorization::capability_binding_lowering::{
     field_locator, relation,
 };
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityDelegationBindings {
     pub(in crate::domain_computation::authorization) rule: ApplicationCapabilityDelegationRule,

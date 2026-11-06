@@ -1,14 +1,7 @@
 //! Physical field revisions and declared roles, never equal business values.
 use super::*;
 use worth_execution::MapKernelContext;
-use {
-    crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationQueryObservation,
-    crate::domain_computation::primary_graph::schema_layout::InstalledFieldCoordinate,
-    crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact,
-    crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-    crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint,
-};
+use {crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationQueryObservation, crate::domain_computation::graph_layout::InstalledFieldCoordinate, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact, crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture, crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout, crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint};
 mod input;
 mod output;
 mod performed_input;

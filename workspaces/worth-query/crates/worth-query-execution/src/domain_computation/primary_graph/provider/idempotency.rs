@@ -9,7 +9,7 @@ use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
+use crate::domain_computation::graph_layout::WorthQueryProviderIdempotencyLayout;
 
 mod lookup_key;
 pub(crate) mod product_affinity;

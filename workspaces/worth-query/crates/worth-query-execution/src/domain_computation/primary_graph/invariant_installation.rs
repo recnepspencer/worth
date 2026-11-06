@@ -16,9 +16,7 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::runtime::CustomInvariantRegistration;
 
-use super::{
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 
 use super::application_invariant::{
     ErasedApplicationInvariantRule, WorthQueryApplicationInvariantRule,
@@ -152,7 +150,7 @@ where
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding_identity: ApplicationSchemaBindingIdentity,
-        layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
+        layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     ) -> Result<
         (
             Vec<CustomInvariantRegistration>,

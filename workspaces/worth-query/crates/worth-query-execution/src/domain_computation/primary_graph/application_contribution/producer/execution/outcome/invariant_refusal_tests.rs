@@ -1,7 +1,5 @@
 use super::*;
-use crate::domain_computation::{
-    WorthQueryCustomInvariantDenial, WorthQueryInvariantExecutionFailure,
-};
+use {crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial, crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure};
 use worth_relational::facade::runtime::{
     CustomInvariantRefusal, CustomInvariantRuleId, CustomInvariantSemanticIdentity,
     CustomInvariantSemanticVersion,
@@ -38,7 +36,7 @@ fn producer_denial_and_retained_clone_keep_the_original_invariant_payload() {
 
 #[test]
 fn a_producer_requirement_refusal_keeps_its_receipt_basis_on_the_demand_denial() {
-    use crate::domain_computation::WorthQueryInvariantExecutionDenialKind as Kind;
+    use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind as Kind;
     use worth_relational::facade::mvcc::CustomInvariantNonApplicability;
     use worth_relational::facade::runtime::InvariantDecisionKind;
     let admission =

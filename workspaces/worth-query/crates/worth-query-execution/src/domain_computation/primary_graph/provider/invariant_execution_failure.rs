@@ -1,6 +1,4 @@
-use crate::domain_computation::{
-    WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
-};
+use {crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind, crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure};
 
 pub(super) fn map_transaction_admission_failure(
     denial: worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial,
@@ -183,7 +181,7 @@ fn map_invariant_failure(
     fields: worth_relational::facade::transactions::InvariantViolationFields,
     detail: String,
 ) -> WorthQueryInvariantExecutionFailure {
-    if crate::domain_computation::WorthQueryRelationLawDenial::from_fields(&fields).is_some() {
+    if crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryRelationLawDenial::from_fields(&fields).is_some() {
         return WorthQueryInvariantExecutionFailure::relation_law_denied(fields, detail);
     }
     map_custom_invariant_failure(fields, detail.clone()).unwrap_or_else(|| {
@@ -198,7 +196,7 @@ fn map_custom_invariant_failure(
     fields: worth_relational::facade::transactions::InvariantViolationFields,
     detail: String,
 ) -> Option<WorthQueryInvariantExecutionFailure> {
-    use crate::domain_computation::WorthQueryCustomInvariantDenial;
+    use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial;
     use worth_relational::facade::transactions::InvariantViolationFields;
 
     let denial = match fields {

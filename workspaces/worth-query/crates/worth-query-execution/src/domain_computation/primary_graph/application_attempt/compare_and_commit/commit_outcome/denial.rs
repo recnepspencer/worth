@@ -115,7 +115,7 @@ impl WorthQueryApplicationCommitDenial {
 
     pub fn custom_invariant_denial(
         &self,
-    ) -> Option<&crate::domain_computation::WorthQueryCustomInvariantDenial> {
+    ) -> Option<&crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial> {
         self.custom_invariant()
     }
 
@@ -123,11 +123,11 @@ impl WorthQueryApplicationCommitDenial {
         &self,
     ) -> Option<&worth_relational::facade::transactions::CustomInvariantSemanticIdentity> {
         match self.custom_invariant()? {
-            crate::domain_computation::WorthQueryCustomInvariantDenial::Violation {
+            crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial::Violation {
                 identity,
                 ..
             } => Some(identity),
-            crate::domain_computation::WorthQueryCustomInvariantDenial::Failure { .. } => None,
+            crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial::Failure { .. } => None,
         }
     }
 
@@ -139,12 +139,12 @@ impl WorthQueryApplicationCommitDenial {
         worth_relational::facade::transactions::ResultCustomInvariantFailureKind,
     )> {
         match self.custom_invariant()? {
-            crate::domain_computation::WorthQueryCustomInvariantDenial::Failure {
+            crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial::Failure {
                 identity,
                 phase,
                 failure,
             } => Some((identity, *phase, *failure)),
-            crate::domain_computation::WorthQueryCustomInvariantDenial::Violation { .. } => None,
+            crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial::Violation { .. } => None,
         }
     }
 

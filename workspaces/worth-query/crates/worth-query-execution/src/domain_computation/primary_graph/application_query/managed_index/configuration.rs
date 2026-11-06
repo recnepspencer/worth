@@ -3,13 +3,7 @@ use super::{
     adapter::{ErasedIndexExecutor, InstalledIndexProvider, TypedIndexProvider},
     WorthQueryManagedIndexProvider,
 };
-use crate::{
-    domain_computation::primary_graph::{
-        WorthQueryPrimaryGraphInstallationDenial as Denial,
-        WorthQueryPrimaryGraphInstallationDenialKind as Kind,
-    },
-    equality_type_id::EqualityTypeId,
-};
+use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind, crate::equality_type_id::EqualityTypeId};
 use std::{any::Any, collections::HashMap, marker::PhantomData, sync::Arc};
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding,

@@ -1,7 +1,5 @@
 //! Complete component inspection under installation-owned projection authority.
-use crate::domain_computation::primary_graph::{
-    aggregate_observation::AggregateSelection, schema_layout::ComponentSetLayout,
-};
+use {crate::domain_computation::primary_graph::aggregate_observation::AggregateSelection, crate::domain_computation::graph_layout::ComponentSetLayout};
 use worth_query_declaration::facade::application_schema::ApplicationComponentSetRef;
 use worth_query_installation::facade::ApplicationSchema;
 use {
@@ -69,7 +67,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             .layout
             .component_set(set.name())
             .ok_or_else(|| Denial::new(Kind::ComponentSetNotInstalled, set.name()))?;
-        use crate::domain_computation::primary_graph::schema_layout::MemberDomainBinding;
+        use crate::domain_computation::graph_layout::MemberDomainBinding;
         use worth_relational::facade::schema::NativeMemberDomain;
         let domain_matches = match (
             self.layout.member_binding(set.member_selector()),

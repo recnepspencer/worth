@@ -11,14 +11,7 @@ use super::invariant_execution_failure::{
     map_transaction_admission_failure, map_transaction_staging_failure, map_validation_failure,
 };
 use super::WorthQueryPrimaryGraphProvider;
-use crate::domain_computation::{
-    WorthQueryBoundInvariantExecutionView, WorthQueryInvariantExecutionDenialKind,
-    WorthQueryInvariantExecutionFailure, WorthQueryInvariantExecutionProvider,
-    WorthQueryInvariantProviderVerdict, WorthQueryInvariantStateLoadAdmission,
-    WorthQueryInvariantStateLoadEvidence, WorthQueryInvariantStateLoadRequestView,
-    WorthQueryInvariantStructuralCounters, WorthQueryInvariantVerdictAdmission,
-    WorthQueryInvariantVerdictEvidence, WorthQueryProviderSessionView,
-};
+use {crate::domain_computation::WorthQueryBoundInvariantExecutionView, crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind, crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure, crate::domain_computation::WorthQueryInvariantExecutionProvider, crate::domain_computation::WorthQueryInvariantProviderVerdict, crate::domain_computation::WorthQueryInvariantStateLoadAdmission, crate::domain_computation::WorthQueryInvariantStateLoadEvidence, crate::domain_computation::WorthQueryInvariantStateLoadRequestView, crate::domain_computation::WorthQueryInvariantStructuralCounters, crate::domain_computation::WorthQueryInvariantVerdictAdmission, crate::domain_computation::WorthQueryInvariantVerdictEvidence, crate::domain_computation::WorthQueryProviderSessionView};
 
 pub(super) struct WorthQueryInvariantWorkMint {
     _private: (),
@@ -280,7 +273,7 @@ fn invariant_violation_probe() -> worth_relational::facade::transactions::Mutati
 }
 
 fn undeclared_application_touch_probe(
-    layout: &super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
     touches: &worth_query_installation::facade::WorthQueryOperationTouchContract,
 ) -> Result<
     worth_relational::facade::transactions::MutationIntent,

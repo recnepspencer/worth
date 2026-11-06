@@ -1,7 +1,7 @@
 //! Read-only logical selectors come only from genuine pinned source endpoints.
 mod component;
 use super::*;
-use crate::domain_computation::primary_graph::schema_layout::MemberDomainBinding as Domain;
+use crate::domain_computation::graph_layout::MemberDomainBinding as Domain;
 pub use component::WorthQueryInvariantGraphComponent;
 use worth_relational::facade::{
     runtime::DerivedRelationReadShape as Shape, schema::NativeMemberKey as Key,

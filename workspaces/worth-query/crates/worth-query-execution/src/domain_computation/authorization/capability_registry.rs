@@ -9,7 +9,7 @@ use worth_runtime_bridge::facade::BridgeAuthorizationInstallationBatch;
 use super::capability_lowering::compile_capability_plan;
 pub(super) use super::capability_lowering::WorthQueryInstalledCapabilityPlan;
 use super::WorthQueryOperationAuthorizationDenial;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 
 mod delegation;
 pub(super) use delegation::{

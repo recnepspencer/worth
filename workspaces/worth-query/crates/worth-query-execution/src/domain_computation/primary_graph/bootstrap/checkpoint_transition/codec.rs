@@ -1,8 +1,6 @@
 //! Join authenticated Query activation to the exclusive native codec owner.
 use super::denial;
-use crate::domain_computation::primary_graph::{
-    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
-};
+use {crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{
     durability::RecoveredRelationalRuntimeAuthority,
@@ -83,7 +81,7 @@ pub(super) fn map_refusal(
         && let Publication::DurabilityUnresolved(unresolved) = outcome.as_ref()
     {
         return WorthQueryPrimaryGraphInstallationDenial::new(
-            crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::RelationalDurabilityUnresolved,
+            crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind::RelationalDurabilityUnresolved,
             format!(
                 "checkpoint native transition durability is unresolved for {}",
                 unresolved.subject()

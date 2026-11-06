@@ -74,7 +74,7 @@ pub fn originals(meaning: &WorkflowApprovalMeaning) -> [String; 5] {
     .map(|text| text.as_str_for_test().to_owned())
 }
 pub fn locators(
-    layout: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout,
+    layout: &worth_query_execution::court_doors_for_test::domain_computation::graph_layout::workflow::layout::WorthQueryWorkflowLayout,
 ) -> [&AspectFieldLocator; 5] {
     [
         &(*(*layout.approval_for_test()).authorization_request_for_test()),

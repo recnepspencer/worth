@@ -1,7 +1,7 @@
 use super::super::provider::WorthQueryApplicationResourceProvider;
 use super::clock::{ClockCorrespondence, TypedResourceClock};
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial as Denial;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaMember;
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationResource, WorthQueryInstalledApplicationSchema,

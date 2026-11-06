@@ -53,7 +53,7 @@ pub struct WorthQueryApplicationSnapshotLease {
     custody: Option<SnapshotCustody>,
     product: crate::basis::WorthQueryProductBranchLease,
     selection_origin: super::super::product_operation::SelectedQueryOrigin,
-    pub(super) layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
+    pub(super) layout: std::sync::Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout>,
 }
 
 impl WorthQueryApplicationSnapshotLease {
@@ -86,7 +86,7 @@ impl WorthQueryApplicationSnapshotLease {
     pub(in crate::domain_computation) fn acquire(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: WorthQueryPrimaryGraphIntegrationHandle,
-        layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
+        layout: std::sync::Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout>,
         product: crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryApplicationSnapshotLeaseDenial> {
         let basis = product.relational_basis().clone();
@@ -119,7 +119,7 @@ impl WorthQueryApplicationSnapshotLease {
 
     pub(in crate::domain_computation::primary_graph) fn from_existing(
         handle: WorthQueryPrimaryGraphIntegrationHandle,
-        layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
+        layout: std::sync::Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout>,
         basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         snapshot: SnapshotHandle,
         product: crate::basis::WorthQueryProductBranchLease,

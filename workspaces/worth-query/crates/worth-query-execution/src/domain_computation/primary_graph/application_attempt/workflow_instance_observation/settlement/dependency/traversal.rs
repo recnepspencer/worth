@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation;
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::runtime::{RelationalAdjacencyDirection, RelationalAdjacencyVisit};

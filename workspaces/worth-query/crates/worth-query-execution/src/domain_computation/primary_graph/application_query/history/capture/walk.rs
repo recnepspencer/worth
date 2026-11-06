@@ -15,7 +15,7 @@ use worth_relational::facade::{
 use super::super::super::projection::{
     WorthQueryApplicationProjectedRelation, WorthQueryApplicationProjectionNode,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 use {
     super::super::request_stage,
     crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial,
