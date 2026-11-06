@@ -7,8 +7,11 @@ use std::sync::Arc;
 
 impl HistoryAuthority<'_> {
     /// Corrupt an existing recorded envelope only for the enclosed court action.
-    /// Restore the exact residency and catalog on return, panic, or early exit.
-    /// This supplies no validation proof and never changes current graph truth.
+    /// Restore the exact residency and catalog on return, panic, or early exit
+    /// when history has not advanced.
+    /// This supplies no validation proof; the corruption changes no current graph truth.
+    /// Publishing inside the action invalidates the scope: it fails loudly and
+    /// leaves the advanced history intact instead of restoring over new commits.
     pub fn with_corrupt_commit_envelope_for_test<R>(
         &self,
         commit: CommitId,
@@ -25,6 +28,8 @@ struct Restore<'a> {
     commit: CommitId,
     original: Arc<RelationalCommitEnvelopeResidency>,
     catalog: Option<RelationalCommitCatalog>,
+    next_commit_id: u64,
+    latest_commit: Option<CommitId>,
 }
 impl<'a> Restore<'a> {
     fn install(
@@ -60,22 +65,36 @@ impl<'a> Restore<'a> {
             .history
             .commit_artifact(commit)
             .expect("court catalog entry exists");
-        let mut catalog = runtime.history.with_ledger_mut(|ledger| {
-            ledger
-                .commit_catalog
-                .retained_entries_except(&std::collections::BTreeSet::from([commit]))
-        });
-        catalog
-            .append_checkpoint_recovery(Arc::new(envelope.clone()), None, Some(artifact.roots()))
-            .expect("corruption preserves catalog identity");
-        let original_catalog = runtime
-            .history
-            .with_ledger_mut(|ledger| std::mem::replace(&mut ledger.commit_catalog, catalog));
-        let _restore = Restore {
-            runtime: runtime,
+        let (original_catalog, next_commit_id, latest_commit) =
+            runtime.history.with_ledger_mut(|ledger| {
+                let mut catalog = ledger
+                    .commit_catalog
+                    .retained_entries_except(&std::collections::BTreeSet::from([commit]));
+                catalog
+                    .append_checkpoint_recovery(
+                        Arc::new(envelope.clone()),
+                        None,
+                        Some(artifact.roots()),
+                    )
+                    .expect("corruption preserves catalog identity");
+                let next_commit_id = ledger.next_commit_id;
+                let latest_commit = ledger
+                    .commit_catalog
+                    .latest_identity()
+                    .map(|id| id.commit_id());
+                (
+                    std::mem::replace(&mut ledger.commit_catalog, catalog),
+                    next_commit_id,
+                    latest_commit,
+                )
+            });
+        let restore = Restore {
+            runtime,
             commit,
             original,
             catalog: Some(original_catalog),
+            next_commit_id,
+            latest_commit,
         };
         runtime.history.with_ledger_mut(|ledger| {
             ledger.commit_envelopes.insert(
@@ -86,16 +105,29 @@ impl<'a> Restore<'a> {
                 )),
             );
         });
-        _restore
+        restore
     }
 }
 impl Drop for Restore<'_> {
     fn drop(&mut self) {
-        self.runtime.history.with_ledger_mut(|ledger| {
-            ledger
-                .commit_envelopes
-                .insert(self.commit, Arc::clone(&self.original));
+        let movement = self.runtime.history.with_ledger_mut(|ledger| {
+            let latest_commit = ledger.commit_catalog.latest_identity().map(|id| id.commit_id());
+            if ledger.next_commit_id != self.next_commit_id || latest_commit != self.latest_commit {
+                return Some(format!(
+                    "recorded header corruption scope moved history: next_commit_id {} -> {}; latest_commit {:?} -> {:?}",
+                    self.next_commit_id, ledger.next_commit_id, self.latest_commit, latest_commit,
+                ));
+            }
+            ledger.commit_envelopes.insert(self.commit, Arc::clone(&self.original));
             ledger.commit_catalog = self.catalog.take().expect("restore once");
+            None
         });
+        if let Some(message) = movement {
+            if std::thread::panicking() {
+                eprintln!("{message}");
+                std::process::abort();
+            }
+            panic!("{message}");
+        }
     }
 }

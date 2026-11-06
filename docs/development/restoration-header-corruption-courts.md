@@ -20,8 +20,13 @@ then requires `TransactionCommitError::Publication`, the exact
 `AuthoredRetirementRefusal::CorruptPublication`, its affected entity, and the
 specific header refusal detail. The exact branch observation must remain
 unchanged: inverse custody is refused before a candidate can publish. The door
-restores the original history residency and catalog using `Drop`, and the
-lawful inverse admits again afterward.
+restores the original history residency and catalog using `Drop` when history
+has not advanced, and the lawful inverse admits again afterward. It records
+both the next commit ID and the catalog's latest commit at installation. If
+either changes, it keeps the advanced history intact and panics with the
+before/after coordinates; during an existing unwind it prints those coordinates
+and aborts. A separate court commits inside the scope and requires that loud
+failure while observing the retained catalog commit and entity truth.
 
 The door accepts a closed corruption enum, not arbitrary replacement history.
 Its header copying excludes the envelope's diagnostics and authority-bearing

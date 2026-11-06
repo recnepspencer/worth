@@ -26,7 +26,10 @@ fn check(restoration: bool, detail: &str, corruption: Corruption) {
         .unwrap()
         .1;
     let retired = &world.retired.publication().envelope;
-    let json = serde_json::to_value(retired.as_ref()).unwrap();
+    let json = serde_json::from_str::<serde_json::Value>(
+        &serde_json::to_string(retired.as_ref()).unwrap(),
+    )
+    .unwrap();
     let co_anchors = json["authored_cascade_retirement"]["co_anchors"]
         .as_array()
         .unwrap()
@@ -56,7 +59,10 @@ fn check(restoration: bool, detail: &str, corruption: Corruption) {
     } else {
         retired
     };
-    let header = serde_json::to_value(envelope.as_ref()).unwrap();
+    let header = serde_json::from_str::<serde_json::Value>(
+        &serde_json::to_string(envelope.as_ref()).unwrap(),
+    )
+    .unwrap();
     let event = &header[if restoration {
         "authored_cascade_restoration"
     } else {

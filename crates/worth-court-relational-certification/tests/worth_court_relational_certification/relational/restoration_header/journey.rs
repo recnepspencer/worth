@@ -272,7 +272,10 @@ impl InstalledHistory {
             .collect::<Vec<_>>();
         assert_ne!(sources[0], original.sources[0]);
         release_test_commit_snapshot(&self.runtime, &restored);
-        let event = serde_json::to_value(restored.publication().envelope.as_ref()).unwrap();
+        let event = serde_json::from_str::<serde_json::Value>(
+            &serde_json::to_string(restored.publication().envelope.as_ref()).unwrap(),
+        )
+        .unwrap();
         let event = &event["authored_cascade_restoration"];
         let members = event["entities"]
             .as_array()
