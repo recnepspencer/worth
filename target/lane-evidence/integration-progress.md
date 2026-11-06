@@ -1441,3 +1441,12 @@ Final phase tools are deliberately held at a source-ready sentinel until the rem
   zero-byte original ticket may allow later concrete operation/history backing
   without inventing a grant. Verify RequestAllocationControl's original scope
   policy and cancellation semantics before using it. No product edits made.
+- Follow-up source finding: do NOT retain only a zero-byte ticket from
+  RequestAllocationControl. Its CancellationRegistration owns the pinned
+  token-listener future, and that registration drops when input capture returns
+  (primary_graph/request_allocation_control.rs). A later grow_for_allocation
+  would need the owned registration as well as its memory ticket to preserve
+  original cancellation. No funding API or half-applied product edit exists.
+- Census checkpoint committed a9e043a06f. Steps1–2 complete with the documented
+  release attribution limit; step3 design and the actual stack fix are still
+  integration-owned and unimplemented. No implementation rounds spent.
