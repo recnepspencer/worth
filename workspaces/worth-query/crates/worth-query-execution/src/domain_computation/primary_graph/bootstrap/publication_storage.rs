@@ -3,23 +3,23 @@ use super::{
     WorthQueryPrimaryGraphInstallationDenial as Denial,
     WorthQueryPrimaryGraphInstallationDenialKind as Kind,
 };
-use std::cell::Cell;
+use std::cell::OnceCell;
 use worth_execution::{
     ExecutionArray, ExecutionRequest, ExecutionRequestArrayBuilder, ExecutionRequestArrayDenial,
 };
 
 pub(in crate::domain_computation::primary_graph) struct BootstrapPublicationStorage<T> {
-    values: ExecutionArray<Cell<Option<T>>>,
+    values: ExecutionArray<OnceCell<T>>,
 }
 pub(in crate::domain_computation::primary_graph) struct BootstrapPublicationReservation<T> {
-    values: ExecutionArray<Cell<Option<T>>>,
+    values: ExecutionArray<OnceCell<T>>,
 }
 impl<T> BootstrapPublicationReservation<T> {
     pub(in crate::domain_computation::primary_graph) fn prepare(
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
         let mut builder = ExecutionRequestArrayBuilder::allocate(*request, 1).map_err(denied)?;
-        builder.push(Cell::new(None)).map_err(denied)?;
+        builder.push(OnceCell::new()).map_err(denied)?;
         Ok(Self {
             values: builder.seal().map_err(denied)?,
         })
@@ -29,7 +29,7 @@ impl<T> BootstrapPublicationReservation<T> {
         value: T,
     ) -> BootstrapPublicationStorage<T> {
         assert!(
-            self.values.elements()[0].replace(Some(value)).is_none(),
+            self.values.elements()[0].set(value).is_ok(),
             "bootstrap successor filled once"
         );
         BootstrapPublicationStorage {
@@ -38,6 +38,11 @@ impl<T> BootstrapPublicationReservation<T> {
     }
 }
 impl<T> BootstrapPublicationStorage<T> {
+    pub(in crate::domain_computation::primary_graph) fn value(&self) -> &T {
+        self.values.elements()[0]
+            .get()
+            .expect("actual bootstrap successor")
+    }
     pub(in crate::domain_computation::primary_graph) fn consume(self) -> T {
         self.values
             .into_iter()

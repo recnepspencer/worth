@@ -1338,3 +1338,22 @@ Final phase tools are deliberately held at a source-ready sentinel until the rem
 - Fresh independent reviewer head_closure_terminal_independent_review REJECT,3P1agreedOPEN: (1)all3normalmainstackoverflows, (2)remaining2exclusive oldreceipt expectations/fullmainred, (3)Candidatefixturetopology. No additional material custody/funding/D8defect. Do not present the report as approved or complete.
 - Next:read head-closure-main-round3-census.log and full95/99/99frame JSONlists before Source. Reduce actual graph/service future frames at their owners as onewholeplan; no biggerstack/thread. Batchremaining2consumerretryoraclesagainstrecordedD9meaning. ResolveCandidates-profilefixtureownership withoutcollapsingmembershipornewbaseline. Do not re-run already-greenunchangedownercontrols or broadsuites.
 - Counts:thisturn3cargo check,15clippy,9focusednextestbuilds,10normal-rolebuildattempts,8nextestruns+2doctestruns;12actualnormalprogramexecutions,8diagnosticmainreexecutions,6ownedtoolruns. No ignoredtestexecuted; Bankchildharnessignoredmetadata2isretained explicitly. Sourcechangescommitted, no push.
+
+## Main-entry closure batch after 04e727
+- Design: main-entry-closure-design.md; source-only review main_stack_design_review.
+  These owner functions are synchronous, so use funded returning phases rather
+  than introducing artificial futures. Native candidate/invariant/finalization
+  and Query Native/Bridge/service completion keep large successors off earlier
+  frames. Candidate uses the existing generic owned provider factory and retains
+  its own schema; both remaining duplicate fixtures require D9 recorded receipts.
+- Review caught insufficient changed-record comparison. Strengthen the existing
+  matches_recorded_original contract with complete original Native semantic
+  equality; no live result or witness is added to recovered receipts.
+- Round 1 command correction: selecting external worth-relational --tests from
+  Query's manifest omitted Native's Root dev-dependencies (158 diagnostics, all
+  missing harness/testkit/property/allocation test dependencies and their imports).
+  Native production and Query artifacts compiled. Run that owner check through
+  Root's own manifest; no source workaround or test change for this runner error.
+- Next: finish the reached-owner check batch, commit its coherent source, then
+  one normal-role build for the four real entries and focused Bank/Candidate runs.
+  No second stack verification round has started.

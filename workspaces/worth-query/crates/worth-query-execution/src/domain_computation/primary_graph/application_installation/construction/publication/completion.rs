@@ -7,10 +7,11 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
 ) -> Result<WorthQueryPrimaryGraphApplicationRuntime<S>, WorthQueryInMemoryApplicationDenial> {
     use WorthQueryInMemoryApplicationDenial as Denial;
     let PublishedMemoryService {
-        mut application,
+        application,
         installed_conditionals,
         completion,
     } = published.consume();
+    let mut application = application.consume();
     let MemoryPublicationCompletion {
         producers,
         build_identity,

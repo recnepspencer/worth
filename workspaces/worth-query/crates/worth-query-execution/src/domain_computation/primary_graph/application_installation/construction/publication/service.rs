@@ -32,8 +32,13 @@ pub(super) fn publish<S: ApplicationSchemaComposition>(
 fn publish_plain<S: ApplicationSchemaComposition>(
     phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
     input: BootstrapPublicationStorage<PlainMemoryService<S>>,
-) -> Result<WorthQueryPrimaryGraphApplicationRuntime<S>, WorthQueryInMemoryApplicationDenial> {
+) -> Result<
+    BootstrapPublicationStorage<WorthQueryPrimaryGraphApplicationRuntime<S>>,
+    WorthQueryInMemoryApplicationDenial,
+> {
     use WorthQueryInMemoryApplicationDenial as Denial;
+    let storage = BootstrapPublicationReservation::prepare(&phase.execution_request())
+        .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
     let PlainMemoryService {
         graph,
         runtime,
@@ -60,7 +65,7 @@ fn publish_plain<S: ApplicationSchemaComposition>(
         ),
     }
     .map_err(Denial::Publication)?;
-    Ok(application)
+    Ok(storage.fill(application))
 }
 
 #[inline(never)]
@@ -68,9 +73,15 @@ fn publish_conditional<S: ApplicationSchemaComposition>(
     phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
     input: BootstrapPublicationStorage<crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalApplicationRuntimeInstallation<S>>,
     conditionals: &crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<S>,
-) -> Result<WorthQueryPrimaryGraphApplicationRuntime<S>, WorthQueryInMemoryApplicationDenial> {
-    input
+) -> Result<
+    BootstrapPublicationStorage<WorthQueryPrimaryGraphApplicationRuntime<S>>,
+    WorthQueryInMemoryApplicationDenial,
+> {
+    let storage = BootstrapPublicationReservation::prepare(&phase.execution_request())
+        .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
+    let application = input
         .consume()
         .publish_contributions(phase, conditionals)
-        .map_err(WorthQueryInMemoryApplicationDenial::ConditionalPublication)
+        .map_err(WorthQueryInMemoryApplicationDenial::ConditionalPublication)?;
+    Ok(storage.fill(application))
 }

@@ -1,14 +1,9 @@
 use crate::runtime::{RelationalPreparationRuntime, RelationalRuntime};
-use crate::transactions::data::{
-    CommitConflict, CommitValidation, ConflictClass, TransactionCommitError,
-};
+use crate::transactions::data::{CommitConflict, ConflictClass, TransactionCommitError};
 
 use super::proposal_invariants::stale_validated_proposal;
 use super::proposal_source::RelationalProposalSource;
-use super::validated_proposal::{
-    RelationalMutationInvariantEvidence, StrategyProposalDecoration, ValidatedProposalState,
-    ValidatedRelationalProposal,
-};
+use super::validated_proposal::{StrategyProposalDecoration, ValidatedRelationalProposal};
 
 impl RelationalPreparationRuntime {
     pub(crate) fn validate_consulted_branch_transaction(
@@ -123,7 +118,6 @@ impl RelationalPreparationRuntime {
         let complexity_before = self.performance_access().complexity_counters_snapshot();
         let batch_count = transaction.batches().len();
         let basis = transaction.basis.clone();
-        let branch = basis.identity().branch_id().clone();
         if basis.identity().runtime_instance_id() != self.runtime_instance_id() {
             return Err(TransactionCommitError::conflict(CommitConflict::new(
                 ConflictClass::ForeignRuntime {
@@ -132,7 +126,8 @@ impl RelationalPreparationRuntime {
                 },
             )));
         }
-        self.history.record_transaction_validation_attempt(&branch);
+        self.history
+            .record_transaction_validation_attempt(basis.identity().branch_id());
         if !basis.is_current() {
             return Err(stale_validated_proposal(
                 "transaction basis is no longer current",
@@ -160,97 +155,18 @@ impl RelationalPreparationRuntime {
         let validated_against_version = basis.observation().version_id();
         transaction.prepare_home_target_coverage(execution, self)?;
         let validated_against_commit = basis.observation().commit_id();
-        let super::proposal_round::PreparedProposalRound {
-            prepared,
-            mutation: proposed_mutation,
-            identity: proposal_identity,
-            validation_input,
-            commit_boundary,
-            mutation_sensitive,
-            publication,
-        } = self.prepare_proposal_round(execution, &mut transaction, &source, context)?;
-        require_not_interrupted(
-            &transaction.control,
-            &transaction.basis.inner.retention_binding,
-            crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
-        )?;
-        let transaction_id = transaction.transaction_id;
-        let proposed_version = proposal_identity.proposed_version_id();
-        let summary = CommitValidation::summarize(&[
-            commit_boundary.clone(),
-            mutation_sensitive.clone(),
-            publication.clone(),
-        ]);
-        let custom_invariant_execution_receipts =
-            super::custom_invariant_execution_receipt::collect_custom_invariant_execution_receipts(
-                [&commit_boundary, &mutation_sensitive, &publication],
-                &self.schema_contract_runtime.custom_invariant_registries,
-            );
-        let strategy = source.into_strategy();
-        let strategy_commit_artifacts = strategy.as_ref().map(|strategy| {
-            let validation_cost =
-                crate::commit_strategies::data::StrategyPreviewValidationCostSummary::new(
-                    proposed_version,
-                    prepared.plan.view().commands().merged_intents.len(),
-                    prepared.structural_summary.touched_partitions.len(),
-                    prepared.structural_summary.bulk_entity_slots_reserved,
-                    prepared.structural_summary.bulk_relation_slots_reserved,
-                    2,
-                );
-            strategy.artifacts.clone().with_preview_validation(
-                summary,
-                validation_cost,
-                validated_against_commit,
-                validated_against_version,
-            )
-        });
-        let strategy_bulk_mutation_batch =
-            strategy.and_then(|strategy| strategy.bulk_mutation_batch);
-        let complexity_after = self.performance_access().complexity_counters_snapshot();
-        let validation_complexity_delta =
-            crate::performance::operation_complexity_accounting::complexity_delta_without_commit_gauges(
-                complexity_before,
-                complexity_after,
-            );
-        require_not_interrupted(
-            &transaction.control,
-            &transaction.basis.inner.retention_binding,
-            crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
-        )?;
-        ValidatedRelationalProposal::retain(
+        let round = self.prepare_proposal_round(execution, &mut transaction, &source, context)?;
+        super::proposal_completion::complete(
+            self,
             execution,
-            ValidatedProposalState {
-                caller_association: None,
-                required_output_publication: None,
-                required_output_materialization: None,
-                commit_work_budget: self.commit_work_budget.clone(),
-                mutation_authority: transaction.mutation_authority,
-                transaction_id,
-                validation_input,
-                prepared,
-                proposed_mutation,
-                commit_boundary,
-                mutation_sensitive,
-                snapshot_publication: publication,
-                evidence: RelationalMutationInvariantEvidence {
-                    branch,
-                    proposed_version,
-                    proposal_identity: proposal_identity.clone(),
-                    summary,
-                    custom_invariant_execution_receipts,
-                },
-                proposal_identity,
-                validated_against_commit,
-                validated_against_version,
-                validated_against_branch_version: basis.descriptor().truth_version(),
-                custom_invariant_generation: self
-                    .schema_contract_runtime
-                    .custom_invariant_generation,
-                batch_count,
-                strategy_commit_artifacts,
-                strategy_bulk_mutation_batch,
-                validation_complexity_delta,
-            },
+            transaction,
+            source,
+            round,
+            complexity_before,
+            batch_count,
+            basis,
+            validated_against_commit,
+            validated_against_version,
         )
     }
 }

@@ -26,6 +26,7 @@ use worth_query_installation::facade::{
 
 mod clock_publication;
 mod conditional_publication;
+mod graph_publication;
 mod publication_preparation;
 pub(super) fn publish_application_runtime_with_clock<Schema>(
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
@@ -102,8 +103,8 @@ where
 }
 fn publish_application_graph<Schema>(
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
-    mut bootstrap: WorthQueryPrimaryGraphBootstrap<Schema>,
-    mut runtime: WorthQueryExecutionRuntime,
+    bootstrap: WorthQueryPrimaryGraphBootstrap<Schema>,
+    runtime: WorthQueryExecutionRuntime,
     authority: WorthQueryExecutionInstallationAuthority,
     installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
     fault_port: std::sync::Arc<
@@ -111,87 +112,24 @@ fn publish_application_graph<Schema>(
     >,
     conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
 ) -> Result<
-    PublishedApplicationGraph<
-        super::super::managed_bridge::WorthQueryApplicationBridgeInstallation,
+    crate::domain_computation::primary_graph::bootstrap::BootstrapPublicationStorage<
+        PublishedApplicationGraph<
+            super::super::managed_bridge::WorthQueryApplicationBridgeInstallation,
+        >,
     >,
     WorthQueryPrimaryGraphInstallationDenial,
 >
 where
     Schema: ApplicationSchema,
 {
-    let execution_request = phase.execution_request();
-    let execution = &execution_request;
-    let bridge_layout = std::sync::Arc::clone(&bootstrap.graph.layout);
-    let product_world_resources = bootstrap.product_world_resources.clone();
-    let recovered_relational_authority = bootstrap.take_recovered_relational_authority();
-    let checkpoint_restore_work = bootstrap.recovered_checkpoint_restore_work();
-    let (publication, resource_support) =
-        bootstrap.publish_with_resource_support(phase, &mut runtime, &authority)?;
-    let graph = runtime
-        .retain_primary_graph_integration_handle()
-        .expect("publishing the primary graph installs its integration authority");
-    let relational_source = graph.relational_bridge_source();
-    graph
-        .bind_current_truth_head(execution, &super::super::application_branch::primary_relational_branch_id())
-        .map_err(|denial| {
-            let kind = match denial {
-                worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted => {
-                    WorthQueryPrimaryGraphInstallationDenialKind::RetentionCapacityExhausted
-                }
-                worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted => {
-                    WorthQueryPrimaryGraphInstallationDenialKind::RetentionIdentityExhausted
-                }
-                worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
-                    WorthQueryPrimaryGraphInstallationDenialKind::SnapshotIdentityExhausted
-                }
-                _ => WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
-            };
-            WorthQueryPrimaryGraphInstallationDenial::new(kind, format!("{denial:?}"))
-        })?;
-    let relational_branch_identity = graph.with_runtime(execution, |runtime| {
-        runtime
-            .branch_identity(&super::super::application_branch::primary_relational_branch_id())
-            .expect("the published primary application branch remains owner registered")
-    });
-    let bridge = super::super::managed_bridge::install_application_bridge(
+    let seed = graph_publication::publish_native(phase, bootstrap, runtime, authority)?;
+    graph_publication::install_bridge(
+        phase,
+        seed,
         installed_schema,
-        &bridge_layout,
-        relational_source.clone(),
-        conditional_evaluation_budget,
-    )?;
-    let truth_partition_role = graph.truth_partition_role().cloned();
-    let maximum_concurrent_graph_work = runtime
-        .application_query_resource_profile()
-        .maximum_concurrent_graph_work();
-    let (provider_anchor, primary_provider) = WorthQueryPrimaryGraphProvider::install(
-        graph,
         fault_port,
-        maximum_concurrent_graph_work,
-        resource_support,
-    );
-    primary_provider
-        .graph
-        .output_lineage
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .install_binding_identities(
-            installed_schema
-                .installed_mutation_binding_inventory()
-                .map(|binding| (TypeId::from(binding.binding_type()), binding.identity())),
-        );
-    let primary_graph_authority =
-        super::graph_participation::install(&authority, truth_partition_role, provider_anchor)?;
-    Ok(PublishedApplicationGraph {
-        runtime,
-        publication,
-        relational_branch_identity,
-        bridge,
-        primary_provider,
-        primary_graph_authority,
-        product_world_resources,
-        recovered_relational_authority,
-        checkpoint_restore_work,
-    })
+        conditional_evaluation_budget,
+    )
 }
 fn seal_application_graph(
     graph: PublishedApplicationGraph<

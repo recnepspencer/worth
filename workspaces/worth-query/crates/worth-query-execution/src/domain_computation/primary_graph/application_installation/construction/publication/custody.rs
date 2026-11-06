@@ -39,7 +39,8 @@ pub(super) struct ConfiguredMemoryService<S: ApplicationSchemaComposition> {
     pub(super) completion: BootstrapPublicationStorage<MemoryPublicationCompletion<S>>,
 }
 pub(super) struct PublishedMemoryService<S: ApplicationSchemaComposition> {
-    pub(super) application: WorthQueryPrimaryGraphApplicationRuntime<S>,
+    pub(super) application:
+        BootstrapPublicationStorage<WorthQueryPrimaryGraphApplicationRuntime<S>>,
     pub(super) installed_conditionals: WorthQueryInstalledApplicationConditionalRegistry<S>,
     pub(super) completion: BootstrapPublicationStorage<MemoryPublicationCompletion<S>>,
 }

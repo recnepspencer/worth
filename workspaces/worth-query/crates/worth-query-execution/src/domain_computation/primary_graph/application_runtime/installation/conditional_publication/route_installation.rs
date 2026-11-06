@@ -14,7 +14,7 @@ pub(super) fn install<S: ApplicationSchema + 'static>(
     let storage = BootstrapPublicationReservation::prepare(&phase.execution_request())
         .map_err(publication_denial)?;
     let PublishedConditionalGraph {
-        mut graph,
+        graph,
         installed_schema,
         authorization,
         authorization_clock,
@@ -23,6 +23,7 @@ pub(super) fn install<S: ApplicationSchema + 'static>(
         managed_indexes,
         resources,
     } = published.consume();
+    let mut graph = graph.consume();
     let authoritative_commit_cursor = graph
         .primary_provider
         .graph

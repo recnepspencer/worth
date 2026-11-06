@@ -23,7 +23,9 @@ mod reconciliation;
 mod route_installation;
 mod runtime_assembly;
 struct PublishedConditionalGraph<S: ApplicationSchema> {
-    graph: PublishedApplicationGraph<WorthQueryApplicationBridgeInstallation>,
+    graph: BootstrapPublicationStorage<
+        PublishedApplicationGraph<WorthQueryApplicationBridgeInstallation>,
+    >,
     installed_schema: WorthQueryInstalledApplicationSchema<S>,
     authorization: WorthQueryInstalledAuthorizationRegistry,
     authorization_clock: WorthQueryRuntimeClock,

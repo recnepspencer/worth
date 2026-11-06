@@ -32,7 +32,7 @@ where
         fault_port,
         conditional_evaluation_budget,
     } = input;
-    let mut graph = publish_application_graph(
+    let graph = publish_application_graph(
         phase,
         bootstrap,
         runtime,
@@ -41,6 +41,7 @@ where
         fault_port,
         conditional_evaluation_budget,
     )?;
+    let mut graph = graph.consume();
     let resources = resources.install(
         &phase.execution_request(),
         Some(graph.bridge.conditional_builder()),
