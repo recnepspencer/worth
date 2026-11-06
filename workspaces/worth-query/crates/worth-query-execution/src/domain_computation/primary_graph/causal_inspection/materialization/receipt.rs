@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use crate::domain_computation::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -28,7 +29,10 @@ impl CausalMaterializationReceipt {
         materialization_policy: CausalInspectionMaterializationPolicy,
         performance: &CausalInspectionPerformanceEnvelope,
         detail_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let policy_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalInspectionArtifact)
                 .field_shape(WorthQueryEvidenceTag::new("role"), "materialization-policy")
@@ -40,7 +44,7 @@ impl CausalMaterializationReceipt {
                     WorthQueryEvidenceTag::new("materialization"),
                     materialization_policy.as_str(),
                 )
-                .seal();
+                .seal()?;
         let materialization_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalInspectionArtifact)
                 .field_shape(WorthQueryEvidenceTag::new("role"), "materialization")
@@ -62,7 +66,7 @@ impl CausalMaterializationReceipt {
                     performance.performance_identity(),
                 )
                 .field_evidence_identity(WorthQueryEvidenceTag::new("detail"), detail_identity)
-                .seal();
+                .seal()?;
         let receipt_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalInspectionArtifact)
                 .field_shape(
@@ -73,8 +77,8 @@ impl CausalMaterializationReceipt {
                     WorthQueryEvidenceTag::new("materialization"),
                     &materialization_identity,
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             query_admission_identity: query_admission_identity.clone(),
             bridge_envelope_identity: bridge_envelope_identity.cloned(),
             bridge_receipt_identity: bridge_receipt_identity.cloned(),
@@ -82,7 +86,7 @@ impl CausalMaterializationReceipt {
             performance_identity: performance.performance_identity().clone(),
             materialization_identity,
             receipt_identity,
-        }
+        })
     }
 
     pub fn query_admission_for_reporting(&self) -> &str {

@@ -72,6 +72,10 @@ impl WorthQueryMemoryWorkspace {
             .into_iter()
             .map(|entity| {
                 let identity = match entity.scalar_value_at(field_path) {
+                    Some(AspectValue::String(InternedString::Stored(value))) => {
+                        let value = value.as_string();
+                        value.clone()
+                    }
                     Some(AspectValue::String(InternedString::Raw(value))) => value.clone(),
                     _ => {
                         return Err(WorthQueryWorkspaceError::new(

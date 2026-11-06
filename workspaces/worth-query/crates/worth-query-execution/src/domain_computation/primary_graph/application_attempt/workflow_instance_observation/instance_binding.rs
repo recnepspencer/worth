@@ -74,6 +74,18 @@ pub(in crate::domain_computation::primary_graph) fn owner_custody(
                 locator,
             },
         )),
+        Some(AspectValue::String(InternedString::Stored(transition))) => {
+            let transition = transition.as_str().to_owned();
+            Ok((
+                Some(transition.clone()),
+                WorthQueryApplicationObservedFact::Field {
+                    entity_id,
+                    kind,
+                    locator,
+                    value: AspectValue::String(InternedString::Raw(transition)),
+                },
+            ))
+        }
         Some(AspectValue::String(InternedString::Raw(transition))) => Ok((
             Some(transition.clone()),
             WorthQueryApplicationObservedFact::Field {
@@ -167,6 +179,24 @@ pub(super) fn resume_definition(
                 locator: locator.clone(),
             });
             Ok(())
+        }
+        Some(AspectValue::String(InternedString::Stored(path))) => {
+            let path = path.as_str().to_owned();
+            {
+                if path != instance.start_node_path() {
+                    return Err(denial("workflow instance resume node changed"));
+                }
+                *compiled = compiled.resumed_at(&path).ok_or_else(|| {
+                    denial("workflow instance resume node is not in its definition")
+                })?;
+                facts.push(WorthQueryApplicationObservedFact::Field {
+                    entity_id,
+                    kind,
+                    locator: locator.clone(),
+                    value: text(path),
+                });
+                Ok(())
+            }
         }
         Some(AspectValue::String(InternedString::Raw(path))) => {
             if path != instance.start_node_path() {

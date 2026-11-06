@@ -83,7 +83,7 @@ fn value_meaning_golden_is_the_complete_shared_field_emitter() {
         .entries()
         .iter()
         .map(|entry| {
-            let CanonicalBasisLocus::Named(InternedString::Raw(name)) = entry.locus() else {
+            let Some(name) = (entry.locus()).raw_text() else {
                 panic!("golden loci are named text")
             };
             (name.clone(), entry.value().clone())

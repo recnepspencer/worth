@@ -39,6 +39,9 @@ pub(crate) fn encoded_aspect_value_len(value: &AspectValue) -> Option<usize> {
         | AspectValue::Timestamp(_) => Some(9),
         AspectValue::ContentRef(_) => Some(33),
         AspectValue::String(InternedString::Raw(value)) => 2usize.checked_add(text(value)?),
+        AspectValue::String(InternedString::Stored(value)) => {
+            2usize.checked_add(text(value.as_str())?)
+        }
         AspectValue::String(InternedString::Symbol(_)) => Some(6),
         AspectValue::Decimal(value) => 1usize.checked_add(text(value.as_str())?),
         AspectValue::BigInt(value) => 1usize.checked_add(text(value.as_str())?),
@@ -156,6 +159,10 @@ fn encode_interned_string(bytes: &mut Vec<u8>, value: &InternedString) {
         InternedString::Raw(text) => {
             bytes.push(tags::RAW_STRING);
             encode_string(bytes, text);
+        }
+        InternedString::Stored(text) => {
+            bytes.push(tags::RAW_STRING);
+            encode_string(bytes, text.as_str());
         }
         InternedString::Symbol(symbol) => {
             bytes.push(tags::SYMBOL_STRING);

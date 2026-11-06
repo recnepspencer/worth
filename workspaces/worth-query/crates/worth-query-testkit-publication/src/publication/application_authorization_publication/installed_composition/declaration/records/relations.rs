@@ -165,6 +165,10 @@ impl GrantKey {
     }
     fn checked(value: worth_foundational::facade::InternedString) -> Option<Self> {
         match value {
+            worth_foundational::facade::InternedString::Stored(value) => {
+                let value = value.as_string();
+                Some(Self(value))
+            }
             worth_foundational::facade::InternedString::Raw(value) => Some(Self(value)),
             worth_foundational::facade::InternedString::Symbol(_) => None,
         }

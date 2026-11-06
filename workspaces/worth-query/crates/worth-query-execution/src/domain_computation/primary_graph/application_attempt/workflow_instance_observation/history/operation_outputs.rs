@@ -193,6 +193,10 @@ pub fn text(
     field: &AspectFieldLocator,
 ) -> Result<String, WorthQueryApplicationAttemptDenial> {
     match observe_field_value(runtime, execution, snapshot, entity, kind, field)? {
+        Some(AspectValue::String(InternedString::Stored(value))) if !value.as_str().is_empty() => {
+            let value = value.as_str().to_owned();
+            Ok(value)
+        }
         Some(AspectValue::String(InternedString::Raw(value))) if !value.is_empty() => Ok(value),
         _ => Err(denial("workflow output text is malformed")),
     }

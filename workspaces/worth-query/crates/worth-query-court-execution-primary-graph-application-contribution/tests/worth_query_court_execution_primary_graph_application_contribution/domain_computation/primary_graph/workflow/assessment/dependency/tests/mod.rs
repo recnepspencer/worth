@@ -39,6 +39,10 @@ fn durable_field_dependency_roundtrips_presence_and_denies_partial_revision() {
         let mut encoded = BTreeMap::new();
         append_field_revision_fields(layout, &locator, Some(revision), &mut encoded);
         let string = |field| match encoded.get(field).unwrap() {
+            AspectValue::String(InternedString::Stored(value)) => {
+                let value = value.as_string();
+                value.clone()
+            }
             AspectValue::String(InternedString::Raw(value)) => value.clone(),
             _ => panic!("string evidence field"),
         };

@@ -7,10 +7,11 @@ pub use canonical::{
     decode_canonical_value, decode_canonical_value_with_admission,
     decode_delegated_canonical_value, decode_delegated_canonical_value_with_admission,
     encode_application_binary_value, encode_application_document, encode_canonical_value,
-    encode_delegated_canonical_value, ApplicationCanonicalValueContract,
-    ApplicationCanonicalValueReference, ApplicationCanonicalValueReferenceParts,
-    BinaryValueDelegate, BinaryValueWriter, CanonicalDocumentCodec, CanonicalValue,
-    ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueShape,
+    encode_delegated_canonical_value, encode_stored_canonical_value,
+    ApplicationCanonicalValueContract, ApplicationCanonicalValueReference,
+    ApplicationCanonicalValueReferenceParts, BinaryValueDelegate, BinaryValueWriter,
+    CanonicalDocumentCodec, CanonicalValue, ValueCodecDenial, ValueDecodeAdmission,
+    ValueDecodeBounds, ValueShape,
 };
 pub use worth_foundational::facade::{
     value_decode_error, ArrayDelegate, BoxDelegate, CanonicalValueSeed, DelegatedValueSeed,

@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use std::collections::BTreeSet;
 
 use crate::domain_computation::evidence_identity::{
@@ -20,16 +21,26 @@ use super::reference_index::{
 pub fn resolve_causal_evidence_references(
     anchor: CausalObservationAnchor,
     requested_families: &[CausalEvidenceFamily],
-) -> CausalEvidenceReferenceResolution {
-    let index = anchor_derived_reference_index(&anchor);
-    resolve_indexed_causal_evidence_references(anchor, requested_families, &index)
+) -> Result<
+    CausalEvidenceReferenceResolution,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    let index = anchor_derived_reference_index(&anchor)?;
+    Ok(resolve_indexed_causal_evidence_references(
+        anchor,
+        requested_families,
+        &index,
+    )?)
 }
 
 pub fn resolve_indexed_causal_evidence_references(
     anchor: CausalObservationAnchor,
     requested_families: &[CausalEvidenceFamily],
     index: &CausalEvidenceReferenceIndex,
-) -> CausalEvidenceReferenceResolution {
+) -> Result<
+    CausalEvidenceReferenceResolution,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
     let requested_families = requested_reference_families(&anchor, requested_families);
     let anchor_reference_width = anchor.observation_receipt().evidence_identities().len();
     let mut resolved_references = Vec::new();
@@ -53,7 +64,7 @@ pub fn resolve_indexed_causal_evidence_references(
                         index_record.owner(),
                         family,
                         index_record.reference_digest().clone(),
-                    ));
+                    )?);
                 }
                 None => missing_indexed_reference_count += 1,
             }
@@ -67,27 +78,27 @@ pub fn resolve_indexed_causal_evidence_references(
         index_lookup_count,
         resolved_references.len(),
         missing_families.len() + missing_indexed_reference_count,
-    );
+    )?;
 
     if !missing_families.is_empty() || missing_indexed_reference_count > 0 {
-        return CausalEvidenceReferenceResolution::MissingRequiredEvidence {
+        return Ok(CausalEvidenceReferenceResolution::MissingRequiredEvidence {
             denial: CausalEvidenceReferenceResolutionDenial::new(
                 anchor.anchor_digest().clone(),
                 missing_families,
                 missing_indexed_reference_count,
-            ),
+            )?,
             counters,
-        };
+        });
     }
 
-    let reference_set_digest = reference_set_digest(&anchor, &resolved_references);
+    let reference_set_digest = reference_set_digest(&anchor, &resolved_references)?;
     let receipt = CausalEvidenceReferenceReceipt::new(
         anchor.anchor_digest().clone(),
         reference_set_digest.clone(),
         resolved_references.len(),
         0,
-    );
-    CausalEvidenceReferenceResolution::Resolved {
+    )?;
+    Ok(CausalEvidenceReferenceResolution::Resolved {
         reference_set: CausalEvidenceReferenceSet::new(
             anchor,
             resolved_references,
@@ -95,7 +106,7 @@ pub fn resolve_indexed_causal_evidence_references(
             receipt,
         ),
         counters,
-    }
+    })
 }
 
 fn requested_reference_families(
@@ -123,39 +134,46 @@ fn requested_reference_families(
 fn reference_set_digest(
     anchor: &CausalObservationAnchor,
     references: &[CausalEvidenceReference],
-) -> CausalEvidenceReferenceDigest {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalEvidenceReference)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("anchor"),
-            anchor.anchor_digest().evidence_identity(),
-        )
-        .field_evidence_identity_sequence(
-            WorthQueryEvidenceTag::new("references"),
-            references
-                .iter()
-                .map(CausalEvidenceReference::evidence_identity),
-        )
-        .seal()
-        .into()
+) -> Result<
+    CausalEvidenceReferenceDigest,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalEvidenceReference)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("anchor"),
+                anchor.anchor_digest().evidence_identity(),
+            )
+            .field_evidence_identity_sequence(
+                WorthQueryEvidenceTag::new("references"),
+                references
+                    .iter()
+                    .map(CausalEvidenceReference::evidence_identity),
+            )
+            .seal()?
+            .into(),
+    )
 }
 
 fn anchor_derived_reference_index(
     anchor: &CausalObservationAnchor,
-) -> CausalEvidenceReferenceIndex {
-    causal_evidence_reference_index(
-        anchor
-            .observation_receipt()
-            .evidence_identities()
-            .iter()
-            .map(|identity| {
-                causal_evidence_reference_index_record(
-                    owner_for_family(identity.family()),
-                    identity.family(),
-                    identity.reference_digest().clone(),
-                )
-                .expect("Phase 1 anchor validation rejects empty evidence identities")
-            }),
-    )
+) -> Result<
+    CausalEvidenceReferenceIndex,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    let records = anchor
+        .observation_receipt()
+        .evidence_identities()
+        .iter()
+        .map(|identity| {
+            super::reference_index::CausalEvidenceReferenceIndexRecord::new(
+                owner_for_family(identity.family()),
+                identity.family(),
+                identity.reference_digest().clone(),
+            )
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(causal_evidence_reference_index(records)?)
 }
 
 fn anchor_reference_digests_for_family(

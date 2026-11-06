@@ -61,7 +61,7 @@ pub(super) fn encode<Binding: ApplicationReadableScalarValueBinding>(
     let encoded = Binding::encode(&value).map_err(|denial| {
         CustomInvariantExecutionError::new(format!("refusal codec denied: {denial:?}"))
     })?;
-    let AspectValue::String(InternedString::Raw(text)) = encoded else {
+    let Some(text) = (encoded).raw_text() else {
         return Err(CustomInvariantExecutionError::new(
             "refusal codec returned noncanonical carrier",
         ));
@@ -74,7 +74,7 @@ pub(super) fn encode<Binding: ApplicationReadableScalarValueBinding>(
     Ok(CustomInvariantVerdict::Violation(
         CustomInvariantRefusal::DeclaredValue {
             value_identity: Binding::IDENTITY_NAME.to_owned(),
-            bytes: text.into_bytes(),
+            bytes: text.as_bytes().to_vec(),
         },
     ))
 }

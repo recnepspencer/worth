@@ -1,5 +1,5 @@
 pub use crate::evidence_identity::{
-    WorthQueryEvidenceIdentity, WorthQueryEvidenceIdentityComparisonError,
+    WorthQueryEvidenceIdentityDerivationDenial, WorthQueryEvidenceIdentity, WorthQueryEvidenceIdentityComparisonError,
     WorthQueryEvidenceIdentityKey, WorthQueryEvidenceIdentityScheme, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
 };
@@ -44,7 +44,7 @@ pub use crate::runtime::{
     CausalInspectionReason, CausalInspectionRedactionPolicy,
     CausalInspectionRepresentativeEvidence, CausalInspectionRepresentativeKind,
     CausalInspectionRepresentativeMatrix, CausalInspectionRepresentativeRowDigestSet,
-    CausalInspectionRequest, CausalInspectionRequestError, CausalInspectionRequestErrorKind,
+    CausalInspectionConstructionStop, CausalInspectionRequest, CausalInspectionRequestError, CausalInspectionRequestErrorKind,
     CausalInspectionRichness, CausalInspectionScaleCounterSnapshot,
     CausalInspectionScaleFixtureSize, CausalInspectionSupport, CausalInspectionSupportExplanation,
     CausalInspectionSupportPosture, CausalInspectionSupportRow, CausalInspectionSupportRowPosture,

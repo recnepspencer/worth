@@ -92,6 +92,10 @@ impl<'a> WorthQueryArtifactProviderFieldSlice<'a> {
                     .saturating_add(value.denominator.0.capacity())
             }),
             Self::String(values) => nested_bytes(values, |value| match value {
+                InternedString::Stored(value) => {
+                    let value = value.as_string();
+                    value.capacity()
+                }
                 InternedString::Raw(value) => value.capacity(),
                 InternedString::Symbol(_) => 0,
             }),

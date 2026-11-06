@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use crate::domain_computation::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -24,9 +25,12 @@ impl CausalInspectionPerformanceEnvelope {
     pub(super) fn for_bridge_envelope(
         envelope: &BridgeCausalExplanationEnvelope,
         redaction_count: usize,
-    ) -> Self {
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let counters = envelope.counters();
-        Self::new(
+        Ok(Self::new(
             1,
             1,
             1,
@@ -38,16 +42,24 @@ impl CausalInspectionPerformanceEnvelope {
             counters.bridge_retained_lookup_count(),
             counters.bridge_record_unindexed_scan_count(),
             counters.materialized_detail_count(),
-        )
+        )?)
     }
 
-    pub(super) fn for_denied_query() -> Self {
-        Self::new(1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0)
+    pub(super) fn for_denied_query() -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        Ok(Self::new(1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0)?)
     }
 
-    pub(super) fn for_bridge_denial(denial: &BridgeCausalEnvelopeDenial) -> Self {
+    pub(super) fn for_bridge_denial(
+        denial: &BridgeCausalEnvelopeDenial,
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let counters = denial.counters();
-        Self::new(
+        Ok(Self::new(
             1,
             1,
             1,
@@ -59,7 +71,7 @@ impl CausalInspectionPerformanceEnvelope {
             counters.bridge_retained_lookup_count(),
             counters.bridge_record_unindexed_scan_count(),
             counters.materialized_detail_count(),
-        )
+        )?)
     }
 
     fn new(
@@ -74,7 +86,10 @@ impl CausalInspectionPerformanceEnvelope {
         bridge_lookup_count: usize,
         bridge_unindexed_scan_count: usize,
         materialized_detail_count: usize,
-    ) -> Self {
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let performance_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionPerformanceSnapshot,
         )
@@ -116,8 +131,8 @@ impl CausalInspectionPerformanceEnvelope {
             WorthQueryEvidenceTag::new("materialized_detail"),
             materialized_detail_count,
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             anchor_derivation_count,
             evidence_reference_resolution_count,
             admission_count,
@@ -130,7 +145,7 @@ impl CausalInspectionPerformanceEnvelope {
             bridge_unindexed_scan_count,
             materialized_detail_count,
             performance_identity,
-        }
+        })
     }
 
     pub fn anchor_derivation_count(&self) -> usize {

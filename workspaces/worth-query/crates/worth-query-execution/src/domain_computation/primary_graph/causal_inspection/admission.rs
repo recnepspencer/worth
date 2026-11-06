@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use super::admission_decision::{
     CausalInspectionAdmissionDecision, CausalInspectionAdmissionDecisionKind,
     CausalInspectionAdmissionSubject, CausalInspectionAdvisoryKind, CausalInspectionViolationKind,
@@ -134,13 +135,18 @@ impl CausalInspectionProofFlow {
     }
 }
 
-pub fn admit_causal_inspection(request: CausalInspectionRequest) -> CausalInspectionProofFlow {
-    let subject = CausalInspectionAdmissionSubject::from_request(&request);
-    let decision = admission_decision(&request);
-    let trace = decision_trace(&request, &decision);
-    let counters = CausalInspectionAdmissionCounters::new(decision.kind(), &trace);
-    let receipt = CausalInspectionAdmissionReceipt::new(&subject, &decision, &trace, &counters);
-    match decision.kind() {
+pub fn admit_causal_inspection(
+    request: CausalInspectionRequest,
+) -> Result<
+    CausalInspectionProofFlow,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    let subject = CausalInspectionAdmissionSubject::from_request(&request)?;
+    let decision = admission_decision(&request)?;
+    let trace = decision_trace(&request, &decision)?;
+    let counters = CausalInspectionAdmissionCounters::new(decision.kind(), &trace)?;
+    let receipt = CausalInspectionAdmissionReceipt::new(&subject, &decision, &trace, &counters)?;
+    Ok(match decision.kind() {
         CausalInspectionAdmissionDecisionKind::Success => {
             CausalInspectionProofFlow::Admitted(AdmittedCausalInspection {
                 admitted_inspection_digest: inspection_digest(
@@ -149,7 +155,7 @@ pub fn admit_causal_inspection(request: CausalInspectionRequest) -> CausalInspec
                     &decision,
                     &trace,
                     &receipt,
-                ),
+                )?,
                 subject,
                 decision,
                 decision_trace: trace,
@@ -165,7 +171,7 @@ pub fn admit_causal_inspection(request: CausalInspectionRequest) -> CausalInspec
                     &decision,
                     &trace,
                     &receipt,
-                ),
+                )?,
                 subject,
                 decision,
                 decision_trace: trace,
@@ -181,7 +187,7 @@ pub fn admit_causal_inspection(request: CausalInspectionRequest) -> CausalInspec
                     &decision,
                     &trace,
                     &receipt,
-                ),
+                )?,
                 subject,
                 decision,
                 decision_trace: trace,
@@ -189,19 +195,24 @@ pub fn admit_causal_inspection(request: CausalInspectionRequest) -> CausalInspec
                 counters,
             })
         }
-    }
+    })
 }
 
-fn admission_decision(request: &CausalInspectionRequest) -> CausalInspectionAdmissionDecision {
-    match request.explanation_family() {
+fn admission_decision(
+    request: &CausalInspectionRequest,
+) -> Result<
+    CausalInspectionAdmissionDecision,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(match request.explanation_family() {
         CausalInspectionExplanationFamily::CrossRuntimeCausalExplanation => {
             if request.requested_richness() == CausalInspectionRichness::MaterializedDetail {
                 CausalInspectionAdmissionDecision::advisory(
                     request,
                     CausalInspectionAdvisoryKind::MaterializedDetailDeferredUntilBridgeEnvelope,
-                )
+                )?
             } else {
-                CausalInspectionAdmissionDecision::success(request)
+                CausalInspectionAdmissionDecision::success(request)?
             }
         }
         CausalInspectionExplanationFamily::DurableCausalArchive
@@ -209,15 +220,18 @@ fn admission_decision(request: &CausalInspectionRequest) -> CausalInspectionAdmi
             CausalInspectionAdmissionDecision::violation(
                 request,
                 CausalInspectionViolationKind::UnsupportedExplanationFamily,
-            )
+            )?
         }
-    }
+    })
 }
 
 fn decision_trace(
     request: &CausalInspectionRequest,
     decision: &CausalInspectionAdmissionDecision,
-) -> CausalDecisionTraceIndex {
+) -> Result<
+    CausalDecisionTraceIndex,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
     let explanation_decision = if decision.violation_kind().is_some() {
         CausalInspectionAdmissionDecisionKind::Violation
     } else {
@@ -239,29 +253,29 @@ fn decision_trace(
         } else {
             "reference-only inspection does not require bridge envelope materialization"
         };
-    CausalDecisionTraceIndex::new(vec![
+    Ok(CausalDecisionTraceIndex::new(vec![
         CausalDecisionTraceRow::new(
             "explanation_family",
             request.explanation_family().as_str(),
             explanation_decision,
             "query_inspection_admission",
             family_reason,
-        ),
+        )?,
         CausalDecisionTraceRow::new(
             "richness_policy",
             request.requested_richness().as_str(),
             richness_decision,
             "query_redaction_posture",
             richness_reason,
-        ),
+        )?,
         CausalDecisionTraceRow::new(
             "evidence_family_scope",
             "resolved_reference_set",
             decision.kind(),
             "query_evidence_reference_set",
             "requested evidence families are bounded by Phase 2 reference proof",
-        ),
-    ])
+        )?,
+    ])?)
 }
 
 fn inspection_digest(
@@ -270,12 +284,15 @@ fn inspection_digest(
     decision: &CausalInspectionAdmissionDecision,
     trace: &CausalDecisionTraceIndex,
     receipt: &CausalInspectionAdmissionReceipt,
-) -> CausalInspectionOutcomeIdentity {
-    compose_causal_outcome_identity(
+) -> Result<
+    CausalInspectionOutcomeIdentity,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(compose_causal_outcome_identity(
         kind,
         subject.subject_identity(),
         decision.decision_identity(),
         trace.trace_identity(),
         receipt.receipt_identity(),
-    )
+    )?)
 }

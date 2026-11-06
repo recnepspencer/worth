@@ -127,17 +127,14 @@ impl<Schema: ApplicationSchema, Operation>
         };
         self.reader
             .body_scalar_observe(&identity, &layout.program_revision_locator, |raw| {
-                let Some(worth_foundational::facade::AspectValue::String(
-                    worth_foundational::facade::InternedString::Raw(text),
-                )) = raw
-                else {
+                let Some(text) = (raw).as_ref().and_then(|value| value.raw_text()) else {
                     return Err(invalid());
                 };
                 let bytes = u64::try_from(text.len()).map_err(|_| invalid())?;
                 let reservation = execution.reserve(bytes).map_err(|cause| {
                     HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(cause))
                 })?;
-                Ok((text.clone(), reservation))
+                Ok((text.to_owned(), reservation))
             })
     }
 }

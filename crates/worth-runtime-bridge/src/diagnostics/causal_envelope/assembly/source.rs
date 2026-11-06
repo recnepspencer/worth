@@ -51,7 +51,7 @@ pub(super) enum ResolvedBinding {
 }
 
 impl CausalEnvelopeAssemblySource for SourceContext<'_> {
-    type Stop = BridgeCausalEnvelopeDenial;
+    type Stop = super::super::BridgeCausalEnvelopeConstructionStop;
 
     fn prepare_progress(
         &mut self,
@@ -61,14 +61,15 @@ impl CausalEnvelopeAssemblySource for SourceContext<'_> {
             .admission_summary()
             .requires_application_inspection_admission()
         {
-            return Err(BridgeCausalEnvelopeDenial::new(
+            return Err((BridgeCausalEnvelopeDenial::new(
                 BridgeCausalEnvelopeDenialKind::ApplicationInspectionAdmissionRequired,
                 BridgeCausalEvidenceFamily::QueryObservation,
                 BridgeCausalEvidenceOwner::Query,
                 BridgeCausalEvidenceOwner::Query,
                 request.request_evidence_identity().clone(),
-                BridgeCausalEnvelopeCounters::empty(),
-            ));
+                BridgeCausalEnvelopeCounters::empty()?,
+            )?)
+            .into());
         }
         Ok(BridgeCausalEnvelopeAssemblyProgress::for_request(
             request,
@@ -93,14 +94,19 @@ impl CausalEnvelopeAssemblySource for SourceContext<'_> {
         request: &BridgeCausalEnvelopeAssemblyRequest,
         progress: &BridgeCausalEnvelopeAssemblyProgress,
     ) -> Self::Stop {
+        let counters = match progress.success_counters() {
+            Ok(counters) => counters,
+            Err(cause) => return cause.into(),
+        };
         BridgeCausalEnvelopeDenial::new(
             BridgeCausalEnvelopeDenialKind::MissingRequiredBridgeRouteEvidence,
             BridgeCausalEvidenceFamily::BridgeRoute,
             BridgeCausalEvidenceOwner::RuntimeBridge,
             BridgeCausalEvidenceOwner::RuntimeBridge,
             request.request_evidence_identity().clone(),
-            progress.success_counters(),
+            counters,
         )
+        .map_or_else(Into::into, Into::into)
     }
 
     fn finish(
@@ -108,12 +114,12 @@ impl CausalEnvelopeAssemblySource for SourceContext<'_> {
         request: BridgeCausalEnvelopeAssemblyRequest,
         progress: BridgeCausalEnvelopeAssemblyProgress,
     ) -> Result<BridgeCausalExplanationEnvelope, Self::Stop> {
-        let counters = progress.success_counters();
+        let counters = progress.success_counters()?;
         Ok(BridgeCausalExplanationEnvelope::new(
             request,
             progress.into_bindings(),
             counters,
-        ))
+        )?)
     }
 }
 
@@ -132,7 +138,10 @@ impl SourceContext<'_> {
         &self,
         reference: &BridgeCausalEvidenceReference,
         counters: BridgeCausalEnvelopeCounters,
-    ) -> Result<ResolvedBinding, BridgeCausalEnvelopeDenial> {
+    ) -> Result<
+        ResolvedBinding,
+        crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop,
+    > {
         match self {
             Self::Native(evidence) if evidence.contains(reference) => {
                 Ok(ResolvedBinding::NativeRetained)
@@ -142,26 +151,27 @@ impl SourceContext<'_> {
             {
                 Ok(ResolvedBinding::External)
             }
-            Self::Native(_) => Err(native_required(reference, counters)),
+            Self::Native(_) => Err((native_required(reference, counters)?).into()),
             Self::LegacyDiagnostics(_)
                 if reference.family()
                     == BridgeCausalEvidenceFamily::BridgeConditionalObservation =>
             {
-                Err(native_required(reference, counters))
+                Err((native_required(reference, counters)?).into())
             }
             Self::LegacyDiagnostics(facade)
                 if reference.owner() == BridgeCausalEvidenceOwner::RuntimeBridge =>
             {
                 match retained_mapping::retained_record_evidence_identity(facade, reference)? {
                     Some(identity) => Ok(ResolvedBinding::LegacyRetained(identity)),
-                    None => Err(BridgeCausalEnvelopeDenial::new(
+                    None => Err((BridgeCausalEnvelopeDenial::new(
                         BridgeCausalEnvelopeDenialKind::MissingRetainedBridgeRecord,
                         reference.family(),
                         reference.owner(),
                         reference.family().expected_owner(),
                         reference.reference_evidence_identity().clone(),
                         counters,
-                    )),
+                    )?)
+                    .into()),
                 }
             }
             Self::LegacyDiagnostics(_) => Ok(ResolvedBinding::External),
@@ -172,13 +182,16 @@ impl SourceContext<'_> {
 fn native_required(
     reference: &BridgeCausalEvidenceReference,
     counters: BridgeCausalEnvelopeCounters,
-) -> BridgeCausalEnvelopeDenial {
-    BridgeCausalEnvelopeDenial::new(
+) -> Result<
+    BridgeCausalEnvelopeDenial,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
+    Ok(BridgeCausalEnvelopeDenial::new(
         BridgeCausalEnvelopeDenialKind::NativeObservationRequired,
         reference.family(),
         reference.owner(),
         reference.family().expected_owner(),
         reference.reference_evidence_identity().clone(),
         counters,
-    )
+    )?)
 }

@@ -27,6 +27,10 @@ pub(super) fn inspect<R>(
             // Native system text and native managed field text are two current representations,
             // not two formats. A missing managed symbol never falls back to an ID or raw spelling.
             let text = match value {
+                Some(AspectValue::String(InternedString::Stored(text))) => {
+                    let text = text.as_string();
+                    Some(text.as_str())
+                }
                 Some(AspectValue::String(InternedString::Raw(text))) => Some(text.as_str()),
                 Some(AspectValue::String(InternedString::Symbol(symbol))) => pinned
                     .symbols()

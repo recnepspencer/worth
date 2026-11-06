@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 mod planning;
 
 pub use planning::{
@@ -62,6 +63,7 @@ impl CausalInspectionSupportPosture {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CausalInspectionPlanError {
+    Construction(super::CausalInspectionConstructionStop),
     BasisMismatch(CausalInspectionBasisMismatch),
     Anchor(CausalObservationAnchorError),
     MissingEvidence(CausalEvidenceReferenceResolutionDenial),
@@ -70,6 +72,7 @@ pub enum CausalInspectionPlanError {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CausalInspectionPlanErrorKind {
+    Construction,
     BasisMismatch,
     Anchor,
     MissingEvidence,
@@ -79,6 +82,7 @@ pub enum CausalInspectionPlanErrorKind {
 impl CausalInspectionPlanErrorKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::Construction => "construction",
             Self::BasisMismatch => "basis_mismatch",
             Self::Anchor => "anchor",
             Self::MissingEvidence => "missing_evidence",
@@ -90,6 +94,7 @@ impl CausalInspectionPlanErrorKind {
 impl CausalInspectionPlanError {
     pub fn kind(&self) -> CausalInspectionPlanErrorKind {
         match self {
+            Self::Construction(_) => CausalInspectionPlanErrorKind::Construction,
             Self::BasisMismatch(_) => CausalInspectionPlanErrorKind::BasisMismatch,
             Self::Anchor(_) => CausalInspectionPlanErrorKind::Anchor,
             Self::MissingEvidence(_) => CausalInspectionPlanErrorKind::MissingEvidence,
@@ -97,12 +102,13 @@ impl CausalInspectionPlanError {
         }
     }
 
-    pub fn failure_digest(&self) -> &str {
+    pub fn failure_digest(&self) -> Option<&str> {
         match self {
-            Self::BasisMismatch(error) => error.failure_digest(),
-            Self::Anchor(error) => error.failure_digest(),
-            Self::MissingEvidence(denial) => denial.failure_digest(),
-            Self::Request(error) => error.failure_for_reporting(),
+            Self::Construction(_) => None,
+            Self::BasisMismatch(error) => Some(error.failure_digest()),
+            Self::Anchor(error) => Some(error.failure_digest()),
+            Self::MissingEvidence(denial) => Some(denial.failure_digest()),
+            Self::Request(error) => Some(error.failure_for_reporting()),
         }
     }
 }
@@ -285,15 +291,13 @@ impl CausalInspection {
         let reason = self
             .reason
             .unwrap_or_else(|| planning::reason_for_outcome(self.receipt.outcome()));
-        let anchor = anchor_causal_observation(self.receipt, reason)
-            .map_err(CausalInspectionPlanError::Anchor)?;
+        let anchor = anchor_causal_observation(self.receipt, reason)?;
         let target = causal_inspection_target(
             anchor.observation_receipt().observation_target().clone(),
             anchor.observation_receipt().result_shape_context().clone(),
-        )
-        .map_err(CausalInspectionPlanError::Request)?;
+        )?;
         let resolution =
-            resolve_causal_evidence_references(anchor, &self.requested_evidence_families);
+            resolve_causal_evidence_references(anchor, &self.requested_evidence_families)?;
         let reference_set = match resolution {
             CausalEvidenceReferenceResolution::Resolved { reference_set, .. } => reference_set,
             CausalEvidenceReferenceResolution::MissingRequiredEvidence { denial, .. } => {
@@ -306,9 +310,8 @@ impl CausalInspection {
             self.explanation_family,
             self.richness,
             &self.requested_evidence_families,
-        )
-        .map_err(CausalInspectionPlanError::Request)?;
-        let admission = admit_causal_inspection(request.clone());
+        )?;
+        let admission = admit_causal_inspection(request.clone())?;
         Ok(CausalInspectionPlan {
             inspection_basis: self.inspection_basis,
             reference_set,
@@ -317,5 +320,24 @@ impl CausalInspection {
             redaction_policy: self.redaction_policy,
             materialization_policy: self.materialization_policy,
         })
+    }
+}
+
+impl From<super::CausalInspectionConstructionStop> for CausalInspectionPlanError {
+    fn from(cause: super::CausalInspectionConstructionStop) -> Self {
+        match cause {
+            super::CausalInspectionConstructionStop::Anchor(error) => Self::Anchor(error),
+            super::CausalInspectionConstructionStop::Request(error) => Self::Request(error),
+            other => Self::Construction(other),
+        }
+    }
+}
+impl From<WorthQueryEvidenceIdentityDerivationDenial>
+    for CausalInspectionPlanError
+{
+    fn from(
+        cause: WorthQueryEvidenceIdentityDerivationDenial,
+    ) -> Self {
+        Self::Construction(cause.into())
     }
 }

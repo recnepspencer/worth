@@ -205,6 +205,10 @@ pub(super) fn observe(
             layout.transition.entity_kind,
             &layout.transition.identity,
         )? {
+            Some(AspectValue::String(InternedString::Stored(identity))) => {
+                let identity = identity.as_str().to_owned();
+                identity
+            }
             Some(AspectValue::String(InternedString::Raw(identity))) => identity,
             _ => return Err(denial("workflow transition identity is unavailable")),
         };
@@ -216,20 +220,19 @@ pub(super) fn observe(
                 charge.reserve_path(node.path())?;
             }
             HistoryNodes::Recorded => {
-                let Some(AspectValue::String(InternedString::Raw(path))) =
-                    super::observe_field_value(
-                        runtime,
-                        execution,
-                        snapshot,
-                        settlement.node(),
-                        layout.node.entity_kind,
-                        &layout.node.path,
-                    )?
-                else {
+                let Some(path) = (super::observe_field_value(
+                    runtime,
+                    execution,
+                    snapshot,
+                    settlement.node(),
+                    layout.node.entity_kind,
+                    &layout.node.path,
+                )?)
+                .and_then(|value| value.into_raw_text()) else {
                     return Err(denial("history node path is unavailable"));
                 };
                 charge.reserve_path(&path)?;
-                recorded_paths.push(path);
+                recorded_paths.push(path.to_owned());
             }
         }
         let assessment_evidence = settlement::observe_assessment_evidence(

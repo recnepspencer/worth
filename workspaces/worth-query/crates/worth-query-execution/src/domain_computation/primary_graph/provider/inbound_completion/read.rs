@@ -169,6 +169,10 @@ pub(super) fn field(
 
 fn raw_string(value: &AspectValue) -> Result<String, WorthQueryInboundCompletionReadDenial> {
     match value {
+        AspectValue::String(InternedString::Stored(value)) => {
+            let value = value.as_string();
+            Ok(value.clone())
+        }
         AspectValue::String(InternedString::Raw(value)) => Ok(value.clone()),
         _ => Err(WorthQueryInboundCompletionReadDenial::Malformed),
     }

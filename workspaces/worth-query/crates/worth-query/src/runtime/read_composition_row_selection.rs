@@ -220,6 +220,10 @@ fn identity_anchor(request: &DeclarativeLiveQueryRequest) -> Option<&str> {
                 if is_identity_field_key(filter.source_field_key()) =>
             {
                 match filter.value().as_native() {
+                    AspectValue::String(InternedString::Stored(value)) => {
+                        let value = value.as_string();
+                        Some(value.as_str())
+                    }
                     AspectValue::String(InternedString::Raw(value)) => Some(value.as_str()),
                     _ => None,
                 }
@@ -346,6 +350,10 @@ fn identity_field_key() -> FieldKey {
 
 fn as_string_scalar(value: &AspectValue) -> Option<&str> {
     match value {
+        AspectValue::String(InternedString::Stored(value)) => {
+            let value = value.as_string();
+            Some(value.as_str())
+        }
         AspectValue::String(InternedString::Raw(value)) => Some(value.as_str()),
         _ => None,
     }

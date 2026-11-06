@@ -1,4 +1,5 @@
 //! Native-request decoding. Standalone representation decoding remains separate.
+mod stored_text;
 use super::{
     CanonicalValue, DelegatedValueSeed, ValueCodecDenial as D, ValueDecodeAdmission,
     ValueDecodeBounds, ValueDelegate, ValueSeedDelegate,
@@ -6,6 +7,7 @@ use super::{
 use serde::de::DeserializeSeed;
 use serde::Serialize;
 use std::io::Write;
+pub use stored_text::StoredValueText;
 
 /// Decode through one borrowed admission callback supplied by the native owner.
 /// The callback is not authority itself. The first refused grant wins, including
@@ -24,7 +26,13 @@ pub(super) fn decode_recording<Value: CanonicalValue>(
     admission: &mut ValueDecodeAdmission<'_>,
     require_admission: bool,
 ) -> Result<Value, D> {
-    decode_delegate_recording::<ValueDelegate<Value>>(raw, bounds, admission, require_admission)
+    decode_delegate_recording::<ValueDelegate<Value>>(
+        raw,
+        bounds,
+        admission,
+        require_admission,
+        None,
+    )
 }
 
 /// Bounded canonical decoding using the same seed contract as a declared field.
@@ -32,7 +40,7 @@ pub fn decode_delegated_canonical_value<Delegate: ValueSeedDelegate>(
     raw: &str,
     bounds: ValueDecodeBounds,
 ) -> Result<Delegate::Value, D> {
-    decode_delegate_recording::<Delegate>(raw, bounds, &mut |_, _| Ok(()), false)
+    decode_delegate_recording::<Delegate>(raw, bounds, &mut |_, _| Ok(()), false, None)
 }
 
 /// The caller's admission loan reaches every nested seed and canonical check.
@@ -41,7 +49,44 @@ pub fn decode_delegated_canonical_value_with_admission<Delegate: ValueSeedDelega
     bounds: ValueDecodeBounds,
     admission: &mut ValueDecodeAdmission<'_>,
 ) -> Result<Delegate::Value, D> {
-    decode_delegate_recording::<Delegate>(raw, bounds, admission, true)
+    decode_delegate_recording::<Delegate>(raw, bounds, admission, true, None)
+}
+
+/// Stored reads retain the canonicality proof on the immutable text artifact.
+/// Parsing still pays for exactly the value read. Untrusted text uses the full
+/// check; a seal is reused only for the same codec and representation policy.
+pub fn decode_stored_canonical_value<Value: CanonicalValue>(
+    text: &crate::values::InternedString,
+    bounds: ValueDecodeBounds,
+    admission: Option<&mut ValueDecodeAdmission<'_>>,
+) -> Result<Value, D> {
+    let raw = text.raw_text().ok_or(D::Malformed)?;
+    let seal = match text {
+        crate::values::InternedString::Stored(text) => Some(text),
+        _ => None,
+    };
+    match admission {
+        Some(admission) => {
+            decode_delegate_recording::<ValueDelegate<Value>>(raw, bounds, admission, true, seal)
+        }
+        None => decode_delegate_recording::<ValueDelegate<Value>>(
+            raw,
+            bounds,
+            &mut |_, _| Ok(()),
+            false,
+            seal,
+        ),
+    }
+}
+
+/// Encode and certify once; clones share immutable bytes and their codec seal.
+pub fn encode_stored_canonical_value<Value: CanonicalValue>(
+    value: &Value,
+    bounds: ValueDecodeBounds,
+) -> Result<crate::values::InternedString, D> {
+    let text = StoredValueText::new(super::encode_canonical_value(value, bounds)?);
+    text.seal::<ValueDelegate<Value>>(bounds);
+    Ok(crate::values::InternedString::Stored(text))
 }
 
 fn decode_delegate_recording<Delegate: ValueSeedDelegate>(
@@ -49,6 +94,7 @@ fn decode_delegate_recording<Delegate: ValueSeedDelegate>(
     bounds: ValueDecodeBounds,
     admission: &mut ValueDecodeAdmission<'_>,
     require_admission: bool,
+    seal: Option<&StoredValueText>,
 ) -> Result<Delegate::Value, D> {
     if bounds
         .maximum_wire_bytes()
@@ -64,7 +110,7 @@ fn decode_delegate_recording<Delegate: ValueSeedDelegate>(
         refusal: None,
         require_admission,
     };
-    let result = decode::<Delegate>(raw, bounds, &mut latched, require_admission);
+    let result = decode::<Delegate>(raw, bounds, &mut latched, require_admission, seal);
     if let Some(denial) = latched.refusal {
         return Err(denial);
     }
@@ -76,6 +122,7 @@ fn decode<Delegate: ValueSeedDelegate>(
     bounds: ValueDecodeBounds,
     admission: &mut ValueDecodeAdmission<'_>,
     require_admission: bool,
+    seal: Option<&StoredValueText>,
 ) -> Result<Delegate::Value, D> {
     admission.admit(raw.len(), 0)?;
     if require_admission {
@@ -90,6 +137,9 @@ fn decode<Delegate: ValueSeedDelegate>(
         .deserialize(serde_stacker::Deserializer::new(&mut decoder))
         .map_err(|_| D::Malformed)?;
     decoder.end().map_err(|_| D::Malformed)?;
+    if seal.is_some_and(|text| text.matches::<Delegate>(bounds)) {
+        return Ok(value);
+    }
     Delegate::validate(&value, bounds)?;
     // Compare canonical serialization directly against the admitted source.
     // This is the actual serializer, with no second owned encoding allocation.
@@ -111,6 +161,9 @@ fn decode<Delegate: ValueSeedDelegate>(
     }
     if comparison.cursor != raw.len() {
         return Err(D::NonCanonical);
+    }
+    if let Some(text) = seal {
+        text.seal::<Delegate>(bounds);
     }
     Ok(value)
 }
@@ -148,3 +201,6 @@ impl Write for CanonicalComparison<'_, '_> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests;

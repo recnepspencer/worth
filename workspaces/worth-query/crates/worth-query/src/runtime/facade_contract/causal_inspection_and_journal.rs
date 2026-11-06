@@ -24,7 +24,7 @@ pub use super::inspection::{
     CausalInspectionEstimatedCost, CausalInspectionExplanationFamily,
     CausalInspectionMaterializationError, CausalInspectionMaterializationErrorKind,
     CausalInspectionMaterializationPolicy, CausalInspectionPerformanceCertificationBundle,
-    CausalInspectionPerformanceEnvelope, CausalInspectionPlan, CausalInspectionPlanError,
+    CausalInspectionPerformanceEnvelope, CausalInspectionConstructionStop, CausalInspectionPlan, CausalInspectionPlanError,
     CausalInspectionPlanErrorKind, CausalInspectionPlanExplanation, CausalInspectionProofFlow,
     CausalInspectionProofShapeCertification, CausalInspectionReason,
     CausalInspectionRedactionPolicy, CausalInspectionRepresentativeEvidence,

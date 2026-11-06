@@ -38,6 +38,10 @@ pub(super) fn bind(
         return work.invalid(PlanDenial::InvalidStoredIdentity);
     }
     let text = |name| match fields.get(&FieldKey::new(name).expect("fixed coordinate field")) {
+        Some(AspectValue::String(InternedString::Stored(value))) => {
+            let value = value.as_string();
+            Some(value.as_str())
+        }
         Some(AspectValue::String(InternedString::Raw(value))) => Some(value.as_str()),
         _ => None,
     };

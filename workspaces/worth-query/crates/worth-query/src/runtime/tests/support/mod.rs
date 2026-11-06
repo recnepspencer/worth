@@ -255,11 +255,9 @@ pub(in crate::runtime::tests) fn test_native_string_value(
     let AspectValue::String(value) = test_native_scalar_value(row, field_path)? else {
         return None;
     };
-    Some(match value {
-        worth_foundational::facade::InternedString::Raw(value) => value.clone(),
-        worth_foundational::facade::InternedString::Symbol(symbol) => {
-            format!("symbol:{}", symbol.0)
-        }
+    Some(match value.raw_text() {
+        Some(text) => text.to_owned(),
+        None => format!("symbol:{}", value.as_symbol()?.0),
     })
 }
 

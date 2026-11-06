@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use super::identity::{
     compose_causal_admission_decision_identity, compose_causal_admission_subject_identity,
     CausalInspectionAdmissionDecisionIdentity, CausalInspectionAdmissionSubjectIdentity,
@@ -87,7 +88,12 @@ pub struct CausalInspectionAdmissionSubject {
 }
 
 impl CausalInspectionAdmissionSubject {
-    pub(super) fn from_request(request: &CausalInspectionRequest) -> Self {
+    pub(super) fn from_request(
+        request: &CausalInspectionRequest,
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let requested_evidence_families = request.requested_evidence_families().to_vec();
         let anchor_digest = request.reference_set().anchor().anchor_digest().clone();
         let observation_receipt = request.reference_set().anchor().observation_receipt();
@@ -155,11 +161,11 @@ impl CausalInspectionAdmissionSubject {
                 crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentity::compose(
                     crate::domain_computation::evidence_identity::WorthQueryEvidenceScope::CausalInspectionAdmissionSubject,
                 )
-                .seal(),
+                .seal()?,
             ),
         };
-        subject.subject_identity = compose_causal_admission_subject_identity(&subject);
-        subject
+        subject.subject_identity = compose_causal_admission_subject_identity(&subject)?;
+        Ok(subject)
     }
 
     pub fn request_digest(&self) -> &str {
@@ -309,40 +315,51 @@ pub struct CausalInspectionAdmissionDecision {
 }
 
 impl CausalInspectionAdmissionDecision {
-    pub(super) fn success(request: &CausalInspectionRequest) -> Self {
-        Self::new(
+    pub(super) fn success(
+        request: &CausalInspectionRequest,
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        Ok(Self::new(
             CausalInspectionAdmissionDecisionKind::Success,
             None,
             None,
             request.requested_richness(),
             request.requested_evidence_families().to_vec(),
-        )
+        )?)
     }
 
     pub(super) fn advisory(
         request: &CausalInspectionRequest,
         advisory_kind: CausalInspectionAdvisoryKind,
-    ) -> Self {
-        Self::new(
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        Ok(Self::new(
             CausalInspectionAdmissionDecisionKind::Advisory,
             Some(advisory_kind),
             None,
             CausalInspectionRichness::ReferenceOnly,
             request.requested_evidence_families().to_vec(),
-        )
+        )?)
     }
 
     pub(super) fn violation(
         request: &CausalInspectionRequest,
         violation_kind: CausalInspectionViolationKind,
-    ) -> Self {
-        Self::new(
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        Ok(Self::new(
             CausalInspectionAdmissionDecisionKind::Violation,
             None,
             Some(violation_kind),
             CausalInspectionRichness::ReferenceOnly,
             request.requested_evidence_families().to_vec(),
-        )
+        )?)
     }
 
     fn new(
@@ -351,7 +368,10 @@ impl CausalInspectionAdmissionDecision {
         violation_kind: Option<CausalInspectionViolationKind>,
         admitted_richness: CausalInspectionRichness,
         permitted_evidence_families: Vec<CausalEvidenceFamily>,
-    ) -> Self {
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let mut decision = Self {
             kind,
             advisory_kind,
@@ -362,11 +382,11 @@ impl CausalInspectionAdmissionDecision {
                 crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentity::compose(
                     crate::domain_computation::evidence_identity::WorthQueryEvidenceScope::CausalInspectionAdmissionDecision,
                 )
-                .seal(),
+                .seal()?,
             ),
         };
-        decision.decision_identity = compose_causal_admission_decision_identity(&decision);
-        decision
+        decision.decision_identity = compose_causal_admission_decision_identity(&decision)?;
+        Ok(decision)
     }
 
     pub fn kind(&self) -> CausalInspectionAdmissionDecisionKind {

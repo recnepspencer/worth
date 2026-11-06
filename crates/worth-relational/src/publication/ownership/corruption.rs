@@ -41,7 +41,10 @@ fn state(state: &mut Option<PortableRecordAspectState>, publication: CommitId, c
                 return entry.clone();
             };
             let payload = FieldKey::new("payload").expect("fixed payload field");
-            let Some(AspectValue::String(InternedString::Raw(text))) = fields.get(&payload) else {
+            let Some(text) = (fields.get(&payload))
+                .as_ref()
+                .and_then(|value| value.raw_text())
+            else {
                 return entry.clone();
             };
             let Ok(mut catalog) = serde_json::from_str::<record::Catalog>(text) else {

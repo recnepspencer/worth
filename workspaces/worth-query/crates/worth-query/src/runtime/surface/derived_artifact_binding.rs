@@ -233,7 +233,7 @@ mod tests {
             .expect("bound materialization should carry one row")
             .scalar_value_at(&value_path)
             .expect("bound materialization should carry value field");
-        let AspectValue::String(InternedString::Raw(value)) = value else {
+        let Some(value) = (value).raw_text() else {
             panic!("expected retained string value, got {value:?}");
         };
         value.clone()

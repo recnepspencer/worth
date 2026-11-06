@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use std::collections::HashMap;
 
 use super::identity::{
@@ -43,7 +44,10 @@ impl CausalDecisionTraceRow {
         decision: CausalInspectionAdmissionDecisionKind,
         authority: &'static str,
         reason: &'static str,
-    ) -> Self {
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let mut row = Self {
             key: key.to_string(),
             span: span.to_string(),
@@ -54,11 +58,11 @@ impl CausalDecisionTraceRow {
                 crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentity::compose(
                     crate::domain_computation::evidence_identity::WorthQueryEvidenceScope::CausalInspectionDecisionTraceRow,
                 )
-                .seal(),
+                .seal()?,
             ),
         };
-        row.row_identity = compose_causal_decision_trace_row_identity(&row);
-        row
+        row.row_identity = compose_causal_decision_trace_row_identity(&row)?;
+        Ok(row)
     }
 
     pub fn key(&self) -> &str {
@@ -100,7 +104,12 @@ pub struct CausalDecisionTraceIndex {
 }
 
 impl CausalDecisionTraceIndex {
-    pub(super) fn new(rows: Vec<CausalDecisionTraceRow>) -> Self {
+    pub(super) fn new(
+        rows: Vec<CausalDecisionTraceRow>,
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let lookup = rows
             .iter()
             .enumerate()
@@ -113,11 +122,11 @@ impl CausalDecisionTraceIndex {
                 crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentity::compose(
                     crate::domain_computation::evidence_identity::WorthQueryEvidenceScope::CausalInspectionDecisionTraceIndex,
                 )
-                .seal(),
+                .seal()?,
             ),
         };
-        trace.trace_identity = compose_causal_decision_trace_identity(trace.rows());
-        trace
+        trace.trace_identity = compose_causal_decision_trace_identity(trace.rows())?;
+        Ok(trace)
     }
 
     pub fn rows(&self) -> &[CausalDecisionTraceRow] {
@@ -158,7 +167,10 @@ impl CausalInspectionAdmissionCounters {
     pub(super) fn new(
         kind: CausalInspectionAdmissionDecisionKind,
         trace: &CausalDecisionTraceIndex,
-    ) -> Self {
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let advisory_count = usize::from(kind == CausalInspectionAdmissionDecisionKind::Advisory);
         let denial_count = usize::from(kind == CausalInspectionAdmissionDecisionKind::Violation);
         let trace_lookup_count = trace.rows().len();
@@ -182,11 +194,11 @@ impl CausalInspectionAdmissionCounters {
                 crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentity::compose(
                     crate::domain_computation::evidence_identity::WorthQueryEvidenceScope::CausalInspectionAdmissionCounters,
                 )
-                .seal(),
+                .seal()?,
             ),
         };
-        counters.counter_identity = compose_causal_admission_counters_identity(&counters);
-        counters
+        counters.counter_identity = compose_causal_admission_counters_identity(&counters)?;
+        Ok(counters)
     }
 
     pub fn causal_inspection_proof_transition_count(&self) -> usize {
@@ -253,21 +265,24 @@ impl CausalInspectionAdmissionReceipt {
         decision: &CausalInspectionAdmissionDecision,
         trace: &CausalDecisionTraceIndex,
         counters: &CausalInspectionAdmissionCounters,
-    ) -> Self {
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let mut receipt = Self {
             receipt_identity: CausalInspectionAdmissionReceiptIdentity::from(
                 crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentity::compose(
                     crate::domain_computation::evidence_identity::WorthQueryEvidenceScope::CausalInspectionAdmissionReceipt,
                 )
-                .seal(),
+                .seal()?,
             ),
             subject_identity: subject.subject_identity().clone(),
             decision_identity: decision.decision_identity().clone(),
             decision_trace_identity: trace.trace_identity().clone(),
             counter_identity: counters.counter_identity().clone(),
         };
-        receipt.receipt_identity = compose_causal_admission_receipt_identity(&receipt);
-        receipt
+        receipt.receipt_identity = compose_causal_admission_receipt_identity(&receipt)?;
+        Ok(receipt)
     }
 
     pub fn receipt_digest(&self) -> &str {

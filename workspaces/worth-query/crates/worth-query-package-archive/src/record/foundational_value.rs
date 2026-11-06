@@ -42,6 +42,12 @@ pub(super) fn write_aspect_value(
             output.text(value.numerator.as_str())?;
             output.text(value.denominator.as_str())
         }
+        AspectValue::String(InternedString::Stored(value)) => {
+            let value = value.as_string();
+            {
+                tagged(output, 16, |output| output.text(value))
+            }
+        }
         AspectValue::String(InternedString::Raw(value)) => {
             tagged(output, 16, |output| output.text(value))
         }

@@ -18,62 +18,77 @@ impl BridgeCausalEvidenceReferenceIdentity {
         owner: BridgeCausalEvidenceOwner,
         family: BridgeCausalEvidenceFamily,
         identity: BridgeIdentityEvidence,
-    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
+    {
         if identity.is_empty() {
-            return Err(BridgeCausalEnvelopeDenial::new(
+            return Err((BridgeCausalEnvelopeDenial::new(
                 BridgeCausalEnvelopeDenialKind::EmptyEvidenceReference,
                 family,
                 owner,
                 family.expected_owner(),
                 identity.clone(),
-                BridgeCausalEnvelopeCounters::empty(),
-            ));
+                BridgeCausalEnvelopeCounters::empty()?,
+            )?)
+            .into());
         }
         if owner != family.expected_owner() {
-            return Err(BridgeCausalEnvelopeDenial::new(
+            return Err((BridgeCausalEnvelopeDenial::new(
                 BridgeCausalEnvelopeDenialKind::EvidenceOwnerMismatch,
                 family,
                 owner,
                 family.expected_owner(),
                 identity.clone(),
-                BridgeCausalEnvelopeCounters::empty(),
-            ));
+                BridgeCausalEnvelopeCounters::empty()?,
+            )?)
+            .into());
         }
         Ok(Self { family, identity })
     }
 
     pub fn query_observation(
         identity: BridgeIdentityEvidence,
-    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
-        Self::for_owner(
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
+    {
+        Ok(Self::for_owner(
             BridgeCausalEvidenceOwner::Query,
             BridgeCausalEvidenceFamily::QueryObservation,
             identity,
-        )
+        )?)
     }
 
     pub fn runtime_bridge(
         family: BridgeCausalEvidenceFamily,
         identity: BridgeIdentityEvidence,
-    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
-        Self::for_owner(BridgeCausalEvidenceOwner::RuntimeBridge, family, identity)
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
+    {
+        Ok(Self::for_owner(
+            BridgeCausalEvidenceOwner::RuntimeBridge,
+            family,
+            identity,
+        )?)
     }
 
     pub fn relational_authority(
         identity: BridgeIdentityEvidence,
-    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
-        Self::for_owner(
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
+    {
+        Ok(Self::for_owner(
             BridgeCausalEvidenceOwner::Relational,
             BridgeCausalEvidenceFamily::RelationalAuthority,
             identity,
-        )
+        )?)
     }
 
     pub fn signal(
         family: BridgeCausalEvidenceFamily,
         identity: BridgeIdentityEvidence,
-    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
-        Self::for_owner(BridgeCausalEvidenceOwner::Signal, family, identity)
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
+    {
+        Ok(Self::for_owner(
+            BridgeCausalEvidenceOwner::Signal,
+            family,
+            identity,
+        )?)
     }
 
     pub fn family(&self) -> BridgeCausalEvidenceFamily {
@@ -110,26 +125,29 @@ impl BridgeCausalEvidenceReference {
         owner: BridgeCausalEvidenceOwner,
         family: BridgeCausalEvidenceFamily,
         reference_identity: BridgeCausalEvidenceReferenceIdentity,
-    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
+    {
         if reference_identity.family() != family {
-            return Err(BridgeCausalEnvelopeDenial::new(
+            return Err((BridgeCausalEnvelopeDenial::new(
                 BridgeCausalEnvelopeDenialKind::EvidenceReferenceFamilyMismatch,
                 family,
                 owner,
                 reference_identity.family().expected_owner(),
                 reference_identity.evidence_identity().clone(),
-                BridgeCausalEnvelopeCounters::empty(),
-            ));
+                BridgeCausalEnvelopeCounters::empty()?,
+            )?)
+            .into());
         }
         if owner != family.expected_owner() {
-            return Err(BridgeCausalEnvelopeDenial::new(
+            return Err((BridgeCausalEnvelopeDenial::new(
                 BridgeCausalEnvelopeDenialKind::EvidenceOwnerMismatch,
                 family,
                 owner,
                 family.expected_owner(),
                 reference_identity.evidence_identity().clone(),
-                BridgeCausalEnvelopeCounters::empty(),
-            ));
+                BridgeCausalEnvelopeCounters::empty()?,
+            )?)
+            .into());
         }
         let reference_identity = reference_identity.identity.clone();
         let reference_digest_identity = compose_bridge_causal_envelope_evidence_identity(
@@ -139,7 +157,7 @@ impl BridgeCausalEvidenceReference {
                 shape_part(family.as_str()),
                 evidence_part(&reference_identity),
             ],
-        );
+        )?;
         Ok(Self {
             owner,
             family,

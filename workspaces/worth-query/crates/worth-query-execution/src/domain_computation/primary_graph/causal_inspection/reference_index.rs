@@ -1,3 +1,5 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
+use crate::domain_computation::primary_graph::causal_inspection::CausalInspectionConstructionStop;
 use std::collections::BTreeMap;
 
 use crate::domain_computation::evidence_identity::{
@@ -21,7 +23,12 @@ pub struct CausalEvidenceReferenceIndex {
 }
 
 impl CausalEvidenceReferenceIndex {
-    pub fn new(records: Vec<CausalEvidenceReferenceIndexRecord>) -> Self {
+    pub fn new(
+        records: Vec<CausalEvidenceReferenceIndexRecord>,
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let mut indexed_records = BTreeMap::<
             CausalEvidenceFamily,
             BTreeMap<CausalEvidenceReferenceDigest, CausalEvidenceReferenceIndexRecord>,
@@ -32,11 +39,11 @@ impl CausalEvidenceReferenceIndex {
                 .or_default()
                 .insert(record.reference_digest().clone(), record);
         }
-        let index_identity = index_identity(&indexed_records);
-        Self {
+        let index_identity = index_identity(&indexed_records)?;
+        Ok(Self {
             records: indexed_records,
             index_identity,
-        }
+        })
     }
 
     pub(super) fn record_for_reference(
@@ -75,7 +82,10 @@ impl CausalEvidenceReferenceIndexRecord {
         owner: CausalEvidenceOwner,
         family: CausalEvidenceFamily,
         reference_digest: CausalEvidenceReferenceDigest,
-    ) -> Self {
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let record_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalEvidenceReferenceIndexRecord,
         )
@@ -85,14 +95,14 @@ impl CausalEvidenceReferenceIndexRecord {
             WorthQueryEvidenceTag::new("reference"),
             reference_digest.evidence_identity(),
         )
-        .seal()
+        .seal()?
         .into();
-        Self {
+        Ok(Self {
             owner,
             family,
             reference_digest,
             record_identity,
-        }
+        })
     }
 
     pub fn owner(&self) -> CausalEvidenceOwner {
@@ -144,7 +154,10 @@ impl CausalEvidenceReferenceIndexError {
         family: CausalEvidenceFamily,
         supplied_owner: CausalEvidenceOwner,
         expected_owner: CausalEvidenceOwner,
-    ) -> Self {
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let failure_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalEvidenceReferenceIndexError,
         )
@@ -158,15 +171,15 @@ impl CausalEvidenceReferenceIndexError {
             WorthQueryEvidenceTag::new("expected_owner"),
             expected_owner.as_str(),
         )
-        .seal()
+        .seal()?
         .into();
-        Self {
+        Ok(Self {
             kind,
             family,
             supplied_owner,
             expected_owner,
             failure_identity,
-        }
+        })
     }
 
     pub fn kind(&self) -> CausalEvidenceReferenceIndexErrorKind {
@@ -192,30 +205,39 @@ impl CausalEvidenceReferenceIndexError {
 
 pub fn causal_evidence_reference_index(
     records: impl IntoIterator<Item = CausalEvidenceReferenceIndexRecord>,
-) -> CausalEvidenceReferenceIndex {
-    CausalEvidenceReferenceIndex::new(records.into_iter().collect())
+) -> Result<
+    CausalEvidenceReferenceIndex,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(CausalEvidenceReferenceIndex::new(
+        records.into_iter().collect(),
+    )?)
 }
 
 pub fn causal_evidence_reference_index_record(
     owner: CausalEvidenceOwner,
     family: CausalEvidenceFamily,
     reference_digest: impl Into<CausalEvidenceReferenceInput>,
-) -> Result<CausalEvidenceReferenceIndexRecord, CausalEvidenceReferenceIndexError> {
+) -> Result<
+    CausalEvidenceReferenceIndexRecord,
+    CausalInspectionConstructionStop,
+> {
     let expected_owner = owner_for_family(family);
     if owner != expected_owner {
-        return Err(CausalEvidenceReferenceIndexError::new(
+        return Err((CausalEvidenceReferenceIndexError::new(
             CausalEvidenceReferenceIndexErrorKind::EvidenceOwnerMismatch,
             family,
             owner,
             expected_owner,
-        ));
+        )?)
+        .into());
     }
-    let CausalEvidenceReferenceInput::Typed(reference_digest) = reference_digest.into();
+    let reference_digest = reference_digest.into().into_digest()?;
     Ok(CausalEvidenceReferenceIndexRecord::new(
         owner,
         family,
         reference_digest,
-    ))
+    )?)
 }
 
 pub(super) fn owner_for_family(family: CausalEvidenceFamily) -> CausalEvidenceOwner {
@@ -256,15 +278,20 @@ fn index_identity(
         CausalEvidenceFamily,
         BTreeMap<CausalEvidenceReferenceDigest, CausalEvidenceReferenceIndexRecord>,
     >,
-) -> CausalEvidenceReferenceIndexIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalEvidenceReferenceIndex)
-        .field_evidence_identity_sequence(
-            WorthQueryEvidenceTag::new("records"),
-            records
-                .values()
-                .flat_map(|family_records| family_records.values())
-                .map(|record| record.record_identity().evidence_identity()),
-        )
-        .seal()
-        .into()
+) -> Result<
+    CausalEvidenceReferenceIndexIdentity,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalEvidenceReferenceIndex)
+            .field_evidence_identity_sequence(
+                WorthQueryEvidenceTag::new("records"),
+                records
+                    .values()
+                    .flat_map(|family_records| family_records.values())
+                    .map(|record| record.record_identity().evidence_identity()),
+            )
+            .seal()?
+            .into(),
+    )
 }

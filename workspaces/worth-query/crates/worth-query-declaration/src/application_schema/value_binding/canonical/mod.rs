@@ -8,9 +8,9 @@ pub use reference::{ApplicationCanonicalValueReference, ApplicationCanonicalValu
 pub use worth_foundational::facade::{
     decode_canonical_value, decode_canonical_value_with_admission,
     decode_delegated_canonical_value, decode_delegated_canonical_value_with_admission,
-    encode_canonical_value, encode_delegated_canonical_value, BinaryValueDelegate,
-    BinaryValueWriter, CanonicalDocumentCodec, CanonicalValue, ValueCodecDenial,
-    ValueDecodeAdmission, ValueDecodeBounds, ValueShape, ValueShapeDefinition,
+    encode_canonical_value, encode_delegated_canonical_value, encode_stored_canonical_value,
+    BinaryValueDelegate, BinaryValueWriter, CanonicalDocumentCodec, CanonicalValue,
+    ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueShape, ValueShapeDefinition,
 };
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -112,7 +112,7 @@ pub fn decode_application_canonical_value<Value: CanonicalValue>(
     bounds: ValueDecodeBounds,
     binding_identity: crate::portable_identity::WorthQueryPortableTypeIdentity,
 ) -> Result<Value, super::ApplicationValueDecodeDenial> {
-    use worth_foundational::facade::{AspectValue, InternedString, ScalarAspectType};
+    use worth_foundational::facade::{AspectValue, ScalarAspectType};
     let AspectValue::String(text) = raw else {
         return Err(super::ApplicationValueDecodeDenial::ScalarFamilyMismatch {
             binding_identity,
@@ -120,10 +120,7 @@ pub fn decode_application_canonical_value<Value: CanonicalValue>(
             observed: raw.value_family(),
         });
     };
-    let InternedString::Raw(text) = text else {
-        return Err(super::ApplicationValueDecodeDenial::CodecRejected { binding_identity });
-    };
-    decode_canonical_value(text, bounds).map_err(|cause| {
+    worth_foundational::facade::decode_stored_canonical_value(text, bounds, None).map_err(|cause| {
         super::ApplicationValueDecodeDenial::Canonical {
             binding_identity,
             cause,
@@ -137,7 +134,7 @@ pub fn decode_application_canonical_value_with_admission<Value: CanonicalValue>(
     binding_identity: crate::portable_identity::WorthQueryPortableTypeIdentity,
     admission: &mut ValueDecodeAdmission<'_>,
 ) -> Result<Value, super::ApplicationValueDecodeDenial> {
-    use worth_foundational::facade::{AspectValue, InternedString, ScalarAspectType};
+    use worth_foundational::facade::{AspectValue, ScalarAspectType};
     let AspectValue::String(text) = raw else {
         return Err(super::ApplicationValueDecodeDenial::ScalarFamilyMismatch {
             binding_identity,
@@ -145,13 +142,9 @@ pub fn decode_application_canonical_value_with_admission<Value: CanonicalValue>(
             observed: raw.value_family(),
         });
     };
-    let InternedString::Raw(text) = text else {
-        return Err(super::ApplicationValueDecodeDenial::CodecRejected { binding_identity });
-    };
-    decode_canonical_value_with_admission(text, bounds, admission).map_err(|cause| {
-        super::ApplicationValueDecodeDenial::Canonical {
+    worth_foundational::facade::decode_stored_canonical_value(text, bounds, Some(admission))
+        .map_err(|cause| super::ApplicationValueDecodeDenial::Canonical {
             binding_identity,
             cause,
-        }
-    })
+        })
 }

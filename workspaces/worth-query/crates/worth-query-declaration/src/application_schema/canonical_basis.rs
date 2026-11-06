@@ -239,6 +239,9 @@ fn interned_string_bytes(value: &worth_foundational::facade::InternedString) -> 
         worth_foundational::facade::InternedString::Raw(value) => {
             u64::try_from(value.len()).unwrap_or(u64::MAX)
         }
+        worth_foundational::facade::InternedString::Stored(value) => {
+            u64::try_from(value.as_str().len()).unwrap_or(u64::MAX)
+        }
         worth_foundational::facade::InternedString::Symbol(_) => 8,
     }
 }

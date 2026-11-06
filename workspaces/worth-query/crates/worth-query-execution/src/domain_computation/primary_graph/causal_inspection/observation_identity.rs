@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 
@@ -167,6 +168,7 @@ impl Hash for CausalEvidenceReferenceDigest {
 
 pub enum CausalEvidenceReferenceInput {
     Typed(CausalEvidenceReferenceDigest),
+    Bridge(BridgeIdentityEvidence),
 }
 
 impl From<CausalEvidenceReferenceDigest> for CausalEvidenceReferenceInput {
@@ -177,6 +179,22 @@ impl From<CausalEvidenceReferenceDigest> for CausalEvidenceReferenceInput {
 
 impl From<BridgeIdentityEvidence> for CausalEvidenceReferenceInput {
     fn from(value: BridgeIdentityEvidence) -> Self {
+        Self::Bridge(value)
+    }
+}
+impl CausalEvidenceReferenceInput {
+    pub(super) fn into_digest(
+        self,
+    ) -> Result<
+        CausalEvidenceReferenceDigest,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        let Self::Bridge(value) = self else {
+            let Self::Typed(value) = self else {
+                unreachable!()
+            };
+            return Ok(value);
+        };
         let bridge_authority = value.clone();
         let identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalEvidenceReference)
@@ -184,8 +202,8 @@ impl From<BridgeIdentityEvidence> for CausalEvidenceReferenceInput {
                     WorthQueryEvidenceTag::new("bridge_evidence"),
                     &value,
                 )
-                .seal();
-        Self::Typed(CausalEvidenceReferenceDigest {
+                .seal()?;
+        Ok(CausalEvidenceReferenceDigest {
             identity,
             bridge_authority: Some(bridge_authority),
         })
@@ -198,13 +216,18 @@ pub struct CausalObservationTargetHandle {
 }
 
 impl CausalObservationTargetHandle {
-    pub fn from_evidence_identity(identity: &WorthQueryEvidenceIdentity) -> Self {
+    pub fn from_evidence_identity(
+        identity: &WorthQueryEvidenceIdentity,
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalObservationTarget)
                 .field_evidence_identity(WorthQueryEvidenceTag::new("source_identity"), identity)
-                .seal()
+                .seal()?
                 .into();
-        Self { identity }
+        Ok(Self { identity })
     }
 
     pub fn rendered(&self) -> &str {
@@ -222,13 +245,18 @@ pub struct CausalResultShapeContextHandle {
 }
 
 impl CausalResultShapeContextHandle {
-    pub fn from_evidence_identity(identity: &WorthQueryEvidenceIdentity) -> Self {
+    pub fn from_evidence_identity(
+        identity: &WorthQueryEvidenceIdentity,
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalResultShapeContext)
                 .field_evidence_identity(WorthQueryEvidenceTag::new("source_identity"), identity)
-                .seal()
+                .seal()?
                 .into();
-        Self { identity }
+        Ok(Self { identity })
     }
 
     pub fn rendered(&self) -> &str {

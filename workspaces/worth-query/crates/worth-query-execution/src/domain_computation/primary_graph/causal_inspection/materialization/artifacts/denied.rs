@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use super::super::super::identity::{
     CausalInspectionArtifactIdentity, CausalInspectionOutcomeIdentity,
 };
@@ -43,15 +44,18 @@ impl DeniedQueryCausalInspectionArtifact {
         performance: CausalInspectionPerformanceEnvelope,
         receipt: CausalMaterializationReceipt,
         artifact_identity: CausalInspectionArtifactIdentity,
-    ) -> Self {
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let causal_identity = causal_materialization_identity(
             CausalInspectionArtifactKind::Denied,
             query_denial_identity,
             query_observation_identity.evidence_identity(),
             None,
             None,
-        );
-        Self {
+        )?;
+        Ok(Self {
             query_denial_identity: query_denial_identity.clone(),
             query_observation_identity: query_observation_identity.clone(),
             result_shape_context_identity: result_shape_context_identity.clone(),
@@ -65,7 +69,7 @@ impl DeniedQueryCausalInspectionArtifact {
             receipt,
             causal_identity,
             artifact_identity,
-        }
+        })
     }
 
     pub fn query_denial_for_reporting(&self) -> &str {

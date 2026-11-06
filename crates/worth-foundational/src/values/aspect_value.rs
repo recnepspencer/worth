@@ -35,6 +35,18 @@ pub enum AspectValue {
 }
 
 impl AspectValue {
+    pub fn into_raw_text(self) -> Option<String> {
+        match self { Self::String(text) => text.into_raw_text(), _ => None }
+    }
+
+    /// Borrow resolved text independently of its immutable storage backing.
+    pub fn raw_text(&self) -> Option<&str> {
+        match self {
+            Self::String(text) => text.raw_text(),
+            _ => None,
+        }
+    }
+
     pub fn value_family(&self) -> ScalarAspectType {
         match self {
             Self::Null => ScalarAspectType::Null,
@@ -99,6 +111,9 @@ impl AspectValue {
             Self::String(super::scalar_wrappers::InternedString::Raw(value)) => {
                 1_usize.saturating_add(value.len())
             }
+            Self::String(super::scalar_wrappers::InternedString::Stored(value)) => {
+                1_usize.saturating_add(value.as_str().len())
+            }
             Self::String(super::scalar_wrappers::InternedString::Symbol(_)) => 5,
             Self::Uuid(_) => 17,
             Self::TimestampTz(_) => 13,
@@ -118,7 +133,7 @@ impl AspectValue {
                 .0
                 .capacity()
                 .saturating_add(value.denominator.0.capacity()),
-            Self::String(InternedString::Raw(value)) => value.capacity(),
+            Self::String(value) => value.owned_allocation_capacity_bytes(),
             Self::InlineBytes(value) => value.owned_allocation_capacity_bytes(),
             _ => 0,
         }

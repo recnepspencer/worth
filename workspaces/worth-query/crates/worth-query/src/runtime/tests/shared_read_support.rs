@@ -195,6 +195,12 @@ pub(super) fn consume_display_title(artifact: &WorthQueryPublishedDerivedArtifac
         .display_fields()
         .first()
         .and_then(|fact| match fact.native_value().scalar()? {
+            AspectValue::String(worth_foundational::facade::InternedString::Stored(value)) => {
+                let value = value.as_string();
+                {
+                    Some(value.clone())
+                }
+            }
             AspectValue::String(worth_foundational::facade::InternedString::Raw(value)) => {
                 Some(value.clone())
             }

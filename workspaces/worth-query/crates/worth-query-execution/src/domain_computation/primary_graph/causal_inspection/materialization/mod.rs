@@ -1,3 +1,5 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
+use crate::domain_computation::primary_graph::causal_inspection::CausalInspectionConstructionStop;
 mod denied;
 
 pub use denied::materialize_denied_causal_inspection;
@@ -61,7 +63,10 @@ pub fn materialize_admitted_causal_inspection(
     envelope: &BridgeCausalExplanationEnvelope,
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> Result<QueryCausalInspectionArtifact, CausalInspectionMaterializationError> {
+) -> Result<
+    QueryCausalInspectionArtifact,
+    CausalInspectionConstructionStop,
+> {
     let readmission_proof = validate_bridge_summary(
         inspection.admitted_inspection_identity(),
         inspection.subject().anchor_identity(),
@@ -83,8 +88,8 @@ pub fn materialize_admitted_causal_inspection(
         &readmission_proof,
         redaction_policy,
         materialization_policy,
-    );
-    let temporal_async_explanation = project_admitted_temporal_async_explanation(inspection);
+    )?;
+    let temporal_async_explanation = project_admitted_temporal_async_explanation(inspection)?;
     Ok(QueryCausalInspectionArtifact::Admitted(
         AdmittedQueryCausalInspectionArtifact::from_parts(
             inspection.admitted_inspection_identity(),
@@ -93,7 +98,7 @@ pub fn materialize_admitted_causal_inspection(
             envelope,
             temporal_async_explanation,
             built,
-        ),
+        )?,
     ))
 }
 
@@ -102,7 +107,10 @@ pub fn materialize_advisory_causal_inspection(
     envelope: &BridgeCausalExplanationEnvelope,
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> Result<QueryCausalInspectionArtifact, CausalInspectionMaterializationError> {
+) -> Result<
+    QueryCausalInspectionArtifact,
+    CausalInspectionConstructionStop,
+> {
     let readmission_proof = validate_bridge_summary(
         inspection.advisory_inspection_identity(),
         inspection.subject().anchor_identity(),
@@ -128,8 +136,8 @@ pub fn materialize_advisory_causal_inspection(
         &readmission_proof,
         redaction_policy,
         materialization_policy,
-    );
-    let temporal_async_explanation = project_advisory_temporal_async_explanation(inspection);
+    )?;
+    let temporal_async_explanation = project_advisory_temporal_async_explanation(inspection)?;
     Ok(QueryCausalInspectionArtifact::Advisory(
         AdvisoryQueryCausalInspectionArtifact::from_parts(
             inspection.advisory_inspection_identity(),
@@ -139,7 +147,7 @@ pub fn materialize_advisory_causal_inspection(
             envelope,
             temporal_async_explanation,
             built,
-        ),
+        )?,
     ))
 }
 
@@ -148,10 +156,13 @@ pub fn validate_bridge_summary(
     anchor_identity: &super::observation_identity::CausalObservationAnchorDigest,
     expected_kind: BridgeCausalInspectionAdmissionSummaryKind,
     envelope: &BridgeCausalExplanationEnvelope,
-) -> Result<CausalBridgeReadmissionProof, CausalInspectionMaterializationError> {
+) -> Result<
+    CausalBridgeReadmissionProof,
+    CausalInspectionConstructionStop,
+> {
     contract::require_legacy_materialization_source(envelope)?;
     if envelope.admission_summary_kind() != expected_kind {
-        return Err(CausalInspectionMaterializationError::new(
+        return Err((CausalInspectionMaterializationError::new(
             CausalInspectionMaterializationErrorKind::AdmissionSummaryKindMismatch,
             |identity| {
                 identity
@@ -166,7 +177,8 @@ pub fn validate_bridge_summary(
                         ),
                     )
             },
-        ));
+        )?)
+        .into());
     }
     let expected_summary = match expected_kind {
         BridgeCausalInspectionAdmissionSummaryKind::Admitted => {
@@ -192,7 +204,7 @@ pub fn validate_bridge_summary(
     }
     .expect("existing Query admission and anchor digests should form a bridge summary");
     if expected_summary.summary_for_reporting() != envelope.admission_summary_for_reporting() {
-        return Err(CausalInspectionMaterializationError::new(
+        return Err((CausalInspectionMaterializationError::new(
             CausalInspectionMaterializationErrorKind::AdmissionSummaryDigestMismatch,
             |identity| {
                 identity
@@ -205,14 +217,15 @@ pub fn validate_bridge_summary(
                         envelope.admission_summary_for_reporting(),
                     )
             },
-        ));
+        )?)
+        .into());
     }
     Ok(
         CausalBridgeReadmissionProof::from_readmitted_bridge_envelope(
             query_admission_identity,
             anchor_identity,
             envelope,
-        ),
+        )?,
     )
 }
 
@@ -225,20 +238,23 @@ fn build_bridge_backed_artifact(
     readmission_proof: &CausalBridgeReadmissionProof,
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> BuiltBridgeBackedArtifact {
+) -> Result<
+    BuiltBridgeBackedArtifact,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
     let evidence_references = envelope
         .bindings()
         .iter()
         .map(|binding| {
             QueryCausalEvidenceReferenceArtifact::from_bridge_binding(binding, redaction_policy)
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let redaction_count = evidence_references
         .iter()
         .filter(|reference| reference.detail_redacted())
         .count();
     let performance =
-        CausalInspectionPerformanceEnvelope::for_bridge_envelope(envelope, redaction_count);
+        CausalInspectionPerformanceEnvelope::for_bridge_envelope(envelope, redaction_count)?;
     let detail_identity = materialized_detail_identity(
         query_observation_identity,
         advisory_reason,
@@ -246,11 +262,11 @@ fn build_bridge_backed_artifact(
         &evidence_references,
         redaction_policy,
         materialization_policy,
-    );
-    let bridge_identity = compose_bridge_causal_envelope_identity(envelope.identity());
-    let bridge_envelope_identity = compose_bridge_causal_explanation_envelope_identity(envelope);
+    )?;
+    let bridge_identity = compose_bridge_causal_envelope_identity(envelope.identity())?;
+    let bridge_envelope_identity = compose_bridge_causal_explanation_envelope_identity(envelope)?;
     let bridge_receipt_identity =
-        compose_bridge_causal_envelope_receipt_identity(envelope.receipt());
+        compose_bridge_causal_envelope_receipt_identity(envelope.receipt())?;
     let receipt = CausalMaterializationReceipt::new(
         query_admission_identity,
         Some(&bridge_envelope_identity),
@@ -259,7 +275,7 @@ fn build_bridge_backed_artifact(
         materialization_policy,
         &performance,
         detail_identity.evidence_identity(),
-    );
+    )?;
     let artifact_identity = artifact_identity(
         kind,
         query_admission_identity,
@@ -268,15 +284,15 @@ fn build_bridge_backed_artifact(
         &receipt,
         Some(readmission_proof),
         detail_identity.evidence_identity(),
-    );
+    )?;
     let causal_identity = causal_materialization_identity(
         kind,
         query_admission_identity,
         query_observation_identity,
         Some(&bridge_identity),
         Some(&bridge_envelope_identity),
-    );
-    BuiltBridgeBackedArtifact {
+    )?;
+    Ok(BuiltBridgeBackedArtifact {
         boundary_categories: policy::boundary_categories(),
         evidence_references,
         performance,
@@ -284,7 +300,7 @@ fn build_bridge_backed_artifact(
         readmission_proof: readmission_proof.clone(),
         causal_identity,
         artifact_identity,
-    }
+    })
 }
 
 pub(super) fn causal_materialization_identity(
@@ -293,14 +309,17 @@ pub(super) fn causal_materialization_identity(
     query_observation_identity: &WorthQueryEvidenceIdentity,
     bridge_identity: Option<&WorthQueryEvidenceIdentity>,
     bridge_envelope: Option<&WorthQueryEvidenceIdentity>,
-) -> CausalInspectionArtifactIdentity {
-    compose_causal_artifact_causal_identity(
+) -> Result<
+    CausalInspectionArtifactIdentity,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(compose_causal_artifact_causal_identity(
         kind,
         query_admission_identity,
         query_observation_identity,
         bridge_identity,
         bridge_envelope,
-    )
+    )?)
 }
 
 fn materialized_detail_identity(
@@ -310,15 +329,18 @@ fn materialized_detail_identity(
     evidence_references: &[QueryCausalEvidenceReferenceArtifact],
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> super::identity::CausalInspectionMaterializedDetailIdentity {
-    compose_causal_materialized_detail_identity(
+) -> Result<
+    super::identity::CausalInspectionMaterializedDetailIdentity,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(compose_causal_materialized_detail_identity(
         query_observation_identity,
         advisory_reason,
         readmission_proof,
         evidence_references,
         redaction_policy,
         materialization_policy,
-    )
+    )?)
 }
 
 fn artifact_identity(
@@ -329,8 +351,11 @@ fn artifact_identity(
     receipt: &CausalMaterializationReceipt,
     readmission_proof: Option<&CausalBridgeReadmissionProof>,
     detail_identity: &WorthQueryEvidenceIdentity,
-) -> CausalInspectionArtifactIdentity {
-    compose_causal_artifact_identity(
+) -> Result<
+    CausalInspectionArtifactIdentity,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(compose_causal_artifact_identity(
         kind,
         query_admission_identity,
         bridge_identity,
@@ -338,5 +363,5 @@ fn artifact_identity(
         receipt.receipt_identity(),
         readmission_proof.map(CausalBridgeReadmissionProof::readmission_proof_identity),
         detail_identity,
-    )
+    )?)
 }

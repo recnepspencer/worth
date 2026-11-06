@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 mod artifact_union;
 
 pub use artifact_union::QueryCausalInspectionArtifact;
@@ -43,7 +44,10 @@ impl QueryCausalEvidenceReferenceArtifact {
     pub(in crate::domain_computation::primary_graph::causal_inspection::materialization) fn from_bridge_binding(
         binding: &BridgeCausalEvidenceBinding,
         redaction_policy: CausalInspectionRedactionPolicy,
-    ) -> Self {
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let detail_redacted = redaction_policy == CausalInspectionRedactionPolicy::DigestOnly;
         let retained_record_identity = if detail_redacted {
             None
@@ -71,7 +75,7 @@ impl QueryCausalEvidenceReferenceArtifact {
             WorthQueryEvidenceTag::new("reference"),
             &bridge_reference_identity,
         )
-        .seal();
+        .seal()?;
         let binding_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalEvidenceReferenceReceipt,
         )
@@ -88,28 +92,34 @@ impl QueryCausalEvidenceReferenceArtifact {
             WorthQueryEvidenceTag::new("binding"),
             &bridge_binding_identity,
         )
-        .seal();
-        let retained_record_identity = retained_record_identity.as_ref().map(|retained_record| {
-            WorthQueryEvidenceIdentity::compose(
-                WorthQueryEvidenceScope::CausalEvidenceReferenceReceipt,
-            )
-            .field_shape(WorthQueryEvidenceTag::new("role"), "retained-bridge-record")
-            .field_shape(
-                WorthQueryEvidenceTag::new("owner"),
-                binding.owner().as_str(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("family"),
-                binding.family().as_str(),
-            )
-            .field_evidence_identity(WorthQueryEvidenceTag::new("reference"), &reference_identity)
-            .field_evidence_identity(WorthQueryEvidenceTag::new("binding"), &binding_identity)
-            .field_bridge_retained_evidence_identity(
-                WorthQueryEvidenceTag::new("retained"),
-                retained_record,
-            )
-            .seal()
-        });
+        .seal()?;
+        let retained_record_identity = retained_record_identity
+            .as_ref()
+            .map(|retained_record| {
+                WorthQueryEvidenceIdentity::compose(
+                    WorthQueryEvidenceScope::CausalEvidenceReferenceReceipt,
+                )
+                .field_shape(WorthQueryEvidenceTag::new("role"), "retained-bridge-record")
+                .field_shape(
+                    WorthQueryEvidenceTag::new("owner"),
+                    binding.owner().as_str(),
+                )
+                .field_shape(
+                    WorthQueryEvidenceTag::new("family"),
+                    binding.family().as_str(),
+                )
+                .field_evidence_identity(
+                    WorthQueryEvidenceTag::new("reference"),
+                    &reference_identity,
+                )
+                .field_evidence_identity(WorthQueryEvidenceTag::new("binding"), &binding_identity)
+                .field_bridge_retained_evidence_identity(
+                    WorthQueryEvidenceTag::new("retained"),
+                    retained_record,
+                )
+                .seal()
+            })
+            .transpose()?;
         let reference_receipt_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalEvidenceReferenceReceipt,
         )
@@ -128,8 +138,8 @@ impl QueryCausalEvidenceReferenceArtifact {
             retained_record_identity.as_ref(),
         )
         .field_bool(WorthQueryEvidenceTag::new("redacted"), detail_redacted)
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             owner: binding.owner(),
             family: binding.family(),
             reference_identity,
@@ -137,7 +147,7 @@ impl QueryCausalEvidenceReferenceArtifact {
             retained_record_identity,
             detail_redacted,
             reference_receipt_identity,
-        }
+        })
     }
 
     pub fn owner(&self) -> &str {
@@ -255,13 +265,16 @@ impl AdmittedQueryCausalInspectionArtifact {
         envelope: &BridgeCausalExplanationEnvelope,
         temporal_async_explanation: QueryCausalTemporalAsyncExplanation,
         built: BuiltBridgeBackedArtifact,
-    ) -> Self {
-        let bridge_identity = compose_bridge_causal_envelope_identity(envelope.identity());
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        let bridge_identity = compose_bridge_causal_envelope_identity(envelope.identity())?;
         let bridge_envelope_identity =
-            compose_bridge_causal_explanation_envelope_identity(envelope);
+            compose_bridge_causal_explanation_envelope_identity(envelope)?;
         let bridge_receipt_identity =
-            compose_bridge_causal_envelope_receipt_identity(envelope.receipt());
-        Self {
+            compose_bridge_causal_envelope_receipt_identity(envelope.receipt())?;
+        Ok(Self {
             query_admission_identity: query_admission_identity.clone(),
             query_observation_identity: query_observation_identity.clone(),
             result_shape_context_identity: result_shape_context_identity.clone(),
@@ -276,7 +289,7 @@ impl AdmittedQueryCausalInspectionArtifact {
             readmission_proof: built.readmission_proof,
             causal_identity: built.causal_identity,
             artifact_identity: built.artifact_identity,
-        }
+        })
     }
 
     pub fn query_admission_for_reporting(&self) -> &str {
@@ -311,13 +324,16 @@ impl AdvisoryQueryCausalInspectionArtifact {
         envelope: &BridgeCausalExplanationEnvelope,
         temporal_async_explanation: QueryCausalTemporalAsyncExplanation,
         built: BuiltBridgeBackedArtifact,
-    ) -> Self {
-        let bridge_identity = compose_bridge_causal_envelope_identity(envelope.identity());
+    ) -> Result<
+        Self,
+        WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        let bridge_identity = compose_bridge_causal_envelope_identity(envelope.identity())?;
         let bridge_envelope_identity =
-            compose_bridge_causal_explanation_envelope_identity(envelope);
+            compose_bridge_causal_explanation_envelope_identity(envelope)?;
         let bridge_receipt_identity =
-            compose_bridge_causal_envelope_receipt_identity(envelope.receipt());
-        Self {
+            compose_bridge_causal_envelope_receipt_identity(envelope.receipt())?;
+        Ok(Self {
             query_advisory_identity: query_advisory_identity.clone(),
             query_observation_identity: query_observation_identity.clone(),
             result_shape_context_identity: result_shape_context_identity.clone(),
@@ -333,7 +349,7 @@ impl AdvisoryQueryCausalInspectionArtifact {
             readmission_proof: built.readmission_proof,
             causal_identity: built.causal_identity,
             artifact_identity: built.artifact_identity,
-        }
+        })
     }
 
     pub fn query_advisory_for_reporting(&self) -> &str {

@@ -31,7 +31,7 @@ pub use anchor::{
 };
 pub use builder::{
     CausalInspection, CausalInspectionBasisMismatch, CausalInspectionEstimatedCost,
-    CausalInspectionPlan, CausalInspectionPlanError, CausalInspectionPlanErrorKind,
+    CausalInspectionConstructionStop, CausalInspectionPlan, CausalInspectionPlanError, CausalInspectionPlanErrorKind,
     CausalInspectionPlanExplanation, CausalInspectionSupportPosture,
 };
 pub use builder_support::{

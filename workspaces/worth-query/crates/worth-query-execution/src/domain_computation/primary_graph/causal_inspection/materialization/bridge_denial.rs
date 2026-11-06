@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use crate::domain_computation::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceTag,
 };
@@ -19,14 +20,17 @@ pub(crate) fn materialize_bridge_denied_admitted_causal_inspection(
     bridge_denial: &BridgeCausalEnvelopeDenial,
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> QueryCausalInspectionArtifact {
-    materialize_bridge_denied_query_inspection(
+) -> Result<
+    QueryCausalInspectionArtifact,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(materialize_bridge_denied_query_inspection(
         inspection,
         inspection.admitted_inspection_identity(),
         bridge_denial,
         redaction_policy,
         materialization_policy,
-    )
+    )?)
 }
 
 pub(crate) fn materialize_bridge_denied_advisory_causal_inspection(
@@ -34,14 +38,17 @@ pub(crate) fn materialize_bridge_denied_advisory_causal_inspection(
     bridge_denial: &BridgeCausalEnvelopeDenial,
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> QueryCausalInspectionArtifact {
-    materialize_bridge_denied_query_inspection(
+) -> Result<
+    QueryCausalInspectionArtifact,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(materialize_bridge_denied_query_inspection(
         inspection,
         inspection.advisory_inspection_identity(),
         bridge_denial,
         redaction_policy,
         materialization_policy,
-    )
+    )?)
 }
 
 fn materialize_bridge_denied_query_inspection(
@@ -50,10 +57,13 @@ fn materialize_bridge_denied_query_inspection(
     bridge_denial: &BridgeCausalEnvelopeDenial,
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> QueryCausalInspectionArtifact {
+) -> Result<
+    QueryCausalInspectionArtifact,
+    WorthQueryEvidenceIdentityDerivationDenial,
+> {
     let denial_reason = "bridge_envelope_denial".to_string();
-    let performance = CausalInspectionPerformanceEnvelope::for_bridge_denial(bridge_denial);
-    let bridge_denial_identity = compose_bridge_causal_denial_identity(bridge_denial);
+    let performance = CausalInspectionPerformanceEnvelope::for_bridge_denial(bridge_denial)?;
+    let bridge_denial_identity = compose_bridge_causal_denial_identity(bridge_denial)?;
     let detail_identity = WorthQueryEvidenceIdentity::compose(
         crate::domain_computation::evidence_identity::WorthQueryEvidenceScope::CausalInspectionDeniedArtifactDetail,
     )
@@ -81,7 +91,7 @@ fn materialize_bridge_denied_query_inspection(
         WorthQueryEvidenceTag::new("bridge_denial_family"),
         bridge_denial.family().as_str(),
     )
-    .seal();
+    .seal()?;
     let receipt = CausalMaterializationReceipt::new(
         query_admission_identity,
         None,
@@ -90,7 +100,7 @@ fn materialize_bridge_denied_query_inspection(
         materialization_policy,
         &performance,
         &detail_identity,
-    );
+    )?;
     let artifact_identity = artifact_identity(
         CausalInspectionArtifactKind::Denied,
         query_admission_identity,
@@ -99,26 +109,28 @@ fn materialize_bridge_denied_query_inspection(
         &receipt,
         None,
         &detail_identity,
-    );
+    )?;
     let temporal_async_explanation = QueryCausalTemporalAsyncExplanation::project(
         inspection.subject().inspection_reason(),
         inspection.subject().observation_outcome(),
         inspection.subject().resolved_evidence_families(),
         Some(bridge_denial.family()),
-    );
-    QueryCausalInspectionArtifact::Denied(DeniedQueryCausalInspectionArtifact::from_parts(
-        query_admission_identity,
-        denial_reason,
-        inspection.subject().query_observation_identity(),
-        inspection.subject().result_shape_context_identity(),
-        Some(bridge_denial_identity),
-        Some(bridge_denial.kind()),
-        Some(bridge_denial.family()),
-        temporal_async_explanation,
-        policy::boundary_categories(),
-        performance,
-        receipt,
-        artifact_identity,
+    )?;
+    Ok(QueryCausalInspectionArtifact::Denied(
+        DeniedQueryCausalInspectionArtifact::from_parts(
+            query_admission_identity,
+            denial_reason,
+            inspection.subject().query_observation_identity(),
+            inspection.subject().result_shape_context_identity(),
+            Some(bridge_denial_identity),
+            Some(bridge_denial.kind()),
+            Some(bridge_denial.family()),
+            temporal_async_explanation,
+            policy::boundary_categories(),
+            performance,
+            receipt,
+            artifact_identity,
+        )?,
     ))
 }
 

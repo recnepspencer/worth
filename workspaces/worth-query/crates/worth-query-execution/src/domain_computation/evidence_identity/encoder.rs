@@ -198,12 +198,15 @@ impl WorthQueryEvidenceIdentityEncoder {
         }
     }
 
-    pub fn seal(self) -> WorthQueryEvidenceIdentity {
-        WorthQueryEvidenceIdentity::new(derive_evidence_identity(
-            self.scope,
-            self.scheme,
-            self.entries,
-        ))
+    pub fn seal(
+        self,
+    ) -> Result<WorthQueryEvidenceIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
+        derive_evidence_identity(self.scope, self.scheme, self.entries)
+            .map(WorthQueryEvidenceIdentity::new)
+            .map_err(|cause| WorthQueryEvidenceIdentityDerivationDenial {
+                scope: self.scope,
+                cause,
+            })
     }
 
     fn push_text(
@@ -235,4 +238,11 @@ fn sequence_count_locus(tag: WorthQueryEvidenceTag) -> String {
 
 fn sequence_item_locus(tag: WorthQueryEvidenceTag, index: usize) -> String {
     format!("evidence.sequence.{}.item.{index}", tag.as_str())
+}
+
+/// A refused identity names its semantic subject and original digest limit.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct WorthQueryEvidenceIdentityDerivationDenial {
+    pub scope: WorthQueryEvidenceScope,
+    pub cause: worth_foundational::facade::CanonicalDigestDerivationDenial,
 }

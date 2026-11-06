@@ -151,6 +151,15 @@ fn cardinality_loci(declaration: &ErasedApplicationSchemaDeclaration) -> Vec<Str
         .iter()
         .filter_map(|entry| match (entry.locus(), entry.value()) {
             (
+                CanonicalBasisLocus::Named(InternedString::Stored(locus)),
+                CanonicalBasisValue::ExactText(InternedString::Stored(value)),
+            ) if locus.contains(".output-role[") && locus.ends_with(".cardinality") => {
+                let locus = locus.as_string();
+                {
+                    Some(value.to_string())
+                }
+            }
+            (
                 CanonicalBasisLocus::Named(InternedString::Raw(locus)),
                 CanonicalBasisValue::ExactText(InternedString::Raw(value)),
             ) if locus.contains(".output-role[") && locus.ends_with(".cardinality") => {

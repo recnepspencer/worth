@@ -298,6 +298,10 @@ fn value_payload_bytes(value: &AspectValue) -> Option<usize> {
             .as_str()
             .len()
             .checked_add(value.denominator.as_str().len()),
+        AspectValue::String(InternedString::Stored(value)) => {
+            let value = value.as_string();
+            Some(value.len())
+        }
         AspectValue::String(InternedString::Raw(value)) => Some(value.len()),
         _ => Some(0),
     }

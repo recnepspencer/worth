@@ -69,6 +69,10 @@ impl<'a, 'e, 'r> ReadFields<'a, 'e, 'r> {
             |v| {
                 let text = match v {
                     None => return Ok(None),
+                    Some(AspectValue::String(InternedString::Stored(v))) => {
+                        let v = v.as_string();
+                        v.as_str()
+                    }
                     Some(AspectValue::String(InternedString::Raw(v))) => v.as_str(),
                     Some(AspectValue::String(InternedString::Symbol(v))) => self
                         .pin

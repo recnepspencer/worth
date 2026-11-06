@@ -18,7 +18,8 @@ pub(super) struct NativeEvidence<'a> {
 impl<'a> NativeEvidence<'a> {
     pub(super) fn from_verified(
         observation: &'a BridgeConditionalCausalObservation,
-    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
+    {
         let attempt = observation.attempt().to_string();
         let source = observation
             .bridge_snapshot_identity()
@@ -36,14 +37,14 @@ impl<'a> NativeEvidence<'a> {
                 }),
                 value_part(source.unwrap_or("")),
             ],
-        );
+        )?;
         let evaluation = compose(
             Artifact::NativeSignalEvaluation,
             &[
                 evidence_part(&native),
                 value_part(observation.signal_projection().label()),
             ],
-        );
+        )?;
         let mut references = vec![
             reference(
                 Owner::RuntimeBridge,
@@ -59,7 +60,7 @@ impl<'a> NativeEvidence<'a> {
                     evidence_part(&native),
                     shape_part("actual_performed_invalidation"),
                 ],
-            );
+            )?;
             references.push(reference(
                 Owner::Signal,
                 Family::SignalInvalidation,
@@ -75,7 +76,10 @@ impl<'a> NativeEvidence<'a> {
     pub(super) fn references_with_query(
         &self,
         query: BridgeIdentityEvidence,
-    ) -> Result<Vec<Reference>, BridgeCausalEnvelopeDenial> {
+    ) -> Result<
+        Vec<Reference>,
+        crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop,
+    > {
         let mut references = Vec::with_capacity(self.references.len() + 1);
         references.push(reference(Owner::Query, Family::QueryObservation, query)?);
         references.extend(self.references.iter().cloned());
@@ -95,7 +99,7 @@ fn reference(
     owner: Owner,
     family: Family,
     identity: BridgeIdentityEvidence,
-) -> Result<Reference, BridgeCausalEnvelopeDenial> {
+) -> Result<Reference, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop> {
     let identity = match owner {
         Owner::Query => Identity::query_observation(identity),
         Owner::RuntimeBridge => Identity::runtime_bridge(family, identity),

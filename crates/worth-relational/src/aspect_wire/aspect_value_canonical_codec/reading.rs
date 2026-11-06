@@ -139,8 +139,8 @@ impl<'a> AspectValueBodyReader<'a> {
 
     fn read_string_value(&mut self) -> Result<AspectValue, AspectValueCanonicalCodecError> {
         match self.read_u8()? {
-            tags::RAW_STRING => Ok(AspectValue::String(InternedString::Raw(
-                self.read_string()?,
+            tags::RAW_STRING => Ok(AspectValue::String(InternedString::Stored(
+                worth_foundational::facade::StoredValueText::new(self.read_string()?),
             ))),
             tags::SYMBOL_STRING => Ok(AspectValue::String(InternedString::Symbol(Symbol(
                 self.read_u32()?,

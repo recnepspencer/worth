@@ -99,6 +99,10 @@ fn scalar(value: &AspectValue) -> Result<u64, D> {
             bytes(value.numerator.0.len())?,
             bytes(value.denominator.0.len())?,
         ]),
+        AspectValue::String(InternedString::Stored(value)) => {
+            let value = value.as_string();
+            bytes(value.len())
+        }
         AspectValue::String(InternedString::Raw(value)) => bytes(value.len()),
         _ => Ok(0),
     }

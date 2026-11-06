@@ -83,6 +83,10 @@ impl ComponentIdentifier {
     }
     fn checked(value: worth_foundational::facade::InternedString) -> Option<Self> {
         match value {
+            worth_foundational::facade::InternedString::Stored(text) => {
+                let text = text.as_string();
+                Some(Self(text))
+            }
             worth_foundational::facade::InternedString::Raw(text) => Some(Self(text)),
             worth_foundational::facade::InternedString::Symbol(_) => None,
         }

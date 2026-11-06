@@ -302,6 +302,12 @@ fn unique_created_text(
                 .committed_changes()
                 .committed_field_values(entity, &[locator])
                 .and_then(|values| match values.as_slice() {
+                    [AspectValue::String(InternedString::Stored(value))] => {
+                        let value = value.as_string();
+                        {
+                            Some((entity, value.clone()))
+                        }
+                    }
                     [AspectValue::String(InternedString::Raw(value))] => {
                         Some((entity, value.clone()))
                     }
@@ -324,7 +330,7 @@ fn unique_created_text_pair(
         .filter(|(_, change)| *change == worth_relational::facade::publication::RecordStructuralChange::Created)
         .filter_map(|(entity, _)| receipt.committed_changes().committed_field_values(entity, &[first, second])
             .and_then(|values| match values.as_slice() {
-                [AspectValue::String(InternedString::Raw(a)), AspectValue::String(InternedString::Raw(b))] => Some((entity, a.clone(), b.clone())),
+                [a, b] => Some((entity, a.raw_text()?.to_owned(), b.raw_text()?.to_owned())),
                 _ => None,
             }))
         .collect::<Vec<_>>();

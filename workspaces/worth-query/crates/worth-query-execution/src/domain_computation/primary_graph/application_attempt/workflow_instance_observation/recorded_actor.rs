@@ -46,9 +46,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn origina
         layout.transition.entity_kind,
         &layout.transition.identity,
     )?;
-    let Some(AspectValue::String(worth_foundational::facade::InternedString::Raw(identity))) =
-        identity
-    else {
+    let Some(identity) = (identity).as_ref().and_then(|value| value.raw_text()) else {
         return Err(denial("original transition identity is absent"));
     };
     if identity.len() != 64 || !identity.bytes().all(|byte| byte.is_ascii_hexdigit()) {
@@ -57,10 +55,10 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn origina
     facts.push(WorthQueryApplicationObservedFact::Field {
         entity_id: entity,
         kind: layout.transition.entity_kind,
-        locator: layout.transition.identity.clone(),
-        value: text(identity.clone()),
+        locator: layout.transition.identity.to_owned(),
+        value: text(identity.to_owned()),
     });
-    Ok((WorkflowTransitionLocator::new(entity, settlement), identity))
+    Ok((WorkflowTransitionLocator::new(entity, settlement), identity.to_owned()))
 }
 fn incoming(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -159,7 +157,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn recorde
                 entry.entity,
                 layout.transition.entity_kind,
                 &layout.transition.identity,
-                text(entry.identity.clone()),
+                text(entry.identity.to_owned()),
                 facts,
             )?;
         }

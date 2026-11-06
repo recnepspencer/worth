@@ -383,11 +383,7 @@ impl HostileExecutionState {
                 .facts()
                 .display_fields()
                 .first()
-                .and_then(|fact| match fact.native_value().scalar()? {
-                    AspectValue::String(InternedString::Raw(value)) => Some(value.as_str()),
-                    AspectValue::String(InternedString::Symbol(_)) => None,
-                    _ => None,
-                })
+                .and_then(|fact| fact.native_value().scalar()?.raw_text())
                 .expect("display title should be present")
                 .to_string(),
             other => panic!("expected admitted published fact consumption, got {other:?}"),

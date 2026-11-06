@@ -90,6 +90,10 @@ fn assert_canonical_scalar_allocation(artifact: &ContractValidatedAspectArtifact
     };
     // Inspect actual canonical buffers independently of admission's accounting.
     let actual = match value {
+        AspectValue::String(InternedString::Stored(value)) => {
+            let value = value.as_string();
+            value.capacity()
+        }
         AspectValue::String(InternedString::Raw(value)) => value.capacity(),
         AspectValue::Decimal(value) => value.0.capacity(),
         AspectValue::BigInt(value) => value.0.capacity(),

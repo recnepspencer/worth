@@ -110,9 +110,7 @@ pub fn observe<Schema>(
             &layout.instance.definition_content_identity,
         )
         .map_err(Denial::Relational)?;
-        let Some(AspectValue::String(worth_foundational::facade::InternedString::Raw(content))) =
-            content
-        else {
+        let Some(content) = (content).as_ref().and_then(|value| value.raw_text()) else {
             return Err(Denial::Corrupt);
         };
         let content = worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionContentIdentity::from_recorded(&content).ok_or(Denial::Corrupt)?;

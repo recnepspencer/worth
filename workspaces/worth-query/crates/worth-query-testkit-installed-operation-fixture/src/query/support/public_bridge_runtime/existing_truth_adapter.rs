@@ -101,6 +101,12 @@ pub fn terminal_digest_from_aspect_value(value: &AspectValue) -> String {
         AspectValue::Float32(value) => format!("f32-bits:{}", value.bits()),
         AspectValue::Float64(value) => format!("f64-bits:{}", value.bits()),
         AspectValue::String(value) => match value {
+            worth_foundational::facade::InternedString::Stored(value) => {
+                let value = value.as_string();
+                {
+                    format!("string:{}:{value}", value.len())
+                }
+            }
             worth_foundational::facade::InternedString::Raw(value) => {
                 format!("string:{}:{value}", value.len())
             }
