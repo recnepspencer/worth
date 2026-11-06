@@ -8,6 +8,7 @@ use worth_query_testkit_decl::fragment_auth_fixture::*;
 use worth_query_testkit_decl::fragment_fixture::*;
 mod authentication;
 mod candidate;
+mod contract_revisions;
 mod inspection;
 mod read;
 mod resources;
