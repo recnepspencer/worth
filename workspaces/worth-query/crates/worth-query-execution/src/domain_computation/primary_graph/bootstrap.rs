@@ -256,3 +256,8 @@ pub(super) fn request_denial(
 pub(super) mod request_read_denial;
 
 mod court_doors_for_test;
+
+mod publication_storage;
+pub(in crate::domain_computation::primary_graph) use publication_storage::{
+    BootstrapPublicationReservation, BootstrapPublicationStorage,
+};

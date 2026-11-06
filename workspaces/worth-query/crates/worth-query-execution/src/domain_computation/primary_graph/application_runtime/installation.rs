@@ -24,6 +24,9 @@ use worth_query_installation::facade::{
     WorthQueryInstalledGraphParticipationAuthority,
 };
 
+mod clock_publication;
+mod conditional_publication;
+mod publication_preparation;
 pub(super) fn publish_application_runtime_with_clock<Schema>(
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     input: ApplicationRuntimePublication<Schema>,
@@ -34,50 +37,9 @@ pub(super) fn publish_application_runtime_with_clock<Schema>(
 where
     Schema: ApplicationSchema,
 {
-    let ApplicationRuntimePublication {
-        mut bootstrap,
-        runtime,
-        authority,
-        installed_schema,
-        authorization_clock,
-        fault_port,
-        conditional_evaluation_budget,
-    } = input;
-    validate_application_schema(&runtime, &installed_schema)?;
-    let mutation_handlers = owned_contributions::preflight(&bootstrap, &installed_schema)?;
-    let managed_indexes = bootstrap.managed_indexes.take_complete(&installed_schema)?;
-    let resources = std::mem::take(&mut bootstrap.resources);
-    let mutation_projection = bootstrap.retain_invariant_projection_authority();
-    let authorization = compile_authorization(&bootstrap, &installed_schema)?;
-    let mut graph = publish_application_graph(
-        phase,
-        bootstrap,
-        runtime,
-        authority,
-        &installed_schema,
-        fault_port,
-        conditional_evaluation_budget,
-    )?;
-    let resources = resources.install(
-        &phase.execution_request(),
-        Some(graph.bridge.conditional_builder()),
-        graph.primary_provider.application_resource_support_ref(),
-    )?;
-    let graph = seal_application_graph(graph)?;
-    let mut application = assemble_application_runtime(
-        phase,
-        graph,
-        installed_schema,
-        authorization,
-        authorization_clock,
-        Default::default(),
-        mutation_handlers,
-        mutation_projection,
-        Default::default(),
-        Default::default(),
-    )?;
-    owned_contributions::transfer(&mut application, resources, managed_indexes);
-    Ok(application)
+    let prepared = publication_preparation::prepare_clock(phase, input)?;
+    let authorized = publication_preparation::authorize(phase, prepared)?;
+    clock_publication::publish(phase, authorized)
 }
 pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_conditionals<
     Schema,
@@ -99,112 +61,16 @@ pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_
 where
     Schema: ApplicationSchema + 'static,
 {
-    let ApplicationRuntimePublication {
-        mut bootstrap,
-        runtime,
-        authority,
-        installed_schema,
-        authorization_clock,
-        fault_port,
-        conditional_evaluation_budget,
-    } = input;
-    validate_application_schema(&runtime, &installed_schema)
-        .map_err(super::super::conditional_operation::publication_denial)?;
-    let mutation_handlers = owned_contributions::preflight(&bootstrap, &installed_schema)
-        .map_err(super::super::conditional_operation::publication_denial)?;
-    let managed_indexes = bootstrap
-        .managed_indexes
-        .take_complete(&installed_schema)
-        .map_err(super::super::conditional_operation::publication_denial)?;
-    let resources = std::mem::take(&mut bootstrap.resources);
-    let mutation_projection = bootstrap.retain_invariant_projection_authority();
-    super::super::conditional_operation::require_complete_binding_inventory(
+    let prepared = publication_preparation::prepare_conditional(
+        phase,
+        input,
         expected_conditional_bindings,
         &bindings,
         output_readiness.len(),
     )?;
-    let authorization = compile_authorization(&bootstrap, &installed_schema)
+    let authorized = publication_preparation::authorize(phase, prepared)
         .map_err(super::super::conditional_operation::publication_denial)?;
-    let mut graph = publish_application_graph(
-        phase,
-        bootstrap,
-        runtime,
-        authority,
-        &installed_schema,
-        fault_port,
-        conditional_evaluation_budget,
-    )
-    .map_err(super::super::conditional_operation::publication_denial)?;
-    let authoritative_commit_cursor = graph
-        .primary_provider
-        .graph
-        .source_owner
-        .invalidation_owner
-        .latest_position();
-    let mut conditional_operations = super::super::conditional_operation::install_pending_bindings(
-        bindings,
-        graph.bridge.conditional_builder(),
-        &graph.primary_graph_authority,
-        authoritative_commit_cursor,
-        graph.runtime.authority_identity().as_u64(),
-        graph.runtime.installed_packages().runtime_ordinal(),
-        graph.runtime.installed_packages().generation().ordinal(),
-        graph.primary_graph_authority.provider_identity(),
-        super::super::application_branch::PRIMARY_APPLICATION_BRANCH,
-    )?;
-    let output_producer_routes = producers
-        .install_signal_routes(graph.bridge.conditional_builder())
-        .map_err(super::super::conditional_operation::publication_denial)?;
-    let output_readiness_routes =
-        super::super::application_contribution::install_output_readiness_routes(
-            output_readiness,
-            graph.bridge.conditional_builder(),
-            &graph.primary_graph_authority,
-        )?;
-    producers
-        .validate_readiness_routes(&output_readiness_routes)
-        .map_err(super::super::conditional_operation::publication_denial)?;
-    {
-        let mut lineage = graph
-            .primary_provider
-            .graph
-            .output_lineage
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        lineage.install_output_families(producers.output_family_bindings());
-    }
-    let resources = resources
-        .install(
-            &phase.execution_request(),
-            Some(graph.bridge.conditional_builder()),
-            graph.primary_provider.application_resource_support_ref(),
-        )
-        .map_err(super::super::conditional_operation::publication_denial)?;
-    let graph = seal_application_graph(graph)
-        .map_err(super::super::conditional_operation::publication_denial)?;
-    let mut application = assemble_application_runtime(
-        phase,
-        graph,
-        installed_schema,
-        authorization,
-        authorization_clock,
-        Default::default(),
-        mutation_handlers,
-        mutation_projection,
-        output_producer_routes,
-        output_readiness_routes,
-    )
-    .map_err(super::super::conditional_operation::publication_denial)?;
-    owned_contributions::transfer(&mut application, resources, managed_indexes);
-    conditional_operations.reconstruct_all(&application)?;
-    conditional_operations
-        .reconcile_all(&mut application.runtime.bridge.conditional_lifecycle())?;
-    *application
-        .conditional_cleanup
-        .operations
-        .get_mut()
-        .unwrap_or_else(std::sync::PoisonError::into_inner) = conditional_operations;
-    Ok(application)
+    conditional_publication::publish(phase, authorized, bindings, output_readiness, producers)
 }
 pub(super) struct PublishedApplicationGraph<Bridge> {
     runtime: WorthQueryExecutionRuntime,
