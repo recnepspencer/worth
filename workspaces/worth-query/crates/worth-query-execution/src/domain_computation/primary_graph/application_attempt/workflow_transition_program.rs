@@ -49,6 +49,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use operat
 pub(in crate::domain_computation::primary_graph) use operation::ValidatedWorkflowOperationReceipt;
 pub(super) use operation::{operation_receipt_requires_recovery, receipt_identity_from_outcome};
 mod preparation;
+pub(in crate::domain_computation::primary_graph) use preparation::{complete_local_operation, prepare_local_action};
 mod publication;
 pub(super) use publication::transition_entity_in_receipt;
 mod terminal;

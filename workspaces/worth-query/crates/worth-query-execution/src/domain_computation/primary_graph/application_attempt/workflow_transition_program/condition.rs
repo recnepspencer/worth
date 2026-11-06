@@ -19,7 +19,7 @@ where
     Schema: ApplicationSchema,
     Operation: 'static,
 {
-    pub(super) fn settle(
+    pub(in crate::domain_computation::primary_graph) fn settle(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,

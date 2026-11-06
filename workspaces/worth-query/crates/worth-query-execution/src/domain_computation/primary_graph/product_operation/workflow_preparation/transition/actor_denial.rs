@@ -15,7 +15,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: &PublishedWorkflowInstanceRef,
         denial: &WorthQueryOperationAuthorizationDenial,
-    ) -> Option<super::super::RequiredWorkflowActor>
+    ) -> Option<crate::domain_computation::primary_graph::application_attempt::RequiredWorkflowActor>
     where
         Capability: worth_query_declaration::facade::application_capability::ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
         Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema> + 'static,
@@ -27,7 +27,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         {
             return None;
         }
-        Some(super::super::RequiredWorkflowActor::new(
+        Some(crate::domain_computation::primary_graph::application_attempt::RequiredWorkflowActor::new(
             instance.entity_id(),
             denial.clone(),
         ))

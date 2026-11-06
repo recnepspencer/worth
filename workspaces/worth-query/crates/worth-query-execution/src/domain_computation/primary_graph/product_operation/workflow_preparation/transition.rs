@@ -20,5 +20,13 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
 };
 
+mod actor_denial;
+mod adapter_body;
+mod adapter_commit;
+mod adapter_owner;
+mod adapter_preparation;
+mod adapter_replay;
+mod local_operation;
+
 #[doc(hidden)]
 pub struct WorthQueryWorkflowAdvanceAdapter;

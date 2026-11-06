@@ -3,7 +3,7 @@ use crate::domain_computation::primary_graph::application_attempt::ApplicationAt
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_transition_program_publication::RequiredWorkflowCondition;
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn resolve_condition_replay(
+    pub(in crate::domain_computation::primary_graph) fn resolve_condition_replay(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,

@@ -6,7 +6,7 @@ where
     Schema: ApplicationSchema,
     Operation: 'static,
 {
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn settle<
+    pub(in crate::domain_computation::primary_graph) fn settle<
         Binding,
     >(
         self,
@@ -30,7 +30,7 @@ where
         self.settle_validated(performed)
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn settle_recovered<
+    pub(in crate::domain_computation::primary_graph) fn settle_recovered<
         Binding,
     >(
         self,

@@ -26,7 +26,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         };
         let execution = &phase_request;
 
-        selected.prepare_workflow_advance::<Capability, Operation, Input, Scope, Spec>(
+        selected.workflow_selection_basis().prepare_workflow_advance::<Capability, Operation, Input, Scope, Spec>(
             execution, installed, instance, admission,
         )
     }
@@ -53,7 +53,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         };
         let execution = &phase_request;
 
-        selected.prepare_workflow_navigate_back::<Capability, Operation, Input, Scope, Spec>(
+        selected.workflow_selection_basis().prepare_workflow_navigate_back::<Capability, Operation, Input, Scope, Spec>(
             execution, installed, instance, admission,
         )
     }
@@ -81,7 +81,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         };
         let execution = &phase_request;
 
-        selected.prepare_workflow_collect_assessment::<Capability, Operation, Input, Scope, Spec>(
+        selected.workflow_selection_basis().prepare_workflow_collect_assessment::<Capability, Operation, Input, Scope, Spec>(
             execution, installed, instance, node_path, admission,
         )
     }
@@ -112,8 +112,15 @@ impl WorthQueryWorkflowAdvanceAdapter {
         };
         let execution = &phase_request;
 
-        selected.prepare_workflow_approval::<Capability, Operation, Input, Scope, Spec>(
-            execution, workflow, instance, required, proposal, decision, admission,
+        selected.workflow_selection_basis().prepare_workflow_approval::<Capability, Operation, Input, Scope, Spec>(
+            execution,
+            workflow,
+            workflow.workflow_spec_for(selected),
+            instance,
+            required,
+            proposal,
+            decision,
+            admission,
         )
     }
 }

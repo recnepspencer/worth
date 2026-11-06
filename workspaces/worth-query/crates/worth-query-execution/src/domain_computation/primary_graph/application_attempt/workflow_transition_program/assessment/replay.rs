@@ -20,7 +20,7 @@ where
     Schema: ApplicationSchema,
     Operation: 'static,
 {
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn requested_instance(
+    pub(in crate::domain_computation::primary_graph) fn requested_instance(
         &self,
     ) -> worth_relational::facade::identity::EntityId {
         match self {
@@ -35,7 +35,7 @@ where
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn resolve_assessment_replay<
+    pub(in crate::domain_computation::primary_graph) fn resolve_assessment_replay<
         Query,
     >(
         &self,
