@@ -274,3 +274,28 @@ def against_stack(edges, kinds, order):
             entry['refs'] += 1
             entry['from'][low] += 1
     return result
+
+
+def stray_inherent_impls(model, parent):
+    """Inherent impls of a crate type that sit in another top-level child of `parent` than the
+    type itself: [(impl module, type key, header)]. A crate split refuses them, so each belongs
+    with its type, or becomes an extension trait owned where it sits, or a free function."""
+    found = []
+    for names in sorted(model.views):
+        impl_node = node_of(names, parent)
+        if impl_node is None:
+            continue
+        text = model.index[names].text
+        for attributes, _visibility, keyword, _name, start, end in scope_items(text):
+            if keyword != 'impl' or test_gated(attributes):
+                continue
+            generics, trait_path, self_path, header = header_parts(text[start:end])
+            if trait_path or not self_path or (self_path[0] in generics and len(self_path) == 1):
+                continue
+            target = lookup(model, names, self_path)
+            if target is None or target[0] != 'item':
+                continue
+            type_node = node_of(target[1][0], parent)
+            if type_node is not None and type_node != impl_node:
+                found.append((names, target[1], ' '.join(header.split())[:120]))
+    return found

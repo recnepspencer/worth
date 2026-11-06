@@ -117,8 +117,9 @@ class VocabularyWorld(World):
         return name
 
     def movable_kind(self, key):
-        if split(key)[1] in self.excluded:
-            return False
+        module, name = split(key)
+        if name in self.excluded and 'vocabulary' not in module:
+            return False       # a designed item stays for its packet until it has landed below
         kind = self.kind(key)
         if not (kind in MOVABLE_TYPES or kind in HELPER_KINDS or (kind is None and split(key)[1].isupper())):
             return False
@@ -126,8 +127,12 @@ class VocabularyWorld(World):
         if unit is not None:
             # Behaviour, not vocabulary: a hub whose impls spread over several families, or a
             # type whose impls are larger than a vocabulary file could hold.
-            families = {node_of(impl.module, self.parent) for impl in unit.impls} - {None}
-            if len(families) > 1 or sum(impl.lines for impl in unit.impls) > self.impl_limit:
+            # An impl of one of this crate's traits stays with the trait (legal after a crate
+            # split, as ownership_units and unit_move.py treat it), so only inherent impls and
+            # impls of outside traits travel with the type.
+            travelling = [impl for impl in unit.impls if impl.trait is None or impl.trait[0] == 'external']
+            families = {node_of(impl.module, self.parent) for impl in travelling} - {None}
+            if len(families) > 1 or sum(impl.lines for impl in travelling) > self.impl_limit:
                 return False
         return True
 

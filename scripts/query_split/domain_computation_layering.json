@@ -1,0 +1,114 @@
+{
+ "order": [
+  "execution_resource_attempt",
+  "primary_graph",
+  "application_aftermath",
+  "authorization",
+  "managed_run",
+  "provider_session",
+  "convergence_epoch",
+  "operation_binding",
+  "product_publication",
+  "invalidation_equivalence_control",
+  "execution_runtime",
+  "artifact_owner",
+  "domain_evidence_binding",
+  "request_execution",
+  "vocabulary",
+  "runtime_time",
+  "execution_observation",
+  "evidence_material",
+  "evidence_identity",
+  "artifact_identity",
+  "application_outcome_identity",
+  "application_contract_admission"
+ ],
+ "parent": "domain_computation",
+ "stray_impls": [
+  "domain_computation::application_aftermath::external_effect::outbox::court_doors_for_test -> domain_computation::vocabulary::application_aftermath::outbox::WorthQueryPendingDispatchOutbox",
+  "domain_computation::convergence_epoch::admission -> domain_computation::execution_runtime::runtime_root::WorthQueryExecutionRuntime",
+  "domain_computation::execution_resource_attempt -> domain_computation::execution_runtime::runtime_root::WorthQueryExecutionRuntime",
+  "domain_computation::managed_run::admission -> domain_computation::execution_runtime::runtime_root::WorthQueryExecutionRuntime",
+  "domain_computation::managed_run::admission::court_doors_for_test -> domain_computation::execution_runtime::runtime_root::WorthQueryExecutionRuntime",
+  "domain_computation::managed_run::direct_admission -> domain_computation::execution_runtime::runtime_root::WorthQueryExecutionRuntime",
+  "domain_computation::operation_binding::authority::runtime_binding -> domain_computation::execution_runtime::runtime_root::WorthQueryExecutionRuntime",
+  "domain_computation::operation_binding::authority::runtime_binding::court_doors_for_test -> domain_computation::execution_runtime::runtime_root::WorthQueryExecutionRuntime",
+  "domain_computation::primary_graph::application_attempt::commit_authority_binding::court_doors_for_test -> domain_computation::vocabulary::primary_graph::commit_authority_binding::WorthQueryRetainedGovernedInput",
+  "domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::advancement -> domain_computation::request_execution::advancement::WorthQueryAdvancementDenial",
+  "domain_computation::primary_graph::application_invariant::refusal -> domain_computation::provider_session::provisional_attempt::invariant_execution::denial::WorthQueryCustomInvariantDenial",
+  "domain_computation::primary_graph::application_invariant_preparation -> domain_computation::execution_runtime::installation_authority::WorthQueryExecutionInstallationAuthority",
+  "domain_computation::primary_graph::bootstrap::checkpoint -> domain_computation::execution_runtime::installation_authority::WorthQueryExecutionInstallationAuthority",
+  "domain_computation::primary_graph::bootstrap::preparation -> domain_computation::execution_runtime::installation_authority::WorthQueryExecutionInstallationAuthority",
+  "domain_computation::primary_graph::bootstrap::preparation::court_doors_for_test -> domain_computation::execution_runtime::installation_authority::WorthQueryExecutionInstallationAuthority",
+  "domain_computation::primary_graph::product_operation::program_adoption::custody::recovery::readmission -> domain_computation::execution_observation::WorthQueryExecutionObservation",
+  "domain_computation::primary_graph::provider::session_commit::outbox_commit::court_doors_for_test -> domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding",
+  "domain_computation::primary_graph::schema_layout::principal_binding::court_doors_for_test -> domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout",
+  "domain_computation::primary_graph::source_disclosure::inspection::court_doors_for_test -> domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure",
+  "domain_computation::primary_graph::vocabulary::application_attempt::decision_reuse -> domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext",
+  "domain_computation::primary_graph::vocabulary::application_attempt::handler_fact_boundary -> domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary",
+  "domain_computation::primary_graph::vocabulary::application_query::control -> domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl",
+  "domain_computation::primary_graph::vocabulary::schema_layout::principal_binding -> domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout",
+  "domain_computation::provider_session::protocol::declared_closure::court_doors_for_test -> domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations",
+  "domain_computation::provider_session::protocol::declared_closure::court_doors_for_test -> domain_computation::vocabulary::provider_session::declared_role_closure::WorthQueryProviderPlanDeclaredClosure",
+  "domain_computation::request_execution::advancement::observation -> domain_computation::execution_observation::WorthQueryExecutionObservation"
+ ],
+ "upward": [
+  [
+   "application_aftermath",
+   "primary_graph"
+  ],
+  [
+   "artifact_owner",
+   "operation_binding"
+  ],
+  [
+   "authorization",
+   "primary_graph"
+  ],
+  [
+   "convergence_epoch",
+   "managed_run"
+  ],
+  [
+   "convergence_epoch",
+   "provider_session"
+  ],
+  [
+   "domain_evidence_binding",
+   "provider_session"
+  ],
+  [
+   "execution_runtime",
+   "invalidation_equivalence_control"
+  ],
+  [
+   "execution_runtime",
+   "managed_run"
+  ],
+  [
+   "execution_runtime",
+   "primary_graph"
+  ],
+  [
+   "execution_runtime",
+   "product_publication"
+  ],
+  [
+   "operation_binding",
+   "provider_session"
+  ],
+  [
+   "product_publication",
+   "primary_graph"
+  ],
+  [
+   "provider_session",
+   "managed_run"
+  ],
+  [
+   "provider_session",
+   "primary_graph"
+  ]
+ ],
+ "version": 1
+}

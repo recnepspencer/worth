@@ -10,7 +10,7 @@ import contextlib
 import io
 import json
 
-from module_coupling import check_all, coupling, freeze, ratchet, report
+from module_coupling import check_all, coupling, freeze, ratchet, report, strays
 from split_candidates import balanced
 from module_graph import LibraryModel
 from ownership_units import Classifier, header_parts, units
@@ -85,6 +85,24 @@ class CouplingTests(unittest.TestCase):
         self.assertIn(f'new upward edge {low} -> {high}', refusals[0])
         edges.pop((low, high))
         self.assertEqual(ratchet(strict, children, edges), [])
+
+    def test_ratchet_refuses_an_inherent_impl_outside_its_types_module(self):
+        layering_file = freeze(report(self.lib, PARENT, self.root))
+        self.assertEqual(layering_file['stray_impls'], [])
+        gamma = self.root / 'fixture/src/graph/gamma.rs'
+        gamma.write_text(gamma.read_text() + '\nimpl super::alpha::Alpha {\n'
+                         '    pub(crate) fn stray(&self) {}\n}\n')
+        model = LibraryModel(self.lib, self.root)
+        children, edges, _kinds = coupling(self.lib, PARENT, self.root, model)
+        found = strays(model, PARENT)
+        self.assertEqual(found, ['graph::gamma -> graph::alpha::Alpha'])
+        stray = [r for r in ratchet(layering_file, children, edges, found) if 'inherent impl' in r]
+        self.assertEqual(len(stray), 1)
+        self.assertIn('inherent impl outside its type\'s module: graph::gamma -> graph::alpha::Alpha', stray[0])
+        frozen = dict(layering_file, stray_impls=found)
+        self.assertFalse([r for r in ratchet(frozen, children, edges, found) if 'stray' in r or 'inherent' in r])
+        self.assertIn('baseline stray impl graph::gamma -> graph::alpha::Alpha no longer exists; remove it '
+                      'from "stray_impls"', ratchet(frozen, children, edges, []))
 
     def write_layering(self, name, layering_file):
         path = self.root / name
@@ -195,3 +213,31 @@ class OwnershipTests(unittest.TestCase):
         verdict, detail = classifier.judge((('graph', 'high'), 'Thing'), 'low')
         self.assertEqual(verdict, 'behaviour-coupled')
         self.assertIn('graph::high::measure', {item for _label, _node, item, _kind in detail})
+
+
+class VocabularyKindTests(unittest.TestCase):
+    """The simulation's movable test agrees with ownership_units: an impl of a crate trait stays
+    with the trait, and a designed item stays only until it has landed in a vocabulary module."""
+
+    def world(self, impls, excluded=frozenset()):
+        from ownership_units import Impl, Unit
+        from vocabulary_simulation import VocabularyWorld
+        world = VocabularyWorld.__new__(VocabularyWorld)
+        world.parent, world.excluded, world.impl_limit = ('pg',), excluded, 600
+        world.kind = lambda key: 'struct'
+        key = ('pg', 'attempt', 'Fact')
+        world.units = {(key[:-1], key[-1]): Unit(key, 'struct', None, [Impl(*i) for i in impls])}
+        return world
+
+    def test_a_local_trait_impl_elsewhere_does_not_make_the_type_a_hub(self):
+        inherent = (('pg', 'attempt'), 'impl Fact', None, False, None)
+        local = (('pg', 'provider'), 'impl Store for Fact', None, False, ('item', 'pg::provider::Store'))
+        external = (('pg', 'provider'), 'impl Debug for Fact', None, False, ('external', 'Debug'))
+        self.assertTrue(self.world([inherent, local]).movable_kind('pg::attempt::Fact'))
+        self.assertFalse(self.world([inherent, external]).movable_kind('pg::attempt::Fact'))
+
+    def test_a_designed_item_is_excluded_until_it_lands_in_a_vocabulary_module(self):
+        world = self.world([], excluded=frozenset({'Fact'}))
+        self.assertFalse(world.movable_kind('pg::attempt::Fact'))
+        world.units = {}
+        self.assertTrue(world.movable_kind('pg::vocabulary::attempt::Fact'))

@@ -6,7 +6,8 @@ Usage:
     python scripts/query_split/module_coupling.py baseline <lib.rs> <module::path> --out <layering.json>
     python scripts/query_split/module_coupling.py check <lib.rs> <layering.json> [<layering.json> ...]
 
-`baseline` freezes the current layering and its upward edges. `check` is the ratchet:
+`baseline` freezes the current layering, its upward edges and the inherent impls that sit outside
+their type's top-level child (a crate split refuses those). `check` is the ratchet:
 it refuses a new upward edge, an unplaced new module, or a baseline edge that no longer
 exists (shrink the baseline in the same change), so the cycle can only get smaller.
 Each layering file names its own `parent`, so one run checks several modules (for example
@@ -27,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from coupling_graph import components, layering, upward_edges  # noqa: E402
 from module_graph import LibraryModel, node_graph  # noqa: E402
+from ownership_units import stray_inherent_impls  # noqa: E402
 
 TYPE_KINDS = ('struct', 'enum', 'trait', 'type', 'union')
 
@@ -44,8 +46,15 @@ def coupling(lib_source, parent, repository, model=None):
     return [c[-1] for c in children], named, kinds
 
 
+def strays(model, parent):
+    """Inherent impls sitting in another top-level child than their type, as sorted labels."""
+    return sorted({f"{'::'.join(module)} -> {'::'.join(key[0])}::{key[1]}"
+                   for module, key, _header in stray_inherent_impls(model, parent)})
+
+
 def report(lib_source, parent, repository):
-    children, edges, kinds = coupling(lib_source, parent, repository)
+    model = LibraryModel(lib_source, repository)
+    children, edges, kinds = coupling(lib_source, parent, repository, model)
     weights = {edge: len(refs) for edge, refs in edges.items()}
     groups = components(children, weights)
     cyclic = [g for g in groups if len(g) > 1]
@@ -75,6 +84,7 @@ def report(lib_source, parent, repository):
             'upward_references': sum(r['references'] for r in upward_rows),
             'upward_references_by_kind': dict(sorted(by_kind.items())),
             'layering_top_to_bottom': order, 'upward': upward_rows,
+            'stray_impls': strays(model, parent),
             'edges': [{'from': a, 'to': b, 'references': w} for (a, b), w in sorted(weights.items())]}
 
 
@@ -97,11 +107,14 @@ def markdown(result):
 
 def freeze(result):
     return {'version': 1, 'parent': result['parent'], 'order': result['layering_top_to_bottom'],
-            'upward': sorted([r['from'], r['to']] for r in result['upward'])}
+            'upward': sorted([r['from'], r['to']] for r in result['upward']),
+            'stray_impls': result['stray_impls']}
 
 
-def ratchet(layering, children, edges):
-    """Refusals for one tree against a frozen layering; empty means the rule passes."""
+def ratchet(layering, children, edges, stray=()):
+    """Refusals for one tree against a frozen layering; empty means the rule passes. `stray`
+    lists inherent impls outside their type's top-level child (a crate split refuses them);
+    only those frozen in "stray_impls" pass, and a frozen one that is gone must be removed."""
     position = {name: i for i, name in enumerate(layering['order'])}
     allowed = {tuple(edge) for edge in layering['upward']}
     refusals = [f'module {name} is not placed in the layering; add it to "order"'
@@ -116,6 +129,12 @@ def ratchet(layering, children, edges):
                                 f'first: {example[1]} in {example[0]})')
     refusals += [f'baseline edge {a} -> {b} no longer exists; remove it from "upward"'
                  for a, b in sorted(allowed - present)]
+    frozen = set(layering.get('stray_impls', []))
+    refusals += [f'inherent impl outside its type\'s module: {label}; move it home, or make it an '
+                 f'extension trait owned where it sits, or a free function'
+                 for label in sorted(set(stray) - frozen)]
+    refusals += [f'baseline stray impl {label} no longer exists; remove it from "stray_impls"'
+                 for label in sorted(frozen - set(stray))]
     return refusals
 
 
@@ -132,7 +151,7 @@ def check_all(lib, layering_files, root):
     for path, layering in layerings:
         parent = tuple(layering['parent'].split('::'))
         children, edges, _kinds = coupling(lib, parent, root, model)
-        refusals = ratchet(layering, children, edges)
+        refusals = ratchet(layering, children, edges, strays(model, parent))
         for refusal in refusals:
             print(f"[{layering['parent']}] {refusal}" if many else refusal, file=sys.stderr)
         summary = {'refusals': len(refusals), 'upward_edges': len(layering['upward'])}
