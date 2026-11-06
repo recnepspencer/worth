@@ -1,0 +1,19 @@
+[package]
+name = "worth-query-court-execution"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+serde_json = "1"
+worth-query-testkit-instantiation = { path = "../worth-query-testkit-instantiation" }
+
+[[test]]
+name = "worth_query_court_execution"
+path = "tests/worth_query_court_execution.rs"
+
+[lints]
+workspace = true

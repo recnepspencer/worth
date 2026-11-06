@@ -13,13 +13,13 @@ mod read;
 mod resources;
 mod world;
 mod write;
-use world::{Mode, World};
+pub(crate) use world::{Mode, World};
 
 fn work<Output>(run: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> Output) -> Output {
     let mut admit = |_, _| Ok(());
     run(&mut admit)
 }
-fn measured() -> Measurements {
+pub(crate) fn measured() -> Measurements {
     Measurements {
         components: [17, 23, 31],
         interval: Interval::checked(41, 53).unwrap(),

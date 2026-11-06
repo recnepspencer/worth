@@ -47,6 +47,10 @@ pub struct RequiredWitness;
 pub struct OptionalWitness;
 
 #[doc(hidden)]
+#[diagnostic::on_unimplemented(
+    message = "member `{Self}` cannot be declared in schema `{Schema}`",
+    note = "implement the member's schema requirements (including its schema binding trait) for `{Schema}`"
+)]
 pub trait FragmentMember<Schema, Set, Witness> {
     fn lower(
         builder: Builder<Schema>,
@@ -185,6 +189,10 @@ where
 }
 
 #[doc(hidden)]
+#[diagnostic::on_unimplemented(
+    message = "members `{Self}` cannot be declared in schema `{Schema}`",
+    note = "each member's schema requirements must be implemented by `{Schema}`"
+)]
 pub trait FragmentMembers<Schema, Set, Witness> {
     fn lower(
         builder: Builder<Schema>,

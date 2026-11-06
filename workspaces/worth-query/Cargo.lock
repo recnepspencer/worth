@@ -830,6 +830,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-court-execution"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "worth-query-testkit-instantiation",
+]
+
+[[package]]
 name = "worth-query-court-host-replay"
 version = "0.1.0"
 dependencies = [
@@ -1192,6 +1200,14 @@ dependencies = [
  "worth-relational",
  "worth-runtime-bridge",
  "worth-signal",
+]
+
+[[package]]
+name = "worth-query-testkit-instantiation"
+version = "0.1.0"
+dependencies = [
+ "worth-query-declaration",
+ "worth-query-execution",
 ]
 
 [[package]]

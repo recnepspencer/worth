@@ -86,6 +86,11 @@ field handles without a second declaration or a declaration macro.
 `DecisionReader::fragment(Fixture)` and `CandidateWriter::fragment(Fixture)` lend
 `View<F, Reading>` and `View<F, Writing>` respectively. Fragment code names its
 fragment and its real authority phase; it has no installed-schema type parameter.
+Marker calls extract identities and the installed flat column layout, then enter
+one concrete read or effect core. A borrowed stack slot receives the actual
+installed scalar decoder's result; no boxed value round trip is needed per field.
+Generic record resolution still carries the constructor's record requirement,
+so a selected handle can be resolved by generic code without restating that bound.
 The existing projection and candidate owners retain snapshot, operation, attempt
 and installation affinity. Acquisition uses the fragment catalog carried by the
 existing installed value binding catalog. No Store or Relational owner changes.

@@ -1,13 +1,7 @@
-use std::marker::PhantomData;
-use std::sync::Arc;
-
-use worth_query_installation::facade::ApplicationScalarValueBinding;
-use worth_relational::facade::transactions::EntityReference;
-
-use super::{denial, WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder};
+use super::{WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder};
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationEntityIdentity, WorthQueryInvariantMutationTarget,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationEntityIdentity,
+    WorthQueryInvariantMutationTarget,
 };
 
 impl<Schema, Operation, Input, Scope>
@@ -30,55 +24,15 @@ impl<Schema, Operation, Input, Scope>
             Value = Value,
         >,
     {
-        let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
-        let encoded = Field::Binding::encode(&value).map_err(|_| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
-                field.field(),
-            )
-        })?;
-        let expected_kind = self.layout.entity_kind(field.entity()).ok_or_else(|| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                field.entity(),
-            )
-        })?;
-        let matches = self.read_set.facts.iter().filter_map(|fact| match fact {
-            super::super::WorthQueryApplicationObservedFact::Field {
-                entity_id,
-                kind,
-                locator: observed_locator,
-                value: observed_value,
-            } if *kind == expected_kind
-                && *observed_locator == locator
-                && *observed_value == encoded =>
-            {
-                Some(*entity_id)
-            }
-            _ => None,
-        });
-        // A source proof and the decision read may observe the same entity;
-        // only distinct matching entities make this effect target ambiguous.
-        let mut entities = matches.collect::<std::collections::BTreeSet<_>>();
-        let Some(entity_id) = entities.pop_first() else {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                field.entity(),
-            ));
-        };
-        if !entities.is_empty() {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                field.entity(),
-            ));
-        }
-        Ok(WorthQueryApplicationEffectEntity {
-            reference: EntityReference::Existing(entity_id),
-            entity: field.entity().to_owned(),
-            created_effect: None,
-            program: Arc::clone(&self.program),
-            _marker: PhantomData,
-        })
+        Ok(self
+            .native_selection()
+            .resolve_observed_entity(
+                field.identity(),
+                &crate::domain_computation::primary_graph::value_decode::ScalarFieldEncoder::<
+                    Field::Binding,
+                >::new(&value),
+            )?
+            .into_typed())
     }
 
     pub fn projected_entity<Entity>(
@@ -86,40 +40,16 @@ impl<Schema, Operation, Input, Scope>
         target: &WorthQueryInvariantMutationTarget<Schema, Entity>,
     ) -> Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>
     {
-        let observed = self
-            .read_set
-            .effect_routes
-            .walk_touches_entity(&self.read_set.facts, target.entity_id)
-            || self
-                .read_set
-                .facts
-                .iter()
-                .filter(|fact| {
-                    !matches!(
-                        fact,
-                        super::super::WorthQueryApplicationObservedFact::StructuralWalk { .. }
-                            | super::super::WorthQueryApplicationObservedFact::ComponentSelection {..}
-                            | super::super::WorthQueryApplicationObservedFact::Aggregate { .. }
-                    )
-                })
-                .any(|fact| fact.touches_entity(target.entity_id));
-        if target.runtime_authority != self.read_set.admission.runtime_authority()
-            || &target.binding_identity != self.read_set.admission.binding_identity()
-            || target.admission_identity != self.read_set.admission.admission_identity()
-            || !observed
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
+        Ok(self
+            .native_selection()
+            .select(
+                target.entity_id,
                 target.entity.as_ref(),
-            ));
-        }
-        Ok(WorthQueryApplicationEffectEntity {
-            reference: EntityReference::Existing(target.entity_id),
-            entity: target.entity.to_string(),
-            created_effect: None,
-            program: Arc::clone(&self.program),
-            _marker: PhantomData,
-        })
+                target.runtime_authority,
+                &target.binding_identity,
+                Some(&target.admission_identity),
+            )?
+            .into_typed())
     }
 
     pub fn existing_entity<Entity>(
@@ -127,38 +57,15 @@ impl<Schema, Operation, Input, Scope>
         identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
     ) -> Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>
     {
-        let observed = self
-            .read_set
-            .effect_routes
-            .walk_touches_entity(&self.read_set.facts, identity.entity_id())
-            || self
-                .read_set
-                .facts
-                .iter()
-                .filter(|fact| {
-                    !matches!(
-                        fact,
-                        super::super::WorthQueryApplicationObservedFact::StructuralWalk { .. }
-                            | super::super::WorthQueryApplicationObservedFact::ComponentSelection {..}
-                            | super::super::WorthQueryApplicationObservedFact::Aggregate { .. }
-                    )
-                })
-                .any(|fact| fact.touches_entity(identity.entity_id()));
-        if identity.runtime_authority() != self.read_set.admission.runtime_authority()
-            || identity.binding_identity() != self.read_set.admission.binding_identity()
-            || !observed
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
+        Ok(self
+            .native_selection()
+            .select(
+                identity.entity_id(),
                 identity.entity_name(),
-            ));
-        }
-        Ok(WorthQueryApplicationEffectEntity {
-            reference: EntityReference::Existing(identity.entity_id()),
-            entity: identity.entity_name().to_string(),
-            created_effect: None,
-            program: Arc::clone(&self.program),
-            _marker: PhantomData,
-        })
+                identity.runtime_authority(),
+                identity.binding_identity(),
+                None,
+            )?
+            .into_typed())
     }
 }

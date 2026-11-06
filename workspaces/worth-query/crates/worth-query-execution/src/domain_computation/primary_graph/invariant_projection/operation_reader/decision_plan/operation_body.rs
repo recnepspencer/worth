@@ -1,12 +1,12 @@
 //! Installed body reads use the ordinary tracked field-decision boundary.
-use super::{
-    ApplicationOperationDecisionReadTarget, ApplicationSchema,
-    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantDecisionPlanDenial,
-    WorthQueryInvariantDecisionPlanDenialKind, WorthQueryInvariantEntityIdentity,
-};
-use crate::domain_computation::primary_graph::operation_body::{
-    BodyFieldExpectation, PreparedBodySource, WorthQueryCurrentBodyRequirementAssessment,
-};
+use super::ApplicationSchema;
+use super::WorthQueryApplicationOperationInvariantProjectionReader;
+use super::WorthQueryInvariantDecisionPlanDenial;
+use super::WorthQueryInvariantDecisionPlanDenialKind;
+use super::WorthQueryInvariantEntityIdentity;
+use crate::domain_computation::primary_graph::operation_body::BodyFieldExpectation;
+use crate::domain_computation::primary_graph::operation_body::PreparedBodySource;
+use crate::domain_computation::primary_graph::operation_body::WorthQueryCurrentBodyRequirementAssessment;
 use crate::domain_computation::primary_graph::HandlerExecutionDenial;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
@@ -144,29 +144,7 @@ impl<Schema: ApplicationSchema, Operation>
         field: &ApplicationFieldBindingLocus,
     ) -> Result<worth_foundational::facade::AspectFieldLocator, WorthQueryInvariantDecisionPlanDenial>
     {
-        self.admit_decision_target(&ApplicationOperationDecisionReadTarget::Field {
-            entity: field.entity().to_owned(),
-            aspect: field.aspect().to_owned(),
-            field: field.field().to_owned(),
-        })?;
-        if !self.reader.identity_is_local(identity, field.entity()) {
-            return Err(WorthQueryInvariantDecisionPlanDenial::new(
-                WorthQueryInvariantDecisionPlanDenialKind::ForeignIdentity,
-                field.entity(),
-            ));
-        }
-        let locator = self
-            .reader
-            .layout
-            .field_locator(field.entity(), field.aspect(), field.field())
-            .cloned()
-            .ok_or_else(|| {
-                WorthQueryInvariantDecisionPlanDenial::new(
-                    WorthQueryInvariantDecisionPlanDenialKind::FieldNotInstalled,
-                    field.field(),
-                )
-            })?;
-        self.record_field_dependency(identity, field, locator.clone());
-        Ok(locator)
+        self.native_decision()
+            .tracked_field(identity.native_identity(), field)
     }
 }

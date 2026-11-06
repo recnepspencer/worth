@@ -21,6 +21,7 @@ mod body_requirement;
 mod body_retirement;
 mod body_selection;
 mod field_presence;
+pub(super) mod native_decision;
 mod operation_body;
 mod predecode_admission;
 mod signed_evidence;
@@ -73,6 +74,7 @@ where
         Ok(())
     }
 
+    #[inline(always)]
     pub fn decision_field<Entity, Aspect, Field, Value>(
         &mut self,
 
@@ -155,26 +157,20 @@ where
     ) -> Result<Relations, Cause> {
         let before = self.reader.work_budget;
         let relations = read(self.reader);
-        let maximum_work_units = self
-            .reader
-            .work_budget
-            .adjacency_recomparison_limit_since(before);
-        self.decision_facts.record(
-            WorthQueryApplicationFactKey::Adjacency {
-                relation: target_relation_name(target),
-                anchor,
-                direction,
-                maximum_work_units,
-            },
-            if relations.is_ok() {
-                DecisionReadOutcome::Observed
-            } else {
-                DecisionReadOutcome::Failed
-            },
+        record_adjacency(
+            self.decision_facts,
+            target,
+            anchor,
+            direction,
+            self.reader
+                .work_budget
+                .adjacency_recomparison_limit_since(before),
+            relations.is_ok(),
         );
         relations
     }
 
+    #[inline(always)]
     pub fn require_decision_field<Entity, Aspect, Field, Value>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
@@ -188,99 +184,8 @@ where
         >,
         Field::Binding: ApplicationReadableScalarValueBinding,
     {
-        field
-            .installed(self.reader.value_bindings.fragments())
-            .map_err(|_| {
-                WorthQueryInvariantDecisionPlanDenial::new(
-                    WorthQueryInvariantDecisionPlanDenialKind::FieldNotInstalled,
-                    field.field(),
-                )
-            })?;
-        self.require_named_field(identity, field.entity(), field.aspect(), field.field())
-    }
-
-    fn require_named_field<Entity>(
-        &mut self,
-        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        entity: &str,
-        aspect: &str,
-        field: &str,
-    ) -> Result<(), WorthQueryInvariantDecisionPlanDenial> {
-        let target = ApplicationOperationDecisionReadTarget::Field {
-            entity: entity.to_string(),
-            aspect: aspect.to_string(),
-            field: field.to_string(),
-        };
-        self.admit_decision_target(&target)?;
-        if !self.reader.identity_is_local(identity, entity) {
-            return Err(WorthQueryInvariantDecisionPlanDenial::new(
-                WorthQueryInvariantDecisionPlanDenialKind::ForeignIdentity,
-                entity,
-            ));
-        }
-        let locator = self
-            .reader
-            .layout
-            .field_locator(entity, aspect, field)
-            .cloned()
-            .ok_or_else(|| {
-                WorthQueryInvariantDecisionPlanDenial::new(
-                    WorthQueryInvariantDecisionPlanDenialKind::FieldNotInstalled,
-                    field,
-                )
-            })?;
-        self.record_field_dependency(
-            identity,
-            &ApplicationFieldBindingLocus::new(entity, aspect, field),
-            locator,
-        );
-        Ok(())
-    }
-
-    fn record_field_dependency<Entity>(
-        &mut self,
-        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: &ApplicationFieldBindingLocus,
-        locator: worth_foundational::facade::AspectFieldLocator,
-    ) {
-        let entity = field.entity();
-        if let Some(presence) = self.reader.layout.record_presence_locator(field).cloned()
-            && presence != locator
-            && self.admitted_contracts.as_deref().is_some_and(|contract| {
-                field_presence::may_write(contract.touches(), entity, &locator)
-            })
-        {
-            self.decision_facts.record(
-                WorthQueryApplicationFactKey::Field {
-                    entity: entity.to_owned(),
-                    entity_id: identity.entity_id,
-                    locator: presence,
-                },
-                DecisionReadOutcome::Observed,
-            );
-        }
-        if self.reader.layout.field_is_optional(entity, &locator)
-            && self.admitted_contracts.as_deref().is_some_and(|contract| {
-                field_presence::may_write(contract.touches(), entity, &locator)
-            })
-        {
-            self.decision_facts.record(
-                WorthQueryApplicationFactKey::AspectPresence {
-                    entity: entity.to_owned(),
-                    entity_id: identity.entity_id,
-                    locator: locator.clone(),
-                },
-                DecisionReadOutcome::Observed,
-            );
-        }
-        self.decision_facts.record(
-            WorthQueryApplicationFactKey::Field {
-                entity: entity.to_owned(),
-                entity_id: identity.entity_id,
-                locator,
-            },
-            DecisionReadOutcome::Observed,
-        );
+        self.native_decision()
+            .require_field(identity.native_identity(), field.identity())
     }
 
     pub fn require_decision_relation<Relation, From, To>(
@@ -321,23 +226,7 @@ where
         &self,
         target: &ApplicationOperationDecisionReadTarget,
     ) -> Result<(), WorthQueryInvariantDecisionPlanDenial> {
-        if self
-            .admitted_contracts
-            .as_deref()
-            .is_none_or(|contract| match target {
-                ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => {
-                    contract.managed_index_reads().contains(parent)
-                }
-                _ => graph_reads_admit_target(contract.graph_reads(), target),
-            })
-        {
-            Ok(())
-        } else {
-            Err(WorthQueryInvariantDecisionPlanDenial::new(
-                WorthQueryInvariantDecisionPlanDenialKind::UndeclaredDecisionTarget,
-                format!("{target:?}"),
-            ))
-        }
+        native_decision::admit_target(self.admitted_contracts.as_deref(), target)
     }
 }
 
@@ -365,4 +254,27 @@ fn decision_traversal_denial(
         super::super::WorthQueryInvariantProjectionTraversalDenialKind::UndeclaredDecisionTarget,
         denial.subject(),
     )
+}
+
+fn record_adjacency(
+    facts: &mut super::DecisionReads,
+    target: &ApplicationOperationDecisionReadTarget,
+    anchor: EntityId,
+    direction: WorthQueryApplicationAdjacencyDirection,
+    maximum_work_units: usize,
+    observed: bool,
+) {
+    facts.record(
+        WorthQueryApplicationFactKey::Adjacency {
+            relation: target_relation_name(target),
+            anchor,
+            direction,
+            maximum_work_units,
+        },
+        if observed {
+            DecisionReadOutcome::Observed
+        } else {
+            DecisionReadOutcome::Failed
+        },
+    );
 }

@@ -59,6 +59,7 @@ where
         self.reader.resolve_optional_entity(field, value)
     }
 
+    #[inline(always)]
     pub fn field<Entity, Aspect, Field, Value>(
         &mut self,
 
@@ -84,28 +85,17 @@ where
         WorthQueryInvariantMutationTarget<Schema, Entity>,
         WorthQueryInvariantProjectionTraversalDenial,
     > {
-        let admission_identity = self.admission_identity.ok_or_else(|| {
-            WorthQueryInvariantProjectionTraversalDenial::mutation_target_unavailable(
-                identity.entity_name(),
-            )
-        })?;
-        if identity.authority_identity != self.reader.authority_identity {
-            return Err(
-                WorthQueryInvariantProjectionTraversalDenial::foreign_identity(
-                    identity.entity_name(),
-                ),
-            );
-        }
-        Ok(WorthQueryInvariantMutationTarget {
-            entity_id: identity.entity_id,
-            entity: Arc::clone(&identity.entity),
-            runtime_authority: self.runtime_authority,
-            binding_identity: self.binding_identity.clone(),
-            admission_identity,
-            _marker: PhantomData,
-        })
+        Ok(super::mutation_target::target(
+            identity.native_identity(),
+            self.reader.authority_identity,
+            self.runtime_authority,
+            self.binding_identity,
+            self.admission_identity,
+        )?
+        .into_typed())
     }
 
+    #[inline(always)]
     pub fn relations_from<Relation, From, To>(
         &mut self,
 
@@ -122,6 +112,7 @@ where
         self.reader.relations_from(relation, from)
     }
 
+    #[inline(always)]
     pub fn relations_to<Relation, From, To>(
         &mut self,
 

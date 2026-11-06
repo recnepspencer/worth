@@ -2,6 +2,7 @@
 
 mod aspect_selection;
 mod catalog;
+mod column_identity;
 mod declaration;
 mod field_encode_refusal;
 mod field_handle;
@@ -29,6 +30,8 @@ pub use catalog::{
     AspectDefinition, FragmentCatalog, FragmentDefinition, RecordFieldDefinition,
     RelationDefinition,
 };
+#[doc(hidden)]
+pub use column_identity::ColumnIdentity;
 pub use declaration::{
     declaration_builder, declare, relation_integrity, visit_correction, Aspect, Entity, Fragment,
     NoBindings, Registration, Relation,

@@ -69,6 +69,7 @@ mod structural_walk;
 mod unique_write_dependencies;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
+pub(super) use relation_observation::matching_relations;
 pub use relation_observation::WorthQueryObservedApplicationRelation;
 use source_facts::{merge_source_facts, validate_source_facts, SourceFacts};
 

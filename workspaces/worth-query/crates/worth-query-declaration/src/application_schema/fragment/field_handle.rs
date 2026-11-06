@@ -125,22 +125,13 @@ where
             path: cause.path().to_owned(),
         }
     })?;
-    let column = columns
-        .iter()
-        .find(|column| column.path == path)
-        .ok_or_else(
-            || super::super::ApplicationSchemaDeclarationDenial::InvalidRecordField {
-                field: locus.clone(),
-            },
-        )?;
-    let actual = (column.recipe)(locus.clone());
-    let selected = ApplicationFieldBindingRecipe::of::<<Set as Scalar<T>>::Binding>(locus.clone());
-    if actual.value_type() != TypeId::of::<T>() || actual.binding_type() != selected.binding_type()
-    {
-        return Err(
-            super::super::ApplicationSchemaDeclarationDenial::InvalidRecordField { field: locus },
-        );
-    }
+    let (column, actual) = checked_column(
+        &columns,
+        &locus,
+        path,
+        TypeId::of::<T>(),
+        TypeId::of::<<Set as Scalar<T>>::Binding>(),
+    )?;
     Ok(RecordField {
         recipe: actual,
         content: column.content.clone(),
@@ -149,18 +140,8 @@ where
         presence: column.presence,
         locus,
         path: format!("{prefix}.{path}"),
-        encode: |value| {
-            <Set as Scalar<T>>::Binding::validate(value)
-                .map_err(ApplicationValueEncodeDenial::from)?;
-            <Set as Scalar<T>>::Binding::encode(value)
-        },
-        decode: |value, admission| {
-            use super::super::ApplicationReadableScalarValueBinding;
-            let decoded = <Set as Scalar<T>>::Binding::decode_admitted(value, admission)?;
-            <Set as Scalar<T>>::Binding::validate(&decoded)
-                .map_err(super::super::ApplicationValueDecodeDenial::from)?;
-            Ok(decoded)
-        },
+        encode: encode_scalar::<<Set as Scalar<T>>::Binding>,
+        decode: decode_scalar::<<Set as Scalar<T>>::Binding>,
         marker: PhantomData,
     })
 }
@@ -240,4 +221,42 @@ impl<E, A, T: 'static> RecordField<E, A, T> {
             super::RecordRefusal::new(&self.path, super::RecordRefusalKind::Decode(cause))
         })
     }
+}
+
+fn checked_column<'a>(
+    columns: &'a [super::record::Column],
+    locus: &ApplicationFieldBindingLocus,
+    path: &str,
+    value: TypeId,
+    binding: TypeId,
+) -> Result<
+    (&'a super::record::Column, ApplicationFieldBindingRecipe),
+    super::super::ApplicationSchemaDeclarationDenial,
+> {
+    let rejected = || super::super::ApplicationSchemaDeclarationDenial::InvalidRecordField {
+        field: locus.clone(),
+    };
+    let column = columns
+        .iter()
+        .find(|column| column.path == path)
+        .ok_or_else(rejected)?;
+    let actual = (column.recipe)(locus.clone());
+    if actual.value_type() != value || actual.binding_type() != binding {
+        return Err(rejected());
+    }
+    Ok((column, actual))
+}
+fn encode_scalar<B: ApplicationScalarValueBinding>(
+    value: &B::Value,
+) -> Result<ApplicationValue, ApplicationValueEncodeDenial> {
+    B::validate(value).map_err(ApplicationValueEncodeDenial::from)?;
+    B::encode(value)
+}
+fn decode_scalar<B: super::super::ApplicationReadableScalarValueBinding>(
+    value: &ApplicationValue,
+    admission: &mut super::super::ValueDecodeAdmission<'_>,
+) -> Result<B::Value, super::super::ApplicationValueDecodeDenial> {
+    let decoded = B::decode_admitted(value, admission)?;
+    B::validate(&decoded).map_err(super::super::ApplicationValueDecodeDenial::from)?;
+    Ok(decoded)
 }

@@ -11,22 +11,24 @@ use worth_query_declaration::facade::application_schema::fragment::{
 
 type Selected<'a> = Option<(&'a AspectDefinition, BTreeMap<String, AspectValue>)>;
 
-fn observe_group<'a, E: Entity>(
+fn observe_group<'a>(
     access: &mut Reading<'_>,
     fragment: &'a FragmentDefinition,
-    target: &ObservedEntity<E>,
+    target: &super::ErasedObserved,
+    entity: std::any::TypeId,
+    entity_name: &'static str,
     group: &GroupDefinition,
 ) -> Result<Selected<'a>, FragmentDenial> {
     let mut selected = None;
     let mut present = Vec::new();
     for case in group.cases() {
-        let aspect = fragment
-            .case_aspect::<E>(case)
-            .ok_or(FragmentDenial::MemberNotInstalled {
-                entity: E::NAME,
+        let aspect = fragment.case_aspect_by_identity(entity, case).ok_or(
+            FragmentDenial::MemberNotInstalled {
+                entity: entity_name,
                 member: case.name(),
-            })?;
-        if let Some(raw) = access.port.record(&target.erased, aspect)? {
+            },
+        )?;
+        if let Some(raw) = access.port.record(target, aspect)? {
             present.push(aspect.path().to_owned());
             if selected.is_none() {
                 selected = Some((aspect, raw));
@@ -35,7 +37,7 @@ fn observe_group<'a, E: Entity>(
     }
     if present.len() > 1 || (present.is_empty() && !group.optional()) {
         return Err(FragmentDenial::CorruptOneOf {
-            entity: E::NAME,
+            entity: entity_name,
             group: group.name(),
             present,
         });
@@ -61,7 +63,15 @@ where
             entity: E::NAME,
             member: "one-of",
         })?;
-    let Some((aspect, raw)) = observe_group(access, fragment, target, group)? else {
+    let Some((aspect, raw)) = observe_group(
+        access,
+        fragment,
+        &target.erased,
+        crate::equality_type_id::EqualityTypeId::of::<E>().into_external(),
+        E::NAME,
+        group,
+    )?
+    else {
         return Ok(None);
     };
     let mut decoded = None;
@@ -136,7 +146,15 @@ macro_rules! case_read {
                             entity: E::NAME,
                             member: A::NAME,
                         })?;
-                let Some((aspect, raw)) = observe_group(access, fragment, target, group)? else {
+                let Some((aspect, raw)) = observe_group(
+                    access,
+                    fragment,
+                    &target.erased,
+                    crate::equality_type_id::EqualityTypeId::of::<E>().into_external(),
+                    E::NAME,
+                    group,
+                )?
+                else {
                     return Ok(None);
                 };
                 if aspect.meaning() != A::NAME {
