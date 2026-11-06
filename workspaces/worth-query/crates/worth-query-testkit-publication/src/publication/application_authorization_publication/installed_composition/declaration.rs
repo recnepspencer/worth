@@ -13,7 +13,7 @@ pub use worth_query_declaration::{
     worth_query_capability, worth_query_capability_context,
     worth_query_capability_context_entity_slot, worth_query_capability_provenance,
     worth_query_operation, worth_query_operation_reads, worth_query_operation_writes,
-    };
+};
 
 use worth_query_declaration::facade::application_schema::{
     fragment::{self, *},

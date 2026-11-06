@@ -10,7 +10,8 @@ pub use worth_query_host::facade::declaration::application_query::{
 pub use worth_query_host::facade::{declaration, primary_graph};
 pub use worth_query_host::facade::{
     worth_query_application_query, worth_query_operation, worth_query_operation_reads,
-    worth_query_operation_writes, worth_query_portable_type, };
+    worth_query_operation_writes, worth_query_portable_type,
+};
 
 use worth_query_host::facade::declaration::application_schema::{
     fragment::{self, *},

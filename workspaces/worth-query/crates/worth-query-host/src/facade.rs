@@ -324,8 +324,7 @@ pub use worth_query_declaration::facade as declaration;
 pub use worth_query_declaration::{
     worth_query_application_query, worth_query_effect, worth_query_operation,
     worth_query_operation_emits, worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_portable_type, worth_query_structured_value_binding,
-    worth_query_workflow,
+    worth_query_portable_type, worth_query_structured_value_binding, worth_query_workflow,
 };
 pub use worth_query_execution::facade::application_contribution;
 pub use worth_query_execution::facade::application_discovery;
