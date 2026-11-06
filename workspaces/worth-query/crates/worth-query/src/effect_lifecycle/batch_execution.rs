@@ -275,7 +275,7 @@ impl ExecutedEffectBatchPlan {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("aggregate"),
-                    &executed_authority_artifact_identity(&aggregate_artifact),
+                    &executed_authority_artifact_identity(&aggregate_artifact)?,
                 )
                 .field_evidence_identity_sequence(
                     WorthQueryEvidenceTag::new("component"),
@@ -353,8 +353,8 @@ impl ExecutedEffectBatchPlan {
         &self.counters
     }
 
-    pub fn receipt(&self) -> EffectExecutionReceipt {
-        EffectExecutionReceipt::from_batch(self)
+    pub fn receipt(&self) -> Result<EffectExecutionReceipt, IdentityDerivationDenial> {
+        Ok(EffectExecutionReceipt::from_batch(self)?)
     }
 
     pub(crate) fn published_snapshot(

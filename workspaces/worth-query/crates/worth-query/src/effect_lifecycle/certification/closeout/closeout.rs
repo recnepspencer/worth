@@ -2,6 +2,7 @@ use crate::effect_lifecycle::{
     effect_lifecycle_public_surface_inventory, effect_lifecycle_support_matrix,
     EffectLifecycleCounters,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::closeout_artifacts::{
@@ -23,16 +24,16 @@ use super::{
 
 pub fn certify_effect_execution_pipeline(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> EffectExecutionCertificationBundle {
+) -> Result<EffectExecutionCertificationBundle, IdentityDerivationDenial> {
     let seeded = certify_effect_lifecycle_seeded(execution, 17, 12);
     let phase4 = certify_effect_lifecycle_phase4(execution);
-    let mutation = mutation_receipt_surface(execution);
-    let writeback = writeback_receipt_surface(execution);
+    let mutation = mutation_receipt_surface(execution)?;
+    let writeback = writeback_receipt_surface(execution)?;
     let batch = batch_receipt_surface(execution);
-    let support_matrix = effect_lifecycle_support_matrix();
-    let public_surface = effect_lifecycle_public_surface_inventory();
-    let dx = build_closeout_dx(execution, &public_surface);
-    let oracles = build_closeout_oracles(execution);
+    let support_matrix = effect_lifecycle_support_matrix()?;
+    let public_surface = effect_lifecycle_public_surface_inventory()?;
+    let dx = build_closeout_dx(execution, &public_surface)?;
+    let oracles = build_closeout_oracles(execution)?;
     let audits = build_closeout_audits(
         &mutation,
         &writeback,
@@ -207,12 +208,12 @@ pub fn certify_effect_execution_pipeline(
         ),
     ];
 
-    EffectExecutionCertificationBundle::new(
+    Ok(EffectExecutionCertificationBundle::new(
         rows,
         outputs,
         seeded.certification_bundle_digest().to_string(),
         phase4.phase4_bundle_digest().to_string(),
-    )
+    ))
 }
 
 fn compile_fail_row(compile_fail_digest: String) -> EffectExecutionCertificationRow {

@@ -79,7 +79,7 @@ fn common_lower_runtime_explanation_artifact_matches_proof_lane_materialization(
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let envelope = lower_runtime_envelope("boundary-explanation-artifact")?;
-    let (reference_set, inspection_target) = replay_gap_inputs();
+    let (reference_set, inspection_target) = replay_gap_inputs()?;
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
     let target = domain
@@ -137,7 +137,7 @@ fn checked_lower_runtime_review_lane_preserves_denied_metadata(
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let envelope = lower_runtime_envelope("boundary-explanation-denial")?;
-    let (reference_set, inspection_target) = replay_gap_inputs();
+    let (reference_set, inspection_target) = replay_gap_inputs()?;
 
     let checked = install_domain_capability_certification(request_execution)
         .contributions()
@@ -228,7 +228,7 @@ fn lower_runtime_envelope(
             target_digest,
         )
         .seal()?,
-    );
+    )?;
     let detail_identity = crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
         crate::evidence_identity::WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
     )
@@ -240,14 +240,14 @@ fn lower_runtime_envelope(
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request,
         &detail_identity,
-    );
+    )?;
     let route = WorthQueryLowerRuntimeRoutePlan::new(
         eligibility,
         WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
             "domain-capabilities-dx-route",
             &detail_identity,
-        ),
-    );
+        )?,
+    )?;
     let retained_evidence =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "domain-capabilities-dx-test",
@@ -259,16 +259,18 @@ fn lower_runtime_envelope(
                 target_digest,
             )
             .seal()?,
-        );
-    let boundary =
-        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(&route, &retained_evidence);
+        )?;
+    let boundary = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
+        &route,
+        &retained_evidence,
+    )?;
 
     Ok(WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
         &route,
         &boundary,
         &retained_evidence,
-    ))
+    )?)
 }
 
 fn write_authority_boundary_source(
@@ -277,7 +279,7 @@ fn write_authority_boundary_source(
     use worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts;
 
     let command = WorthQueryWriteCommand::Delete {
-        entity_identity: crate::memory_workspace::admit_authored_entity_label(target_digest),
+        entity_identity: crate::memory_workspace::admit_authored_entity_label(target_digest)?,
     };
     let mutation_receipt =
         crate::memory_workspace::WorthQueryMutationReceipt::from_authoritative_parts(
@@ -293,7 +295,7 @@ fn write_authority_boundary_source(
             ),
             Vec::new(),
         );
-    Ok(crate::runtime::WriteAuthorityExecutionReceipt::from_command(&command, mutation_receipt))
+    Ok(crate::runtime::WriteAuthorityExecutionReceipt::from_command(&command, mutation_receipt)?)
 }
 
 fn materialize_invariant_denial_from_source<S>(
@@ -349,24 +351,27 @@ fn materialize_invariant_denial(
     ))
 }
 
-fn replay_gap_inputs() -> (
-    crate::runtime::CausalEvidenceReferenceSet,
-    crate::runtime::CausalInspectionTarget,
-) {
+fn replay_gap_inputs() -> Result<
+    (
+        crate::runtime::CausalEvidenceReferenceSet,
+        crate::runtime::CausalInspectionTarget,
+    ),
+    IdentityDerivationDenial,
+> {
     let read_receipt = WorthQueryReadReceipt::test_only(
         "read-graph:domain-capability",
         "query:domain-capability",
         "basis:domain-capability",
         "result:domain-capability",
         WorthQueryReadExecutionEngine::QueryRuntimeHistorical,
-    );
+    )?;
     let observation = crate::runtime::QueryObservationReceipt::from_read_receipt(
         &read_receipt,
         crate::basis_lifecycle::basis_lifecycle()
             .historical_snapshot("domain-capability-lower-runtime", true)
             .inspect()
             .unwrap(),
-    );
+    )?;
     let anchor = anchor_causal_observation(
         observation.clone(),
         CausalInspectionReason::HistoricalReplayResult,
@@ -383,5 +388,5 @@ fn replay_gap_inputs() -> (
     )
     .expect("observation-derived target should be valid");
 
-    (reference_set, target)
+    Ok((reference_set, target))
 }

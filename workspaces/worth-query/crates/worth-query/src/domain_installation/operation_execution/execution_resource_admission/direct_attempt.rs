@@ -3,6 +3,7 @@ use crate::domain_installation::operation_authority_chain::{
     mint_operation_phase_proof, operation_phase_basis, WorthQueryOperationPhaseProof,
     WorthQueryResourceAdmittedOperationPhase,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 use worth_query_declaration::facade::domain_computation::WorthQueryExecutionResourceRequest;
 
@@ -67,7 +68,8 @@ where
         input: O::Input,
         request: WorthQueryExecutionResourceRequest,
         workspace: &crate::runtime::WorthQueryWorkspace,
-    ) -> WorthQueryDirectResourceAdmissionOutcome<D, O, F, L> {
+    ) -> Result<WorthQueryDirectResourceAdmissionOutcome<D, O, F, L>, IdentityDerivationDenial>
+    {
         let mut counters = WorthQueryExecutionResourceAdmissionCounters {
             runtime_authority_checks: 1,
             ..Default::default()
@@ -75,7 +77,7 @@ where
         let witness =
             crate::domain_installation::WorthQueryInstalledDomainAuthorityWitness::from_authority(
                 std::sync::Arc::clone(self.operation().domain_authority()),
-            );
+            )?;
         if let Err(denial) = workspace.validate_installed_domain_witness::<D>(&witness) {
             let kind = denial.kind();
             let denial = WorthQueryExecutionResourceAdmissionDenial::new(
@@ -83,17 +85,19 @@ where
                 format!("{denial:?}"),
                 counters,
             );
-            return runtime_denial(kind, denial);
+            return Ok(runtime_denial(kind, denial));
         }
         counters.input_contract_checks += 1;
         if !super::super::operation_input::input_satisfies_contract(
             &input,
             &self.definition().semantics().parameters,
         ) {
-            return TransitionOutcome::Denied(WorthQueryExecutionResourceAdmissionDenial::new(
-                Kind::InputContract,
-                "operation input does not satisfy the installed parameter contract",
-                counters,
+            return Ok(TransitionOutcome::Denied(
+                WorthQueryExecutionResourceAdmissionDenial::new(
+                    Kind::InputContract,
+                    "operation input does not satisfy the installed parameter contract",
+                    counters,
+                ),
             ));
         }
         counters.execution_contract_checks += 1;
@@ -108,11 +112,11 @@ where
                 crate::domain_installation::WorthQueryOperationLineageContract::NotRequired
             )
         {
-            return TransitionOutcome::Denied(WorthQueryExecutionResourceAdmissionDenial::new(
+            return Ok(TransitionOutcome::Denied(WorthQueryExecutionResourceAdmissionDenial::new(
                 Kind::DirectExecutionContract,
                 "direct execution lacks an admitted evidence route for the declared effects, invariants, or lineage",
                 counters,
-            ));
+            )));
         }
         let executor = std::sync::Arc::clone(self.direct_executor());
         let support = self
@@ -128,14 +132,14 @@ where
             counters,
         ) {
             Ok(resources) => resources,
-            Err(denial) => return admission_denial_outcome(denial),
+            Err(denial) => return Ok(admission_denial_outcome(denial)),
         };
         let resource_attempt = match workspace
             .query_execution_runtime()
             .start_direct_resource_attempt(self.execution_authority(), resources)
         {
             Ok(attempt) => attempt,
-            Err(denial) => return admission_denial_outcome(denial),
+            Err(denial) => return Ok(admission_denial_outcome(denial)),
         };
         let mut basis = operation_phase_basis(self.authority_proof()).clone();
         basis.resource_admission_identity =
@@ -145,13 +149,15 @@ where
             Some(self.authority_proof().payload().identity()),
             basis,
         );
-        TransitionOutcome::Success(WorthQueryAdmittedDirectOperation {
-            bound: self,
-            input,
-            executor,
-            resource_attempt,
-            phase_proof,
-        })
+        Ok(TransitionOutcome::Success(
+            WorthQueryAdmittedDirectOperation {
+                bound: self,
+                input,
+                executor,
+                resource_attempt,
+                phase_proof,
+            },
+        ))
     }
 }
 

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -101,21 +102,29 @@ impl<D> WorthQueryInstalledDomainHandle<D> {
         )
     }
 
-    pub fn authority_witness(&self) -> WorthQueryInstalledDomainAuthorityWitness {
-        WorthQueryInstalledDomainAuthorityWitness::from_authority(self.authority_arc())
+    pub fn authority_witness(
+        &self,
+    ) -> Result<WorthQueryInstalledDomainAuthorityWitness, IdentityDerivationDenial> {
+        Ok(WorthQueryInstalledDomainAuthorityWitness::from_authority(
+            self.authority_arc(),
+        )?)
     }
     pub fn graph_read_operation(
         &self,
         definition: &WorthQueryDomainGraphReadOperationDefinition,
-    ) -> WorthQueryInstalledGraphReadOperation {
-        let authority = self.authority_witness();
-        WorthQueryInstalledGraphReadOperation::new(
+    ) -> Result<WorthQueryInstalledGraphReadOperation, IdentityDerivationDenial> {
+        let authority = self.authority_witness()?;
+        Ok(WorthQueryInstalledGraphReadOperation::new(
             definition.declare_for_installed_authority(&authority),
             authority,
-        )
+        ))
     }
-    pub fn rebind_request(&self) -> WorthQueryDomainRebindRequest<D> {
-        WorthQueryDomainRebindRequest::new(self.authority_witness())
+    pub fn rebind_request(
+        &self,
+    ) -> Result<WorthQueryDomainRebindRequest<D>, IdentityDerivationDenial> {
+        Ok(WorthQueryDomainRebindRequest::new(
+            self.authority_witness()?,
+        ))
     }
 
     pub fn declarations<C>(

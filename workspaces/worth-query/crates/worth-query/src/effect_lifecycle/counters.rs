@@ -147,10 +147,11 @@ impl EffectLifecycleCounters {
         )
     }
 
-    pub fn counter_for_reporting(&self) -> String {
-        self.evidence_identity()
+    pub fn counter_for_reporting(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(self
+            .evidence_identity()?
             .terminal_projection_for_reporting()
-            .to_string()
+            .to_string())
     }
 
     pub(crate) fn combine(&self, other: &Self) -> Self {

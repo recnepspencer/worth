@@ -360,7 +360,7 @@ impl WorthQueryCollectionConsumerWindow {
             )
             .field_evidence_identity(
                 crate::WorthQueryEvidenceTag::new("source-generation"),
-                &self.source_generation_identity_evidence(),
+                &self.source_generation_identity_evidence()?,
             )
             .field_value(
                 crate::WorthQueryEvidenceTag::new("maintenance"),

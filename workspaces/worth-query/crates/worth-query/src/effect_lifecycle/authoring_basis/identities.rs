@@ -33,7 +33,7 @@ pub(super) fn mutation_preparation_capability_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("capability"),
-                &basis_lifecycle_admitted_capability_label_identity(basis.capability_digest()),
+                &basis_lifecycle_admitted_capability_label_identity(basis.capability_digest())?,
             )
             .seal()?,
     )
@@ -63,7 +63,7 @@ pub(super) fn preview_closeout_capability_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("capability"),
-                &basis_lifecycle_admitted_capability_label_identity(basis.capability_digest()),
+                &basis_lifecycle_admitted_capability_label_identity(basis.capability_digest())?,
             )
             .seal()?,
     )
@@ -71,14 +71,20 @@ pub(super) fn preview_closeout_capability_identity(
 
 pub(super) fn advisory_basis_capability_identity(
     normalized: &NormalizedBasisIntent,
-) -> WorthQueryEvidenceIdentity {
-    capability_identity_for_normalized(normalized, "inspection_advisory")
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(capability_identity_for_normalized(
+        normalized,
+        "inspection_advisory",
+    )?)
 }
 
 pub(super) fn deferred_basis_capability_identity(
     normalized: &NormalizedBasisIntent,
-) -> WorthQueryEvidenceIdentity {
-    capability_identity_for_normalized(normalized, "deferred_future_neighbor")
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(capability_identity_for_normalized(
+        normalized,
+        "deferred_future_neighbor",
+    )?)
 }
 
 fn capability_identity_for_normalized(
@@ -106,7 +112,7 @@ fn capability_identity_for_normalized(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("normalized"),
-                &basis_lifecycle_normalized_label_identity(normalized),
+                &basis_lifecycle_normalized_label_identity(normalized)?,
             )
             .seal()?,
     )
@@ -114,26 +120,26 @@ fn capability_identity_for_normalized(
 
 pub(super) fn mutation_preparation_scoped_basis_identity(
     basis: &ScopedMutationPreparationBasis,
-) -> WorthQueryEvidenceIdentity {
-    scoped_basis_identity_for_admitted(
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(scoped_basis_identity_for_admitted(
         "mutation_preparation",
         basis.family().as_str(),
         basis.authority().as_str(),
         basis.lifecycle().as_str(),
-        basis_lifecycle_scoped_basis_label_identity(basis.scoped_basis_digest()),
-    )
+        basis_lifecycle_scoped_basis_label_identity(basis.scoped_basis_digest())?,
+    )?)
 }
 
 pub(super) fn preview_closeout_scoped_basis_identity(
     basis: &ScopedPreviewCloseoutBasis,
-) -> WorthQueryEvidenceIdentity {
-    scoped_basis_identity_for_admitted(
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(scoped_basis_identity_for_admitted(
         "preview_closeout",
         basis.family().as_str(),
         basis.authority().as_str(),
         basis.lifecycle().as_str(),
-        basis_lifecycle_scoped_basis_label_identity(basis.scoped_basis_digest()),
-    )
+        basis_lifecycle_scoped_basis_label_identity(basis.scoped_basis_digest())?,
+    )?)
 }
 
 fn scoped_basis_identity_for_admitted(
@@ -160,14 +166,20 @@ fn scoped_basis_identity_for_admitted(
 
 pub(super) fn advisory_basis_scoped_basis_identity(
     normalized: &NormalizedBasisIntent,
-) -> WorthQueryEvidenceIdentity {
-    normalized_basis_identity(normalized, "inspection_advisory")
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(normalized_basis_identity(
+        normalized,
+        "inspection_advisory",
+    )?)
 }
 
 pub(super) fn deferred_basis_scoped_basis_identity(
     normalized: &NormalizedBasisIntent,
-) -> WorthQueryEvidenceIdentity {
-    normalized_basis_identity(normalized, "deferred_future_neighbor")
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(normalized_basis_identity(
+        normalized,
+        "deferred_future_neighbor",
+    )?)
 }
 
 fn normalized_basis_identity(
@@ -195,7 +207,7 @@ fn normalized_basis_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("normalized"),
-                &basis_lifecycle_normalized_label_identity(normalized),
+                &basis_lifecycle_normalized_label_identity(normalized)?,
             )
             .seal()?,
     )

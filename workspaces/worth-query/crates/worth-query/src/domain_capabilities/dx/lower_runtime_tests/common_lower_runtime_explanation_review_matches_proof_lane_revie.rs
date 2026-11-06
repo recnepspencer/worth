@@ -9,7 +9,7 @@ fn common_lower_runtime_explanation_review_matches_proof_lane_review(
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let envelope = lower_runtime_envelope("boundary-explanation-review")?;
-    let (reference_set, inspection_target) = replay_gap_inputs();
+    let (reference_set, inspection_target) = replay_gap_inputs()?;
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
     let target = domain

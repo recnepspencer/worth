@@ -172,7 +172,7 @@ fn continuity_runtime_materializer_builds_continuity_evidence(
         crate::runtime::WorthQueryContinuityOutcomeClass::ContinuesAsSingleSuccessor
     );
     assert_eq!(preserved.prior_authoritative_identity().as_str(), "edge:12");
-    let expected_binding_target = admitted_plan_target("plan-continuity");
+    let expected_binding_target = admitted_plan_target("plan-continuity")?;
     let expected_binding_identity =
         domain_capability_scope_encoder("domain_capability_continuity_binding_v1")
             .field_shape(
@@ -187,7 +187,7 @@ fn continuity_runtime_materializer_builds_continuity_evidence(
     let expected_basis_binding_digest = WorthQueryMutationEvidenceDigest::source_identity(
         "continuity-basis-binding",
         &expected_binding_identity,
-    );
+    )?;
     assert_eq!(
         preserved
             .basis_binding_digest()
@@ -273,7 +273,7 @@ fn ready_admission(
     IdentityDerivationDenial,
 > {
     Ok(ready(authoring.bind_to_admitted_plan_target(
-        admitted_plan_target("plan-admission"),
+        admitted_plan_target("plan-admission")?,
     ))?)
 }
 
@@ -286,7 +286,7 @@ fn ready_support(
     IdentityDerivationDenial,
 > {
     Ok(ready(authoring.bind_to_admitted_plan_target(
-        admitted_plan_target("plan-admission"),
+        admitted_plan_target("plan-admission")?,
     ))?)
 }
 
@@ -300,7 +300,7 @@ fn ready_continuity(
 > {
     Ok(ready_continuity_payload(
         authoring
-            .bind_to_admitted_plan_target(admitted_plan_target("plan-continuity"))
+            .bind_to_admitted_plan_target(admitted_plan_target("plan-continuity")?)
             .payload()
             .payload()
             .clone(),
@@ -317,7 +317,7 @@ fn ready_continuity_payload(
 > {
     Ok(ready(
         super::proof_integration::create_requested_domain_capability_contribution(
-            admitted_plan_target("plan-continuity"),
+            admitted_plan_target("plan-continuity")?,
             payload,
         )?,
     )?)

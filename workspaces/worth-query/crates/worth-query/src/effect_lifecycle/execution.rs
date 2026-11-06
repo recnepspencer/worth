@@ -10,6 +10,7 @@ use super::execution_relational_scalar::execute_lowered_mutation;
 use super::lowering::{LoweredEffectExecutionArtifact, LoweredEffectExecutionPlan};
 use super::receipt::EffectExecutionReceipt;
 use super::RelationalEffectExecutionFailure;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 impl LoweredEffectExecutionPlan {
     pub(crate) fn execute_with(
         self,
@@ -135,26 +136,26 @@ pub(crate) fn execute_lowered_effect_plan_with_authority(
 fn lower_relational_stop(
     lowered: &LoweredEffectExecutionPlan,
     failure: RelationalEffectExecutionFailure,
-) -> EffectExecutionStop {
-    match failure {
+) -> Result<EffectExecutionStop, IdentityDerivationDenial> {
+    Ok(match failure {
         RelationalEffectExecutionFailure::Deferred { kind, message } => {
-            EffectExecutionStop::Deferred(EffectExecutionDeferred::new(lowered, kind, message))
+            EffectExecutionStop::Deferred(EffectExecutionDeferred::new(lowered, kind, message)?)
         }
         RelationalEffectExecutionFailure::Denied { kind, message } => {
-            EffectExecutionStop::Denied(EffectExecutionDenial::new(lowered, kind, message))
+            EffectExecutionStop::Denied(EffectExecutionDenial::new(lowered, kind, message)?)
         }
         RelationalEffectExecutionFailure::ControlStopped { kind, message } => {
             EffectExecutionStop::ControlStopped(super::EffectExecutionControlStopped::new(
                 lowered, kind, message,
-            ))
+            )?)
         }
         RelationalEffectExecutionFailure::DurabilityUnresolved(unresolved) => {
             let (message, unresolved) = unresolved.into_parts();
             EffectExecutionStop::DurabilityUnresolved(EffectExecutionDurabilityUnresolved::new(
                 lowered, message, unresolved,
-            ))
+            )?)
         }
-    }
+    })
 }
 
 pub(super) fn lower_runtime_error(

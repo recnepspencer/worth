@@ -25,7 +25,7 @@ impl BridgeExecutionOracle {
         outcome_class: BridgeWritebackOutcomeClass,
         request_subject_identity: WorthQueryEvidenceIdentity,
         receipt_subject_identity: WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let bridge_oracle_identity = compose_bridge_oracle_identity(
             &execution_record_identity,
             &outcome_subject_identity,
@@ -33,8 +33,8 @@ impl BridgeExecutionOracle {
             &request_subject_identity,
             &receipt_subject_identity,
             None,
-        );
-        Self {
+        )?;
+        Ok(Self {
             execution_record_identity,
             outcome_subject_identity,
             outcome_class,
@@ -42,13 +42,13 @@ impl BridgeExecutionOracle {
             receipt_subject_identity,
             execution_receipt_subject_identity: None,
             bridge_oracle_identity,
-        }
+        })
     }
 
     pub fn with_execution_receipt_subject_identity(
         mut self,
         execution_receipt_subject_identity: WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         self.bridge_oracle_identity = compose_bridge_oracle_identity(
             &self.execution_record_identity,
             &self.outcome_subject_identity,
@@ -56,9 +56,9 @@ impl BridgeExecutionOracle {
             &self.request_subject_identity,
             &self.receipt_subject_identity,
             Some(&execution_receipt_subject_identity),
-        );
+        )?;
         self.execution_receipt_subject_identity = Some(execution_receipt_subject_identity);
-        self
+        Ok(self)
     }
 
     pub fn observe_last_writeback(
@@ -160,32 +160,47 @@ impl BridgeExecutionOracle {
 
 pub fn bridge_observation_execution_record_subject_identity(
     record_digest: &str,
-) -> WorthQueryEvidenceIdentity {
-    bridge_observation_subject_identity("execution_record", record_digest)
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(bridge_observation_subject_identity(
+        "execution_record",
+        record_digest,
+    )?)
 }
 
 pub fn bridge_observation_outcome_subject_identity(
     outcome_digest: &str,
-) -> WorthQueryEvidenceIdentity {
-    bridge_observation_subject_identity("outcome", outcome_digest)
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(bridge_observation_subject_identity(
+        "outcome",
+        outcome_digest,
+    )?)
 }
 
 pub fn bridge_observation_request_subject_identity(
     request_digest: &str,
-) -> WorthQueryEvidenceIdentity {
-    bridge_observation_subject_identity("request", request_digest)
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(bridge_observation_subject_identity(
+        "request",
+        request_digest,
+    )?)
 }
 
 pub fn bridge_observation_receipt_subject_identity(
     receipt_digest: &str,
-) -> WorthQueryEvidenceIdentity {
-    bridge_observation_subject_identity("receipt", receipt_digest)
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(bridge_observation_subject_identity(
+        "receipt",
+        receipt_digest,
+    )?)
 }
 
 pub fn bridge_observation_execution_receipt_subject_identity(
     execution_receipt_digest: &str,
-) -> WorthQueryEvidenceIdentity {
-    bridge_observation_subject_identity("execution_receipt", execution_receipt_digest)
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(bridge_observation_subject_identity(
+        "execution_receipt",
+        execution_receipt_digest,
+    )?)
 }
 
 fn bridge_observation_subject_identity(
@@ -270,13 +285,13 @@ fn writeback_outcome_class_label(outcome_class: BridgeWritebackOutcomeClass) -> 
 fn incomplete_bridge_record_error(
     missing_field: &str,
     record_digest: &str,
-) -> EffectExecutionOracleError {
-    EffectExecutionOracleError::new(
+) -> Result<EffectExecutionOracleError, IdentityDerivationDenial> {
+    Ok(EffectExecutionOracleError::new(
         EffectExecutionOracleErrorKind::BridgeObservationIncompleteWritebackRecord,
         format!(
             "independent bridge oracle inspection found writeback record `{record_digest}` without `{missing_field}`"
         ),
-        &bridge_oracle_observation_subject(),
-        Some(&bridge_observation_execution_record_subject_identity(record_digest)),
-    )
+        &bridge_oracle_observation_subject()?,
+        Some(&bridge_observation_execution_record_subject_identity(record_digest)?),
+    )?)
 }

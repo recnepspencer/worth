@@ -239,9 +239,11 @@ where
             .declaration_family_version(family_key)
     }
 
-    pub fn retained_world_basis(&self) -> crate::application::WorthQueryAdmittedWorldBasis {
+    pub fn retained_world_basis(
+        &self,
+    ) -> Result<crate::application::WorthQueryAdmittedWorldBasis, IdentityDerivationDenial> {
         let basis_lifecycle_support = crate::basis_lifecycle::basis_lifecycle_support_matrix();
-        crate::application::WorthQueryAdmittedWorldBasis::new(
+        Ok(crate::application::WorthQueryAdmittedWorldBasis::new(
             self.domain_key(),
             self.display_name(),
             self.operating_context_identity.clone(),
@@ -249,9 +251,9 @@ where
             self.support_snapshot().snapshot_digest().to_string(),
             crate::application::compose_basis_lifecycle_support_identity(
                 basis_lifecycle_support.matrix_digest(),
-            ),
+            )?,
             self.installed_authority.clone(),
-        )
+        ))
     }
 }
 

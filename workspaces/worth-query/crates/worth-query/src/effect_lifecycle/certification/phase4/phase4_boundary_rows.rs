@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_relational::facade::history::BranchId;
 
 use crate::basis_lifecycle::BasisFamily;
@@ -72,7 +73,8 @@ pub(super) fn batch_lane_denial_row() -> EffectLifecyclePhase4CertificationRow {
     )
 }
 
-pub(super) fn preview_rebind_row() -> EffectLifecyclePhase4CertificationRow {
+pub(super) fn preview_rebind_row(
+) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let basis = EffectAuthoringBasis::from(preview_closeout_basis("phase4-preview"));
     let raw = RawEffectIntent::Mutation {
         binding: preview_workflow_binding("phase4-preview"),
@@ -96,11 +98,11 @@ pub(super) fn preview_rebind_row() -> EffectLifecyclePhase4CertificationRow {
         },
     };
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("preview mutation normalizes");
-    let rebind = match evaluate_effect_eligibility(normalized) {
+    let rebind = match evaluate_effect_eligibility(normalized)? {
         EffectEligibilityOutcome::RebindRequired(rebind) => rebind,
         other => panic!("expected preview rebind, got {other:?}"),
     };
-    EffectLifecyclePhase4CertificationRow::new(
+    Ok(EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::PreviewRebind,
         EffectLifecyclePhase4LaneOutcome::RebindRequired,
         basis.family(),
@@ -108,10 +110,11 @@ pub(super) fn preview_rebind_row() -> EffectLifecyclePhase4CertificationRow {
         format!("{:?}", rebind.denial_kind()),
         rebind.decision_trace().message().to_string(),
         rebind.counters().clone(),
-    )
+    ))
 }
 
-pub(super) fn deferred_replay_row() -> EffectLifecyclePhase4CertificationRow {
+pub(super) fn deferred_replay_row(
+) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let basis = EffectAuthoringBasis::store_backed("phase4-store-basis");
     let raw = RawEffectIntent::Writeback {
         binding: runtime_workflow_binding(),
@@ -123,11 +126,11 @@ pub(super) fn deferred_replay_row() -> EffectLifecyclePhase4CertificationRow {
     };
     let normalized =
         normalize_raw_effect_intent(&basis, raw).expect("deferred writeback normalizes");
-    let deferred = match evaluate_effect_eligibility(normalized) {
+    let deferred = match evaluate_effect_eligibility(normalized)? {
         EffectEligibilityOutcome::Deferred(deferred) => deferred,
         other => panic!("expected deferred writeback, got {other:?}"),
     };
-    EffectLifecyclePhase4CertificationRow::new(
+    Ok(EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::DeferredReplay,
         EffectLifecyclePhase4LaneOutcome::Deferred,
         basis.family(),
@@ -135,12 +138,12 @@ pub(super) fn deferred_replay_row() -> EffectLifecyclePhase4CertificationRow {
         format!("{:?}", deferred.denial_kind()),
         deferred.decision_trace().message().to_string(),
         deferred.counters().clone(),
-    )
+    ))
 }
 
 pub(super) fn host_override_denial_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> EffectLifecyclePhase4CertificationRow {
+) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
         execution,
@@ -156,17 +159,17 @@ pub(super) fn host_override_denial_row(
         "host-override".to_string(),
     );
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("mutation should normalize");
-    let admitted = match evaluate_effect_eligibility(normalized) {
+    let admitted = match evaluate_effect_eligibility(normalized)? {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted mutation, got {other:?}"),
     };
-    let denial = scope_admitted_effect_plan(admitted)
+    let denial = scope_admitted_effect_plan(admitted)?
         .lower()
         .expect("mutation should lower")
         .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
         .expect_err("bridge host override should deny");
     let denial = denial.denial().expect("bridge override is a denial");
-    EffectLifecyclePhase4CertificationRow::new(
+    Ok(EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::HostOverrideDenial,
         EffectLifecyclePhase4LaneOutcome::Denied,
         basis.family(),
@@ -174,12 +177,12 @@ pub(super) fn host_override_denial_row(
         denial.denial_for_reporting().to_string(),
         denial.message().to_string(),
         denial.counters().clone(),
-    )
+    ))
 }
 
 pub(super) fn stale_after_admission_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> EffectLifecyclePhase4CertificationRow {
+) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
         execution,
@@ -204,7 +207,7 @@ pub(super) fn stale_after_admission_row(
         "stale-after-admission".to_string(),
     );
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("mutation should normalize");
-    let admitted = match evaluate_effect_eligibility(normalized) {
+    let admitted = match evaluate_effect_eligibility(normalized)? {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted mutation, got {other:?}"),
     };
@@ -214,7 +217,7 @@ pub(super) fn stale_after_admission_row(
         "intervening",
         BranchId("branch-a".to_string()),
     );
-    let denial = scope_admitted_effect_plan(admitted)
+    let denial = scope_admitted_effect_plan(admitted)?
         .lower()
         .expect("mutation should still lower after admission")
         .execute_with(
@@ -223,7 +226,7 @@ pub(super) fn stale_after_admission_row(
         )
         .expect_err("changed truth after admission should deny at execution");
     let denial = denial.denial().expect("stale admission is a denial");
-    EffectLifecyclePhase4CertificationRow::new(
+    Ok(EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::StaleAfterAdmission,
         EffectLifecyclePhase4LaneOutcome::Denied,
         basis.family(),
@@ -231,12 +234,12 @@ pub(super) fn stale_after_admission_row(
         denial.denial_for_reporting().to_string(),
         denial.message().to_string(),
         denial.counters().clone(),
-    )
+    ))
 }
 
 pub(super) fn stale_after_lowering_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> EffectLifecyclePhase4CertificationRow {
+) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
         execution,
@@ -266,11 +269,11 @@ pub(super) fn stale_after_lowering_row(
                 ),
             )
             .expect("mutation should normalize"),
-        ) {
+        )? {
             EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
             other => panic!("expected admitted mutation, got {other:?}"),
         },
-    )
+    )?
     .lower()
     .expect("mutation should lower");
     create_entity(
@@ -286,7 +289,7 @@ pub(super) fn stale_after_lowering_row(
         )
         .expect_err("retained lowered artifact should stale-deny");
     let denial = denial.denial().expect("stale lowering is a denial");
-    EffectLifecyclePhase4CertificationRow::new(
+    Ok(EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::StaleAfterLowering,
         EffectLifecyclePhase4LaneOutcome::Denied,
         basis.family(),
@@ -294,7 +297,7 @@ pub(super) fn stale_after_lowering_row(
         denial.denial_for_reporting().to_string(),
         denial.message().to_string(),
         denial.counters().clone(),
-    )
+    ))
 }
 
 pub(super) fn seeded_replay_row(

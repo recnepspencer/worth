@@ -56,13 +56,13 @@ fn construct_installed_domain_record(
     generation_lease: &WorthQueryDomainInstallationGenerationLease,
     execution_index: &WorthQueryInstalledDomainExecutionIndex,
     portable_index: &worth_query_installation::facade::WorthQueryInstalledPackageIndex,
-) -> WorthQueryInstalledDomainRecord {
+) -> Result<WorthQueryInstalledDomainRecord, IdentityDerivationDenial> {
     let installation_identity = installation_identity(
         runtime_authority,
         generation,
         &artifact,
         execution_index.identity(),
-    );
+    )?;
     let receipt = installation_receipt(&artifact, generation, installation_identity.clone());
     let authority = installed_authority(
         &artifact,
@@ -72,12 +72,12 @@ fn construct_installed_domain_record(
         installation_identity,
         execution_index,
         portable_index,
-    );
-    WorthQueryInstalledDomainRecord {
+    )?;
+    Ok(WorthQueryInstalledDomainRecord {
         artifact,
         authority,
         receipt,
-    }
+    })
 }
 
 fn installation_receipt(
@@ -125,7 +125,7 @@ fn installed_authority(
     installation_identity: WorthQueryEvidenceIdentity,
     execution_index: &WorthQueryInstalledDomainExecutionIndex,
     portable_index: &worth_query_installation::facade::WorthQueryInstalledPackageIndex,
-) -> Arc<WorthQueryInstalledDomainAuthority> {
+) -> Result<Arc<WorthQueryInstalledDomainAuthority>, IdentityDerivationDenial> {
     let semantics = execution_index
         .domain_semantics(artifact.marker_type)
         .expect("every installed artifact has one derived semantic index");
@@ -135,7 +135,7 @@ fn installed_authority(
     portable_index
         .validate(&portable_authority)
         .expect("newly minted portable package authority must validate");
-    Arc::new(WorthQueryInstalledDomainAuthority::new(
+    Ok(Arc::new(WorthQueryInstalledDomainAuthority::new(
         super::super::WorthQueryInstalledDomainAuthorityInputs {
             runtime_authority,
             generation,
@@ -153,7 +153,7 @@ fn installed_authority(
             semantics,
             portable_authority,
         },
-    ))
+    )?))
 }
 
 fn installation_identity(

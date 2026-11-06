@@ -60,7 +60,7 @@ impl ExecutedEffectPlan {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("artifact"),
-                    &executed_authority_artifact_identity(&artifact),
+                    &executed_authority_artifact_identity(&artifact)?,
                 )
                 .seal()?;
         let counters = EffectLifecycleCounters::executed(
@@ -135,8 +135,8 @@ impl ExecutedEffectPlan {
         &self.counters
     }
 
-    pub fn receipt(&self) -> EffectExecutionReceipt {
-        EffectExecutionReceipt::from_scalar(self)
+    pub fn receipt(&self) -> Result<EffectExecutionReceipt, IdentityDerivationDenial> {
+        Ok(EffectExecutionReceipt::from_scalar(self)?)
     }
 
     pub(crate) fn published_snapshot(
@@ -194,7 +194,7 @@ pub(crate) fn executed_authority_artifact_identity(
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("execution"),
-                    &executed_writeback_execution_identity(execution),
+                    &executed_writeback_execution_identity(execution)?,
                 )
                 .seal()?
         }
@@ -212,21 +212,21 @@ fn executed_writeback_execution_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("outcome"),
-                &writeback_bridge_evidence_identity("outcome", execution.outcome()),
+                &writeback_bridge_evidence_identity("outcome", execution.outcome())?,
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("authority_receipt"),
                 &writeback_bridge_receipt_evidence_identity(
                     "authority_receipt",
                     execution.authority_receipt(),
-                ),
+                )?,
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("execution_receipt"),
                 &writeback_bridge_execution_receipt_evidence_identity(
                     "execution_receipt",
                     execution.execution_receipt(),
-                ),
+                )?,
             )
             .seal()?,
     )
@@ -334,7 +334,7 @@ pub(crate) fn writeback_bridge_execution_receipt_evidence_identity(
                 &writeback_bridge_receipt_evidence_identity(
                     "authority_receipt",
                     receipt.authority_receipt(),
-                ),
+                )?,
             )
             .field_shape(
                 WorthQueryEvidenceTag::new("replay_bundle_digest"),

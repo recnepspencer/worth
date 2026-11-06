@@ -14,7 +14,7 @@ use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as Iden
 #[test]
 fn support_traceability_materializer_builds_domain_scoped_report(
 ) -> Result<(), IdentityDerivationDenial> {
-    let plan_target = admitted_plan_target("plan-support");
+    let plan_target = admitted_plan_target("plan-support")?;
     let report = success(materialize_intent_admission_support_traceability_report(
         ready_support(WorthQuerySupportContributionAuthoring::declaration_support(
             "spatial.arbitration.support",
@@ -57,7 +57,7 @@ fn equivalent_support_meaning_materializes_same_traceability_digest(
     let direct = success(materialize_intent_admission_support_traceability_report(
         ready(
             super::super::proof_integration::create_requested_domain_capability_contribution(
-                admitted_plan_target("plan-support"),
+                admitted_plan_target("plan-support")?,
                 WorthQuerySupportContributionPayload::new(
                     WorthQuerySupportContributionPosture::DeclarationTraceability,
                     "spatial.traceability",
@@ -130,6 +130,6 @@ fn ready_support(
     IdentityDerivationDenial,
 > {
     Ok(ready(authoring.bind_to_admitted_plan_target(
-        admitted_plan_target("plan-support"),
+        admitted_plan_target("plan-support")?,
     ))?)
 }

@@ -71,7 +71,7 @@ where
             Some(&binding_identity),
             None,
             None,
-        ),
+        )?,
     ))
 }
 

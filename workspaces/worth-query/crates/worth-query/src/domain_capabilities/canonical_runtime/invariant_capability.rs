@@ -282,8 +282,8 @@ where
                 WorthQueryGraphCompositionDomainInvariantDenial::from_contributed(
                     graph_invariant_denial.invariant_family(),
                     payload.detail(),
-                    graph_invariant_summary(graph_invariant_denial),
-                ),
+                    graph_invariant_summary(graph_invariant_denial)?,
+                )?,
             )
         }
         WorthQueryInvariantCapabilityContributionPosture::CapabilityGap
@@ -302,15 +302,17 @@ where
 
 fn graph_invariant_summary(
     semantics: &WorthQueryGraphInvariantDenialRuntimeSemantics,
-) -> WorthQueryGraphCompositionDomainInvariantSummary {
-    WorthQueryGraphCompositionDomainInvariantSummary::from_parts(
-        semantics.declared_collections().to_vec(),
-        semantics.declared_symbols().to_vec(),
-        semantics.target_combination_families().to_vec(),
-        semantics.lifecycle_families().to_vec(),
-        semantics.program_identity().clone(),
-        semantics.breadth_identity().clone(),
-        semantics.counter_snapshot().to_string(),
+) -> Result<WorthQueryGraphCompositionDomainInvariantSummary, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryGraphCompositionDomainInvariantSummary::from_parts(
+            semantics.declared_collections().to_vec(),
+            semantics.declared_symbols().to_vec(),
+            semantics.target_combination_families().to_vec(),
+            semantics.lifecycle_families().to_vec(),
+            semantics.program_identity().clone(),
+            semantics.breadth_identity().clone(),
+            semantics.counter_snapshot().to_string(),
+        )?,
     )
 }
 

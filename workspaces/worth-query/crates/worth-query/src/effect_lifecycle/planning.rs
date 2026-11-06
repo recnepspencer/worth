@@ -258,8 +258,10 @@ impl AuthorityScopedEffectPlan {
     }
 }
 
-pub fn scope_admitted_effect_plan(admitted: AdmittedEffectIntent) -> AuthorityScopedEffectPlan {
-    AuthorityScopedEffectPlan::new(admitted)
+pub fn scope_admitted_effect_plan(
+    admitted: AdmittedEffectIntent,
+) -> Result<AuthorityScopedEffectPlan, IdentityDerivationDenial> {
+    Ok(AuthorityScopedEffectPlan::new(admitted)?)
 }
 
 fn invariant_scope_for(family: EffectFamily) -> EffectInvariantScope {

@@ -56,7 +56,7 @@ impl EffectExecutionReceipt {
             .admitted()
             .normalized()
             .basis_family();
-        let execution_identity = scalar_execution_receipt_identity(executed, receipt_family);
+        let execution_identity = scalar_execution_receipt_identity(executed, receipt_family)?;
         let receipt_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -72,14 +72,14 @@ impl EffectExecutionReceipt {
                     &execution_identity,
                 )
                 .seal()?;
-        let decision_trace = EffectReceiptDecisionTrace::scalar(executed);
+        let decision_trace = EffectReceiptDecisionTrace::scalar(executed)?;
         let integrity_markers = EffectReceiptIntegrityMarkers::new(
             executed.artifact(),
             executed.counters(),
             &receipt_identity,
-        );
+        )?;
         let counters = executed.counters().clone();
-        let target_evidence = scalar_target_evidence(executed);
+        let target_evidence = scalar_target_evidence(executed)?;
         Ok(Self {
             target_evidence,
             write_count: 1,
@@ -101,7 +101,7 @@ impl EffectExecutionReceipt {
         let declared_effect_family = EffectFamily::Mutation;
         let authority_lane = executed.authority_lane();
         let basis_family = executed.basis_family();
-        let execution_identity = batch_execution_receipt_identity(executed);
+        let execution_identity = batch_execution_receipt_identity(executed)?;
         let receipt_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -117,12 +117,12 @@ impl EffectExecutionReceipt {
                     &execution_identity,
                 )
                 .seal()?;
-        let decision_trace = EffectReceiptDecisionTrace::batch(executed);
+        let decision_trace = EffectReceiptDecisionTrace::batch(executed)?;
         let integrity_markers = EffectReceiptIntegrityMarkers::new(
             executed.aggregate_artifact(),
             executed.counters(),
             &receipt_identity,
-        );
+        )?;
         let counters = executed.counters().clone();
         let aggregate = executed
             .aggregate_mutation()
@@ -190,20 +190,28 @@ impl EffectExecutionReceipt {
         self.write_count
     }
 
-    pub fn effect_envelope(&self) -> SelfDescribingEffectEnvelope {
-        SelfDescribingEffectEnvelope::from_receipt(self)
+    pub fn effect_envelope(
+        &self,
+    ) -> Result<SelfDescribingEffectEnvelope, IdentityDerivationDenial> {
+        Ok(SelfDescribingEffectEnvelope::from_receipt(self)?)
     }
 
     pub fn materialize_diagnostics(
         &self,
         request: EffectDiagnosticsRequest,
-    ) -> EffectDiagnosticsMaterialization {
-        let envelope = self.effect_envelope();
-        EffectDiagnosticsMaterialization::from_receipt(self, &envelope, request)
+    ) -> Result<EffectDiagnosticsMaterialization, IdentityDerivationDenial> {
+        let envelope = self.effect_envelope()?;
+        Ok(EffectDiagnosticsMaterialization::from_receipt(
+            self, &envelope, request,
+        )?)
     }
 
-    pub fn transition_rules(&self) -> EffectReceiptTransitionRules {
-        EffectReceiptTransitionRules::for_receipt_family(self.receipt_family)
+    pub fn transition_rules(
+        &self,
+    ) -> Result<EffectReceiptTransitionRules, IdentityDerivationDenial> {
+        Ok(EffectReceiptTransitionRules::for_receipt_family(
+            self.receipt_family,
+        )?)
     }
 
     pub fn target_evidence(&self) -> EffectReceiptTargetEvidence {
@@ -215,8 +223,10 @@ impl EffectExecutionReceipt {
     }
 }
 
-fn scalar_target_evidence(executed: &ExecutedEffectPlan) -> EffectReceiptTargetEvidence {
-    match executed.artifact() {
+fn scalar_target_evidence(
+    executed: &ExecutedEffectPlan,
+) -> Result<EffectReceiptTargetEvidence, IdentityDerivationDenial> {
+    Ok(match executed.artifact() {
         ExecutedEffectAuthorityArtifact::Mutation(result) => {
             EffectReceiptTargetEvidence::MutationCommit {
                 commit_id: result.outcome().commit.commit_id.0,
@@ -234,18 +244,18 @@ fn scalar_target_evidence(executed: &ExecutedEffectPlan) -> EffectReceiptTargetE
                 outcome_identity: writeback_bridge_evidence_identity(
                     "outcome",
                     execution.outcome(),
-                ),
+                )?,
                 authority_receipt_identity: writeback_bridge_receipt_evidence_identity(
                     "authority_receipt",
                     execution.authority_receipt(),
-                ),
+                )?,
                 execution_receipt_identity: writeback_bridge_execution_receipt_evidence_identity(
                     "execution_receipt",
                     execution.execution_receipt(),
-                ),
+                )?,
             }
         }
-    }
+    })
 }
 
 fn scalar_execution_receipt_identity(
@@ -268,7 +278,7 @@ fn scalar_execution_receipt_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("authority_artifact"),
-                &executed_authority_artifact_identity(executed.artifact()),
+                &executed_authority_artifact_identity(executed.artifact())?,
             )
             .seal()?,
     )
@@ -293,7 +303,7 @@ fn batch_execution_receipt_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("authority_artifact"),
-                &executed_authority_artifact_identity(executed.aggregate_artifact()),
+                &executed_authority_artifact_identity(executed.aggregate_artifact())?,
             )
             .seal()?,
     )

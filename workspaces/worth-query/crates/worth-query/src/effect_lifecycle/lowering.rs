@@ -59,12 +59,15 @@ pub struct EffectLoweringDenial {
 }
 
 impl EffectLoweringDenial {
-    fn from_workflow_error(plan: &AuthorityScopedEffectPlan, error: WorkflowLoweringError) -> Self {
-        Self::from_workflow_error_for_batch(
+    fn from_workflow_error(
+        plan: &AuthorityScopedEffectPlan,
+        error: WorkflowLoweringError,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_workflow_error_for_batch(
             plan.plan_identity(),
             plan.counters().effect_support_row_count(),
             error,
-        )
+        )?)
     }
 
     pub(crate) fn from_workflow_error_for_batch(
@@ -318,11 +321,11 @@ pub fn lower_authority_scoped_effect_plan(
 pub(crate) fn assemble_lowered_batch_mutation_component(
     admitted: AdmittedEffectIntent,
     declaration: LoweredMutationIntentDeclaration,
-) -> LoweredEffectExecutionPlan {
-    LoweredEffectExecutionPlan::new(
-        scope_admitted_effect_plan(admitted),
+) -> Result<LoweredEffectExecutionPlan, IdentityDerivationDenial> {
+    Ok(LoweredEffectExecutionPlan::new(
+        scope_admitted_effect_plan(admitted)?,
         LoweredEffectExecutionArtifact::Mutation(declaration),
-    )
+    )?)
 }
 
 fn lowering_denial_kind(failure_class: &WorkflowLoweringFailureClass) -> EffectLoweringDenialKind {

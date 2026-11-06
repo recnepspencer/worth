@@ -7,7 +7,7 @@ fn preview_workflow_artifact_materializer_denies_runtime_only_workflow_postures(
         WorthQueryWorkflowContributionAuthoring::confirmation_required_query_inspection(
             "spatial.confirmation.runtime",
             "authoritative confirmation requires runtime preflight context",
-            crate::memory_workspace::admit_external_snapshot_label("runtime-snapshot:77"),
+            crate::memory_workspace::admit_external_snapshot_label("runtime-snapshot:77")?,
         )?,
         admitted_plan_target_parts(
             "plan-preview-runtime",

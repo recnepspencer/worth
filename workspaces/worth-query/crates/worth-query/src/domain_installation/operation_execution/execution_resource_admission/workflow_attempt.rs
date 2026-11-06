@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeMap;
 
 use crate::basis_lifecycle::BasisOperationLane;
@@ -63,7 +64,8 @@ where
         self,
         request: WorthQueryExecutionResourceRequest,
         workspace: &crate::runtime::WorthQueryWorkspace,
-    ) -> WorthQueryWorkflowResourceAdmissionOutcome<D, O, F, L> {
+    ) -> Result<WorthQueryWorkflowResourceAdmissionOutcome<D, O, F, L>, IdentityDerivationDenial>
+    {
         let counters = WorthQueryExecutionResourceAdmissionCounters {
             runtime_authority_checks: 1,
             ..Default::default()
@@ -71,7 +73,7 @@ where
         let witness =
             crate::domain_installation::WorthQueryInstalledDomainAuthorityWitness::from_authority(
                 std::sync::Arc::clone(self.operation().domain_authority()),
-            );
+            )?;
         if let Err(denial) = workspace.validate_installed_domain_witness::<D>(&witness) {
             let kind = denial.kind();
             let denial = WorthQueryExecutionResourceAdmissionDenial::new(
@@ -79,7 +81,7 @@ where
                 format!("{denial:?}"),
                 counters,
             );
-            return runtime_denial(kind, denial);
+            return Ok(runtime_denial(kind, denial));
         }
         let (graph, executor, parallel_posture) = self.workflow_providers();
         let graph = std::sync::Arc::clone(graph);
@@ -98,7 +100,7 @@ where
             counters,
         ) {
             Ok(plan) => plan,
-            Err(denial) => return admission_denial_outcome(denial),
+            Err(denial) => return Ok(admission_denial_outcome(denial)),
         };
         let stages = match lower_stages(
             &self,
@@ -106,7 +108,7 @@ where
             WorthQueryExecutionResourceAdmissionCounters::default(),
         ) {
             Ok(stages) => stages,
-            Err(denial) => return admission_denial_outcome(denial),
+            Err(denial) => return Ok(admission_denial_outcome(denial)),
         };
         let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(operation, stages);
         let resource_attempt = match workspace
@@ -114,7 +116,7 @@ where
             .start_workflow_resource_attempt(self.execution_authority(), resources)
         {
             Ok(attempt) => attempt,
-            Err(denial) => return admission_denial_outcome(denial),
+            Err(denial) => return Ok(admission_denial_outcome(denial)),
         };
         let mut basis = operation_phase_basis(self.authority_proof()).clone();
         basis.resource_admission_identity =
@@ -124,14 +126,16 @@ where
             Some(self.authority_proof().payload().identity()),
             basis,
         );
-        TransitionOutcome::Success(WorthQueryAdmittedWorkflowOperation {
-            bound: self,
-            graph,
-            executor,
-            parallel_posture,
-            resource_attempt,
-            phase_proof,
-        })
+        Ok(TransitionOutcome::Success(
+            WorthQueryAdmittedWorkflowOperation {
+                bound: self,
+                graph,
+                executor,
+                parallel_posture,
+                resource_attempt,
+                phase_proof,
+            },
+        ))
     }
 }
 

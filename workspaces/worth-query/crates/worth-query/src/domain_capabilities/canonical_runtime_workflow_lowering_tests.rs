@@ -36,7 +36,7 @@ fn mutation_lowering_materializer_builds_runtime_lowered_declaration(
         WorthQueryWorkflowContributionAuthoring::confirmation_required_mutation_reconciliation(
             "spatial.workflow.mutation",
             "runtime preflight should lower a relational mutation intent",
-            crate::memory_workspace::admit_external_snapshot_label("runtime-snapshot:42"),
+            crate::memory_workspace::admit_external_snapshot_label("runtime-snapshot:42")?,
             authority_binding_identity.clone(),
             EntityId::new(PartitionId(1), 41, 0),
             crate::aspect_field_authoring::single_native_string_aspect_field_patch(
@@ -120,7 +120,7 @@ fn writeback_lowering_materializer_builds_bridge_writeback_declaration(
             "runtime preflight should lower a bridge writeback declaration",
             crate::memory_workspace::admit_external_snapshot_label(
                 "runtime-snapshot:58",
-            ),
+            )?,
         )?
         .bind_to_declaration_target(declaration_target("intent-workflow-writeback")),
     )?));
@@ -152,7 +152,7 @@ fn workflow_lowering_materializer_denies_missing_lowering_semantics(
                     WorthQueryWorkflowRuntimeBindingSemantics::runtime_preflight_snapshot_identity(
                         crate::memory_workspace::admit_external_snapshot_label(
                             "runtime-snapshot:42",
-                        ),
+                        )?,
                     ),
                     crate::workflow::WorkflowDeclarationFamily::MutationLoweringNarrow,
                     crate::workflow::WorkflowAuthorityTargetFamily::RelationalMutation,

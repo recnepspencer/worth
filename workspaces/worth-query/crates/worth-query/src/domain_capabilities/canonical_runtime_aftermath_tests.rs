@@ -272,7 +272,7 @@ fn ready_aftermath(
     IdentityDerivationDenial,
 > {
     Ok(ready(authoring.bind_to_admitted_plan_target(
-        admitted_plan_target("plan-aftermath"),
+        admitted_plan_target("plan-aftermath")?,
     ))?)
 }
 

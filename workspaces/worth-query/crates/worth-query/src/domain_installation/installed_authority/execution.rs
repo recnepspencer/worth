@@ -102,15 +102,15 @@ impl WorthQueryInstalledDomainExecutionReceipt {
         declaration_identity: WorthQueryEvidenceIdentity,
         basis_identity: WorthQueryEvidenceIdentity,
         operational_identity: WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self::new_with_managed_live_resource(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new_with_managed_live_resource(
             installed_authority,
             capability,
             declaration_identity,
             basis_identity,
             operational_identity,
             None,
-        )
+        )?)
     }
 
     pub(crate) fn new_managed_live(
@@ -120,15 +120,15 @@ impl WorthQueryInstalledDomainExecutionReceipt {
         basis_identity: WorthQueryEvidenceIdentity,
         operational_identity: WorthQueryEvidenceIdentity,
         managed_live_resource_identity: WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self::new_with_managed_live_resource(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new_with_managed_live_resource(
             installed_authority,
             capability,
             declaration_identity,
             basis_identity,
             operational_identity,
             Some(managed_live_resource_identity),
-        )
+        )?)
     }
 
     fn new_with_managed_live_resource(
@@ -190,15 +190,15 @@ impl WorthQueryInstalledDomainExecutionReceipt {
         &self,
         capability: WorthQueryInstalledDomainCapabilityKind,
         operational_identity: WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self::new_with_managed_live_resource(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new_with_managed_live_resource(
             self.installed_authority.clone(),
             capability,
             self.declaration_identity.clone(),
             self.basis_identity.clone(),
             operational_identity,
             self.managed_live_resource_identity.clone(),
-        )
+        )?)
     }
 
     pub fn installed_authority(&self) -> &WorthQueryInstalledDomainAuthorityWitness {

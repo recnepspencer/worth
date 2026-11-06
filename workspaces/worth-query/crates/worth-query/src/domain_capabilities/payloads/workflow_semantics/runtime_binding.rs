@@ -107,7 +107,7 @@ impl WorthQueryWorkflowRuntimeBindingSemantics {
                         WorthQueryEvidenceTag::new("canonical_query"),
                         &crate::identity::canonical_query_evidence_identity(
                             preflight.plan().query().canonical_query_digest(),
-                        ),
+                        )?,
                     )
                     .field_evidence_identity(
                         WorthQueryEvidenceTag::new("basis_proof"),

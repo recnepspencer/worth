@@ -95,7 +95,7 @@ impl WorthQueryInMemoryTestBackend {
             &crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
                 "in-memory-live-request",
                 request.target(),
-            ),
+            )?,
         )
     }
 

@@ -21,7 +21,7 @@ fn common_aftermath_contract_lane_matches_proof_lane_materialization(
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let plan = admitted_projection_consumption_plan();
+    let plan = admitted_projection_consumption_plan()?;
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
     let target = domain
@@ -63,7 +63,7 @@ fn common_aftermath_review_lane_matches_proof_lane_materialization(
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let plan = admitted_projection_consumption_plan();
+    let plan = admitted_projection_consumption_plan()?;
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
     let target = domain
@@ -93,11 +93,12 @@ fn common_aftermath_review_lane_matches_proof_lane_materialization(
 }
 
 #[test]
-fn common_aftermath_support_and_eligibility_lanes_preserve_warning_truth() {
+fn common_aftermath_support_and_eligibility_lanes_preserve_warning_truth(
+) -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let plan = admitted_projection_consumption_plan();
+    let plan = admitted_projection_consumption_plan()?;
 
     let support = install_domain_capability_certification(request_execution)
         .contributions()
@@ -160,14 +161,16 @@ fn common_aftermath_support_and_eligibility_lanes_preserve_warning_truth() {
         eligibility,
         ProjectionConsumptionEligibility::AdmittedWithWarnings(_, _)
     ));
+
+    Ok(())
 }
 
 #[test]
-fn checked_aftermath_lane_preserves_denied_metadata() {
+fn checked_aftermath_lane_preserves_denied_metadata() -> Result<(), IdentityDerivationDenial> {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let plan = admitted_projection_consumption_plan();
+    let plan = admitted_projection_consumption_plan()?;
 
     let checked = install_domain_capability_certification(request_execution)
         .contributions()
@@ -202,6 +205,8 @@ fn checked_aftermath_lane_preserves_denied_metadata() {
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan
     );
     assert!(checked.denial().is_some());
+
+    Ok(())
 }
 
 fn proof_contract(
@@ -277,7 +282,8 @@ fn success<T>(
     }
 }
 
-fn admitted_projection_consumption_plan() -> WorthQueryAdmittedIntentPlan {
+fn admitted_projection_consumption_plan(
+) -> Result<WorthQueryAdmittedIntentPlan, IdentityDerivationDenial> {
     let declaration = crate::projection_consumption::declare_projection_consumption(
         admitted_projection_source(),
         admitted_projection_binding(),
@@ -297,10 +303,12 @@ fn admitted_projection_consumption_plan() -> WorthQueryAdmittedIntentPlan {
         )
         .expect("projection request should build");
 
-    match crate::intent_admission::admit_runtime_intent_request(request) {
-        crate::intent_admission::WorthQueryIntentAdmissionDecision::Admitted(plan) => plan,
-        other => panic!("expected admitted projection-consumption plan, got {other:?}"),
-    }
+    Ok(
+        match crate::intent_admission::admit_runtime_intent_request(request)? {
+            crate::intent_admission::WorthQueryIntentAdmissionDecision::Admitted(plan) => plan,
+            other => panic!("expected admitted projection-consumption plan, got {other:?}"),
+        },
+    )
 }
 
 fn admitted_projection_source() -> ProjectionConsumptionSource {

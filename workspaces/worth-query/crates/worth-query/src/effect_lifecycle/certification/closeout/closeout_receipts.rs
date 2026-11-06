@@ -3,6 +3,7 @@ use crate::effect_lifecycle::{
     scope_admitted_effect_plan, EffectAuthoringBasis, EffectDiagnosticsRequest,
     EffectEligibilityOutcome, EffectExecutionAuthority, EffectLifecycleCounters, RawEffectIntent,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 use crate::workflow::{
     WorkflowAuthorityTargetFamily, WorkflowDeclarationFamily, WritebackLoweringInput,
@@ -80,7 +81,7 @@ impl ReceiptSurfaceEvidence {
 
 pub(super) fn mutation_receipt_surface(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> ReceiptSurfaceEvidence {
+) -> Result<ReceiptSurfaceEvidence, IdentityDerivationDenial> {
     let branch = "cert-phase6-branch";
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
@@ -99,17 +100,17 @@ pub(super) fn mutation_receipt_surface(
         entity_id,
         "after".to_string(),
     );
-    scalar_surface_evidence(
+    Ok(scalar_surface_evidence(
         execution,
         &basis,
         raw,
         EffectExecutionAuthority::relational(&mut runtime),
-    )
+    )?)
 }
 
 pub(super) fn writeback_receipt_surface(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> ReceiptSurfaceEvidence {
+) -> Result<ReceiptSurfaceEvidence, IdentityDerivationDenial> {
     let basis = EffectAuthoringBasis::from(scenarios::tenant_mutation_basis("tenant-a"));
     let raw = RawEffectIntent::Writeback {
         binding: scenarios::runtime_workflow_binding(),
@@ -120,12 +121,12 @@ pub(super) fn writeback_receipt_surface(
         input: WritebackLoweringInput::projected_state_diff(),
     };
     let bridge = test_bridge_with_writeback_authority();
-    scalar_surface_evidence(
+    Ok(scalar_surface_evidence(
         execution,
         &basis,
         raw,
         EffectExecutionAuthority::bridge(&bridge),
-    )
+    )?)
 }
 
 pub(super) fn batch_receipt_surface(
@@ -230,12 +231,12 @@ fn scalar_surface_evidence(
     basis: &EffectAuthoringBasis,
     raw: RawEffectIntent,
     authority: EffectExecutionAuthority<'_>,
-) -> ReceiptSurfaceEvidence {
+) -> Result<ReceiptSurfaceEvidence, IdentityDerivationDenial> {
     let raw_digest = raw_effect_intent_digest(&raw);
     let normalized =
         normalize_raw_effect_intent(basis, raw).expect("closeout receipt surface should normalize");
     let normalization_counter_digest = normalized.counters().counter_for_reporting().to_string();
-    let eligibility = match evaluate_effect_eligibility(normalized.clone()) {
+    let eligibility = match evaluate_effect_eligibility(normalized.clone())? {
         EffectEligibilityOutcome::Admitted(eligibility) => eligibility,
         other => panic!("expected admitted closeout surface, got {other:?}"),
     };
@@ -245,7 +246,7 @@ fn scalar_surface_evidence(
         .to_string();
     let eligibility_counter_digest = eligibility.counters().counter_for_reporting().to_string();
     let admitted = admit_effect_intent(eligibility);
-    let scoped_plan = scope_admitted_effect_plan(admitted);
+    let scoped_plan = scope_admitted_effect_plan(admitted)?;
     let query_digest = normalized
         .workflow_binding()
         .query_for_reporting()
@@ -292,7 +293,7 @@ fn scalar_surface_evidence(
         .expect("closeout receipt surface should execute");
     let envelope = receipt.effect_envelope();
     let diagnostics = receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic());
-    ReceiptSurfaceEvidence {
+    Ok(ReceiptSurfaceEvidence {
         raw_digest,
         query_digest,
         family_digest,
@@ -340,7 +341,7 @@ fn scalar_surface_evidence(
             .counter_snapshot_for_reporting()
             .to_string(),
         counters: receipt.delivery_counters().clone(),
-    }
+    })
 }
 
 fn raw_effect_intent_digest(raw: &RawEffectIntent) -> String {

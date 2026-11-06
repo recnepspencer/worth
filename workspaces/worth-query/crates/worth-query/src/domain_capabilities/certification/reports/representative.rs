@@ -127,8 +127,8 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
     domain: &crate::domain_capabilities::WorthQueryInstalledDomainContributionSurface,
 ) -> Result<WorthQueryDomainCapabilityRepresentativeReport, IdentityDerivationDenial> {
     let declaration = intent_declaration("domain-capability-certification");
-    let admitted_plan = admitted_basis_observation_plan();
-    let projection_plan = admitted_projection_consumption_plan();
+    let admitted_plan = admitted_basis_observation_plan()?;
+    let projection_plan = admitted_projection_consumption_plan()?;
     let lower_runtime = lower_runtime_envelope("domain-capability-certification")?;
     let declaration_target = domain
         .intent_target(&declaration)
@@ -233,7 +233,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
         .expect("installed projection target should belong to the certification domain")
         .consumes_projection_contract(
             "aftermath.projection_contract",
-            projection_contract_request(),
+            projection_contract_request()?,
         )
         .because("projection aftermath should bind a stable contract")
         .materialize()
@@ -248,7 +248,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
         .expect("installed lower-runtime target should belong to the certification domain")
         .explains_store_backed_replay_gap(
             "explanation.store_backed_replay",
-            store_backed_replay_gap_request(),
+            store_backed_replay_gap_request()?,
         )
         .because("store-backed replay should preserve denied explanation identity")
         .materialize_artifact()
@@ -285,7 +285,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
             intent_declaration("certification.trace"),
         )
         .expect("deferred-neighbor request should build"),
-    );
+    )?;
     let decision_trace = advisory_review
         .decision_trace_envelope()
         .expect("advisory review should preserve decision trace")

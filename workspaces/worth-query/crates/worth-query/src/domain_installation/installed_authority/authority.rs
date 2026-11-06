@@ -60,15 +60,17 @@ pub(crate) struct WorthQueryInstalledDomainAuthorityInputs {
 }
 
 impl WorthQueryInstalledDomainAuthority {
-    pub(crate) fn new(inputs: WorthQueryInstalledDomainAuthorityInputs) -> Self {
-        let world_identity = installed_world_identity(inputs.runtime_authority);
+    pub(crate) fn new(
+        inputs: WorthQueryInstalledDomainAuthorityInputs,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let world_identity = installed_world_identity(inputs.runtime_authority)?;
         let authority_identity = installed_authority_identity(
             inputs.runtime_authority,
             inputs.generation,
             &inputs.installation_identity,
             inputs.semantics.identity(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             runtime_authority: inputs.runtime_authority,
             generation: inputs.generation,
             generation_lease: inputs.generation_lease,
@@ -86,7 +88,7 @@ impl WorthQueryInstalledDomainAuthority {
             portable_authority: inputs.portable_authority,
             world_identity,
             authority_identity,
-        }
+        })
     }
 
     pub fn domain_owner(&self) -> &str {

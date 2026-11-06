@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[path = "scenarios_executed.rs"]
 mod scenarios_executed;
 #[path = "scenarios_non_admitted.rs"]
@@ -148,39 +149,46 @@ pub(super) fn preview_derived_inspection_advisory(
         .expect("preview-derived inspection should be advisory")
 }
 
-pub(super) fn runtime_workflow_binding() -> WorkflowContextBinding {
-    runtime_workflow_binding_with_snapshot(WorthQuerySnapshotIdentity::from_relational_snapshot(
-        RelationalBridgeSnapshotIdentityParts::new(1, 1),
-    ))
+pub(super) fn runtime_workflow_binding() -> Result<WorkflowContextBinding, IdentityDerivationDenial>
+{
+    Ok(runtime_workflow_binding_with_snapshot(
+        WorthQuerySnapshotIdentity::from_relational_snapshot(
+            RelationalBridgeSnapshotIdentityParts::new(1, 1),
+        ),
+    )?)
 }
 
 pub(super) fn runtime_workflow_binding_with_snapshot(
     snapshot_identity: WorthQuerySnapshotIdentity,
-) -> WorkflowContextBinding {
-    synthetic_runtime_workflow_binding_for_snapshot_identity(
+) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
+    Ok(synthetic_runtime_workflow_binding_for_snapshot_identity(
         "effect-lifecycle-seeded-runtime",
         snapshot_identity,
-    )
+    )?)
 }
 
 pub(super) fn runtime_workflow_binding_for_branch(
     snapshot_identity: WorthQuerySnapshotIdentity,
     branch: &str,
-) -> WorkflowContextBinding {
-    synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_identity(
-        "effect-lifecycle-seeded-runtime",
-        "effect-lifecycle-seeded-branch",
-        snapshot_identity,
-        BranchId(branch.to_string()),
+) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
+    Ok(
+        synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_identity(
+            "effect-lifecycle-seeded-runtime",
+            "effect-lifecycle-seeded-branch",
+            snapshot_identity,
+            BranchId(branch.to_string()),
+        )?,
     )
 }
 
-pub(super) fn preview_workflow_binding(label: &str) -> WorkflowContextBinding {
-    synthetic_preview_workflow_binding(
+pub(super) fn preview_workflow_binding(
+    label: &str,
+) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
+    Ok(synthetic_preview_workflow_binding(
         "effect-lifecycle-seeded-preview",
         BridgePreviewSessionIdentity::from_stable_name(label),
         WorkflowPreviewEvaluationClass::PromotionEligible,
-    )
+    )?)
 }
 
 pub(super) fn workflow_request(

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::marker::PhantomData;
 
 use crate::ordinary::mutation::{
@@ -46,11 +47,11 @@ impl<D> WorthQueryInstalledDomainMutationDeclaration<D> {
     pub fn workflow(
         self,
         label: WorthQuerySessionLabel,
-    ) -> WorthQueryInstalledDomainWorkflowDeclaration<D> {
-        WorthQueryInstalledDomainWorkflowDeclaration::new(
+    ) -> Result<WorthQueryInstalledDomainWorkflowDeclaration<D>, IdentityDerivationDenial> {
+        Ok(WorthQueryInstalledDomainWorkflowDeclaration::new(
             self.witness,
-            declare_workflow(label, self.declaration),
-        )
+            declare_workflow(label, self.declaration)?,
+        ))
     }
 }
 

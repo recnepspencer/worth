@@ -17,32 +17,37 @@ fn success<T>(
     }
 }
 
-fn projection_contract_request() -> crate::domain_capabilities::WorthQueryProjectionContractRequest
+fn projection_contract_request(
+) -> Result<crate::domain_capabilities::WorthQueryProjectionContractRequest, IdentityDerivationDenial>
 {
-    crate::domain_capabilities::WorthQueryProjectionContractRequest::new(
-        projection_source(),
-        projection_binding(),
-        crate::projection_consumption::ProjectMaterializedFacts::declare().display_field_path(
-            crate::projection_consumption::projection_fact_field_path_from_segments([
-                worth_foundational::facade::FieldKey::new("field")
-                    .expect("projection fact field segment should admit"),
-                worth_foundational::facade::FieldKey::new("visible")
-                    .expect("projection fact field segment should admit"),
-            ]),
+    Ok(
+        crate::domain_capabilities::WorthQueryProjectionContractRequest::new(
+            projection_source()?,
+            projection_binding(),
+            crate::projection_consumption::ProjectMaterializedFacts::declare().display_field_path(
+                crate::projection_consumption::projection_fact_field_path_from_segments([
+                    worth_foundational::facade::FieldKey::new("field")
+                        .expect("projection fact field segment should admit"),
+                    worth_foundational::facade::FieldKey::new("visible")
+                        .expect("projection fact field segment should admit"),
+                ]),
+            ),
         ),
     )
 }
 
-fn store_backed_replay_gap_request(
-) -> crate::domain_capabilities::WorthQueryLowerRuntimeExplanationRequest {
-    let (reference_set, target) = replay_gap_inputs();
-    crate::domain_capabilities::WorthQueryLowerRuntimeExplanationRequest::explains_store_backed_replay_gap(
+fn store_backed_replay_gap_request() -> Result<
+    crate::domain_capabilities::WorthQueryLowerRuntimeExplanationRequest,
+    IdentityDerivationDenial,
+> {
+    let (reference_set, target) = replay_gap_inputs()?;
+    Ok(crate::domain_capabilities::WorthQueryLowerRuntimeExplanationRequest::explains_store_backed_replay_gap(
         reference_set,
         target,
         vec![crate::runtime::CausalEvidenceFamily::QueryInspection],
         crate::runtime::CausalInspectionRedactionPolicy::PreserveDetail,
         crate::runtime::CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
-    )
+    ))
 }
 
 #[test]
@@ -52,8 +57,8 @@ fn public_common_and_checked_lanes_converge_for_named_categories(
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let declaration = intent_declaration();
-    let admitted_plan = admitted_basis_observation_plan();
-    let projection_plan = admitted_projection_consumption_plan();
+    let admitted_plan = admitted_basis_observation_plan()?;
+    let projection_plan = admitted_projection_consumption_plan()?;
     let lower_runtime = lower_runtime_envelope("domain-capability-public-lane")?;
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
@@ -145,7 +150,7 @@ fn public_common_and_checked_lanes_converge_for_named_categories(
         .expect("installed contribution authority must remain current")
         .consumes_projection_contract(
             "aftermath.projection_contract",
-            projection_contract_request(),
+            projection_contract_request()?,
         )
         .because("public common and checked aftermath lanes must agree")
         .materialize()
@@ -156,7 +161,7 @@ fn public_common_and_checked_lanes_converge_for_named_categories(
             .expect("installed contribution authority must remain current")
             .consumes_projection_contract(
                 "aftermath.projection_contract",
-                projection_contract_request(),
+                projection_contract_request()?,
             )
             .because("public common and checked aftermath lanes must agree")
             .try_materialize()
@@ -169,7 +174,7 @@ fn public_common_and_checked_lanes_converge_for_named_categories(
         .expect("installed contribution authority must remain current")
         .explains_store_backed_replay_gap(
             "explanation.store_backed_replay",
-            store_backed_replay_gap_request(),
+            store_backed_replay_gap_request()?,
         )
         .because("public common and checked explanation lanes must agree")
         .materialize_artifact()
@@ -180,7 +185,7 @@ fn public_common_and_checked_lanes_converge_for_named_categories(
             .expect("installed contribution authority must remain current")
             .explains_store_backed_replay_gap(
                 "explanation.store_backed_replay",
-                store_backed_replay_gap_request(),
+                store_backed_replay_gap_request()?,
             )
             .because("public common and checked explanation lanes must agree")
             .try_materialize_artifact()

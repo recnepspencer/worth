@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_relational::facade::history::BranchId;
 
 use crate::effect_lifecycle::{
@@ -28,7 +29,7 @@ use super::{
 
 pub(super) fn branch_mutation_execution_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> EffectLifecyclePhase4CertificationRow {
+) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
         execution,
@@ -52,13 +53,13 @@ pub(super) fn branch_mutation_execution_row(
         entity_id,
         "phase4-branch-executed".to_string(),
     );
-    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Mutation);
+    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Mutation)?;
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("mutation should normalize");
-    let admitted = match evaluate_effect_eligibility(normalized) {
+    let admitted = match evaluate_effect_eligibility(normalized)? {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted mutation, got {other:?}"),
     };
-    let executed = scope_admitted_effect_plan(admitted)
+    let executed = scope_admitted_effect_plan(admitted)?
         .lower()
         .expect("mutation should lower")
         .execute_with(
@@ -66,7 +67,7 @@ pub(super) fn branch_mutation_execution_row(
             EffectExecutionAuthority::relational(&mut runtime),
         )
         .expect("mutation should execute");
-    EffectLifecyclePhase4CertificationRow::new(
+    Ok(EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::BranchMutationExecution,
         EffectLifecyclePhase4LaneOutcome::Executed,
         basis.family(),
@@ -80,12 +81,12 @@ pub(super) fn branch_mutation_execution_row(
                 .lowered_effect_execution_plan_for_reporting()
         ),
         executed.counters().clone(),
-    )
+    ))
 }
 
 pub(super) fn relational_merge_execution_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> EffectLifecyclePhase4CertificationRow {
+) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let mut runtime = relational_runtime_with_intent_strategy();
     create_entity(
         execution,
@@ -118,13 +119,13 @@ pub(super) fn relational_merge_execution_row(
             BranchId("candidate".to_string()),
         ),
     };
-    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Merge);
+    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Merge)?;
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("merge should normalize");
-    let admitted = match evaluate_effect_eligibility(normalized) {
+    let admitted = match evaluate_effect_eligibility(normalized)? {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted merge, got {other:?}"),
     };
-    let executed = scope_admitted_effect_plan(admitted)
+    let executed = scope_admitted_effect_plan(admitted)?
         .lower()
         .expect("merge should lower")
         .execute_with(
@@ -132,7 +133,7 @@ pub(super) fn relational_merge_execution_row(
             EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
         )
         .expect("merge should execute");
-    EffectLifecyclePhase4CertificationRow::new(
+    Ok(EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::RelationalMergeExecution,
         EffectLifecyclePhase4LaneOutcome::Executed,
         basis.family(),
@@ -146,12 +147,12 @@ pub(super) fn relational_merge_execution_row(
                 .lowered_effect_execution_plan_for_reporting()
         ),
         executed.counters().clone(),
-    )
+    ))
 }
 
 pub(super) fn bridge_writeback_execution_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> EffectLifecyclePhase4CertificationRow {
+) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let bridge = test_bridge_with_writeback_authority();
     let basis = EffectAuthoringBasis::from(branch_mutation_basis("branch-a"));
     let raw = RawEffectIntent::Writeback {
@@ -162,18 +163,18 @@ pub(super) fn bridge_writeback_execution_row(
         ),
         input: WritebackLoweringInput::projected_state_diff(),
     };
-    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Writeback);
+    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Writeback)?;
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("writeback should normalize");
-    let admitted = match evaluate_effect_eligibility(normalized) {
+    let admitted = match evaluate_effect_eligibility(normalized)? {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted writeback, got {other:?}"),
     };
-    let executed = scope_admitted_effect_plan(admitted)
+    let executed = scope_admitted_effect_plan(admitted)?
         .lower()
         .expect("writeback should lower")
         .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
         .expect("writeback should execute");
-    EffectLifecyclePhase4CertificationRow::new(
+    Ok(EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::BridgeWritebackExecution,
         EffectLifecyclePhase4LaneOutcome::Executed,
         basis.family(),
@@ -187,12 +188,12 @@ pub(super) fn bridge_writeback_execution_row(
                 .lowered_effect_execution_plan_for_reporting()
         ),
         executed.counters().clone(),
-    )
+    ))
 }
 
 pub(super) fn batch_execution_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> EffectLifecyclePhase4CertificationRow {
+) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let mut runtime = relational_runtime_with_intent_strategy();
     let left = create_entity(
         execution,
@@ -218,7 +219,7 @@ pub(super) fn batch_execution_row(
         branch_snapshot_identity(&runtime, "branch-a"),
         "branch-a",
     );
-    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Mutation);
+    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Mutation)?;
     let executed = effect_batch()
         .using_basis(basis.clone())
         .push(raw_mutation_effect_with_binding(
@@ -240,7 +241,7 @@ pub(super) fn batch_execution_row(
             EffectExecutionAuthority::relational(&mut runtime),
         )
         .expect("batch should execute");
-    EffectLifecyclePhase4CertificationRow::new(
+    Ok(EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::BatchExecution,
         EffectLifecyclePhase4LaneOutcome::Executed,
         basis.family(),
@@ -252,12 +253,12 @@ pub(super) fn batch_execution_row(
             executed.components().len()
         ),
         executed.counters().clone(),
-    )
+    ))
 }
 
 pub(super) fn relational_oracle_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> EffectLifecyclePhase4CertificationRow {
+) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
         execution,
@@ -287,11 +288,11 @@ pub(super) fn relational_oracle_row(
                 ),
             )
             .expect("mutation should normalize"),
-        ) {
+        )? {
             EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
             other => panic!("expected admitted mutation, got {other:?}"),
         },
-    )
+    )?
     .lower()
     .expect("mutation should lower")
     .execute_with(
@@ -313,11 +314,11 @@ pub(super) fn relational_oracle_row(
             .iter()
             .map(|id| id.0)
             .collect(),
-    );
+    )?;
     let verification = executed
         .verify_against_relational_oracle(&oracle)
         .expect("oracle verification should succeed");
-    EffectLifecyclePhase4CertificationRow::new(
+    Ok(EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::RelationalOracle,
         EffectLifecyclePhase4LaneOutcome::Verified,
         basis.family(),
@@ -325,12 +326,12 @@ pub(super) fn relational_oracle_row(
         verification.verification_for_reporting().to_string(),
         "Mutation".to_string(),
         executed.counters().clone(),
-    )
+    ))
 }
 
 pub(super) fn bridge_oracle_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> EffectLifecyclePhase4CertificationRow {
+) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let bridge = test_bridge_with_writeback_authority();
     let basis = EffectAuthoringBasis::from(branch_mutation_basis("branch-a"));
     let executed = scope_admitted_effect_plan(
@@ -347,11 +348,11 @@ pub(super) fn bridge_oracle_row(
                 },
             )
             .expect("writeback should normalize"),
-        ) {
+        )? {
             EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
             other => panic!("expected admitted writeback, got {other:?}"),
         },
-    )
+    )?
     .lower()
     .expect("writeback should lower")
     .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
@@ -360,16 +361,16 @@ pub(super) fn bridge_oracle_row(
         .as_writeback()
         .expect("writeback artifact should exist");
     let oracle = BridgeExecutionOracle::new(
-        bridge_observation_execution_record_subject_identity("bridge-record:phase4"),
-        bridge_observation_outcome_subject_identity(outcome.digest()),
+        bridge_observation_execution_record_subject_identity("bridge-record:phase4")?,
+        bridge_observation_outcome_subject_identity(outcome.digest())?,
         outcome.outcome_class(),
-        bridge_observation_request_subject_identity(receipt.request_digest()),
-        bridge_observation_receipt_subject_identity(receipt.digest()),
-    );
+        bridge_observation_request_subject_identity(receipt.request_digest())?,
+        bridge_observation_receipt_subject_identity(receipt.digest())?,
+    )?;
     let verification = executed
         .verify_against_bridge_oracle(&oracle)
         .expect("bridge oracle verification should succeed");
-    EffectLifecyclePhase4CertificationRow::new(
+    Ok(EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::BridgeOracle,
         EffectLifecyclePhase4LaneOutcome::Verified,
         basis.family(),
@@ -377,5 +378,5 @@ pub(super) fn bridge_oracle_row(
         verification.verification_for_reporting().to_string(),
         "Writeback".to_string(),
         executed.counters().clone(),
-    )
+    ))
 }

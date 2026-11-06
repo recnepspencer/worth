@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod identities;
 
 use crate::basis_lifecycle::{
@@ -74,38 +75,42 @@ impl EffectAuthoringBasis {
         }
     }
 
-    pub fn capability_for_reporting(&self) -> String {
-        self.capability_identity().as_str().to_string()
+    pub fn capability_for_reporting(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(self.capability_identity()?.as_str().to_string())
     }
 
-    pub fn capability_identity(&self) -> WorthQueryEvidenceIdentity {
-        match self {
-            Self::MutationPreparation(basis) => mutation_preparation_capability_identity(basis),
-            Self::PreviewCloseout(basis) => preview_closeout_capability_identity(basis),
+    pub fn capability_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(match self {
+            Self::MutationPreparation(basis) => mutation_preparation_capability_identity(basis)?,
+            Self::PreviewCloseout(basis) => preview_closeout_capability_identity(basis)?,
             Self::InspectionAdvisory(advisory) => {
-                advisory_basis_capability_identity(advisory.normalized())
+                advisory_basis_capability_identity(advisory.normalized())?
             }
             Self::DeferredFutureNeighbor(deferred) => {
-                deferred_basis_capability_identity(deferred.normalized())
+                deferred_basis_capability_identity(deferred.normalized())?
             }
-        }
+        })
     }
 
-    pub fn scoped_basis_for_reporting(&self) -> String {
-        self.scoped_basis_identity().as_str().to_string()
+    pub fn scoped_basis_for_reporting(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(self.scoped_basis_identity()?.as_str().to_string())
     }
 
-    pub fn scoped_basis_identity(&self) -> WorthQueryEvidenceIdentity {
-        match self {
-            Self::MutationPreparation(basis) => mutation_preparation_scoped_basis_identity(basis),
-            Self::PreviewCloseout(basis) => preview_closeout_scoped_basis_identity(basis),
+    pub fn scoped_basis_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(match self {
+            Self::MutationPreparation(basis) => mutation_preparation_scoped_basis_identity(basis)?,
+            Self::PreviewCloseout(basis) => preview_closeout_scoped_basis_identity(basis)?,
             Self::InspectionAdvisory(advisory) => {
-                advisory_basis_scoped_basis_identity(advisory.normalized())
+                advisory_basis_scoped_basis_identity(advisory.normalized())?
             }
             Self::DeferredFutureNeighbor(deferred) => {
-                deferred_basis_scoped_basis_identity(deferred.normalized())
+                deferred_basis_scoped_basis_identity(deferred.normalized())?
             }
-        }
+        })
     }
 
     pub fn expected_lower_runtime_binding_digest(&self) -> Option<&str> {

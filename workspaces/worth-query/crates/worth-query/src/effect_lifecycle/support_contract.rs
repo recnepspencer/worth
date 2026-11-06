@@ -156,18 +156,18 @@ pub(crate) fn support_deferred_neighbors(
 
 pub(crate) fn deferred_support_contract(
     cause: EffectSupportCause,
-) -> Option<EffectDeferredSupportContract> {
-    match cause {
+) -> Result<Option<EffectDeferredSupportContract>, IdentityDerivationDenial> {
+    Ok(match cause {
         EffectSupportCause::StoreBackedExecutionDeferred => {
             Some(EffectDeferredSupportContract::new(
                 EffectDeferredNeighborFamily::StoreBackedExecutionParity,
                 DeniedEffectEligibilityKind::StoreBackedExecutionDeferred,
-            ))
+            )?)
         }
         EffectSupportCause::DurableReplayDeferred => Some(EffectDeferredSupportContract::new(
             EffectDeferredNeighborFamily::DurableReplayAndRestartStableEnvelope,
             DeniedEffectEligibilityKind::DurableReplayDeferred,
-        )),
+        )?),
         _ => None,
-    }
+    })
 }

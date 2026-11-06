@@ -35,21 +35,21 @@ impl RelationalExecutionOracle {
         observed_commit_id: u64,
         observed_version_id: u64,
         observed_parent_commit_ids: Vec<u64>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let branch_identity = branch_identity.into();
         let relational_oracle_identity = compose_relational_oracle_identity(
             &branch_identity,
             observed_commit_id,
             observed_version_id,
             &observed_parent_commit_ids,
-        );
-        Self {
+        )?;
+        Ok(Self {
             branch_identity,
             observed_commit_id,
             observed_version_id,
             observed_parent_commit_ids,
             relational_oracle_identity,
-        }
+        })
     }
 
     pub fn observe_branch_head(

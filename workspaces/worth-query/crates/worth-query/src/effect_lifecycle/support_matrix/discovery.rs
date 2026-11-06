@@ -152,8 +152,10 @@ impl EffectLifecycleSupportDiscovery {
         support_deferred_neighbors(self.requested_effect_family)
     }
 
-    pub fn deferred_contract(&self) -> Option<EffectDeferredSupportContract> {
-        deferred_support_contract(self.cause)
+    pub fn deferred_contract(
+        &self,
+    ) -> Result<Option<EffectDeferredSupportContract>, IdentityDerivationDenial> {
+        Ok(deferred_support_contract(self.cause)?)
     }
 
     pub fn matched_row_identity(&self) -> Option<&WorthQueryEvidenceIdentity> {
@@ -223,12 +225,12 @@ pub fn effect_lifecycle_support_matrix(
 pub fn discover_effect_lifecycle_support(
     basis_family: BasisFamily,
     effect_family: EffectFamily,
-) -> EffectLifecycleSupportDiscovery {
-    let support_matrix = effect_lifecycle_support_matrix();
-    EffectLifecycleSupportDiscovery::new(
+) -> Result<EffectLifecycleSupportDiscovery, IdentityDerivationDenial> {
+    let support_matrix = effect_lifecycle_support_matrix()?;
+    Ok(EffectLifecycleSupportDiscovery::new(
         basis_family,
         effect_family,
-        support_decision_for(basis_family, effect_family),
+        support_decision_for(basis_family, effect_family)?,
         support_matrix.matrix_identity().clone(),
-    )
+    )?)
 }

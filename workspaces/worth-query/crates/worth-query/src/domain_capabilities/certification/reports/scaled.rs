@@ -74,8 +74,8 @@ fn scaled_evidence(
     domain: &crate::domain_capabilities::WorthQueryInstalledDomainContributionSurface,
 ) -> Result<WorthQueryDomainCapabilityScaledEvidence, IdentityDerivationDenial> {
     let declaration = intent_declaration(&format!("domain-capability-scale-{scale}"));
-    let admitted_plan = admitted_basis_observation_plan();
-    let projection_plan = admitted_projection_consumption_plan();
+    let admitted_plan = admitted_basis_observation_plan()?;
+    let projection_plan = admitted_projection_consumption_plan()?;
     let lower_runtime = lower_runtime_envelope(&format!("domain-capability-scale-{scale}"))?;
     let categories = category_set_for_scale(scale);
     let admitted_plan_target = domain
@@ -166,7 +166,7 @@ fn scaled_evidence(
             .expect("installed contribution authority must remain current")
             .consumes_projection_contract(
                 format!("aftermath.scale_{scale}"),
-                projection_contract_request(),
+                projection_contract_request()?,
             )
             .because("scaled aftermath evidence should remain canonical")
             .materialize()
@@ -180,7 +180,7 @@ fn scaled_evidence(
             .expect("installed contribution authority must remain current")
             .explains_store_backed_replay_gap(
                 format!("explanation.scale_{scale}"),
-                store_backed_replay_gap_request(),
+                store_backed_replay_gap_request()?,
             )
             .because("scaled explanation evidence should remain canonical")
             .materialize_artifact()
@@ -209,7 +209,7 @@ fn scaled_evidence(
                 intent_declaration(&format!("trace.scale.{scale}.{index}")),
             )
             .expect("scaled deferred-neighbor request should build"),
-        );
+        )?;
         let trace = review
             .decision_trace_envelope()
             .expect("scaled review should preserve decision trace")

@@ -66,10 +66,11 @@ mod tests {
     }
 
     #[test]
-    fn equivalent_full_identities_share_a_locator_without_digest_truncation() {
-        let first = identity("first");
+    fn equivalent_full_identities_share_a_locator_without_digest_truncation(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let first = identity("first")?;
         let equivalent = first.clone();
-        let second = identity("second");
+        let second = identity("second")?;
 
         assert_eq!(
             foundational_boundary_handle(&first),
@@ -79,5 +80,7 @@ mod tests {
             foundational_boundary_handle(&first),
             foundational_boundary_handle(&second)
         );
+
+        Ok(())
     }
 }

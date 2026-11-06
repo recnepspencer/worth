@@ -27,21 +27,23 @@ fn compose_inventory_identity(
     )
 }
 
-pub fn effect_lifecycle_family_inventory() -> EffectLifecycleFamilyInventory {
+pub fn effect_lifecycle_family_inventory(
+) -> Result<EffectLifecycleFamilyInventory, IdentityDerivationDenial> {
     let rows = effect_lifecycle_family_rows();
     let row_identities = rows
         .iter()
         .map(|row| row.row_identity().clone())
         .collect::<Vec<_>>();
     let inventory_identity =
-        compose_inventory_identity("effect_lifecycle_family_inventory_v1", &row_identities);
-    EffectLifecycleFamilyInventory {
+        compose_inventory_identity("effect_lifecycle_family_inventory_v1", &row_identities)?;
+    Ok(EffectLifecycleFamilyInventory {
         rows,
         inventory_identity,
-    }
+    })
 }
 
-pub fn effect_lifecycle_public_surface_inventory() -> EffectLifecyclePublicSurfaceInventory {
+pub fn effect_lifecycle_public_surface_inventory(
+) -> Result<EffectLifecyclePublicSurfaceInventory, IdentityDerivationDenial> {
     let rows = effect_lifecycle_public_surface_rows();
     let row_identities = rows
         .iter()
@@ -50,31 +52,31 @@ pub fn effect_lifecycle_public_surface_inventory() -> EffectLifecyclePublicSurfa
     let inventory_identity = compose_inventory_identity(
         "effect_lifecycle_public_surface_inventory_v1",
         &row_identities,
-    );
-    EffectLifecyclePublicSurfaceInventory {
+    )?;
+    Ok(EffectLifecyclePublicSurfaceInventory {
         rows,
         inventory_identity,
-    }
+    })
 }
 
 pub fn effect_lifecycle_family_row_for_key(
     family_key: EffectLifecycleFamilyKey,
-) -> Option<EffectLifecycleFamilyInventoryRow> {
-    effect_lifecycle_family_inventory()
+) -> Result<Option<EffectLifecycleFamilyInventoryRow>, IdentityDerivationDenial> {
+    Ok(effect_lifecycle_family_inventory()?
         .rows
         .into_iter()
-        .find(|row| row.family_key() == family_key)
+        .find(|row| row.family_key() == family_key))
 }
 
 pub fn effect_lifecycle_family_row_for(
     effect_family: EffectFamily,
-) -> Option<EffectLifecycleFamilyInventoryRow> {
+) -> Result<Option<EffectLifecycleFamilyInventoryRow>, IdentityDerivationDenial> {
     let family_key = match effect_family {
         EffectFamily::Mutation => EffectLifecycleFamilyKey::Mutation,
         EffectFamily::Merge => EffectLifecycleFamilyKey::Merge,
         EffectFamily::Writeback => EffectLifecycleFamilyKey::Writeback,
     };
-    effect_lifecycle_family_row_for_key(family_key)
+    Ok(effect_lifecycle_family_row_for_key(family_key)?)
 }
 
 pub fn effect_lifecycle_supported_basis_families(effect_family: EffectFamily) -> Vec<BasisFamily> {
@@ -83,11 +85,13 @@ pub fn effect_lifecycle_supported_basis_families(effect_family: EffectFamily) ->
         .unwrap_or_default()
 }
 
-pub fn effect_lifecycle_support_row_matches_inventory(row: &EffectLifecycleSupportRow) -> bool {
-    let Some(family_row) = effect_lifecycle_family_row_for(row.effect_family()) else {
-        return false;
+pub fn effect_lifecycle_support_row_matches_inventory(
+    row: &EffectLifecycleSupportRow,
+) -> Result<bool, IdentityDerivationDenial> {
+    let Some(family_row) = effect_lifecycle_family_row_for(row.effect_family())? else {
+        return Ok(false);
     };
-    row.authority_owner() == family_row.authority_owner()
+    Ok(row.authority_owner() == family_row.authority_owner()
         && row.lowered_artifact_kind() == family_row.lowered_artifact_kind()
-        && row.receipt_artifact_kind() == family_row.receipt_artifact_kind()
+        && row.receipt_artifact_kind() == family_row.receipt_artifact_kind())
 }

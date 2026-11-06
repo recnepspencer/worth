@@ -78,7 +78,7 @@ where
                 source_label.as_str(),
                 &binding_scope,
                 runtime_snapshot_identity.clone(),
-            )
+            )?
         }
         WorthQueryWorkflowRuntimeBindingSemantics::RuntimePreflightBundle { preflight } =>
             match scoped_runtime_preflight_workflow_binding_for_binding_identity(

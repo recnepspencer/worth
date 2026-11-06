@@ -3,6 +3,7 @@ use crate::effect_lifecycle::{
     scope_admitted_effect_plan, EffectAuthoringBasis, EffectEligibilityOutcome,
     EffectExecutionAuthority, RawEffectIntent,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::workflow::{
     WorkflowAuthorityTargetFamily, WorkflowDeclarationFamily, WritebackLoweringInput,
 };
@@ -41,24 +42,28 @@ impl CloseoutOracleEvidence {
 
 pub(super) fn build_closeout_oracles(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> CloseoutOracleEvidence {
-    CloseoutOracleEvidence::new(
-        relational_oracle_digest(execution).to_string(),
-        bridge_oracle_digest(execution).to_string(),
-    )
+) -> Result<CloseoutOracleEvidence, IdentityDerivationDenial> {
+    Ok(CloseoutOracleEvidence::new(
+        relational_oracle_digest(execution)?.to_string(),
+        bridge_oracle_digest(execution)?.to_string(),
+    ))
 }
 
-fn relational_oracle_digest(execution: &worth_execution::ExecutionRequest<'_, '_>) -> String {
-    let mutation_digest = scalar_mutation_oracle_digest(execution);
+fn relational_oracle_digest(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<String, IdentityDerivationDenial> {
+    let mutation_digest = scalar_mutation_oracle_digest(execution)?;
     let batch_digest = batch_mutation_oracle_digest(execution);
-    crate::identity::hash_parts(&[
+    Ok(crate::identity::hash_parts(&[
         "effect_closeout_relational_oracles_v1".to_string(),
         format!("scalar:{mutation_digest}"),
         format!("batch:{batch_digest}"),
-    ])
+    ]))
 }
 
-fn scalar_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'_, '_>) -> String {
+fn scalar_mutation_oracle_digest(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<String, IdentityDerivationDenial> {
     let branch = "closeout-oracle-branch";
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
@@ -84,15 +89,15 @@ fn scalar_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'
         raw,
     )
     .expect("closeout oracle mutation should normalize");
-    let admitted = match evaluate_effect_eligibility(normalized) {
+    let admitted = match evaluate_effect_eligibility(normalized)? {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted closeout oracle mutation, got {other:?}"),
     };
-    let lowered = scope_admitted_effect_plan(admitted)
+    let lowered = scope_admitted_effect_plan(admitted)?
         .lower()
         .expect("closeout oracle mutation should lower");
 
-    lowered
+    Ok(lowered
         .execute_with(
             execution,
             EffectExecutionAuthority::relational(&mut runtime),
@@ -102,7 +107,7 @@ fn scalar_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'
         .expect("closeout oracle mutation should verify")
         .relational_oracle_for_reporting()
         .expect("relational oracle digest should exist")
-        .to_string()
+        .to_string())
 }
 
 fn batch_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'_, '_>) -> String {
@@ -159,7 +164,9 @@ fn batch_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'_
         .to_string()
 }
 
-fn bridge_oracle_digest(execution: &worth_execution::ExecutionRequest<'_, '_>) -> String {
+fn bridge_oracle_digest(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<String, IdentityDerivationDenial> {
     let bridge = test_bridge_with_writeback_authority();
     let basis = EffectAuthoringBasis::from(tenant_mutation_basis("tenant-a"));
     let raw = RawEffectIntent::Writeback {
@@ -172,20 +179,20 @@ fn bridge_oracle_digest(execution: &worth_execution::ExecutionRequest<'_, '_>) -
     };
     let normalized = normalize_raw_effect_intent(&basis, raw)
         .expect("closeout bridge oracle writeback normalizes");
-    let admitted = match evaluate_effect_eligibility(normalized) {
+    let admitted = match evaluate_effect_eligibility(normalized)? {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted closeout bridge writeback, got {other:?}"),
     };
-    let executed = scope_admitted_effect_plan(admitted)
+    let executed = scope_admitted_effect_plan(admitted)?
         .lower()
         .expect("closeout bridge oracle writeback should lower")
         .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
         .expect("closeout bridge oracle writeback should execute");
 
-    executed
+    Ok(executed
         .verify_against_bridge_runtime(&bridge)
         .expect("closeout bridge oracle should verify")
         .bridge_oracle_for_reporting()
         .expect("bridge oracle digest should exist")
-        .to_string()
+        .to_string())
 }

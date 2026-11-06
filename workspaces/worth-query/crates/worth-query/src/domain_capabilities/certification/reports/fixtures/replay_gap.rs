@@ -1,25 +1,29 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 pub(in crate::domain_capabilities::certification::reports) fn store_backed_replay_gap_request(
-) -> WorthQueryLowerRuntimeExplanationRequest {
-    let (reference_set, target) = replay_gap_inputs();
-    WorthQueryLowerRuntimeExplanationRequest::explains_store_backed_replay_gap(
-        reference_set,
-        target,
-        vec![CausalEvidenceFamily::QueryInspection],
-        CausalInspectionRedactionPolicy::PreserveDetail,
-        CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
+) -> Result<WorthQueryLowerRuntimeExplanationRequest, IdentityDerivationDenial> {
+    let (reference_set, target) = replay_gap_inputs()?;
+    Ok(
+        WorthQueryLowerRuntimeExplanationRequest::explains_store_backed_replay_gap(
+            reference_set,
+            target,
+            vec![CausalEvidenceFamily::QueryInspection],
+            CausalInspectionRedactionPolicy::PreserveDetail,
+            CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
+        ),
     )
 }
 
 pub(in crate::domain_capabilities::certification::reports) fn store_backed_replay_gap_parts(
-) -> (CausalEvidenceReferenceSet, CausalInspectionTarget) {
-    replay_gap_inputs()
+) -> Result<(CausalEvidenceReferenceSet, CausalInspectionTarget), IdentityDerivationDenial> {
+    Ok(replay_gap_inputs()?)
 }
 
-fn replay_gap_inputs() -> (CausalEvidenceReferenceSet, CausalInspectionTarget) {
+fn replay_gap_inputs(
+) -> Result<(CausalEvidenceReferenceSet, CausalInspectionTarget), IdentityDerivationDenial> {
     let observation =
-        QueryObservationReceipt::certification_historical_replay_fixture("domain-capability");
+        QueryObservationReceipt::certification_historical_replay_fixture("domain-capability")?;
     let anchor = anchor_causal_observation(
         observation.clone(),
         CausalInspectionReason::HistoricalReplayResult,
@@ -36,5 +40,5 @@ fn replay_gap_inputs() -> (CausalEvidenceReferenceSet, CausalInspectionTarget) {
     )
     .expect("observation-derived target should be valid");
 
-    (reference_set, target)
+    Ok((reference_set, target))
 }

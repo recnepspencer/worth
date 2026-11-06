@@ -38,7 +38,7 @@ fn certification_bundle_preserves_support_scope_and_posture_distinction(
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let declaration = intent_declaration();
-    let admitted_plan = admitted_basis_observation_plan();
+    let admitted_plan = admitted_basis_observation_plan()?;
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
     let bundle = certify_domain_capabilities_in(domain)?;
@@ -102,8 +102,8 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs(
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let admitted_plan = admitted_basis_observation_plan();
-    let projection_plan = admitted_projection_consumption_plan();
+    let admitted_plan = admitted_basis_observation_plan()?;
+    let projection_plan = admitted_projection_consumption_plan()?;
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
     let bundle = certify_domain_capabilities_in(domain)?;
@@ -162,7 +162,7 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs(
         .consumes_projection_contract(
             "aftermath.projection_contract",
             crate::domain_capabilities::WorthQueryProjectionContractRequest::new(
-                projection_source(),
+                projection_source()?,
                 projection_binding(),
                 crate::projection_consumption::ProjectMaterializedFacts::declare()
                     .display_field_path(
@@ -182,7 +182,7 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs(
         crate::domain_capabilities::WorthQueryAftermathContributionAuthoring::consumes_projection_contract(
             "worth.spatial.aftermath.projection_contract",
             "projection aftermath should bind a stable contract",
-            projection_source(),
+            projection_source()?,
             projection_binding(),
             crate::projection_consumption::ProjectMaterializedFacts::declare()
                 .display_field_path(crate::projection_consumption::projection_fact_field_path_from_segments([worth_foundational::facade::FieldKey::new("field").expect("projection fact field segment should admit"), worth_foundational::facade::FieldKey::new("visible").expect("projection fact field segment should admit")])),

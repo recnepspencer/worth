@@ -142,7 +142,7 @@ fn workflow_inspection_materializer_denies_missing_inspection_semantics(
                     WorthQueryWorkflowRuntimeBindingSemantics::runtime_preflight_snapshot_identity(
                         crate::memory_workspace::admit_external_snapshot_label(
                             "runtime-snapshot:inspection",
-                        ),
+                        )?,
                     ),
                     WorkflowDeclarationFamily::ConflictInspectionNarrow,
                     WorkflowAuthorityTargetFamily::QueryInspection,

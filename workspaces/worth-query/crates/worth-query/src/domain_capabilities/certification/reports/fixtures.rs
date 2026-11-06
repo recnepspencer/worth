@@ -50,22 +50,26 @@ pub(super) fn intent_declaration(name: &str) -> WorthQueryIntentDeclaration {
     )
 }
 
-pub(super) fn admitted_basis_observation_plan() -> WorthQueryAdmittedIntentPlan {
+pub(super) fn admitted_basis_observation_plan(
+) -> Result<WorthQueryAdmittedIntentPlan, IdentityDerivationDenial> {
     let request =
         crate::intent_admission::WorthQueryRawIntentAdmissionRequest::basis_observation_lane(
             crate::basis_lifecycle::RawBasisIntent::CurrentHead,
         )
         .expect("basis-observation request should build");
 
-    match crate::intent_admission::admit_runtime_intent_request(request) {
-        crate::intent_admission::WorthQueryIntentAdmissionDecision::Admitted(plan) => plan,
-        other => panic!("expected admitted basis-observation plan, got {other:?}"),
-    }
+    Ok(
+        match crate::intent_admission::admit_runtime_intent_request(request)? {
+            crate::intent_admission::WorthQueryIntentAdmissionDecision::Admitted(plan) => plan,
+            other => panic!("expected admitted basis-observation plan, got {other:?}"),
+        },
+    )
 }
 
-pub(super) fn admitted_projection_consumption_plan() -> WorthQueryAdmittedIntentPlan {
+pub(super) fn admitted_projection_consumption_plan(
+) -> Result<WorthQueryAdmittedIntentPlan, IdentityDerivationDenial> {
     let declaration = crate::projection_consumption::declare_projection_consumption(
-        admitted_projection_source(),
+        admitted_projection_source()?,
         admitted_projection_binding(),
         ProjectMaterializedFacts::declare().display_field_path(
             crate::projection_consumption::projection_fact_field_path_from_segments([
@@ -83,15 +87,18 @@ pub(super) fn admitted_projection_consumption_plan() -> WorthQueryAdmittedIntent
         )
         .expect("projection request should build");
 
-    match crate::intent_admission::admit_runtime_intent_request(request) {
-        crate::intent_admission::WorthQueryIntentAdmissionDecision::Admitted(plan) => plan,
-        other => panic!("expected admitted projection-consumption plan, got {other:?}"),
-    }
+    Ok(
+        match crate::intent_admission::admit_runtime_intent_request(request)? {
+            crate::intent_admission::WorthQueryIntentAdmissionDecision::Admitted(plan) => plan,
+            other => panic!("expected admitted projection-consumption plan, got {other:?}"),
+        },
+    )
 }
 
-pub(super) fn projection_contract_request() -> WorthQueryProjectionContractRequest {
-    WorthQueryProjectionContractRequest::new(
-        admitted_projection_source(),
+pub(super) fn projection_contract_request(
+) -> Result<WorthQueryProjectionContractRequest, IdentityDerivationDenial> {
+    Ok(WorthQueryProjectionContractRequest::new(
+        admitted_projection_source()?,
         admitted_projection_binding(),
         ProjectMaterializedFacts::declare().display_field_path(
             crate::projection_consumption::projection_fact_field_path_from_segments([
@@ -101,15 +108,18 @@ pub(super) fn projection_contract_request() -> WorthQueryProjectionContractReque
                     .expect("projection fact field segment should admit"),
             ]),
         ),
-    )
+    ))
 }
 
-pub(super) fn projection_contract_parts() -> (
-    ProjectionConsumptionSource,
-    ProjectionConsumptionBindingContext,
-    ProjectMaterializedFacts,
-) {
-    projection_contract_request().into_parts()
+pub(super) fn projection_contract_parts() -> Result<
+    (
+        ProjectionConsumptionSource,
+        ProjectionConsumptionBindingContext,
+        ProjectMaterializedFacts,
+    ),
+    IdentityDerivationDenial,
+> {
+    Ok(projection_contract_request()?.into_parts())
 }
 
 pub(super) fn lower_runtime_envelope(
@@ -125,7 +135,7 @@ pub(super) fn lower_runtime_envelope(
         )
         .field_value(WorthQueryEvidenceTag::new("test_target"), target_digest)
         .seal()?,
-    );
+    )?;
     let detail_identity =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_value(WorthQueryEvidenceTag::new("test_detail"), "detail")
@@ -133,14 +143,14 @@ pub(super) fn lower_runtime_envelope(
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request,
         &detail_identity,
-    );
+    )?;
     let route = WorthQueryLowerRuntimeRoutePlan::new(
         eligibility,
         crate::lower_runtime_routing::WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
             "certification-report-route",
             &detail_identity,
-        ),
-    );
+        )?,
+    )?;
     let retained_evidence =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "domain-capability-certification-report",
@@ -152,22 +162,26 @@ pub(super) fn lower_runtime_envelope(
                 target_digest,
             )
             .seal()?,
-        );
-    let boundary =
-        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(&route, &retained_evidence);
+        )?;
+    let boundary = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
+        &route,
+        &retained_evidence,
+    )?;
 
     Ok(WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
         &route,
         &boundary,
         &retained_evidence,
-    ))
+    )?)
 }
 
-fn admitted_projection_source() -> ProjectionConsumptionSource {
-    crate::projection_consumption::intent_admission_admitted_projection_declaration()
-        .source()
-        .clone()
+fn admitted_projection_source() -> Result<ProjectionConsumptionSource, IdentityDerivationDenial> {
+    Ok(
+        crate::projection_consumption::intent_admission_admitted_projection_declaration()?
+            .source()
+            .clone(),
+    )
 }
 
 fn admitted_projection_binding() -> ProjectionConsumptionBindingContext {
@@ -275,7 +289,7 @@ pub(super) fn aftermath_requested(
     WorthQueryRequestedAftermathContribution<WorthQueryInstalledAdmittedPlanContributionTarget>,
     IdentityDerivationDenial,
 > {
-    let (source, binding, facts) = projection_contract_parts();
+    let (source, binding, facts) = projection_contract_parts()?;
     Ok(crate::domain_capabilities::WorthQueryAftermathContributionAuthoring::consumes_projection_contract(
         "worth.spatial.aftermath.projection_contract",
         "projection aftermath should bind a stable contract",
@@ -292,7 +306,7 @@ pub(super) fn explanation_requested(
     WorthQueryRequestedExplanationContribution<WorthQueryInstalledLowerRuntimeContributionTarget>,
     IdentityDerivationDenial,
 > {
-    let (reference_set, inspection_target) = store_backed_replay_gap_parts();
+    let (reference_set, inspection_target) = store_backed_replay_gap_parts()?;
     Ok(crate::domain_capabilities::WorthQueryExplanationContributionAuthoring::store_backed_replay_gap_explanation(
         "worth.spatial.explanation.store_backed_replay",
         "store-backed replay should preserve denied explanation identity",

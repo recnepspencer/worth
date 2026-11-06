@@ -10,7 +10,7 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs(
 
     let declaration = intent_declaration();
     let lower_runtime = lower_runtime_envelope("domain-capability-closeout")?;
-    let (reference_set, target) = replay_gap_inputs();
+    let (reference_set, target) = replay_gap_inputs()?;
     let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
     let bundle = certify_domain_capabilities_in(domain)?;

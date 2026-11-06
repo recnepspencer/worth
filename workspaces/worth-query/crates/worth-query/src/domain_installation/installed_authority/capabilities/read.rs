@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::marker::PhantomData;
 
 use crate::ordinary::read::{
@@ -152,7 +153,7 @@ impl<D> WorthQueryInstalledDomainReadCompletion<D> {
     pub fn project(
         &self,
         declaration: WorthQueryProjectionDeclaration,
-    ) -> WorthQueryInstalledDomainProjectionOutcome<D> {
+    ) -> Result<WorthQueryInstalledDomainProjectionOutcome<D>, IdentityDerivationDenial> {
         let outcome = self.completion.consume_projection(declaration);
         let receipt = WorthQueryInstalledDomainExecutionReceipt::new(
             self.receipt.installed_authority().clone(),
@@ -160,12 +161,12 @@ impl<D> WorthQueryInstalledDomainReadCompletion<D> {
             self.receipt.declaration_identity().clone(),
             self.receipt.basis_identity().clone(),
             self.receipt.operational_identity().clone(),
-        );
-        WorthQueryInstalledDomainProjectionOutcome {
+        )?;
+        Ok(WorthQueryInstalledDomainProjectionOutcome {
             outcome,
             receipt,
             marker: PhantomData,
-        }
+        })
     }
 
     pub(crate) fn witness(&self) -> &WorthQueryInstalledDomainAuthorityWitness {

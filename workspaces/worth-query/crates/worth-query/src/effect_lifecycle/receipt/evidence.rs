@@ -69,7 +69,7 @@ pub struct EffectReceiptDecisionTrace {
 }
 
 impl EffectReceiptDecisionTrace {
-    pub(super) fn scalar(executed: &ExecutedEffectPlan) -> Self {
+    pub(super) fn scalar(executed: &ExecutedEffectPlan) -> Result<Self, IdentityDerivationDenial> {
         let admitted_or_batch_identity = executed
             .lowered()
             .authority_scoped_plan()
@@ -80,21 +80,23 @@ impl EffectReceiptDecisionTrace {
             .lowered()
             .lowered_effect_execution_plan_identity()
             .clone();
-        Self::new(
+        Ok(Self::new(
             admitted_or_batch_identity,
             lowered_identity,
             executed.authority_owner(),
             "admitted",
-        )
+        )?)
     }
 
-    pub(super) fn batch(executed: &ExecutedEffectBatchPlan) -> Self {
-        Self::new(
+    pub(super) fn batch(
+        executed: &ExecutedEffectBatchPlan,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             executed.lowered().admitted_batch_identity().clone(),
             executed.lowered().batch_identity().clone(),
             executed.authority_owner(),
             "admitted_batch",
-        )
+        )?)
     }
 
     fn new(
@@ -163,7 +165,7 @@ impl EffectReceiptIntegrityMarkers {
         counters: &EffectLifecycleCounters,
         receipt_identity: &WorthQueryEvidenceIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let authority_artifact_identity = executed_authority_artifact_identity(authority_artifact);
+        let authority_artifact_identity = executed_authority_artifact_identity(authority_artifact)?;
         let counter_snapshot_identity = counters.evidence_identity();
         let integrity_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)

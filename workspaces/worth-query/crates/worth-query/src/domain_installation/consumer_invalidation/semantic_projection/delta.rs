@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::WorthQueryImpactSemanticProjection;
 
@@ -69,7 +70,9 @@ impl WorthQueryConsumerInvalidationSemanticProjection {
 }
 
 impl super::super::WorthQueryConsumerInvalidationDelta {
-    pub fn semantic_projection(&self) -> WorthQueryConsumerInvalidationSemanticProjection {
+    pub fn semantic_projection(
+        &self,
+    ) -> Result<WorthQueryConsumerInvalidationSemanticProjection, IdentityDerivationDenial> {
         let impact = self.impact().semantic_projection();
         let affected_native_keys = self
             .affected_native_keys()
@@ -81,8 +84,9 @@ impl super::super::WorthQueryConsumerInvalidationDelta {
             .iter()
             .map(crate::domain_installation::operation_execution::workflow_conditional_trace::conditional_trace_meaning)
             .collect();
-        let identity = super::encoding::invalidation_identity(self, &impact, &affected_native_keys);
-        WorthQueryConsumerInvalidationSemanticProjection {
+        let identity =
+            super::encoding::invalidation_identity(self, &impact, &affected_native_keys)?;
+        Ok(WorthQueryConsumerInvalidationSemanticProjection {
             identity,
             impact,
             affected_native_keys,
@@ -91,7 +95,7 @@ impl super::super::WorthQueryConsumerInvalidationDelta {
             cause: self.cause().clone(),
             locality: self.locality(),
             continuation: self.continuation(),
-        }
+        })
     }
 }
 

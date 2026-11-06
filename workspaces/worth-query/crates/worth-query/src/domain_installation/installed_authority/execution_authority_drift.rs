@@ -142,19 +142,21 @@ impl WorthQueryInstalledDomainExecutionDrift {
         Ok(())
     }
 
-    pub(crate) fn stale_installation(witness: &WorthQueryInstalledDomainAuthorityWitness) -> Self {
-        Self::new(
+    pub(crate) fn stale_installation(
+        witness: &WorthQueryInstalledDomainAuthorityWitness,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             witness,
             None,
             WorthQueryInstalledDomainExecutionDriftKind::StaleInstallation,
             WorthQueryInstalledDomainExecutionNextAction::RebindCurrentInstallation,
-        )
+        )?)
     }
 
     fn from_handle_denial(
         witness: &WorthQueryInstalledDomainAuthorityWitness,
         denial: WorthQueryDomainHandleDenial,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let (kind, next_action) = match denial.kind() {
             WorthQueryDomainHandleDenialKind::DomainNotInstalled => (
                 WorthQueryInstalledDomainExecutionDriftKind::DomainNotInstalled,
@@ -173,7 +175,7 @@ impl WorthQueryInstalledDomainExecutionDrift {
                 WorthQueryInstalledDomainExecutionNextAction::ReconcilePackageMeaning,
             ),
         };
-        Self::new(witness, None, kind, next_action)
+        Ok(Self::new(witness, None, kind, next_action)?)
     }
 
     fn new(

@@ -232,7 +232,10 @@ where
             WorthQueryAdmittedPlanBoundContributionTarget,
         >,
 {
-    Ok(ready_payload(admitted_plan_target(target_digest), payload)?)
+    Ok(ready_payload(
+        admitted_plan_target(target_digest)?,
+        payload,
+    )?)
 }
 
 fn lower_runtime_ready_contribution<P>(
