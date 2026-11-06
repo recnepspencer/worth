@@ -4,7 +4,7 @@ use crate::basis::{
     WorthQueryExpectedProductBasisDescription, WorthQueryProductBranchAdmissionDenial,
 };
 use crate::domain_computation::primary_graph::product_operation::ContextScopedOps;
-use crate::domain_computation::primary_graph::product_operation::ObservationRoomScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::observation_room::ObservationRoomScopedOps;
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
 use {
     crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,

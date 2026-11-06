@@ -18,7 +18,7 @@ use crate::basis::WorthQueryProductBranchAdmissionDenial as Denial;
 pub(in crate::domain_computation::primary_graph) trait ObservationRoomScopedOps<
     Schema: ApplicationSchema,
 >:
-    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 {
     fn admit_with_observation_room<Admitted>(
         &self,
@@ -41,7 +41,7 @@ pub(in crate::domain_computation::primary_graph) trait ObservationRoomScopedOps<
 
 impl<
         Schema: ApplicationSchema,
-        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+        HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<
                 Schema,
             > + ?Sized,
     > ObservationRoomScopedOps<Schema> for HostRuntime

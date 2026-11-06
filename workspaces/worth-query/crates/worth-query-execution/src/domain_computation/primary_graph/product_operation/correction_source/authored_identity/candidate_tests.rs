@@ -1,5 +1,5 @@
 //! Owner comparisons over lowered effects; public courts cover actual commit custody.
-use super::candidate::AuthoredCorrectionCandidateDenial;
+use crate::domain_computation::primary_graph::application_attempt::provider_binding::authored_correction_candidate_denial::AuthoredCorrectionCandidateDenial;
 use super::*;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestInterruption, WorthQueryRequestScope,

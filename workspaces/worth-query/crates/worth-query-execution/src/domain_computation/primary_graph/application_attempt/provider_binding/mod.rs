@@ -1,6 +1,7 @@
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 pub(crate) mod effect_accumulator;
 
+pub(crate) mod authored_correction_candidate_denial;
 mod effect_lowering;
 mod registration;
 

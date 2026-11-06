@@ -14,7 +14,7 @@ use crate::domain_computation::primary_graph::WorthQueryHistoryOutputAuthority;
 use crate::domain_computation::primary_graph::product_operation::WorthQueryPreparedBranchSetAdoption;
 use crate::domain_computation::primary_graph::product_operation::WorthQueryPreparedProgramMigration;
 use crate::domain_computation::primary_graph::product_operation::WorthQueryProductEntry;
-use crate::domain_computation::primary_graph::product_operation::WorthQueryProgramMigrationPreparationDenial;
+use crate::domain_computation::primary_graph::application_attempt::migration::preparation_denial::WorthQueryProgramMigrationPreparationDenial;
 use crate::domain_computation::primary_graph::product_operation::WorthQueryStoppedBranchSetAdoption;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
